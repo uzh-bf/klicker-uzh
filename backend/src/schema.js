@@ -27,6 +27,8 @@ const {
   publishFeedback,
   resolveFeedback,
   respondToFeedback,
+  upvoteFeedback,
+  reactToFeedbackResponse,
   deleteFeedbackResponse,
   deleteFeedback,
   addConfusionTS,
@@ -119,8 +121,10 @@ const typeDefs = [
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
     pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
     publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): ID!
+    upvoteFeedback(sessionId: ID!, feedbackId: ID!, undo: Boolean): ID!
+    reactToFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!, positive: Int, negative: Int): ID!
     respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
-    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): ID!
+    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): Session!
     resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
@@ -232,6 +236,8 @@ const resolvers = {
     modifyQuestionBlock,
     questionStatistics,
     exportQuestions,
+    upvoteFeedback,
+    reactToFeedbackResponse,
   },
   Subscription: {
     // TODO: some form of authentication

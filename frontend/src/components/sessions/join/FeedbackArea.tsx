@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
-import useStickyState from '../../../lib/hooks/useStickyState'
 
 import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
 import PublicFeedback from './PublicFeedback'
@@ -16,8 +15,14 @@ interface Props {
   feedbacks?: any[]
   handleNewConfusionTS: any
   handleNewFeedback: any
+  handleUpvoteFeedback: any
+  handleReactToFeedbackResponse: any
   shortname: string
   sessionId: string
+  upvotedFeedbacks: any
+  setUpvotedFeedbacks: any
+  reactions: any
+  setReactions: any
 }
 
 const defaultProps = {
@@ -33,8 +38,14 @@ function FeedbackArea({
   feedbacks,
   handleNewConfusionTS,
   handleNewFeedback,
+  handleUpvoteFeedback,
+  handleReactToFeedbackResponse,
   shortname,
   sessionId,
+  upvotedFeedbacks,
+  setUpvotedFeedbacks,
+  reactions,
+  setReactions,
 }: Props): React.ReactElement {
   // const [confusionDifficulty, setConfusionDifficulty] = useState()
   // const [confusionSpeed, setConfusionSpeed] = useState()
@@ -43,14 +54,12 @@ function FeedbackArea({
     open: [],
     resolved: [],
   })
-  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
-  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
   useEffect(() => {
     const [resolved, open] = partition((feedback) => feedback.resolved, feedbacks)
     setProcessedFeedbacks({
-      resolved: sortBy((o) => o.votes, resolved as any[]),
-      open: sortBy((o) => o.votes, open as any[]),
+      resolved: sortBy((o) => -o.votes, resolved as any[]),
+      open: sortBy((o) => -o.votes, open as any[]),
     })
   }, [feedbacks])
 
@@ -58,7 +67,7 @@ function FeedbackArea({
     setProcessedFeedbacks((prev) => ({
       open: prev.open.map((feedback) => ({
         ...feedback,
-        upvoted: !!upvotedFeedbacks[feedback.id],
+        upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
           positive: reactions[response.id] > 0,
@@ -67,7 +76,7 @@ function FeedbackArea({
       })),
       resolved: prev.resolved.map((feedback) => ({
         ...feedback,
-        upvoted: !!upvotedFeedbacks[feedback.id],
+        upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
           positive: reactions[response.id] > 0,
@@ -75,7 +84,7 @@ function FeedbackArea({
         })),
       })),
     }))
-  }, [upvotedFeedbacks, reactions])
+  }, [feedbacks, upvotedFeedbacks, reactions])
 
   // useEffect((): void => {
   //   try {
@@ -118,11 +127,17 @@ function FeedbackArea({
     handleNewFeedback({ content: feedbackInputValue })
   }
 
-  const handleUpvoteFeedback = (feedbackId: string) => {
+  const onUpvoteFeedback = async (feedbackId: string) => {
+    await handleUpvoteFeedback({ feedbackId, undo: !!upvotedFeedbacks[feedbackId] })
     setUpvotedFeedbacks((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }))
   }
 
-  const handlePositiveResponseReaction = (responseId: string, feedbackId: string) => {
+  const handlePositiveResponseReaction = async (responseId: string, feedbackId: string) => {
+    if (reactions[responseId] < 0) {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: -1 })
+    } else {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: 0 })
+    }
     setReactions((prev) => {
       return {
         ...prev,
@@ -131,7 +146,12 @@ function FeedbackArea({
     })
   }
 
-  const handleNegativeResponseReaction = (responseId: string, feedbackId: string) => {
+  const handleNegativeResponseReaction = async (responseId: string, feedbackId: string) => {
+    if (reactions[responseId] > 0) {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: -1, negative: 1 })
+    } else {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 0, negative: 1 })
+    }
     setReactions((prev) => {
       return {
         ...prev,
@@ -193,7 +213,7 @@ function FeedbackArea({
                         onPositiveResponseReaction={(responseId: string) =>
                           handlePositiveResponseReaction(responseId, id)
                         }
-                        onUpvoteFeedback={() => handleUpvoteFeedback(id)}
+                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
                       />
                     </div>
                   )

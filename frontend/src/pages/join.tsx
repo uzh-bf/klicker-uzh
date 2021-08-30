@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import _sortBy from 'lodash/sortBy'
+import useStickyState from '../lib/hooks/useStickyState'
 
 import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
@@ -14,6 +15,8 @@ import QuestionArea from '../components/sessions/join/QuestionArea'
 import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
+import UpvoteFeedbackMutation from '../graphql/mutations/UpvoteFeedbackMutation.graphql'
+import ReactToFeedbackResponseMutation from '../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
 import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
 import useLogging from '../lib/hooks/useLogging'
@@ -48,11 +51,17 @@ function Join(): React.ReactElement {
   const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
   const [extraMessage, setExtraMessage] = useState(null as string)
 
+  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
+  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
+
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
+  const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
+  const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
+    pollInterval: 10000,
   })
 
   const { shortname }: { shortname?: string } = router.query
@@ -97,8 +106,6 @@ function Join(): React.ReactElement {
 
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
-  const sortedFeedbacks = _sortBy(feedbacks, ['pinned', 'votes', 'createdAt']).reverse()
-
   const onSidebarActiveItemChange =
     (newSidebarActiveItem): any =>
     (): void => {
@@ -137,34 +144,40 @@ function Join(): React.ReactElement {
     try {
       if (settings.isFeedbackChannelPublic) {
         newFeedback({
+          refetchQueries: [{ query: JoinSessionQuery, variables: { shortname } }],
           // optimistically add the feedback to the array already
-          optimisticResponse: {
-            addFeedback: {
-              __typename: 'Session_Feedback',
-              content,
-              // randomly generate an id, will be replaced by server response
-              id: Math.round(Math.random() * -1000000),
-              votes: 0,
-            },
-          },
+          // optimisticResponse: {
+          //   addFeedback: {
+          //     __typename: 'Session_Feedback',
+          //     content,
+          //     // randomly generate an id, will be replaced by server response
+          //     id: Math.round(Math.random() * -1000000),
+          //     votes: 0,
+          //     pinned: false,
+          //     resolved: false,
+          //     createdAt: '',
+          //     resolvedAt: null,
+          //     responses: [],
+          //   },
+          // },
           // update the cache after the mutation has completed
-          update: (store, { data: { addFeedback } }): void => {
-            const query = {
-              query: JoinSessionQuery,
-              variables: { shortname: router.query.shortname },
-            }
+          // update: (store, { data: { addFeedback } }): void => {
+          //   const query = {
+          //     query: JoinSessionQuery,
+          //     variables: { shortname: router.query.shortname },
+          //   }
 
-            // get the data from the store
-            // replace the feedbacks
-            const queryData: any = store.readQuery(query)
-            queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
+          //   // get the data from the store
+          //   // replace the feedbacks
+          //   const queryData: any = store.readQuery(query)
+          //   queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
 
-            // write the updated data to the store
-            store.writeQuery({
-              ...query,
-              data: queryData,
-            })
-          },
+          //   // write the updated data to the store
+          //   store.writeQuery({
+          //     ...query,
+          //     data: queryData,
+          //   })
+          // },
           variables: { content, fp: fingerprint, sessionId },
         })
       } else {
@@ -194,6 +207,22 @@ function Join(): React.ReactElement {
     }
   }
 
+  const onUpvoteFeedback = async ({ feedbackId, undo }) => {
+    try {
+      await upvoteFeedback({ variables: { sessionId, feedbackId, undo } })
+    } catch ({ message }) {
+      console.error(message)
+    }
+  }
+
+  const onReactToFeedbackResponse = async ({ feedbackId, responseId, positive, negative }) => {
+    try {
+      await reactToFeedbackResponse({ variables: { sessionId, feedbackId, responseId, positive, negative } })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage(messages.activeQuestionTitle)
@@ -215,7 +244,6 @@ function Join(): React.ReactElement {
           document: UpdatedSessionSubscription,
           updateQuery: (prev, { subscriptionData }): any => {
             if (!subscriptionData.data) return prev
-            console.log(subscriptionData)
             return { joinSession: subscriptionData.data.sessionUpdated }
           },
           variables: { sessionId },
@@ -250,13 +278,19 @@ function Join(): React.ReactElement {
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={sortedFeedbacks}
+            feedbacks={feedbacks}
             handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
+            handleReactToFeedbackResponse={onReactToFeedbackResponse}
+            handleUpvoteFeedback={onUpvoteFeedback}
             isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
+            reactions={reactions}
             sessionId={sessionId}
+            setReactions={setReactions}
+            setUpvotedFeedbacks={setUpvotedFeedbacks}
             shortname={shortname}
+            upvotedFeedbacks={upvotedFeedbacks}
           />
         )}
       </div>

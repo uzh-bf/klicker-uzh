@@ -60,7 +60,7 @@ module.exports = convict({
   cache: {
     pages: {
       join: {
-        default: 30,
+        default: 10,
         env: 'CACHE_PAGES_JOIN',
         format: 'int',
       },

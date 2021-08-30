@@ -1,14 +1,12 @@
 subscription UpdateSession($sessionId: ID!) {
   sessionUpdated(sessionId: $sessionId) {
     id
-    expiresAt
-    timeLimit
     status
     settings {
+      isParticipantAuthenticationEnabled
       isFeedbackChannelActive
       isFeedbackChannelPublic
       isConfusionBarometerActive
-      isParticipantAuthenticationEnabled
       authenticationMode
       storageMode
     }
@@ -55,6 +53,15 @@ subscription UpdateSession($sessionId: ID!) {
       id
       content
       votes
+      pinned
+      resolved
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        createdAt
+      }
     }
   }
 }
