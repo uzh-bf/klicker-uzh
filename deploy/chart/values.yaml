@@ -54,7 +54,7 @@ analytics:
     trackingId: UA-33258666-18
 
 frontend:
-  replicaCount: 2
+  replicaCount: 1
 
   hostname: app.klicker-stage.bf-app.ch
 
@@ -84,9 +84,9 @@ frontend:
   resources: {}
 
   autoscaling:
-    enabled: false
+    enabled: true
     minReplicas: 1
-    maxReplicas: 100
+    maxReplicas: 4
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
 
@@ -97,7 +97,7 @@ frontend:
   affinity: {}
 
 backend:
-  replicaCount: 2
+  replicaCount: 1
 
   hostname: api.klicker-stage.bf-app.ch
 
@@ -126,9 +126,9 @@ backend:
   resources: {}
 
   autoscaling:
-    enabled: false
+    enabled: true
     minReplicas: 1
-    maxReplicas: 100
+    maxReplicas: 4
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
 
