@@ -620,6 +620,7 @@ const joinSession = async ({ shortname, auth }) => {
     id,
     settings,
     status,
+    isFeedbackOnlySession: blocks.length === 0,
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format

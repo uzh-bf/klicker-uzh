@@ -1,6 +1,7 @@
 query JoinSession($shortname: String!) {
   joinSession(shortname: $shortname) {
     id
+    isFeedbackOnlySession
     timeLimit
     expiresAt
     status
