@@ -87,6 +87,9 @@ function Join(): React.ReactElement {
     if (responseError?.graphQLErrors[0]?.message === 'RESPONSE_NOT_ALLOWED') {
       setExtraMessage(intl.formatMessage(messages.ignoredSecondResponse))
     }
+    if (data?.joinSession?.isFeedbackOnlySession) {
+      setSidebarActiveItem('feedbackChannel')
+    }
   }, [data, loading, responseError])
 
   const fingerprint = useFingerprint()

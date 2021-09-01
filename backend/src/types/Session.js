@@ -30,6 +30,7 @@ module.exports = `
     timeLimit: Int
     expiresAt: DateTime
     execution: Int
+    isFeedbackOnlySession: Boolean
 
     settings: Session_Settings!
 
