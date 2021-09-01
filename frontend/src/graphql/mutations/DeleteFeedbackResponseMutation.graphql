@@ -1,3 +1,11 @@
 mutation DeleteFeedbackResponseMutation($sessionId: ID!, $feedbackId: ID!, $responseId: ID!) {
-  deleteFeedbackResponse(sessionId: $sessionId, feedbackId: $feedbackId, responseId: $responseId)
+  deleteFeedbackResponse(sessionId: $sessionId, feedbackId: $feedbackId, responseId: $responseId) {
+    id
+    feedbacks {
+      id
+      responses {
+        id
+      }
+    }
+  }
 }

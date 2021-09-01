@@ -1,3 +1,17 @@
 mutation RespondToFeedbackMutation($sessionId: ID!, $feedbackId: ID!, $response: String!) {
-  respondToFeedback(sessionId: $sessionId, feedbackId: $feedbackId, response: $response)
+  respondToFeedback(sessionId: $sessionId, feedbackId: $feedbackId, response: $response) {
+    id
+    feedbacks {
+      id
+      pinned
+      resolved
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+        createdAt
+      }
+    }
+  }
 }

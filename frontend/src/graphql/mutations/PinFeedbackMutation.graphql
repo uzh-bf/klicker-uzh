@@ -1,3 +1,9 @@
 mutation PinFeedback($sessionId: ID!, $feedbackId: ID!, $pinState: Boolean!) {
-  pinFeedback(sessionId: $sessionId, feedbackId: $feedbackId, pinState: $pinState)
+  pinFeedback(sessionId: $sessionId, feedbackId: $feedbackId, pinState: $pinState) {
+    id
+    feedbacks {
+      id
+      pinned
+    }
+  }
 }
