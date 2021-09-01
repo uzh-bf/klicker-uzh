@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { FormattedMessage } from 'react-intl'
+import clsx from 'clsx'
 
 import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
@@ -63,9 +64,9 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
 
   return (
     <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className="teacherLayout">
+      <div className={clsx('flex flex-col', fixedHeight ? 'h-screen min-h-[initial]' : 'h-[initial] min-h-screen')}>
         {navbar && (
-          <div className="navbar">
+          <div className="flex-initial print:hidden">
             <Navbar
               handleSidebarToggle={(): void => setIsSidebarVisible((prevState): boolean => !prevState)}
               sidebarVisible={isSidebarVisible}
@@ -75,7 +76,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
           </div>
         )}
 
-        <div className="content">
+        <div className="flex flex-1 overflow-hidden bg-white content">
           <Sidebar
             handleSidebarItemClick={handleSidebarItemClick}
             items={sidebarItems}
@@ -86,34 +87,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
           </Sidebar>
         </div>
 
-        <div className="actionArea">{actionArea}</div>
-
-        <style jsx>{`
-          .teacherLayout {
-            display: flex;
-            flex-direction: column;
-            height: ${fixedHeight ? '100vh' : 'initial'};
-            min-height: ${fixedHeight ? 'initial' : '100vh'};
-
-            .navbar {
-              flex: 0 0 auto;
-            }
-
-            .content {
-              background-color: white;
-
-              flex: 1;
-
-              display: flex;
-
-              overflow: hidden;
-            }
-
-            .actionArea {
-              flex: 0 0 auto;
-            }
-          }
-        `}</style>
+        <div className="flex-initial print:hidden">{actionArea}</div>
       </div>
     </CommonLayout>
   )

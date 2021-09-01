@@ -17,6 +17,7 @@ import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedba
 
 interface Props {
   sessionId: string
+  sessionName: string
   confusionTS: any[]
   feedbacks: any[]
   isFeedbackChannelActive: boolean
@@ -27,6 +28,7 @@ interface Props {
 
 function AudienceInteraction({
   sessionId,
+  sessionName,
   confusionTS,
   feedbacks,
   isFeedbackChannelActive,
@@ -46,8 +48,11 @@ function AudienceInteraction({
   return (
     <div>
       <div className="flex flex-row justify-between">
-        <div className="text-2xl font-bold">Audience Interaction</div>
-        <div className="mr-2">
+        <div className="text-2xl font-bold print:hidden">Audience Interaction</div>
+        <div className="hidden print:block">
+          <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
+        </div>
+        <div className="mr-2 print:hidden">
           <Checkbox
             toggle
             checked={isFeedbackChannelActive}
@@ -88,6 +93,7 @@ function AudienceInteraction({
       {!isFeedbackChannelActive && (
         <Message
           info
+          className="print:hidden"
           content="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
           icon="info"
         />

@@ -1,6 +1,7 @@
 query RunningSession {
   runningSession {
     id
+    name
     startedAt
     activeStep
     activeBlock

@@ -55,13 +55,14 @@ function Running(): React.ReactElement {
 
   useEffect((): void => {
     router.prefetch('/sessions/evaluation')
+    router.prefetch('/sessions/feedbacks')
     router.prefetch('/join')
     router.prefetch('/qr')
   }, [])
 
   const accountSummary = useQuery(AccountSummaryQuery)
   const { data, loading, error, startPolling, stopPolling, subscribeToMore } = useQuery(RunningSessionQuery, {
-    pollInterval: 5000,
+    // pollInterval: 5000,
   })
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
@@ -102,6 +103,7 @@ function Running(): React.ReactElement {
 
         const {
           id,
+          name,
           activeStep,
           // activeBlock,
           blocks,
@@ -114,7 +116,7 @@ function Running(): React.ReactElement {
 
         return (
           <div className="p-4 md:p-8 lg:py-8 lg:px-[10%]">
-            <div className="mb-8 md:p-2 ">
+            <div className="mb-8 md:p-2 print:hidden">
               {settings.isParticipantAuthenticationEnabled && (
                 <Message icon warning>
                   <Icon name="lock" />
@@ -260,6 +262,7 @@ function Running(): React.ReactElement {
               isFeedbackChannelActive={settings.isFeedbackChannelActive}
               isFeedbackChannelPublic={settings.isFeedbackChannelPublic}
               sessionId={id}
+              sessionName={name}
               subscribeToMore={subscribeToMore}
             />
           </div>

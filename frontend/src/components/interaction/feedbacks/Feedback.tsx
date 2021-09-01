@@ -71,15 +71,25 @@ function Feedback({
         role="button"
         onClick={() => setIsEditingActive((prev) => !prev)}
       >
-        <div className="flex-1">
+        <div className="flex-1 no-page-break-inside">
           <p className="mb-0">{content}</p>
           <div className="flex flex-row items-end mt-2 text-gray-500">
             <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-            <div className="ml-4">{resolved ? <Icon name="check" /> : <Icon name="discussions" />}</div>
+            <div className="ml-8">
+              {resolved ? (
+                <div>
+                  <Icon name="check" /> Resolved during session
+                </div>
+              ) : (
+                <div>
+                  <Icon name="discussions" />
+                </div>
+              )}
+            </div>
             <div className="ml-4">{pinned && <Icon name="pin" />}</div>
           </div>
         </div>
-        <div className="flex flex-col items-end justify-between flex-initial">
+        <div className="flex flex-col items-end justify-between flex-initial print:hidden">
           <div className="text-xl text-gray-500">
             {votes} <Icon name="thumbs up outline" />
           </div>
@@ -115,91 +125,90 @@ function Feedback({
         </div>
       </div>
 
-      {isEditingActive && (
-        <div className="p-4 border border-t-0 border-gray-300 border-solid">
-          <div>
-            {responses.map((response) => (
-              <div
-                className="flex flex-row pl-4 mt-2 border border-solid border-l-[5px] first:mt-0 last:mb-4 items-start bg-gray-50 py-1 rounded shadow-sm"
-                key={response.createdAt}
-              >
-                <div className="flex-1">
-                  <p className="mb-0 prose">{response.content}</p>
-                  <div className="mt-1 text-sm text-gray-500">
-                    {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
-                  </div>
+      <div
+        className={clsx(
+          'p-4 print:p-2 print:pr-0 border print:border-0 border-t-0 border-gray-300 border-solid',
+          !isEditingActive && 'hidden print:block'
+        )}
+      >
+        <div>
+          {responses.map((response) => (
+            <div
+              className="flex flex-row pl-4 mt-2 border border-solid border-l-[5px] print:border-l-[10px] first:mt-0 last:mb-4 items-start bg-gray-50 py-1 print:pr-0 rounded shadow-sm no-page-break-inside"
+              key={response.createdAt}
+            >
+              <div className="flex-1">
+                <p className="mb-0 prose">{response.content}</p>
+                <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+              </div>
+              <div className="flex flex-row items-center flex-initial print:hidden">
+                <div className={clsx('text-gray-500')}>
+                  {response.positiveReactions} <Icon name="thumbs up outline" />
                 </div>
-                <div className="flex flex-row items-center flex-initial">
-                  <div className={clsx('text-gray-500')}>
-                    {response.positiveReactions} <Icon name="thumbs up outline" />
-                  </div>
-                  <div className={clsx('ml-2', 'text-gray-500')}>
-                    {response.negativeReactions} <Icon name="question" />
-                  </div>
-                  <div className="ml-2">
-                    <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />
-                  </div>
+                <div className={clsx('ml-2', 'text-gray-500')}>
+                  {response.negativeReactions} <Icon name="question" />
+                </div>
+                <div className="ml-2 print:hidden">
+                  <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="flex">
-            <div className="flex-1">
-              <Form className="h-full">
-                <TextArea
-                  autoFocus
-                  className="h-full"
-                  disabled={resolved}
-                  id="response"
-                  placeholder={
-                    resolved ? 'Reopen the feedback to add a new response...' : 'Write your response here...'
-                  }
-                  rows={3}
-                  value={formik.values.response}
-                  onChange={formik.handleChange}
-                />
-              </Form>
             </div>
-            <div className="flex flex-col flex-initial pl-4">
-              <Button
-                compact
-                className="!mr-0"
-                content={pinned ? 'Unpin' : 'Pin'}
+          ))}
+        </div>
+        <div className="flex print:hidden">
+          <div className="flex-1">
+            <Form className="h-full">
+              <TextArea
+                autoFocus
+                className="h-full"
                 disabled={resolved}
-                icon="pin"
-                labelPosition="left"
-                onClick={() => onPinFeedback(!pinned)}
+                id="response"
+                placeholder={resolved ? 'Reopen the feedback to add a new response...' : 'Write your response here...'}
+                rows={3}
+                value={formik.values.response}
+                onChange={formik.handleChange}
               />
-              <Button
-                compact
-                className="!mt-2 !mr-0"
-                content={resolved ? 'Reopen' : 'Resolve'}
-                icon={resolved ? 'lock open' : 'lock'}
-                labelPosition="left"
-                onClick={() => {
-                  onResolveFeedback(!resolved)
-                  if (!resolved) {
-                    setIsEditingActive(false)
-                  }
-                }}
-              />
-              <Button
-                compact
-                primary
-                className="!mt-2 !mr-0"
-                content="Respond"
-                disabled={resolved || !formik.isValid || !formik.dirty}
-                icon="send"
-                labelPosition="left"
-                onClick={() => {
-                  formik.submitForm()
+            </Form>
+          </div>
+          <div className="flex flex-col flex-initial pl-4">
+            <Button
+              compact
+              className="!mr-0"
+              content={pinned ? 'Unpin' : 'Pin'}
+              disabled={resolved}
+              icon="pin"
+              labelPosition="left"
+              onClick={() => onPinFeedback(!pinned)}
+            />
+            <Button
+              compact
+              className="!mt-2 !mr-0"
+              content={resolved ? 'Reopen' : 'Resolve'}
+              icon={resolved ? 'lock open' : 'lock'}
+              labelPosition="left"
+              onClick={() => {
+                onResolveFeedback(!resolved)
+                if (!resolved) {
                   setIsEditingActive(false)
-                }}
-              />
-            </div>
+                }
+              }}
+            />
+            <Button
+              compact
+              primary
+              className="!mt-2 !mr-0"
+              content="Respond"
+              disabled={resolved || !formik.isValid || !formik.dirty}
+              icon="send"
+              labelPosition="left"
+              onClick={() => {
+                formik.submitForm()
+                setIsEditingActive(false)
+              }}
+            />
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
