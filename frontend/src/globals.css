@@ -14,4 +14,8 @@
   .bg-primary-10\% {
     background-color: rgb(124, 184, 228, 0.1);
   }
+
+  .no-page-break-inside {
+    page-break-inside: avoid;
+  }
 }

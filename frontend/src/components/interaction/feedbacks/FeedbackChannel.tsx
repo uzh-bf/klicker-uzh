@@ -5,6 +5,7 @@ import _sortBy from 'lodash/sortBy'
 import * as JsSearch from 'js-search'
 import dayjs from 'dayjs'
 
+import clsx from 'clsx'
 import Feedback from './Feedback'
 
 const messages = defineMessages({
@@ -138,7 +139,7 @@ function FeedbackChannel({
         </div>
       </div> */}
 
-      <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row">
+      <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
         <div className="flex flex-col items-end md:flex-row">
           <Input
             className="w-full md:w-96"
@@ -163,17 +164,20 @@ function FeedbackChannel({
           </div>
         </div>
 
-        <Dropdown
-          selection
-          className="mt-4 md:mt-0"
-          disabled={sortedFeedbacks?.length === 0}
-          options={[
-            { text: 'Sort by Recency', value: 'recency' },
-            { text: 'Sort by Upvotes', value: 'votes' },
-          ]}
-          value={sortBy}
-          onChange={(_, { value }) => setSortBy(value as string)}
-        />
+        <div className="flex flex-row">
+          <Button basic className="!mr-2" icon="print" onClick={() => window.print()} />
+          <Dropdown
+            selection
+            className="mt-4 md:mt-0"
+            disabled={sortedFeedbacks?.length === 0}
+            options={[
+              { text: 'Sort by Recency', value: 'recency' },
+              { text: 'Sort by Upvotes', value: 'votes' },
+            ]}
+            value={sortBy}
+            onChange={(_, { value }) => setSortBy(value as string)}
+          />
+        </div>
       </div>
 
       <div className="mt-4 overflow-y-auto">
@@ -183,9 +187,12 @@ function FeedbackChannel({
         )}
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
-            <div className="flex flex-row mt-4 first:mt-0" key={id}>
+            <div
+              className={clsx('flex flex-row mt-4 print:mt-2 first:mt-0', (!published || !resolved) && 'print:hidden')}
+              key={id}
+            >
               {!isPublic && (
-                <div className="flex-initial">
+                <div className="flex-initial print:hidden">
                   <Button
                     basic
                     compact

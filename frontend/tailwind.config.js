@@ -7,7 +7,11 @@ module.exports = {
   mode: 'jit',
   darkMode: false, // or 'media' or 'class'
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        print: { raw: 'print' },
+      },
+    },
   },
   variants: {
     extend: {},
