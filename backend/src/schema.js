@@ -119,13 +119,13 @@ const typeDefs = [
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
-    pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
-    publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): ID!
+    pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): Session!
+    publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): Session!
     upvoteFeedback(sessionId: ID!, feedbackId: ID!, undo: Boolean): ID!
     reactToFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!, positive: Int, negative: Int): ID!
-    respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
+    respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): Session!
     deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): Session!
-    resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
+    resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): Session!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
     changePassword(newPassword: String!): User!

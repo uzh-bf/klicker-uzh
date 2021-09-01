@@ -47,12 +47,12 @@ const addFeedback = async ({ sessionId, content }) => {
 
   // if the feedback channel is public, publish the feedback directly
   // otherwise, it will need to be published after moderation
-  if (session.settings.isFeedbackChannelPublic) {
-    pubsub.publish(FEEDBACK_ADDED, {
-      [FEEDBACK_ADDED]: savedFeedbackWithId,
-      sessionId,
-    })
-  }
+  // if (session.settings.isFeedbackChannelPublic) {
+  //   pubsub.publish(FEEDBACK_ADDED, {
+  //     [FEEDBACK_ADDED]: savedFeedbackWithId,
+  //     sessionId,
+  //   })
+  // }
 
   // return the updated session
   return savedFeedbackWithId
@@ -70,7 +70,7 @@ async function pinFeedback({ sessionId, feedbackId, userId, pinState }) {
 
   assertUserMatch(session, userId)
 
-  await SessionModel.findOneAndUpdate(
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -79,10 +79,11 @@ async function pinFeedback({ sessionId, feedbackId, userId, pinState }) {
       $set: {
         'feedbacks.$.pinned': pinState,
       },
-    }
+    },
+    { new: true }
   )
 
-  return feedbackId
+  return updatedSession
 }
 
 async function publishFeedback({ sessionId, feedbackId, userId, publishState }) {
@@ -90,7 +91,7 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
 
   assertUserMatch(session, userId)
 
-  const savedSession = await SessionModel.findOneAndUpdate(
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -106,16 +107,16 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
   )
 
   // if the feedback is newly published, send it out via subscription
-  if (publishState) {
-    const savedFeedback = savedSession.feedbacks.find((feedback) => feedback._id === feedbackId).toObject()
-    const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
-    pubsub.publish(FEEDBACK_ADDED, {
-      [FEEDBACK_ADDED]: savedFeedbackWithId,
-      sessionId,
-    })
-  }
+  // if (publishState) {
+  //   const savedFeedback = savedSession.feedbacks.find((feedback) => feedback._id === feedbackId).toObject()
+  //   const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
+  //   pubsub.publish(FEEDBACK_ADDED, {
+  //     [FEEDBACK_ADDED]: savedFeedbackWithId,
+  //     sessionId,
+  //   })
+  // }
 
-  return feedbackId
+  return updatedSession
 }
 
 async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState }) {
@@ -123,7 +124,7 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
 
   assertUserMatch(session, userId)
 
-  await SessionModel.findOneAndUpdate(
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -141,12 +142,13 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
       : {
           'feedbacks.$.resolved': resolvedState,
           'feedbacks.$.resolvedAt': null,
-        }
+        },
+    { new: true }
   )
 
   // TODO: publish the feedback update
 
-  return feedbackId
+  return updatedSession
 }
 
 async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
@@ -154,7 +156,7 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
 
   assertUserMatch(session, userId)
 
-  await SessionModel.findOneAndUpdate(
+  const updatedSesion = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -171,12 +173,15 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
       $currentDate: {
         'feedbacks.$.resolvedAt': true,
       },
+    },
+    {
+      new: true,
     }
   )
 
   // TODO: publish the response on a subscription
 
-  return feedbackId
+  return updatedSesion
 }
 
 async function upvoteFeedback({ sessionId, feedbackId, undo }) {

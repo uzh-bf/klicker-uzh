@@ -100,69 +100,30 @@ function AudienceInteraction({
               feedbacks={feedbacks}
               handleActiveToggle={() => null}
               handleDeleteFeedback={(feedbackId: string): void => {
-                deleteFeedback({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { feedbackId, sessionId },
-                })
+                deleteFeedback({ variables: { feedbackId, sessionId } })
               }}
               handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
-                deleteFeedbackResponse({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { sessionId, feedbackId, responseId },
-                })
+                deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
               }}
               handlePinFeedback={(feedbackId: string, pinState: boolean) => {
-                pinFeedback({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { sessionId, feedbackId, pinState },
-                  // update(cache, { data: pinFeedback }) {
-                  //   cache.modify({
-                  //     fields: {
-                  //       feedbacks(existingFeedbacks = []) {
-
-                  //       }
-                  //     }
-                  //   })
-                  // }
-                })
+                pinFeedback({ variables: { sessionId, feedbackId, pinState } })
               }}
               handlePublicToggle={(): void => {
                 updateSettings({
-                  refetchQueries: [{ query: RunningSessionQuery }],
                   variables: {
                     sessionId,
-                    settings: {
-                      isFeedbackChannelPublic: !isFeedbackChannelPublic,
-                    },
+                    settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
                   },
                 })
               }}
               handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
-                publishFeedback({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { sessionId, feedbackId, publishState },
-                  // update(cache, { data: pinFeedback }) {
-                  //   cache.modify({
-                  //     fields: {
-                  //       feedbacks(existingFeedbacks = []) {
-
-                  //       }
-                  //     }
-                  //   })
-                  // }
-                })
+                publishFeedback({ variables: { sessionId, feedbackId, publishState } })
               }}
               handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
-                resolveFeedback({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { sessionId, feedbackId, resolvedState },
-                })
+                resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
               }}
               handleRespondToFeedback={(feedbackId: string, response: string) => {
-                respondToFeedback({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: { sessionId, feedbackId, response },
-                })
+                respondToFeedback({ variables: { sessionId, feedbackId, response } })
               }}
               isActive={isFeedbackChannelActive}
               isPublic={isFeedbackChannelPublic}
