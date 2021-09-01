@@ -4,3 +4,5 @@ node_modules/
 *.archive
 secrets.yaml
 .env
+
+*.DS_Store

@@ -26,7 +26,7 @@ Before preparing a session, all questions that are to be contained need to be cr
 
    4.2 **Attached Images:** Images can be attached to a question and will be shown to the audience and on the evaluation screen. An additional image title can be added as auxiliary information.
 
-5. **Available Choices (SC / MC only):** The available answers the audience may choose from. Click the plus sign to add a new answer and type in the answer. Then click the red cross or green tick (5.1 or 5.2) to select whether the answer is correct or not. If there is no correct answer just skip this step and save the answer. Delete answers with the button on the left (5.4). In case of Number range Questions you need to choose your **Input Restrictions (Number Range only):** The range the answer needs to be in. Either provide a lower and upper limit, only one of the said limits or no limit at all.
+5. **Available Choices (SC / MC only):** The available answers the audience may choose from. Click the plus sign to add a new answer and type in the answer. Then click the red cross or green tick (5.1 or 5.2) to select whether the answer is correct or not. If there is no correct answer just skip this step and save the answer. Delete answers with the button on the left (5.4). In case of Number range Questions you have the possiblity to choose your **Input Restrictions (Number Range only):** The range the answer needs to be in. Either provide a lower and upper limit, only one of the said limits or no limit at all.
 
 6. **Save** Press the save button on the bottom to save the question and add it to the [Question Pool](question_pool.md) (see next section).
 
