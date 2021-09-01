@@ -167,7 +167,7 @@ function FeedbackArea({
         active ? 'flex' : 'hidden'
       )}
     >
-      <h1>Feedback-Channel</h1>
+      <h1 className="hidden md:block">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
         <div>
