@@ -369,14 +369,12 @@ function SessionTimeline({
           )
         )}
         {isFeedbackSession && (
-          <div className="blockWrap">
-            <Message info>
-              <FormattedMessage
-                defaultMessage="This feedback session does not contain any questions."
-                id="runningSession.message.feedbackSession"
-              />
-            </Message>
-          </div>
+          <Message info>
+            <FormattedMessage
+              defaultMessage="This feedback session does not contain any questions."
+              id="runningSession.message.feedbackSession"
+            />
+          </Message>
         )}
       </div>
       <div className="buttons">
