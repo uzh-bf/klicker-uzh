@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.7...v1.6.0-alpha.8) (2021-09-02)
+
+
+### Features
+
+* display the feedback channel by default if a session is feedback only ([6e9b214](https://github.com/uzh-bf/klicker-uzh/commit/6e9b214fd4ab6305a10ee4acbe8b2a4f83c4714f))
+* implement basic print layout for the running session screen ([0ecd5c7](https://github.com/uzh-bf/klicker-uzh/commit/0ecd5c797cbee0241667f2dd3416d8c9d1e17f2e))
+
+
+### Deployment
+
+* ensure that autoscalers could be created ([aca6a88](https://github.com/uzh-bf/klicker-uzh/commit/aca6a8874e2fdaccb1d039794cf326c10ac34655))
+
+
+### Other
+
+* fixed typos in documentation and missing number on docs image ([b4e7ae9](https://github.com/uzh-bf/klicker-uzh/commit/b4e7ae977714fbff8a1d8b4a3102e24001fdff43))
+
+
+### Enhancements
+
+* add a filter for unpublished feedbacks ([671f2a1](https://github.com/uzh-bf/klicker-uzh/commit/671f2a1a17831addcdb9d409d142be8311bef4ab))
+* ensure that session timeline folds if no blocks are added ([118ddb1](https://github.com/uzh-bf/klicker-uzh/commit/118ddb1a740b1a7f521e9922116fd492a16c8c66))
+* hide the feedback channel title on mobile ([3880bb2](https://github.com/uzh-bf/klicker-uzh/commit/3880bb28db2c9864b55dac1985c1db5efc29bfbd))
+* make refetching unnecessary for simple lecturer interactions in Q&A ([8d3e4d2](https://github.com/uzh-bf/klicker-uzh/commit/8d3e4d28637454c6e7743b294d5d00bd3dc3c70a))
+
 ## [1.6.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.6...v1.6.0-alpha.7) (2021-08-30)
 
 
