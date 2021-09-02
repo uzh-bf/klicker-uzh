@@ -9,6 +9,7 @@
       "basics/session_list",
       "basics/session_running",
       "basics/audience_view",
+      "basics/audience_interaction",
       "basics/evaluation"
     ],
     "Advanced Features": [
