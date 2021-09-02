@@ -15,4 +15,4 @@ For mobile devices, the page is divided into two separate sections.
 
 ![Audience View Mobile](assets/audience_view_mobile.png)
 
-To continue with the tutorial, respond to your question on the left side and add some feedback with the options on the right side. You can then return to your _Running Session_ screen, where you will see the feedbacks you have just added. Click on [Evaluation (Results)](evaluation.md) to continue.
+To continue with the tutorial, respond to your question on the left side and add some feedback with the options on the right side. You can then return to your _Running Session_ screen, where you will see the feedbacks you have just added. Click on [Audience Interaction](audience_interaction.md) to continue.

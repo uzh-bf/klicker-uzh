@@ -25,4 +25,8 @@ The lecturer / moderator can organize all incoming questions / feedback:
 6. **Pin a question:** An especially useful function for large lectures with many students is the already mentioned possiblity to pin questions. This tool can be used by an assistant to the professor, who pins important questions (e.g. with many upvotes) and therefore automatically pushes them to the teachers feedback screen shown below. 
 7. **Visibility:** If moderation is enabled, the lecturer / moderator will have the possiblity to hide / show certain feedback and questions. By default, every incoming statement will be invisible to other students and can only be seen by the lecturer. By answering the question or toggling its visibility, this can be easily changed. Attention: the visibility feature is not coupled with pinning and works independently. I.e. it is possible to pin a question for the presenter, which is not visible to all students.
 
+Finally, the picture below shows the feedback site, which can be used if only the pinned questions together with their upvotes shall be shown on a screen (e.g. to the lecturer):
 
+![Lecturer View Feedback Site](assets/lecturer_view_feedbackSite.png)
+
+Click on [Evaluation (Results)](evaluation.md) to continue.
