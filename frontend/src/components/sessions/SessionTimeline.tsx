@@ -239,7 +239,7 @@ function SessionTimeline({
               )}
 
               {isParticipantAuthenticationEnabled && [
-                <Dropdown.Header>
+                <Dropdown.Header key="header">
                   <FormattedMessage
                     defaultMessage="Participant Authentication"
                     id="runningSession.string.participantAuthentication"
@@ -254,6 +254,7 @@ function SessionTimeline({
                 //   />
                 // </Dropdown.Item>,
                 <Modal
+                  key="modal"
                   open={isParticipantListVisible}
                   trigger={
                     <Menu.Item icon onClick={handleToggleParticipantList}>
@@ -284,7 +285,7 @@ function SessionTimeline({
                       </Table.Header>
                       <Table.Body>
                         {participants.map(({ username, password }) => (
-                          <Table.Row>
+                          <Table.Row key={username}>
                             <Table.Cell>{username}</Table.Cell>
                             {authenticationMode === 'PASSWORD' && (
                               <Table.Cell>
@@ -328,7 +329,7 @@ function SessionTimeline({
       <div className="blocks">
         {blocks.map(
           (block, index): React.ReactElement => (
-            <div className="blockWrap">
+            <div className="blockWrap" key={block.id}>
               <div className={clsx('waiting', { first: index === 0 })}>
                 <Icon
                   color={index === activeStep / 2 ? 'green' : undefined}
@@ -336,7 +337,7 @@ function SessionTimeline({
                   size="big"
                 />
               </div>
-              <div className="block" key={block.id}>
+              <div className="block">
                 <QuestionBlock
                   expiresAt={block.expiresAt}
                   handleActivateQuestionBlock={(): void => handleActivateBlockById(block.id)}

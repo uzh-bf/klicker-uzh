@@ -61,6 +61,7 @@ function FeedbackChannel({
 
   const [searchString, setSearchString] = useState('')
   const [showResolved, setShowResolved] = useState(true)
+  const [showUnpublished, setShowUnpublished] = useState(true)
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
   const [sortBy, setSortBy] = useState('votes')
@@ -87,11 +88,12 @@ function FeedbackChannel({
       results.filter((item) => {
         if (!showResolved && item.resolved) return false
         if (!showOpen && !item.resolved) return false
+        if (!showUnpublished && !item.published) return false
         if (!showUnpinned && !item.pinned) return false
         return true
       })
     )
-  }, [feedbacks, searchIndex, searchString, showResolved, showOpen, showUnpinned])
+  }, [feedbacks, searchIndex, searchString, showResolved, showOpen, showUnpinned, showUnpublished])
 
   useEffect(() => {
     setSortedFeedbacks(
@@ -161,6 +163,12 @@ function FeedbackChannel({
               label="Unpinned"
               onChange={() => setShowUnpinned((current) => !current)}
             />
+            <Checkbox
+              checked={showUnpublished}
+              className="ml-4"
+              label="Unpublished"
+              onChange={() => setShowUnpublished((current) => !current)}
+            />
           </div>
         </div>
 
@@ -187,10 +195,7 @@ function FeedbackChannel({
         )}
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
-            <div
-              className={clsx('flex flex-row mt-4 print:mt-2 first:mt-0', (!published || !resolved) && 'print:hidden')}
-              key={id}
-            >
+            <div className="flex flex-row mt-4 print:mt-2 first:mt-0" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
