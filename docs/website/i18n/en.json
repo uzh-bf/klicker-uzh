@@ -8,8 +8,8 @@
       "advanced/delete_account": {
         "title": "Account Deletion"
       },
-      "advanced/language": {
-        "title": "Language Settings"
+      "advanced/participant_authentication": {
+        "title": "Participant Authentication"
       },
       "advanced/question_archive": {
         "title": "Question Archival"
@@ -37,6 +37,9 @@
       },
       "advanced/settings": {
         "title": "User Settings"
+      },
+      "basics/audience_interaction": {
+        "title": "Audience Interaction"
       },
       "basics/audience_view": {
         "title": "Audience View"
