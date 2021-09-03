@@ -1,20 +1,19 @@
 /* eslint-disable */
 
-require('full-icu')
-const IntlPolyfill = require('intl')
-const glob = require('glob')
-const cookieParser = require('cookie-parser')
-const express = require('express')
-const next = require('next')
-const compression = require('compression')
-const cors = require('cors')
-const helmet = require('helmet')
-const morgan = require('morgan')
-const { basename } = require('path')
-const { readFileSync } = require('fs')
+import { sync as globSync } from 'glob'
+import cookieParser from 'cookie-parser'
+import express from 'express'
+import next from 'next'
+import compression from 'compression'
+import cors from 'cors'
+import helmet from 'helmet'
+import morgan from 'morgan'
+import { basename } from 'path'
+import { polyfill } from './polyfills'
+import crypto from 'crypto'
 
 // import the configuration
-const CFG = require('./src/klicker.conf.js')
+import CFG from './src/klicker.conf.js'
 
 // log the configuration
 console.log('[klicker-react] Successfully loaded configuration')
@@ -84,71 +83,13 @@ const pages = [
   },
 ]
 
-// Polyfill Node with `Intl` that has data for all locales.
-// See: https://formatjs.io/guides/runtime-environments/#server
-Intl.NumberFormat = IntlPolyfill.NumberFormat
-Intl.DateTimeFormat = IntlPolyfill.DateTimeFormat
-
 // Bootstrap a new Next.js application
 const app = next({ dev: isDev })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob.sync(`./src/lang/*.json`).map((f) => basename(f, '.json'))
-
-// We need to expose React Intl's locale data on the request for the user's
-// locale. This function will also cache the scripts by lang in memory.
-const localeDataCache = new Map()
-function getLocaleDataScript(locale) {
-  if (!localeDataCache.has(locale)) {
-    const localeDataFile = require.resolve(`@formatjs/intl-relativetimeformat/dist/locale-data/${locale}`)
-    const localeDataScript = readFileSync(localeDataFile, 'utf8')
-    localeDataCache.set(locale, localeDataScript)
-  }
-  return localeDataCache.get(locale)
-}
-
-// We need to load and expose the translations on the request for the user's
-// locale. These will only be used in production, in dev the `defaultMessage` in
-// each message description in the source code will be used.
-function getMessages(locale) {
-  return require(`./src/lang/${locale}.json`)
-}
-
-function getLocale(req) {
-  try {
-    // if a locale cookie was already set, use the locale saved within
-    if (req.cookies.locale && languages.includes(req.cookies.locale)) {
-      return { locale: req.cookies.locale }
-    }
-
-    // if the accepts header is set, use its language
-    const acceptedLang = req.acceptsLanguages(isDev ? ['en'] : languages) || 'en'
-    return {
-      locale: acceptedLang.includes('-') ? acceptedLang.split('-')[0] : acceptedLang,
-      setCookie: true,
-    }
-  } catch (e) {
-    console.error(e)
-    return {
-      locale: 'en',
-      setCookie: true,
-    }
-  }
-}
-
-function setupLocale(req, res) {
-  const { locale, setCookie } = getLocale(req)
-
-  req.locale = locale
-  // req.localeDataScript = getLocaleDataScript(locale)
-  req.messages = isDev ? {} : getMessages(locale)
-
-  // set a locale cookie with the specified language
-  if (setCookie) {
-    res.cookie('locale', locale, { secure: true })
-  }
-}
+const SUPPORTED_LOCALES = ['en', 'de']
+const supportedLanguages = globSync('./compiled-lang/*.json').map((f) => basename(f, '.json'))
 
 // prepare cache to be connected to
 let cache
@@ -231,8 +172,35 @@ async function renderAndCache(req, res, pagePath, queryParams, expiration = 60) 
   }
 }
 
-app
-  .prepare()
+function setupLocale(req, res) {
+  const nonce = crypto.randomBytes(20).toString('hex')
+  req.nonce = nonce
+
+  // TODO: This will blow up other next inline JS but next.js should prob fix this
+  // res.setHeader('Content-Security-Policy', `script-src 'nonce-${nonce}'`);
+
+  try {
+    // if a locale cookie was already set, use the locale saved within
+    if (req.cookies.locale && supportedLanguages.includes(req.cookies.locale)) {
+      req.locale = req.cookies.locale
+      return
+    }
+
+    // if the accepts header is set, use its language
+    const acceptedLang = req.acceptsLanguages(isDev ? ['en'] : supportedLanguages) || 'en'
+    const locale = acceptedLang.includes('-') ? acceptedLang.split('-')[0] : acceptedLang
+    req.locale = locale
+    res.cookie('locale', locale, { secure: true })
+    return
+  } catch (e) {
+    console.error(e)
+    req.locale = 'en'
+    res.cookie('locale', 'en', { secure: true })
+    return
+  }
+}
+
+Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
   .then(() => {
     console.log('[klicker-react] Starting up...')
 
@@ -283,7 +251,7 @@ app
             action: frameguard.action,
           },
           hsts: hsts.enabled && {
-            includeSubdomains: hsts.includeSubdomains,
+            includeSubDomains: hsts.includeSubDomains,
             maxAge: hsts.maxAge,
             preload: hsts.preload,
           },
@@ -324,7 +292,6 @@ app
     // create routes for all specified static and dynamic pages
     pages.forEach(({ url, mapParams, renderPath, cached = false }) => {
       server.get(url, (req, res) => {
-        // setup locale and get messages for the specific route
         setupLocale(req, res)
 
         // if the route contents should be cached
@@ -337,7 +304,6 @@ app
     })
 
     server.get('*', (req, res) => {
-      // setup locale and get messages for the specific route
       setupLocale(req, res)
 
       return handle(req, res)
@@ -366,4 +332,4 @@ const shutdown = (signal) => async () => {
 }
 
 const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM', 'exit']
-shutdownSignals.forEach((signal) => process.once(signal, shutdown(signal)))
+shutdownSignals.forEach((signal) => process.once(signal as any, shutdown(signal)))

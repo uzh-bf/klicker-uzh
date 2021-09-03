@@ -5,6 +5,7 @@ bundles
 .next
 src/lang/.messages
 *.log
+dist/
 
 .idea/
 .DS_Store
