@@ -36,6 +36,8 @@ We offer support for the KlickerUZH on various channels:
 
 - Webchat as included in the application
 - Email on [klicker.support@uzh.ch](mailto:klicker.support@uzh.ch)
-- Spectrum Community on [spectrum.chat/klickeruzh](https://spectrum.chat/klickeruzh)
+- Github Discussions on [uzh-bf/klicker-uzh](https://github.com/uzh-bf/klicker-uzh/discussions)
+
+If you are affiliated with the University of Zurich, we would also like to invite you to join our public team on [Microsoft Teams](https://teams.microsoft.com/l/team/19%3afbf6198f94934e20ab86571dd73e8616%40thread.tacv2/conversations?groupId=1a1e9be8-effe-4e7d-98bd-d4a3c836c478&tenantId=c7e438db-e462-4c22-a90a-c358b16980b3), where you can talk to us and fellow users of the KlickerUZH.
 
 Please bear in mind that even though we strive for good response time and general support, we do not have any dedicated support staff for the project. This is due to the fact that the project does not generate any monetary inflow, and its operations are funded only by the Department of Banking and Finance and UZH.
