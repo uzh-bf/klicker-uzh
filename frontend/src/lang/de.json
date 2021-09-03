@@ -205,6 +205,7 @@
   "runningSession.button.finish": "Session beenden",
   "runningSession.button.openBlock": "Nächsten Frageblock aktivieren",
   "runningSession.button.participantAuthenticationToggle": "Erzwinge Authentifizierung",
+  "runningSession.button.pinnedfeedbacks": "Angepinnte Feedbacks",
   "runningSession.button.publicEvaluation": "Zur öffentlichen Auswertung",
   "runningSession.button.publicEvaluationToggle": "Auswertung publizieren",
   "runningSession.button.start": "Ersten Frageblock aktivieren",

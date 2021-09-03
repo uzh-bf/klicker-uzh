@@ -206,6 +206,7 @@
   "runningSession.button.finish": "Finish session",
   "runningSession.button.openBlock": "Open next block",
   "runningSession.button.participantAuthenticationToggle": "Enforce authentication",
+  "runningSession.button.pinnedfeedbacks": "Pinned Feedbacks",
   "runningSession.button.publicEvaluation": "To Public Evaluation",
   "runningSession.button.publicEvaluationToggle": "Publish evaluation",
   "runningSession.button.start": "Open first block",
