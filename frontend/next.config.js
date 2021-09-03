@@ -37,7 +37,7 @@ module.exports = (phase) => {
       rootDir: __dirname,
     },
     // setup custom webpack configuration
-    webpack: (webpackConfig, { isServer }) => {
+    webpack: (webpackConfig) => {
       // ignore test files when bundling
       // webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 

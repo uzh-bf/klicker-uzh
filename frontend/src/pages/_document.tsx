@@ -1,33 +1,42 @@
 /* eslint-disable react/no-danger */
 
-import Document, { Html, Head, Main, NextScript } from 'next/document'
+import Document, { Html, Head, Main, NextScript, DocumentContext } from 'next/document'
 import React from 'react'
-
-if (typeof global.Intl !== 'object') {
-  global.Intl = require('intl')
-}
 
 interface Props {
   locale: string
-  localeDataScript: any
+  lang: string
+  nonce: string
 }
 
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.
 class IntlDocument extends Document<Props> {
-  static async getInitialProps(context): Promise<any> {
-    const props = await super.getInitialProps(context)
-    const {
-      req: { locale, localeDataScript },
-    } = context
+  static async getInitialProps(ctx: DocumentContext) {
+    const { req } = ctx
+    const initialProps = await Document.getInitialProps(ctx)
+    const { locale } = req as any
     return {
-      ...props,
+      ...initialProps,
       locale,
-      localeDataScript,
+      lang: locale ? locale.split('-')[0] : undefined,
+      nonce: (req as any).nonce,
     }
   }
 
-  render(): React.ReactElement {
+  render() {
+    let scriptEl
+    if (this.props.locale) {
+      scriptEl = (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.LOCALE="${this.props.locale}"`,
+          }}
+          nonce={this.props.nonce}
+        />
+      )
+    }
+
     return (
       <Html lang={this.props.locale}>
         <Head>
@@ -39,12 +48,8 @@ class IntlDocument extends Document<Props> {
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
         </Head>
         <body>
+          {scriptEl}
           <Main />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: this.props.localeDataScript,
-            }}
-          />
           <NextScript />
         </body>
       </Html>

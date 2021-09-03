@@ -1,0 +1,1942 @@
+{
+  "admin.AdminArea.SessionManagement.noSession": [
+    {
+      "type": 0,
+      "value": "No matching running session was found."
+    }
+  ],
+  "admin.pageTitle": [
+    {
+      "type": 0,
+      "value": "Admin Area"
+    }
+  ],
+  "admin.runningSessions": [
+    {
+      "type": 0,
+      "value": "Running Sessions"
+    }
+  ],
+  "admin.title": [
+    {
+      "type": 0,
+      "value": "Admin Area"
+    }
+  ],
+  "admin.userManagement": [
+    {
+      "type": 0,
+      "value": "User Management"
+    }
+  ],
+  "common.FREE.label": [
+    {
+      "type": 0,
+      "value": "Free Text (FT)"
+    }
+  ],
+  "common.FREE_RANGE.label": [
+    {
+      "type": 0,
+      "value": "Numerical (NR)"
+    }
+  ],
+  "common.MC.label": [
+    {
+      "type": 0,
+      "value": "Multiple Choice (MC)"
+    }
+  ],
+  "common.SC.label": [
+    {
+      "type": 0,
+      "value": "Single Choice (SC)"
+    }
+  ],
+  "common.button.back": [
+    {
+      "type": 0,
+      "value": "Back"
+    }
+  ],
+  "common.button.continue": [
+    {
+      "type": 0,
+      "value": "Continue"
+    }
+  ],
+  "common.button.discard": [
+    {
+      "type": 0,
+      "value": "Discard"
+    }
+  ],
+  "common.button.login": [
+    {
+      "type": 0,
+      "value": "Login"
+    }
+  ],
+  "common.button.no": [
+    {
+      "type": 0,
+      "value": "No"
+    }
+  ],
+  "common.button.save": [
+    {
+      "type": 0,
+      "value": "Save"
+    }
+  ],
+  "common.button.skip": [
+    {
+      "type": 0,
+      "value": "Skip"
+    }
+  ],
+  "common.button.start": [
+    {
+      "type": 0,
+      "value": "Start"
+    }
+  ],
+  "common.button.submit": [
+    {
+      "type": 0,
+      "value": "Submit"
+    }
+  ],
+  "common.button.yes": [
+    {
+      "type": 0,
+      "value": "Yes"
+    }
+  ],
+  "common.input.search.placeholder": [
+    {
+      "type": 0,
+      "value": "Search..."
+    }
+  ],
+  "common.string.activated": [
+    {
+      "type": 0,
+      "value": "Activated"
+    }
+  ],
+  "common.string.admin": [
+    {
+      "type": 0,
+      "value": "Admin"
+    }
+  ],
+  "common.string.logout": [
+    {
+      "type": 0,
+      "value": "Logout"
+    }
+  ],
+  "common.string.or": [
+    {
+      "type": 0,
+      "value": "Or"
+    }
+  ],
+  "common.string.password": [
+    {
+      "type": 0,
+      "value": "Password"
+    }
+  ],
+  "common.string.settings": [
+    {
+      "type": 0,
+      "value": "Settings"
+    }
+  ],
+  "common.string.username": [
+    {
+      "type": 0,
+      "value": "Username"
+    }
+  ],
+  "components.admin.sessionlist.abort.success": [
+    {
+      "type": 0,
+      "value": "Session successfully aborted."
+    }
+  ],
+  "components.admin.userList.delete.error": [
+    {
+      "type": 0,
+      "value": "Unable to delete user: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "components.admin.userList.edit.error": [
+    {
+      "type": 0,
+      "value": "Unable to edit user: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "components.admin.userList.edit.success": [
+    {
+      "type": 0,
+      "value": "User successfully modified."
+    }
+  ],
+  "components.admin.userlist.delete.success": [
+    {
+      "type": 0,
+      "value": "User successfully deleted."
+    }
+  ],
+  "components.admin.userlist.noUsers": [
+    {
+      "type": 0,
+      "value": "No matching user was found."
+    }
+  ],
+  "components.questions.actionBar.data.error": [
+    {
+      "type": 0,
+      "value": "Unable to export statistics: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "components.questions.actionBar.export.error": [
+    {
+      "type": 0,
+      "value": "Unable to export questions: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "components.questions.uploadModal.load.error": [
+    {
+      "type": 0,
+      "value": "Unable to parse questions: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "components.questions.uploadModal.sequence.error": [
+    {
+      "type": 0,
+      "value": "Unable to import questions: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "createQuestion.contentInput.label": [
+    {
+      "type": 0,
+      "value": "Question"
+    }
+  ],
+  "createQuestion.contentInput.tooltip": [
+    {
+      "type": 0,
+      "value": "Enter the question you want to ask the audience."
+    }
+  ],
+  "createQuestion.filesLabel": [
+    {
+      "type": 0,
+      "value": "Attached Images"
+    }
+  ],
+  "createQuestion.options.max": [
+    {
+      "type": 0,
+      "value": "Max"
+    }
+  ],
+  "createQuestion.options.min": [
+    {
+      "type": 0,
+      "value": "Min"
+    }
+  ],
+  "createQuestion.optionsFREE.label": [
+    {
+      "type": 0,
+      "value": "Input Restrictions"
+    }
+  ],
+  "createQuestion.optionsFREE.tooltip": [
+    {
+      "type": 0,
+      "value": "Choose the allowed format of incoming responses."
+    }
+  ],
+  "createQuestion.optionsSC.label": [
+    {
+      "type": 0,
+      "value": "Available Choices"
+    }
+  ],
+  "createQuestion.optionsSC.tooltip": [
+    {
+      "type": 0,
+      "value": "Add answering options the respondents can choose from."
+    }
+  ],
+  "createQuestion.previewLabel": [
+    {
+      "type": 0,
+      "value": "Audience Preview"
+    }
+  ],
+  "createQuestion.questionType.label": [
+    {
+      "type": 0,
+      "value": "Question Type"
+    }
+  ],
+  "createQuestion.questionType.tooltip": [
+    {
+      "type": 0,
+      "value": "Choose the type of question you would like to create."
+    }
+  ],
+  "createQuestion.tagInput.label": [
+    {
+      "type": 0,
+      "value": "Tags"
+    }
+  ],
+  "createQuestion.tagInput.tooltip": [
+    {
+      "type": 0,
+      "value": "Add tags to your question to improve organization and reusability (similar to the folders used previously)."
+    }
+  ],
+  "createQuestion.titleInput.label": [
+    {
+      "type": 0,
+      "value": "Question Title"
+    }
+  ],
+  "createQuestion.titleInput.tooltip": [
+    {
+      "type": 0,
+      "value": "Enter a short summarizing title for the question."
+    }
+  ],
+  "createSession.title": [
+    {
+      "type": 0,
+      "value": "Create Session"
+    }
+  ],
+  "customizableTable.abortConfirmation": [
+    {
+      "type": 0,
+      "value": "Are you sure that you want to abort the session "
+    },
+    {
+      "type": 1,
+      "value": "activeId"
+    },
+    {
+      "type": 0,
+      "value": "?"
+    }
+  ],
+  "customizableTable.abortSession": [
+    {
+      "type": 0,
+      "value": "Abort Session"
+    }
+  ],
+  "customizableTable.deleteConfirmation": [
+    {
+      "type": 0,
+      "value": "Are you sure that you want to delete the entity "
+    },
+    {
+      "type": 1,
+      "value": "activeId"
+    },
+    {
+      "type": 0,
+      "value": "?"
+    }
+  ],
+  "customizableTable.deleteEntity": [
+    {
+      "type": 0,
+      "value": "Delete Entity"
+    }
+  ],
+  "editQuestion.error": [
+    {
+      "type": 0,
+      "value": "Could not modify question: "
+    },
+    {
+      "type": 1,
+      "value": "error"
+    }
+  ],
+  "editQuestion.questionContents.title": [
+    {
+      "type": 0,
+      "value": "Question Contents"
+    }
+  ],
+  "editQuestion.sucess": [
+    {
+      "type": 0,
+      "value": "Successfully modified question."
+    }
+  ],
+  "editQuestion.titleInput.label": [
+    {
+      "type": 0,
+      "value": "Question Title"
+    }
+  ],
+  "editQuestion.type": [
+    {
+      "type": 0,
+      "value": "Question Type"
+    }
+  ],
+  "evaluation.bins.description": [
+    {
+      "type": 0,
+      "value": "Type a number to override Freedman-Diaconis thresholding. The threshold defines the number of bins displayed in the histogram."
+    }
+  ],
+  "evaluation.graph.noResults": [
+    {
+      "type": 0,
+      "value": "No Results Available"
+    }
+  ],
+  "evaluation.graph.showGraph": [
+    {
+      "type": 0,
+      "value": "Show Graph"
+    }
+  ],
+  "evaluation.pageTitle": [
+    {
+      "type": 0,
+      "value": "Evaluation"
+    }
+  ],
+  "evaluation.possibilities.noRestrictions": [
+    {
+      "type": 0,
+      "value": "No restrictions."
+    }
+  ],
+  "evaluation.showSolution.label": [
+    {
+      "type": 0,
+      "value": "Show solution"
+    }
+  ],
+  "evaluation.statistics.title": [
+    {
+      "type": 0,
+      "value": "Statistics"
+    }
+  ],
+  "evaluation.totalParticipants.label": [
+    {
+      "type": 0,
+      "value": "Total participants:"
+    }
+  ],
+  "evaluation.visualization.title": [
+    {
+      "type": 0,
+      "value": "Visualization"
+    }
+  ],
+  "fileDropzone.button.delete": [
+    {
+      "type": 0,
+      "value": "Delete"
+    }
+  ],
+  "fileDropzone.button.upload": [
+    {
+      "type": 0,
+      "value": "Upload"
+    }
+  ],
+  "form.blockSettings.header": [
+    {
+      "type": 0,
+      "value": "Set time limit"
+    }
+  ],
+  "form.blockSettings.timeLimit": [
+    {
+      "type": 0,
+      "value": "Time limit"
+    }
+  ],
+  "form.button.saveChanges": [
+    {
+      "type": 0,
+      "value": "Save Changes"
+    }
+  ],
+  "form.common.button.submit": [
+    {
+      "type": 0,
+      "value": "Submit"
+    }
+  ],
+  "form.createQuestion.content.empty": [
+    {
+      "type": 0,
+      "value": "Please add a question"
+    }
+  ],
+  "form.createQuestion.options.empty": [
+    {
+      "type": 0,
+      "value": "Please add at least one answer option"
+    }
+  ],
+  "form.createQuestion.options.invalid": [
+    {
+      "type": 0,
+      "value": "Invalid options"
+    }
+  ],
+  "form.createQuestion.options.invalidSC": [
+    {
+      "type": 0,
+      "value": "SC questions may only contain a single correct option"
+    }
+  ],
+  "form.createQuestion.options.minMaxRange.invalid": [
+    {
+      "type": 0,
+      "value": "Please specify a range from min to max"
+    }
+  ],
+  "form.createQuestion.tags.empty": [
+    {
+      "type": 0,
+      "value": "Please add at least one tag"
+    }
+  ],
+  "form.createQuestion.title.empty": [
+    {
+      "type": 0,
+      "value": "Please add a title"
+    }
+  ],
+  "form.createQuestion.type.empty": [
+    {
+      "type": 0,
+      "value": "Please choose a question type"
+    }
+  ],
+  "form.createSession.button.save": [
+    {
+      "type": 0,
+      "value": "Save & Close"
+    }
+  ],
+  "form.createSession.interactionCopy": [
+    {
+      "type": 0,
+      "value": "Copy Session"
+    }
+  ],
+  "form.createSession.interactionCreate": [
+    {
+      "type": 0,
+      "value": "Create Session"
+    }
+  ],
+  "form.createSession.interactionModify": [
+    {
+      "type": 0,
+      "value": "Modify Session"
+    }
+  ],
+  "form.createSession.newBlock": [
+    {
+      "type": 0,
+      "value": "New Block"
+    }
+  ],
+  "form.createSession.participantAuth.aggregatedResults.description": [
+    {
+      "type": 0,
+      "value": "The results of a session will only be stored in an aggregated format, making it impossible to derive the responses of individual participants."
+    }
+  ],
+  "form.createSession.participantAuth.aggregatedResults.title": [
+    {
+      "type": 0,
+      "value": "Aggregated Results"
+    }
+  ],
+  "form.createSession.participantAuth.button.setParticipants": [
+    {
+      "type": 0,
+      "value": "Set Participants"
+    }
+  ],
+  "form.createSession.participantAuth.button.updateParticipants": [
+    {
+      "type": 0,
+      "value": "Update Participants"
+    }
+  ],
+  "form.createSession.participantAuth.button.xParticipants": [
+    {
+      "type": 1,
+      "value": "num"
+    },
+    {
+      "type": 0,
+      "value": " Participants"
+    }
+  ],
+  "form.createSession.participantAuth.completeResults.description": [
+    {
+      "type": 0,
+      "value": "The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username."
+    }
+  ],
+  "form.createSession.participantAuth.completeResults.title": [
+    {
+      "type": 0,
+      "value": "Complete Results"
+    }
+  ],
+  "form.createSession.participantAuth.passwordDistribution.description": [
+    {
+      "type": 0,
+      "value": "After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password combinations that you can distribute to your participants."
+    }
+  ],
+  "form.createSession.participantAuth.passwordDistribution.title": [
+    {
+      "type": 0,
+      "value": "Password Distribution"
+    }
+  ],
+  "form.createSession.participantAuth.steps.authentication": [
+    {
+      "type": 0,
+      "value": "Authentication"
+    }
+  ],
+  "form.createSession.participantAuth.steps.participants": [
+    {
+      "type": 0,
+      "value": "Participants"
+    }
+  ],
+  "form.createSession.participantAuth.string.participantAuthentication": [
+    {
+      "type": 0,
+      "value": "Participant Authentication"
+    }
+  ],
+  "form.createSession.participantAuth.string.participants": [
+    {
+      "type": 0,
+      "value": "Participants"
+    }
+  ],
+  "form.createSession.participantAuth.string.participantsPlaceholder": [
+    {
+      "type": 0,
+      "value": "Input your participants (each on a new line)"
+    }
+  ],
+  "form.createSession.participantAuth.switchAai.description": [
+    {
+      "type": 0,
+      "value": "After your upload of a list of SwitchAAI accounts (exact matches by email), participants will get access to your KlickerUZH session using their personal SwitchAAI login. Therefore, you will not be able to emulate any of your participants."
+    }
+  ],
+  "form.createSession.participantAuth.switchAai.title": [
+    {
+      "type": 0,
+      "value": "SwitchAAI"
+    }
+  ],
+  "form.createSession.sessionName": [
+    {
+      "type": 0,
+      "value": "Session Name"
+    }
+  ],
+  "form.createSession.string.alreadyRunning": [
+    {
+      "type": 0,
+      "value": "A session is already running"
+    }
+  ],
+  "form.editQuestion.content.empty": [
+    {
+      "type": 0,
+      "value": "Please add a question."
+    }
+  ],
+  "form.editQuestion.options.empty": [
+    {
+      "type": 0,
+      "value": "Please add at least one answer option."
+    }
+  ],
+  "form.editQuestion.options.invalid": [
+    {
+      "type": 0,
+      "value": "Invalid options"
+    }
+  ],
+  "form.editQuestion.options.minMaxRange.invalid": [
+    {
+      "type": 0,
+      "value": "Please specify a range from min to max."
+    }
+  ],
+  "form.editQuestion.tags.empty": [
+    {
+      "type": 0,
+      "value": "Please add at least one tag."
+    }
+  ],
+  "form.editQuestion.title.empty": [
+    {
+      "type": 0,
+      "value": "Please add a question title."
+    }
+  ],
+  "form.email.invalid": [
+    {
+      "type": 0,
+      "value": "Please provide a valid email address."
+    }
+  ],
+  "form.email.label": [
+    {
+      "type": 0,
+      "value": "Email"
+    }
+  ],
+  "form.email.notAvailable": [
+    {
+      "type": 0,
+      "value": "An account for this email address already exists. Please provide another address."
+    }
+  ],
+  "form.forgotPassword.label": [
+    {
+      "type": 0,
+      "value": "Forgot password?"
+    }
+  ],
+  "form.institution.invalid": [
+    {
+      "type": 0,
+      "value": "Please provide a valid institution."
+    }
+  ],
+  "form.institution.label": [
+    {
+      "type": 0,
+      "value": "Institution"
+    }
+  ],
+  "form.login.infoMessageResetPW": [
+    {
+      "type": 0,
+      "value": "reset your password"
+    }
+  ],
+  "form.login.infoMessageSignup": [
+    {
+      "type": 0,
+      "value": "sign up"
+    }
+  ],
+  "form.password.invalid": [
+    {
+      "type": 0,
+      "value": "Please provide a valid password (8+ characters)."
+    }
+  ],
+  "form.password.label": [
+    {
+      "type": 0,
+      "value": "Password"
+    }
+  ],
+  "form.passwordRepeat.invalid": [
+    {
+      "type": 0,
+      "value": "Please ensure that passwords match."
+    }
+  ],
+  "form.passwordRepeat.label": [
+    {
+      "type": 0,
+      "value": "Repeat password"
+    }
+  ],
+  "form.passwordReset.backToLogin": [
+    {
+      "type": 0,
+      "value": "Back to login"
+    }
+  ],
+  "form.shortname.invalid": [
+    {
+      "type": 0,
+      "value": "Please provide a valid account ID (3-8 characters)."
+    }
+  ],
+  "form.shortname.label": [
+    {
+      "type": 0,
+      "value": "Account ID / Join Link"
+    }
+  ],
+  "form.shortname.notAvailable": [
+    {
+      "type": 0,
+      "value": "This Account ID has already been taken. Please choose another one."
+    }
+  ],
+  "form.shortname.tooltip": [
+    {
+      "type": 0,
+      "value": "A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen)."
+    }
+  ],
+  "form.useCase.label": [
+    {
+      "type": 0,
+      "value": "Use case description"
+    }
+  ],
+  "form.useCase.tooltip": [
+    {
+      "type": 0,
+      "value": "Short description of your planned use case for the Klicker UZH."
+    }
+  ],
+  "form.userSettings.accountDataItem": [
+    {
+      "type": 0,
+      "value": "Account Data"
+    }
+  ],
+  "form.userSettings.button.requestAccountDeletion": [
+    {
+      "type": 0,
+      "value": "Yes, I want to delete my account!"
+    }
+  ],
+  "form.userSettings.button.successfulRequest": [
+    {
+      "type": 0,
+      "value": "We have sent you an email regarding your account deletion request. Please check your inbox in a few minutes."
+    }
+  ],
+  "form.userSettings.changePasswordItem": [
+    {
+      "type": 0,
+      "value": "Change Password"
+    }
+  ],
+  "form.userSettings.deleteAccountItem": [
+    {
+      "type": 0,
+      "value": "Delete Account"
+    }
+  ],
+  "form.userSettings.string.accountDeletionInfo": [
+    {
+      "type": 0,
+      "value": "To request deletion of your Klicker account, please click the button below. You will be sent an email that will allow you to confirm your account deletion."
+    }
+  ],
+  "form.userSettings.string.accountDeletionWarning": [
+    {
+      "type": 0,
+      "value": "All your data will be removed from the Klicker servers. We will not be able to recover any of your data, should you find that you would still have needed it."
+    }
+  ],
+  "form.username.invalid": [
+    {
+      "type": 0,
+      "value": "Please provide a valid username."
+    }
+  ],
+  "forms.editTableRow.changeLeading": [
+    {
+      "type": 0,
+      "value": "The following changes will be made"
+    }
+  ],
+  "freeAnswer.maxValue": [
+    {
+      "type": 0,
+      "value": "Maximum value: "
+    },
+    {
+      "type": 1,
+      "value": "max"
+    }
+  ],
+  "freeAnswer.minValue": [
+    {
+      "type": 0,
+      "value": "Minimum value: "
+    },
+    {
+      "type": 1,
+      "value": "min"
+    }
+  ],
+  "freeAnswer.unrestricted": [
+    {
+      "type": 0,
+      "value": "Unrestricted input (any number)"
+    }
+  ],
+  "joinSession.activeQuestion.title": [
+    {
+      "type": 0,
+      "value": "Active Question"
+    }
+  ],
+  "joinSession.feedbackChannel.title": [
+    {
+      "type": 0,
+      "value": "Feedback-Channel"
+    }
+  ],
+  "joinSession.loginMessage": [
+    {
+      "type": 0,
+      "value": "You need to login before access to the session is granted."
+    }
+  ],
+  "joinSession.noQuestionActive": [
+    {
+      "type": 0,
+      "value": "No question active."
+    }
+  ],
+  "joinSession.noSessionActive": [
+    {
+      "type": 0,
+      "value": "No session active. Please reload the page once a session has been started."
+    }
+  ],
+  "joinSession.questionArea.alreadyAnswered": [
+    {
+      "type": 0,
+      "value": "You have already answered all active questions."
+    }
+  ],
+  "joinSession.questionArea.info.FREE": [
+    {
+      "type": 0,
+      "value": "Please enter your response below:"
+    }
+  ],
+  "joinSession.questionArea.info.FREE_RANGE": [
+    {
+      "type": 0,
+      "value": "Please choose a number from the given range below:"
+    }
+  ],
+  "joinSession.questionArea.info.MC": [
+    {
+      "type": 0,
+      "value": "Please choose one or multiple of the options below:"
+    }
+  ],
+  "joinSession.questionArea.info.SC": [
+    {
+      "type": 0,
+      "value": "Please choose a single option below:"
+    }
+  ],
+  "joinSession.questionArea.title": [
+    {
+      "type": 0,
+      "value": "Question"
+    }
+  ],
+  "joinSession.sidebar.activeQuestion": [
+    {
+      "type": 0,
+      "value": "Active Question"
+    }
+  ],
+  "joinSession.sidebar.feedbackChannel": [
+    {
+      "type": 0,
+      "value": "Feedback-Channel"
+    }
+  ],
+  "joinSession.string.joinForbidden": [
+    {
+      "type": 0,
+      "value": "You are not permitted to join this session"
+    }
+  ],
+  "joinSession.string.responseIgnored": [
+    {
+      "type": 0,
+      "value": "As you are only allowed to respond once, we did not count your latest response."
+    }
+  ],
+  "questionDetails.button.duplicate": [
+    {
+      "type": 0,
+      "value": "Duplicate"
+    }
+  ],
+  "questionDetails.button.edit": [
+    {
+      "type": 0,
+      "value": "View / Edit"
+    }
+  ],
+  "questionDetails.usageHistory": [
+    {
+      "type": 0,
+      "value": "Usage history"
+    }
+  ],
+  "questionImport.button.addQuestions": [
+    {
+      "type": 0,
+      "value": "Add questions"
+    }
+  ],
+  "questionImport.button.upload": [
+    {
+      "type": 0,
+      "value": "Start Upload"
+    }
+  ],
+  "questionImport.string.header": [
+    {
+      "type": 0,
+      "value": "Question Import"
+    }
+  ],
+  "questionImport.string.questionContent": [
+    {
+      "type": 0,
+      "value": "Content"
+    }
+  ],
+  "questionImport.string.questionTitle": [
+    {
+      "type": 0,
+      "value": "Title"
+    }
+  ],
+  "questionImport.string.questionType": [
+    {
+      "type": 0,
+      "value": "Type"
+    }
+  ],
+  "questionList.string.noMatchingQuestions": [
+    {
+      "type": 0,
+      "value": "No questions matching your specified criteria."
+    }
+  ],
+  "questionPool.button.archiveQuestions": [
+    {
+      "type": 0,
+      "value": "Archive"
+    }
+  ],
+  "questionPool.button.computeStatistics": [
+    {
+      "type": 0,
+      "value": "Statistics (CSV)"
+    }
+  ],
+  "questionPool.button.create": [
+    {
+      "type": 0,
+      "value": "Create"
+    }
+  ],
+  "questionPool.button.createQuestion": [
+    {
+      "type": 0,
+      "value": "New Question"
+    }
+  ],
+  "questionPool.button.createSession": [
+    {
+      "type": 0,
+      "value": "New Session"
+    }
+  ],
+  "questionPool.button.deleteQuestions": [
+    {
+      "type": 0,
+      "value": "Delete"
+    }
+  ],
+  "questionPool.button.deletionConfirmationCancel": [
+    {
+      "type": 0,
+      "value": "Cancel"
+    }
+  ],
+  "questionPool.button.deletionConfirmationConfirm": [
+    {
+      "type": 0,
+      "value": "Delete "
+    },
+    {
+      "type": 1,
+      "value": "num"
+    },
+    {
+      "type": 0,
+      "value": " question(s)!"
+    }
+  ],
+  "questionPool.button.exportQuestions": [
+    {
+      "type": 0,
+      "value": "Export (JSON)"
+    }
+  ],
+  "questionPool.button.importQuestions": [
+    {
+      "type": 0,
+      "value": "Questions via Import"
+    }
+  ],
+  "questionPool.button.quickCreateSeparate": [
+    {
+      "type": 0,
+      "value": "Split questions into "
+    },
+    {
+      "type": 1,
+      "value": "num"
+    },
+    {
+      "type": 0,
+      "value": " blocks"
+    }
+  ],
+  "questionPool.button.quickCreateSingle": [
+    {
+      "type": 0,
+      "value": "Group questions into one block ("
+    },
+    {
+      "type": 1,
+      "value": "num"
+    },
+    {
+      "type": 0,
+      "value": "->1)"
+    }
+  ],
+  "questionPool.button.unarchiveQuestions": [
+    {
+      "type": 0,
+      "value": "Unarchive"
+    }
+  ],
+  "questionPool.pageTitle": [
+    {
+      "type": 0,
+      "value": "Question Pool"
+    }
+  ],
+  "questionPool.question.titleArchive": [
+    {
+      "type": 0,
+      "value": "ARCHIVED"
+    }
+  ],
+  "questionPool.string.deletionConfirmationContent": [
+    {
+      "type": 0,
+      "value": "Are you sure you want to delete the "
+    },
+    {
+      "type": 1,
+      "value": "num"
+    },
+    {
+      "type": 0,
+      "value": " selected questions? Consider moving them to the archive if you could have use for them in the future."
+    }
+  ],
+  "questionPool.string.itemsChecked": [
+    {
+      "type": 1,
+      "value": "count"
+    },
+    {
+      "type": 0,
+      "value": " items checked"
+    }
+  ],
+  "questionPool.title": [
+    {
+      "type": 0,
+      "value": "Question Pool"
+    }
+  ],
+  "questions.index.archivation.toast.error": [
+    {
+      "type": 0,
+      "value": "Unable to archive question: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "questions.index.archivation.toast.successful": [
+    {
+      "type": 0,
+      "value": "Questions successfully archived/unarchived."
+    }
+  ],
+  "questions.index.createSession.error": [
+    {
+      "type": 0,
+      "value": "Unable to create session: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "questions.index.createSession.success": [
+    {
+      "type": 0,
+      "value": "Session successfully created. Visit the "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": " to manage your new session."
+    }
+  ],
+  "questions.index.deleteQuestion.error": [
+    {
+      "type": 0,
+      "value": "Unable to delete questions: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "questions.index.deleteQuestion.success": [
+    {
+      "type": 0,
+      "value": "Questions successfully deleted."
+    }
+  ],
+  "runningSession.blockActions.activateBlock": [
+    {
+      "type": 0,
+      "value": "Activate block"
+    }
+  ],
+  "runningSession.blockActions.resetBlockResults": [
+    {
+      "type": 0,
+      "value": "Reset block results"
+    }
+  ],
+  "runningSession.button.closeBlock": [
+    {
+      "type": 0,
+      "value": "Close current block"
+    }
+  ],
+  "runningSession.button.evaluation": [
+    {
+      "type": 0,
+      "value": "Evaluation (Results)"
+    }
+  ],
+  "runningSession.button.finish": [
+    {
+      "type": 0,
+      "value": "Finish session"
+    }
+  ],
+  "runningSession.button.openBlock": [
+    {
+      "type": 0,
+      "value": "Open next block"
+    }
+  ],
+  "runningSession.button.participantAuthenticationToggle": [
+    {
+      "type": 0,
+      "value": "Enforce authentication"
+    }
+  ],
+  "runningSession.button.pinnedfeedbacks": [
+    {
+      "type": 0,
+      "value": "Pinned Feedbacks"
+    }
+  ],
+  "runningSession.button.publicEvaluation": [
+    {
+      "type": 0,
+      "value": "To Public Evaluation"
+    }
+  ],
+  "runningSession.button.publicEvaluationToggle": [
+    {
+      "type": 0,
+      "value": "Publish evaluation"
+    }
+  ],
+  "runningSession.button.start": [
+    {
+      "type": 0,
+      "value": "Open first block"
+    }
+  ],
+  "runningSession.confusion.difficulty.Range": [
+    {
+      "type": 0,
+      "value": "easy - hard"
+    }
+  ],
+  "runningSession.confusion.difficulty.Title": [
+    {
+      "type": 0,
+      "value": "Difficulty"
+    }
+  ],
+  "runningSession.confusion.info": [
+    {
+      "type": 0,
+      "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
+    }
+  ],
+  "runningSession.confusion.speed.Range": [
+    {
+      "type": 0,
+      "value": "slow - fast"
+    }
+  ],
+  "runningSession.confusion.speed.Title": [
+    {
+      "type": 0,
+      "value": "Speed"
+    }
+  ],
+  "runningSession.confusionSection.noData": [
+    {
+      "type": 0,
+      "value": "No data yet."
+    }
+  ],
+  "runningSession.errorLoading": [
+    {
+      "type": 0,
+      "value": "Failed loading current session..."
+    }
+  ],
+  "runningSession.feedbackChannel.publishFeedbacks": [
+    {
+      "type": 0,
+      "value": "Publish feedbacks"
+    }
+  ],
+  "runningSession.message.feedbackSession": [
+    {
+      "type": 0,
+      "value": "This feedback session does not contain any questions."
+    }
+  ],
+  "runningSession.noRunningSession": [
+    {
+      "type": 0,
+      "value": "No currently running session..."
+    }
+  ],
+  "runningSession.pageTitle": [
+    {
+      "type": 0,
+      "value": "Running Session"
+    }
+  ],
+  "runningSession.string.downloadResponses": [
+    {
+      "type": 0,
+      "value": "Export Responses"
+    }
+  ],
+  "runningSession.string.participantAuthentication": [
+    {
+      "type": 0,
+      "value": "Participant Authentication"
+    }
+  ],
+  "runningSession.string.participantLink": [
+    {
+      "type": 0,
+      "value": "Link for Participants"
+    }
+  ],
+  "runningSession.string.participantList": [
+    {
+      "type": 0,
+      "value": "Participant List"
+    }
+  ],
+  "runningSession.string.publicEvaluation": [
+    {
+      "type": 0,
+      "value": "Public Evaluation"
+    }
+  ],
+  "runningSession.string.restrictedSession": [
+    {
+      "type": 0,
+      "value": "This session is restricted to a predefined list of participants. For participant details, open the"
+    }
+  ],
+  "runningSession.title": [
+    {
+      "type": 0,
+      "value": "Running Session"
+    }
+  ],
+  "session.authMode.aai": [
+    {
+      "type": 0,
+      "value": "AAI"
+    }
+  ],
+  "session.authMode.password": [
+    {
+      "type": 0,
+      "value": "PASS"
+    }
+  ],
+  "session.button.completed.content": [
+    {
+      "type": 0,
+      "value": "Copy"
+    }
+  ],
+  "session.button.copyAndModify": [
+    {
+      "type": 0,
+      "value": "Copy & Modify"
+    }
+  ],
+  "session.button.created.content": [
+    {
+      "type": 0,
+      "value": "Start"
+    }
+  ],
+  "session.button.delete": [
+    {
+      "type": 0,
+      "value": "Delete Session"
+    }
+  ],
+  "session.button.evaluation": [
+    {
+      "type": 0,
+      "value": "Evaluation"
+    }
+  ],
+  "session.button.modify": [
+    {
+      "type": 0,
+      "value": "Modify Session"
+    }
+  ],
+  "session.button.paused.content": [
+    {
+      "type": 0,
+      "value": "Continue"
+    }
+  ],
+  "session.button.running.content": [
+    {
+      "type": 0,
+      "value": "Running"
+    }
+  ],
+  "session.deletionConfirmation.cancel": [
+    {
+      "type": 0,
+      "value": "Cancel"
+    }
+  ],
+  "session.deletionConfirmation.confirm": [
+    {
+      "type": 0,
+      "value": "Delete session!"
+    }
+  ],
+  "session.deletionConfirmation.content": [
+    {
+      "type": 0,
+      "value": "Are you sure you want to delete \""
+    },
+    {
+      "type": 1,
+      "value": "name"
+    },
+    {
+      "type": 0,
+      "value": "\"? All results will be lost!"
+    }
+  ],
+  "session.storageMode.complete": [
+    {
+      "type": 0,
+      "value": "COMPLETE"
+    }
+  ],
+  "session.storageMode.secret": [
+    {
+      "type": 0,
+      "value": "AGGREGATED"
+    }
+  ],
+  "sessionArea.button.cancelSession": [
+    {
+      "type": 0,
+      "value": "Cancel Session"
+    }
+  ],
+  "sessionArea.button.cancelSessionWarning": [
+    {
+      "type": 0,
+      "value": "Are you sure you want to cancel the current session? Session progress and submitted answers will be lost."
+    }
+  ],
+  "sessionArea.button.pauseSession": [
+    {
+      "type": 0,
+      "value": "Pause Session"
+    }
+  ],
+  "sessionArea.qrPresentation": [
+    {
+      "type": 0,
+      "value": "Present QR"
+    }
+  ],
+  "sessionArea.support": [
+    {
+      "type": 0,
+      "value": "Support"
+    }
+  ],
+  "sessionArea.toJoinSession": [
+    {
+      "type": 0,
+      "value": "Student View"
+    }
+  ],
+  "sessionArea.toRunningSession": [
+    {
+      "type": 0,
+      "value": "Running Session"
+    }
+  ],
+  "sessionArea.whatsNew": [
+    {
+      "type": 0,
+      "value": "Updates"
+    }
+  ],
+  "sessionCreation.blockGrouping": [
+    {
+      "type": 0,
+      "value": "Group questions inside a block to activate and evaluate them simultaneously."
+    }
+  ],
+  "sessionCreation.blockSequence": [
+    {
+      "type": 0,
+      "value": "Create multiple blocks to evaluate questions sequentially."
+    }
+  ],
+  "sessionCreation.emptyDropzoneInfo": [
+    {
+      "type": 0,
+      "value": "Drag & drop a question onto the grey plus sign to begin."
+    }
+  ],
+  "sessionList.pageTitle": [
+    {
+      "type": 0,
+      "value": "Session List"
+    }
+  ],
+  "sessionList.string.noSessionRunning": [
+    {
+      "type": 0,
+      "value": "No session is currently running."
+    }
+  ],
+  "sessionList.string.noSessions": [
+    {
+      "type": 0,
+      "value": "No session was found."
+    }
+  ],
+  "sessionList.title": [
+    {
+      "type": 0,
+      "value": "Session List"
+    }
+  ],
+  "sessionList.title.completedSessions": [
+    {
+      "type": 0,
+      "value": "Completed sessions"
+    }
+  ],
+  "sessionList.title.plannedSessions": [
+    {
+      "type": 0,
+      "value": "Planned sessions"
+    }
+  ],
+  "sessionList.title.runningSession": [
+    {
+      "type": 0,
+      "value": "Running / paused sessions"
+    }
+  ],
+  "sessions.index.startSession.error": [
+    {
+      "type": 0,
+      "value": "Unable to start session: "
+    },
+    {
+      "type": 1,
+      "value": "errorMessage"
+    }
+  ],
+  "sessions.running.resetSessionblock.success": [
+    {
+      "type": 0,
+      "value": "Question block successfully reset."
+    }
+  ],
+  "tagList.button.reset": [
+    {
+      "type": 0,
+      "value": "Reset filters"
+    }
+  ],
+  "tagList.header.tags": [
+    {
+      "type": 0,
+      "value": "Tags"
+    }
+  ],
+  "tagList.header.types": [
+    {
+      "type": 0,
+      "value": "Types"
+    }
+  ],
+  "tagList.string.noTags": [
+    {
+      "type": 0,
+      "value": "No tags available."
+    }
+  ],
+  "tagList.string.showArchive": [
+    {
+      "type": 0,
+      "value": "Show Archive"
+    }
+  ],
+  "tagList.string.showPool": [
+    {
+      "type": 0,
+      "value": "Show Pool"
+    }
+  ],
+  "user.activateAccount.pageTitle": [
+    {
+      "type": 0,
+      "value": "Activate Account"
+    }
+  ],
+  "user.activateAccount.success": [
+    {
+      "type": 0,
+      "value": "Your account has been successfully activated. You can now "
+    },
+    {
+      "type": 1,
+      "value": "login"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
+  "user.activateAccount.title": [
+    {
+      "type": 0,
+      "value": "Activate your new account"
+    }
+  ],
+  "user.deleteAccount.button.cancel": [
+    {
+      "type": 0,
+      "value": "No, take me back."
+    }
+  ],
+  "user.deleteAccount.button.confirm": [
+    {
+      "type": 0,
+      "value": "Yes, I am sure!"
+    }
+  ],
+  "user.deleteAccount.pageTitle": [
+    {
+      "type": 0,
+      "value": "Delete Account"
+    }
+  ],
+  "user.deleteAccount.success": [
+    {
+      "type": 0,
+      "value": "Your Klicker account has been deleted."
+    }
+  ],
+  "user.deleteAccount.title": [
+    {
+      "type": 0,
+      "value": "Are you sure you want to delete your Klicker account?"
+    }
+  ],
+  "user.login.infoMessage": [
+    {
+      "type": 0,
+      "value": "To login with a legacy account, please "
+    },
+    {
+      "type": 1,
+      "value": "requestLink"
+    },
+    {
+      "type": 0,
+      "value": " first. If you need a new account, you can "
+    },
+    {
+      "type": 1,
+      "value": "signupLink"
+    },
+    {
+      "type": 0,
+      "value": " here."
+    }
+  ],
+  "user.login.pageTitle": [
+    {
+      "type": 0,
+      "value": "Login"
+    }
+  ],
+  "user.login.title": [
+    {
+      "type": 0,
+      "value": "Login"
+    }
+  ],
+  "user.registration.loginInfo": [
+    {
+      "type": 0,
+      "value": "Already have an account? "
+    },
+    {
+      "type": 1,
+      "value": "loginLink"
+    }
+  ],
+  "user.registration.loginInfoLink": [
+    {
+      "type": 0,
+      "value": "Login here."
+    }
+  ],
+  "user.registration.pageTitle": [
+    {
+      "type": 0,
+      "value": "Registration"
+    }
+  ],
+  "user.registration.studentAccountWarning": [
+    {
+      "type": 0,
+      "value": "You don't need an account to respond to polls; just visit the given /join page of your lecturer and respond anonymously. However, feel free to create an account if you would like to create polls yourself."
+    }
+  ],
+  "user.registration.successNotification": [
+    {
+      "type": 0,
+      "value": "Successfully registered as "
+    },
+    {
+      "type": 1,
+      "value": "newEmail"
+    },
+    {
+      "type": 0,
+      "value": "."
+    },
+    {
+      "type": 1,
+      "value": "br"
+    },
+    {
+      "type": 0,
+      "value": " Please activate your new account using the link in the email we just sent you. You can then login at "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
+  "user.registration.title": [
+    {
+      "type": 0,
+      "value": "Registration"
+    }
+  ],
+  "user.registration.tos": [
+    {
+      "type": 0,
+      "value": "By registering, I accept the site "
+    },
+    {
+      "type": 1,
+      "value": "terms"
+    },
+    {
+      "type": 0,
+      "value": " and "
+    },
+    {
+      "type": 1,
+      "value": "privacy"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
+  "user.requestPassword.success": [
+    {
+      "type": 0,
+      "value": "An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
+    }
+  ],
+  "user.requestPassword.title": [
+    {
+      "type": 0,
+      "value": "Reset your password"
+    }
+  ],
+  "user.resetPassword.pageTitle": [
+    {
+      "type": 0,
+      "value": "Reset password"
+    }
+  ],
+  "user.resetPassword.success": [
+    {
+      "type": 0,
+      "value": "Your password was successfully changed. You can now "
+    },
+    {
+      "type": 1,
+      "value": "login"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
+  "user.resetPassword.title": [
+    {
+      "type": 0,
+      "value": "Reset your password"
+    }
+  ],
+  "userSettings.pageTitle": [
+    {
+      "type": 0,
+      "value": "User Settings"
+    }
+  ],
+  "userSettings.title": [
+    {
+      "type": 0,
+      "value": "User Settings"
+    }
+  ]
+}

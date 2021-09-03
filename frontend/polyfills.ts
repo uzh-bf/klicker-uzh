@@ -8,7 +8,7 @@ import { shouldPolyfill as shouldPolyfillRelativeTimeFormat } from '@formatjs/in
  * Dynamically polyfill Intl API & its locale data
  * @param locale locale to polyfill
  */
-export async function polyfill(locale = '') {
+export async function polyfill(locale: string = '') {
   const dataPolyfills = []
   // Polyfill Intl.getCanonicalLocales if necessary
   if (shouldPolyfillGetCanonicalLocales()) {
@@ -20,7 +20,7 @@ export async function polyfill(locale = '') {
     await import(/* webpackChunkName: "intl-pluralrules" */ '@formatjs/intl-pluralrules/polyfill')
   }
 
-  if (Intl.PluralRules.polyfilled) {
+  if ((Intl.PluralRules as any).polyfilled) {
     const lang = locale.split('-')[0]
     switch (lang) {
       default:
@@ -41,7 +41,7 @@ export async function polyfill(locale = '') {
     await import(/* webpackChunkName: "intl-numberformat" */ '@formatjs/intl-numberformat/polyfill')
   }
 
-  if (Intl.NumberFormat.polyfilled) {
+  if ((Intl.NumberFormat as any).polyfilled) {
     switch (locale) {
       default:
         dataPolyfills.push(
@@ -61,7 +61,7 @@ export async function polyfill(locale = '') {
     await import(/* webpackChunkName: "intl-datetimeformat" */ '@formatjs/intl-datetimeformat/polyfill')
   }
 
-  if (Intl.DateTimeFormat.polyfilled) {
+  if ((Intl.DateTimeFormat as any).polyfilled) {
     dataPolyfills.push(import('@formatjs/intl-datetimeformat/add-all-tz'))
     switch (locale) {
       default:
@@ -82,7 +82,7 @@ export async function polyfill(locale = '') {
     await import(/* webpackChunkName: "intl-relativetimeformat" */ '@formatjs/intl-relativetimeformat/polyfill')
   }
 
-  if (Intl.RelativeTimeFormat.polyfilled) {
+  if ((Intl.RelativeTimeFormat as any).polyfilled) {
     switch (locale) {
       default:
         dataPolyfills.push(
