@@ -27,7 +27,7 @@ RUN set -x && npm run build
 
 # run next in production mode
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]
 
 # add labels
 ARG VERSION="canary"
