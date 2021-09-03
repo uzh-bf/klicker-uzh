@@ -21,3 +21,4 @@ src/stories/
 !sentry.*.ts
 !semantic.json
 !polyfills.ts
+!tsconfig.server.json
