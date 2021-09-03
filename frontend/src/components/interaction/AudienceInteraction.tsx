@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { Checkbox, Message } from 'semantic-ui-react'
+import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 // import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -53,6 +54,14 @@ function AudienceInteraction({
           <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
         </div>
         <div className="mr-2 print:hidden">
+          {isFeedbackChannelActive && (
+            <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank" className="mr-10">
+              <Button icon labelPosition="left" size="small">
+                <Icon name="external" />
+                <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
+              </Button>
+            </a>
+          )}
           <Checkbox
             toggle
             checked={isFeedbackChannelActive}
