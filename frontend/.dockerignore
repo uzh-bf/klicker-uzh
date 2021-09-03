@@ -13,9 +13,10 @@ src/stories/
 !.babelrc
 !tsconfig.json
 !next.config.js
-!server.js
+!server.ts
 !next-env.d.ts
 !postcss.config.js
 !tailwind.config.js
-!sentry.*.js
+!sentry.*.ts
 !semantic.json
+!polyfills.ts
