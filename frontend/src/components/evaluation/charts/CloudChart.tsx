@@ -23,7 +23,7 @@ function CloudChart({ data, size }: Props): React.ReactElement {
     <div className="cloudChart">
       <WordCloud
         data={data.map(({ value, count }): any => ({ text: value, value: count }))}
-        fontSizeMapper={fontSizeMapper}
+        fontSize={fontSizeMapper}
         height={600}
         rotate={rotate}
         width={size.width || 600}
