@@ -1,3 +1,5 @@
 .babelrc
-src/.next
+dist/
+compiled-lang/
+.next
 src/lib/semantic

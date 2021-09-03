@@ -2,38 +2,22 @@
 import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
-import App from 'next/app'
+import App, { AppContext } from 'next/app'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
-import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
+import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
+import { polyfill } from '../../polyfills'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
-
-// This is optional but highly recommended
-// since it prevents memory leak
-const cache = createIntlCache()
 
 const { publicRuntimeConfig } = getConfig()
 
 const isProd = process.env.NODE_ENV === 'production'
 
-// Register React Intl's locale data for the user's locale in the browser. This
-// locale data was added to the page by `pages/_document.js`. This only happens
-// once, on initial page load in the browser.
-if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
-  import('intl-pluralrules')
-  import('@formatjs/intl-relativetimeformat/polyfill')
-
-  Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
-    import(`@formatjs/intl-relativetimeformat/locale-data/${lang}`)
-  })
-}
-
 interface Props {
-  apolloClient: any
   locale: string
   messages: any
 }
@@ -41,19 +25,32 @@ interface Props {
 class Klicker extends App<Props> {
   state = { error: null }
 
-  static async getInitialProps({ Component, ctx }): Promise<any> {
-    let pageProps = {}
+  static async getInitialProps(appContext: AppContext): Promise<any> {
+    const {
+      ctx: { req },
+    } = appContext
 
-    if (Component.getInitialProps) {
-      pageProps = await Component.getInitialProps(ctx)
+    const requestedLocales: string | string[] =
+      (req as any)?.locale ||
+      (typeof navigator !== 'undefined' && navigator.languages) ||
+      // IE11
+      (typeof navigator !== 'undefined' && (navigator as any).userLanguage) ||
+      (typeof window !== 'undefined' && (window as any).LOCALE) ||
+      'en'
+
+    const [supportedLocale, messagePromise] = getMessages(requestedLocales)
+
+    const [, messages, appProps] = await Promise.all([
+      polyfill(supportedLocale),
+      messagePromise,
+      App.getInitialProps(appContext),
+    ])
+
+    return {
+      ...(appProps as any),
+      locale: supportedLocale,
+      messages: messages.default,
     }
-
-    // Get the `locale` and `messages` from the request object on the server.
-    // In the browser, use the same values that the server serialized.
-    const { req } = ctx
-    const { locale, messages } = req || window.__NEXT_DATA__.props
-
-    return { pageProps, locale, messages }
   }
 
   componentDidMount(): any {
@@ -87,10 +84,8 @@ class Klicker extends App<Props> {
     }
   }
 
-  render(): React.ReactElement {
+  render() {
     const { Component, pageProps, locale, messages } = this.props
-
-    const intl = createIntl({ locale, messages }, cache)
 
     return (
       <>
@@ -98,17 +93,48 @@ class Klicker extends App<Props> {
           <meta content="width=device-width, initial-scale=1" name="viewport" />
         </Head>
         <DndProvider backend={HTML5Backend}>
-          <RawIntlProvider value={intl}>
+          <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
             <ToastProvider autoDismiss>
               <StrictMode>
                 <Component {...pageProps} err={this.state.error} />
               </StrictMode>
             </ToastProvider>
-          </RawIntlProvider>
+          </IntlProvider>
         </DndProvider>
       </>
     )
   }
+}
+
+/**
+ * Get the messages and also do locale negotiation. A multi-lingual user
+ * can specify locale prefs like ['ja', 'en-GB', 'en'] which is interpreted as
+ * Japanese, then British English, then English
+ * @param locales list of requested locales
+ * @returns {[string, Promise]} A tuple containing the negotiated locale
+ * and the promise of fetching the translated messages
+ */
+function getMessages(locales: string | string[] = ['en']) {
+  if (!Array.isArray(locales)) {
+    locales = [locales]
+  }
+  let langBundle
+  let locale
+  for (let i = 0; i < locales.length && !locale; i++) {
+    locale = locales[i]
+    switch (locale) {
+      case 'de':
+        langBundle = import('../../compiled-lang/de.json')
+        break
+      default:
+        break
+      // Add more languages
+    }
+  }
+  if (!langBundle) {
+    return ['en', import('../../compiled-lang/en.json')]
+  }
+  return [locale, langBundle]
 }
 
 export default Klicker

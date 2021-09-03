@@ -1,7 +1,5 @@
 /* eslint-disable babel/quotes */
 
-require('dotenv').config()
-
 const convict = require('convict')
 const convictValidators = require('convict-format-with-validator')
 
@@ -233,7 +231,7 @@ module.exports = convict({
         env: 'SECURITY_HSTS_ENABLED',
         format: Boolean,
       },
-      includeSubdomains: {
+      includeSubDomains: {
         default: false,
         env: 'SECURITY_HSTS_INCLUDE_SUBDOMAINS',
         format: Boolean,
