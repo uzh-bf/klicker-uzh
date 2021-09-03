@@ -25,6 +25,7 @@ The lecturer / moderator can organize all incoming questions / feedback:
 5. **Resolve / Reopen a question:** Questions can also be marked as solved manually (without answering them). While this only causes a reorganization on the students screens, this is a useful tool if the question has been answered orally by the lecturer. Vice-versa, questions can also be reopened and pushed to the section 'Open'.
 6. **Pin a question:** An especially useful feature for large lectures with many students is the already mentioned possiblity to pin questions. This tool can be used by an assistant to the professor, who pins important questions (e.g. with many upvotes) and thereby automatically pushes them to the teachers mentioned feedback screen shown below.
 7. **Visibility:** If moderation is enabled, the lecturer / moderator will have the possiblity to hide / show certain feedback and questions. By default, every incoming statement will be invisible to other students and can only be seen by the lecturer. By answering the question or toggling its visibility, this can be easily changed. Attention: the visibility feature is not coupled with pinning and works independently. I.e. it is possible to pin a question for the presenter, which is not visible to all students.
+8. **Print Comments:** Clicking on the printer icon, it is possible to save all comments / questions including the given responses as a PDF to your local computer or print them. The students input itself will also still be available after the session ends on the evaluation screen (see [Evaluation (Results)](evaluation.md)).
 
 <!-- Previous functionalities that might be readded to the audience interaction section later on in a similar or modified manner:
 12. **Confusion-Barometer:** The Confusion-Barometer enables the audience to give feedback about the speed and difficulty of the speech or lecture. Click the button to activate or deactivate the function. Below the feedback about the speed and difficulty is presented in separate graphs.
@@ -32,7 +33,7 @@ The lecturer / moderator can organize all incoming questions / feedback:
 14. **Pause Session:** Click here if you want to pause at the current state of a session and continue the same session later on (by reactivating it from the session list).
 15. **Cancel Session:** Click here if you want to cancel the session and restart it from a fresh state. Please note that this will remove all results that might have previously been collected for this session. Once the cancellation has been confirmed, the session can be restarted from the session list. -->
 
-Finally, the picture below shows the feedback site, which can be used if only the pinned questions together with their upvotes shall be shown on a screen (e.g. to the lecturer):
+Finally, the screenshot below shows the referenced feedback site, which can be used if only pinned questions together with their upvotes shall be shown on a screen (e.g. to the lecturer):
 
 ![Lecturer View Feedback Site](assets/lecturer_view_feedbackSite.png)
 
