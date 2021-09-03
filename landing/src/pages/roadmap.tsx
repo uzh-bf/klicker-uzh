@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import React, { useState, useEffect } from 'react'
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Container,
@@ -9,7 +9,7 @@ import {
   Icon,
   Button,
   Form,
-} from 'semantic-ui-react'
+} from "semantic-ui-react";
 
 enum Status {
   RELEASED,
@@ -18,23 +18,23 @@ enum Status {
 }
 
 const StatusColor = {
-  [Status.RELEASED]: 'green',
-  [Status.WORKING_ON]: 'olive',
-  [Status.PLANNED]: 'grey',
-}
+  [Status.RELEASED]: "green",
+  [Status.WORKING_ON]: "olive",
+  [Status.PLANNED]: "grey",
+};
 
 const StatusText = {
-  [Status.RELEASED]: 'Released',
-  [Status.WORKING_ON]: 'Working On',
-  [Status.PLANNED]: 'Planned',
-}
+  [Status.RELEASED]: "Released",
+  [Status.WORKING_ON]: "Working On",
+  [Status.PLANNED]: "Planned",
+};
 
 interface RoadmapItemProps {
-  fluid?: boolean
-  title: string
-  description: string
-  status: Status
-  children: any
+  fluid?: boolean;
+  title: string;
+  description: string;
+  status: Status;
+  children: any;
 }
 
 function RoadmapItem({
@@ -54,38 +54,37 @@ function RoadmapItem({
         {children}
       </Card.Content>
     </Card>
-  )
+  );
 }
 
 export default function Roadmap() {
   useEffect(() => {
-    var s: any = document.createElement('script'),
+    var s: any = document.createElement("script"),
       options = {
         id: 7,
         theme: 0,
-        container: 'c7',
-        height: '479px',
-        form:
-          '//www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fembed',
-      }
-    s.type = 'text/javascript'
+        container: "c7",
+        height: "479px",
+        form: "//www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fembed",
+      };
+    s.type = "text/javascript";
     s.src =
-      'https://www.bf-tools.uzh.ch/applications/easyforms/static_files/js/form.widget.js'
+      "https://www.bf-tools.uzh.ch/applications/easyforms/static_files/js/form.widget.js";
     s.onload = s.onreadystatechange = function () {
-      var rs = this.readyState
-      if (rs) if (rs != 'complete') if (rs != 'loaded') return
+      var rs = this.readyState;
+      if (rs) if (rs != "complete") if (rs != "loaded") return;
       try {
-        new window.EasyForms().initialize(options).display()
+        new window.EasyForms().initialize(options).display();
       } catch (e) {}
-    }
-    var scr = document.getElementsByTagName('script')[0],
-      par = scr.parentNode
-    par.insertBefore(s, scr)
-  })
+    };
+    var scr = document.getElementsByTagName("script")[0],
+      par = scr.parentNode;
+    par.insertBefore(s, scr);
+  });
 
   return (
     <Container className="pt-4 pb-16">
-      <h1>Roadmap</h1>
+      <h1>Roadmap / Get Involved</h1>
       <div className="mb-8">
         <Image bordered fluid src="/img/whiteboard.png" />
       </div>
@@ -101,8 +100,8 @@ export default function Roadmap() {
         performance and stability improvements.
       </p>
 
-      <div className="max-w-3xl">
-        <div className="mb-6">
+      <div className="w-full flex justify-center">
+        <div className="mb-6 max-w-3xl">
           <Card fluid color="green">
             <Card.Content header="Participant Authentication" />
             {/* <Image src="https://place-hold.it/300x100" /> */}
@@ -139,8 +138,9 @@ export default function Roadmap() {
             </Card.Content>
           </Card>
         </div>
-
-        <div>
+      </div>
+      <div className="w-full flex justify-center">
+        <div className="max-w-3xl">
           <RoadmapItem
             fluid
             title="Scalability and Performance"
@@ -172,19 +172,17 @@ export default function Roadmap() {
           src="/img/logo_uzh.jpeg"
         />
       </div>
-
-      <Card.Group>
-        <RoadmapItem
-          title="Gamification and Engagement"
-          description="The incorporation of gamified interactions allows lecturers to increase engagement in their (virtual) classrooms."
-          status={Status.PLANNED}
-        >
-          <Label>Spring 22</Label>
-        </RoadmapItem>
-
+      <Card.Group className="flex justify-center md:justify-start">
         <RoadmapItem
           title="Interaction"
           description="New interaction modalities for virtual and physical classrooms improve interaction between lecturers and participants."
+          status={Status.WORKING_ON}
+        >
+          <Label>Spring 22</Label>
+        </RoadmapItem>
+        <RoadmapItem
+          title="Gamification and Engagement"
+          description="The incorporation of gamified interactions allows lecturers to increase engagement in their (virtual) classrooms."
           status={Status.PLANNED}
         >
           <Label>Spring 22</Label>
@@ -198,7 +196,6 @@ export default function Roadmap() {
           <Label>Fall 22</Label>
         </RoadmapItem>
       </Card.Group>
-
       <h2 className="mt-16">Get Involved</h2>
       <p className="mb-4 prose prose-lg max-w-none">
         We strive to develop our roadmap and goals based on the needs of our
@@ -208,7 +205,7 @@ export default function Roadmap() {
       </p>
       <div className="max-w-lg border">
         <div id="c7">
-          Ausfüllen{' '}
+          Ausfüllen{" "}
           <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
             Online Formular
           </a>
@@ -216,5 +213,5 @@ export default function Roadmap() {
         </div>
       </div>
     </Container>
-  )
+  );
 }
