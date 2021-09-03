@@ -6,6 +6,13 @@ query EvaluateSession($sessionId: ID!) {
       id
       content
       votes
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+        createdAt
+      }
     }
     confusionTS {
       id
