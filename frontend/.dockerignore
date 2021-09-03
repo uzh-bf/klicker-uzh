@@ -3,6 +3,7 @@
 !public/
 !src/
 !dist/
+!compiled-lang/
 src/stories/
 
 !LICENSE.md
