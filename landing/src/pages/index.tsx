@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react'
-import { Button, Grid, Image, List, Message } from 'semantic-ui-react'
-import axios from 'axios'
+import React, { useState, useEffect } from "react";
+import { Button, Grid, Image, List, Message } from "semantic-ui-react";
+import axios from "axios";
 
-import KlickerUZH from '../components/common/KlickerUZH'
-import Slider from '../components/slider/Slider'
-import Section from '../components/section/Section'
-import FeatureOverview from '../components/section/FeatureOverview'
+import KlickerUZH from "../components/common/KlickerUZH";
+import Slider from "../components/slider/Slider";
+import Section from "../components/section/Section";
+import FeatureOverview from "../components/section/FeatureOverview";
 
 async function pingKlickerEndpoint({
   serviceName,
   callback,
-  path = '',
-  method = 'get',
+  path = "",
+  method = "get",
 }) {
   try {
     await axios({
       method,
       url: `https://${serviceName}.klicker.uzh.ch${path}`,
       timeout: 1500,
-    } as any)
-    callback(true)
+    } as any);
+    callback(true);
   } catch (error) {
-    console.log(error)
-    callback(false)
+    console.log(error);
+    callback(false);
   }
 }
 
@@ -44,20 +44,29 @@ function Buttons() {
         <Button primary>Login</Button>
       </a>
     </>
-  )
+  );
+}
+function GetInvolvedButton() {
+  return (
+    <>
+      <a href="/roadmap" target="_blank" rel="noopener noreferrer">
+        <Button primary>Get Involved</Button>
+      </a>
+    </>
+  );
 }
 
 export default function Index() {
-  const [isAppAvailable, setIsAppAvailable] = useState(null)
+  const [isAppAvailable, setIsAppAvailable] = useState(null);
   // const [isApiAvailable, setIsApiAvailable] = useState(null)
   // const [isAaiAvailable, setIsAaiAvailable] = useState(null)
 
   useEffect(() => {
     async function pingKlickerEndpoints() {
       pingKlickerEndpoint({
-        serviceName: 'app',
+        serviceName: "app",
         callback: setIsAppAvailable,
-      })
+      });
       // pingKlickerEndpoint({
       //   serviceName: 'api',
       //   callback: setIsApiAvailable,
@@ -70,8 +79,8 @@ export default function Index() {
       // })
     }
 
-    pingKlickerEndpoints()
-  }, [])
+    pingKlickerEndpoints();
+  }, []);
 
   return (
     <div>
@@ -80,7 +89,7 @@ export default function Index() {
           <Message error>
             The Klicker is unavailable at the moment. We are trying to fix the
             problem as quickly as possible. <br />
-            You can get updates on our{' '}
+            You can get updates on our{" "}
             <a
               target="_blank"
               rel="noopener noreferrer"
@@ -91,7 +100,7 @@ export default function Index() {
             . Please excuse the inconvenience and try again later.
             <Message.List>
               <Message.Item>
-                Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
+                Frontend - {isAppAvailable ? "UP" : "DOWN"}
               </Message.Item>
               {/* <Message.Item>
               Backend - {isApiAvailable ? 'UP' : 'DOWN'}
@@ -125,6 +134,13 @@ export default function Index() {
           imageSrc="/img/running_session_mac_small.png"
         >
           <Buttons />
+        </Slider.Item>
+        <Slider.Item
+          title={<KlickerUZH />}
+          description="Get involved today and help us to develop an interactive open-source tool for lecturers and students at universities!"
+          imageSrc="/img/development_mac_small.png"
+        >
+          <GetInvolvedButton />
         </Slider.Item>
         {/* <Slider.Embed>
         <Embed
@@ -226,7 +242,7 @@ export default function Index() {
                       </List.Content>
                     </List.Item>
                   </List>
-                  The project documentation is available{' '}
+                  The project documentation is available{" "}
                   <a href="https://uzh-bf.github.io/klicker-uzh/">online</a> and
                   is being updated for every release.
                 </FeatureOverview>
@@ -239,5 +255,5 @@ export default function Index() {
         </Section>
       </div>
     </div>
-  )
+  );
 }
