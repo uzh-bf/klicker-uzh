@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-alpha.10) (2021-09-03)
+
+
+### Features
+
+* added button to reach 'pinned feedback' page from running session view ([13a9faa](https://github.com/uzh-bf/klicker-uzh/commit/13a9faa4513caddc4f7ace7f5d63c8716fb196f7))
+* rework react-intl integration and migrate to ts-node ([#2533](https://github.com/uzh-bf/klicker-uzh/issues/2533)) ([f9fc0ae](https://github.com/uzh-bf/klicker-uzh/commit/f9fc0ae30b88515f37cf483fe9c36b590a59b955))
+
+
+### Dependencies
+
+* perform minor and non-critical deps upgrades ([4ec66e7](https://github.com/uzh-bf/klicker-uzh/commit/4ec66e7c114a563773b87f2f049d3348378b77c3))
+* upgrade husky ([1399f20](https://github.com/uzh-bf/klicker-uzh/commit/1399f20c5995d7e79e425f20c19611bd6bf3b292))
+
+
+### Other
+
+* improved landing site with a call for involvement and some styling ([d9139e8](https://github.com/uzh-bf/klicker-uzh/commit/d9139e8e916a8cabbca5491c866ff18fc26ff64a))
+* lockfile maintenance ([454fe8b](https://github.com/uzh-bf/klicker-uzh/commit/454fe8b891ecedd756f62fa52cb755eb991a562b))
+* make husky scripts executable ([d9ba16b](https://github.com/uzh-bf/klicker-uzh/commit/d9ba16b05811b783f236113d7fec6d171ca76d70))
+* **release:** 1.6.0-alpha.9 ([69ff0d7](https://github.com/uzh-bf/klicker-uzh/commit/69ff0d73e35347ace76fb42b2ebc1a71b28750f0))
+
+
+### Documentation
+
+* ensure that there is a type for EasyForms ([91fce9a](https://github.com/uzh-bf/klicker-uzh/commit/91fce9aa83841e0d1f60601987bc1ca1a77bc420))
+* update audience interaction documentation ([b156240](https://github.com/uzh-bf/klicker-uzh/commit/b156240da9a908783f2cd968d9064b4401d0e659))
+* update evaluation documentation ([1c6162e](https://github.com/uzh-bf/klicker-uzh/commit/1c6162e16f88af1f880fa9499cc3a8e8ac6670d3))
+* update of audience interaction docs ([d2692c4](https://github.com/uzh-bf/klicker-uzh/commit/d2692c435f016058484a6e03b4b4b00557e4dda2))
+* update of running session docs ([929c658](https://github.com/uzh-bf/klicker-uzh/commit/929c658b488327ce4b35b8e3ced5bbc430880da8))
+* updated audience view doc page ([0914601](https://github.com/uzh-bf/klicker-uzh/commit/09146014fb37b77e69f532ef1099211bd4b06e4b))
+* upgrade dependencies for documentation ([87d5844](https://github.com/uzh-bf/klicker-uzh/commit/87d5844f4eed9e583167105323cb95f5c2b083a5))
+
+
+### Deployment
+
+* update node command in dockerfile ([d505c0f](https://github.com/uzh-bf/klicker-uzh/commit/d505c0f896e2472681e5418b5cb0987051030e03))
+
 ## [1.6.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-alpha.9) (2021-09-03)
 
 
