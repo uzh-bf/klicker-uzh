@@ -10,7 +10,7 @@ The evaluation screen provides different charts for all questions asked within a
 Depending on the question type the evaluation screen might look different. Additionally, some
 charts are not available for all question types. The two screens show all features.
 
-1. **Navigation:** All questions within the active block are listed here. Click the question or use the arrows on the very left or right to navigate through the questions.
+1. **Navigation:** All questions within the active block are listed here. Click the question or use the arrows on the very left or right to navigate through the questions. Additionally, if the audience interaction feature was enabled during the session, input from the students will also be available under a separate _Feedback-Channel_-Tab.
 2. **Question:** The question posed to the audience.
 3. **Number of participants:** Indicates how many participants answered the question.
 4. **Show Solution:** For single and multiple choice questions this slider can be used to show the correct answer within the graph.
