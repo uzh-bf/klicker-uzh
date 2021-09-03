@@ -20,9 +20,11 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
             (element: any): React.ReactElement => (
               <Table.Row>
                 <Table.Cell>
-                  {element.content}{' '}
-                  <div className="float-right">
-                    {element.votes} <Icon name="thumbs up outline" />
+                  <div className="flex">
+                    <div className="flex-1">{element.content}</div>
+                    <div className="float-right ml-6">
+                      {element.votes} <Icon name="thumbs up outline" />
+                    </div>
                   </div>
                   {element.responses
                     ? element.responses.map((response: any) => <Response response={response} />)
@@ -49,9 +51,9 @@ interface ResponseProps {
 function Response({ response }: ResponseProps): React.ReactElement {
   return (
     <>
-      <div className="mt-4 ml-4 p-2 border-solid border-2 border-gray-400 rounded-md">
-        {response.content}
-        <div className="ml-4 float-right float-top">
+      <div className="flex mt-4 ml-4 p-2 border-solid border-2 border-gray-400 rounded-md">
+        <div className="flex-1">{response.content}</div>
+        <div className="ml-6 float-right float-top">
           {response.positiveReactions} <Icon name="thumbs up outline" />
           {response.negativeReactions} <Icon name="question" />
         </div>
