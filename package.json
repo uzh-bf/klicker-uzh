@@ -10,7 +10,8 @@
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
-    "release:rc:dry": "standard-version --dry-run --prerelease rc"
+    "release:rc:dry": "standard-version --dry-run --prerelease rc",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -21,7 +22,8 @@
     "url": "https://github.com/uzh-bf/klicker-uzh/issues"
   },
   "homepage": "https://www.klicker.uzh.ch/",
-  "dependencies": {
-    "standard-version": "9.3.1"
+  "devDependencies": {
+    "standard-version": "9.3.1",
+    "husky": "^7.0.0"
   }
 }
