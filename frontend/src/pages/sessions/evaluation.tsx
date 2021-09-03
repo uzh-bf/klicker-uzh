@@ -200,7 +200,9 @@ function Evaluation(): React.ReactElement {
                     />
                   )}
                   {sessionStatus === SESSION_STATUS.COMPLETED && showFeedback && (
-                    <FeedbackTableChart feedbacks={feedbacks} />
+                    <div className="h-full overflow-auto">
+                      <FeedbackTableChart feedbacks={feedbacks} />
+                    </div>
                   )}
                   {/* sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
                     <ConfusionCharts confusionTS={confusionTS} />
