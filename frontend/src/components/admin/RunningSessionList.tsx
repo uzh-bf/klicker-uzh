@@ -55,7 +55,7 @@ function RunningSessionList({ filters }: Props): React.ReactElement {
       } catch ({ message }) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
+            defaultMessage="Unable to delete user: {errorMessage}"
             id="components.admin.userList.delete.error"
             values={{ errorMessage: message }}
           />,
