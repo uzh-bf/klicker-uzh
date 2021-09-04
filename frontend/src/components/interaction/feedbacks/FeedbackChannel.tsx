@@ -68,6 +68,7 @@ function FeedbackChannel({
   const [searchIndex, setSearchIndex] = useState(null)
   const [filteredFeedbacks, setFilteredFeedbacks] = useState(feedbacks)
   const [sortedFeedbacks, setSortedFeedbacks] = useState(feedbacks)
+  const intl = useIntl()
 
   useEffect(() => {
     const search = new JsSearch.Search('id')
@@ -108,8 +109,6 @@ function FeedbackChannel({
     )
   }, [filteredFeedbacks, sortBy])
 
-  const intl = useIntl()
-
   return (
     <div>
       {/* <div>
@@ -145,30 +144,53 @@ function FeedbackChannel({
         <div className="flex flex-col items-end md:flex-row">
           <Input
             className="w-full md:w-96"
-            placeholder="Search..."
+            placeholder="Search..." // intl.formatMessage({ id: 'runningSession.search.placeholder' }) - multi-language alternative not working yet...
             value={searchString}
             onChange={(e) => setSearchString(e.target.value)}
           />
-          <div className="flex flex-row justify-between flex-initial mt-4 md:mt-0 md:ml-8">
-            <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
-            <Checkbox
-              checked={showOpen}
-              className="ml-4"
-              label="Open"
-              onChange={() => setShowOpen((current) => !current)}
-            />
-            <Checkbox
-              checked={showUnpinned}
-              className="ml-4"
-              label="Unpinned"
-              onChange={() => setShowUnpinned((current) => !current)}
-            />
-            <Checkbox
-              checked={showUnpublished}
-              className="ml-4"
-              label="Unpublished"
-              onChange={() => setShowUnpublished((current) => !current)}
-            />
+          <div className="flex flex-row justify-between flex-initial mt-4 mb-1 md:mt-0 md:ml-8">
+            <div className="inline-block">
+              <span className="flex items-center">
+                <Checkbox checked={showResolved} label="" onChange={() => setShowResolved((current) => !current)} />
+                <FormattedMessage defaultMessage="Resolved" id="runningSession.checkboxes.resolved" />
+              </span>
+            </div>
+
+            <div className="inline-block">
+              <span className="flex items-center">
+                <Checkbox
+                  checked={showOpen}
+                  className="ml-4"
+                  label=""
+                  onChange={() => setShowOpen((current) => !current)}
+                />
+                <FormattedMessage defaultMessage="Open" id="runningSession.checkboxes.open" />
+              </span>
+            </div>
+
+            <div className="inline-block">
+              <span className="flex items-center">
+                <Checkbox
+                  checked={showUnpinned}
+                  className="ml-4"
+                  label=""
+                  onChange={() => setShowUnpinned((current) => !current)}
+                />{' '}
+                <FormattedMessage defaultMessage="Unpinned" id="runningSession.checkboxes.unpinned" />
+              </span>
+            </div>
+
+            <div className="inline-block">
+              <span className="flex items-center">
+                <Checkbox
+                  checked={showUnpublished}
+                  className="ml-4"
+                  label=""
+                  onChange={() => setShowUnpublished((current) => !current)}
+                />
+                <FormattedMessage defaultMessage="Unpublished" id="runningSession.checkboxes.unpublished" />
+              </span>
+            </div>
           </div>
         </div>
 
@@ -179,8 +201,14 @@ function FeedbackChannel({
             className="mt-4 md:mt-0"
             disabled={sortedFeedbacks?.length === 0}
             options={[
-              { text: 'Sort by Recency', value: 'recency' },
-              { text: 'Sort by Upvotes', value: 'votes' },
+              {
+                text: <FormattedMessage defaultMessage="Sort by Recency" id="runningSession.sorting.recency" />,
+                value: 'recency',
+              },
+              {
+                text: <FormattedMessage defaultMessage="Sort by Upvotes" id="runningSession.sorting.upvotes" />,
+                value: 'votes',
+              },
             ]}
             value={sortBy}
             onChange={(_, { value }) => setSortBy(value as string)}
@@ -189,9 +217,18 @@ function FeedbackChannel({
       </div>
 
       <div className="mt-4 overflow-y-auto">
-        {feedbacks.length === 0 && <Message info>No feedbacks received yet...</Message>}
+        {feedbacks.length === 0 && (
+          <Message info>
+            <FormattedMessage defaultMessage="No feedbacks received yet..." id="runningSession.info.nofeedbacks" />
+          </Message>
+        )}
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
-          <Message info>No feedbacks matching your current filter selection...</Message>
+          <Message info>
+            <FormattedMessage
+              defaultMessage="No feedbacks matching your current filter selection..."
+              id="runningSession.info.nomatchingfeedbacks"
+            />
+          </Message>
         )}
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (

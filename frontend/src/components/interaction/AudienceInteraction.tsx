@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import clsx from 'clsx'
 
 // import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -49,11 +50,13 @@ function AudienceInteraction({
   return (
     <div>
       <div className="flex flex-row justify-between">
-        <div className="text-2xl font-bold print:hidden">Audience Interaction</div>
+        <div className="text-2xl font-bold print:hidden">
+          <FormattedMessage defaultMessage="Audience Interaction" id="runningSession.title.audienceinteraction" />
+        </div>
         <div className="hidden print:block">
           <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
         </div>
-        <div className="mr-2 print:hidden">
+        <div className="flex items-center mr-2 print:hidden">
           {isFeedbackChannelActive && (
             <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank" className="mr-10">
               <Button icon labelPosition="left" size="small">
@@ -62,40 +65,56 @@ function AudienceInteraction({
               </Button>
             </a>
           )}
-          <Checkbox
-            toggle
-            checked={isFeedbackChannelActive}
-            label="Enable Audience Interaction"
-            onChange={(): void => {
-              updateSettings({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: {
-                  sessionId,
-                  settings: {
-                    isFeedbackChannelActive: !isFeedbackChannelActive,
-                  },
-                },
-              })
-            }}
-          />
-          <Checkbox
-            toggle
-            checked={!isFeedbackChannelPublic}
-            className="ml-8"
-            disabled={!isFeedbackChannelActive}
-            label="Enable Moderation"
-            onChange={(): void => {
-              updateSettings({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: {
-                  sessionId,
-                  settings: {
-                    isFeedbackChannelPublic: !isFeedbackChannelPublic,
-                  },
-                },
-              })
-            }}
-          />
+
+          <div className="inline-block float-bottom">
+            <span className="flex">
+              <Checkbox
+                toggle
+                checked={isFeedbackChannelActive}
+                label=""
+                onChange={(): void => {
+                  updateSettings({
+                    refetchQueries: [{ query: RunningSessionQuery }],
+                    variables: {
+                      sessionId,
+                      settings: {
+                        isFeedbackChannelActive: !isFeedbackChannelActive,
+                      },
+                    },
+                  })
+                }}
+              />
+              <FormattedMessage
+                defaultMessage="Enable Audience Interaction"
+                id="runningSession.switches.enableaudienceinteraction"
+              />
+            </span>
+          </div>
+          <div className="inline-block float-bottom">
+            <span className="flex">
+              <Checkbox
+                toggle
+                checked={!isFeedbackChannelPublic}
+                className="ml-8"
+                disabled={!isFeedbackChannelActive}
+                label=""
+                onChange={(): void => {
+                  updateSettings({
+                    refetchQueries: [{ query: RunningSessionQuery }],
+                    variables: {
+                      sessionId,
+                      settings: {
+                        isFeedbackChannelPublic: !isFeedbackChannelPublic,
+                      },
+                    },
+                  })
+                }}
+              />
+              <div className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+                <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
+              </div>
+            </span>
+          </div>
         </div>
       </div>
 
