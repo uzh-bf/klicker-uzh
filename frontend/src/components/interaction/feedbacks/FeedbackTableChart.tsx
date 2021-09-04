@@ -1,10 +1,11 @@
 import React from 'react'
 import { Table, Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
 interface Props {
   feedbacks: any[]
 }
-
+//<Button basic className="!mr-2" icon="print" onClick={() => window.print()} />
 // feedback element has attributes content, id and votes BUT NO ANSWER ATTRIBUTE
 function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
   return (
@@ -12,9 +13,12 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
       <Table striped>
         <Table.Header>
           <Table.Row>
-            <Table.HeaderCell>Feedback</Table.HeaderCell>
+            <Table.HeaderCell>
+              Feedback <Button basic className="!mr-2 float-right" icon="print" onClick={() => window.print()} />
+            </Table.HeaderCell>
           </Table.Row>
         </Table.Header>
+
         <Table.Body>
           {feedbacks.map(
             (element: any): React.ReactElement => (
@@ -39,6 +43,11 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
       <style jsx>{`
         .tableChart {
           width: 100%;
+        }
+        @media print {
+          @page {
+            size: landscape;
+          }
         }
       `}</style>
     </div>
