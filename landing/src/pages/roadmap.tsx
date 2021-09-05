@@ -1,5 +1,5 @@
-import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import Link from 'next/link'
+import React, { useState, useEffect } from 'react'
 import {
   Card,
   Container,
@@ -9,7 +9,7 @@ import {
   Icon,
   Button,
   Form,
-} from "semantic-ui-react";
+} from 'semantic-ui-react'
 
 enum Status {
   RELEASED,
@@ -18,23 +18,23 @@ enum Status {
 }
 
 const StatusColor = {
-  [Status.RELEASED]: "green",
-  [Status.WORKING_ON]: "olive",
-  [Status.PLANNED]: "grey",
-};
+  [Status.RELEASED]: 'green',
+  [Status.WORKING_ON]: 'olive',
+  [Status.PLANNED]: 'grey',
+}
 
 const StatusText = {
-  [Status.RELEASED]: "Released",
-  [Status.WORKING_ON]: "Working On",
-  [Status.PLANNED]: "Planned",
-};
+  [Status.RELEASED]: 'Released',
+  [Status.WORKING_ON]: 'Working On',
+  [Status.PLANNED]: 'Planned',
+}
 
 interface RoadmapItemProps {
-  fluid?: boolean;
-  title: string;
-  description: string;
-  status: Status;
-  children: any;
+  fluid?: boolean
+  title: string
+  description: string
+  status: Status
+  children: any
 }
 
 function RoadmapItem({
@@ -45,7 +45,11 @@ function RoadmapItem({
   children,
 }: RoadmapItemProps) {
   return (
-    <Card fluid={fluid} color={StatusColor[status] as any}>
+    <Card
+      fluid={fluid}
+      className="md:!max-w-sm"
+      color={StatusColor[status] as any}
+    >
       <Card.Content header={title} />
       {/* <Image src="https://place-hold.it/300x100" /> */}
       <Card.Content>{description}</Card.Content>
@@ -54,164 +58,138 @@ function RoadmapItem({
         {children}
       </Card.Content>
     </Card>
-  );
+  )
 }
 
 export default function Roadmap() {
   useEffect(() => {
-    var s: any = document.createElement("script"),
+    var s: any = document.createElement('script'),
       options = {
         id: 7,
         theme: 0,
-        container: "c7",
-        height: "479px",
-        form: "//www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fembed",
-      };
-    s.type = "text/javascript";
+        container: 'c7',
+        height: '479px',
+        form: '//www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fembed',
+      }
+    s.type = 'text/javascript'
     s.src =
-      "https://www.bf-tools.uzh.ch/applications/easyforms/static_files/js/form.widget.js";
+      'https://www.bf-tools.uzh.ch/applications/easyforms/static_files/js/form.widget.js'
     s.onload = s.onreadystatechange = function () {
-      var rs = this.readyState;
-      if (rs) if (rs != "complete") if (rs != "loaded") return;
+      var rs = this.readyState
+      if (rs) if (rs != 'complete') if (rs != 'loaded') return
       try {
-        new window.EasyForms().initialize(options).display();
+        new window.EasyForms().initialize(options).display()
       } catch (e) {}
-    };
-    var scr = document.getElementsByTagName("script")[0],
-      par = scr.parentNode;
-    par.insertBefore(s, scr);
-  });
+    }
+    var scr = document.getElementsByTagName('script')[0],
+      par = scr.parentNode
+    par.insertBefore(s, scr)
+  })
 
   return (
-    <Container className="pt-4 pb-16">
-      <h1>Roadmap / Get Involved</h1>
-      <div className="mb-8">
-        <Image bordered fluid src="/img/whiteboard.png" />
-      </div>
+    <div className="p-4 pt-8 md:p-16">
+      <h1 className="ml-4">Get Involved</h1>
 
-      <h2 className="pt-4">Current Focus Areas</h2>
-      <p className="mb-8 prose prose-lg max-w-none">
-        The current development focus of the KlickerUZH is centered around
-        stability and integrity of the voting performed on the platform. As part
-        of a project sponsored by the Faculty of Business, Economics and
-        Informatics, we have released authentication capabilities for KlickerUZH
-        sessions. Furthermore, we are cooperating with the UZH Central IT to get
-        the KlickerUZH running on Microsoft Azure, allowing for significant
-        performance and stability improvements.
-      </p>
+      <div className="flex flex-col flex-wrap md:flex-row">
+        <div className="flex-1 p-4 md:pr-8">
+          <h2 className="mt-16">P-8 &quot;Digital Skills&quot;</h2>
+          <p className="mb-4 prose prose-lg md:mb-8 max-w-none">
+            As part of a project backed by swissuniversities and the Teaching
+            Center at the Dept. of Banking and Finance (UZH), the KlickerUZH
+            team will be working on several interesting focus areas over the
+            coming years. We will be developing best practices and materials, as
+            well as extending the KlickerUZH with capabilities that support each
+            of these areas. This page and our official documentation will be
+            continuously extended with helpful resources.
+          </p>
 
-      <div className="w-full flex justify-center">
-        <div className="mb-6 max-w-3xl">
-          <Card fluid color="green">
-            <Card.Content header="Participant Authentication" />
-            {/* <Image src="https://place-hold.it/300x100" /> */}
-            <Card.Content>
-              <p>
-                Restrict access to your KlickerUZH sessions by defining a list
-                of authorized participants. After logging in using AAI or a
-                username and password, authorized participants can vote on
-                active polls exactly once.
-              </p>
-              <p>
-                <span className="font-bold">Access Control</span>: restrict the
-                vote to participants of a seminar or lecture by uploading your
-                participant list. This ensures that no one else can cast a vote
-                or influence the voting with malicious intent
-              </p>
-              <p>
-                <span className="font-bold">Secret Voting</span>: besides
-                restricting access, authenticated sessions also ensure that each
-                participant can vote exactly once, as well as that nobody can
-                view the specific vote of a participant. This makes the
-                functionalitiy suitable for secret votes in committees or
-                assemblies.
-              </p>
-            </Card.Content>
+          <div className="flex flex-row">
+            <Image
+              className="w-auto h-10 mr-8"
+              src="/img/logo_swissuniversities.png"
+            />
+            <Image className="w-auto h-10" src="/img/logo_uzh.jpeg" />
+          </div>
 
-            <Card.Content extra className="flex items-center">
-              <Label color="green">Released</Label>
-              <Link href="https://uzh-bf.github.io/klicker-uzh/docs/advanced/participant_authentication">
-                <a className="ml-4" target="_blank">
-                  <Icon name="info circle" /> Usage Instructions
-                </a>
-              </Link>
-            </Card.Content>
-          </Card>
+          <div className="mt-8">
+            <Card.Group fluid className="flex justify-center md:justify-start">
+              <RoadmapItem
+                fluid
+                title="Interaction"
+                description={`
+                  New interaction modalities for virtual and physical classrooms
+                  improve interaction between lecturers and participants.
+                `}
+                status={Status.WORKING_ON}
+              >
+                <Label>Fall 21 - Spring 22</Label>
+              </RoadmapItem>
+              <RoadmapItem
+                fluid
+                title="Gamification and Engagement"
+                description={`
+                The incorporation of gamified interactions allows lecturers to increase engagement
+                in their (virtual) classrooms.
+                `}
+                status={Status.PLANNED}
+              >
+                <Label>Spring 22 - Fall 22</Label>
+              </RoadmapItem>
+
+              <RoadmapItem
+                fluid
+                title="In-Depth Analysis"
+                description={`
+                Analysis functionalities allow lecturers to evaluate their
+                sessions and questions in terms of different quality dimensions.
+                `}
+                status={Status.PLANNED}
+              >
+                <Label>Fall 22 - Spring 23</Label>
+              </RoadmapItem>
+            </Card.Group>
+          </div>
+        </div>
+
+        <div className="flex-1 max-w-2xl p-4 mt-8 md:pl-8 md:mt-0">
+          <h2 className="mt-16">User Group</h2>
+          <p className="mb-4 prose prose-lg max-w-none">
+            We strive to develop our roadmap and goals based on the needs of our
+            users. The goal of our project on &quot;Digital Skills&quot; is to
+            improve your capabilities in the area of digital interactions. If
+            you are interested in classroom interaction and would like to be
+            involved in future developments, we welcome you to join our new
+            KlickerUZH user group with the following form.
+          </p>
+          <div className="max-w-lg mt-8 border min-h-[370px]">
+            <div id="c7">
+              Ausfüllen{' '}
+              <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
+                Online Formular
+              </a>
+              .
+            </div>
+          </div>
         </div>
       </div>
-      <div className="w-full flex justify-center">
-        <div className="max-w-3xl">
-          <RoadmapItem
-            fluid
-            title="Scalability and Performance"
-            description="Deployment to the Microsoft Azure cloud allows us to optimize the KlickerUZH for scalability and performance. Technical resources for automated deployment to the Azure platform will be provided as part of the open-source release."
-            status={Status.WORKING_ON}
-          >
-            <Label>Fall 21</Label>
-          </RoadmapItem>
-        </div>
-      </div>
 
-      <h2 className="mt-16">Future Focus Areas</h2>
+      <div className="p-4 mt-8 md:mt-16">
+        <h1>Public Roadmap</h1>
+        <p className="prose prose-lg max-w-none">
+          Our public roadmap is directly integrated with our project management
+          software, allowing you to see what milestones we are currently working
+          on.
+        </p>
 
-      <h3>2021-2023</h3>
-      <p className="mb-4 prose prose-lg md:mb-8 max-w-none">
-        As part of a project backed by the University of Zurich and
-        swissuniversities, the KlickerUZH team will be working on several
-        interesting focus areas over the coming years. We will be developing
-        best practices and materials, as well as extending the KlickerUZH with
-        capabilities that support each of these areas.
-      </p>
-      <div className="flex flex-col mb-8 md:flex-row">
-        <Image
-          className="w-56 mb-4 md:mb-0 md:mr-16 md:w-auto md:h-16"
-          src="/img/logo_swissuniversities.png"
-        />
-        <Image
-          className="w-56 mb-4 md:mb-0 md:w-auto md:h-16"
-          src="/img/logo_uzh.jpeg"
-        />
+        <iframe
+          className="clickup-embed"
+          src="https://sharing.clickup.com/b/h/5-74501758-2/8696b18d0f64dc6"
+          onWheel={() => null}
+          width="100%"
+          height="700px"
+          style={{ background: 'transparent', border: '1px solid #ccc' }}
+        ></iframe>
       </div>
-      <Card.Group className="flex justify-center md:justify-start">
-        <RoadmapItem
-          title="Interaction"
-          description="New interaction modalities for virtual and physical classrooms improve interaction between lecturers and participants."
-          status={Status.WORKING_ON}
-        >
-          <Label>Spring 22</Label>
-        </RoadmapItem>
-        <RoadmapItem
-          title="Gamification and Engagement"
-          description="The incorporation of gamified interactions allows lecturers to increase engagement in their (virtual) classrooms."
-          status={Status.PLANNED}
-        >
-          <Label>Spring 22</Label>
-        </RoadmapItem>
-
-        <RoadmapItem
-          title="In-Depth Analysis"
-          description="Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions."
-          status={Status.PLANNED}
-        >
-          <Label>Fall 22</Label>
-        </RoadmapItem>
-      </Card.Group>
-      <h2 className="mt-16">Get Involved</h2>
-      <p className="mb-4 prose prose-lg max-w-none">
-        We strive to develop our roadmap and goals based on the needs of our
-        users. If you are interested in classroom interaction and would like to
-        be involved in future developments, we welcome you to join our new
-        KlickerUZH user group with the following form.
-      </p>
-      <div className="max-w-lg border">
-        <div id="c7">
-          Ausfüllen{" "}
-          <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
-            Online Formular
-          </a>
-          .
-        </div>
-      </div>
-    </Container>
-  );
+    </div>
+  )
 }
