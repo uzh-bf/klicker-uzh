@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-beta.0) (2021-09-05)
+
+
+### Features
+
+* added button to reach 'pinned feedback' page from running session view ([13a9faa](https://github.com/uzh-bf/klicker-uzh/commit/13a9faa4513caddc4f7ace7f5d63c8716fb196f7))
+* added possiblity to print feedback from evaluation for past sessions ([e26bc89](https://github.com/uzh-bf/klicker-uzh/commit/e26bc89205fb73083c2ab47c3c4da9a01b4cb9e7))
+* **landing:** rework the roadmap page to incorporate our public clickup roadmap ([7d93b2a](https://github.com/uzh-bf/klicker-uzh/commit/7d93b2a9d3a8b5b0a5ad91f1b539914e3a558b8d))
+* response ratings and question responses are now visible for past sessions as well ([8eba2da](https://github.com/uzh-bf/klicker-uzh/commit/8eba2da65e5c068dc0a93a2998cc0d670f43e683))
+* rework react-intl integration and migrate to ts-node ([#2533](https://github.com/uzh-bf/klicker-uzh/issues/2533)) ([f9fc0ae](https://github.com/uzh-bf/klicker-uzh/commit/f9fc0ae30b88515f37cf483fe9c36b590a59b955))
+
+
+### Bug Fixes
+
+* **frontend:** ensure that NEXT_PUBLIC_DISPLAY_AAI is parsed correctly ([58d791f](https://github.com/uzh-bf/klicker-uzh/commit/58d791f6b7842446ca462a23e00cc598168b7dd0))
+* **landing:** ensure that the nav on landing can stack on mobile ([53e2014](https://github.com/uzh-bf/klicker-uzh/commit/53e2014ce882b5a3afcf5fcef7334f8c7a10c826))
+
+
+### Dependencies
+
+* perform minor and non-critical deps upgrades ([4ec66e7](https://github.com/uzh-bf/klicker-uzh/commit/4ec66e7c114a563773b87f2f049d3348378b77c3))
+* upgrade husky ([1399f20](https://github.com/uzh-bf/klicker-uzh/commit/1399f20c5995d7e79e425f20c19611bd6bf3b292))
+
+
+### Deployment
+
+* update node command in dockerfile ([d505c0f](https://github.com/uzh-bf/klicker-uzh/commit/d505c0f896e2472681e5418b5cb0987051030e03))
+
+
+### Documentation
+
+* ensure that there is a type for EasyForms ([91fce9a](https://github.com/uzh-bf/klicker-uzh/commit/91fce9aa83841e0d1f60601987bc1ca1a77bc420))
+* mini update of audience interaction ([92f451d](https://github.com/uzh-bf/klicker-uzh/commit/92f451d042912848e0fdb5599e47374113041446))
+* replace spectrum chat with gh discussions, add mention of ms teams ([094f7ba](https://github.com/uzh-bf/klicker-uzh/commit/094f7ba5f0cf733acef223700f2892dcc6fc28c4))
+* update audience interaction documentation ([b156240](https://github.com/uzh-bf/klicker-uzh/commit/b156240da9a908783f2cd968d9064b4401d0e659))
+* update evaluation documentation ([3e4d179](https://github.com/uzh-bf/klicker-uzh/commit/3e4d17995922f4970051c37ff443123cffaae2d7))
+* update evaluation documentation ([1c6162e](https://github.com/uzh-bf/klicker-uzh/commit/1c6162e16f88af1f880fa9499cc3a8e8ac6670d3))
+* update of audience interaction docs ([d2692c4](https://github.com/uzh-bf/klicker-uzh/commit/d2692c435f016058484a6e03b4b4b00557e4dda2))
+* update of running session docs ([929c658](https://github.com/uzh-bf/klicker-uzh/commit/929c658b488327ce4b35b8e3ced5bbc430880da8))
+* updated audience view doc page ([0914601](https://github.com/uzh-bf/klicker-uzh/commit/09146014fb37b77e69f532ef1099211bd4b06e4b))
+* updated screenshot and content for question pool documentation ([4880ba0](https://github.com/uzh-bf/klicker-uzh/commit/4880ba0e6c4760a1fd285306f754501b59ef49ae))
+* upgrade dependencies for documentation ([87d5844](https://github.com/uzh-bf/klicker-uzh/commit/87d5844f4eed9e583167105323cb95f5c2b083a5))
+
+
+### Enhancements
+
+* **frontend:** allow parametrized display of the AAI login button based on NEXT_PUBLIC_DISPLAY_AAI ([8ba7a83](https://github.com/uzh-bf/klicker-uzh/commit/8ba7a83c8bb7dca746a352e368efe98cb4781a5d))
+* **landing:** add compression and caching rules to .htaccess ([8d7f4cd](https://github.com/uzh-bf/klicker-uzh/commit/8d7f4cdc4f60deeed54376bca553671fc9b4d39c))
+
+
+### Other
+
+* added scrolling in case of overflow on feedback site for past sessions ([9fe8199](https://github.com/uzh-bf/klicker-uzh/commit/9fe8199f5883224e807e2f8bc987d0b170032b99))
+* enable polling on the running session screen ([b7c732c](https://github.com/uzh-bf/klicker-uzh/commit/b7c732c98c7c3a27af364b36f8eebece7fdf62ef))
+* improved landing site with a call for involvement and some styling ([d9139e8](https://github.com/uzh-bf/klicker-uzh/commit/d9139e8e916a8cabbca5491c866ff18fc26ff64a))
+* improved styling of feedback channel for display of past sessions ([41b92b5](https://github.com/uzh-bf/klicker-uzh/commit/41b92b5ae884b6c1e12be209002ed1cdce9af5e3))
+* internationalization for running session audience interaction panel ([55f3bd5](https://github.com/uzh-bf/klicker-uzh/commit/55f3bd5147e14c3c03eca29f24b9da4211faec08))
+* lockfile maintenance ([454fe8b](https://github.com/uzh-bf/klicker-uzh/commit/454fe8b891ecedd756f62fa52cb755eb991a562b))
+* make husky scripts executable ([d9ba16b](https://github.com/uzh-bf/klicker-uzh/commit/d9ba16b05811b783f236113d7fec6d171ca76d70))
+* **release:** 1.6.0-alpha.10 ([6bbe387](https://github.com/uzh-bf/klicker-uzh/commit/6bbe3876f19bf93f7e40bd5133fb9ce163b78cef))
+* **release:** 1.6.0-alpha.9 ([69ff0d7](https://github.com/uzh-bf/klicker-uzh/commit/69ff0d73e35347ace76fb42b2ebc1a71b28750f0))
+* small upgrades and improvements ([ad764cb](https://github.com/uzh-bf/klicker-uzh/commit/ad764cb6f235e81f59483ddb7d9f25b1500fbfe5))
+
 ## [1.6.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-alpha.10) (2021-09-03)
 
 
