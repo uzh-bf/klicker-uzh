@@ -82,7 +82,7 @@ function Login(): React.ReactElement {
             }}
           />
 
-          {process.env.NEXT_PUBLIC_DISPLAY_AAI && (
+          {process.env.NEXT_PUBLIC_DISPLAY_AAI && process.env.NEXT_PUBLIC_DISPLAY_AAI !== 'false' && (
             <div className="aai">
               <a href="https://aai.klicker.uzh.ch/public" role="button">
                 <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
