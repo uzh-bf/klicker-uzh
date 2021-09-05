@@ -93,13 +93,13 @@ class Klicker extends App<Props> {
           <meta content="width=device-width, initial-scale=1" name="viewport" />
         </Head>
         <DndProvider backend={HTML5Backend}>
-          <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
-            <ToastProvider autoDismiss>
+          <ToastProvider autoDismiss>
+            <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
               <StrictMode>
                 <Component {...pageProps} err={this.state.error} />
               </StrictMode>
-            </ToastProvider>
-          </IntlProvider>
+            </IntlProvider>
+          </ToastProvider>
         </DndProvider>
       </>
     )
