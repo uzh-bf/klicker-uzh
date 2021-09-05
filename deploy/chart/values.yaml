@@ -58,6 +58,8 @@ frontend:
 
   hostname: app.klicker-stage.bf-app.ch
 
+  displayAAI: false
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend
     pullPolicy: Always
