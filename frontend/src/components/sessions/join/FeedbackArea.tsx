@@ -70,8 +70,8 @@ function FeedbackArea({
         upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
-          positive: reactions[response.id] > 0,
-          negative: reactions[response.id] < 0,
+          positive: reactions?.[response.id] > 0,
+          negative: reactions?.[response.id] < 0,
         })),
       })),
       resolved: prev.resolved.map((feedback) => ({
@@ -79,8 +79,8 @@ function FeedbackArea({
         upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
-          positive: reactions[response.id] > 0,
-          negative: reactions[response.id] < 0,
+          positive: reactions?.[response.id] > 0,
+          negative: reactions?.[response.id] < 0,
         })),
       })),
     }))
@@ -128,34 +128,34 @@ function FeedbackArea({
   }
 
   const onUpvoteFeedback = async (feedbackId: string) => {
-    await handleUpvoteFeedback({ feedbackId, undo: !!upvotedFeedbacks[feedbackId] })
-    setUpvotedFeedbacks((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }))
+    await handleUpvoteFeedback({ feedbackId, undo: upvotedFeedbacks && !!upvotedFeedbacks[feedbackId] })
+    setUpvotedFeedbacks((prev) => ({ ...(prev || {}), [feedbackId]: prev?.[feedbackId] ? !prev[feedbackId] : true }))
   }
 
   const handlePositiveResponseReaction = async (responseId: string, feedbackId: string) => {
-    if (reactions[responseId] < 0) {
+    if (reactions?.[responseId] < 0) {
       await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: -1 })
     } else {
       await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: 0 })
     }
     setReactions((prev) => {
       return {
-        ...prev,
-        [responseId]: prev[responseId] > 0 ? undefined : 1,
+        ...(prev || {}),
+        [responseId]: prev?.[responseId] > 0 ? undefined : 1,
       }
     })
   }
 
   const handleNegativeResponseReaction = async (responseId: string, feedbackId: string) => {
-    if (reactions[responseId] > 0) {
+    if (reactions?.[responseId] > 0) {
       await handleReactToFeedbackResponse({ feedbackId, responseId, positive: -1, negative: 1 })
     } else {
       await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 0, negative: 1 })
     }
     setReactions((prev) => {
       return {
-        ...prev,
-        [responseId]: prev[responseId] < 0 ? undefined : -1,
+        ...(prev || {}),
+        [responseId]: prev?.[responseId] < 0 ? undefined : -1,
       }
     })
   }
