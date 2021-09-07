@@ -33,8 +33,8 @@ function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
           // otherwise render a chart
           return (
             <>
-              <div>Value: {data[data.length - 1].value}</div>
-              <div>Running Average: {data[data.length - 1].valueRunning}</div>
+              <div>Running Average: {data[data.length - 1].valueRunning.map((element: any) => element + ', ')}</div>
+              <div>Number of Datapoints: {data.length}</div>
             </>
           )
         })()}

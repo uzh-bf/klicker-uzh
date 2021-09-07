@@ -53,8 +53,7 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
           onChange={handleActiveToggle}
         />
       </div>
-
-      {isActive && <ConfusionCharts confusionTS={confusionTS} />}
+      <div className="flex flex-row">{isActive && <ConfusionCharts confusionTS={confusionTS} />}</div>
 
       <style jsx>{`
         @import 'src/theme';

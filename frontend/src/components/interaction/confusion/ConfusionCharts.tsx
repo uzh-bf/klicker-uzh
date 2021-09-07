@@ -34,9 +34,45 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
   const parsedTS = confusionTS.reduce((acc, { createdAt, speed, difficulty }): any[] => {
     const tempAcc = [...acc, { difficulty, speed }]
 
-    // calculate the running average for difficulty and speed
-    const difficultyRunning = _sumBy(tempAcc, 'difficulty') / tempAcc.length
-    const speedRunning = _sumBy(tempAcc, 'speed') / tempAcc.length
+    // check if the time difference between now and a given timestamp is less than 10 minutes
+    const compareTimeToNow = (arr: any, differenceSec: number) => {
+      const now = new Date()
+      if (
+        parseInt(arr[0]) * 60 * 60 + parseInt(arr[1]) * 60 + parseInt(arr[2]) + differenceSec <
+        now.getHours() * 60 * 60 + now.getMinutes() * 60 + now.getSeconds()
+      ) {
+        return false
+      }
+      return true
+    }
+
+    const difficultyEntries = tempAcc
+      .filter((element: any) => {
+        if (element.timestamp) {
+          return compareTimeToNow(element.timestamp.split(':'), 600)
+        }
+      })
+      .map((element: any) => element.difficulty)
+
+    const speedEntries = tempAcc
+      .filter((element: any) => {
+        if (element.timestamp) {
+          return compareTimeToNow(element.timestamp.split(':'), 600)
+        }
+      })
+      .map((element: any) => element.speed)
+
+    const reducer = (accumulator: number) => accumulator + 1
+    const difficultyRunning = [
+      Math.abs(difficultyEntries.filter((elem: any) => elem == -1).reduce(reducer, 0)),
+      Math.abs(difficultyEntries.filter((elem: any) => elem == 0).reduce(reducer, 0)),
+      Math.abs(difficultyEntries.filter((elem: any) => elem == 1).reduce(reducer, 0)),
+    ]
+    const speedRunning = [
+      Math.abs(speedEntries.filter((elem: any) => elem == -1).reduce(reducer, 0)),
+      Math.abs(speedEntries.filter((elem: any) => elem == 0).reduce(reducer, 0)),
+      Math.abs(speedEntries.filter((elem: any) => elem == 1).reduce(reducer, 0)),
+    ]
 
     return [
       ...acc,

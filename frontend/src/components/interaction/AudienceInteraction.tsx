@@ -179,8 +179,14 @@ function AudienceInteraction({
               }}
             />
           </div>
-
-          <div className="flex-1 md:pl-4 max-w-[40%]">
+        </div>
+      )}
+      {isFeedbackChannelActive && (
+        <>
+          <div className="text-2xl font-bold mt-16 print:hidden">
+            <FormattedMessage defaultMessage="Confusion Barometer" id="runningSession.title.confusionbarometer" />
+          </div>
+          <div className="flex-1">
             <ConfusionBarometer
               confusionTS={confusionTS}
               handleActiveToggle={(): void => {
@@ -213,7 +219,7 @@ function AudienceInteraction({
               }}
             />
           </div>
-        </div>
+        </>
       )}
     </div>
   )
