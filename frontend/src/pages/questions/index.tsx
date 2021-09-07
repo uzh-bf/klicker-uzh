@@ -93,6 +93,8 @@ function Index(): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
+  const [questionView, setQuestionView] = useState('block')
+
   const index = useMemo(() => {
     if (data?.questions) {
       return buildIndex('questions', data.questions, ['title', 'createdAt'])
@@ -373,6 +375,14 @@ function Index(): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
+  const onChangeQuestionView = (): void => {
+    if (questionView === 'block') {
+      setQuestionView('list')
+    } else {
+      setQuestionView('block')
+    }
+  }
+
   const renderActionArea = (runningSessionId): React.ReactElement => {
     if (creationMode) {
       if (editSessionId) {
@@ -460,6 +470,7 @@ function Index(): React.ReactElement {
             return [
               <ActionBar
                 creationMode={creationMode}
+                questionView={questionView}
                 deletionConfirmation={deletionConfirmation}
                 handleArchiveQuestions={onArchiveQuestions}
                 handleCreationModeToggle={onCreationModeToggle}
@@ -468,6 +479,7 @@ function Index(): React.ReactElement {
                 handleQuickBlocks={onQuickBlocks}
                 handleResetItemsChecked={handleResetSelection}
                 handleSetItemsChecked={handleSelectItems}
+                handleQuesionViewChange={onChangeQuestionView}
                 isArchiveActive={filters.archive}
                 itemsChecked={selectedItems.ids}
                 questions={processedQuestions}
@@ -479,6 +491,7 @@ function Index(): React.ReactElement {
                   questions={processedQuestions}
                   selectedItems={selectedItems}
                   onQuestionChecked={handleSelectItem}
+                  questionView={questionView}
                 />
               </div>,
             ]

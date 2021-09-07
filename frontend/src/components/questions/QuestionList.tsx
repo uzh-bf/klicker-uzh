@@ -4,6 +4,7 @@ import { Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import Question from './Question'
+import QuestionCompact from './QuestionCompact'
 
 interface Props {
   creationMode?: boolean
@@ -11,12 +12,14 @@ interface Props {
   onQuestionChecked: any
   selectedItems: any
   questions?: any[]
+  questionView?: string
 }
 
 const defaultProps = {
   creationMode: false,
   isArchiveActive: false,
   questions: [],
+  questionView: 'block',
 }
 
 function QuestionList({
@@ -25,6 +28,7 @@ function QuestionList({
   selectedItems,
   isArchiveActive,
   questions,
+  questionView,
 }: Props): React.ReactElement {
   if (!questions) {
     return null
@@ -43,41 +47,79 @@ function QuestionList({
 
   return (
     <div className="questionList">
-      {questions.map((question): any => (
-        <Question
-          checked={selectedItems.ids.includes(question.id)}
-          creationMode={creationMode}
-          draggable={creationMode}
-          id={question.id}
-          isArchived={isArchiveActive}
-          key={question.id}
-          lastUsed={Array.from(
-            question.instances
-              .filter((instance): boolean => !!instance)
-              .reduce((prevMap, { createdAt, session }): any => {
-                // if there is already a link to the session, skip the duplicate
-                if (prevMap.has(session)) {
-                  return prevMap
-                }
+      {questionView === 'block' &&
+        questions.map((question): any => (
+          <Question
+            checked={selectedItems.ids.includes(question.id)}
+            creationMode={creationMode}
+            draggable={creationMode}
+            id={question.id}
+            isArchived={isArchiveActive}
+            key={question.id}
+            lastUsed={Array.from(
+              question.instances
+                .filter((instance): boolean => !!instance)
+                .reduce((prevMap, { createdAt, session }): any => {
+                  // if there is already a link to the session, skip the duplicate
+                  if (prevMap.has(session)) {
+                    return prevMap
+                  }
 
-                // append the session link to the map
-                return prevMap.set(
-                  session,
-                  <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
-                    {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
-                  </a>
-                )
-              }, new Map())
-              .values()
-          )}
-          tags={question.tags}
-          title={question.title}
-          type={question.type}
-          versions={question.versions}
-          onCheck={onQuestionChecked(question.id, question)}
-          // onDrop={() => null}
-        />
-      ))}
+                  // append the session link to the map
+                  return prevMap.set(
+                    session,
+                    <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
+                      {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
+                    </a>
+                  )
+                }, new Map())
+                .values()
+            )}
+            tags={question.tags}
+            title={question.title}
+            type={question.type}
+            versions={question.versions}
+            onCheck={onQuestionChecked(question.id, question)}
+            // onDrop={() => null}
+          />
+        ))}
+
+      {questionView === 'list' &&
+        questions.map((question): any => (
+          <QuestionCompact
+            checked={selectedItems.ids.includes(question.id)}
+            creationMode={creationMode}
+            draggable={creationMode}
+            id={question.id}
+            isArchived={isArchiveActive}
+            key={question.id}
+            lastUsed={Array.from(
+              question.instances
+                .filter((instance): boolean => !!instance)
+                .reduce((prevMap, { createdAt, session }): any => {
+                  // if there is already a link to the session, skip the duplicate
+                  if (prevMap.has(session)) {
+                    return prevMap
+                  }
+
+                  // append the session link to the map
+                  return prevMap.set(
+                    session,
+                    <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
+                      {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
+                    </a>
+                  )
+                }, new Map())
+                .values()
+            )}
+            tags={question.tags}
+            title={question.title}
+            type={question.type}
+            versions={question.versions}
+            onCheck={onQuestionChecked(question.id, question)}
+            // onDrop={() => null}
+          />
+        ))}
 
       <style jsx>{`
         .questionList {

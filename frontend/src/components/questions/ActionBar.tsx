@@ -36,6 +36,7 @@ const messages = defineMessages({
 
 interface Props {
   creationMode?: boolean
+  questionView?: string
   deletionConfirmation: boolean
   handleArchiveQuestions: any
   handleCreationModeToggle: any
@@ -44,6 +45,7 @@ interface Props {
   handleQuickBlocks: any
   handleSetItemsChecked: any
   handleResetItemsChecked: any
+  handleQuesionViewChange: any
   isArchiveActive?: boolean
   itemsChecked?: string[]
   questions?: any[]
@@ -51,6 +53,7 @@ interface Props {
 
 const defaultProps = {
   creationMode: false,
+  questionView: 'block',
   isArchiveActive: false,
   itemsChecked: [],
   questions: [],
@@ -59,6 +62,7 @@ const defaultProps = {
 function ActionBar({
   isArchiveActive,
   creationMode,
+  questionView,
   deletionConfirmation,
   itemsChecked,
   handleArchiveQuestions,
@@ -68,6 +72,7 @@ function ActionBar({
   handleQuickBlocks,
   handleSetItemsChecked,
   handleResetItemsChecked,
+  handleQuesionViewChange,
   questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -300,6 +305,10 @@ function ActionBar({
             />
           </span>
         </Label>
+
+        <Button className="order-1" onClick={(): void => handleQuesionViewChange()}>
+          <FormattedMessage defaultMessage="Change View" id="questionPool.string.changeView" />
+        </Button>
 
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
