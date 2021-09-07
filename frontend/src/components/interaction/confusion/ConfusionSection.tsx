@@ -31,9 +31,11 @@ function ConfusionSection({ data, title, xlabel }: Props): React.ReactElement {
             return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
           }
 
+          let counter = 0
           // otherwise render a histogram
           const HistData = data[data.length - 1].valueRunning.map((elem: any) => {
-            return { value: elem, title: xlabel[data[data.length - 1].valueRunning.indexOf(elem)] }
+            counter++
+            return { value: elem, title: xlabel[counter - 1] }
           })
           console.log(HistData)
 
