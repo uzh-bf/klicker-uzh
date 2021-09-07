@@ -6,7 +6,6 @@ import { createLinks } from '../../../lib/utils/css'
 
 interface Props {
   handleChange: any
-  handleChangeComplete: any
   labels?: any
   title: React.ReactNode
   value?: number
@@ -18,7 +17,7 @@ const defaultProps = {
   value: undefined,
 }
 
-function ConfusionDialog({ title, value, handleChange, handleChangeComplete, labels }: Props): React.ReactElement {
+function ConfusionDialog({ title, value, handleChange, labels }: Props): React.ReactElement {
   return (
     <div className="confusionSlider mb-10">
       <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
@@ -28,7 +27,6 @@ function ConfusionDialog({ title, value, handleChange, handleChangeComplete, lab
         <Button
           onClick={(): void => {
             handleChange(-1)
-            handleChangeComplete()
           }}
           color={value == -1 ? 'blue' : null}
         >
@@ -37,7 +35,6 @@ function ConfusionDialog({ title, value, handleChange, handleChangeComplete, lab
         <Button
           onClick={(): void => {
             handleChange(0)
-            handleChangeComplete()
           }}
           color={value == 0 ? 'blue' : null}
         >
@@ -46,7 +43,6 @@ function ConfusionDialog({ title, value, handleChange, handleChangeComplete, lab
         <Button
           onClick={(): void => {
             handleChange(1)
-            handleChangeComplete()
           }}
           color={value == 1 ? 'blue' : null}
         >

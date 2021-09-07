@@ -32,9 +32,9 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
   const intl = useIntl()
 
   const parsedTS = confusionTS.reduce((acc, { createdAt, speed, difficulty }): any[] => {
+    console.log([...acc, { difficulty, speed }])
     const tempAcc = [...acc, { difficulty, speed }]
-
-    // check if the time difference between now and a given timestamp is less than 10 minutes
+    // check if the time difference between now and a given timestamp is less than a specified duration in seconds
     const compareTimeToNow = (arr: any, differenceSec: number) => {
       const now = new Date()
       if (

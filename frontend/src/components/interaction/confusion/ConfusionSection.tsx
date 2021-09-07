@@ -31,8 +31,7 @@ function ConfusionSection({ data, title, xlabel }: Props): React.ReactElement {
             return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
           }
 
-          // otherwise render a barchart
-
+          // otherwise render a histogram
           const HistData = data[data.length - 1].valueRunning.map((elem: any) => {
             return { value: elem, title: xlabel[data[data.length - 1].valueRunning.indexOf(elem)] }
           })

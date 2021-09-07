@@ -39,7 +39,7 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
     <div className="confusionBarometer">
       <div className="mb-4 infoMessage">
         <FormattedMessage
-          defaultMessage="The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
+          defaultMessage="The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time. It displays all feedbacks that were shared by students throughout the past 10 minutes"
           id="runningSession.confusion.info"
         />
       </div>

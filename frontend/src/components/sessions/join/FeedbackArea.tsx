@@ -98,8 +98,13 @@ function FeedbackArea({
     }
   }, [])
 
-  const onNewConfusionTS = (): void => {
+  const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
+    if (selector === 'speed') {
+      await setSpeedAsync(newValue)
+    } else if (selector === 'difficulty') {
+      await setDifficultyAsync(newValue)
+    }
     handleNewConfusionTS({
       difficulty: confusionDifficulty,
       speed: confusionSpeed,
@@ -120,6 +125,13 @@ function FeedbackArea({
     } catch (e) {
       console.error(e)
     }
+  }
+
+  const setSpeedAsync = async (newValue: any) => {
+    setConfusionSpeed(newValue)
+  }
+  const setDifficultyAsync = async (newValue: any) => {
+    setConfusionDifficulty(newValue)
   }
 
   const onNewFeedback = (): void => {
@@ -261,33 +273,34 @@ function FeedbackArea({
         )}
       </div>
 
-      {isConfusionBarometerActive && (
-        <div className="float-bottom">
-          <ConfusionDialog
-            handleChange={(newValue): void => setConfusionSpeed(newValue)}
-            handleChangeComplete={onNewConfusionTS}
-            labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-            title={
-              <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
-              </h2>
-            }
-            value={confusionSpeed}
-          />
+      {
+        // CHANGES FROM HERE ON
+        isConfusionBarometerActive && (
+          <div className="float-bottom">
+            <ConfusionDialog
+              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+              labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
+              title={
+                <h2 className="sectionTitle">
+                  <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+                </h2>
+              }
+              value={confusionSpeed}
+            />
 
-          <ConfusionDialog
-            handleChange={(newValue): void => setConfusionDifficulty(newValue)}
-            handleChangeComplete={onNewConfusionTS}
-            labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-            title={
-              <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
-              </h2>
-            }
-            value={confusionDifficulty}
-          />
-        </div>
-      )}
+            <ConfusionDialog
+              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+              labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
+              title={
+                <h2 className="sectionTitle">
+                  <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+                </h2>
+              }
+              value={confusionDifficulty}
+            />
+          </div>
+        )
+      }
     </div>
   )
 }
