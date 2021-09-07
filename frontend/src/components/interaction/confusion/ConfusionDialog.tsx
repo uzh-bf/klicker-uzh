@@ -1,6 +1,6 @@
 import React from 'react'
-import Slider from 'react-rangeslider'
 import Head from 'next/head'
+import { Button } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib/utils/css'
 
@@ -8,8 +8,6 @@ interface Props {
   handleChange: any
   handleChangeComplete: any
   labels?: any
-  max: number
-  min: number
   title: React.ReactNode
   value?: number
 }
@@ -20,37 +18,40 @@ const defaultProps = {
   value: undefined,
 }
 
-function ConfusionSlider({
-  title,
-  value,
-  handleChange,
-  handleChangeComplete,
-  min,
-  max,
-  labels,
-}: Props): React.ReactElement {
-  const labelsSlider = {}
-  labelsSlider[min] = labels.min
-  labelsSlider[(max + min) / 2] = labels.mid
-  labelsSlider[max] = labels.max
-
+function ConfusionDialog({ title, value, handleChange, handleChangeComplete, labels }: Props): React.ReactElement {
   return (
-    <div className="confusionSlider">
+    <div className="confusionSlider mb-10">
       <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
+      {title && <div className="text-base m-0 mb-2">{title}</div>}
 
-      {title && <div className="title">{title}</div>}
-
-      <div className="slider">
-        <Slider
-          handleLabel={value}
-          labels={labelsSlider}
-          max={max}
-          min={min}
-          tooltip={false}
-          value={value}
-          onChange={handleChange}
-          onChangeComplete={handleChangeComplete}
-        />
+      <div>
+        <Button
+          onClick={(): void => {
+            handleChange(-1)
+            handleChangeComplete()
+          }}
+          color={value == -1 ? 'blue' : null}
+        >
+          {labels.min}
+        </Button>
+        <Button
+          onClick={(): void => {
+            handleChange(0)
+            handleChangeComplete()
+          }}
+          color={value == 0 ? 'blue' : null}
+        >
+          {labels.mid}
+        </Button>
+        <Button
+          onClick={(): void => {
+            handleChange(1)
+            handleChangeComplete()
+          }}
+          color={value == 1 ? 'blue' : null}
+        >
+          {labels.max}
+        </Button>
       </div>
 
       <style jsx>{`
@@ -90,6 +91,6 @@ function ConfusionSlider({
   )
 }
 
-ConfusionSlider.defaultProps = defaultProps
+ConfusionDialog.defaultProps = defaultProps
 
-export default ConfusionSlider
+export default ConfusionDialog

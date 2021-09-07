@@ -4,11 +4,11 @@ import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import clsx from 'clsx'
 
-// import ConfusionBarometer from './confusion/ConfusionBarometer'
+import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-// import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
 import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
@@ -180,39 +180,39 @@ function AudienceInteraction({
             />
           </div>
 
-          {/* <div className="flex-1 md:pl-4 max-w-[40%]">
-          <ConfusionBarometer
-            confusionTS={confusionTS}
-            handleActiveToggle={(): void => {
-              updateSettings({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: {
-                  sessionId,
-                  settings: {
-                    isConfusionBarometerActive: !isConfusionBarometerActive,
-                  },
-                },
-              })
-            }}
-            isActive={isConfusionBarometerActive}
-            subscribeToMore={(): void => {
-              subscribeToMore({
-                document: ConfusionAddedSubscription,
-                updateQuery: (prev, { subscriptionData }): any => {
-                  if (!subscriptionData.data) return prev
-                  return {
-                    ...prev,
-                    runningSession: {
-                      ...prev.runningSession,
-                      confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
+          <div className="flex-1 md:pl-4 max-w-[40%]">
+            <ConfusionBarometer
+              confusionTS={confusionTS}
+              handleActiveToggle={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isConfusionBarometerActive: !isConfusionBarometerActive,
                     },
-                  }
-                },
-                variables: { sessionId },
-              })
-            }}
-          />
-        </div> */}
+                  },
+                })
+              }}
+              isActive={isConfusionBarometerActive}
+              subscribeToMore={(): void => {
+                subscribeToMore({
+                  document: ConfusionAddedSubscription,
+                  updateQuery: (prev, { subscriptionData }): any => {
+                    if (!subscriptionData.data) return prev
+                    return {
+                      ...prev,
+                      runningSession: {
+                        ...prev.runningSession,
+                        confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
+                      },
+                    }
+                  },
+                  variables: { sessionId },
+                })
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

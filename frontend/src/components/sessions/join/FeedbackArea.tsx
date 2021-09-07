@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 
-import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
+import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
 import PublicFeedback from './PublicFeedback'
 
 interface Props {
@@ -47,8 +47,8 @@ function FeedbackArea({
   reactions,
   setReactions,
 }: Props): React.ReactElement {
-  // const [confusionDifficulty, setConfusionDifficulty] = useState()
-  // const [confusionSpeed, setConfusionSpeed] = useState()
+  const [confusionDifficulty, setConfusionDifficulty] = useState()
+  const [confusionSpeed, setConfusionSpeed] = useState()
   const [feedbackInputValue, setFeedbackInputValue] = useState('')
   const [processedFeedbacks, setProcessedFeedbacks] = useState({
     open: [],
@@ -86,41 +86,41 @@ function FeedbackArea({
     }))
   }, [feedbacks, upvotedFeedbacks, reactions])
 
-  // useEffect((): void => {
-  //   try {
-  //     if (window.sessionStorage) {
-  //       const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
-  //       setConfusionDifficulty(confusion.confusionDifficulty)
-  //       setConfusionSpeed(confusion.confusionSpeed)
-  //     }
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-  // }, [])
+  useEffect((): void => {
+    try {
+      if (window.sessionStorage) {
+        const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
+        setConfusionDifficulty(confusion.confusionDifficulty)
+        setConfusionSpeed(confusion.confusionSpeed)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
 
-  // const onNewConfusionTS = (): void => {
-  //   // send the new confusion entry to the server
-  //   handleNewConfusionTS({
-  //     difficulty: confusionDifficulty,
-  //     speed: confusionSpeed,
-  //   })
+  const onNewConfusionTS = (): void => {
+    // send the new confusion entry to the server
+    handleNewConfusionTS({
+      difficulty: confusionDifficulty,
+      speed: confusionSpeed,
+    })
 
-  //   // update the confusion cookie
-  //   try {
-  //     if (window.sessionStorage) {
-  //       sessionStorage.setItem(
-  //         `${shortname}-${sessionId}-confusion`,
-  //         JSON.stringify({
-  //           difficulty: confusionDifficulty,
-  //           speed: confusionSpeed,
-  //           timestamp: dayjs().unix(),
-  //         })
-  //       )
-  //     }
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-  // }
+    // update the confusion cookie
+    try {
+      if (window.sessionStorage) {
+        sessionStorage.setItem(
+          `${shortname}-${sessionId}-confusion`,
+          JSON.stringify({
+            difficulty: confusionDifficulty,
+            speed: confusionSpeed,
+            timestamp: dayjs().unix(),
+          })
+        )
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const onNewFeedback = (): void => {
     setFeedbackInputValue('')
@@ -261,14 +261,12 @@ function FeedbackArea({
         )}
       </div>
 
-      {/* {isConfusionBarometerActive && (
-        <div className="confusion">
-          <ConfusionSlider
+      {isConfusionBarometerActive && (
+        <div className="float-bottom">
+          <ConfusionDialog
             handleChange={(newValue): void => setConfusionSpeed(newValue)}
             handleChangeComplete={onNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-            max={5}
-            min={-5}
             title={
               <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
@@ -277,12 +275,10 @@ function FeedbackArea({
             value={confusionSpeed}
           />
 
-          <ConfusionSlider
+          <ConfusionDialog
             handleChange={(newValue): void => setConfusionDifficulty(newValue)}
             handleChangeComplete={onNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-            max={5}
-            min={-5}
             title={
               <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
@@ -291,7 +287,7 @@ function FeedbackArea({
             value={confusionDifficulty}
           />
         </div>
-      )} */}
+      )}
     </div>
   )
 }

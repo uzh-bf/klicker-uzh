@@ -1,5 +1,5 @@
 import React from 'react'
-import {
+/*import {
   Legend,
   Line,
   LineChart,
@@ -9,7 +9,7 @@ import {
   YAxis,
   CartesianGrid,
   Label,
-} from 'recharts'
+} from 'recharts'*/
 import { FormattedMessage } from 'react-intl'
 
 interface Props {
@@ -32,27 +32,10 @@ function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
 
           // otherwise render a chart
           return (
-            <ResponsiveContainer>
-              <LineChart
-                data={data}
-                margin={{
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                }}
-              >
-                <CartesianGrid strokeDasharray="5 5" />
-                <XAxis dataKey="timestamp" padding={{ right: 10 }} />
-                <YAxis domain={[-5, 5]} minTickGap={1} padding={{ bottom: 10, top: 10 }} ticks={[-5, -2.5, 0, 2.5, 5]}>
-                  <Label angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} value={ylabel} />
-                </YAxis>
-                <ReferenceLine stroke="black" y={0} />
-                <Line dataKey="value" stroke="lightgrey" type="monotone" />
-                <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
-                <Legend />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <div>Value: {data[data.length - 1].value}</div>
+              <div>Running Average: {data[data.length - 1].valueRunning}</div>
+            </>
           )
         })()}
       </div>
