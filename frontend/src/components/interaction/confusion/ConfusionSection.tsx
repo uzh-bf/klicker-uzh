@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { PureComponent } from 'react'
 /*import {
   Legend,
   Line,
@@ -11,14 +11,15 @@ import React from 'react'
   Label,
 } from 'recharts'*/
 import { FormattedMessage } from 'react-intl'
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface Props {
   data: any[]
   title: string
-  ylabel: string
+  xlabel: string[]
 }
 
-function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
+function ConfusionSection({ data, title, xlabel }: Props): React.ReactElement {
   return (
     <div className="confusionSection">
       <h3>{title}</h3>
@@ -30,9 +31,21 @@ function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
             return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
           }
 
-          // otherwise render a chart
+          // otherwise render a barchart
+
+          const HistData = data[data.length - 1].valueRunning.map((elem: any) => {
+            return { value: elem, title: xlabel[data[data.length - 1].valueRunning.indexOf(elem)] }
+          })
+          console.log(HistData)
+
           return (
             <>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart width={150} height={40} data={HistData}>
+                  <XAxis dataKey="title" />
+                  <Bar dataKey="value" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
               <div>Running Average: {data[data.length - 1].valueRunning.map((element: any) => element + ', ')}</div>
               <div>Number of Datapoints: {data.length}</div>
             </>

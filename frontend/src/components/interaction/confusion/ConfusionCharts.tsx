@@ -95,7 +95,9 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
           valueRunning: difficultyRunning,
         }))}
         title={intl.formatMessage(messages.difficultyTitle)}
-        ylabel={intl.formatMessage(messages.difficultyRange)}
+        // TODO: replace this line again by an intl string collection later on
+        //xlabel={intl.formatMessage(messages.difficultyRange)}
+        xlabel={['easy', 'optimal', 'hard']}
       />
       <ConfusionSection
         data={parsedTS.map(({ timestamp, speed, speedRunning }): any => ({
@@ -104,7 +106,9 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
           valueRunning: speedRunning,
         }))}
         title={intl.formatMessage(messages.speedTitle)}
-        ylabel={intl.formatMessage(messages.speedRange)}
+        // TODO: replace this line again by an intl string collection later on
+        //xlabel={intl.formatMessage(messages.speedRange)}
+        xlabel={['slow', 'optimal', 'fast']}
       />
     </>
   )
