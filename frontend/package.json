@@ -16,6 +16,9 @@
     "Luca Locher <luca.locher@bf.uzh.ch>",
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
+  "engines": {
+    "node": ">=14"
+  },
   "license": "AGPL-3.0",
   "dependencies": {
     "@formatjs/cli": "4.2.33",
