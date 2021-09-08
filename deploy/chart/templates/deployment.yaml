@@ -44,6 +44,8 @@ spec:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend
             - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-frontend
+            - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-common
           livenessProbe:
             httpGet:
