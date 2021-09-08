@@ -101,11 +101,11 @@ export default function createApolloClient(initialState, ctx) {
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         // TODO: log errors to sentry?
-        graphQLErrors.forEach(({ message, path, locations, extensions }) => {
+        graphQLErrors.forEach(({ message, path, locations }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
 
           // redirect the user to the login page on errors
-          if (isBrowser && (extensions.code === 'UNAUTHENTICATED' || extensions.code === 'INTERNAL_SERVER_ERROR')) {
+          if (isBrowser && message === 'UNAUTHORIZED') {
             Router.push('/user/login?expired=true')
           }
         })
