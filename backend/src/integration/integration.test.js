@@ -146,7 +146,11 @@ describe('Integration', () => {
   const questions = {}
 
   beforeAll(async () => {
-    ;({ userId: initialUserId, dummyId: initialDummyId, shortname: initialShortname } = await initializeDb({
+    ;({
+      userId: initialUserId,
+      dummyId: initialDummyId,
+      shortname: initialShortname,
+    } = await initializeDb({
       mongoose,
       email: 'testintegration@bf.uzh.ch',
       shortname: 'integr',
