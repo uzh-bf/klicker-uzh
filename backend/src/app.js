@@ -10,6 +10,7 @@ const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
 const { applyMiddleware } = require('graphql-middleware')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
+const { default: responseCachePlugin } = require('apollo-server-plugin-response-cache')
 
 // express middlewares
 const bodyParser = require('body-parser')
@@ -223,6 +224,7 @@ const schemaWithAuthentication = applyMiddleware(schema, permissions)
   // setup a new apollo server instance
   const apolloServer = new ApolloServer({
     schema: schemaWithAuthentication,
+    plugins: [responseCachePlugin()],
     context: async ({ connection, req, res }) => {
       // context handler for subscriptions
       if (connection) {

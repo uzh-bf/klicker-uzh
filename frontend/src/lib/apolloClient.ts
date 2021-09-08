@@ -9,7 +9,8 @@ import { onError } from '@apollo/client/link/error'
 import { getMainDefinition } from '@apollo/client/utilities'
 import { print, GraphQLError } from 'graphql'
 import { createClient, ClientOptions, Client } from 'graphql-ws'
-
+import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
+import { sha256 } from 'crypto-hash'
 // custom websocket link to make apollo work with graphql-ws
 // ref: https://www.npmjs.com/package/graphql-ws#apollo-client
 class WebSocketLink extends ApolloLink {
@@ -61,13 +62,15 @@ export default function createApolloClient(initialState, ctx) {
   }).restore(initialState || {})
 
   // initialize the basic http link for both SSR and client-side usage
-  let httpLink: any = new BatchHttpLink({
-    credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-    fetch,
-    uri: isBrowser
-      ? publicRuntimeConfig.apiUrl
-      : serverRuntimeConfig.apiUrlSSR || publicRuntimeConfig.apiUrl || 'http://localhost:4000/graphql',
-  })
+  let httpLink: any = createPersistedQueryLink({ sha256 }).concat(
+    new BatchHttpLink({
+      credentials: 'include', // Additional fetch() options like `credentials` or `headers`
+      fetch,
+      uri: isBrowser
+        ? publicRuntimeConfig.apiUrl
+        : serverRuntimeConfig.apiUrlSSR || publicRuntimeConfig.apiUrl || 'http://localhost:4000/graphql',
+    })
+  )
 
   // on the client, differentiate between websockets and http requests
   if (isBrowser) {
