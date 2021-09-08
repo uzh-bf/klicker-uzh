@@ -2,7 +2,7 @@ node_modules/
 .vscode/
 
 *.archive
-secrets.yaml
+secrets*.yaml
 .env
 
 *.DS_Store

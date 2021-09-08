@@ -1,0 +1,47 @@
+cache:
+  port: 32712
+
+s3:
+  endpoint: sos-ch-dk-2.exo.io
+  bucket: klicker-qa
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker-qa.bf-app.ch
+
+analytics:
+  sentry:
+    frontend:
+      environment: qa
+
+frontend:
+  hostname: app.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: app.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-tls
+        hosts:
+          - app.klicker-qa.bf-app.ch
+
+backend:
+  hostname: api.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: api.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-backend-tls
+        hosts:
+          - api.klicker-qa.bf-app.ch
