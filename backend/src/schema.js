@@ -1,4 +1,4 @@
-const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-iso-date')
+const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-scalars')
 
 const { requestPresignedURL } = require('./resolvers/files')
 
