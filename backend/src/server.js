@@ -1,4 +1,11 @@
 /* eslint-disable global-require */
+const { createServer } = require('http')
+const mongoose = require('mongoose')
+const { useServer } = require('graphql-ws/lib/use/ws')
+const ws = require('ws')
+
+const { app, schemaWithAuthentication } = require('./app')
+const { getRedis } = require('./redis')
 
 // import the configuration
 const CFG = require('./klicker.conf.js') // eslint-disable-line
@@ -21,22 +28,17 @@ if (SERVICES_CFG.apm.enabled) {
   })
 }
 
-const mongoose = require('mongoose')
-const { useServer } = require('graphql-ws/lib/use/ws')
-const ws = require('ws')
-
-const { app, schemaWithAuthentication } = require('./app')
-const { getRedis } = require('./redis')
-
 const redis = getRedis()
 
-const server = app.listen(APP_CFG.port, (err) => {
-  if (err) throw err
+const httpServer = createServer(app)
 
-  const wsServer = new ws.Server({
-    server,
-    path: '/graphql',
-  })
+const wsServer = new ws.Server({
+  server: httpServer,
+  path: '/graphql',
+})
+
+httpServer.listen(APP_CFG.port, (err) => {
+  if (err) throw err
 
   useServer({ schema: schemaWithAuthentication }, wsServer)
 

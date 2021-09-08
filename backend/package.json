@@ -19,7 +19,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@graphql-tools/schema": "8.2.0",
-    "apollo-server-express": "2.18.2",
+    "apollo-server-express": "3.3.0",
     "aws-sdk": "2.984.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
