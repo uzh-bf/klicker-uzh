@@ -35,7 +35,7 @@ const hasRedis = CACHE_CFG.redis.enabled
 
 // prepare page configuration
 const pages = [
-  { cached: CACHE_CFG.pages.landing, url: '/' },
+  { url: '/' },
   { url: '/user/login' },
   { url: '/user/registration' },
   { url: '/questions/create' },
