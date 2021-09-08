@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.3) (2021-09-08)
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+
 ## [1.6.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-beta.2) (2021-09-08)
 
 
