@@ -306,6 +306,11 @@ module.exports = convict({
         env: 'SERVICES_SENTRY_ENABLED',
         format: Boolean,
       },
+      environment: {
+        default: undefined,
+        env: 'SERVICES_SENTRY_ENV',
+        format: String,
+      },
     },
   },
 })
