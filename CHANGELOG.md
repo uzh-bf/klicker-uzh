@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.4) (2021-09-09)
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+
+
+### Other
+
+* disable caching of the landing page to reduce redis requests ([5a57fe2](https://github.com/uzh-bf/klicker-uzh/commit/5a57fe22468c8189a5a0653485fb44ff74d38bb4))
+* **release:** 1.6.0-beta.3 ([28f8c72](https://github.com/uzh-bf/klicker-uzh/commit/28f8c7227f49947c94caf92acd4e9a58ba2ac221))
+* remove cruft azure scripting ([4683abf](https://github.com/uzh-bf/klicker-uzh/commit/4683abfb5b1e6857b1a939fb28d8b4a9bc1becf9))
+
+
+### Deployment
+
+* add remaining labels to service selector ([7dd0feb](https://github.com/uzh-bf/klicker-uzh/commit/7dd0febea0f697e91d1371b39505cbd7e8cf9fb6))
+* ensure that the sentry auth token for frontend is read correctly ([d095b05](https://github.com/uzh-bf/klicker-uzh/commit/d095b057e95a42e96f36618a8c145ff4901d95f8))
+* split values of stage and qa env ([248614e](https://github.com/uzh-bf/klicker-uzh/commit/248614eec6e9731798fc72bc860f9e9fa5a3f6d0))
+* update resources and autoscale settings for services ([c0f8994](https://github.com/uzh-bf/klicker-uzh/commit/c0f89946a56cc2ad03464b6e9376bcae87e60c28))
+
 ## [1.6.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.3) (2021-09-08)
 
 
