@@ -115,13 +115,13 @@ def client(host='localhost', port=6379, password=None, db=0,
         r = RedisWrapper(unix_socket_path=unix_socket_path,
                         password=password,
                         db=db,
-                        charset=encoding, ssl=True)
+                        charset=encoding, ssl=True, ssl_cert_reqs=None)
     else:
         r = RedisWrapper(host=host,
                         port=port,
                         password=password,
                         db=db,
-                        charset=encoding, ssl=True)
+                        charset=encoding, ssl=True, ssl_cert_reqs=None)
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
@@ -312,6 +312,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
           unix_socket_path=None, encoding='utf-8', use_expireat=False):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
+    print(r.keys())
     if empty:
         _empty(r)
     table = json.loads(s)
@@ -321,6 +322,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         if not counter:
             p = r.pipeline(transaction=False)
         item = table[key]
+        print(item)
         type = item['type']
         value = item['value']
         ttl = item.get('ttl')
