@@ -4,6 +4,7 @@ cache:
 s3:
   endpoint: sos-ch-dk-2.exo.io
   bucket: klicker-qa
+  region: ch-dk-2
 
 email:
   from: klicker.support@uzh.ch

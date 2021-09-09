@@ -18,6 +18,7 @@ data:
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
   S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
+  S3_REGION: {{ .Values.s3.region | quote }}
   SECURITY_CORS_CREDENTIALS: "true"
   SECURITY_CORS_ORIGIN: {{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
   SECURITY_RATE_LIMIT_ENABLED: "true"
