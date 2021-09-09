@@ -220,24 +220,8 @@ export default function Index() {
                     <List.Item>
                       <List.Icon name="github" />
                       <List.Content>
-                        <a href="https://github.com/uzh-bf/klicker-react">
-                          klicker-react - React/NextJS Frontend
-                        </a>
-                      </List.Content>
-                    </List.Item>
-                    <List.Item>
-                      <List.Icon name="github" />
-                      <List.Content>
-                        <a href="https://github.com/uzh-bf/klicker-api">
-                          klicker-api - GraphQL/NodeJS API
-                        </a>
-                      </List.Content>
-                    </List.Item>
-                    <List.Item>
-                      <List.Icon name="github" />
-                      <List.Content>
                         <a href="https://github.com/uzh-bf/klicker-uzh">
-                          klicker-uzh - Documentation and Roadmap
+                          klicker-uzh - Github
                         </a>
                       </List.Content>
                     </List.Item>

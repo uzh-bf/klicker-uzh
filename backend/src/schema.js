@@ -1,4 +1,4 @@
-const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-iso-date')
+const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-scalars')
 
 const { requestPresignedURL } = require('./resolvers/files')
 
@@ -87,6 +87,17 @@ const typeDefs = [
   scalar Date
   scalar Time
   scalar DateTime
+
+  enum CacheControlScope {
+    PUBLIC
+    PRIVATE
+  }
+
+  directive @cacheControl(
+    maxAge: Int
+    scope: CacheControlScope
+    inheritMaxAge: Boolean
+  ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
   schema {
     query: Query

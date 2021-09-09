@@ -15,6 +15,7 @@ data:
   APP_TRUST_PROXY: "true"
   S3_ROOT_URL: "https://{{ .Values.s3.endpoint }}/{{ .Values.s3.bucket }}"
   SECURITY_CORS_ORIGIN: "{{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}"
+  NEXT_PUBLIC_DISPLAY_AAI: {{ .Values.frontend.displayAAI | quote }}
   # SECURITY_CSP_ENABLED: {{ .Values.security.csp.enabled | quote }}
   # SECURITY_CSP_REPORT_URI: {{ .Values.security.csp.reportUri | quote }}
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
@@ -25,5 +26,8 @@ data:
   # SERVICES_GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.analytics.google.trackingId | quote }}
   # SERVICES_LOGROCKET_APP_ID: {{ .Values.analytics.logrocket.appId | quote }}
   # SERVICES_LOGROCKET_ENABLED: {{ .Values.analytics.logrocket.enabled | quote }}
-  # SERVICES_SENTRY_DSN: {{ .Values.analytics.sentry.dsn | quote }}
-  # SERVICES_SENTRY_ENABLED: {{ .Values.analytics.sentry.enabled | quote }}
+  SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
+  SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
+  SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
+  SENTRY_PROJECT: {{ .Values.analytics.sentry.frontend.project | quote }}
+  SENTRY_ENV: {{ .Values.analytics.sentry.frontend.environment | quote }}

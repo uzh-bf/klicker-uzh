@@ -24,5 +24,6 @@ The following areas and buttons provide filtering options for the question list 
 10. **Sort**: Sort the questions according to their creation dates, last usage, question types or titles.
 11. **Sorting Order**: Order the questions in ascending or descending order.
 12. **Creation Menu** with options to [create a new question](question_create.md), [create a new session](session_create.md), and [import questions](advanced/question_export.md).
+13. **Further Options**: Possibility to delete or archive selected questions as well as to export them or save the statistic in a csv-File.
 
 To continue with the tutorial and create your first question, click on [Create Question](question_create.md).

@@ -1347,6 +1347,30 @@
       "value": "Open first block"
     }
   ],
+  "runningSession.checkboxes.open": [
+    {
+      "type": 0,
+      "value": "Open"
+    }
+  ],
+  "runningSession.checkboxes.resolved": [
+    {
+      "type": 0,
+      "value": "Resolved"
+    }
+  ],
+  "runningSession.checkboxes.unpinned": [
+    {
+      "type": 0,
+      "value": "Unpinned"
+    }
+  ],
+  "runningSession.checkboxes.unpublished": [
+    {
+      "type": 0,
+      "value": "Unpublished"
+    }
+  ],
   "runningSession.confusion.difficulty.Range": [
     {
       "type": 0,
@@ -1395,6 +1419,18 @@
       "value": "Publish feedbacks"
     }
   ],
+  "runningSession.info.nofeedbacks": [
+    {
+      "type": 0,
+      "value": "No feedbacks received yet..."
+    }
+  ],
+  "runningSession.info.nomatchingfeedbacks": [
+    {
+      "type": 0,
+      "value": "No feedbacks matching your current filter selection..."
+    }
+  ],
   "runningSession.message.feedbackSession": [
     {
       "type": 0,
@@ -1411,6 +1447,18 @@
     {
       "type": 0,
       "value": "Running Session"
+    }
+  ],
+  "runningSession.sorting.recency": [
+    {
+      "type": 0,
+      "value": "Sort by Recency"
+    }
+  ],
+  "runningSession.sorting.upvotes": [
+    {
+      "type": 0,
+      "value": "Sort by Upvotes"
     }
   ],
   "runningSession.string.downloadResponses": [
@@ -1449,10 +1497,28 @@
       "value": "This session is restricted to a predefined list of participants. For participant details, open the"
     }
   ],
+  "runningSession.switches.enableaudienceinteraction": [
+    {
+      "type": 0,
+      "value": "Enable Audience Interaction"
+    }
+  ],
+  "runningSession.switches.enablemoderation": [
+    {
+      "type": 0,
+      "value": "Enable Moderation"
+    }
+  ],
   "runningSession.title": [
     {
       "type": 0,
       "value": "Running Session"
+    }
+  ],
+  "runningSession.title.audienceinteraction": [
+    {
+      "type": 0,
+      "value": "Audience Interaction"
     }
   ],
   "session.authMode.aai": [

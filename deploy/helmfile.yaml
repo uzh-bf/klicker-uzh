@@ -1,10 +1,41 @@
 releases:
-  - name: '{{ env "RELEASE_NAME" | default "klicker-uzh" }}'
-    namespace: '{{ env "KUBE_NAMESPACE" | default "klicker-uzh" }}'
+  # - name: '{{ env "RELEASE_NAME" | default "klicker-uzh" }}'
+  #   namespace: '{{ env "KUBE_NAMESPACE" | default "klicker-uzh" }}'
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: {{ env "INSTALL" | default "true" }}
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/secrets.yaml
+  # - name: klicker-stage
+  #   namespace: klicker-stage
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: {{ env "INSTALL" | default "true" }}
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/values.stage.yaml
+  #     - chart/secrets.stage.yaml
+
+  - name: klicker-qa
+    namespace: klicker-qa
     createNamespace: true
     chart: ./chart
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
     installed: {{ env "INSTALL" | default "true" }}
     values:
       - chart/values.yaml
-      - chart/secrets.yaml
+      - chart/values.qa.yaml
+      - chart/secrets.qa.yaml
+
+  # - name: klicker-prod
+  #   namespace: klicker-prod
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: {{ env "INSTALL" | default "true" }}
+  #   values:
+  #     - chart/values.prod.yaml
+  #     - chart/secrets.prod.yaml

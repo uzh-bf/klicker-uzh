@@ -38,7 +38,7 @@ class IntlDocument extends Document<Props> {
     }
 
     return (
-      <Html lang={this.props.locale}>
+      <Html lang={this.props.lang}>
         <Head>
           <meta
             content="The KlickerUZH is an open-source instant-class-response system that supports the interaction between speakers and their audience."

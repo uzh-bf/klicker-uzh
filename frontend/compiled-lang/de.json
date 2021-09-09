@@ -1359,6 +1359,30 @@
       "value": "Ersten Frageblock aktivieren"
     }
   ],
+  "runningSession.checkboxes.open": [
+    {
+      "type": 0,
+      "value": "Offen"
+    }
+  ],
+  "runningSession.checkboxes.resolved": [
+    {
+      "type": 0,
+      "value": "Gelöst"
+    }
+  ],
+  "runningSession.checkboxes.unpinned": [
+    {
+      "type": 0,
+      "value": "Ungepinnt"
+    }
+  ],
+  "runningSession.checkboxes.unpublished": [
+    {
+      "type": 0,
+      "value": "Unveröffentlicht"
+    }
+  ],
   "runningSession.confusion.difficulty.Range": [
     {
       "type": 0,
@@ -1425,6 +1449,18 @@
       "value": "Feedback-Channel"
     }
   ],
+  "runningSession.info.nofeedbacks": [
+    {
+      "type": 0,
+      "value": "Bisher keine Feedbacks erhalten..."
+    }
+  ],
+  "runningSession.info.nomatchingfeedbacks": [
+    {
+      "type": 0,
+      "value": "Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein..."
+    }
+  ],
   "runningSession.message.feedbackSession": [
     {
       "type": 0,
@@ -1441,6 +1477,18 @@
     {
       "type": 0,
       "value": "Laufende Session"
+    }
+  ],
+  "runningSession.sorting.recency": [
+    {
+      "type": 0,
+      "value": "Nach Zeitpunkt sortieren"
+    }
+  ],
+  "runningSession.sorting.upvotes": [
+    {
+      "type": 0,
+      "value": "Nach Stimmen sortieren"
     }
   ],
   "runningSession.string.downloadResponses": [
@@ -1479,10 +1527,28 @@
       "value": "Diese Session ist nur für vordefinierte Teilnehmer zugänglich. Für Teilnehmerdetails öffnen Sie die"
     }
   ],
+  "runningSession.switches.enableaudienceinteraction": [
+    {
+      "type": 0,
+      "value": "Publikumsinteraktion aktivieren"
+    }
+  ],
+  "runningSession.switches.enablemoderation": [
+    {
+      "type": 0,
+      "value": "Moderation aktivieren"
+    }
+  ],
   "runningSession.title": [
     {
       "type": 0,
       "value": "Laufende Session"
+    }
+  ],
+  "runningSession.title.audienceinteraction": [
+    {
+      "type": 0,
+      "value": "Publikumsinteraktion"
     }
   ],
   "session.button.completed.content": [
