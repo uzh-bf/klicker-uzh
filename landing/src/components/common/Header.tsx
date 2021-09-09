@@ -16,13 +16,13 @@ function Header() {
             </Link>
           </div>
 
-          <Menu text as="nav">
+          <Menu text as="nav" stackable>
             <Menu.Item>
               <Link href="/">Home</Link>
             </Menu.Item>
 
             <Menu.Item>
-              <Link href="/roadmap">Roadmap</Link>
+              <Link href="/roadmap">Roadmap &amp; Get Involved</Link>
             </Menu.Item>
 
             <Menu.Item>
@@ -35,7 +35,7 @@ function Header() {
 
             <Menu.Item>
               <ScrollLink to="footer" smooth duration={500} offset={-50}>
-                <a className="cursor-pointer">Contact Us</a>
+                <a className="cursor-pointer">Contact</a>
               </ScrollLink>
             </Menu.Item>
 

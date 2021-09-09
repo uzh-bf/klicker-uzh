@@ -10,6 +10,7 @@ const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
 const { applyMiddleware } = require('graphql-middleware')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
+const { default: responseCachePlugin } = require('apollo-server-plugin-response-cache')
 
 // express middlewares
 const bodyParser = require('body-parser')
@@ -219,77 +220,82 @@ const pe = new PrettyError()
 const schema = makeExecutableSchema({ typeDefs, resolvers })
 const schemaWithAuthentication = applyMiddleware(schema, permissions)
 
-// setup a new apollo server instance
-const apollo = new ApolloServer({
-  schema: schemaWithAuthentication,
-  context: async ({ connection, req, res }) => {
-    // context handler for subscriptions
-    if (connection) {
-      return {}
-    }
-
-    // context handler for normal requests
-    return {
-      auth: req.auth,
-      ip: req.ip,
-      loaders: createLoaders(req.auth),
-      res,
-    }
-  },
-  engine: SERVICES_CFG.apolloEngine.enabled && {
-    apiKey: SERVICES_CFG.apolloEngine.apiKey,
-  },
-  formatError: (e) => {
-    console.log(pe.render(e))
-
-    if (isProd && Raven) {
-      if (e.path || e.name !== 'GraphQLError') {
-        Raven.captureException(e, {
-          tags: { graphql: 'exec_error' },
-          extra: {
-            source: e.source && e.source.body,
-            positions: e.locations,
-            path: e.path,
-          },
-        })
-      } else {
-        Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
-          tags: { graphql: 'wrong_query' },
-          extra: {
-            source: e.source && e.source.body,
-            positions: e.locations,
-            path: e.path,
-          },
-        })
+;(async () => {
+  // setup a new apollo server instance
+  const apolloServer = new ApolloServer({
+    schema: schemaWithAuthentication,
+    plugins: [responseCachePlugin()],
+    context: async ({ connection, req, res }) => {
+      // context handler for subscriptions
+      if (connection) {
+        return {}
       }
-    }
 
-    return e
-    /* return {
+      // context handler for normal requests
+      return {
+        auth: req.auth,
+        ip: req.ip,
+        loaders: createLoaders(req.auth),
+        res,
+      }
+    },
+    // engine: SERVICES_CFG.apolloEngine.enabled && {
+    //   apiKey: SERVICES_CFG.apolloEngine.apiKey,
+    // },
+    formatError: (e) => {
+      console.log(pe.render(e))
+
+      if (isProd && Raven) {
+        if (e.path || e.name !== 'GraphQLError') {
+          Raven.captureException(e, {
+            tags: { graphql: 'exec_error' },
+            extra: {
+              source: e.source && e.source.body,
+              positions: e.locations,
+              path: e.path,
+            },
+          })
+        } else {
+          Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
+            tags: { graphql: 'wrong_query' },
+            extra: {
+              source: e.source && e.source.body,
+              positions: e.locations,
+              path: e.path,
+            },
+          })
+        }
+      }
+
+      return e
+      /* return {
       message: e.message,
       stack: isDev ? e.stack && e.stack.split('\n') : null,
     } */
-  },
-})
+    },
+  })
 
-// apply the apollo middleware to express
-apollo.applyMiddleware({
-  app,
-  cors: false,
-  bodyParserConfig: false,
-  onHealthCheck: async () => {
-    // check connection to mongo
-    if (!mongoose.connection.readyState) {
-      console.error('[klicker-react] MongoDB connection failure...')
-      throw new Error('MONGODB_CONNECTION_ERROR')
-    }
+  await apolloServer.start()
 
-    // check connection to redis
-    if (redisCache && redisCache.status !== 'ready') {
-      console.error('[klicker-react] Redis connection failure...')
-      throw new Error('REDIS_CONNECTION_ERROR')
-    }
-  },
-})
+  // apply the apollo middleware to express
+  apolloServer.applyMiddleware({
+    app,
+    cors: false,
+    bodyParserConfig: false,
+    onHealthCheck: async () => {
+      // check connection to mongo
+      if (!mongoose.connection.readyState) {
+        console.error('[klicker-react] MongoDB connection failure...')
+        throw new Error('MONGODB_CONNECTION_ERROR')
+      }
 
-module.exports = { app, apollo, schemaWithAuthentication }
+      // check connection to redis
+      if (redisCache && redisCache.status !== 'ready') {
+        console.error('[klicker-react] Redis connection failure...')
+        throw new Error('REDIS_CONNECTION_ERROR')
+      }
+    },
+  })
+})()
+
+module.exports = { app, schemaWithAuthentication }

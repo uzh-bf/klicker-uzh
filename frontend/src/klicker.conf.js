@@ -303,8 +303,23 @@ module.exports = convict({
       },
       enabled: {
         default: false,
-        env: 'SERVICES_SENTRY_ENABLED',
+        env: 'SENTRY_ENABLED',
         format: Boolean,
+      },
+      environment: {
+        default: undefined,
+        env: 'SENTRY_ENV',
+        format: String,
+      },
+      url: {
+        default: 'https://sentry.io',
+        env: 'SENTRY_URL',
+        format: 'url',
+      },
+      tracesSampleRate: {
+        default: 1,
+        env: 'SENTRY_SAMPLE_RATE',
+        format: Number,
       },
     },
   },

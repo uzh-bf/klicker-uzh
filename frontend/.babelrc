@@ -16,7 +16,7 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv"]
+      "plugins": ["import-graphql", "inline-dotenv"]
     },
     "production": {
       "presets": [
@@ -42,7 +42,7 @@
           }
         ]
       ],
-      "plugins": ["transform-inline-environment-variables"]
+      "plugins": ["import-graphql", "transform-inline-environment-variables"]
     },
     "test": {
       "presets": [
