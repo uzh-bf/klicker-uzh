@@ -110,18 +110,18 @@ class RedisWrapper(redis.Redis):
             return p.expireat(key, int(time))
 
 def client(host='localhost', port=6379, password=None, db=0,
-                 unix_socket_path=None, encoding='utf-8'):
+                 unix_socket_path=None, encoding='utf-8', ssl=False):
     if unix_socket_path is not None:
         r = RedisWrapper(unix_socket_path=unix_socket_path,
                         password=password,
                         db=db,
-                        charset=encoding, ssl=True, ssl_cert_reqs=None)
+                        charset=encoding, ssl=ssl, ssl_cert_reqs=None)
     else:
         r = RedisWrapper(host=host,
                         port=port,
                         password=password,
                         db=db,
-                        charset=encoding, ssl=True, ssl_cert_reqs=None)
+                        charset=encoding, ssl=ssl, ssl_cert_reqs=None)
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
@@ -309,9 +309,9 @@ def _empty(r):
         r.delete(key)
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
-          unix_socket_path=None, encoding='utf-8', use_expireat=False):
+          unix_socket_path=None, encoding='utf-8', use_expireat=False, ssl=False):
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path=unix_socket_path, encoding=encoding)
+               unix_socket_path=unix_socket_path, encoding=encoding, ssl=ssl)
     print(r.keys())
     if empty:
         _empty(r)
