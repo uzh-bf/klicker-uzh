@@ -44,55 +44,78 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
       </Menu.Item>
 
       <Modal
+        open={open}
+        size="fullscreen"
+        trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
+        // width={200}
         onClose={() => setOpen(false)}
         onOpen={() => setOpen(true)}
-        open={open}
-        trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
-        width={200}
       >
-        <Modal.Header>Support</Modal.Header>
         <Modal.Content>
-          <Modal.Description>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
-                <a href="https://uzh-bf.github.io/klicker-uzh/" rel="noopener noreferrer" target="_blank">
-                  <Icon name="file alternate outline" size="massive" color="black" />
-                  <Header>
-                    <Header.Content>
-                      Documentation
-                      <Header.Subheader>User manual, Features and more</Header.Subheader>
-                    </Header.Content>
-                  </Header>
-                </a>
-              </div>
-              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
+          <div className="flex flex-row flex-wrap">
+            <div className="flex flex-col flex-1 md:pr-4">
+              <div className="p-4 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
                 <a
-                  href="https://forms.clickup.com/f/4dv27-1781/Z5ZVQBCR5R5FXXPB0Q"
+                  href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <Icon name="comment outline" size="massive" color="black" />
-                  <Header>
+                  <Header size="small">
+                    <Icon name="book" />
                     <Header.Content>
-                      Feedback
-                      <Header.Subheader>Tell us about your opinion on KlickerUZH</Header.Subheader>
+                      Documentation
+                      <Header.Subheader>User Manual, Feature Overview, etc.</Header.Subheader>
                     </Header.Content>
                   </Header>
                 </a>
               </div>
-              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a href="https://uzh-bf.github.io/klicker-uzh/docs/faq/faq" rel="noopener noreferrer" target="_blank">
+                  <Header size="small">
+                    <Icon name="question" />
+
+                    <Header.Content>
+                      FAQ
+                      <Header.Subheader>Frequently Asked Questions</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a href="https://github.com/uzh-bf/klicker-uzh" rel="noopener noreferrer" target="_blank">
+                  <Header size="small">
+                    <Icon name="code" />
+                    <Header.Content>
+                      Github Repository
+                      <Header.Subheader>Source Code and Discussions</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
                 <a href="mailto:klicker.support@uzh.ch">
-                  <Icon name="mail outline" size="massive" color="black" />
-                  <Header>
+                  <Header size="small">
+                    <Icon name="mail outline" />
                     <Header.Content>
                       Contact
-                      <Header.Subheader>klicker.support@uzh.ch</Header.Subheader>
+                      <Header.Subheader>Email to klicker.support@uzh.ch</Header.Subheader>
                     </Header.Content>
                   </Header>
                 </a>
               </div>
             </div>
-          </Modal.Description>
+            <div className="mt-4 md:mt-0 flex-1 min-w-[500px] min-h-[800px]">
+              <iframe
+                className="clickup-embed clickup-dynamic-height"
+                height="100%"
+                src="https://forms.clickup.com/f/4dv27-1781/Z5ZVQBCR5R5FXXPB0Q"
+                // style="background: transparent; border: 1px solid #ccc;"
+                title="ClickUp Feedback Form"
+                width="100%"
+                // onWheel=""
+              />
+            </div>
+          </div>
         </Modal.Content>
       </Modal>
 
