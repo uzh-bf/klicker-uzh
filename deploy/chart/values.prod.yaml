@@ -13,11 +13,23 @@ email:
 
 security:
   domain: klicker.uzh.ch
+  hsts:
+    enabled: true
+  csp:
+    enabled: true
+  expectCt:
+    enabled: true
+  frameguard:
+    enabled: true
 
 analytics:
   sentry:
     frontend:
       environment: prod
+  logrocket:
+    enabled: true
+  google:
+    enabled: true
 
 frontend:
   replicaCount: 1
