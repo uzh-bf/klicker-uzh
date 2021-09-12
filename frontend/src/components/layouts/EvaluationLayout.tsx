@@ -309,6 +309,11 @@ function EvaluationLayout({
               onChangeType={onChangeVisualizationType}
             />
           )}
+          {showFeedback && (
+            <div className="print:hidden">
+              <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
+            </div>
+          )}
         </div>
 
         <div className="chart">{children}</div>
