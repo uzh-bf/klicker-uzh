@@ -13,6 +13,7 @@ query EvaluateSession($sessionId: ID!) {
         negativeReactions
         createdAt
       }
+      createdAt
     }
     confusionTS {
       id
