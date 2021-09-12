@@ -13,9 +13,9 @@ data:
   APP_JOIN_URL: "{{ .Values.frontend.hostname }}/join"
   APP_PERSIST_QUERIES: "false"
   APP_TRUST_PROXY: "true"
+  APP_WITH_AAI: {{ .Values.frontend.displayAAI | quote }}
   S3_ROOT_URL: "https://{{ .Values.s3.endpoint }}/{{ .Values.s3.bucket }}"
   SECURITY_CORS_ORIGIN: "{{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}"
-  NEXT_PUBLIC_DISPLAY_AAI: {{ .Values.frontend.displayAAI | quote }}
   # SECURITY_CSP_ENABLED: {{ .Values.security.csp.enabled | quote }}
   # SECURITY_CSP_REPORT_URI: {{ .Values.security.csp.reportUri | quote }}
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}

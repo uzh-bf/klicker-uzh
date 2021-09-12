@@ -54,6 +54,11 @@ module.exports = convict({
       env: 'APP_TRUST_PROXY',
       format: Boolean,
     },
+    withAai: {
+      default: false,
+      env: 'APP_WITH_AAI',
+      format: Boolean,
+    },
   },
   cache: {
     pages: {

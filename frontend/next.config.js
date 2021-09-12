@@ -31,6 +31,7 @@ module.exports = (phase) => {
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
       withFingerprinting: SECURITY_CFG.fingerprinting,
+      withAai: APP_CFG.withAai,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
