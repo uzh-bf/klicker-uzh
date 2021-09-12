@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.0...v1.6.0-rc.1) (2021-09-12)
+
+
+### Other
+
+* bump chart appVersion ([6d0f508](https://github.com/uzh-bf/klicker-uzh/commit/6d0f508920440d8773307eddbb690f2da267a27a))
+
+
+### Enhancements
+
+* add APP_WITH_AAI configuration parameter to enable aai login on prod ([90b27e8](https://github.com/uzh-bf/klicker-uzh/commit/90b27e88faf349750e316c8801f04c0dea19b861))
+
 ## [1.6.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-rc.0) (2021-09-12)
 
 
