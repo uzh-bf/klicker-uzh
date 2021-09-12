@@ -20,7 +20,7 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
             Feedbacks / Questions
             <Button basic className="float-right !m-0" icon="print" onClick={() => window.print()} />
           </div>
-          <div className="text-xl font-bold mb-4 bg-red-200 hidden print:block">Feedbacks</div>
+          <div className="text-xl font-bold mb-4 bg-red-200 hidden print:block">Feedbacks / Questions</div>
         </>
       )}
       {feedbacks
@@ -55,6 +55,23 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
           )
         )}
     </div>
+
+    /* Simplified View
+    <div>
+      <div className="text-lg font-bold mb-6 print:hidden">
+        Feedbacks / Questions
+        <Button basic className="float-right !m-0" icon="print" onClick={() => window.print()} />
+      </div>
+      <div className="text-xl font-bold mb-4 bg-red-200 hidden print:block">Feedbacks / Questions</div>
+
+      {feedbacks.map(
+        (feedback: any): React.ReactElement => (
+          <>
+            <FeedbackBlock feedback={feedback} />
+          </>
+        )
+      )}
+    </div>*/
   )
 }
 
