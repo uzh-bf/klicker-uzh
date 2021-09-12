@@ -9,8 +9,8 @@ interface Props {
 }
 
 function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
-  const simpleFeedbackAmount = feedbacks.filter((feedback: any) => feedback.responses.length == 0).length
-  const answeredQuestionsAmount = feedbacks.filter((feedback: any) => feedback.responses.length > 0).length
+  const simpleFeedbackAmount = feedbacks.filter((feedback: any) => feedback.resolved == false).length
+  const answeredQuestionsAmount = feedbacks.filter((feedback: any) => feedback.resolved == true).length
 
   return (
     <div>
@@ -24,7 +24,7 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
         </>
       )}
       {feedbacks
-        .filter((feedback: any) => feedback.responses.length == 0)
+        .filter((feedback: any) => feedback.resolved == false)
         .map(
           (feedback: any): React.ReactElement => (
             <>
@@ -48,7 +48,7 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
         </>
       )}
       {feedbacks
-        .filter((feedback: any) => feedback.responses.length > 0)
+        .filter((feedback: any) => feedback.resolved == true)
         .map(
           (feedback: any): React.ReactElement => (
             <FeedbackBlock feedback={feedback} />

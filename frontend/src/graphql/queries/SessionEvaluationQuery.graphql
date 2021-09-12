@@ -6,6 +6,8 @@ query EvaluateSession($sessionId: ID!) {
       id
       content
       votes
+      createdAt
+      resolved
       responses {
         id
         content
@@ -13,7 +15,6 @@ query EvaluateSession($sessionId: ID!) {
         negativeReactions
         createdAt
       }
-      createdAt
     }
     confusionTS {
       id
