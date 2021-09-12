@@ -47,7 +47,7 @@ analytics:
     trackingId: UA-33258666-18
 
 frontend:
-  replicaCount: 2
+  replicaCount: 1
 
   displayAAI: false
 
@@ -74,9 +74,9 @@ frontend:
       memory: 1Gi
 
   autoscaling:
-    enabled: true
-    minReplicas: 2
-    maxReplicas: 5
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 6
     targetCPUUtilizationPercentage: 60
     targetMemoryUtilizationPercentage: 70
 
@@ -87,7 +87,7 @@ frontend:
   affinity: {}
 
 backend:
-  replicaCount: 2
+  replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend
@@ -112,9 +112,9 @@ backend:
       memory: 1Gi
 
   autoscaling:
-    enabled: true
-    minReplicas: 2
-    maxReplicas: 5
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 6
     targetCPUUtilizationPercentage: 60
     targetMemoryUtilizationPercentage: 70
 
