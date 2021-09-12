@@ -1,0 +1,61 @@
+cache:
+  port: 32705
+
+s3:
+  endpoint: tc-klicker-prod.s3.amazonaws.com
+  bucket: images
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker-uzh.bf-app.ch
+
+analytics:
+  sentry:
+    frontend:
+      environment: prod
+
+frontend:
+  hostname: app.klicker-uzh.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: app.klicker-uzh.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      # - host: app.klicker.uzh.ch
+      #   paths:
+      #     - path: /
+      #       pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-uzh-frontend-tls
+        hosts:
+          - app.klicker-uzh.bf-app.ch
+      # - secretName: klicker-prod-frontend-tls
+      #   hosts:
+      #     - app.klicker.uzh.ch
+
+backend:
+  hostname: api.klicker-uzh.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: api.klicker-uzh.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      # - host: api.klicker.uzh.ch
+      #   paths:
+      #     - path: /
+      #       pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-uzh-backend-tls
+        hosts:
+          - api.klicker-uzh.bf-app.ch
+      # - secretName: klicker-prod-backend-tls
+      #   hosts:
+      #     - api.klicker.uzh.ch
