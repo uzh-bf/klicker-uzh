@@ -27,7 +27,7 @@ frontend:
   hostname: app.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
+    enabled: true
 
   ingress:
     hosts:
@@ -49,7 +49,7 @@ backend:
   hostname: api.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
+    enabled: true
 
   ingress:
     hosts:
