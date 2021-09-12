@@ -24,6 +24,6 @@ data:
   SECURITY_RATE_LIMIT_ENABLED: "true"
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
   # SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.backend | quote }}
-  # SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
+  SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
   # SERVICES_SENTRY_ENABLED: {{ .Values.analytics.sentry.enabled | quote }}
   # SERVICES_SENTRY_DSN: {{ .Values.analytics.sentry.backend | quote }}
