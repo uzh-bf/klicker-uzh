@@ -11,7 +11,7 @@ const defaultProps = {
 
 function Info({ totalResponses }: Props): React.ReactElement {
   return (
-    <div className="info">
+    <div className="info print:hidden">
       <FormattedMessage defaultMessage="Total participants:" id="evaluation.totalParticipants.label" /> {totalResponses}
     </div>
   )

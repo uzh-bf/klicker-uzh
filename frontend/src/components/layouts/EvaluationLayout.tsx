@@ -178,7 +178,7 @@ function EvaluationLayout({
           }
 
           return (
-            <div className="instanceChooser">
+            <div className="instanceChooser print:!hidden">
               <Menu fitted tabular>
                 <Menu.Item
                   className="hoverable"
@@ -260,7 +260,7 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails">
+        <div className="questionDetails print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
             {(showQuestionLayout && description) ||
               (showFeedback && 'Feedback-Channel') ||
