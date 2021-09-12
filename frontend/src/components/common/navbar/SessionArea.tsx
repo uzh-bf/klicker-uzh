@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
-import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, Modal, Header } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 const messages = defineMessages({
@@ -25,6 +25,8 @@ const defaultProps = {
 
 function SessionArea({ sessionId }: Props): React.ReactElement {
   const intl = useIntl()
+  const [open, setOpen] = React.useState(false)
+
   return (
     <>
       <Menu.Item>
@@ -41,50 +43,58 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
         </Button>
       </Menu.Item>
 
-      <Popup
-        basic
-        hoverable
-        closeOnDocumentClick={false}
-        closeOnPortalMouseLeave={false}
-        closeOnTriggerMouseLeave={false}
-        hideOnScroll={false}
-        on="click"
-        position="bottom right"
+      <Modal
+        onClose={() => setOpen(false)}
+        onOpen={() => setOpen(true)}
+        open={open}
         trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
+        width={200}
       >
-        <Popup.Content>
-          <div className="popupHelp popupContent">
-            <a href="mailto:klicker.support@uzh.ch">
-              <Button fluid icon labelPosition="left">
-                <Icon name="mail" />
-                klicker.support@uzh.ch
-              </Button>
-            </a>
-
-            <a href="https://uzh-bf.github.io/klicker-uzh/" rel="noopener noreferrer" target="_blank">
-              <Button fluid icon labelPosition="left">
-                <Icon name="external" />
-                Documentation
-              </Button>
-            </a>
-
-            {/* <Modal
-              closeIcon
-              trigger={
-                <Button fluid icon labelPosition="left">
-                  <Icon name="video" />
-                  Introductory Video
-                </Button>
-              }
-            >
-              <Modal.Header>Introductory Video</Modal.Header>
-              <Modal.Content>
-                <Embed id="Dpx7BWKeqlo" source="youtube" />
-              </Modal.Content>
-            </Modal> */}
-          </div>
-        </Popup.Content>
-      </Popup>
+        <Modal.Header>Support</Modal.Header>
+        <Modal.Content>
+          <Modal.Description>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
+                <a href="https://uzh-bf.github.io/klicker-uzh/" rel="noopener noreferrer" target="_blank">
+                  <Icon name="file alternate outline" size="massive" color="black" />
+                  <Header>
+                    <Header.Content>
+                      Documentation
+                      <Header.Subheader>User manual, Features and more</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
+                <a
+                  href="https://forms.clickup.com/f/4dv27-1781/Z5ZVQBCR5R5FXXPB0Q"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <Icon name="comment outline" size="massive" color="black" />
+                  <Header>
+                    <Header.Content>
+                      Feedback
+                      <Header.Subheader>Tell us about your opinion on KlickerUZH</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="hover:bg-gray-200 hover:cursor-pointer rounded-lg p-4">
+                <a href="mailto:klicker.support@uzh.ch">
+                  <Icon name="mail outline" size="massive" color="black" />
+                  <Header>
+                    <Header.Content>
+                      Contact
+                      <Header.Subheader>klicker.support@uzh.ch</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+            </div>
+          </Modal.Description>
+        </Modal.Content>
+      </Modal>
 
       <style jsx>{`
         h3 {
