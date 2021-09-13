@@ -24,7 +24,7 @@ releases:
     createNamespace: true
     chart: ./chart
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: {{ env "INSTALL" | default "true" }}
+    installed: false
     values:
       - chart/values.yaml
       - chart/values.qa.yaml
