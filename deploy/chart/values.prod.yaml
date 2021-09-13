@@ -48,9 +48,6 @@ frontend:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-tls
-        hosts:
-          - app.klicker.uzh.ch
       - secretName: klicker-prod-frontend-tls
         hosts:
           - app.klicker.uzh.ch
@@ -70,9 +67,6 @@ backend:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-tls
-        hosts:
-          - api.klicker.uzh.ch
       - secretName: klicker-prod-backend-tls
         hosts:
           - api.klicker.uzh.ch
