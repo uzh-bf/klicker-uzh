@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.1...v1.6.0-rc.2) (2021-09-13)
+
+
+### Bug Fixes
+
+* reverse the order of toast and intl provider as toast depends on intl ([f427484](https://github.com/uzh-bf/klicker-uzh/commit/f427484d37e52edb0deef78a70d359ab0c10040e))
+
+
+### Deployment
+
+* enable autoscaling for prod ([ff15bb5](https://github.com/uzh-bf/klicker-uzh/commit/ff15bb53e062ebaa5cb196bd171c7df3d8e3b7ed))
+* reapply additional production settings ([bcb163d](https://github.com/uzh-bf/klicker-uzh/commit/bcb163d27c6f51cb7a386e67e63c37a8f37d27e7))
+* update resource reservations and limits and autoscaling ([711e9ad](https://github.com/uzh-bf/klicker-uzh/commit/711e9ad024c85c4e2160592039edf63378ae47e1))
+* use letsencrypt-based tls ([8e241f9](https://github.com/uzh-bf/klicker-uzh/commit/8e241f9fa19f3e5026a9fd65d7be2275c955d829))
+
+
+### Other
+
+* reorganize docker-compose with one file at the root ([92687a4](https://github.com/uzh-bf/klicker-uzh/commit/92687a4fd106b143bb03ee3fa56a99d4a6917a59))
+
 ## [1.6.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.0...v1.6.0-rc.1) (2021-09-12)
 
 
