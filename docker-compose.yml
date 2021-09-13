@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:5.0.9
+    ports:
+      - 6379:6379
+    networks:
+      - klicker-dev
+    volumes:
+      - /data
+
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker-dev
+
+networks:
+  klicker-dev:
+    driver: bridge
