@@ -41,13 +41,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-common
-            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-frontend
-            - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-common
           livenessProbe:
             httpGet:
               path: /
@@ -114,11 +110,7 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-common
-            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-backend
-            - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-common
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend
           livenessProbe:

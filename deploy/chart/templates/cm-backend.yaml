@@ -12,6 +12,9 @@ data:
   APP_HTTPS: {{ .Values.security.https.enabled | quote }}
   APP_SECURE: {{ .Values.security.https.enabled | quote }}
   APP_TRUST_PROXY: "true"
+  CACHE_REDIS_HOST: {{ .Release.Name }}-redis-master
+  CACHE_REDIS_PORT: "6379"
+  CACHE_REDIS_TLS: "false"
   EMAIL_FROM: {{ .Values.email.from | quote }}
   EMAIL_HOST: {{ .Values.email.host | quote }}
   EMAIL_USER: {{ .Values.email.user | quote }}
@@ -27,3 +30,9 @@ data:
   SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
   # SERVICES_SENTRY_ENABLED: {{ .Values.analytics.sentry.enabled | quote }}
   # SERVICES_SENTRY_DSN: {{ .Values.analytics.sentry.backend | quote }}
+
+  {{- if .Values.backend.redis }}
+  EXEC_REDIS_HOST: {{ .Values.backend.redis.host | quote }}
+  EXEC_REDIS_PORT: {{ .Values.backend.redis.port | quote }}
+  EXEC_REDIS_TLS: {{ .Values.backend.redis.tls | quote }}
+  {{ end }}

@@ -8,16 +8,27 @@ podSecurityContext: {}
 
 securityContext: {}
 
-cache:
-  enabled: true
-  tls: true
+redis:
+  # architecture: standalone
+  auth:
+    enabled: true
+
+  master:
+    persistence:
+      enabled: false
+
+  replica:
+    replicaCount: 1
+
+    persistence:
+      enabled: false
 
 security:
   https:
     enabled: true
   csp:
     enabled: false
-    reportUri: ''
+    reportUri: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
   expectCt:
     enabled: false
     frontend: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
@@ -65,19 +76,13 @@ frontend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources:
-    requests:
-      cpu: 300m
-      memory: 256Mi
-    limits:
-      cpu: 600m
-      memory: 512Mi
+  resources: {}
 
   autoscaling:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 6
-    targetCPUUtilizationPercentage: 70
+    minReplicas: 2
+    maxReplicas: 7
+    targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
@@ -88,6 +93,8 @@ frontend:
 
 backend:
   replicaCount: 1
+
+  redis: {}
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend
@@ -103,20 +110,14 @@ backend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources:
-    requests:
-      cpu: 250m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
+  resources: {}
 
   autoscaling:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 6
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 70
+    minReplicas: 2
+    maxReplicas: 7
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 

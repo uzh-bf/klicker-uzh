@@ -1,10 +1,21 @@
 version: '3'
 
 services:
-  redis:
+  # redis instance to support session execution
+  redis_exec:
     image: redis:5.0.9
     ports:
       - 6379:6379
+    networks:
+      - klicker-dev
+    volumes:
+      - /data
+
+  # redis instance for page caching and rate limiting
+  redis_cache:
+    image: redis:5.0.9
+    ports:
+      - 6380:6379
     networks:
       - klicker-dev
     volumes:

@@ -82,6 +82,29 @@ module.exports = convict({
         format: 'Boolean',
       },
     },
+    exec: {
+      host: {
+        default: undefined,
+        env: 'EXEC_REDIS_HOST',
+        format: String,
+      },
+      password: {
+        default: undefined,
+        env: 'EXEC_REDIS_PASSWORD',
+        format: String,
+        sensitive: true,
+      },
+      port: {
+        default: 6379,
+        env: 'EXEC_REDIS_PORT',
+        format: 'port',
+      },
+      tls: {
+        default: false,
+        env: 'EXEC_REDIS_TLS',
+        format: 'Boolean',
+      },
+    },
   },
   email: {
     from: {

@@ -10,14 +10,14 @@ const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('.
 const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
-const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+// const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
 
 // initialize redis if available
 // const responseControl = getRedis(2)
-const responseCache = getRedis()
+const responseCache = getRedis('exec')
 
 /**
  * Add a new feedback to a session
@@ -310,11 +310,11 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
-  pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
-    sessionId,
-  })
+  // const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+  // pubsub.publish(CONFUSION_ADDED, {
+  //   [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
+  //   sessionId,
+  // })
 
   // return the updated session
   return session

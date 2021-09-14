@@ -160,7 +160,7 @@ module.exports = convict({
         format: Array,
       },
       imgSrc: {
-        default: ["'self'"],
+        default: ["'self'", 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.co'],
         env: 'SECURITY_CSP_IMG_SRC',
         format: Array,
       },
@@ -170,7 +170,7 @@ module.exports = convict({
         format: 'url',
       },
       scriptSrc: {
-        default: ["'self'", "'unsafe-inline'", 'cdn.polyfill.io'],
+        default: ["'self'", "'unsafe-inline'"],
         env: 'SECURITY_CSP_SCRIPT_SRC',
         format: Array,
       },
