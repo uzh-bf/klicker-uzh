@@ -1,6 +1,3 @@
-cache:
-  port: 32712
-
 s3:
   endpoint: sos-ch-dk-2.exo.io
   bucket: klicker-qa
@@ -35,6 +32,9 @@ frontend:
 
 backend:
   hostname: api.klicker-qa.bf-app.ch
+
+  redis:
+    tls: true
 
   ingress:
     hosts:

@@ -4,10 +4,10 @@ const { getRedis, newRedis } = require('../redis')
 
 let pubsub
 
-const redis = getRedis()
+const redis = getRedis('redis')
 if (redis) {
   // instantiate a new redis-based pubsub instance
-  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis() })
+  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis('redis') })
 } else {
   pubsub = new PubSub()
 }
