@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.3...v1.6.0-rc.4) (2021-09-17)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the redis password for exec instance is added to the secret ([c6fe6ea](https://github.com/uzh-bf/klicker-uzh/commit/c6fe6ea079bea480634924af00a6f53193be5918))
+* **frontend:** ensure that locale stays on page switches and does not revert to browser locale ([58cfa3e](https://github.com/uzh-bf/klicker-uzh/commit/58cfa3e731973ff0a7b34adf082c32105ff73aff))
+
+
+### Deployment
+
+* use appVersion v1.6.0-rc.3 ([b0887fb](https://github.com/uzh-bf/klicker-uzh/commit/b0887fbecb0d437aaa63d59c93f4ddcca900935a))
+
+
+### Enhancements
+
+* **deploy:** add minio to the local dev environment for improved default DX ([9ed8ac7](https://github.com/uzh-bf/klicker-uzh/commit/9ed8ac7d9af7214dadf18cc294a42626893c1ac3))
+
 ## [1.6.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.1...v1.6.0-rc.3) (2021-09-17)
 
 
