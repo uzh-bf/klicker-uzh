@@ -1,6 +1,6 @@
 {
   "name": "klicker-uzh",
-  "version": "1.6.0-rc.2",
+  "version": "1.6.0-rc.3",
   "description": "KlickerUZH instant-class-response system.",
   "scripts": {
     "release": "standard-version --no-verify",
