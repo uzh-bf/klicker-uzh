@@ -31,6 +31,23 @@ services:
     networks:
       - klicker-dev
 
+  # TODO: document having to create an images bucket and setting it to public
+  minio:
+    image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+
 networks:
   klicker-dev:
     driver: bridge
+
+volumes:
+  minio-data:
