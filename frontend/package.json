@@ -41,7 +41,7 @@
     "@types/react": "17.0.19",
     "@types/react-dom": "17.0.9",
     "autoprefixer": "10.3.4",
-    "axios": "0.21.1",
+    "axios": "0.21.2",
     "babel-plugin-formatjs": "10.3.8",
     "babel-plugin-import-graphql": "2.8.1",
     "babel-plugin-inline-dotenv": "1.6.0",
