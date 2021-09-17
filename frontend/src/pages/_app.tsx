@@ -31,11 +31,14 @@ class Klicker extends App<Props> {
     } = appContext
 
     const requestedLocales: string | string[] =
+      // use the locale as returned in SSR
       (req as any)?.locale ||
+      // use the locale as stored in the window when switching pages on the client
+      (typeof window !== 'undefined' && (window as any).LOCALE) ||
+      // use the language of the browser as a sane default
       (typeof navigator !== 'undefined' && navigator.languages) ||
       // IE11
       (typeof navigator !== 'undefined' && (navigator as any).userLanguage) ||
-      (typeof window !== 'undefined' && (window as any).LOCALE) ||
       'en'
 
     const [supportedLocale, messagePromise] = getMessages(requestedLocales)

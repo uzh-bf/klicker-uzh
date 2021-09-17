@@ -34,9 +34,7 @@
             "lodash": {
               "id": ["lodash", "recompose", "semantic-ui-react"]
             },
-            "react-intl": {
-              "idInterpolationPattern": "[sha512:contenthash:base64:6]",
-              "extractFromFormatMessageCall": true,
+            "formatjs": {
               "ast": true
             }
           }

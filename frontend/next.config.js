@@ -38,7 +38,7 @@ module.exports = (phase) => {
       rootDir: __dirname,
     },
     // setup custom webpack configuration
-    webpack: (webpackConfig) => {
+    webpack: (webpackConfig, { dev }) => {
       // ignore test files when bundling
       // webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
@@ -55,6 +55,12 @@ module.exports = (phase) => {
           { loader: 'graphql-tag/loader' },
         ],
       })
+
+      if (!dev) {
+        // https://formatjs.io/docs/guides/advanced-usage#react-intl-without-parser-40-smaller
+        webpackConfig.resolve.alias['@formatjs/icu-messageformat-parser'] =
+          '@formatjs/icu-messageformat-parser/no-parser'
+      }
 
       return webpackConfig
     },
