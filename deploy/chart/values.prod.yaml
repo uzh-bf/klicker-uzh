@@ -51,11 +51,11 @@ frontend:
 
   resources:
     requests:
-      cpu: 200m
-      memory: 200Mi
+      cpu: 250m
+      memory: 250Mi
     limits:
-      cpu: 400m
-      memory: 400Mi
+      cpu: 500m
+      memory: 500Mi
 
 backend:
   replicaCount: 1

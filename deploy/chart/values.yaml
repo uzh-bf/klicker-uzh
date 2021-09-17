@@ -11,7 +11,7 @@ securityContext: {}
 redis:
   # architecture: standalone
   auth:
-    enabled: true
+    enabled: false
 
   master:
     persistence:
