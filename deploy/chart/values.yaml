@@ -80,7 +80,7 @@ frontend:
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 7
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
@@ -114,7 +114,7 @@ backend:
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 7
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
