@@ -282,6 +282,7 @@ function Join(): React.ReactElement {
             handleUpvoteFeedback={onUpvoteFeedback}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
+            sessionId={sessionId}
             setReactions={setReactions}
             setUpvotedFeedbacks={setUpvotedFeedbacks}
             shortname={shortname}
