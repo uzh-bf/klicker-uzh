@@ -114,10 +114,12 @@ const permissions = shield(
       // TODO What is the criteria? Being logged in?
       confusionAdded: allow,
       feedbackAdded: allow,
+      feedbackResolved: allow,
+      feedbackResponseAdded: allow,
+      feedbackDeleted: allow,
       publicFeedbackAdded: allow,
       sessionUpdated: allow,
       runningSessionUpdated: allow,
-      feedbackDeleted: allow,
     },
   },
   { allowExternalErrors: true }

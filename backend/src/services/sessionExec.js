@@ -3,7 +3,7 @@ const v8n = require('v8n')
 const _trim = require('lodash/trim')
 const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
-const { v5: uuidv5 } = require('uuid')
+const { v5: uuidv5, v4: uuidv4 } = require('uuid')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
@@ -175,14 +175,16 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
 
   assertUserMatch(session, userId)
 
-  const updatedSesion = await SessionModel.findOneAndUpdate(
+  const newResponseId = uuidv4()
+
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
     },
     {
       $push: {
-        'feedbacks.$.responses': { content: response },
+        'feedbacks.$.responses': { id: newResponseId, content: response },
       },
       $set: {
         'feedbacks.$.resolved': true,
@@ -200,14 +202,15 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
 
   pubsub.publish(FEEDBACK_RESPONSE_ADDED, {
     [FEEDBACK_RESPONSE_ADDED]: {
-      id: '1',
+      feedbackId,
+      id: newResponseId,
       content: response,
-      createdAt: '',
+      createdAt: new Date(),
     },
     sessionId,
   })
 
-  return updatedSesion
+  return updatedSession
 }
 
 async function upvoteFeedback({ sessionId, feedbackId, undo }) {
