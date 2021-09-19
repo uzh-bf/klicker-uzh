@@ -18,8 +18,12 @@ const compareSessionId = (payload, variables) => payload.sessionId === variables
 /* ----- subscriptions ----- */
 const FEEDBACK_ADDED = 'feedbackAdded'
 const feedbackAddedSubscription = {
-  // resolve: {},
   subscribe: withFilter(() => pubsub.asyncIterator(FEEDBACK_ADDED), compareSessionId),
+}
+
+const PUBLIC_FEEDBACK_ADDED = 'publicFeedbackAdded'
+const publicFeedbackAddedSubscription = {
+  subscribe: withFilter(() => pubsub.asyncIterator(PUBLIC_FEEDBACK_ADDED), compareSessionId),
 }
 
 const CONFUSION_ADDED = 'confusionAdded'
@@ -43,6 +47,7 @@ module.exports = {
 
   // export subscriptions
   confusionAdded: confusionAddedSubscription,
+  publicFeedbackAdded: publicFeedbackAddedSubscription,
   feedbackAdded: feedbackAddedSubscription,
   sessionUpdated: sessionUpdatedSubscription,
   runningSessionUpdated: runningSessionUpdatedSubscription,
@@ -50,6 +55,7 @@ module.exports = {
   // export subscription types
   CONFUSION_ADDED,
   FEEDBACK_ADDED,
+  PUBLIC_FEEDBACK_ADDED,
   SESSION_UPDATED,
   RUNNING_SESSION_UPDATED,
 }

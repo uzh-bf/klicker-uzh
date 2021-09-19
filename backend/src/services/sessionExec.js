@@ -10,7 +10,7 @@ const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('.
 const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
-const { pubsub, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+const { pubsub, FEEDBACK_ADDED, PUBLIC_FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
@@ -45,11 +45,16 @@ const addFeedback = async ({ sessionId, content }) => {
   const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
   const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
 
+  pubsub.publish(FEEDBACK_ADDED, {
+    [FEEDBACK_ADDED]: savedFeedbackWithId,
+    sessionId,
+  })
+
   // if the feedback channel is public, publish the feedback directly
   // otherwise, it will need to be published after moderation
   if (session.settings.isFeedbackChannelPublic) {
-    pubsub.publish(FEEDBACK_ADDED, {
-      [FEEDBACK_ADDED]: savedFeedbackWithId,
+    pubsub.publish(PUBLIC_FEEDBACK_ADDED, {
+      [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
       sessionId,
     })
   }
@@ -110,9 +115,8 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
   if (publishState) {
     const savedFeedback = updatedSession.feedbacks.find((feedback) => feedback._id.toString() === feedbackId).toObject()
     const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
-    console.log(savedFeedbackWithId)
-    pubsub.publish(FEEDBACK_ADDED, {
-      [FEEDBACK_ADDED]: savedFeedbackWithId,
+    pubsub.publish(PUBLIC_FEEDBACK_ADDED, {
+      [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
       sessionId,
     })
   }

@@ -6,7 +6,7 @@ import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
 import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
-import FeedbackAddedSubscription from '../../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
+import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -48,14 +48,16 @@ function FeedbackArea({
   })
 
   useEffect(() => {
+    console.log('subscribing')
     return subscribeToMore({
-      document: FeedbackAddedSubscription,
+      document: PublicFeedbackAddedSubscription,
       variables: {
         sessionId,
       },
       updateQuery: (prev, { subscriptionData }) => {
+        console.warn(prev, subscriptionData)
         if (!subscriptionData.data) return prev
-        const newItem = subscriptionData.data.feedbackAdded
+        const newItem = subscriptionData.data.publicFeedbackAdded
         if (prev.joinQA.map((item) => item.id).includes(newItem.id)) return prev
         return { ...prev, joinQA: [newItem, ...prev.joinQA] }
       },

@@ -31,7 +31,6 @@ interface Props {
   handleDeleteFeedbackResponse: (id: string, responseId: string) => void
   isActive?: boolean
   isPublic?: boolean
-  subscribeToMore: any
 }
 
 const defaultProps = {
@@ -51,14 +50,7 @@ function FeedbackChannel({
   handleResolveFeedback,
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
-  subscribeToMore,
 }: Props) {
-  useEffect((): void => {
-    if (subscribeToMore) {
-      subscribeToMore()
-    }
-  }, [])
-
   const [searchString, setSearchString] = useState('')
   const [showResolved, setShowResolved] = useState(true)
   const [showUnpublished, setShowUnpublished] = useState(true)

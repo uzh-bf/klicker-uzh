@@ -77,7 +77,13 @@ const {
   checkAccountStatus,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
-const { confusionAdded, feedbackAdded, sessionUpdated, runningSessionUpdated } = require('./resolvers/subscriptions')
+const {
+  confusionAdded,
+  feedbackAdded,
+  publicFeedbackAdded,
+  sessionUpdated,
+  runningSessionUpdated,
+} = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
 // create graphql schema in schema language
@@ -175,7 +181,8 @@ const typeDefs = [
 
   type Subscription {
     confusionAdded(sessionId: ID!): Session_ConfusionTimestep
-    feedbackAdded(sessionId: ID!): Session_Feedback_Public
+    feedbackAdded(sessionId: ID!): Session_Feedback
+    publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
     sessionUpdated(sessionId: ID!): Session_Public
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
@@ -257,6 +264,7 @@ const resolvers = {
     // TODO: some form of authentication
     confusionAdded,
     feedbackAdded,
+    publicFeedbackAdded,
     sessionUpdated,
     runningSessionUpdated,
   },
