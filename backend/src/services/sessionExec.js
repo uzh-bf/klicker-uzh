@@ -10,7 +10,14 @@ const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('.
 const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
-const { pubsub, FEEDBACK_ADDED, PUBLIC_FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+const {
+  pubsub,
+  FEEDBACK_ADDED,
+  PUBLIC_FEEDBACK_ADDED,
+  FEEDBACK_DELETED,
+  FEEDBACK_RESOLVED,
+  FEEDBACK_RESPONSE_ADDED,
+} = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
@@ -286,7 +293,10 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     }
   )
 
-  // TODO: publish the deletion
+  pubsub.publish(FEEDBACK_DELETED, {
+    [FEEDBACK_DELETED]: feedbackId,
+    sessionId,
+  })
 
   // return the updated session
   return updatedSession

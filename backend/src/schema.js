@@ -83,6 +83,7 @@ const {
   publicFeedbackAdded,
   sessionUpdated,
   runningSessionUpdated,
+  feedbackDeleted,
 } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
@@ -182,6 +183,7 @@ const typeDefs = [
   type Subscription {
     confusionAdded(sessionId: ID!): Session_ConfusionTimestep
     feedbackAdded(sessionId: ID!): Session_Feedback
+    feedbackDeleted(sessionId: ID!): ID
     publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
     sessionUpdated(sessionId: ID!): Session_Public
     runningSessionUpdated(sessionId: ID!): Session_Update
@@ -267,6 +269,7 @@ const resolvers = {
     publicFeedbackAdded,
     sessionUpdated,
     runningSessionUpdated,
+    feedbackDeleted,
   },
   // map our own types
   Question: {
