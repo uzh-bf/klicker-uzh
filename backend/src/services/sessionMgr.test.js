@@ -18,7 +18,7 @@ expect.addSnapshotSerializer(questionInstanceSerializer)
 
 const prepareSession = prepareSessionFactory(SessionMgrService)
 
-const responseCache = getRedis()
+const responseCache = getRedis('exec')
 
 describe('SessionMgrService', () => {
   let sessionId
@@ -429,7 +429,7 @@ describe('SessionMgrService', () => {
       const { isConfusionBarometerActive, isFeedbackChannelActive, isFeedbackChannelPublic } = session.settings
       expect(isConfusionBarometerActive).toBeFalsy()
       expect(isFeedbackChannelActive).toBeFalsy()
-      expect(isFeedbackChannelPublic).toBeFalsy()
+      expect(isFeedbackChannelPublic).toBeTruthy()
       expect(session).toMatchSnapshot()
     })
 
