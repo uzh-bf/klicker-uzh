@@ -16,29 +16,18 @@ if (redis) {
 const compareSessionId = (payload, variables) => payload.sessionId === variables.sessionId
 
 /* ----- subscriptions ----- */
-const FEEDBACK_ADDED = 'feedbackAdded'
-const feedbackAddedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(FEEDBACK_ADDED), compareSessionId),
+function subscriptionWithSessionId(subscriptionType) {
+  return {
+    subscribe: withFilter(() => pubsub.asyncIterator(subscriptionType), compareSessionId),
+  }
 }
 
-const PUBLIC_FEEDBACK_ADDED = 'publicFeedbackAdded'
-const publicFeedbackAddedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(PUBLIC_FEEDBACK_ADDED), compareSessionId),
-}
-
-const CONFUSION_ADDED = 'confusionAdded'
-const confusionAddedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(CONFUSION_ADDED), compareSessionId),
-}
-
-const SESSION_UPDATED = 'sessionUpdated'
-const sessionUpdatedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(SESSION_UPDATED), compareSessionId),
-}
-
-const RUNNING_SESSION_UPDATED = 'runningSessionUpdated'
-const runningSessionUpdatedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(RUNNING_SESSION_UPDATED), compareSessionId),
+const subscriptionTypes = {
+  CONFUSION_ADDED: 'confusionAdded',
+  FEEDBACK_ADDED: 'feedbackAdded',
+  PUBLIC_FEEDBACK_ADDED: 'publicFeedbackAdded',
+  SESSION_UPDATED: 'sessionUpdated',
+  RUNNING_SESSION_UPDATED: 'runningSessionUpdated',
 }
 
 module.exports = {
@@ -46,16 +35,12 @@ module.exports = {
   pubsub,
 
   // export subscriptions
-  confusionAdded: confusionAddedSubscription,
-  publicFeedbackAdded: publicFeedbackAddedSubscription,
-  feedbackAdded: feedbackAddedSubscription,
-  sessionUpdated: sessionUpdatedSubscription,
-  runningSessionUpdated: runningSessionUpdatedSubscription,
+  confusionAdded: subscriptionWithSessionId(subscriptionTypes.CONFUSION_ADDED),
+  publicFeedbackAdded: subscriptionWithSessionId(subscriptionTypes.PUBLIC_FEEDBACK_ADDED),
+  feedbackAdded: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_ADDED),
+  sessionUpdated: subscriptionWithSessionId(subscriptionTypes.SESSION_UPDATED),
+  runningSessionUpdated: subscriptionWithSessionId(subscriptionTypes.RUNNING_SESSION_UPDATED),
 
   // export subscription types
-  CONFUSION_ADDED,
-  FEEDBACK_ADDED,
-  PUBLIC_FEEDBACK_ADDED,
-  SESSION_UPDATED,
-  RUNNING_SESSION_UPDATED,
+  ...subscriptionTypes,
 }
