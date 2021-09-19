@@ -58,6 +58,8 @@ const pinnedFeedbacksQuery = async (parentValue, args, { auth }) => {
 const joinSessionQuery = async (parentValue, { shortname }, { auth }) =>
   SessionExecService.joinSession({ shortname, auth })
 
+const joinQAQuery = async (_, { shortname }, { auth }) => SessionExecService.joinQA({ shortname, auth })
+
 /* ----- mutations ----- */
 
 const createSessionMutation = (
@@ -163,6 +165,8 @@ module.exports = {
   session: sessionQuery,
   sessionByPV: sessionByPVQuery,
   sessionsByPV: sessionsByPVQuery,
+  joinSession: joinSessionQuery,
+  joinQA: joinQAQuery,
 
   // mutations
   abortSession: abortSessionMutation,
@@ -178,7 +182,6 @@ module.exports = {
   deleteFeedback: deleteFeedbackMutation,
   addConfusionTS: addConfusionTSMutation,
   updateSessionSettings: updateSessionSettingsMutation,
-  joinSession: joinSessionQuery,
   deleteSessions: deleteSessionsMutation,
   resetQuestionBlock: resetQuestionBlockMutation,
   modifyQuestionBlock: modifyQuestionBlockMutation,

@@ -158,12 +158,31 @@ module.exports = `
     resolvedAt: DateTime
   }
 
+  type Session_Feedback_Public {
+    id: ID!
+    content: String!
+    resolved: Boolean!
+
+    responses: [Session_FeedbackResponse_Public!]!
+
+    createdAt: DateTime!
+    resolvedAt: DateTime
+  }
+
   type Session_FeedbackResponse {
     id: ID!
 
     content: String!
     positiveReactions: Int!
     negativeReactions: Int!
+
+    createdAt: DateTime!
+  }
+
+  type Session_FeedbackResponse_Public {
+    id: ID!
+
+    content: String!
 
     createdAt: DateTime!
   }

@@ -1,29 +1,16 @@
 import dayjs from 'dayjs'
 import { Icon, Button } from 'semantic-ui-react'
+import { IFeedback } from '../../../@types/feedbacks'
 
-interface IFeedbackResponse {
-  id: string
-  content: string
-  createdAt: string
-  positive: boolean
-  negative: boolean
-}
-
-interface Props {
-  createdAt: string
-  content: string
-  votes: number
-  resolved: boolean
-  resolvedAt?: string
-  pinned: boolean
-  upvoted: boolean
-  responses: IFeedbackResponse[]
+interface Props extends Omit<IFeedback, 'id'> {
+  upvoted?: boolean
   onUpvoteFeedback?: () => void
   onPositiveResponseReaction?: (responseId: string) => void
   onNegativeResponseReaction?: (responseId: string) => void
 }
 
 const defaultProps = {
+  upvoted: false,
   resolvedAt: undefined,
   onUpvoteFeedback: () => null,
   onPositiveResponseReaction: () => null,
@@ -33,8 +20,6 @@ const defaultProps = {
 function PublicFeedback({
   content,
   createdAt,
-  votes,
-  pinned,
   resolved,
   resolvedAt,
   responses,
@@ -55,7 +40,6 @@ function PublicFeedback({
                 {resolved ? <Icon name="check" size="small" /> : <Icon name="discussions" size="small" />}
                 {resolved && resolvedAt && dayjs(resolvedAt).format('DD.MM.YYYY HH:mm')}
               </div>
-              <div className="ml-4">{pinned && <Icon name="pin" size="small" />}</div>
             </div>
           </div>
           <div className="flex-initial mt-1 mr-1">

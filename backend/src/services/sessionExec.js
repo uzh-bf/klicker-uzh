@@ -574,6 +574,25 @@ const loginParticipant = async ({ res, sessionId, username, password }) => {
   return participant.id
 }
 
+function verifyParticipantAuthentication({ auth, authenticationMode, id, participants }) {
+  const participantIdentifier = auth ? auth.sub : undefined
+
+  if (
+    typeof participantIdentifier === 'undefined' ||
+    !auth.scope.includes('PARTICIPANT') ||
+    auth.session !== id.toString()
+  ) {
+    throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode })
+  }
+
+  if (
+    (auth.aai && !participants.map((participant) => participant.username).includes(participantIdentifier)) ||
+    (!auth.aai && !participants.map((participant) => participant.id).includes(participantIdentifier))
+  ) {
+    throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode })
+  }
+}
+
 /**
  * Prepare data needed for participating in a session
  * @param {*} param0
@@ -593,27 +612,11 @@ const joinSession = async ({ shortname, auth }) => {
     },
   })
 
-  const { id, activeBlock, blocks, settings, feedbacks, status } = runningSession
+  const { id, activeBlock, blocks, settings, status, participants } = runningSession
   const currentBlock = blocks[activeBlock] || { instances: [] }
 
   if (settings.isParticipantAuthenticationEnabled) {
-    const participantIdentifier = auth ? auth.sub : undefined
-
-    if (
-      typeof participantIdentifier === 'undefined' ||
-      !auth.scope.includes('PARTICIPANT') ||
-      auth.session !== id.toString()
-    ) {
-      throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode: settings.authenticationMode })
-    }
-
-    if (
-      (auth.aai &&
-        !runningSession.participants.map((participant) => participant.username).includes(participantIdentifier)) ||
-      (!auth.aai && !runningSession.participants.map((participant) => participant.id).includes(participantIdentifier))
-    ) {
-      throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode: settings.authenticationMode })
-    }
+    verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
   return {
@@ -644,19 +647,23 @@ const joinSession = async ({ shortname, auth }) => {
           files,
         }
       }),
-    // TODO: ensure that there is no information on reactions sent out
-    feedbacks: settings.isFeedbackChannelActive
-      ? feedbacks.filter((feedback) => feedback.published)
-      : // .map((feedback) => ({
-        //   ...feedback,
-        //   responses: feedback.responses.map((response) => ({
-        //     ...response,
-        //     positiveReactions: undefined,
-        //     negativeReactions: undefined,
-        //   })),
-        // }))
-        null,
   }
+}
+
+async function joinQA({ shortname, auth }) {
+  // find the user with the given shortname
+  const user = await UserModel.findOne({ shortname }).populate('runningSession')
+  if (!user || !user.runningSession) {
+    return null
+  }
+
+  const { id, settings, feedbacks, participants } = user.runningSession
+
+  if (settings.isParticipantAuthenticationEnabled) {
+    verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
+  }
+
+  return settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : []
 }
 
 /**
@@ -743,6 +750,7 @@ module.exports = {
   addFeedback,
   deleteFeedback,
   joinSession,
+  joinQA,
   resetQuestionBlock,
   loginParticipant,
   pinFeedback,
