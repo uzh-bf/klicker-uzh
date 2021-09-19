@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.5...v1.6.0-rc.6) (2021-09-19)
+
+
+### Refactors
+
+* move q&a to a separate query with polling ([8fbce62](https://github.com/uzh-bf/klicker-uzh/commit/8fbce62c3cca683ddc3861a70ca6e5b567d96e83))
+* reduce boilerplate in subscription resolvers ([271021d](https://github.com/uzh-bf/klicker-uzh/commit/271021ddcfc9161288ffd7de6f07225459d291a5))
+
+
+### Enhancements
+
+* add a subscription for added feedback responses ([d2fb373](https://github.com/uzh-bf/klicker-uzh/commit/d2fb373f4e4565165c842957c50811fb6a0cc76a))
+* add a subscription for feedback deletion ([c48feb6](https://github.com/uzh-bf/klicker-uzh/commit/c48feb62a73d7a6be99ff9554d553c583ec47e60))
+* add a subscription for newly added or published feedbacks ([5401261](https://github.com/uzh-bf/klicker-uzh/commit/54012610ceb9a0ab6719404356cefc147ad0d4be))
+* add a subscription for resolving of feedbacks ([03c0bb4](https://github.com/uzh-bf/klicker-uzh/commit/03c0bb4e903add4f73c5d52c8a382c7f6f94ebab))
+* use separate subscriptions for running session and join session screens and new feedbacks ([40b1517](https://github.com/uzh-bf/klicker-uzh/commit/40b151767fa5c5e6c9aad2f17c0aa31dbc55e7c2))
+
+
+### Other
+
+* **deploy:** bump the appVersion to v1.6.0-rc.6 ([4447e4e](https://github.com/uzh-bf/klicker-uzh/commit/4447e4e4bf02d505dfacb5d35c2036bed2617807))
+* **deploy:** update min replicas when autoscaling to three per service ([7834fa4](https://github.com/uzh-bf/klicker-uzh/commit/7834fa4574b1a8c4cc4bf91b04525f4d4b99ef1b))
+* **frontend:** move types to a new specific dir ([9fda4af](https://github.com/uzh-bf/klicker-uzh/commit/9fda4af9b9b1da095e54b54f8a442eb2bb1f3f90))
+* **frontend:** setup rimraf for .next/cache on nodemon restart ([8184336](https://github.com/uzh-bf/klicker-uzh/commit/818433674b19aeb720e502314b714d704b18561d))
+
 ## [1.6.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.4...v1.6.0-rc.5) (2021-09-19)
 
 
