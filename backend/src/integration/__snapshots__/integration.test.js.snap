@@ -727,7 +727,7 @@ exports[`Integration Session Execution (authenticated) LECTURER: can evaluate th
           }
         
       
-      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
+      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true}
     }
   
 `;
@@ -895,7 +895,7 @@ exports[`Integration Session Execution (authenticated) LECTURER: can start the s
 exports[`Integration Session Execution (authenticated) PARTICIPANT: can join the session initially (initial) 1`] = `
 
     joinSession {
-      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
+      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
       activeInstances: 
         title: Test SC #2
         content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
@@ -917,7 +917,7 @@ exports[`Integration Session Execution (authenticated) PARTICIPANT: can join the
 exports[`Integration Session Execution (authenticated) PARTICIPANT: can update the joined session for the second block 2`] = `
 
     joinSession {
-      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
+      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
       activeInstances: 
         title: Test FREE #2
         content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
@@ -2794,7 +2794,7 @@ exports[`Integration Session Management (authenticated) enables the creation of 
       participants: [
           username: integration-1,
       ]
-      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"authenticationMode":"NONE","storageMode":"SECRET"}
+      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"NONE","storageMode":"SECRET"}
     }
   
 `;
@@ -2839,7 +2839,7 @@ exports[`Integration Session Management (authentication, aai) enables the creati
       ,
           username: aai-1,
       ]
-      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"authenticationMode":"AAI","storageMode":"SECRET"}
+      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"AAI","storageMode":"SECRET"}
     }
   
 `;
@@ -2926,7 +2926,7 @@ exports[`Integration Session Management enables the creation of a new session 1`
         
       ]
       participants: []
-      settings: {"isParticipantAuthenticationEnabled":false,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"authenticationMode":"NONE","storageMode":"SECRET"}
+      settings: {"isParticipantAuthenticationEnabled":false,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"NONE","storageMode":"SECRET"}
     }
   
 `;
