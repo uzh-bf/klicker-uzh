@@ -1,0 +1,14 @@
+query JoinQA($shortname: String!) {
+  joinQA(shortname: $shortname) {
+    id
+    content
+    resolved
+    createdAt
+    resolvedAt
+    responses {
+      id
+      content
+      createdAt
+    }
+  }
+}

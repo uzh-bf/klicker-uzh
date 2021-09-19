@@ -40,6 +40,7 @@ const {
   cancelSession,
   endSession,
   joinSession,
+  joinQA,
   runningSession,
   pinnedFeedbacks,
   sessionByPV,
@@ -114,6 +115,7 @@ const typeDefs = [
     allUsers: [User]!
     checkAccountStatus: ID
     checkAvailability(email: String, shortname: String): User_Availability!
+    joinQA(shortname: String!): [Session_Feedback_Public!]!
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session
@@ -197,6 +199,7 @@ const resolvers = {
     checkAccountStatus,
     checkAvailability,
     joinSession,
+    joinQA,
     question,
     runningSession,
     pinnedFeedbacks,
