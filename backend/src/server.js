@@ -28,7 +28,8 @@ if (SERVICES_CFG.apm.enabled) {
   })
 }
 
-const redis = getRedis()
+const redisCache = getRedis('redis')
+const responseCache = getRedis('exec')
 
 const httpServer = createServer(app)
 
@@ -51,7 +52,8 @@ const shutdown = (signal) => async () => {
   await mongoose.disconnect()
   console.log('[mongodb] Disconnected')
 
-  await redis.disconnect()
+  await redisCache.disconnect()
+  await responseCache.disconnect()
   console.log('[redis] Disconnected')
 
   console.log('[klicker-api] Shutdown complete')
