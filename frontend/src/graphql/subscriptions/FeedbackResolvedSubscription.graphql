@@ -1,0 +1,7 @@
+subscription FeedbackResolved($sessionId: ID!) {
+  feedbackResolved(sessionId: $sessionId) {
+    feedbackId
+    resolvedState
+    resolvedAt
+  }
+}
