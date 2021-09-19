@@ -169,6 +169,12 @@ module.exports = `
     resolvedAt: DateTime
   }
 
+  type Session_Feedback_ResolvedStateChange {
+    feedbackId: ID!
+    resolvedState: Boolean!
+    resolvedAt: DateTime
+  }
+
   type Session_FeedbackResponse {
     id: ID!
 
@@ -180,6 +186,15 @@ module.exports = `
   }
 
   type Session_FeedbackResponse_Public {
+    id: ID!
+
+    content: String!
+
+    createdAt: DateTime!
+  }
+
+  type Session_FeedbackResponse_Added {
+    feedbackId: ID!
     id: ID!
 
     content: String!
@@ -200,11 +215,5 @@ module.exports = `
     status: Session_QuestionBlockStatus!
     timeLimit: Int
     expiresAt: DateTime
-  }
-
-  type Session_Feedback_ResolvedStateChange {
-    feedbackId: ID!
-    resolvedState: Boolean!
-    resolvedAt: DateTime
   }
 `

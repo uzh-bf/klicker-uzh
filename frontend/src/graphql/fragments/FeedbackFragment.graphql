@@ -8,6 +8,8 @@ fragment FeedbackFields on Session_Feedback {
     id
     content
     createdAt
+    positiveReactions
+    negativeReactions
   }
   votes
   pinned
