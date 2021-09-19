@@ -201,4 +201,10 @@ module.exports = `
     timeLimit: Int
     expiresAt: DateTime
   }
+
+  type Session_Feedback_ResolvedStateChange {
+    feedbackId: ID!
+    resolvedState: Boolean!
+    resolvedAt: DateTime
+  }
 `

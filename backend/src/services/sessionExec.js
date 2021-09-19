@@ -158,7 +158,14 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
     { new: true }
   )
 
-  // TODO: publish the feedback update
+  pubsub.publish(FEEDBACK_RESOLVED, {
+    [FEEDBACK_RESOLVED]: {
+      feedbackId,
+      resolvedState,
+      resolvedAt: resolvedState ? new Date() : null,
+    },
+    sessionId,
+  })
 
   return updatedSession
 }
@@ -191,7 +198,14 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
     }
   )
 
-  // TODO: publish the response on a subscription
+  pubsub.publish(FEEDBACK_RESPONSE_ADDED, {
+    [FEEDBACK_RESPONSE_ADDED]: {
+      id: '1',
+      content: response,
+      createdAt: '',
+    },
+    sessionId,
+  })
 
   return updatedSesion
 }
