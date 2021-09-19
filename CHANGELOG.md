@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.4...v1.6.0-rc.5) (2021-09-19)
+
+
+### Bug Fixes
+
+* **backend:** use response cache for resolving poll results ([f9f8d68](https://github.com/uzh-bf/klicker-uzh/commit/f9f8d6852ffe743e57649d2f02134f77a1da5b5b))
+* **test:** update snapshots to correspond to new Q&A public by default ([b5259e1](https://github.com/uzh-bf/klicker-uzh/commit/b5259e15dc43c65187f30956bfd0ec3a5300b388))
+
+
+### Other
+
+* **backend:** add mongo test url to .env.template ([aba3813](https://github.com/uzh-bf/klicker-uzh/commit/aba38136b95d7fc44edc980f1a630cdd4d053ed1))
+* **deploy:** update appVersion to v1.6.0-rc.5 ([693a151](https://github.com/uzh-bf/klicker-uzh/commit/693a15134a73c21aa5d78aae79ad5671b32feb74))
+
 ## [1.6.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.3...v1.6.0-rc.4) (2021-09-17)
 
 
