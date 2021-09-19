@@ -63,6 +63,7 @@ const permissions = shield(
       checkAccountStatus: allow,
       checkAvailability: allow,
       joinSession: allow,
+      joinQA: allow,
       question: isAuthenticated,
       runningSession: isAuthenticated,
       session: isAuthenticated,

@@ -6,6 +6,7 @@ import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
 import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
+import FeedbackAddedSubscription from '../../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -20,6 +21,7 @@ interface Props {
   setUpvotedFeedbacks: any
   reactions: any
   setReactions: any
+  sessionId: string
 }
 
 const defaultProps = {
@@ -38,11 +40,27 @@ function FeedbackArea({
   setUpvotedFeedbacks,
   reactions,
   setReactions,
+  sessionId,
 }: Props): React.ReactElement {
-  const { data } = useQuery(JoinQAQuery, {
+  const { data, subscribeToMore } = useQuery(JoinQAQuery, {
     variables: { shortname },
-    pollInterval: 30000,
+    pollInterval: 60000,
   })
+
+  useEffect(() => {
+    return subscribeToMore({
+      document: FeedbackAddedSubscription,
+      variables: {
+        sessionId,
+      },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const newItem = subscriptionData.data.feedbackAdded
+        if (prev.joinQA.map((item) => item.id).includes(newItem.id)) return prev
+        return { ...prev, joinQA: [newItem, ...prev.joinQA] }
+      },
+    })
+  }, [subscribeToMore, sessionId])
 
   const [feedbackInputValue, setFeedbackInputValue] = useState('')
   const [processedFeedbacks, setProcessedFeedbacks] = useState({
@@ -51,11 +69,13 @@ function FeedbackArea({
   })
 
   useEffect(() => {
-    const [resolved, open] = partition((feedback: any) => feedback.resolved, data?.joinQA)
-    setProcessedFeedbacks({
-      resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
-      open: sortBy((o: any) => dayjs(o.createdAt).unix(), open),
-    })
+    if (data?.joinQA) {
+      const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
+      setProcessedFeedbacks({
+        resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
+        open: sortBy((o: any) => dayjs(o.createdAt).unix(), open),
+      })
+    }
   }, [data?.joinQA])
 
   useEffect(() => {

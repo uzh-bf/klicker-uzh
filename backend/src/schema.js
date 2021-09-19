@@ -175,7 +175,7 @@ const typeDefs = [
 
   type Subscription {
     confusionAdded(sessionId: ID!): Session_ConfusionTimestep
-    feedbackAdded(sessionId: ID!): Session_Feedback
+    feedbackAdded(sessionId: ID!): Session_Feedback_Public
     sessionUpdated(sessionId: ID!): Session_Public
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
