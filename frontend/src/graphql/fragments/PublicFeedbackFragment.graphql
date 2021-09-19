@@ -1,4 +1,4 @@
-fragment FeedbackFields on Session_Feedback {
+fragment PublicFeedbackFields on Session_Feedback_Public {
   id
   content
   resolved
@@ -9,7 +9,4 @@ fragment FeedbackFields on Session_Feedback {
     content
     createdAt
   }
-  votes
-  pinned
-  published
 }

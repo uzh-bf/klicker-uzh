@@ -1,7 +1,7 @@
-#import "../fragments/FeedbackFragment.graphql"
+#import "../fragments/PublicFeedbackFragment.graphql"
 
 query JoinQA($shortname: String!) {
   joinQA(shortname: $shortname) {
-    ...FeedbackFields
+    ...PublicFeedbackFields
   }
 }
