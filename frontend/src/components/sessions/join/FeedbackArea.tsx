@@ -7,6 +7,7 @@ import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
 import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
+import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -48,20 +49,30 @@ function FeedbackArea({
   })
 
   useEffect(() => {
-    console.log('subscribing')
-    return subscribeToMore({
+    const publicFeedbackAdded = subscribeToMore({
       document: PublicFeedbackAddedSubscription,
-      variables: {
-        sessionId,
-      },
+      variables: { sessionId },
       updateQuery: (prev, { subscriptionData }) => {
-        console.warn(prev, subscriptionData)
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.publicFeedbackAdded
         if (prev.joinQA.map((item) => item.id).includes(newItem.id)) return prev
         return { ...prev, joinQA: [newItem, ...prev.joinQA] }
       },
     })
+
+    const feedbackDeleted = subscribeToMore({
+      document: FeedbackDeletedSubscription,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return { ...prev, joinQA: prev.joinQA.filter((item) => item.id !== subscriptionData.data.feedbackDeleted) }
+      },
+    })
+
+    return () => {
+      publicFeedbackAdded && publicFeedbackAdded()
+      feedbackDeleted && feedbackDeleted()
+    }
   }, [subscribeToMore, sessionId])
 
   const [feedbackInputValue, setFeedbackInputValue] = useState('')

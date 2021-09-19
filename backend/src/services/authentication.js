@@ -117,6 +117,7 @@ const permissions = shield(
       publicFeedbackAdded: allow,
       sessionUpdated: allow,
       runningSessionUpdated: allow,
+      feedbackDeleted: allow,
     },
   },
   { allowExternalErrors: true }
