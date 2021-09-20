@@ -189,7 +189,7 @@ const typeDefs = [
     feedbackResolved(sessionId: ID!): Session_Feedback_ResolvedStateChange
     feedbackResponseAdded(sessionId: ID!): Session_FeedbackResponse_Added
     publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
-    sessionUpdated(sessionId: ID!): Session_Public
+    sessionUpdated(sessionId: ID!): Session_Public_Update
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
 `,

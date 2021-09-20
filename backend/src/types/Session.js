@@ -38,6 +38,20 @@ module.exports = `
     feedbacks: [Session_Feedback!]
   }
 
+  type Session_Public_Update {
+    id: ID!
+
+    status: Session_Status!
+    timeLimit: Int
+    expiresAt: DateTime
+    execution: Int
+    isFeedbackOnlySession: Boolean
+
+    settings: Session_Settings!
+
+    activeInstances: [Question_Public]!
+  }
+
   input SessionInput {
     name: String!
     blocks: [Session_QuestionBlockInput!]!
