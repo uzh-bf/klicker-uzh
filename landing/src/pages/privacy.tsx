@@ -93,10 +93,10 @@ function Privacy() {
             level.
           </li>
           <li>
-            The data of USERS and VISITORS are stored on a service provider’s
-            server located in Switzerland. The service provider complies with
-            the UZH data storage and privacy requirements, and has agreed to the
-            UZH’s Data Storage requirements.
+            The data of USERS and VISITORS are processed and stored on a service
+            provider’s servers located in Switzerland and the European Union.
+            The service provider complies with the UZH data storage and privacy
+            requirements, and has agreed to the UZH’s Data Storage requirements.
           </li>
           <li>
             In order better understand how our USERS and VISITORS navigate the
