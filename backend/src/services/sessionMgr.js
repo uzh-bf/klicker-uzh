@@ -99,19 +99,15 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
           content: versionInfo.content,
           description: versionInfo.description,
           options: versionInfo.options,
-          files: versionInfo.files.map((el) => ({ ...el, id: el._id, _id: undefined })),
+          files: versionInfo.files.map((el) => ({ ...el, id: el._id })),
         }
       })
     }
   }
 
   resultObj.id = resultObj._id
-  delete resultObj._id
 
-  const properties = ['blocks', 'feedbacks', 'confusionTS']
-  properties.forEach((property) => {
-    resultObj[property] = resultObj[property].map((el) => ({ ...el, id: el._id, _id: undefined }))
-  })
+  resultObj.blocks = resultObj.blocks.map((el) => ({ ...el, id: el._id }))
 
   // Publish Subscription Data to Subscribers
   await pubsub.publish(SESSION_UPDATED, {
