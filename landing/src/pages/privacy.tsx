@@ -7,7 +7,7 @@ function Privacy() {
       <div className="pb-8">
         <h1>Privacy Policy</h1>
         <p>
-          <strong>Updated on August 1, 2018</strong>
+          <strong>Updated on September 20, 2021</strong>
         </p>
         <p>
           Welcome to www.klicker.uzh.ch (the «KLICKERUZH»), a webtool provided
@@ -267,7 +267,7 @@ function Privacy() {
         </p>
         <p>
           KLICKERUZH @ Teaching Center, Department of Banking and Finance,
-          University of Zurich, Plattenstrasse 32, CH – 8032 Zurich, Switzerland
+          University of Zurich, Plattenstrasse 14, CH – 8032 Zurich, Switzerland
         </p>
         <p>
           PLEASE DO NOT SEND ANY SENSITIVE INFORMATION TO US VIA UNENCRYPTED
