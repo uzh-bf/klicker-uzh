@@ -17,11 +17,28 @@ redis:
     persistence:
       enabled: false
 
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
+
   replica:
     replicaCount: 1
 
     persistence:
       enabled: false
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 150m
+        memory: 100Mi
+
 
 security:
   https:
@@ -82,7 +99,7 @@ frontend:
     enabled: false
     minReplicas: 3
     maxReplicas: 7
-    targetCPUUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
@@ -116,7 +133,7 @@ backend:
     enabled: false
     minReplicas: 3
     maxReplicas: 7
-    targetCPUUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
