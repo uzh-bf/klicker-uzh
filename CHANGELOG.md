@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.6...v1.6.0-rc.7) (2021-09-20)
+
+
+### Bug Fixes
+
+* ensure that feedbacks are not published in the session update subscription ([2d32f92](https://github.com/uzh-bf/klicker-uzh/commit/2d32f922df5296f52c5a2400d781014a1d2d85c6))
+
+
+### Other
+
+* **deploy:** adjust resources and add quota for redis ([055ace9](https://github.com/uzh-bf/klicker-uzh/commit/055ace9c0f4ecbfcaca7918ac0ee7cfde6836a1a))
+* **deploy:** update appVersion to v1.6.0-rc.7 ([7eb10c8](https://github.com/uzh-bf/klicker-uzh/commit/7eb10c85da1f72b8226f86be5c9b39407490c373))
+
 ## [1.6.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.5...v1.6.0-rc.6) (2021-09-19)
 
 
