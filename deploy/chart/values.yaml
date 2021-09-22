@@ -97,10 +97,10 @@ frontend:
 
   autoscaling:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 7
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 
@@ -131,10 +131,10 @@ backend:
 
   autoscaling:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 7
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 
