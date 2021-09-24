@@ -266,7 +266,7 @@ function EvaluationLayout({
               (showFeedback && 'Feedback-Channel') ||
               (showConfusionTS && 'Confusion-Barometer')}
           </p>
-          {publicRuntimeConfig.s3root && files.length > 0 && (
+          {showQuestionLayout && publicRuntimeConfig.s3root && files.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
             </div>
@@ -402,6 +402,10 @@ function EvaluationLayout({
                 flex: 1 0 50vh;
                 order: 5;
                 overflow-y: hidden;
+
+                @media print {
+                  overflow-y: visible;
+                }
               }
 
               .questionDetails,
@@ -452,6 +456,11 @@ function EvaluationLayout({
                   height: 100vh;
                   max-height: 100vh;
                   max-width: 100vw;
+
+                  @media print {
+                    height: unset;
+                    max-height: unset;
+                  }
 
                   grid-template-columns: auto 14rem;
                   grid-template-rows:
@@ -566,6 +575,10 @@ function EvaluationLayout({
 
                     :global(> *) {
                       border: ${showQuestionLayout ? '1px solid lightgrey' : '0'};
+                    }
+
+                    @media print {
+                      height: auto;
                     }
                   }
 
