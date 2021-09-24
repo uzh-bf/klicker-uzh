@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.7...v1.6.0-rc.8) (2021-09-24)
+
+
+### Features
+
+* allow for filtering on the feedback page of a closed session using a refactored filter hook ([849239a](https://github.com/uzh-bf/klicker-uzh/commit/849239a117f77e7e949fbb6d148fa6f1e0c1786d))
+
+
+### Bug Fixes
+
+* add DE translation of the descriptive text for the feedback channel ([fa88c13](https://github.com/uzh-bf/klicker-uzh/commit/fa88c138735c4bbb03817f6f06c2452334b0d526))
+* ensure that the print view of the feedbacks on a closed session evaluation does not hide overflow (allow for multiple pages) ([7378062](https://github.com/uzh-bf/klicker-uzh/commit/7378062b2165d5f609cb33f5e262980be3a91723))
+* **landing:** adjust address in privacy policy ([4b79e90](https://github.com/uzh-bf/klicker-uzh/commit/4b79e90e823b15eff28ddcde8d9f4b5b1814f7f5))
+* **landing:** adjust data storage description ([28decd7](https://github.com/uzh-bf/klicker-uzh/commit/28decd72cb9001e53d7219450f15faa43e0f2236))
+
+
+### Enhancements
+
+* remove the icons from public feedbacks ([a1a798e](https://github.com/uzh-bf/klicker-uzh/commit/a1a798e7646e53e2efbcb76da38ef5e0f22465e3))
+* reverse the ordering of feedbacks on the student view to show recent feedbacks on top ([dbede4d](https://github.com/uzh-bf/klicker-uzh/commit/dbede4d0593f45a5be00fa4f858272a1526a5466))
+
+
+### Other
+
+* **deploy:** adjust autoscaling settings ([59dd925](https://github.com/uzh-bf/klicker-uzh/commit/59dd9255e92a5de6a9691986d108db8858d6e84a))
+* **deploy:** bump the version of the app to deploy ([958237d](https://github.com/uzh-bf/klicker-uzh/commit/958237d3b6eb4c87e32fa5b1eea1e4eb5a46ce0c))
+
 ## [1.6.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.6...v1.6.0-rc.7) (2021-09-20)
 
 
