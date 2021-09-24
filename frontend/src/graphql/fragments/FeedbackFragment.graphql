@@ -1,0 +1,17 @@
+fragment FeedbackFields on Session_Feedback {
+  id
+  content
+  resolved
+  createdAt
+  resolvedAt
+  responses {
+    id
+    content
+    createdAt
+    positiveReactions
+    negativeReactions
+  }
+  votes
+  pinned
+  published
+}

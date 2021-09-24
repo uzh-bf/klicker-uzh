@@ -1,0 +1,32 @@
+mutation QuestionStatistics($ids: [ID!]!) {
+  questionStatistics(ids: $ids) {
+    title
+    usageTotal
+    type
+
+    usageDetails {
+      count
+      version
+    }
+
+    statistics {
+      version
+
+      CHOICES {
+        correct
+        name
+        chosen
+        total
+        percentageChosen
+      }
+
+      FREE {
+        chosen
+        percentageChosen
+        total
+        key
+        value
+      }
+    }
+  }
+}

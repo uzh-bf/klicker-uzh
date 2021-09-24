@@ -1,0 +1,28 @@
+mutation ResetQuestionBlock($sessionId: ID!, $blockId: ID!) {
+  resetQuestionBlock(sessionId: $sessionId, blockId: $blockId) {
+    id
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+        question {
+          title
+          type
+        }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
+      }
+    }
+    participants {
+      username
+    }
+  }
+}

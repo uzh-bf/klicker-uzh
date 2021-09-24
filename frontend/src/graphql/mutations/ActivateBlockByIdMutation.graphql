@@ -1,0 +1,17 @@
+mutation ActivateBlockById($sessionId: ID!, $blockId: ID!) {
+  activateBlockById(sessionId: $sessionId, blockId: $blockId) {
+    id
+    activeStep
+    activeBlock
+    blocks {
+      id
+      status
+      timeLimit
+      expiresAt
+      instances {
+        id
+        isOpen
+      }
+    }
+  }
+}

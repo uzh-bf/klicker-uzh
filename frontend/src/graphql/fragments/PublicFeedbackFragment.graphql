@@ -1,0 +1,12 @@
+fragment PublicFeedbackFields on Session_Feedback_Public {
+  id
+  content
+  resolved
+  createdAt
+  resolvedAt
+  responses {
+    id
+    content
+    createdAt
+  }
+}

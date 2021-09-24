@@ -1,0 +1,56 @@
+#import "../fragments/FeedbackFragment.graphql"
+
+query RunningSession {
+  runningSession {
+    id
+    name
+    startedAt
+    activeStep
+    activeBlock
+    blocks {
+      id
+      status
+      timeLimit
+      expiresAt
+      instances {
+        id
+        isOpen
+        version
+        question {
+          id
+          title
+          type
+        }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
+      }
+    }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+    feedbacks {
+      ...FeedbackFields
+    }
+    settings {
+      isParticipantAuthenticationEnabled
+      isConfusionBarometerActive
+      isEvaluationPublic
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+      authenticationMode
+      storageMode
+    }
+    participants {
+      username
+      password
+    }
+  }
+}

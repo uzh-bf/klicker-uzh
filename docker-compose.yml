@@ -1,31 +1,53 @@
 version: '3'
 
 services:
-  react-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    environment:
-      API_ENDPOINT: http://localhost:4000/graphql
-      API_ENDPOINT_WS: ws://localhost:4000/graphql
-      APP_BASE_URL: http://localhost:3000
-      CACHE_REDIS_ENABLED: 'true'
-      CACHE_REDIS_HOST: redis
-      ? FEAT_FORMULAS
-      S3_ROOT_URL: https://klicker-files.s3.eu-central-1.amazonaws.com/klicker-dev
-      SECURITY_FINGERPRINTING: 'true'
+  # redis instance to support session execution
+  redis_exec:
+    image: redis:5.0.9
     ports:
-      - 3000:3000
+      - 6379:6379
+    networks:
+      - klicker-dev
     volumes:
-      - './.env:/app/.env:ro'
-      - './.babelrc:/app/.babelrc:ro'
-      - './server.js:/app/server.js:ro'
-      - './public:/app/public:ro'
-      - './src:/app/src'
+      - /data
+
+  # redis instance for page caching and rate limiting
+  redis_cache:
+    image: redis:5.0.9
+    ports:
+      - 6380:6379
+    networks:
+      - klicker-dev
+    volumes:
+      - /data
+
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
     networks:
       - klicker-dev
 
+  # TODO: document having to create an images bucket and setting it to public
+  minio:
+    image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+
 networks:
   klicker-dev:
-    external:
-      name: klicker-api_klicker-dev
+    driver: bridge
+
+volumes:
+  minio-data:

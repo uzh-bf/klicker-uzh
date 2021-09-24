@@ -1,0 +1,68 @@
+{
+  "env": {
+    "development": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "targets": {
+                "browsers": ["> 0.25%", "not dead"]
+              }
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
+        ]
+      ],
+      "plugins": ["import-graphql", "inline-dotenv"]
+    },
+    "production": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "targets": {
+                "browsers": ["> 0.25%", "not dead"]
+              }
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            },
+            "lodash": {
+              "id": ["lodash", "recompose", "semantic-ui-react"]
+            },
+            "formatjs": {
+              "ast": true
+            }
+          }
+        ]
+      ],
+      "plugins": ["import-graphql", "transform-inline-environment-variables"]
+    },
+    "test": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "modules": "commonjs"
+          }
+        ],
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "modules": "commonjs"
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
+        ]
+      ],
+      "plugins": ["import-graphql"]
+    }
+  }
+}

@@ -1,0 +1,60 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine  on
+  RewriteBase    /
+
+  # redirect SPA routes to the index.html file
+  RewriteRule    ^/tos$ index.html      [L]
+  RewriteRule    ^/privacy$ index.html  [L]
+  RewriteRule    ^/roadmap$ index.html  [L]
+
+  # redirect everything else to the new klicker
+  # except needed assets and routes of the landing SPA
+  RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|img/|_next/|static/|images/|page-data) [NC]
+  RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
+  RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=301]
+ </IfModule>
+
+<IfModule mod_deflate.c>
+  # Compress HTML, CSS, JavaScript, Text, XML and fonts
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+  AddOutputFilterByType DEFLATE application/x-font
+  AddOutputFilterByType DEFLATE application/x-font-opentype
+  AddOutputFilterByType DEFLATE application/x-font-otf
+  AddOutputFilterByType DEFLATE application/x-font-truetype
+  AddOutputFilterByType DEFLATE application/x-font-ttf
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE font/opentype
+  AddOutputFilterByType DEFLATE font/otf
+  AddOutputFilterByType DEFLATE font/ttf
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE image/x-icon
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+
+  # Remove browser bugs (only needed for really old browsers)
+  BrowserMatch ^Mozilla/4 gzip-only-text/html
+  BrowserMatch ^Mozilla/4\.0[678] no-gzip
+  BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+  Header append Vary User-Agent
+</IfModule>
+
+<ifModule mod_headers.c>
+  <filesMatch ".(flv|gif|ico|jpg|jpeg|mp4|mpeg|png|svg|swf|webp)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+
+  <filesMatch ".(js|pdf)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+
+  <filesMatch ".(css)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+</ifModule>

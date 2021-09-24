@@ -1,0 +1,6 @@
+query TagList {
+  tags: allTags {
+    id
+    name
+  }
+}
