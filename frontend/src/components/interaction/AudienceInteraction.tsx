@@ -140,7 +140,12 @@ function AudienceInteraction({
         <Message
           info
           className="print:hidden"
-          content="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+          content={
+            <FormattedMessage
+              defaultMessage="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+              id="runningSession.audienceInteraction.description"
+            />
+          }
           icon="info"
         />
       )}

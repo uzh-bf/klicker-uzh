@@ -1293,6 +1293,12 @@
       "value": "Fragen erfolgreich gelöscht."
     }
   ],
+  "runningSession.audienceInteraction.description": [
+    {
+      "type": 0,
+      "value": "Die Publikumsinteraktion erlaubt es Ihrem Publikum, Fragen zu stellen und Ihnen während der Session Feedback zu geben."
+    }
+  ],
   "runningSession.blockActions.activateBlock": [
     {
       "type": 0,
@@ -1477,6 +1483,12 @@
     {
       "type": 0,
       "value": "Laufende Session"
+    }
+  ],
+  "runningSession.search.placeholder": [
+    {
+      "type": 0,
+      "value": "Suchbegriff eingeben..."
     }
   ],
   "runningSession.sorting.recency": [
