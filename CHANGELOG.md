@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.8...v1.6.1) (2021-09-24)
+
+
+### Other
+
+* **deploy:** bump appVersion to 1.6.1 ([f2ea1b1](https://github.com/uzh-bf/klicker-uzh/commit/f2ea1b11ae5d08bc16d657800712896e0d74bf3b))
+
 ## [1.6.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.7...v1.6.0-rc.8) (2021-09-24)
 
 
