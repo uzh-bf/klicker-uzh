@@ -1,12 +1,9 @@
-coverage/
+__pycache__/
 node_modules/
+.vscode/
 
-bundles
-.next
-src/lang/.messages
-*.log
-
-.idea/
-.DS_Store
-
+*.archive
+secrets*.yaml
 .env
+
+*.DS_Store

@@ -1,0 +1,52 @@
+mutation CreateSession(
+  $name: String!
+  $blocks: [Session_QuestionBlockInput!]!
+  $participants: [Session_ParticipantInput!]
+  $authenticationMode: Session_AuthenticationMode
+  $storageMode: Session_StorageMode
+) {
+  createSession(
+    session: {
+      name: $name
+      blocks: $blocks
+      participants: $participants
+      authenticationMode: $authenticationMode
+      storageMode: $storageMode
+    }
+  ) {
+    id
+    confusionTS {
+      difficulty
+      speed
+    }
+    feedbacks {
+      id
+      content
+      votes
+    }
+    blocks {
+      id
+      status
+      instances {
+        id
+        question {
+          id
+          title
+          type
+        }
+      }
+    }
+    participants {
+      username
+      password
+    }
+    settings {
+      isParticipantAuthenticationEnabled
+      isConfusionBarometerActive
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+      authenticationMode
+      storageMode
+    }
+  }
+}

@@ -1,0 +1,15 @@
+mutation ActivateNextBlock {
+  activateNextBlock {
+    id
+    blocks {
+      id
+      status
+      expiresAt
+      timeLimit
+      instances {
+        id
+        isOpen
+      }
+    }
+  }
+}

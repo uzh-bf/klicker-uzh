@@ -1,0 +1,9 @@
+mutation ModifyUser($email: String, $shortname: String, $institution: String, $useCase: String) {
+  modifyUser(user: { email: $email, shortname: $shortname, institution: $institution, useCase: $useCase }) {
+    id
+    email
+    shortname
+    institution
+    useCase
+  }
+}

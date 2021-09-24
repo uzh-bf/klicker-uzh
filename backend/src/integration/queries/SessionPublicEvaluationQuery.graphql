@@ -1,0 +1,57 @@
+query EvaluatePublicSession($sessionId: ID!) {
+  sessionPublic(id: $sessionId) {
+    id
+    status
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+        version
+        question {
+          id
+          title
+          type
+          versions {
+            description
+            options {
+              FREE_RANGE {
+                restrictions {
+                  min
+                  max
+                }
+              }
+              SC {
+                choices {
+                  name
+                }
+                randomized
+              }
+              MC {
+                choices {
+                  name
+                }
+                randomized
+              }
+            }
+          }
+        }
+        results {
+          ... on SCQuestionResults {
+            CHOICES
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            FREE {
+              count
+              key
+              value
+            }
+            totalParticipants
+          }
+        }
+      }
+    }
+  }
+}

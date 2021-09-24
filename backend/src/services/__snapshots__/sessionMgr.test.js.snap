@@ -1,0 +1,794 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SessionMgrService abortSession successfully abort a running session of a user 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: COMPLETED
+
+    ActiveBlock: 0
+    ActiveStep: 2
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: EXECUTED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService activateBlockById allows activating the first question block by id 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: CREATED
+
+    ActiveBlock: 0
+    ActiveStep: 1
+    ActiveInstances: 1
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService activateBlockById allows activating the first question block by id 2`] = `
+Array [
+  
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: []
+
+    results: undefined
+  ,
+]
+`;
+
+exports[`SessionMgrService activateNextBlock allows activating the first question block 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveStep: 1
+    ActiveInstances: 1
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService activateNextBlock allows activating the first question block 2`] = `
+Array [
+  
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: []
+
+    results: undefined
+  ,
+]
+`;
+
+exports[`SessionMgrService activateNextBlock has a valid initial state 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService activateNextBlock has a valid initial state 2`] = `
+Array [
+  
+    QUESTION_INSTANCE
+
+    isOpen: false
+    version: 0
+
+    responses: []
+
+    results: undefined
+  ,
+]
+`;
+
+exports[`SessionMgrService activateNextBlock recognizes that the final block has been active 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveStep: 2
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: EXECUTED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService activateNextBlock recognizes that the final block has been active 2`] = `
+Array [
+  
+    QUESTION_INSTANCE
+
+    isOpen: false
+    version: 0
+
+    responses: []
+
+    results: {
+      CHOICES: [0,0,0]
+      FREE: undefined
+    }
+  ,
+]
+`;
+
+exports[`SessionMgrService choicesToResults correctly aggregates SC/MC question results 1`] = `
+Object {
+  "CHOICES": Array [
+    1,
+    4,
+    1,
+    3,
+  ],
+  "totalParticipants": "9",
+}
+`;
+
+exports[`SessionMgrService createSession (auth) allows creating a valid session with participant authentication 1`] = `
+
+    SESSION
+
+    Name: with authentication
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: [{
+      Username: testparticipant
+    },{
+      Username: participant2
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: true
+    }
+`;
+
+exports[`SessionMgrService createSession allows creating a valid session 1`] = `
+
+    SESSION
+
+    Name: hello world
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService createSession allows creating sessions without question blocks 1`] = `
+
+    SESSION
+
+    Name: empty feedback session
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: []
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService createSession skips over question blocks without questions 1`] = `
+
+    SESSION
+
+    Name: session with an empty block
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService deleteSession fully deletes a session and all question instances 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService endSession allows ending a running session 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: COMPLETED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService endSession returns on an already completed session 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: COMPLETED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService freeToResults correctly aggregates FREE/FREE_RANGE question results 1`] = `
+Object {
+  "FREE": Object {
+    "asdasd": Object {
+      "count": 0,
+      "value": "hello world",
+    },
+    "asdd": Object {
+      "count": 3,
+      "value": "hehehe",
+    },
+    "asddddd": Object {
+      "count": 1,
+      "value": "blabla",
+    },
+  },
+  "totalParticipants": 4,
+}
+`;
+
+exports[`SessionMgrService modifySession (auth) allows changing the participants of a session 1`] = `
+
+    SESSION
+
+    Name: with authentication
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: [{
+      Username: newparticipant
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: true
+    }
+`;
+
+exports[`SessionMgrService modifySession allows modifying a session 1`] = `
+
+    SESSION
+
+    Name: modified hello world
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 3
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService startSession allows starting a created session 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing all settings at once 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 2`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: true
+      FeedbacksActive: true
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 3`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: true
+      FeedbacksActive: true
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 4`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;
+
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 5`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: true
+      ParticipantAuthentication: false
+    }
+`;

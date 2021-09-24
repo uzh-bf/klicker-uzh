@@ -1,0 +1,2932 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Integration Logout works 1`] = `
+Object {
+  "logout": "LOGGED_OUT",
+}
+`;
+
+exports[`Integration Question Archiving can archive questions 1`] = `
+
+    archiveQuestions: [
+      isArchived: true
+    ,
+      isArchived: true
+    ]
+  
+`;
+
+exports[`Integration Question Archiving can unarchive questions 1`] = `
+
+    archiveQuestions: [
+      isArchived: false
+    ,
+      isArchived: false
+    ]
+  
+`;
+
+exports[`Integration Question Creation creates FREE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE
+      type: FREE
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[],"FREE":"This is true.","FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates MC questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test MC
+      type: MC
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        options: {"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false},"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[false,true,true],"FREE":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates SC questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test SC
+      type: SC
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        options: {"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[false,true],"MC":[],"FREE":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates partly restricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test partly restricted FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple partly restricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple partly restricted FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":10,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":15}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates unrestricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test unrestricted FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple unrestricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple unrestricted FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":20}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies FREE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE #2
+      type: FREE
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[],"FREE":"This is true.","FREE_RANGE":null}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[],"FREE":"New solution.","FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE #2
+      type: FREE_RANGE
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies MC questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test MC #2
+      type: MC
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        options: {"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false},"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[false,true,true],"FREE":null,"FREE_RANGE":null}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified MC question.
+        options: {"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false},"FREE_RANGE":null}
+        solution: {"SC":[],"MC":[true,false,true],"FREE":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies SC questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test SC #2
+      type: SC
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        options: {"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[false,true],"MC":[],"FREE":null,"FREE_RANGE":null}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified SC question.
+        options: {"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null,"FREE_RANGE":null}
+        solution: {"SC":[true,false],"MC":[],"FREE":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies partly restricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE #2
+      type: FREE_RANGE
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies unrestricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE #2
+      type: FREE_RANGE
+      tags: TestTag,AdditionalTag
+      versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
+      ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      
+    }
+  
+`;
+
+exports[`Integration Question Statistics can load question statistics for all question types 1`] = `
+Object {
+  "questionStatistics": Array [
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": Array [
+            Object {
+              "chosen": 1,
+              "correct": false,
+              "name": "option1",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 0,
+              "correct": true,
+              "name": "option2",
+              "percentageChosen": 0,
+              "total": 1,
+            },
+          ],
+          "FREE": null,
+          "version": 0,
+        },
+      ],
+      "title": "Test SC #2",
+      "type": "SC",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": Array [
+            Object {
+              "chosen": 1,
+              "correct": false,
+              "name": "option1",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 1,
+              "correct": true,
+              "name": "option2",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 0,
+              "correct": true,
+              "name": "option3",
+              "percentageChosen": 0,
+              "total": 1,
+            },
+          ],
+          "FREE": null,
+          "version": 0,
+        },
+      ],
+      "title": "Test MC #2",
+      "type": "MC",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": null,
+          "FREE": Array [
+            Object {
+              "chosen": 1,
+              "key": "5eb63bbbe01eeed093cb22bb8f5acdc3",
+              "percentageChosen": 1,
+              "total": 1,
+              "value": "hello world",
+            },
+          ],
+          "version": 0,
+        },
+      ],
+      "title": "Test FREE #2",
+      "type": "FREE",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": null,
+          "FREE": Array [
+            Object {
+              "chosen": 1,
+              "key": "a87ff679a2f3e71d9181a67b7542122c",
+              "percentageChosen": 1,
+              "total": 1,
+              "value": "4",
+            },
+          ],
+          "version": 0,
+        },
+      ],
+      "title": "Test FREE_RANGE #2",
+      "type": "FREE_RANGE",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+  ],
+}
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can activate the first question block (initial) 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true,true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can activate the second question block 2`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can cancel the running session 2`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: CREATED
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can cancel the running session 4`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: CREATED
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can close the first question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can continue the session 2`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can evaluate the first question block: evaluate 1`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[0,0,0],"totalParticipants":0}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can evaluate the first question block: running 1`] = `
+
+    runningSession {
+      activeStep: 1
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can jump back to the second question block 2`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can jump directly to the first question block 2`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true,true
+      ,
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can jump directly to the second question block 3`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can pause the session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: PAUSED
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can reset the results of the second question block (current) 2`] = `
+
+    createSession / modifySession {
+      confusionTS: undefined
+      feedbacks: undefined
+      blocks: [
+        status: EXECUTED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: ACTIVE
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test MC #2
+          type: MC
+        ,
+          title: Test SC #2
+          type: SC
+        
+      ]
+      participants: [
+          username: integration-2,
+      ,
+          username: integration-3,
+      ]
+      settings: undefined
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can start a session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can start the session again 3`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution (authenticated) PARTICIPANT: can join the session initially (initial) 1`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: null
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) PARTICIPANT: can update the joined session for the second block 2`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":true,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":false,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test FREE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE question.
+        type: FREE
+        options: {"FREE_RANGE":null,"SC":null,"MC":null}
+      
+      feedbacks: null
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can activate the first question block (initial) 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true,true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can activate the first question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true,true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can activate the second question block 2`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can activate the third question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: ACTIVE
+        timeLimit: 60
+        expiresAt: Any
+        instances: true,true,true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can cancel the running session 2`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: CREATED
+    }
+    
+`;
+
+exports[`Integration Session Execution LECTURER: can change the settings of the third question block 2`] = `
+
+    modifyQuestionBlock {
+      blocks: 
+        timeLimit: -1
+        expiresAt: null
+      ,
+        timeLimit: -1
+        expiresAt: null
+      ,
+        timeLimit: 60
+        expiresAt: null
+      ,
+        timeLimit: -1
+        expiresAt: null
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can close the first question block 2`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can close the second question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can close the third question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: EXECUTED
+        timeLimit: 60
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can continue the session 2`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the first question block: evaluate 1`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the first question block: running 1`] = `
+
+    runningSession {
+      activeStep: 1
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the second question block: evaluate 1`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the second question block: running 1`] = `
+
+    runningSession {
+      activeStep: 3
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the third question block: evaluate 1`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"},{"count":1,"key":"cfcd208495d565ef66e7dff9f98764da","value":"0"},{"count":1,"key":"177b84641c41559c3c2f24c2ae749816","value":"-10.344"}],"totalParticipants":5}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can evaluate the third question block: running 1`] = `
+
+    runningSession {
+      activeStep: 5
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can join the session initially (initial) 1`] = `
+
+    runningSession {
+      activeStep: 0
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 3
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 2
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+      blocks: 
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can join the session initially (initial) 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can pause the session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: PAUSED
+    }
+    
+`;
+
+exports[`Integration Session Execution LECTURER: can remove responses from questions 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":1,"key":"cfcd208495d565ef66e7dff9f98764da","value":"0"},{"count":1,"key":"177b84641c41559c3c2f24c2ae749816","value":"-10.344"}],"totalParticipants":3}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can restart the cancelled session 2`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution LECTURER: can start a session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution LECTURER: can update session settings 1`] = `
+
+    updateSessionSettings {
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution LECTURER: can update settings of the restarted session 2`] = `
+
+    updateSessionSettings {
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can add confusion timesteps 1`] = `
+Object {
+  "addConfusionTS": "CONFUSION_ADDED",
+}
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can add feedbacks 1`] = `
+Object {
+  "addFeedback": Object {
+    "content": "my test feedback",
+    "votes": 0,
+  },
+}
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can join the session initially (initial) 2`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":false,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can join the session initially 2`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":false,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: 
+    }
+  
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can update the joined session for the second block 2`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":false,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test FREE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE question.
+        type: FREE
+        options: {"FREE_RANGE":null,"SC":null,"MC":null}
+      
+      feedbacks: 
+    }
+  
+`;
+
+exports[`Integration Session Execution PARTICIPANT: can update the joined session for the third block 2`] = `
+
+    joinSession {
+      settings: {"isParticipantAuthenticationEnabled":false,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true,"storageMode":"SECRET"}
+      activeInstances: 
+        title: Test FREE_RANGE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+      ,
+        title: Test partly restricted FREE_RANGE
+        content: {"blocks":[{"data":{},"text":"This is a simple partly restricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple partly restricted FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+      ,
+        title: Test unrestricted FREE_RANGE
+        content: {"blocks":[{"data":{},"text":"This is a simple unrestricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple unrestricted FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+      
+      feedbacks: 
+    }
+  
+`;
+
+exports[`Integration Session Execution allows completing sessions 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: COMPLETED
+    }
+    
+`;
+
+exports[`Integration Session Execution allows evaluating sessions after completion 4`] = `
+
+    evaluateSession {
+      status: COMPLETED
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":1,"key":"cfcd208495d565ef66e7dff9f98764da","value":"0"},{"count":1,"key":"177b84641c41559c3c2f24c2ae749816","value":"-10.344"}],"totalParticipants":3}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows publishing session evaluations 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option1"},{"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option3"},{"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option1"},{"name":"option2"},{"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option3"},{"name":"option4"},{"name":"option5"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":1,"key":"cfcd208495d565ef66e7dff9f98764da","value":"0"},{"count":1,"key":"177b84641c41559c3c2f24c2ae749816","value":"-10.344"}],"totalParticipants":3}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option1"},{"name":"option2"},{"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option3"},{"name":"option4"},{"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option1"},{"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option3"},{"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Management (authenticated) enables modifications on the created session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: undefined
+      feedbacks: undefined
+      blocks: [
+        status: undefined
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test MC #2
+          type: MC
+        ,
+          title: Test SC #2
+          type: SC
+        
+      ]
+      participants: [
+          username: integration-2,
+      ,
+          username: integration-3,
+      ]
+      settings: {"isParticipantAuthenticationEnabled":true,"authenticationMode":"NONE","storageMode":"SECRET"}
+    }
+  
+`;
+
+exports[`Integration Session Management (authenticated) enables the creation of a new session) 1`] = `
+
+    createSession / modifySession {
+      confusionTS: 
+      feedbacks: 
+      blocks: [
+        status: PLANNED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ]
+      participants: [
+          username: integration-1,
+      ]
+      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"NONE","storageMode":"SECRET"}
+    }
+  
+`;
+
+exports[`Integration Session Management (authentication, aai) enables the creation of a new session) 3`] = `
+
+    createSession / modifySession {
+      confusionTS: 
+      feedbacks: 
+      blocks: [
+        status: PLANNED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ]
+      participants: [
+          username: integration-1,
+      ,
+          username: tester-1,
+      ,
+          username: aai-1,
+      ]
+      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"AAI","storageMode":"SECRET"}
+    }
+  
+`;
+
+exports[`Integration Session Management enables modifications on the created session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: undefined
+      feedbacks: undefined
+      blocks: [
+        status: undefined
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test MC #2
+          type: MC
+        ,
+          title: Test SC #2
+          type: SC
+        
+      ]
+      participants: []
+      settings: {"isParticipantAuthenticationEnabled":false,"authenticationMode":"NONE","storageMode":"SECRET"}
+    }
+  
+`;
+
+exports[`Integration Session Management enables the creation of a new session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: 
+      feedbacks: 
+      blocks: [
+        status: PLANNED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ]
+      participants: []
+      settings: {"isParticipantAuthenticationEnabled":false,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":true,"authenticationMode":"NONE","storageMode":"SECRET"}
+    }
+  
+`;

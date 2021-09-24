@@ -1,0 +1,56 @@
+query JoinSession($shortname: String!) {
+  joinSession(shortname: $shortname) {
+    id
+    isFeedbackOnlySession
+    timeLimit
+    expiresAt
+    status
+    settings {
+      isParticipantAuthenticationEnabled
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+      isConfusionBarometerActive
+      authenticationMode
+      storageMode
+    }
+    activeInstances {
+      id
+      timeLimit
+      expiresAt
+      execution
+      questionId
+      title
+      content
+      description
+      type
+      options {
+        FREE_RANGE {
+          restrictions {
+            min
+            max
+          }
+        }
+        SC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+        MC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+      }
+      files {
+        id
+        name
+        type
+        description
+      }
+    }
+  }
+}

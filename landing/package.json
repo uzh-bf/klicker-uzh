@@ -1,0 +1,31 @@
+{
+  "name": "@klickeruzh/landing",
+  "version": "1.6.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next build && next export"
+  },
+  "dependencies": {
+    "@socialgouv/matomo-next": "1.2.2",
+    "axios": "0.21.1",
+    "fomantic-ui-css": "2.8.8",
+    "next": "11.1.2",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-scroll": "1.8.4",
+    "react-slick": "0.28.1",
+    "semantic-ui-react": "2.0.3",
+    "slick-carousel": "1.8.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "0.4.1",
+    "@types/react": "17.0.19",
+    "autoprefixer": "10.3.4",
+    "postcss": "8.3.6",
+    "tailwindcss": "2.2.9",
+    "typescript": "4.4.2"
+  }
+}

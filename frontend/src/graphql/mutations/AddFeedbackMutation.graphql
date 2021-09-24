@@ -1,0 +1,16 @@
+mutation AddFeedback($fp: ID, $sessionId: ID!, $content: String!) {
+  addFeedback(fp: $fp, sessionId: $sessionId, content: $content) {
+    id
+    content
+    votes
+    pinned
+    resolved
+    createdAt
+    resolvedAt
+    responses {
+      id
+      content
+      createdAt
+    }
+  }
+}

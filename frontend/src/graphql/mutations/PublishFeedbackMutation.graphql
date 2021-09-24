@@ -1,0 +1,9 @@
+mutation PublishFeedback($sessionId: ID!, $feedbackId: ID!, $publishState: Boolean!) {
+  publishFeedback(sessionId: $sessionId, feedbackId: $feedbackId, publishState: $publishState) {
+    id
+    feedbacks {
+      id
+      published
+    }
+  }
+}

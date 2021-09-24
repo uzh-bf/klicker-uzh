@@ -1,0 +1,13 @@
+query RunningSession {
+  pinnedFeedbacks {
+    id
+    content
+    votes
+    responses {
+      id
+      content
+      createdAt
+    }
+    createdAt
+  }
+}
