@@ -8,6 +8,8 @@ query EvaluateSession($sessionId: ID!) {
       votes
       createdAt
       resolved
+      pinned
+      published
       responses {
         id
         content
