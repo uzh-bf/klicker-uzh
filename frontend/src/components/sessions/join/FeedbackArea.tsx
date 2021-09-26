@@ -10,6 +10,7 @@ import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/Publ
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
+
 import PublicFeedback from './PublicFeedback'
 
 interface Props {
