@@ -1,73 +1,90 @@
 import React from 'react'
-import { Table, Icon } from 'semantic-ui-react'
-import { Button } from 'semantic-ui-react'
+import { Table, Icon, Button } from 'semantic-ui-react'
+import dayjs from 'dayjs'
+import clsx from 'clsx'
+
+import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
+import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
   feedbacks: any[]
 }
-//<Button basic className="!mr-2" icon="print" onClick={() => window.print()} />
-// feedback element has attributes content, id and votes BUT NO ANSWER ATTRIBUTE
+
 function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
+  const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, {
+    showUnpublishedInitial: false,
+    showOpenInitial: false,
+    withSearch: false,
+  })
   return (
-    <div className="tableChart">
-      <Table striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>
-              Feedback <Button basic className="!mr-2 float-right" icon="print" onClick={() => window.print()} />
-            </Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {feedbacks.map(
-            (element: any): React.ReactElement => (
-              <Table.Row>
-                <Table.Cell>
-                  <div className="flex">
-                    <div className="flex-1">{element.content}</div>
-                    <div className="float-right ml-6">
-                      {element.votes} <Icon name="thumbs up outline" />
-                    </div>
-                  </div>
-                  {element.responses
-                    ? element.responses.map((response: any) => <Response response={response} />)
-                    : 'No answer available'}
-                </Table.Cell>
-              </Table.Row>
-            )
-          )}
-        </Table.Body>
-      </Table>
-
-      <style jsx>{`
-        .tableChart {
-          width: 100%;
-        }
-        @media print {
-          @page {
-            size: landscape;
-          }
-        }
-      `}</style>
+    <div className="flex flex-col gap-4">
+      <FeedbackSearchAndFilters disabled={feedbacks?.length === 0} {...filterProps} />
+      {sortedFeedbacks.map(
+        (feedback: any): React.ReactElement => (
+          <FeedbackBlock feedback={feedback} key={feedback.id} />
+        )
+      )}
     </div>
   )
 }
 
-interface ResponseProps {
-  response: any
+interface FeedbackBlockProps {
+  feedback: any
 }
-function Response({ response }: ResponseProps): React.ReactElement {
+function FeedbackBlock({ feedback }: FeedbackBlockProps): React.ReactElement {
   return (
-    <>
-      <div className="flex mt-4 ml-4 p-2 border-solid border-2 border-gray-400 rounded-md">
-        <div className="flex-1">{response.content}</div>
-        <div className="ml-6 float-right float-top">
-          {response.positiveReactions} <Icon name="thumbs up outline" />
-          {response.negativeReactions} <Icon name="question" />
+    <div className="no-page-break-inside">
+      <div className="flex pl-4 p-2 border border-solid bg-primary-10% border-primary rounded shadow">
+        <div className="flex-1 no-page-break-inside">
+          <div className="mb-0 text-sm print:text-base">{feedback.content}</div>
+          <div className="flex flex-row items-end mt-2 text-xs text-gray-500 print:text-sm">
+            <div>{dayjs(feedback.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+            <div className="ml-8">
+              {feedback.resolved ? (
+                <div>
+                  <Icon name="check" /> Resolved during session
+                </div>
+              ) : (
+                <div>
+                  <Icon name="discussions" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-end justify-between flex-initial !items-top print:hidden">
+          <div className="text-base text-gray-500">
+            {feedback.votes} <Icon name="thumbs up outline" />
+          </div>
         </div>
       </div>
-    </>
+
+      {feedback.responses?.length > 0 && (
+        <div className="flex flex-col gap-2 pl-4 print:p-2 print:pr-0 no-page-break-before">
+          {feedback.responses.map((response: any) => (
+            <div
+              className="first:mt-2 flex flex-row pl-4 border border-solid border-l-[5px] print:border-l-[10px] items-start bg-gray-50 py-1 print:pr-0 rounded shadow-sm no-page-break-inside"
+              key={response.createdAt}
+            >
+              <div className="flex-1">
+                <p className="mb-0 text-sm prose print:text-base">{response.content}</p>
+                <div className="mt-1 text-xs text-gray-500 print:text-sm">
+                  {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
+                </div>
+              </div>
+              <div className="flex flex-row items-center flex-initial print:hidden">
+                <div className={clsx('text-gray-500')}>
+                  {response.positiveReactions} <Icon name="thumbs up outline" />
+                </div>
+                <div className={clsx('ml-2', 'text-gray-500')}>
+                  {response.negativeReactions} <Icon name="question" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

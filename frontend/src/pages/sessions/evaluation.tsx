@@ -200,7 +200,7 @@ function Evaluation(): React.ReactElement {
                     />
                   )}
                   {sessionStatus === SESSION_STATUS.COMPLETED && showFeedback && (
-                    <div className="h-full overflow-auto">
+                    <div className="h-full overflow-auto !print:overflow-visible">
                       <FeedbackTableChart feedbacks={feedbacks} />
                     </div>
                   )}

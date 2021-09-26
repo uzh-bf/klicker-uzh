@@ -12,6 +12,7 @@ spec:
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
   template:
     metadata:
       {{- with .Values.frontend.podAnnotations }}
@@ -40,11 +41,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-common
-            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend
             - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-common
+                name: {{ include "chart.fullname" . }}-secret-frontend
           livenessProbe:
             httpGet:
               path: /
@@ -82,6 +81,7 @@ spec:
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
   template:
     metadata:
       {{- with .Values.backend.podAnnotations }}
@@ -110,11 +110,7 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-common
-            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-backend
-            - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-common
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend
           livenessProbe:

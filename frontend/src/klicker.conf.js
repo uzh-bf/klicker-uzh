@@ -54,6 +54,11 @@ module.exports = convict({
       env: 'APP_TRUST_PROXY',
       format: Boolean,
     },
+    withAai: {
+      default: false,
+      env: 'APP_WITH_AAI',
+      format: Boolean,
+    },
   },
   cache: {
     pages: {
@@ -155,7 +160,7 @@ module.exports = convict({
         format: Array,
       },
       imgSrc: {
-        default: ["'self'"],
+        default: ["'self'", 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.co'],
         env: 'SECURITY_CSP_IMG_SRC',
         format: Array,
       },
@@ -165,7 +170,7 @@ module.exports = convict({
         format: 'url',
       },
       scriptSrc: {
-        default: ["'self'", "'unsafe-inline'", 'cdn.polyfill.io'],
+        default: ["'self'", "'unsafe-inline'"],
         env: 'SECURITY_CSP_SCRIPT_SRC',
         format: Array,
       },
@@ -303,8 +308,23 @@ module.exports = convict({
       },
       enabled: {
         default: false,
-        env: 'SERVICES_SENTRY_ENABLED',
+        env: 'SENTRY_ENABLED',
         format: Boolean,
+      },
+      environment: {
+        default: undefined,
+        env: 'SENTRY_ENV',
+        format: String,
+      },
+      url: {
+        default: 'https://sentry.io',
+        env: 'SENTRY_URL',
+        format: 'url',
+      },
+      tracesSampleRate: {
+        default: 1,
+        env: 'SENTRY_SAMPLE_RATE',
+        format: Number,
       },
     },
   },

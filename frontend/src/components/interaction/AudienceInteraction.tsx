@@ -25,7 +25,7 @@ interface Props {
   isFeedbackChannelActive: boolean
   isFeedbackChannelPublic: boolean
   isConfusionBarometerActive: boolean
-  subscribeToMore: (obj: any) => void
+  subscribeToMore: any
 }
 
 function AudienceInteraction({
@@ -38,6 +38,24 @@ function AudienceInteraction({
   isConfusionBarometerActive,
   subscribeToMore,
 }: Props) {
+  useEffect(() => {
+    return subscribeToMore({
+      document: FeedbackAddedSubscription,
+      updateQuery: (prev, { subscriptionData }): any => {
+        console.warn(prev, subscriptionData)
+        if (!subscriptionData.data) return prev
+        return {
+          ...prev,
+          runningSession: {
+            ...prev.runningSession,
+            feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
+          },
+        }
+      },
+      variables: { sessionId },
+    })
+  }, [subscribeToMore, sessionId])
+
   const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [pinFeedback, { loading: isPinFeedbackLoading }] = useMutation(PinFeedbackMutation)
@@ -58,7 +76,7 @@ function AudienceInteraction({
         </div>
         <div className="flex items-center mr-2 print:hidden">
           {isFeedbackChannelActive && (
-            <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank" className="mr-10">
+            <a className="mr-10" href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
               <Button icon labelPosition="left" size="small">
                 <Icon name="external" />
                 <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
@@ -122,7 +140,12 @@ function AudienceInteraction({
         <Message
           info
           className="print:hidden"
-          content="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+          content={
+            <FormattedMessage
+              defaultMessage="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+              id="runningSession.audienceInteraction.description"
+            />
+          }
           icon="info"
         />
       )}
@@ -161,22 +184,6 @@ function AudienceInteraction({
               }}
               isActive={isFeedbackChannelActive}
               isPublic={isFeedbackChannelPublic}
-              subscribeToMore={(): void => {
-                subscribeToMore({
-                  document: FeedbackAddedSubscription,
-                  updateQuery: (prev, { subscriptionData }): any => {
-                    if (!subscriptionData.data) return prev
-                    return {
-                      ...prev,
-                      runningSession: {
-                        ...prev.runningSession,
-                        feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
-                      },
-                    }
-                  },
-                  variables: { sessionId },
-                })
-              }}
             />
           </div>
         </div>

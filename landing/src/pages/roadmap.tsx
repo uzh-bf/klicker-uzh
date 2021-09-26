@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import {
   Card,
   Container,
@@ -62,6 +63,9 @@ function RoadmapItem({
 }
 
 export default function Roadmap() {
+  const { query } = useRouter()
+  console.log(query)
+
   useEffect(() => {
     var s: any = document.createElement('script'),
       options = {
@@ -87,7 +91,23 @@ export default function Roadmap() {
   })
 
   return (
-    <div className="p-4 pt-8 md:p-16">
+    <div className="p-4 pt-4 md:p-16 md:pt-8">
+      {query?.thanks && (
+        <div className="p-4 mb-16 ml-4 mr-4 bg-blue-100 border border-blue-400">
+          <div className="mb-2 text-2xl font-bold">
+            Thank you for your participation!
+          </div>
+          <p className="max-w-5xl mb-0 prose prose-xl">
+            Your feedback will allow us support teachers with improved digital
+            tooling, know-how, and resources. <br />
+            We will curate and continuously update this page with the most
+            important information regarding our project, in case you would like
+            to stay informed about our progress and updates that might be
+            interesting to you.
+          </p>
+        </div>
+      )}
+
       <h1 className="ml-4">Get Involved</h1>
 
       <div className="flex flex-col flex-wrap md:flex-row">

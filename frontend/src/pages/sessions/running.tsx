@@ -58,10 +58,10 @@ function Running(): React.ReactElement {
     router.prefetch('/sessions/feedbacks')
     router.prefetch('/join')
     router.prefetch('/qr')
-  }, [])
+  }, [router])
 
   const accountSummary = useQuery(AccountSummaryQuery)
-  const { data, loading, error, startPolling, stopPolling, subscribeToMore } = useQuery(RunningSessionQuery, {
+  const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, {
     pollInterval: 10000,
   })
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
@@ -241,7 +241,6 @@ function Running(): React.ReactElement {
                   document: RunningSessionUpdatedSubscription,
                   updateQuery: (prev, { subscriptionData }): any => {
                     if (!subscriptionData.data) return prev
-                    console.log(subscriptionData.data.runningSessionUpdated.blocks)
                     return {
                       ...prev,
                       runningSession: {

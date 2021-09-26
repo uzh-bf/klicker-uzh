@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
-import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, Modal, Header } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 const messages = defineMessages({
@@ -25,6 +25,8 @@ const defaultProps = {
 
 function SessionArea({ sessionId }: Props): React.ReactElement {
   const intl = useIntl()
+  const [open, setOpen] = React.useState(false)
+
   return (
     <>
       <Menu.Item>
@@ -41,50 +43,81 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
         </Button>
       </Menu.Item>
 
-      <Popup
-        basic
-        hoverable
-        closeOnDocumentClick={false}
-        closeOnPortalMouseLeave={false}
-        closeOnTriggerMouseLeave={false}
-        hideOnScroll={false}
-        on="click"
-        position="bottom right"
+      <Modal
+        open={open}
+        size="fullscreen"
         trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
+        // width={200}
+        onClose={() => setOpen(false)}
+        onOpen={() => setOpen(true)}
       >
-        <Popup.Content>
-          <div className="popupHelp popupContent">
-            <a href="mailto:klicker.support@uzh.ch">
-              <Button fluid icon labelPosition="left">
-                <Icon name="mail" />
-                klicker.support@uzh.ch
-              </Button>
-            </a>
+        <Modal.Content>
+          <div className="flex flex-row flex-wrap">
+            <div className="flex flex-col flex-1 md:pr-4">
+              <div className="p-4 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a
+                  href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <Header size="small">
+                    <Icon name="book" />
+                    <Header.Content>
+                      Documentation
+                      <Header.Subheader>User Manual, Feature Overview, etc.</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a href="https://uzh-bf.github.io/klicker-uzh/docs/faq/faq" rel="noopener noreferrer" target="_blank">
+                  <Header size="small">
+                    <Icon name="question" />
 
-            <a href="https://uzh-bf.github.io/klicker-uzh/" rel="noopener noreferrer" target="_blank">
-              <Button fluid icon labelPosition="left">
-                <Icon name="external" />
-                Documentation
-              </Button>
-            </a>
-
-            {/* <Modal
-              closeIcon
-              trigger={
-                <Button fluid icon labelPosition="left">
-                  <Icon name="video" />
-                  Introductory Video
-                </Button>
-              }
-            >
-              <Modal.Header>Introductory Video</Modal.Header>
-              <Modal.Content>
-                <Embed id="Dpx7BWKeqlo" source="youtube" />
-              </Modal.Content>
-            </Modal> */}
+                    <Header.Content>
+                      FAQ
+                      <Header.Subheader>Frequently Asked Questions</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a href="https://github.com/uzh-bf/klicker-uzh" rel="noopener noreferrer" target="_blank">
+                  <Header size="small">
+                    <Icon name="code" />
+                    <Header.Content>
+                      Github Repository
+                      <Header.Subheader>Source Code and Discussions</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+              <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
+                <a href="mailto:klicker.support@uzh.ch">
+                  <Header size="small">
+                    <Icon name="mail outline" />
+                    <Header.Content>
+                      Contact
+                      <Header.Subheader>Email to klicker.support@uzh.ch</Header.Subheader>
+                    </Header.Content>
+                  </Header>
+                </a>
+              </div>
+            </div>
+            <div className="mt-4 md:mt-0 flex-1 min-w-[500px] min-h-[800px]">
+              <iframe
+                className="clickup-embed clickup-dynamic-height"
+                height="100%"
+                src="https://forms.clickup.com/f/4dv27-1781/Z5ZVQBCR5R5FXXPB0Q"
+                // style="background: transparent; border: 1px solid #ccc;"
+                title="ClickUp Feedback Form"
+                width="100%"
+                // onWheel=""
+              />
+            </div>
           </div>
-        </Popup.Content>
-      </Popup>
+        </Modal.Content>
+      </Modal>
 
       <style jsx>{`
         h3 {

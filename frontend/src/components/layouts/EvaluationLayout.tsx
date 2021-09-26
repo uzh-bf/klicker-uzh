@@ -178,7 +178,7 @@ function EvaluationLayout({
           }
 
           return (
-            <div className="instanceChooser">
+            <div className="instanceChooser print:!hidden">
               <Menu fitted tabular>
                 <Menu.Item
                   className="hoverable"
@@ -260,13 +260,13 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails">
+        <div className="questionDetails print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
             {(showQuestionLayout && description) ||
               (showFeedback && 'Feedback-Channel') ||
               (showConfusionTS && 'Confusion-Barometer')}
           </p>
-          {publicRuntimeConfig.s3root && files.length > 0 && (
+          {showQuestionLayout && publicRuntimeConfig.s3root && files.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
             </div>
@@ -308,6 +308,11 @@ function EvaluationLayout({
               questionType={type}
               onChangeType={onChangeVisualizationType}
             />
+          )}
+          {showFeedback && (
+            <div className="print:hidden">
+              <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
+            </div>
           )}
         </div>
 
@@ -397,6 +402,10 @@ function EvaluationLayout({
                 flex: 1 0 50vh;
                 order: 5;
                 overflow-y: hidden;
+
+                @media print {
+                  overflow-y: visible;
+                }
               }
 
               .questionDetails,
@@ -447,6 +456,11 @@ function EvaluationLayout({
                   height: 100vh;
                   max-height: 100vh;
                   max-width: 100vw;
+
+                  @media print {
+                    height: unset;
+                    max-height: unset;
+                  }
 
                   grid-template-columns: auto 14rem;
                   grid-template-rows:
@@ -561,6 +575,10 @@ function EvaluationLayout({
 
                     :global(> *) {
                       border: ${showQuestionLayout ? '1px solid lightgrey' : '0'};
+                    }
+
+                    @media print {
+                      height: auto;
                     }
                   }
 

@@ -2,6 +2,366 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.8...v1.6.1) (2021-09-24)
+
+
+### Other
+
+* **deploy:** bump appVersion to 1.6.1 ([f2ea1b1](https://github.com/uzh-bf/klicker-uzh/commit/f2ea1b11ae5d08bc16d657800712896e0d74bf3b))
+
+## [1.6.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.7...v1.6.0-rc.8) (2021-09-24)
+
+
+### Features
+
+* allow for filtering on the feedback page of a closed session using a refactored filter hook ([849239a](https://github.com/uzh-bf/klicker-uzh/commit/849239a117f77e7e949fbb6d148fa6f1e0c1786d))
+
+
+### Bug Fixes
+
+* add DE translation of the descriptive text for the feedback channel ([fa88c13](https://github.com/uzh-bf/klicker-uzh/commit/fa88c138735c4bbb03817f6f06c2452334b0d526))
+* ensure that the print view of the feedbacks on a closed session evaluation does not hide overflow (allow for multiple pages) ([7378062](https://github.com/uzh-bf/klicker-uzh/commit/7378062b2165d5f609cb33f5e262980be3a91723))
+* **landing:** adjust address in privacy policy ([4b79e90](https://github.com/uzh-bf/klicker-uzh/commit/4b79e90e823b15eff28ddcde8d9f4b5b1814f7f5))
+* **landing:** adjust data storage description ([28decd7](https://github.com/uzh-bf/klicker-uzh/commit/28decd72cb9001e53d7219450f15faa43e0f2236))
+
+
+### Enhancements
+
+* remove the icons from public feedbacks ([a1a798e](https://github.com/uzh-bf/klicker-uzh/commit/a1a798e7646e53e2efbcb76da38ef5e0f22465e3))
+* reverse the ordering of feedbacks on the student view to show recent feedbacks on top ([dbede4d](https://github.com/uzh-bf/klicker-uzh/commit/dbede4d0593f45a5be00fa4f858272a1526a5466))
+
+
+### Other
+
+* **deploy:** adjust autoscaling settings ([59dd925](https://github.com/uzh-bf/klicker-uzh/commit/59dd9255e92a5de6a9691986d108db8858d6e84a))
+* **deploy:** bump the version of the app to deploy ([958237d](https://github.com/uzh-bf/klicker-uzh/commit/958237d3b6eb4c87e32fa5b1eea1e4eb5a46ce0c))
+
+## [1.6.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.6...v1.6.0-rc.7) (2021-09-20)
+
+
+### Bug Fixes
+
+* ensure that feedbacks are not published in the session update subscription ([2d32f92](https://github.com/uzh-bf/klicker-uzh/commit/2d32f922df5296f52c5a2400d781014a1d2d85c6))
+
+
+### Other
+
+* **deploy:** adjust resources and add quota for redis ([055ace9](https://github.com/uzh-bf/klicker-uzh/commit/055ace9c0f4ecbfcaca7918ac0ee7cfde6836a1a))
+* **deploy:** update appVersion to v1.6.0-rc.7 ([7eb10c8](https://github.com/uzh-bf/klicker-uzh/commit/7eb10c85da1f72b8226f86be5c9b39407490c373))
+
+## [1.6.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.5...v1.6.0-rc.6) (2021-09-19)
+
+
+### Refactors
+
+* move q&a to a separate query with polling ([8fbce62](https://github.com/uzh-bf/klicker-uzh/commit/8fbce62c3cca683ddc3861a70ca6e5b567d96e83))
+* reduce boilerplate in subscription resolvers ([271021d](https://github.com/uzh-bf/klicker-uzh/commit/271021ddcfc9161288ffd7de6f07225459d291a5))
+
+
+### Enhancements
+
+* add a subscription for added feedback responses ([d2fb373](https://github.com/uzh-bf/klicker-uzh/commit/d2fb373f4e4565165c842957c50811fb6a0cc76a))
+* add a subscription for feedback deletion ([c48feb6](https://github.com/uzh-bf/klicker-uzh/commit/c48feb62a73d7a6be99ff9554d553c583ec47e60))
+* add a subscription for newly added or published feedbacks ([5401261](https://github.com/uzh-bf/klicker-uzh/commit/54012610ceb9a0ab6719404356cefc147ad0d4be))
+* add a subscription for resolving of feedbacks ([03c0bb4](https://github.com/uzh-bf/klicker-uzh/commit/03c0bb4e903add4f73c5d52c8a382c7f6f94ebab))
+* use separate subscriptions for running session and join session screens and new feedbacks ([40b1517](https://github.com/uzh-bf/klicker-uzh/commit/40b151767fa5c5e6c9aad2f17c0aa31dbc55e7c2))
+
+
+### Other
+
+* **deploy:** bump the appVersion to v1.6.0-rc.6 ([4447e4e](https://github.com/uzh-bf/klicker-uzh/commit/4447e4e4bf02d505dfacb5d35c2036bed2617807))
+* **deploy:** update min replicas when autoscaling to three per service ([7834fa4](https://github.com/uzh-bf/klicker-uzh/commit/7834fa4574b1a8c4cc4bf91b04525f4d4b99ef1b))
+* **frontend:** move types to a new specific dir ([9fda4af](https://github.com/uzh-bf/klicker-uzh/commit/9fda4af9b9b1da095e54b54f8a442eb2bb1f3f90))
+* **frontend:** setup rimraf for .next/cache on nodemon restart ([8184336](https://github.com/uzh-bf/klicker-uzh/commit/818433674b19aeb720e502314b714d704b18561d))
+
+## [1.6.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.4...v1.6.0-rc.5) (2021-09-19)
+
+
+### Bug Fixes
+
+* **backend:** use response cache for resolving poll results ([f9f8d68](https://github.com/uzh-bf/klicker-uzh/commit/f9f8d6852ffe743e57649d2f02134f77a1da5b5b))
+* **test:** update snapshots to correspond to new Q&A public by default ([b5259e1](https://github.com/uzh-bf/klicker-uzh/commit/b5259e15dc43c65187f30956bfd0ec3a5300b388))
+
+
+### Other
+
+* **backend:** add mongo test url to .env.template ([aba3813](https://github.com/uzh-bf/klicker-uzh/commit/aba38136b95d7fc44edc980f1a630cdd4d053ed1))
+* **deploy:** update appVersion to v1.6.0-rc.5 ([693a151](https://github.com/uzh-bf/klicker-uzh/commit/693a15134a73c21aa5d78aae79ad5671b32feb74))
+
+## [1.6.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.3...v1.6.0-rc.4) (2021-09-17)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the redis password for exec instance is added to the secret ([c6fe6ea](https://github.com/uzh-bf/klicker-uzh/commit/c6fe6ea079bea480634924af00a6f53193be5918))
+* **frontend:** ensure that locale stays on page switches and does not revert to browser locale ([58cfa3e](https://github.com/uzh-bf/klicker-uzh/commit/58cfa3e731973ff0a7b34adf082c32105ff73aff))
+
+
+### Deployment
+
+* use appVersion v1.6.0-rc.3 ([b0887fb](https://github.com/uzh-bf/klicker-uzh/commit/b0887fbecb0d437aaa63d59c93f4ddcca900935a))
+
+
+### Enhancements
+
+* **deploy:** add minio to the local dev environment for improved default DX ([9ed8ac7](https://github.com/uzh-bf/klicker-uzh/commit/9ed8ac7d9af7214dadf18cc294a42626893c1ac3))
+
+## [1.6.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.1...v1.6.0-rc.3) (2021-09-17)
+
+
+### Features
+
+* add initial survey confirmation ([368dca8](https://github.com/uzh-bf/klicker-uzh/commit/368dca89af92ef13ebcbaf02fdad871d3812e84a))
+* add second in-cluster redis instance for page caching ([56066a9](https://github.com/uzh-bf/klicker-uzh/commit/56066a9fdc734bb01b6047757c6ed4999c677b43))
+
+
+### Bug Fixes
+
+* reverse the order of toast and intl provider as toast depends on intl ([f427484](https://github.com/uzh-bf/klicker-uzh/commit/f427484d37e52edb0deef78a70d359ab0c10040e))
+
+
+### Deployment
+
+* adjust parameters for autoscale ([487ccb1](https://github.com/uzh-bf/klicker-uzh/commit/487ccb13b31651c42009c088c716a00d163e4322))
+* enable autoscaling for prod ([ff15bb5](https://github.com/uzh-bf/klicker-uzh/commit/ff15bb53e062ebaa5cb196bd171c7df3d8e3b7ed))
+* reapply additional production settings ([bcb163d](https://github.com/uzh-bf/klicker-uzh/commit/bcb163d27c6f51cb7a386e67e63c37a8f37d27e7))
+* update resource reservations and limits and autoscaling ([711e9ad](https://github.com/uzh-bf/klicker-uzh/commit/711e9ad024c85c4e2160592039edf63378ae47e1))
+* use letsencrypt-based tls ([8e241f9](https://github.com/uzh-bf/klicker-uzh/commit/8e241f9fa19f3e5026a9fd65d7be2275c955d829))
+
+
+### Other
+
+* **release:** 1.6.0-rc.2 ([be06213](https://github.com/uzh-bf/klicker-uzh/commit/be06213b2190e6ed471bb96b34c38fe78c4de668))
+* remove pass of in-cluster redis ([d69fa3e](https://github.com/uzh-bf/klicker-uzh/commit/d69fa3ec7523861e9c3f121619892cbbbfb0afb4))
+* reorganize docker-compose with one file at the root ([92687a4](https://github.com/uzh-bf/klicker-uzh/commit/92687a4fd106b143bb03ee3fa56a99d4a6917a59))
+
+## [1.6.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.1...v1.6.0-rc.2) (2021-09-13)
+
+
+### Bug Fixes
+
+* reverse the order of toast and intl provider as toast depends on intl ([f427484](https://github.com/uzh-bf/klicker-uzh/commit/f427484d37e52edb0deef78a70d359ab0c10040e))
+
+
+### Deployment
+
+* enable autoscaling for prod ([ff15bb5](https://github.com/uzh-bf/klicker-uzh/commit/ff15bb53e062ebaa5cb196bd171c7df3d8e3b7ed))
+* reapply additional production settings ([bcb163d](https://github.com/uzh-bf/klicker-uzh/commit/bcb163d27c6f51cb7a386e67e63c37a8f37d27e7))
+* update resource reservations and limits and autoscaling ([711e9ad](https://github.com/uzh-bf/klicker-uzh/commit/711e9ad024c85c4e2160592039edf63378ae47e1))
+* use letsencrypt-based tls ([8e241f9](https://github.com/uzh-bf/klicker-uzh/commit/8e241f9fa19f3e5026a9fd65d7be2275c955d829))
+
+
+### Other
+
+* reorganize docker-compose with one file at the root ([92687a4](https://github.com/uzh-bf/klicker-uzh/commit/92687a4fd106b143bb03ee3fa56a99d4a6917a59))
+
+## [1.6.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.0...v1.6.0-rc.1) (2021-09-12)
+
+
+### Other
+
+* bump chart appVersion ([6d0f508](https://github.com/uzh-bf/klicker-uzh/commit/6d0f508920440d8773307eddbb690f2da267a27a))
+
+
+### Enhancements
+
+* add APP_WITH_AAI configuration parameter to enable aai login on prod ([90b27e8](https://github.com/uzh-bf/klicker-uzh/commit/90b27e88faf349750e316c8801f04c0dea19b861))
+
+## [1.6.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-rc.0) (2021-09-12)
+
+
+### Bug Fixes
+
+* createdAt for feedbacks ([83617b1](https://github.com/uzh-bf/klicker-uzh/commit/83617b14eaa0dcd607956f1b9b2aced969ed28ef))
+* feedback categorization based on resolved attribute ([593cef5](https://github.com/uzh-bf/klicker-uzh/commit/593cef50c783191d91b47488c8bb72dc9510699c))
+* update naming of fingerprint library ([d095592](https://github.com/uzh-bf/klicker-uzh/commit/d0955927276f0217f337bdecd251e2c0bfdc6acf))
+
+
+### Documentation
+
+* add entry for the fall release 2021 ([da030e2](https://github.com/uzh-bf/klicker-uzh/commit/da030e2fdae07e48a2a9328bb2be780d23bb266e))
+
+
+### Other
+
+* added optional simplified view for feedback channel on evaluation page as comment ([8195aac](https://github.com/uzh-bf/klicker-uzh/commit/8195aac126baeaa9c3baf492826c77e2a3dffc4f))
+* dependency maintenance ([101c169](https://github.com/uzh-bf/klicker-uzh/commit/101c169925374fec542d3569c7ee2331a1f2964f))
+* disable caching of the landing page to reduce redis requests ([5a57fe2](https://github.com/uzh-bf/klicker-uzh/commit/5a57fe22468c8189a5a0653485fb44ff74d38bb4))
+* lockfile maintenance ([170f8a2](https://github.com/uzh-bf/klicker-uzh/commit/170f8a2eb69ab6f9d981c96e0d62eca33782791b))
+* optimization of feedback channel tab on evaluation page after session end ([0f56c05](https://github.com/uzh-bf/klicker-uzh/commit/0f56c05db27f531efde45fb638b82c46ff48397e))
+* **release:** 1.6.0-beta.3 ([28f8c72](https://github.com/uzh-bf/klicker-uzh/commit/28f8c7227f49947c94caf92acd4e9a58ba2ac221))
+* **release:** 1.6.0-beta.4 ([a4eceef](https://github.com/uzh-bf/klicker-uzh/commit/a4eceefc92db3c39f9786552eec824fa9db49121))
+* **release:** 1.6.0-beta.5 ([6b32cf9](https://github.com/uzh-bf/klicker-uzh/commit/6b32cf9431aeede2896b2f3f23fb48b48d898a14))
+* remove cruft azure scripting ([4683abf](https://github.com/uzh-bf/klicker-uzh/commit/4683abfb5b1e6857b1a939fb28d8b4a9bc1becf9))
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+* improved feedback / question view on evaluation page and print layout ([b59ab02](https://github.com/uzh-bf/klicker-uzh/commit/b59ab02810c489f6915ba520c23182a4b8355c50))
+* modified support section with modal containing documentation, feedback and contact links ([66b44d3](https://github.com/uzh-bf/klicker-uzh/commit/66b44d36f55388fca41d9da62052ffbb5606b40a))
+* update support screen to incorporate clickup feedback form and additional outgoing links ([766ee87](https://github.com/uzh-bf/klicker-uzh/commit/766ee8736496b40df0641518bc10b22f9fab7284))
+* use simplified feedback display and move print button to info bar ([e931d72](https://github.com/uzh-bf/klicker-uzh/commit/e931d72d8bbbd5bcea35bc5014eb3d2636dc1f21))
+
+
+### Deployment
+
+* add dryrun sync script and use subfolder ([b71ab67](https://github.com/uzh-bf/klicker-uzh/commit/b71ab674f575b013cc3f60c2a71396fc3cb185a4))
+* add redis restore and exo commands ([f72e3e7](https://github.com/uzh-bf/klicker-uzh/commit/f72e3e73e20ef0430bebe216d65297b8fd129393))
+* add remaining labels to service selector ([7dd0feb](https://github.com/uzh-bf/klicker-uzh/commit/7dd0febea0f697e91d1371b39505cbd7e8cf9fb6))
+* ensure that the sentry auth token for frontend is read correctly ([d095b05](https://github.com/uzh-bf/klicker-uzh/commit/d095b057e95a42e96f36618a8c145ff4901d95f8))
+* fixed redis migration commands ([e9ba8d2](https://github.com/uzh-bf/klicker-uzh/commit/e9ba8d2c0902a96a72fdfe18439744156040e829))
+* more work on script ([338a6eb](https://github.com/uzh-bf/klicker-uzh/commit/338a6eb2f5b8ae8e3986c3a2512d315536d0a716))
+* preparations for prod migration ([f23e5c8](https://github.com/uzh-bf/klicker-uzh/commit/f23e5c8951072b1c448804694c31718308948253))
+* split values of stage and qa env ([248614e](https://github.com/uzh-bf/klicker-uzh/commit/248614eec6e9731798fc72bc860f9e9fa5a3f6d0))
+* update migration scripts ([493e7ab](https://github.com/uzh-bf/klicker-uzh/commit/493e7ab5fa206690ea4f1d1a64d52978143bfa2f))
+* update resources and autoscale settings for services ([c0f8994](https://github.com/uzh-bf/klicker-uzh/commit/c0f89946a56cc2ad03464b6e9376bcae87e60c28))
+* update service and deployment labels ([4c94b90](https://github.com/uzh-bf/klicker-uzh/commit/4c94b90b4f6fb694bd34ab330e64bb8b4d7d207b))
+
+## [1.6.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.5) (2021-09-10)
+
+
+### Bug Fixes
+
+* update naming of fingerprint library ([d095592](https://github.com/uzh-bf/klicker-uzh/commit/d0955927276f0217f337bdecd251e2c0bfdc6acf))
+
+
+### Documentation
+
+* add entry for the fall release 2021 ([da030e2](https://github.com/uzh-bf/klicker-uzh/commit/da030e2fdae07e48a2a9328bb2be780d23bb266e))
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+
+
+### Deployment
+
+* add dryrun sync script and use subfolder ([b71ab67](https://github.com/uzh-bf/klicker-uzh/commit/b71ab674f575b013cc3f60c2a71396fc3cb185a4))
+* add redis restore and exo commands ([f72e3e7](https://github.com/uzh-bf/klicker-uzh/commit/f72e3e73e20ef0430bebe216d65297b8fd129393))
+* add remaining labels to service selector ([7dd0feb](https://github.com/uzh-bf/klicker-uzh/commit/7dd0febea0f697e91d1371b39505cbd7e8cf9fb6))
+* ensure that the sentry auth token for frontend is read correctly ([d095b05](https://github.com/uzh-bf/klicker-uzh/commit/d095b057e95a42e96f36618a8c145ff4901d95f8))
+* fixed redis migration commands ([e9ba8d2](https://github.com/uzh-bf/klicker-uzh/commit/e9ba8d2c0902a96a72fdfe18439744156040e829))
+* more work on script ([338a6eb](https://github.com/uzh-bf/klicker-uzh/commit/338a6eb2f5b8ae8e3986c3a2512d315536d0a716))
+* split values of stage and qa env ([248614e](https://github.com/uzh-bf/klicker-uzh/commit/248614eec6e9731798fc72bc860f9e9fa5a3f6d0))
+* update migration scripts ([493e7ab](https://github.com/uzh-bf/klicker-uzh/commit/493e7ab5fa206690ea4f1d1a64d52978143bfa2f))
+* update resources and autoscale settings for services ([c0f8994](https://github.com/uzh-bf/klicker-uzh/commit/c0f89946a56cc2ad03464b6e9376bcae87e60c28))
+* update service and deployment labels ([4c94b90](https://github.com/uzh-bf/klicker-uzh/commit/4c94b90b4f6fb694bd34ab330e64bb8b4d7d207b))
+
+
+### Other
+
+* dependency maintenance ([101c169](https://github.com/uzh-bf/klicker-uzh/commit/101c169925374fec542d3569c7ee2331a1f2964f))
+* disable caching of the landing page to reduce redis requests ([5a57fe2](https://github.com/uzh-bf/klicker-uzh/commit/5a57fe22468c8189a5a0653485fb44ff74d38bb4))
+* lockfile maintenance ([170f8a2](https://github.com/uzh-bf/klicker-uzh/commit/170f8a2eb69ab6f9d981c96e0d62eca33782791b))
+* **release:** 1.6.0-beta.3 ([28f8c72](https://github.com/uzh-bf/klicker-uzh/commit/28f8c7227f49947c94caf92acd4e9a58ba2ac221))
+* **release:** 1.6.0-beta.4 ([a4eceef](https://github.com/uzh-bf/klicker-uzh/commit/a4eceefc92db3c39f9786552eec824fa9db49121))
+* remove cruft azure scripting ([4683abf](https://github.com/uzh-bf/klicker-uzh/commit/4683abfb5b1e6857b1a939fb28d8b4a9bc1becf9))
+
+## [1.6.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.4) (2021-09-09)
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+
+
+### Other
+
+* disable caching of the landing page to reduce redis requests ([5a57fe2](https://github.com/uzh-bf/klicker-uzh/commit/5a57fe22468c8189a5a0653485fb44ff74d38bb4))
+* **release:** 1.6.0-beta.3 ([28f8c72](https://github.com/uzh-bf/klicker-uzh/commit/28f8c7227f49947c94caf92acd4e9a58ba2ac221))
+* remove cruft azure scripting ([4683abf](https://github.com/uzh-bf/klicker-uzh/commit/4683abfb5b1e6857b1a939fb28d8b4a9bc1becf9))
+
+
+### Deployment
+
+* add remaining labels to service selector ([7dd0feb](https://github.com/uzh-bf/klicker-uzh/commit/7dd0febea0f697e91d1371b39505cbd7e8cf9fb6))
+* ensure that the sentry auth token for frontend is read correctly ([d095b05](https://github.com/uzh-bf/klicker-uzh/commit/d095b057e95a42e96f36618a8c145ff4901d95f8))
+* split values of stage and qa env ([248614e](https://github.com/uzh-bf/klicker-uzh/commit/248614eec6e9731798fc72bc860f9e9fa5a3f6d0))
+* update resources and autoscale settings for services ([c0f8994](https://github.com/uzh-bf/klicker-uzh/commit/c0f89946a56cc2ad03464b6e9376bcae87e60c28))
+
+## [1.6.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-beta.2...v1.6.0-beta.3) (2021-09-08)
+
+
+### Enhancements
+
+* improve sentry integration ([2705776](https://github.com/uzh-bf/klicker-uzh/commit/2705776e9253e49409ea96b6a717dc49cc6b7eab))
+
+## [1.6.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-beta.2) (2021-09-08)
+
+
+### Features
+
+* added button to reach 'pinned feedback' page from running session view ([13a9faa](https://github.com/uzh-bf/klicker-uzh/commit/13a9faa4513caddc4f7ace7f5d63c8716fb196f7))
+* added possiblity to print feedback from evaluation for past sessions ([e26bc89](https://github.com/uzh-bf/klicker-uzh/commit/e26bc89205fb73083c2ab47c3c4da9a01b4cb9e7))
+* **landing:** rework the roadmap page to incorporate our public clickup roadmap ([7d93b2a](https://github.com/uzh-bf/klicker-uzh/commit/7d93b2a9d3a8b5b0a5ad91f1b539914e3a558b8d))
+* response ratings and question responses are now visible for past sessions as well ([8eba2da](https://github.com/uzh-bf/klicker-uzh/commit/8eba2da65e5c068dc0a93a2998cc0d670f43e683))
+* rework react-intl integration and migrate to ts-node ([#2533](https://github.com/uzh-bf/klicker-uzh/issues/2533)) ([f9fc0ae](https://github.com/uzh-bf/klicker-uzh/commit/f9fc0ae30b88515f37cf483fe9c36b590a59b955))
+
+
+### Bug Fixes
+
+* ensure that feedbacks and reactions are initialized correctly ([04d2d39](https://github.com/uzh-bf/klicker-uzh/commit/04d2d39f16272b829abcd570eb825e8ba1bd2257))
+* **frontend:** ensure that NEXT_PUBLIC_DISPLAY_AAI is parsed correctly ([58d791f](https://github.com/uzh-bf/klicker-uzh/commit/58d791f6b7842446ca462a23e00cc598168b7dd0))
+* **landing:** ensure that the nav on landing can stack on mobile ([53e2014](https://github.com/uzh-bf/klicker-uzh/commit/53e2014ce882b5a3afcf5fcef7334f8c7a10c826))
+
+
+### Deployment
+
+* update node command in dockerfile ([d505c0f](https://github.com/uzh-bf/klicker-uzh/commit/d505c0f896e2472681e5418b5cb0987051030e03))
+
+
+### Documentation
+
+* ensure that there is a type for EasyForms ([91fce9a](https://github.com/uzh-bf/klicker-uzh/commit/91fce9aa83841e0d1f60601987bc1ca1a77bc420))
+* mini update of audience interaction ([92f451d](https://github.com/uzh-bf/klicker-uzh/commit/92f451d042912848e0fdb5599e47374113041446))
+* replace spectrum chat with gh discussions, add mention of ms teams ([094f7ba](https://github.com/uzh-bf/klicker-uzh/commit/094f7ba5f0cf733acef223700f2892dcc6fc28c4))
+* update audience interaction documentation ([b156240](https://github.com/uzh-bf/klicker-uzh/commit/b156240da9a908783f2cd968d9064b4401d0e659))
+* update evaluation documentation ([3e4d179](https://github.com/uzh-bf/klicker-uzh/commit/3e4d17995922f4970051c37ff443123cffaae2d7))
+* update evaluation documentation ([1c6162e](https://github.com/uzh-bf/klicker-uzh/commit/1c6162e16f88af1f880fa9499cc3a8e8ac6670d3))
+* update of audience interaction docs ([d2692c4](https://github.com/uzh-bf/klicker-uzh/commit/d2692c435f016058484a6e03b4b4b00557e4dda2))
+* update of running session docs ([929c658](https://github.com/uzh-bf/klicker-uzh/commit/929c658b488327ce4b35b8e3ced5bbc430880da8))
+* updated audience view doc page ([0914601](https://github.com/uzh-bf/klicker-uzh/commit/09146014fb37b77e69f532ef1099211bd4b06e4b))
+* updated screenshot and content for question pool documentation ([4880ba0](https://github.com/uzh-bf/klicker-uzh/commit/4880ba0e6c4760a1fd285306f754501b59ef49ae))
+* upgrade dependencies for documentation ([87d5844](https://github.com/uzh-bf/klicker-uzh/commit/87d5844f4eed9e583167105323cb95f5c2b083a5))
+
+
+### Other
+
+* added scrolling in case of overflow on feedback site for past sessions ([9fe8199](https://github.com/uzh-bf/klicker-uzh/commit/9fe8199f5883224e807e2f8bc987d0b170032b99))
+* enable polling on the running session screen ([b7c732c](https://github.com/uzh-bf/klicker-uzh/commit/b7c732c98c7c3a27af364b36f8eebece7fdf62ef))
+* **frontend:** add engines spec for node 14+ ([79ec7e4](https://github.com/uzh-bf/klicker-uzh/commit/79ec7e45a1a38ce03d57818ccd4ca0cc41d35dec))
+* improved landing site with a call for involvement and some styling ([d9139e8](https://github.com/uzh-bf/klicker-uzh/commit/d9139e8e916a8cabbca5491c866ff18fc26ff64a))
+* improved styling of feedback channel for display of past sessions ([41b92b5](https://github.com/uzh-bf/klicker-uzh/commit/41b92b5ae884b6c1e12be209002ed1cdce9af5e3))
+* internationalization for running session audience interaction panel ([55f3bd5](https://github.com/uzh-bf/klicker-uzh/commit/55f3bd5147e14c3c03eca29f24b9da4211faec08))
+* lockfile maintenance ([454fe8b](https://github.com/uzh-bf/klicker-uzh/commit/454fe8b891ecedd756f62fa52cb755eb991a562b))
+* make husky scripts executable ([d9ba16b](https://github.com/uzh-bf/klicker-uzh/commit/d9ba16b05811b783f236113d7fec6d171ca76d70))
+* reformat with prettier ([efc0e7b](https://github.com/uzh-bf/klicker-uzh/commit/efc0e7b1147a3f18f32c1ce0011ffd9589189da9))
+* **release:** 1.6.0-alpha.10 ([6bbe387](https://github.com/uzh-bf/klicker-uzh/commit/6bbe3876f19bf93f7e40bd5133fb9ce163b78cef))
+* **release:** 1.6.0-alpha.9 ([69ff0d7](https://github.com/uzh-bf/klicker-uzh/commit/69ff0d73e35347ace76fb42b2ebc1a71b28750f0))
+* **release:** 1.6.0-beta.0 ([1ccd4d9](https://github.com/uzh-bf/klicker-uzh/commit/1ccd4d9aacdff39f93bc83624634853a2f5d567a))
+* **release:** 1.6.0-beta.1 ([6badcde](https://github.com/uzh-bf/klicker-uzh/commit/6badcde2183635ccd85dd7133c28491bcd003f9a))
+* small upgrades and improvements ([ad764cb](https://github.com/uzh-bf/klicker-uzh/commit/ad764cb6f235e81f59483ddb7d9f25b1500fbfe5))
+* updated open source description on landing page ([0ff6cb3](https://github.com/uzh-bf/klicker-uzh/commit/0ff6cb3e75183d641ed54d74b39fac0fceda9d62))
+
+
+### Dependencies
+
+* perform minor and non-critical deps upgrades ([4ec66e7](https://github.com/uzh-bf/klicker-uzh/commit/4ec66e7c114a563773b87f2f049d3348378b77c3))
+* upgrade apollo-server-express to 3.3.0 ([cd0c5c2](https://github.com/uzh-bf/klicker-uzh/commit/cd0c5c23c644d0dabc19fac07c65723b2aad29a5))
+* upgrade husky ([1399f20](https://github.com/uzh-bf/klicker-uzh/commit/1399f20c5995d7e79e425f20c19611bd6bf3b292))
+* upgrade minor and non-critical dependencies ([d96f846](https://github.com/uzh-bf/klicker-uzh/commit/d96f8467b64d09e868bb3df088e2eb98e0d98f90))
+* upgrade node-schedule ([d27b436](https://github.com/uzh-bf/klicker-uzh/commit/d27b436be328abaac3922dbec485925d291242b9))
+
+
+### Enhancements
+
+* add sentry environment ([40b3657](https://github.com/uzh-bf/klicker-uzh/commit/40b3657d9bc6b3d7d034392d94fbc6356307cfd8))
+* **frontend:** allow parametrized display of the AAI login button based on NEXT_PUBLIC_DISPLAY_AAI ([8ba7a83](https://github.com/uzh-bf/klicker-uzh/commit/8ba7a83c8bb7dca746a352e368efe98cb4781a5d))
+* **landing:** add compression and caching rules to .htaccess ([8d7f4cd](https://github.com/uzh-bf/klicker-uzh/commit/8d7f4cdc4f60deeed54376bca553671fc9b4d39c))
+* prepare apollo response caching plugin and automated persisted queries ([25ddb3c](https://github.com/uzh-bf/klicker-uzh/commit/25ddb3cce8aa9a030df82c5409269b0c0265e015))
+
 ## [1.6.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.8...v1.6.0-beta.1) (2021-09-06)
 
 

@@ -15,12 +15,12 @@ class IntlDocument extends Document<Props> {
   static async getInitialProps(ctx: DocumentContext) {
     const { req } = ctx
     const initialProps = await Document.getInitialProps(ctx)
-    const { locale } = req as any
+    const { locale, nonce } = req as any
     return {
       ...initialProps,
       locale,
       lang: locale ? locale.split('-')[0] : undefined,
-      nonce: (req as any).nonce,
+      nonce,
     }
   }
 
