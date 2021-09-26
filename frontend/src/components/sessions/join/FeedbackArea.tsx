@@ -10,7 +10,7 @@ import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/Publ
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
-
+import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
 import PublicFeedback from './PublicFeedback'
 
 interface Props {
@@ -25,6 +25,8 @@ interface Props {
   reactions: any
   setReactions: any
   sessionId: string
+  isConfusionBarometerActive: boolean
+  handleNewConfusionTS: any
 }
 
 const defaultProps = {
@@ -44,7 +46,12 @@ function FeedbackArea({
   reactions,
   setReactions,
   sessionId,
+  isConfusionBarometerActive,
+  handleNewConfusionTS,
 }: Props): React.ReactElement {
+  const [confusionDifficulty, setConfusionDifficulty] = useState()
+  const [confusionSpeed, setConfusionSpeed] = useState()
+
   const { data, subscribeToMore } = useQuery(JoinQAQuery, {
     variables: { shortname },
     pollInterval: 60000,
@@ -160,6 +167,54 @@ function FeedbackArea({
       })),
     }))
   }, [data?.joinQA, upvotedFeedbacks, reactions])
+
+  useEffect((): void => {
+    try {
+      if (window.sessionStorage) {
+        const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
+        setConfusionDifficulty(confusion.confusionDifficulty)
+        setConfusionSpeed(confusion.confusionSpeed)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
+  const onNewConfusionTS = async (newValue: any, selector: string) => {
+    // send the new confusion entry to the server
+    if (selector === 'speed') {
+      await setSpeedAsync(newValue)
+    } else if (selector === 'difficulty') {
+      await setDifficultyAsync(newValue)
+    }
+    handleNewConfusionTS({
+      difficulty: confusionDifficulty,
+      speed: confusionSpeed,
+    })
+
+    // update the confusion cookie
+    try {
+      if (window.sessionStorage) {
+        sessionStorage.setItem(
+          `${shortname}-${sessionId}-confusion`,
+          JSON.stringify({
+            difficulty: confusionDifficulty,
+            speed: confusionSpeed,
+            timestamp: dayjs().unix(),
+          })
+        )
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const setSpeedAsync = async (newValue: any) => {
+    setConfusionSpeed(newValue)
+  }
+  const setDifficultyAsync = async (newValue: any) => {
+    setConfusionDifficulty(newValue)
+  }
 
   const onNewFeedback = (): void => {
     setFeedbackInputValue('')
@@ -285,6 +340,34 @@ function FeedbackArea({
           </div>
         )}
       </div>
+      {console.log(isConfusionBarometerActive)}
+      {
+        // CHANGES FROM HERE ON
+        isConfusionBarometerActive && (
+          <div className="float-bottom">
+            <ConfusionDialog
+              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+              labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
+              title={
+                <h2 className="sectionTitle">
+                  <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+                </h2>
+              }
+              value={confusionSpeed}
+            />
+            <ConfusionDialog
+              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+              labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
+              title={
+                <h2 className="sectionTitle">
+                  <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+                </h2>
+              }
+              value={confusionDifficulty}
+            />
+          </div>
+        )
+      }
     </div>
   )
 }

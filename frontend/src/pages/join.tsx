@@ -277,9 +277,11 @@ function Join(): React.ReactElement {
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
+            handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
+            isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
             sessionId={sessionId}
