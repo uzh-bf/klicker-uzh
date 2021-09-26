@@ -4,8 +4,8 @@
 
 The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture)):
 
-- [klicker-react](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (frontend)
-- [klicker-api](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (backend)
+- [frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)
+- [backend](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
 
 The following additional resources might be of interest to you:
 
@@ -15,7 +15,7 @@ The following additional resources might be of interest to you:
 
 ## Roadmap / Issues
 
-The KlickerUZH project is publicly managed and documented in this repository. A roadmap can be found at <https://github.com/orgs/uzh-bf/projects/4>. Please feel free to add any issues and comments you might have to that repository.
+The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [landing page](https://www.klicker.uzh.ch/roadmap). Please feel free to add any issues and comments you might have to the [issue section](https://github.com/orgs/uzh-bf/projects/4) of our main GitHub page.
 
 ## Deployment
 
