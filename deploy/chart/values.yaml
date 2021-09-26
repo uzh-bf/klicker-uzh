@@ -8,9 +8,37 @@ podSecurityContext: {}
 
 securityContext: {}
 
-cache:
-  enabled: true
-  tls: true
+redis:
+  # architecture: standalone
+  auth:
+    enabled: false
+
+  master:
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
+
+  replica:
+    replicaCount: 1
+
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 150m
+        memory: 100Mi
+
 
 security:
   https:
@@ -65,20 +93,14 @@ frontend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
+  resources: {}
 
   autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 60
-    targetMemoryUtilizationPercentage: 70
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 
@@ -88,6 +110,8 @@ frontend:
 
 backend:
   replicaCount: 1
+
+  redis: {}
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend
@@ -103,20 +127,14 @@ backend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
+  resources: {}
 
   autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 60
-    targetMemoryUtilizationPercentage: 70
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 

@@ -1,6 +1,6 @@
 {
   "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-  "version": "1.6.0-beta.4",
+  "version": "1.6.1",
   "devDependencies": {
     "cross-env": "6.0.3",
     "docusaurus": "1.14.7",

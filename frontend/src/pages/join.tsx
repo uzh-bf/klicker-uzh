@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
-import _sortBy from 'lodash/sortBy'
 import useStickyState from '../lib/hooks/useStickyState'
 
 import { withApollo } from '../lib/apollo'
@@ -61,7 +60,6 @@ function Join(): React.ReactElement {
   const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
-    pollInterval: 10000,
   })
 
   const { shortname }: { shortname?: string } = router.query
@@ -107,7 +105,7 @@ function Join(): React.ReactElement {
     )
   }
 
-  const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
+  const { id: sessionId, settings, activeInstances, expiresAt, timeLimit } = data.joinSession
 
   const onSidebarActiveItemChange =
     (newSidebarActiveItem): any =>
@@ -147,7 +145,6 @@ function Join(): React.ReactElement {
     try {
       if (settings.isFeedbackChannelPublic) {
         newFeedback({
-          refetchQueries: [{ query: JoinSessionQuery, variables: { shortname } }],
           // optimistically add the feedback to the array already
           // optimisticResponse: {
           //   addFeedback: {
@@ -277,16 +274,12 @@ function Join(): React.ReactElement {
           </div>
         )}
 
-        {/* {(settings.isConfusionBarometerActive || settings.isFeedbackChannelActive) && ( */}
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={feedbacks}
-            handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
-            isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
             sessionId={sessionId}

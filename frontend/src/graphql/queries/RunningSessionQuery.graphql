@@ -1,3 +1,5 @@
+#import "../fragments/FeedbackFragment.graphql"
+
 query RunningSession {
   runningSession {
     id
@@ -35,20 +37,7 @@ query RunningSession {
       createdAt
     }
     feedbacks {
-      id
-      content
-      votes
-      createdAt
-      pinned
-      resolved
-      published
-      responses {
-        id
-        content
-        positiveReactions
-        negativeReactions
-        createdAt
-      }
+      ...FeedbackFields
     }
     settings {
       isParticipantAuthenticationEnabled

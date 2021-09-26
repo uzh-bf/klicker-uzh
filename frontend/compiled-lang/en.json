@@ -1281,6 +1281,12 @@
       "value": "Questions successfully deleted."
     }
   ],
+  "runningSession.audienceInteraction.description": [
+    {
+      "type": 0,
+      "value": "Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+    }
+  ],
   "runningSession.blockActions.activateBlock": [
     {
       "type": 0,
@@ -1413,12 +1419,6 @@
       "value": "Failed loading current session..."
     }
   ],
-  "runningSession.feedbackChannel.publishFeedbacks": [
-    {
-      "type": 0,
-      "value": "Publish feedbacks"
-    }
-  ],
   "runningSession.info.nofeedbacks": [
     {
       "type": 0,
@@ -1447,6 +1447,12 @@
     {
       "type": 0,
       "value": "Running Session"
+    }
+  ],
+  "runningSession.search.placeholder": [
+    {
+      "type": 0,
+      "value": "Search..."
     }
   ],
   "runningSession.sorting.recency": [

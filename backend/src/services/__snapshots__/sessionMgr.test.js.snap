@@ -27,7 +27,7 @@ exports[`SessionMgrService abortSession successfully abort a running session of 
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -59,7 +59,7 @@ exports[`SessionMgrService activateBlockById allows activating the first questio
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -106,7 +106,7 @@ exports[`SessionMgrService activateNextBlock allows activating the first questio
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -153,7 +153,7 @@ exports[`SessionMgrService activateNextBlock has a valid initial state 1`] = `
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -200,7 +200,7 @@ exports[`SessionMgrService activateNextBlock recognizes that the final block has
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -271,7 +271,7 @@ exports[`SessionMgrService createSession (auth) allows creating a valid session 
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: true
     }
 `;
@@ -308,7 +308,7 @@ exports[`SessionMgrService createSession allows creating a valid session 1`] = `
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -335,7 +335,7 @@ exports[`SessionMgrService createSession allows creating sessions without questi
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -372,7 +372,7 @@ exports[`SessionMgrService createSession skips over question blocks without ques
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -404,7 +404,7 @@ exports[`SessionMgrService deleteSession fully deletes a session and all questio
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -436,7 +436,7 @@ exports[`SessionMgrService endSession allows ending a running session 1`] = `
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -468,7 +468,7 @@ exports[`SessionMgrService endSession returns on an already completed session 1`
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -527,7 +527,7 @@ exports[`SessionMgrService modifySession (auth) allows changing the participants
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: true
     }
 `;
@@ -564,7 +564,7 @@ exports[`SessionMgrService modifySession allows modifying a session 1`] = `
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -596,7 +596,7 @@ exports[`SessionMgrService startSession allows starting a created session 1`] = 
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -628,7 +628,7 @@ exports[`SessionMgrService updateSessionSettings allows changing all settings at
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -660,7 +660,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Settings: {
       ConfusionActive: true
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -692,7 +692,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Settings: {
       ConfusionActive: true
       FeedbacksActive: true
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;
@@ -788,7 +788,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
-      FeedbacksPublic: false
+      FeedbacksPublic: true
       ParticipantAuthentication: false
     }
 `;

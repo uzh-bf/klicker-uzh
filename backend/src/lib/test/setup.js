@@ -102,11 +102,24 @@ const initializeDb = async ({
   withAdmin = false,
 }) => {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
-      keepAlive: true,
+    const mongoConfig = {
+      // keepAlive: true,
       promiseLibrary: global.Promise,
-      reconnectTries: 10,
-    })
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      retryWrites: false,
+    }
+    if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
+      await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
+        ...mongoConfig,
+        auth: {
+          user: process.env.MONGO_USER,
+          password: process.env.MONGO_PASSWORD,
+        },
+      })
+    } else {
+      await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, mongoConfig)
+    }
   }
 
   const createdUser = await setupTestEnv({ email, password: 'somePassword', shortname, isActive })

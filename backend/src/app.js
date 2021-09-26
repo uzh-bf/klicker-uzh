@@ -93,7 +93,7 @@ mongoose.connection
   })
 
 // initialize a connection to redis
-const redisCache = getRedis()
+const redisCache = getRedis('redis')
 
 // initialize an express server
 const app = express()
@@ -178,7 +178,7 @@ if (isProd) {
 
   // add a rate limiting middleware
   if (SECURITY_CFG.rateLimit.enabled) {
-    // const RedisStore = require('rate-limit-redis')
+    const RedisStore = require('rate-limit-redis')
 
     const { windowMs, max } = SECURITY_CFG.rateLimit
 
@@ -199,11 +199,11 @@ if (isProd) {
           Raven.captureException(error)
         }
       },
-      // store: new RedisStore({
-      //   client: redisCache,
-      //   expiry: Math.round(windowMs / 1000),
-      //   prefix: 'limiter:',
-      // }),
+      store: new RedisStore({
+        client: redisCache,
+        expiry: Math.round(windowMs / 1000),
+        prefix: 'limiter:',
+      }),
     }
 
     middleware.push(new RateLimit(limiterSettings))

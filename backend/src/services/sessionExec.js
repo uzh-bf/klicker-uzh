@@ -3,21 +3,28 @@ const v8n = require('v8n')
 const _trim = require('lodash/trim')
 const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
-const { v5: uuidv5 } = require('uuid')
+const { v5: uuidv5, v4: uuidv4 } = require('uuid')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
-const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+const {
+  pubsub,
+  FEEDBACK_ADDED,
+  PUBLIC_FEEDBACK_ADDED,
+  FEEDBACK_DELETED,
+  FEEDBACK_RESOLVED,
+  FEEDBACK_RESPONSE_ADDED,
+} = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
 
 // initialize redis if available
 // const responseControl = getRedis(2)
-const responseCache = getRedis()
+const responseCache = getRedis('exec')
 
 /**
  * Add a new feedback to a session
@@ -45,14 +52,19 @@ const addFeedback = async ({ sessionId, content }) => {
   const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
   const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
 
+  pubsub.publish(FEEDBACK_ADDED, {
+    [FEEDBACK_ADDED]: savedFeedbackWithId,
+    sessionId,
+  })
+
   // if the feedback channel is public, publish the feedback directly
   // otherwise, it will need to be published after moderation
-  // if (session.settings.isFeedbackChannelPublic) {
-  //   pubsub.publish(FEEDBACK_ADDED, {
-  //     [FEEDBACK_ADDED]: savedFeedbackWithId,
-  //     sessionId,
-  //   })
-  // }
+  if (session.settings.isFeedbackChannelPublic) {
+    pubsub.publish(PUBLIC_FEEDBACK_ADDED, {
+      [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
+      sessionId,
+    })
+  }
 
   // return the updated session
   return savedFeedbackWithId
@@ -107,14 +119,14 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
   )
 
   // if the feedback is newly published, send it out via subscription
-  // if (publishState) {
-  //   const savedFeedback = savedSession.feedbacks.find((feedback) => feedback._id === feedbackId).toObject()
-  //   const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
-  //   pubsub.publish(FEEDBACK_ADDED, {
-  //     [FEEDBACK_ADDED]: savedFeedbackWithId,
-  //     sessionId,
-  //   })
-  // }
+  if (publishState) {
+    const savedFeedback = updatedSession.feedbacks.find((feedback) => feedback._id.toString() === feedbackId).toObject()
+    const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
+    pubsub.publish(PUBLIC_FEEDBACK_ADDED, {
+      [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
+      sessionId,
+    })
+  }
 
   return updatedSession
 }
@@ -146,7 +158,14 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
     { new: true }
   )
 
-  // TODO: publish the feedback update
+  pubsub.publish(FEEDBACK_RESOLVED, {
+    [FEEDBACK_RESOLVED]: {
+      feedbackId,
+      resolvedState,
+      resolvedAt: resolvedState ? new Date() : null,
+    },
+    sessionId,
+  })
 
   return updatedSession
 }
@@ -156,14 +175,16 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
 
   assertUserMatch(session, userId)
 
-  const updatedSesion = await SessionModel.findOneAndUpdate(
+  const newResponseId = uuidv4()
+
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
     },
     {
       $push: {
-        'feedbacks.$.responses': { content: response },
+        'feedbacks.$.responses': { id: newResponseId, content: response },
       },
       $set: {
         'feedbacks.$.resolved': true,
@@ -179,9 +200,17 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
     }
   )
 
-  // TODO: publish the response on a subscription
+  pubsub.publish(FEEDBACK_RESPONSE_ADDED, {
+    [FEEDBACK_RESPONSE_ADDED]: {
+      feedbackId,
+      id: newResponseId,
+      content: response,
+      createdAt: new Date(),
+    },
+    sessionId,
+  })
 
-  return updatedSesion
+  return updatedSession
 }
 
 async function upvoteFeedback({ sessionId, feedbackId, undo }) {
@@ -281,7 +310,10 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     }
   )
 
-  // TODO: publish the deletion
+  pubsub.publish(FEEDBACK_DELETED, {
+    [FEEDBACK_DELETED]: feedbackId,
+    sessionId,
+  })
 
   // return the updated session
   return updatedSession
@@ -310,11 +342,11 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
-  pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
-    sessionId,
-  })
+  // const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+  // pubsub.publish(CONFUSION_ADDED, {
+  //   [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
+  //   sessionId,
+  // })
 
   // return the updated session
   return session
@@ -574,6 +606,25 @@ const loginParticipant = async ({ res, sessionId, username, password }) => {
   return participant.id
 }
 
+function verifyParticipantAuthentication({ auth, authenticationMode, id, participants }) {
+  const participantIdentifier = auth ? auth.sub : undefined
+
+  if (
+    typeof participantIdentifier === 'undefined' ||
+    !auth.scope.includes('PARTICIPANT') ||
+    auth.session !== id.toString()
+  ) {
+    throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode })
+  }
+
+  if (
+    (auth.aai && !participants.map((participant) => participant.username).includes(participantIdentifier)) ||
+    (!auth.aai && !participants.map((participant) => participant.id).includes(participantIdentifier))
+  ) {
+    throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode })
+  }
+}
+
 /**
  * Prepare data needed for participating in a session
  * @param {*} param0
@@ -593,27 +644,11 @@ const joinSession = async ({ shortname, auth }) => {
     },
   })
 
-  const { id, activeBlock, blocks, settings, feedbacks, status } = runningSession
+  const { id, activeBlock, blocks, settings, status, participants } = runningSession
   const currentBlock = blocks[activeBlock] || { instances: [] }
 
   if (settings.isParticipantAuthenticationEnabled) {
-    const participantIdentifier = auth ? auth.sub : undefined
-
-    if (
-      typeof participantIdentifier === 'undefined' ||
-      !auth.scope.includes('PARTICIPANT') ||
-      auth.session !== id.toString()
-    ) {
-      throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode: settings.authenticationMode })
-    }
-
-    if (
-      (auth.aai &&
-        !runningSession.participants.map((participant) => participant.username).includes(participantIdentifier)) ||
-      (!auth.aai && !runningSession.participants.map((participant) => participant.id).includes(participantIdentifier))
-    ) {
-      throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode: settings.authenticationMode })
-    }
+    verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
   return {
@@ -644,19 +679,23 @@ const joinSession = async ({ shortname, auth }) => {
           files,
         }
       }),
-    // TODO: ensure that there is no information on reactions sent out
-    feedbacks: settings.isFeedbackChannelActive
-      ? feedbacks.filter((feedback) => feedback.published)
-      : // .map((feedback) => ({
-        //   ...feedback,
-        //   responses: feedback.responses.map((response) => ({
-        //     ...response,
-        //     positiveReactions: undefined,
-        //     negativeReactions: undefined,
-        //   })),
-        // }))
-        null,
   }
+}
+
+async function joinQA({ shortname, auth }) {
+  // find the user with the given shortname
+  const user = await UserModel.findOne({ shortname }).populate('runningSession')
+  if (!user || !user.runningSession) {
+    return null
+  }
+
+  const { id, settings, feedbacks, participants } = user.runningSession
+
+  if (settings.isParticipantAuthenticationEnabled) {
+    verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
+  }
+
+  return settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : []
 }
 
 /**
@@ -743,6 +782,7 @@ module.exports = {
   addFeedback,
   deleteFeedback,
   joinSession,
+  joinQA,
   resetQuestionBlock,
   loginParticipant,
   pinFeedback,

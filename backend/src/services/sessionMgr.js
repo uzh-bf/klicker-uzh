@@ -25,7 +25,8 @@ const {
 } = require('../constants')
 const { logDebug } = require('../lib/utils')
 
-const redisCache = getRedis()
+const responseCache = getRedis('exec')
+const redisCache = getRedis('redis')
 
 function mapPropertyIds(elem) {
   if (Array.isArray(elem)) {
@@ -98,19 +99,15 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
           content: versionInfo.content,
           description: versionInfo.description,
           options: versionInfo.options,
-          files: versionInfo.files.map((el) => ({ ...el, id: el._id, _id: undefined })),
+          files: versionInfo.files.map((el) => ({ ...el, id: el._id })),
         }
       })
     }
   }
 
   resultObj.id = resultObj._id
-  delete resultObj._id
 
-  const properties = ['blocks', 'feedbacks', 'confusionTS']
-  properties.forEach((property) => {
-    resultObj[property] = resultObj[property].map((el) => ({ ...el, id: el._id, _id: undefined }))
-  })
+  resultObj.blocks = resultObj.blocks.map((el) => ({ ...el, id: el._id }))
 
   // Publish Subscription Data to Subscribers
   await pubsub.publish(SESSION_UPDATED, {
@@ -266,7 +263,7 @@ const initializeResponseCache = async (
   { settings, participants, namespace }
 ) => {
   const instanceKey = `instance:${id}`
-  const transaction = redisCache.multi()
+  const transaction = responseCache.multi()
 
   // initialize auth and storage mode settings
   const isAuthEnabled = settings.isParticipantAuthenticationEnabled || false
@@ -354,7 +351,7 @@ const computeInstanceResults = async ({ id, question }) => {
   const instanceKey = `instance:${id}`
 
   // setup a transaction for result extraction from redis
-  const redisResponse = await redisCache
+  const redisResponse = await responseCache
     .multi()
     .hgetall(`${instanceKey}:results`)
     .del(`${instanceKey}:info`, `${instanceKey}:results`)
@@ -372,7 +369,7 @@ const computeInstanceResults = async ({ id, question }) => {
 
   if (QUESTION_GROUPS.FREE.includes(question.type)) {
     // extract the response hashes from redis
-    const responseHashes = await redisCache
+    const responseHashes = await responseCache
       .multi()
       .hgetall(`${instanceKey}:responseHashes`)
       .del(`${instanceKey}:responseHashes`)
@@ -387,7 +384,7 @@ const computeInstanceResults = async ({ id, question }) => {
 const getBlockedParticipants = async ({ id }) => {
   const instanceKey = `instance:${id}`
 
-  const participants = await redisCache
+  const participants = await responseCache
     .multi()
     .smembers(`${instanceKey}:participants`)
     .del(`${instanceKey}:participants`, `${instanceKey}:participantList`)
@@ -419,7 +416,7 @@ const parseResponses = (responseData) => {
 const getFullResponseData = async ({ id }) => {
   const instanceKey = `instance:${id}`
 
-  const allResponses = await redisCache
+  const allResponses = await responseCache
     .multi()
     .lrange(`${instanceKey}:responses`, 0, -1)
     .lrange(`${instanceKey}:dropped`, 0, -1)
@@ -742,9 +739,9 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
           promises.push(
             session.blocks[i].instances.map(async (instanceId) => {
               // cleanup the response cache
-              const cacheKeys = await redisCache.keys(`instance:${instanceId}:*`)
+              const cacheKeys = await responseCache.keys(`instance:${instanceId}:*`)
               if (cacheKeys.length > 0) {
-                await redisCache.del(...cacheKeys)
+                await responseCache.del(...cacheKeys)
               }
 
               // reset all instance data
@@ -777,9 +774,7 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
   const promises = [session.save(), updatedUser]
 
   // if redis is in use, cleanup the page cache
-  if (redisCache) {
-    promises.push(cleanCache(user.shortname))
-  }
+  promises.push(cleanCache(user.shortname))
 
   await Promise.all(promises)
 
@@ -849,9 +844,7 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   }
 
   // if redis is in use, cleanup the page cache
-  if (redisCache) {
-    await cleanCache(shortname)
-  }
+  await cleanCache(shortname)
 
   // save the updated session
   await session.save()
@@ -917,9 +910,7 @@ async function deactivateBlockById({ userId, sessionId, blockId, incrementActive
   await session.save()
 
   // if redis is in use, cleanup the page cache
-  if (redisCache) {
-    await cleanCache(user.shortname)
-  }
+  await cleanCache(user.shortname)
 
   if (isScheduled) {
     await publishRunningSessionUpdate({ sessionId })
@@ -978,9 +969,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
       instance.isOpen = true
 
       // if a response cache is available, hydrate it with the newly activated instances
-      if (redisCache) {
-        await initializeResponseCache(instance, session)
-      }
+      await initializeResponseCache(instance, session)
 
       return instance.save()
     })
@@ -1006,9 +995,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
   await session.save()
 
   // if redis is in use, cleanup the page cache
-  if (redisCache) {
-    await cleanCache(user.shortname)
-  }
+  await cleanCache(user.shortname)
 
   await publishSessionUpdate({ sessionId, activeBlock: session.activeBlock })
 

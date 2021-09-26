@@ -12,7 +12,7 @@ if (SERVICES_CFG.sentry.enabled) {
   Sentry.init({
     dsn: SERVICES_CFG.sentry.dsn,
     // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: 1.0,
+    tracesSampleRate: SERVICES_CFG.sentry.tracesSampleRate,
     environment: SERVICES_CFG.sentry.environment,
     // ...
     // Note: if you want to override the automatic release value, do not set a

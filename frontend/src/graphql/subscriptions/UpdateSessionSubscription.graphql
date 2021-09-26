@@ -49,19 +49,5 @@ subscription UpdateSession($sessionId: ID!) {
         description
       }
     }
-    feedbacks {
-      id
-      content
-      votes
-      pinned
-      resolved
-      createdAt
-      resolvedAt
-      responses {
-        id
-        content
-        createdAt
-      }
-    }
   }
 }
