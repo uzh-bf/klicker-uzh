@@ -346,7 +346,7 @@ function FeedbackArea({
         isConfusionBarometerActive && (
           <div className="float-bottom">
             <ConfusionDialog
-              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
               labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
               title={
                 <h2 className="sectionTitle">
@@ -356,7 +356,7 @@ function FeedbackArea({
               value={confusionSpeed}
             />
             <ConfusionDialog
-              handleChange={(newValue): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
               labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
               title={
                 <h2 className="sectionTitle">

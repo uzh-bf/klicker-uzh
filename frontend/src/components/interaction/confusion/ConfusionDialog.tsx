@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Head from 'next/head'
 import { Button } from 'semantic-ui-react'
 
@@ -18,71 +18,35 @@ const defaultProps = {
 }
 
 function ConfusionDialog({ title, value, handleChange, labels }: Props): React.ReactElement {
+  const [buttonState, setButtonState] = useState(true)
+
+  const ConfusionButton = (props) => {
+    return (
+      <Button
+        onClick={(): void => {
+          handleChange(props.onChangeValue)
+          setButtonState(false)
+          clearTimeout()
+          setTimeout(setButtonState, 60000, true)
+        }}
+        color={value == props.onChangeValue ? 'blue' : null}
+        disabled={!buttonState}
+      >
+        {props.children}
+      </Button>
+    )
+  }
+
   return (
     <div className="confusionSlider mb-10">
       <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
       {title && <div className="text-base m-0 mb-2">{title}</div>}
 
       <div>
-        <Button
-          onClick={(): void => {
-            handleChange(-1)
-          }}
-          color={value == -1 ? 'blue' : null}
-        >
-          {labels.min}
-        </Button>
-        <Button
-          onClick={(): void => {
-            handleChange(0)
-          }}
-          color={value == 0 ? 'blue' : null}
-        >
-          {labels.mid}
-        </Button>
-        <Button
-          onClick={(): void => {
-            handleChange(1)
-          }}
-          color={value == 1 ? 'blue' : null}
-        >
-          {labels.max}
-        </Button>
+        <ConfusionButton onChangeValue={-1}>{labels.min}</ConfusionButton>
+        <ConfusionButton onChangeValue={0}>{labels.mid}</ConfusionButton>
+        <ConfusionButton onChangeValue={1}>{labels.max}</ConfusionButton>
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .confusionSlider {
-          .title > :global(*):first-child {
-            font-size: 1rem !important;
-            margin: 0;
-          }
-
-          :global(.rangeslider__fill) {
-            background-color: $color-primary;
-          }
-
-          :global(.rangeslider__handle) {
-            padding: 1rem;
-
-            &:after {
-              display: none;
-            }
-
-            &:focus {
-              outline: none;
-            }
-          }
-
-          :global(.rangeslider__handle-label) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate3d(-50%, -50%, 0);
-          }
-        }
-      `}</style>
     </div>
   )
 }
