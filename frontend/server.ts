@@ -35,7 +35,7 @@ const hasRedis = CACHE_CFG.redis.enabled
 
 // prepare page configuration
 const pages = [
-  { cached: CACHE_CFG.pages.landing, url: '/' },
+  { url: '/' },
   { url: '/user/login' },
   { url: '/user/registration' },
   { url: '/questions/create' },
@@ -223,7 +223,7 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
       const { googleAnalytics, logrocket } = SERVICES_CFG
 
       const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
-      const optionalLogrocket = logrocket.enabled ? ['cdn.logrocket.io'] : []
+      const optionalLogrocket = logrocket.enabled ? ['cdn.lr-in.com', 'r.lr-in.com'] : []
 
       server.use(
         helmet({
@@ -231,7 +231,7 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // generating nonces is currently not correctly supported by nextjs
             directives: {
-              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics],
+              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics, ...optionalLogrocket],
               defaultSrc: csp.defaultSrc,
               fontSrc: csp.fontSrc,
               frameAncestors: frameguard.enabled && frameguard.ancestors,

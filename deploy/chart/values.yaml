@@ -8,22 +8,39 @@ podSecurityContext: {}
 
 securityContext: {}
 
-email:
-  from: klicker.support@uzh.ch
-  host: smtp.uzh.ch
-  user: klicker.support@uzh.ch
+redis:
+  # architecture: standalone
+  auth:
+    enabled: false
 
-cache:
-  enabled: true
-  port: 32602
-  tls: true
+  master:
+    persistence:
+      enabled: false
 
-s3:
-  endpoint: tc-klicker-stage.s3.amazonaws.com
-  bucket: images
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
+
+  replica:
+    replicaCount: 1
+
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 150m
+        memory: 100Mi
+
 
 security:
-  domain: klicker-stage.bf-app.ch
   https:
     enabled: true
   csp:
@@ -43,9 +60,13 @@ security:
 
 analytics:
   sentry:
-    enabled: false
-    frontend: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
-    backend: https://670985cada43448bae071dc933747c27@sentry.ibf-devops.ch/3
+    frontend:
+      enabled: true
+      dsn: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
+      org: uzh-bf
+      project: klicker-react
+    backend:
+      enabled: false
   logrocket:
     enabled: false
     appId: vqm2qj/klicker
@@ -55,8 +76,6 @@ analytics:
 
 frontend:
   replicaCount: 1
-
-  hostname: app.klicker-stage.bf-app.ch
 
   displayAAI: false
 
@@ -73,24 +92,15 @@ frontend:
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    hosts:
-      - host: app.klicker-stage.bf-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-stage-frontend-tls
-        hosts:
-          - app.klicker-stage.bf-app.ch
 
   resources: {}
 
   autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 
@@ -101,7 +111,7 @@ frontend:
 backend:
   replicaCount: 1
 
-  hostname: api.klicker-stage.bf-app.ch
+  redis: {}
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend
@@ -116,23 +126,15 @@ backend:
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    hosts:
-      - host: api.klicker-stage.bf-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-stage-backend-tls
-        hosts:
-          - api.klicker-stage.bf-app.ch
+
   resources: {}
 
   autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 85
+    targetMemoryUtilizationPercentage: 85
 
   nodeSelector: {}
 

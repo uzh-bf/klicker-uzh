@@ -4,6 +4,19 @@ title: Changelog
 sidebar_label: Changelog
 ---
 
+## Upcoming - v1.7.0 (TBD)
+
+## v1.6.0 (September 2021)
+
+The latest release of the KlickerUZH marks the start of our P-8 project on Digital Skills supported by Swissuniversities and the University of Zurich. As part of this project, we will design, develop, and evaluate different functionalities and concepts that support interaction and collaboration in the classroom. We will regularly interact with users of the KlickerUZH to evaluate the concepts in real-world use cases, and to come up with best practice recommendations for publication.
+
+This release includes the following large changes (among many smaller ones):
+
+- Reimagined feedback channel (Q&A) that allows lecturers to interact with and respond to student feedbacks. This work was partially sponsored by our [faculty](https://www.oec.uzh.ch/de.html), which made possible many of the additional features like pinning and exporting feedbacks.
+- Updated application architecture for deployment to a cloud like Microsoft Azure. The KlickerUZH will be hosted on Microsoft Azure starting with Fall 2021.
+- Easier automated deployment with a configurable Helm chart that we will continuously improve to be more flexible.
+- Restructuring of the KlickerUZH code base to a single source repository for simplified maintenance (https://github.com/uzh-bf/klicker-uzh) including all relevant [artifacts](https://github.com/orgs/uzh-bf/packages?repo_name=klicker-uzh), [discussions](https://github.com/uzh-bf/klicker-uzh/discussions), and a detailed [changelog](https://github.com/uzh-bf/klicker-uzh/blob/dev/CHANGELOG.md).
+
 ## v1.5.1 (September 2020)
 
 The latest release of KlickerUZH has been developed during the spring semester 2020, as well as preceding the fall semester 2020. The following features have been added or improved:

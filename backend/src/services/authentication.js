@@ -63,6 +63,7 @@ const permissions = shield(
       checkAccountStatus: allow,
       checkAvailability: allow,
       joinSession: allow,
+      joinQA: allow,
       question: isAuthenticated,
       runningSession: isAuthenticated,
       session: isAuthenticated,
@@ -113,6 +114,10 @@ const permissions = shield(
       // TODO What is the criteria? Being logged in?
       confusionAdded: allow,
       feedbackAdded: allow,
+      feedbackResolved: allow,
+      feedbackResponseAdded: allow,
+      feedbackDeleted: allow,
+      publicFeedbackAdded: allow,
       sessionUpdated: allow,
       runningSessionUpdated: allow,
     },

@@ -1,4 +1,11 @@
 /* eslint-disable global-require */
+const { createServer } = require('http')
+const mongoose = require('mongoose')
+const { useServer } = require('graphql-ws/lib/use/ws')
+const ws = require('ws')
+
+const { app, schemaWithAuthentication } = require('./app')
+const { getRedis } = require('./redis')
 
 // import the configuration
 const CFG = require('./klicker.conf.js') // eslint-disable-line
@@ -21,22 +28,18 @@ if (SERVICES_CFG.apm.enabled) {
   })
 }
 
-const mongoose = require('mongoose')
-const { useServer } = require('graphql-ws/lib/use/ws')
-const ws = require('ws')
+const redisCache = getRedis('redis')
+const responseCache = getRedis('exec')
 
-const { app, schemaWithAuthentication } = require('./app')
-const { getRedis } = require('./redis')
+const httpServer = createServer(app)
 
-const redis = getRedis()
+const wsServer = new ws.Server({
+  server: httpServer,
+  path: '/graphql',
+})
 
-const server = app.listen(APP_CFG.port, (err) => {
+httpServer.listen(APP_CFG.port, (err) => {
   if (err) throw err
-
-  const wsServer = new ws.Server({
-    server,
-    path: '/graphql',
-  })
 
   useServer({ schema: schemaWithAuthentication }, wsServer)
 
@@ -49,7 +52,8 @@ const shutdown = (signal) => async () => {
   await mongoose.disconnect()
   console.log('[mongodb] Disconnected')
 
-  await redis.disconnect()
+  await redisCache.disconnect()
+  await responseCache.disconnect()
   console.log('[redis] Disconnected')
 
   console.log('[klicker-api] Shutdown complete')

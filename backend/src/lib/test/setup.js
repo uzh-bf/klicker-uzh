@@ -45,55 +45,52 @@ const setupTestEnv = async ({ email, password, shortname, isActive = true, role 
 }
 
 // prepare a new session instance
-const prepareSessionFactory = (SessionMgrService) => async ({
-  userId,
-  questions,
-  started = false,
-  participants = [],
-}) => {
-  let session
+const prepareSessionFactory =
+  (SessionMgrService) =>
+  async ({ userId, questions, started = false, participants = [] }) => {
+    let session
 
-  if (!questions) {
-    const question = await QuestionService.createQuestion({
-      content: createContentState('test question'),
-      options: {
-        choices: [
-          { correct: false, name: 'option1' },
-          { correct: true, name: 'option2' },
-          { correct: false, name: 'option3' },
-        ],
-        randomized: true,
-      },
-      tags: ['TEST'],
-      title: 'test question',
-      type: QUESTION_TYPES.SC,
-      userId,
-    })
+    if (!questions) {
+      const question = await QuestionService.createQuestion({
+        content: createContentState('test question'),
+        options: {
+          choices: [
+            { correct: false, name: 'option1' },
+            { correct: true, name: 'option2' },
+            { correct: false, name: 'option3' },
+          ],
+          randomized: true,
+        },
+        tags: ['TEST'],
+        title: 'test question',
+        type: QUESTION_TYPES.SC,
+        userId,
+      })
 
-    session = await SessionMgrService.createSession({
-      name: 'testing session',
-      questionBlocks: [{ questions: [{ question: question.id, version: 0 }] }],
-      participants,
-      userId,
-    })
-  } else {
-    session = await SessionMgrService.createSession({
-      name: 'testing session',
-      questionBlocks: [{ questions }],
-      participants,
-      userId,
-    })
+      session = await SessionMgrService.createSession({
+        name: 'testing session',
+        questionBlocks: [{ questions: [{ question: question.id, version: 0 }] }],
+        participants,
+        userId,
+      })
+    } else {
+      session = await SessionMgrService.createSession({
+        name: 'testing session',
+        questionBlocks: [{ questions }],
+        participants,
+        userId,
+      })
+    }
+
+    if (started) {
+      return SessionMgrService.startSession({
+        id: session.id,
+        userId,
+      })
+    }
+
+    return session
   }
-
-  if (started) {
-    return SessionMgrService.startSession({
-      id: session.id,
-      userId,
-    })
-  }
-
-  return session
-}
 
 const initializeDb = async ({
   mongoose,
@@ -105,11 +102,24 @@ const initializeDb = async ({
   withAdmin = false,
 }) => {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
-      keepAlive: true,
+    const mongoConfig = {
+      // keepAlive: true,
       promiseLibrary: global.Promise,
-      reconnectTries: 10,
-    })
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      retryWrites: false,
+    }
+    if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
+      await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
+        ...mongoConfig,
+        auth: {
+          user: process.env.MONGO_USER,
+          password: process.env.MONGO_PASSWORD,
+        },
+      })
+    } else {
+      await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, mongoConfig)
+    }
   }
 
   const createdUser = await setupTestEnv({ email, password: 'somePassword', shortname, isActive })

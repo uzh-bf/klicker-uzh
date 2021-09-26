@@ -1,4 +1,4 @@
-const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-iso-date')
+const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-scalars')
 
 const { requestPresignedURL } = require('./resolvers/files')
 
@@ -40,6 +40,7 @@ const {
   cancelSession,
   endSession,
   joinSession,
+  joinQA,
   runningSession,
   pinnedFeedbacks,
   sessionByPV,
@@ -76,7 +77,16 @@ const {
   checkAccountStatus,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
-const { confusionAdded, feedbackAdded, sessionUpdated, runningSessionUpdated } = require('./resolvers/subscriptions')
+const {
+  confusionAdded,
+  feedbackAdded,
+  publicFeedbackAdded,
+  sessionUpdated,
+  runningSessionUpdated,
+  feedbackDeleted,
+  feedbackResolved,
+  feedbackResponseAdded,
+} = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
 // create graphql schema in schema language
@@ -87,6 +97,17 @@ const typeDefs = [
   scalar Date
   scalar Time
   scalar DateTime
+
+  enum CacheControlScope {
+    PUBLIC
+    PRIVATE
+  }
+
+  directive @cacheControl(
+    maxAge: Int
+    scope: CacheControlScope
+    inheritMaxAge: Boolean
+  ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
 
   schema {
     query: Query
@@ -103,6 +124,7 @@ const typeDefs = [
     allUsers: [User]!
     checkAccountStatus: ID
     checkAvailability(email: String, shortname: String): User_Availability!
+    joinQA(shortname: String!): [Session_Feedback_Public!]!
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session
@@ -163,7 +185,11 @@ const typeDefs = [
   type Subscription {
     confusionAdded(sessionId: ID!): Session_ConfusionTimestep
     feedbackAdded(sessionId: ID!): Session_Feedback
-    sessionUpdated(sessionId: ID!): Session_Public
+    feedbackDeleted(sessionId: ID!): ID
+    feedbackResolved(sessionId: ID!): Session_Feedback_ResolvedStateChange
+    feedbackResponseAdded(sessionId: ID!): Session_FeedbackResponse_Added
+    publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
+    sessionUpdated(sessionId: ID!): Session_Public_Update
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
 `,
@@ -186,6 +212,7 @@ const resolvers = {
     checkAccountStatus,
     checkAvailability,
     joinSession,
+    joinQA,
     question,
     runningSession,
     pinnedFeedbacks,
@@ -243,8 +270,12 @@ const resolvers = {
     // TODO: some form of authentication
     confusionAdded,
     feedbackAdded,
+    publicFeedbackAdded,
     sessionUpdated,
     runningSessionUpdated,
+    feedbackDeleted,
+    feedbackResolved,
+    feedbackResponseAdded,
   },
   // map our own types
   Question: {

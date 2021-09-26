@@ -1,17 +1,7 @@
+#import "../fragments/FeedbackFragment.graphql"
+
 subscription FeedbackAdded($sessionId: ID!) {
   feedbackAdded(sessionId: $sessionId) {
-    id
-    content
-    votes
-    pinned
-    resolved
-    createdAt
-    resolvedAt
-    responses {
-      id
-      content
-      createdAt
-    }
-    createdAt
+    ...FeedbackFields
   }
 }

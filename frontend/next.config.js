@@ -31,13 +31,14 @@ module.exports = (phase) => {
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
       withFingerprinting: SECURITY_CFG.fingerprinting,
+      withAai: APP_CFG.withAai,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
       rootDir: __dirname,
     },
     // setup custom webpack configuration
-    webpack: (webpackConfig) => {
+    webpack: (webpackConfig, { dev }) => {
       // ignore test files when bundling
       // webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
@@ -54,6 +55,12 @@ module.exports = (phase) => {
           { loader: 'graphql-tag/loader' },
         ],
       })
+
+      if (!dev) {
+        // https://formatjs.io/docs/guides/advanced-usage#react-intl-without-parser-40-smaller
+        webpackConfig.resolve.alias['@formatjs/icu-messageformat-parser'] =
+          '@formatjs/icu-messageformat-parser/no-parser'
+      }
 
       return webpackConfig
     },

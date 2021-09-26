@@ -4,10 +4,10 @@ const { getRedis, newRedis } = require('../redis')
 
 let pubsub
 
-const redis = getRedis()
+const redis = getRedis('redis')
 if (redis) {
   // instantiate a new redis-based pubsub instance
-  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis() })
+  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis('redis') })
 } else {
   pubsub = new PubSub()
 }
@@ -16,25 +16,21 @@ if (redis) {
 const compareSessionId = (payload, variables) => payload.sessionId === variables.sessionId
 
 /* ----- subscriptions ----- */
-const FEEDBACK_ADDED = 'feedbackAdded'
-const feedbackAddedSubscription = {
-  // resolve: {},
-  subscribe: withFilter(() => pubsub.asyncIterator(FEEDBACK_ADDED), compareSessionId),
+function subscriptionWithSessionId(subscriptionType) {
+  return {
+    subscribe: withFilter(() => pubsub.asyncIterator(subscriptionType), compareSessionId),
+  }
 }
 
-const CONFUSION_ADDED = 'confusionAdded'
-const confusionAddedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(CONFUSION_ADDED), compareSessionId),
-}
-
-const SESSION_UPDATED = 'sessionUpdated'
-const sessionUpdatedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(SESSION_UPDATED), compareSessionId),
-}
-
-const RUNNING_SESSION_UPDATED = 'runningSessionUpdated'
-const runningSessionUpdatedSubscription = {
-  subscribe: withFilter(() => pubsub.asyncIterator(RUNNING_SESSION_UPDATED), compareSessionId),
+const subscriptionTypes = {
+  CONFUSION_ADDED: 'confusionAdded',
+  FEEDBACK_ADDED: 'feedbackAdded',
+  FEEDBACK_RESOLVED: 'feedbackResolved',
+  FEEDBACK_DELETED: 'feedbackDeleted',
+  FEEDBACK_RESPONSE_ADDED: 'feedbackResponseAdded',
+  PUBLIC_FEEDBACK_ADDED: 'publicFeedbackAdded',
+  SESSION_UPDATED: 'sessionUpdated',
+  RUNNING_SESSION_UPDATED: 'runningSessionUpdated',
 }
 
 module.exports = {
@@ -42,14 +38,15 @@ module.exports = {
   pubsub,
 
   // export subscriptions
-  confusionAdded: confusionAddedSubscription,
-  feedbackAdded: feedbackAddedSubscription,
-  sessionUpdated: sessionUpdatedSubscription,
-  runningSessionUpdated: runningSessionUpdatedSubscription,
+  confusionAdded: subscriptionWithSessionId(subscriptionTypes.CONFUSION_ADDED),
+  publicFeedbackAdded: subscriptionWithSessionId(subscriptionTypes.PUBLIC_FEEDBACK_ADDED),
+  feedbackAdded: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_ADDED),
+  feedbackResolved: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_RESOLVED),
+  feedbackDeleted: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_DELETED),
+  feedbackResponseAdded: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_RESPONSE_ADDED),
+  sessionUpdated: subscriptionWithSessionId(subscriptionTypes.SESSION_UPDATED),
+  runningSessionUpdated: subscriptionWithSessionId(subscriptionTypes.RUNNING_SESSION_UPDATED),
 
   // export subscription types
-  CONFUSION_ADDED,
-  FEEDBACK_ADDED,
-  SESSION_UPDATED,
-  RUNNING_SESSION_UPDATED,
+  ...subscriptionTypes,
 }

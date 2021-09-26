@@ -5,7 +5,7 @@ import getConfig from 'next/config'
 const { publicRuntimeConfig } = getConfig()
 
 function computeFingerprint(resolve, setCookie = true): void {
-  const Fingerprint2 = require('fingerprintjs2')
+  const Fingerprint2 = require('@fingerprintjs/fingerprintjs')
   Fingerprint2.get({}, (components): void => {
     const values = components.map((component): any => component.value)
     const murmur = Fingerprint2.x64hash128(values.join(''), 31)

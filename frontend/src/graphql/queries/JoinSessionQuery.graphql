@@ -52,19 +52,5 @@ query JoinSession($shortname: String!) {
         description
       }
     }
-    feedbacks {
-      id
-      content
-      votes
-      pinned
-      resolved
-      createdAt
-      resolvedAt
-      responses {
-        id
-        content
-        createdAt
-      }
-    }
   }
 }

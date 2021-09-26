@@ -16,7 +16,7 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv"]
+      "plugins": ["import-graphql", "inline-dotenv"]
     },
     "production": {
       "presets": [
@@ -34,15 +34,13 @@
             "lodash": {
               "id": ["lodash", "recompose", "semantic-ui-react"]
             },
-            "react-intl": {
-              "idInterpolationPattern": "[sha512:contenthash:base64:6]",
-              "extractFromFormatMessageCall": true,
+            "formatjs": {
               "ast": true
             }
           }
         ]
       ],
-      "plugins": ["transform-inline-environment-variables"]
+      "plugins": ["import-graphql", "transform-inline-environment-variables"]
     },
     "test": {
       "presets": [
