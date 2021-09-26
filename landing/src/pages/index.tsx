@@ -137,6 +137,13 @@ export default function Index() {
         </Slider.Item>
         <Slider.Item
           title={<KlickerUZH />}
+          description="The elaborated Q&amp;A and feedback channel allows for even more interaction in the classroom."
+          imageSrc="/img/feedback_channel_mac_small.png"
+        >
+          <Buttons />
+        </Slider.Item>
+        <Slider.Item
+          title={<KlickerUZH />}
           description="Get involved today and help us to develop an interactive open-source tool for lecturers and students at universities!"
           imageSrc="/img/development_mac_small.png"
         >
@@ -189,11 +196,11 @@ export default function Index() {
                     MC questions. Further question types are still on the
                     roadmap.
                   </FeatureOverview.Item>
-                  <FeatureOverview.Item title="Integrated Feedback-Channel">
-                    The integrated feedback channel and confusion barometer
-                    allow lecturers to receive instant feedback on the
-                    difficulty and speed of their lecture and enable them to
-                    react to any occurring questions and problems on the fly.
+                  <FeatureOverview.Item title="Q&amp;A and Feedback-Channel">
+                    The integrated feedback channel and Q&amp;A functionalities
+                    allow lecturers to receive instant feedback on the lecture
+                    and enable them to react to any occurring questions and
+                    problems on the fly.
                   </FeatureOverview.Item>
                   <FeatureOverview.Item title="Multi-Language Support">
                     <KlickerUZH fontSize={1} /> is already available in German
