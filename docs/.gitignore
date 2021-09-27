@@ -5,3 +5,17 @@ website/yarn-error.log
 
 website/i18n/*
 !website/i18n/en.json
+
+# generated files
+website/.docusaurus
+website/.cache-loader
+# misc
+*.DS_Store
+website/.env.local
+website/.env.development.local
+website/.env.test.local.
+website/env.production.local
+
+website/npm-debug.log*
+website/yarn-debug.log*
+website/yarn-error.log*
