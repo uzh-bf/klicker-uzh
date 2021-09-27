@@ -189,7 +189,6 @@
   "questionPool.button.unarchiveQuestions": "Wiederherstellen",
   "questionPool.pageTitle": "Fragepool",
   "questionPool.question.titleArchive": "ARCHIVIERT",
-  "questionPool.string.changeView": "Ansicht wechseln",
   "questionPool.string.deletionConfirmationContent": "Sind Sie sicher, dass Sie die {num} ausgewählten Fragen löschen wollen? Allenfalls könnten Sie diese auch archivieren, falls Sie sie wieder einmal brauchen sollten.",
   "questionPool.string.itemsChecked": "{count} Fragen ausgewählt",
   "questionPool.title": "Fragepool",

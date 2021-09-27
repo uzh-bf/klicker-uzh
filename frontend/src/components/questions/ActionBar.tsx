@@ -309,10 +309,10 @@ function ActionBar({
         {/* buttons to change between question view formats */}
         <div className="ml-1">
           <Button.Group className="order-1">
-            <Button icon onClick={(): void => handleQuesionViewChange('list')}>
+            <Button icon active={questionView == 'list'} onClick={(): void => handleQuesionViewChange('list')}>
               <Icon name="list" />
             </Button>
-            <Button icon onClick={(): void => handleQuesionViewChange('grid')}>
+            <Button icon active={questionView == 'grid'} onClick={(): void => handleQuesionViewChange('grid')}>
               <Icon name="grid layout" />
             </Button>
           </Button.Group>

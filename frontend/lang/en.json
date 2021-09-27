@@ -185,7 +185,6 @@
   "questionPool.button.unarchiveQuestions": "Unarchive",
   "questionPool.pageTitle": "Question Pool",
   "questionPool.question.titleArchive": "ARCHIVED",
-  "questionPool.string.changeView": "Change View",
   "questionPool.string.deletionConfirmationContent": "Are you sure you want to delete the {num} selected questions? Consider moving them to the archive if you could have use for them in the future.",
   "questionPool.string.itemsChecked": "{count} items checked",
   "questionPool.title": "Question Pool",
