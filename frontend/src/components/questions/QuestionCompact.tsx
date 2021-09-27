@@ -4,6 +4,8 @@ import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { useDrag } from 'react-dnd'
 import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
+import { generateTypesShort } from '../../lib/utils/lang'
+import { useIntl } from 'react-intl'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
@@ -45,6 +47,7 @@ function QuestionCompact({
 }: Props): React.ReactElement {
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
   const { description } = versions[activeVersion]
+  const intl = useIntl()
   const [collectedProps, drag] = useDrag({
     item: {
       id,
@@ -69,8 +72,18 @@ function QuestionCompact({
       })}
       ref={drag}
     >
-      <div className="p-4 border border-gray-400 border-2 border-solid p-6 bg-gray-100 rounded-lg">
-        <div className="w-10 h-10 inline-flex items-center justify-center rounded-full bg-indigo-100 text-indigo-500">
+      <div className="p-4 border border-gray-400 border-2 border-solid p-6 bg-gray-100 rounded-lg h-full">
+        <div className="mb-14">
+          <div className="text-right">
+            {tags.map((tag: any) => (
+              <div className="p-2 bg-blue-100 rounded-md w-min float-right ml-2">{tag.name}</div>
+            ))}
+          </div>
+          <div className="absolute text-left bg-blue-200 p-2 rounded-md w-min float-left font-bold">
+            {generateTypesShort(intl)[type]}
+          </div>
+        </div>
+        {/*<div className="w-10 h-10 inline-flex items-center justify-center rounded-full bg-indigo-100 text-indigo-500">
           <svg
             fill="none"
             stroke="currentColor"
@@ -82,10 +95,18 @@ function QuestionCompact({
           >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
-        </div>
+          </div>*/}
         <h2 className="title">{title}</h2>
-        <p className="leading-relaxed text-base line-clamp-3">{description}</p>
+        <p className="leading-relaxed text-base clampedDescription">{description}</p>
       </div>
+      <style jsx>{`
+        .clampedDescription {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
+        }
+      `}</style>
       {/*<div className={clsx('checker', { active: !draggable })}>
         <Checkbox
           checked={checked}
