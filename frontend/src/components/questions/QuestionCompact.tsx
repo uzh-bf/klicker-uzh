@@ -92,15 +92,22 @@ function QuestionCompact({
               <div className="p-2 bg-blue-100 rounded-md w-min float-right ml-2">{tag.name}</div>
             ))}
           </div>
-          <div className="absolute text-left bg-blue-200 p-2 rounded-md w-min float-left font-bold">
-            {generateTypesShort(intl)[type]}
+          <div className="absolute text-left">
+            <div className="bg-blue-200 p-2 rounded-md w-min float-left font-bold">
+              {generateTypesShort(intl)[type]}
+            </div>
           </div>
         </div>
 
-        <h2 className="title">{title}</h2>
+        <h2 className="title align-center">{title}</h2>
         <p className="leading-relaxed text-base clampedDescription mb-16">{description}</p>
         <div className="absolute bottom-0 w-full pl-6 pr-8 -ml-6 ">
           <div className="border-0 border-b-2 border-solid border-gray-300 mb-4" />
+          {isArchived && (
+            <div className="bg-red-600 text-white text-sm p-2.5 rounded-md w-min float-left font-bold mr-2">
+              ARCHIVED
+            </div>
+          )}
           <div className="float-right mb-4">
             <Button onClick={(): void => setIsModificationModalOpen(true)}>
               <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
