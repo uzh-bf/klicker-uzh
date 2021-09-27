@@ -93,7 +93,7 @@ function Index(): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
-  const [questionView, setQuestionView] = useState('block')
+  const [questionView, setQuestionView] = useState('list')
 
   const index = useMemo(() => {
     if (data?.questions) {
@@ -375,12 +375,8 @@ function Index(): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
-  const onChangeQuestionView = (): void => {
-    if (questionView === 'block') {
-      setQuestionView('list')
-    } else {
-      setQuestionView('block')
-    }
+  const onChangeQuestionView = (newView: string): void => {
+    setQuestionView(newView)
   }
 
   const renderActionArea = (runningSessionId): React.ReactElement => {

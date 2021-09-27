@@ -53,7 +53,7 @@ interface Props {
 
 const defaultProps = {
   creationMode: false,
-  questionView: 'block',
+  questionView: 'list',
   isArchiveActive: false,
   itemsChecked: [],
   questions: [],
@@ -306,9 +306,17 @@ function ActionBar({
           </span>
         </Label>
 
-        <Button className="order-1" onClick={(): void => handleQuesionViewChange()}>
-          <FormattedMessage defaultMessage="Change View" id="questionPool.string.changeView" />
-        </Button>
+        {/* buttons to change between question view formats */}
+        <div className="ml-1">
+          <Button.Group className="order-1">
+            <Button icon onClick={(): void => handleQuesionViewChange('list')}>
+              <Icon name="list" />
+            </Button>
+            <Button icon onClick={(): void => handleQuesionViewChange('grid')}>
+              <Icon name="grid layout" />
+            </Button>
+          </Button.Group>
+        </div>
 
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}

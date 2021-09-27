@@ -47,7 +47,7 @@ function QuestionList({
 
   return (
     <div className="questionList">
-      {questionView === 'block' &&
+      {questionView === 'list' &&
         questions.map((question): any => (
           <Question
             checked={selectedItems.ids.includes(question.id)}
@@ -84,7 +84,7 @@ function QuestionList({
           />
         ))}
 
-      {questionView === 'list' && (
+      {questionView === 'grid' && (
         <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
           {questions.map((question): any => (
             <QuestionCompact
