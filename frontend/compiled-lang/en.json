@@ -1195,6 +1195,12 @@
       "value": "ARCHIVED"
     }
   ],
+  "questionPool.string.changeView": [
+    {
+      "type": 0,
+      "value": "Change View"
+    }
+  ],
   "questionPool.string.deletionConfirmationContent": [
     {
       "type": 0,

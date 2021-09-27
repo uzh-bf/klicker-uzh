@@ -84,42 +84,45 @@ function QuestionList({
           />
         ))}
 
-      {questionView === 'list' &&
-        questions.map((question): any => (
-          <QuestionCompact
-            checked={selectedItems.ids.includes(question.id)}
-            creationMode={creationMode}
-            draggable={creationMode}
-            id={question.id}
-            isArchived={isArchiveActive}
-            key={question.id}
-            lastUsed={Array.from(
-              question.instances
-                .filter((instance): boolean => !!instance)
-                .reduce((prevMap, { createdAt, session }): any => {
-                  // if there is already a link to the session, skip the duplicate
-                  if (prevMap.has(session)) {
-                    return prevMap
-                  }
+      {questionView === 'list' && (
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
+          {questions.map((question): any => (
+            <QuestionCompact
+              checked={selectedItems.ids.includes(question.id)}
+              creationMode={creationMode}
+              draggable={creationMode}
+              id={question.id}
+              isArchived={isArchiveActive}
+              key={question.id}
+              lastUsed={Array.from(
+                question.instances
+                  .filter((instance): boolean => !!instance)
+                  .reduce((prevMap, { createdAt, session }): any => {
+                    // if there is already a link to the session, skip the duplicate
+                    if (prevMap.has(session)) {
+                      return prevMap
+                    }
 
-                  // append the session link to the map
-                  return prevMap.set(
-                    session,
-                    <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
-                      {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
-                    </a>
-                  )
-                }, new Map())
-                .values()
-            )}
-            tags={question.tags}
-            title={question.title}
-            type={question.type}
-            versions={question.versions}
-            onCheck={onQuestionChecked(question.id, question)}
-            // onDrop={() => null}
-          />
-        ))}
+                    // append the session link to the map
+                    return prevMap.set(
+                      session,
+                      <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
+                        {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
+                      </a>
+                    )
+                  }, new Map())
+                  .values()
+              )}
+              tags={question.tags}
+              title={question.title}
+              type={question.type}
+              versions={question.versions}
+              onCheck={onQuestionChecked(question.id, question)}
+              // onDrop={() => null}
+            />
+          ))}
+        </div>
+      )}
 
       <style jsx>{`
         .questionList {

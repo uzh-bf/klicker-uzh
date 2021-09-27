@@ -1207,6 +1207,12 @@
       "value": "ARCHIVIERT"
     }
   ],
+  "questionPool.string.changeView": [
+    {
+      "type": 0,
+      "value": "Ansicht wechseln"
+    }
+  ],
   "questionPool.string.deletionConfirmationContent": [
     {
       "type": 0,

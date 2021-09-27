@@ -69,7 +69,24 @@ function QuestionCompact({
       })}
       ref={drag}
     >
-      <div className={clsx('checker', { active: !draggable })}>
+      <div className="p-4 border border-gray-400 border-2 border-solid p-6 bg-gray-100 rounded-lg">
+        <div className="w-10 h-10 inline-flex items-center justify-center rounded-full bg-indigo-100 text-indigo-500">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            className="w-6 h-6"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h2 className="title">{title}</h2>
+        <p className="leading-relaxed text-base line-clamp-3">{description}</p>
+      </div>
+      {/*<div className={clsx('checker', { active: !draggable })}>
         <Checkbox
           checked={checked}
           id={`check-${id}`}
@@ -86,7 +103,6 @@ function QuestionCompact({
           )}{' '}
           {title}
         </h2>
-        {/*<div className="overflow-hidden">{description}</div>*/}
 
         <div className="versionChooser">
           <Dropdown
@@ -105,91 +121,8 @@ function QuestionCompact({
           <QuestionTags tags={tags} type={type} />
         </div>
 
-        {/*<div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
+
           </div>*/}
-      </div>
-      <style jsx>{`
-        @import 'src/theme';
-
-        .question {
-          display: flex;
-          flex-flow: column nowrap;
-
-          border: 1px solid gainsboro;
-          background-color: #f9f9f9;
-
-          &.draggable {
-            cursor: grab;
-
-            &:hover {
-              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
-            }
-          }
-
-          &.isDragging {
-            opacity: 0.5;
-          }
-
-          .checker {
-            flex: 0 0 auto;
-            display: flex;
-
-            align-self: center;
-
-            padding: 0.5rem;
-            padding-left: 0;
-          }
-
-          .wrapper {
-            display: flex;
-            vertical-align: middle;
-
-            .title {
-              color: $color-primary-strong;
-              font-size: $font-size-h1;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-
-            .checker {
-              flex: 0 0 1rem;
-              display: flex;
-              align-items: center;
-
-              padding: 1rem;
-              padding-left: 0.5rem;
-            }
-
-            .wrapper {
-              flex: 1;
-              flex-flow: row wrap;
-
-              .title {
-                flex: 0 0 auto;
-              }
-
-              .versionChooser {
-                flex: 1 1 auto;
-                padding-right: 1rem;
-                text-align: right;
-                align-self: center;
-              }
-
-              .tags {
-                flex: 0 0 auto;
-                align-self: flex-end;
-              }
-
-              .details {
-                flex: 0 0 100%;
-              }
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }
