@@ -5,7 +5,7 @@ title: Session List
 
 The session list provides you with an overview of all your prepared and historic sessions. If you have followed the tutorial, you should see your newly created session in the list.
 
-![Session List](../assets/session_list.png)
+![Session List](/img/session_list.png)
 
 The session list is divided into three sections:
 

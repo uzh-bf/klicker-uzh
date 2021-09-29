@@ -1,5 +1,4 @@
 ---
-id: concepts
 title: Core Concepts
 ---
 
@@ -25,4 +24,4 @@ The flow of a session is controlled on and by the speaker's "Running Session" sc
 
 The upcoming [Basic Tutorial](basics/question_pool.md) is structured to showcase a typical Klicker Workflow. The Klicker Workflow is composed of several steps that are executed in sequence, as can be seen below:
 
-![Workflow](../assets/workflow.png)
+![Workflow](/img/workflow.png)

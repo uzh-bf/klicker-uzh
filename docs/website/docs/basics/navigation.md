@@ -7,6 +7,6 @@ When you log into your Klicker UZH Account, you directly reach the [Question Poo
 
 In addition, you may choose your **language settings**.
 
-![Navigation](../assets/navigation.png)
+![Navigation](/img/navigation.png)
 
 To continue with the tutorial and view your newly created session in the session overview, click on [Session List](session_list.md) in the navigation bar.

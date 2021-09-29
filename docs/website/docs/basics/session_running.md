@@ -5,7 +5,7 @@ title: Running Session
 
 Once you have started a session, you will be redirected to _Running Session_, which will serve as your "Cockpit" throughout the entire execution.
 
-![Running Session](../assets/session_running.png)
+![Running Session](/img/session_running.png)
 
 This screen is used during a speech or lecture to manage the questions and audience feedback and provides the following information and options:
 

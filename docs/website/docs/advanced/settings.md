@@ -14,4 +14,4 @@ There you can change:
 6. your **use case description**
 7. your **password**.
 
-![Settings](../assets/user_settings.png)
+![Settings](/img/user_settings.png)

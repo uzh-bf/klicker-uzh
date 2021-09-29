@@ -5,7 +5,7 @@ title: Question Pool
 
 The question pool is the first page you will encounter upon logging in to your Klicker account. It provides an overview of all previously created questions. The listing can be filtered and sorted by various parameters.
 
-![Question Pool](../assets/question_pool.png)
+![Question Pool](/img/question_pool.png)
 
 The following details and actions are shown for every question:
 
