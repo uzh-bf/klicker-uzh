@@ -1,4 +1,5 @@
 {
+  "name": "@klicker-uzh/docs",
   "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
   "version": "1.6.1",
   "devDependencies": {
