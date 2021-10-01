@@ -39,6 +39,11 @@ module.exports = convict({
       env: 'APP_JOIN_URL',
       format: 'url',
     },
+    host: {
+      default: '0.0.0.0',
+      env: 'APP_HOST',
+      format: String,
+    },
     persistQueries: {
       default: false,
       env: 'APP_PERSIST_QUERIES',
