@@ -309,9 +309,9 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
       return handle(req, res)
     })
 
-    server.listen(3000, (err) => {
+    server.listen(APP_CFG.port, APP_CFG.host, (err) => {
       if (err) throw err
-      console.log('[klicker-react] Ready on localhost:3000')
+      console.log(`[klicker-react] Ready on ${APP_CFG.host}:${APP_CFG.port}`)
     })
   })
   .catch((err) => {

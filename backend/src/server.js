@@ -38,12 +38,12 @@ const wsServer = new ws.Server({
   path: '/graphql',
 })
 
-httpServer.listen(APP_CFG.port, (err) => {
+httpServer.listen(APP_CFG.port, APP_CFG.host, (err) => {
   if (err) throw err
 
   useServer({ schema: schemaWithAuthentication }, wsServer)
 
-  console.log(`[klicker-api] GraphQL ready on ${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
+  console.log(`[klicker-api] GraphQL ready on ${APP_CFG.host}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
 })
 
 const shutdown = (signal) => async () => {
