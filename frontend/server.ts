@@ -309,9 +309,10 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
       return handle(req, res)
     })
 
-    server.listen(APP_CFG.port, APP_CFG.host, (err) => {
+    const listenOn = process.env.NODE_ENV === 'development' ? 'localhost' : APP_CFG.host
+    server.listen(APP_CFG.port, listenOn, (err) => {
       if (err) throw err
-      console.log(`[klicker-react] Ready on ${APP_CFG.host}:${APP_CFG.port}`)
+      console.log(`[klicker-react] Ready on ${listenOn}:${APP_CFG.port}`)
     })
   })
   .catch((err) => {
