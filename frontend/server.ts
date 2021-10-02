@@ -231,6 +231,7 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // generating nonces is currently not correctly supported by nextjs
             directives: {
+              childSrc: [...csp.childSrc],
               connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics, ...optionalLogrocket],
               defaultSrc: csp.defaultSrc,
               fontSrc: csp.fontSrc,
@@ -238,7 +239,9 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
               imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalGoogleAnalytics],
               reportUri: csp.reportUri,
               scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalGoogleAnalytics],
+              scriptSrcElem: [...optionalGoogleAnalytics],
               styleSrc: [...csp.styleSrc, ...optionalGoogleAnalytics],
+              workerSrc: [...csp.workerSrc],
             },
             reportOnly: !csp.enforce,
           },
