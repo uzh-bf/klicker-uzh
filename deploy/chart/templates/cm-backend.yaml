@@ -36,3 +36,5 @@ data:
   EXEC_REDIS_PORT: {{ .Values.backend.redis.port | quote }}
   EXEC_REDIS_TLS: {{ .Values.backend.redis.tls | quote }}
   {{ end }}
+
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}

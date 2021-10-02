@@ -34,3 +34,4 @@ data:
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
   SENTRY_PROJECT: {{ .Values.analytics.sentry.frontend.project | quote }}
   SENTRY_ENV: {{ .Values.analytics.sentry.frontend.environment | quote }}
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
