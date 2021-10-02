@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-alpha.0...v1.6.2-beta.0) (2021-10-02)
+
+
+### Other
+
+* **frontend:** add more default CSP rules based on sentry issues ([20f6e8e](https://github.com/uzh-bf/klicker-uzh/commit/20f6e8e15045b800e413f2079fce07b0f4f4f017))
+
 ### [1.6.2-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.1...v1.6.2-alpha.0) (2021-10-01)
 
 
