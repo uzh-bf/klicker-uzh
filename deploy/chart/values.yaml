@@ -99,8 +99,8 @@ frontend:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -133,8 +133,8 @@ backend:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
