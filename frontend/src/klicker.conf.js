@@ -337,7 +337,7 @@ module.exports = convict({
         format: 'url',
       },
       tracesSampleRate: {
-        default: 1,
+        default: 1.0,
         env: 'SENTRY_SAMPLE_RATE',
         format: Number,
       },

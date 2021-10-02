@@ -35,3 +35,4 @@ data:
   SENTRY_PROJECT: {{ .Values.analytics.sentry.frontend.project | quote }}
   SENTRY_ENV: {{ .Values.analytics.sentry.frontend.environment | quote }}
   SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  SENTRY_SAMPLE_RATE: {{ .Values.analytics.sentry.frontend.sampleRate | quote }}
