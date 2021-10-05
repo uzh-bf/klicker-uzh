@@ -69,6 +69,7 @@ services:
   redis_exec:
     restart: unless-stopped
     image: redis:5.0.9
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
       #- /data/klicker/redis_exec/:/data
       - redis_exec:/data
