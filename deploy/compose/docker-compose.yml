@@ -77,6 +77,7 @@ services:
     image: redis:5.0.9
     # ports:
     #   - 6379:6379
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis-data:/data
     networks:
