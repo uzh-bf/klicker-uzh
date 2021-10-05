@@ -104,6 +104,8 @@ services:
     #   - 27017:27017
     networks:
       - klicker
+    volumes:
+      - mongo-data:/data/db
 
   # minio storage platform for S3
   minio:
@@ -123,6 +125,7 @@ services:
 volumes:
   redis-data:
   minio-data:
+  mongo-data:
 
 networks:
   klicker:
