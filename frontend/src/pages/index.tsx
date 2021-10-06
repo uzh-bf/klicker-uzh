@@ -93,7 +93,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/projects/4">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap">
                     klicker-roadmap
                   </List.Header>
                   <List.Description>Public Github Roadmap</List.Description>
