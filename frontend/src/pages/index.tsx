@@ -102,19 +102,10 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-react">
-                    uzh-bf/klicker-react
+                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh">
+                    uzh-bf/klicker-uzh
                   </List.Header>
-                  <List.Description>Frontend</List.Description>
-                </List.Content>
-              </List.Item>
-              <List.Item>
-                <List.Icon name="github" size="large" verticalAlign="middle" />
-                <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-api">
-                    uzh-bf/klicker-api
-                  </List.Header>
-                  <List.Description>Backend (API)</List.Description>
+                  <List.Description>Public Github Repository</List.Description>
                 </List.Content>
               </List.Item>
             </List>
