@@ -1,7 +1,6 @@
 {
-  "name": "@klickeruzh/landing",
+  "name": "@klicker-uzh/landing",
   "version": "1.6.2-rc.0",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
