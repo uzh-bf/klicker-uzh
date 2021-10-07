@@ -65,7 +65,7 @@ spec:
           imagePullPolicy: {{ .Values.shibboleth.image.pullPolicy }}
           envFrom:
             - configMapRef:
-                name: {{ include "chart.fullname" . }}-cm-shibboleth
+                name: {{ include "chart.fullname" . }}-config-shibboleth
           volumeMounts:
             - mountPath: /etc/shibboleth/sp-cert.pem
               name: sp-cert
