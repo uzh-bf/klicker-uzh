@@ -1,0 +1,108 @@
+<SPConfig xmlns="urn:mace:shibboleth:2.0:native:sp:config" xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" clockSkew="180">
+
+
+        <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
+        <ApplicationDefaults entityID="https://aai.klicker.uzh.ch/shibboleth" homeURL="https://aai.klicker.uzh.ch/Shibboleth.sso/Session" metadataAttributePrefix="Meta-" REMOTE_USER="persistent-id targeted-id uniqueID" signing="back" requireTransportAuth="false">
+
+                <!--
+        Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
+        More information on: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSessions
+        -->
+                <Sessions redirectLimit="host" lifetime="28800" timeout="3600" relayState="ss:mem" checkAddress="false" consistentAddress="true" handlerSSL="false" cookieProps="https">
+
+                        <!--
+            In order to use a default Identity Provider add an attribute like:
+            entityID="https://idp.example.org/shibboleth" to the SSO element.
+            It's value should be the entityID of the default Identity Provider.
+            More information on: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPServiceSSO
+            -->
+                        <SSO discoveryProtocol="SAMLDS" discoveryURL="https://wayf-test.switch.ch/aaitest/WAYF">
+              SAML2
+            </SSO>
+
+                        <!-- SAML and local-only logout. -->
+                        <Logout>Local</Logout>
+
+                        <!-- Extension service that generates "approximate" metadata based on SP configuration. -->
+                        <Handler type="MetadataGenerator" Location="/Metadata" signing="false" />
+
+                        <!-- Status reporting service. The first IPv4/IPv6 address pair allows access from local host. The remaining addresses are used (or will be used in the future) by the AAI Resource Registry operated by SWITCH -->
+                        <Handler type="Status" Location="/Status" acl="127.0.0.1 ::1 10.1.0.0/16 130.59.118.224 130.59.138.32 130.59.10.146 130.59.198.12 2001:620:0:1006::255 2001:620:0:3006::256" />
+
+                        <!-- Session diagnostic service. -->
+                        <Handler type="Session" Location="/Session" acl="127.0.0.1 ::1 10.1.0.0/16 130.59.138.32" />
+
+                        <!-- JSON feed of discovery information. -->
+                        <Handler type="DiscoveryFeed" Location="/DiscoFeed" />
+                </Sessions>
+
+                <!--
+        Allows overriding of error template information/filenames. You can
+        also add attributes with values that can be plugged into the templates.
+        More information on: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPErrors
+        -->
+                <Errors access="accessError.html" supportContact="klicker.support@uzh.ch" helpLocation="https://www.switch.ch/aai/help" logoLocation="https://www.switch.ch/aai/design/images/SWITCHaai.gif" styleSheet="https://www.switch.ch/aai/design/shib-error.css" />
+
+                <!-- Download and verify AAI Test metadata -->
+                <MetadataProvider type="XML" validate="true" uri="http://metadata.aai.switch.ch/metadata.aaitest.xml" backingFilePath="metadata.aaitest.xml" reloadInterval="3600">
+                        <MetadataFilter type="RequireValidUntil" maxValidityInterval="604800" />
+                        <MetadataFilter type="Signature">
+                                <TrustEngine type="StaticPKIX" certificate="SWITCHaaiRootCA.crt.pem" verifyDepth="2" checkRevocation="fullChain" policyMappingInhibit="true" anyPolicyInhibit="true">
+                                        <TrustedName>SWITCHaai Metadata Signer</TrustedName>
+                                        <PolicyOID>2.16.756.1.2.6.7</PolicyOID>
+                                </TrustEngine>
+                        </MetadataFilter>
+                        <MetadataFilter type="EntityRoleWhiteList">
+                                <RetainedRole>md:IDPSSODescriptor</RetainedRole>
+                                <RetainedRole>md:AttributeAuthorityDescriptor</RetainedRole>
+                        </MetadataFilter>
+                </MetadataProvider>
+
+                <!-- Map to extract attributes from SAML assertions. -->
+                <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml" />
+
+                <!-- Extract further attributes about Identity Providers from metadata -->
+                <AttributeExtractor type="Metadata" errorURL="errorURL" DisplayName="displayName" InformationURL="informationURL" PrivacyStatementURL="privacyStatementURL" OrganizationURL="organizationURL">
+                        <ContactPerson id="technicalContactDisplayName" contactType="technical" formatter="$GivenName $SurName" />
+                        <ContactPerson id="technicalContactMailtoURI" contactType="technical" formatter="$EmailAddress" />
+                        <ContactPerson id="supportContactDisplayName" contactType="support" formatter="$GivenName $SurName" />
+                        <ContactPerson id="supportContactMailtoURI" contactType="support" formatter="$EmailAddress" />
+                        <ContactPerson id="administrativeContactDisplayName" contactType="administrative" formatter="$GivenName $SurName" />
+                        <ContactPerson id="administrativeContactMailtoURI" contactType="administrative" formatter="$EmailAddress" />
+                        <Logo id="smallLogo" height="16" width="16" formatter="&lt;img src='$_string' height='$height' width='$width'/&gt;" />
+                        <Logo id="largeLogo" height="60" width="80" formatter="&lt;img src='$_string' height='$height' width='$width'/&gt;" />
+                </AttributeExtractor>
+
+                <!-- Use a SAML query if no attributes are supplied during SSO. -->
+                <AttributeResolver type="Query" subjectMatch="true" />
+
+
+                <!-- Default filtering policy for recognized attributes, lets other data pass -->
+                <AttributeFilter type="XML" validate="true" reloadChanges="false" path="attribute-policy.xml" />
+
+                <!--
+        Certificate/Private key pairs are read in sequence.
+        Unless specificially defined only the first
+        CredentialResolver is used for attribute requests.
+        More information:
+        https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPCredentialResolver
+        -->
+                <CredentialResolver type="Chaining">
+                        <!-- Active certificate -->
+                        <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem" />
+                </CredentialResolver>
+
+                <!--
+        The default settings can be overridden by creating ApplicationOverride elements.
+        More Information and examples on:
+        https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApplicationOverride
+        -->
+        </ApplicationDefaults>
+
+        <!-- Policies that determine how to process and authenticate runtime messages. -->
+        <SecurityPolicyProvider type="XML" validate="true" reloadChanges="false" path="security-policy.xml" />
+
+        <!-- Low-level configuration about protocols and bindings available for use. -->
+        <ProtocolProvider type="XML" validate="true" reloadChanges="false" path="protocols.xml" />
+
+</SPConfig>
