@@ -142,3 +142,26 @@ backend:
   tolerations: []
 
   affinity: {}
+
+shibboleth:
+  enabled: false
+
+  replicaCount: 1
+
+  hostname: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/shibboleth
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources: {}
