@@ -1,0 +1,113 @@
+{{- if .Values.shibboleth.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-shibboleth
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shibboleth
+spec:
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: shibboleth
+  template:
+    metadata:
+      {{- with .Values.shibboleth.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: shibboleth
+    spec:
+      {{- with .Values.shibboleth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.shibboleth.podSecurityContext | nindent 8 }}
+      containers:
+        - name: httpd
+          securityContext:
+            {{- toYaml .Values.shibboleth.securityContext | nindent 12 }}
+          image: "{{ .Values.shibboleth.image.repository }}:{{ .Values.shibboleth.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.shibboleth.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: APP_SECRET
+                  name: {{ include "chart.fullname" . }}-secret-backend
+          command:
+            - /usr/libexec/s2i/run
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+            - mountPath: /var/run/shibboleth
+              name: shib-socket
+          resources:
+            {{- toYaml .Values.shibboleth.resources | nindent 12 }}
+        - name: shib
+          securityContext:
+            {{- toYaml .Values.shibboleth.securityContext | nindent 12 }}
+          image: "{{ .Values.shibboleth.image.repository }}:{{ .Values.shibboleth.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.shibboleth.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-cm-shibboleth
+          volumeMounts:
+            - mountPath: /etc/shibboleth/sp-cert.pem
+              name: sp-cert
+              readOnly: true
+              subPath: sp-cert.pem
+            - mountPath: /etc/shibboleth/sp-key.pem
+              name: sp-key
+              readOnly: true
+              subPath: sp-key.pem
+            - mountPath: /var/run/shibboleth
+              name: shib-socket
+          resources:
+            {{- toYaml .Values.shibboleth.resources | nindent 12 }}
+
+      volumes:
+        - name: sp-cert
+          secret:
+            defaultMode: 288
+            items:
+              - key: sp-cert.pem
+                path: sp-cert.pem
+            secretName: {{ include "chart.fullname" . }}-secret-shibboleth
+        - name: sp-key
+          secret:
+            defaultMode: 288
+            items:
+              - key: sp-key.pem
+                path: sp-key.pem
+            secretName: {{ include "chart.fullname" . }}-secret-shibboleth
+        - emptyDir: {}
+          name: shib-socket
+
+      {{- with .Values.shibboleth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shibboleth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shibboleth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
