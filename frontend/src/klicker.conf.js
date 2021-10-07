@@ -140,7 +140,7 @@ module.exports = convict({
     },
     csp: {
       childSrc: {
-        default: ["'self'", 'blob:', 'forms.clickup.com'],
+        default: ["'self'", 'blob:*', 'forms.clickup.com'],
         env: 'SECURITY_CSP_CHILD_SRC',
         format: Array,
       },
@@ -150,7 +150,7 @@ module.exports = convict({
         format: Array,
       },
       defaultSrc: {
-        default: ["'self'", 'data:'],
+        default: ["'self'"],
         env: 'SECURITY_CSP_DEFAULT_SRC',
         format: Array,
       },
@@ -165,12 +165,12 @@ module.exports = convict({
         format: Boolean,
       },
       fontSrc: {
-        default: ["'self'", 'data:', 'fonts.gstatic.com'],
+        default: ["'self'", 'data:*', 'fonts.gstatic.com'],
         env: 'SECURITY_CSP_FONT_SRC',
         format: Array,
       },
       imgSrc: {
-        default: ["'self'", 'data:', 'blob:', 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.com'],
+        default: ["'self'", 'data:*', 'blob:*', 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.com'],
         env: 'SECURITY_CSP_IMG_SRC',
         format: Array,
       },
@@ -180,7 +180,7 @@ module.exports = convict({
         format: 'url',
       },
       scriptSrc: {
-        default: ["'self'", "'unsafe-inline'", 'blob:'],
+        default: ["'self'", "'unsafe-inline'", 'blob:*'],
         env: 'SECURITY_CSP_SCRIPT_SRC',
         format: Array,
       },
@@ -196,7 +196,7 @@ module.exports = convict({
         format: Array,
       },
       workerSrc: {
-        default: ["'self'", 'blob:'],
+        default: ["'self'", 'blob:*'],
         env: 'SECURITY_CSP_WORKER_SRC',
         format: Array,
       },
