@@ -6,7 +6,7 @@ The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.
 
 - [Frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)
 - [Backend](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
-- [Shibboleth](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
+- [Shibboleth](https://github.com/uzh-bf/klicker-uzh/tree/dev/shibboleth) (subfolder)
 
 The following additional resources might be of interest to you:
 
