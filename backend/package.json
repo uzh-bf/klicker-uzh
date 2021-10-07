@@ -1,6 +1,6 @@
 {
   "name": "klicker-api",
-  "version": "1.6.2-beta.1",
+  "version": "1.6.2-beta.2",
   "main": "src/server.js",
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
