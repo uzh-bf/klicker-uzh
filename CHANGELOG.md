@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.3...v1.6.2-rc.0) (2021-10-07)
+
+
+### Bug Fixes
+
+* **landing:** ensure that links to roadmap and repository are valid ([#2551](https://github.com/uzh-bf/klicker-uzh/issues/2551)) ([4192fa2](https://github.com/uzh-bf/klicker-uzh/commit/4192fa2dbd6b63dde92f21301cbfa7c49919cf3d))
+
+
+### Other
+
+* **deploy:** update appVersion ([486fcf5](https://github.com/uzh-bf/klicker-uzh/commit/486fcf59697a18062a08e3ee4c0730557e14b250))
+* **frontend:** ensure that sentry config is in JS files ([07c1191](https://github.com/uzh-bf/klicker-uzh/commit/07c11918ae50ced2e50bab6834dfac1ee3da9dc3))
+* **frontend:** update default CSP rules ([aab46d8](https://github.com/uzh-bf/klicker-uzh/commit/aab46d8f1e3d81dee8d021bf0e384a333f42a32a))
+
 ### [1.6.2-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.2...v1.6.2-beta.3) (2021-10-07)
 
 
