@@ -216,6 +216,11 @@ module.exports = `
     createdAt: DateTime!
   }
 
+  type Session_FeedbackResponse_Deleted {
+    feedbackId: ID!
+    id: ID!
+  }
+
   type Session_Update {
     id: ID!
     activeStep: Int!
