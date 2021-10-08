@@ -4,6 +4,8 @@ const _trim = require('lodash/trim')
 const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 const { v5: uuidv5, v4: uuidv4 } = require('uuid')
+const mongoose = require('mongoose')
+const { ObjectId } = mongoose.Types
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
@@ -14,9 +16,11 @@ const {
   pubsub,
   FEEDBACK_ADDED,
   PUBLIC_FEEDBACK_ADDED,
+  PUBLIC_FEEDBACK_REMOVED,
   FEEDBACK_DELETED,
   FEEDBACK_RESOLVED,
   FEEDBACK_RESPONSE_ADDED,
+  FEEDBACK_RESPONSE_DELETED,
 } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
@@ -126,6 +130,11 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
       [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
       sessionId,
     })
+  } else {
+    pubsub.publish(PUBLIC_FEEDBACK_REMOVED, {
+      [PUBLIC_FEEDBACK_REMOVED]: feedbackId,
+      sessionId,
+    })
   }
 
   return updatedSession
@@ -175,7 +184,7 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
 
   assertUserMatch(session, userId)
 
-  const newResponseId = uuidv4()
+  const newResponseId = ObjectId()
 
   const updatedSession = await SessionModel.findOneAndUpdate(
     {
@@ -184,7 +193,7 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
     },
     {
       $push: {
-        'feedbacks.$.responses': { id: newResponseId, content: response },
+        'feedbacks.$.responses': { _id: newResponseId, content: response },
       },
       $set: {
         'feedbacks.$.resolved': true,
@@ -279,7 +288,14 @@ async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseI
     }
   )
 
-  // TODO: publish the deletion
+  // publish the deletion
+  pubsub.publish(FEEDBACK_RESPONSE_DELETED, {
+    [FEEDBACK_RESPONSE_DELETED]: {
+      id: responseId,
+      feedbackId,
+    },
+    sessionId,
+  })
 
   return updatedSession
 }
