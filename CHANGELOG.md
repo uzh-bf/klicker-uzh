@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.1...v1.6.2-rc.2) (2021-10-08)
+
+
+### Bug Fixes
+
+* **docs:** update link to roadmap ([6711114](https://github.com/uzh-bf/klicker-uzh/commit/67111146ed04aafdfeaf820afa7dc616894ca810))
+* **frontend:** versioning of questions ([0ffd292](https://github.com/uzh-bf/klicker-uzh/commit/0ffd292571ab33582aad2ccc5776dc097899726e))
+
+
+### Other
+
+* **backend:** update email credentials for local instance ([e1af305](https://github.com/uzh-bf/klicker-uzh/commit/e1af3054d46dd4b7f0169d11c5d881fc2d2430ca))
+
+
+### Enhancements
+
+* add subscriptions for unpublishing feedback and deletion of feedback responses ([#2553](https://github.com/uzh-bf/klicker-uzh/issues/2553)) ([61391f7](https://github.com/uzh-bf/klicker-uzh/commit/61391f771e614dc7402dd4c4027987731a6e44fd))
+* **deploy:** use minio initialization service across compose files ([026e16c](https://github.com/uzh-bf/klicker-uzh/commit/026e16cb7e2c478e4eba4543ce134149ba7c372c))
+* **deploy:** use unless-stopped to prevent restarting services unnecessarily ([72cff46](https://github.com/uzh-bf/klicker-uzh/commit/72cff46be75b51c6dfde42e7a5bdb43f87a0d654))
+
 ### [1.6.2-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.0...v1.6.2-rc.1) (2021-10-07)
 
 
