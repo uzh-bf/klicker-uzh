@@ -57,24 +57,24 @@ function Index(): React.ReactElement {
         <div className="boxes">
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <h2>Project</h2>
+            <h2>Documentation</h2>
             <p>Learn more about Klicker.</p>
           </a>
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://www.klicker.uzh.ch/roadmap"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <h2>Lecturer</h2>
-            <p>How to use Klicker as a lecturer!</p>
+            <h2>Roadmap</h2>
+            <p>Defined goals and milestones.</p>
           </a>
           <div className="box">
-            <h2>Development</h2>
+            <h2>Ressources</h2>
             <List divided relaxed>
               {/* <List.Item>
               <List.Icon name="slack" size="large" verticalAlign="middle" />
@@ -96,19 +96,28 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap">
-                    klicker-roadmap
-                  </List.Header>
-                  <List.Description>Public Github Roadmap</List.Description>
-                </List.Content>
-              </List.Item>
-              <List.Item>
-                <List.Icon name="github" size="large" verticalAlign="middle" />
-                <List.Content>
                   <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh">
                     uzh-bf/klicker-uzh
                   </List.Header>
                   <List.Description>Public Github Repository</List.Description>
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name="edit" size="large" verticalAlign="middle" />
+                <List.Content>
+                  <List.Header as="a" href="https://uzh-bf.github.io/klicker-uzh/docs/faq/changelog">
+                    Changelog
+                  </List.Header>
+                  <List.Description>Major Releases</List.Description>
+                </List.Content>
+              </List.Item>
+              <List.Item>
+                <List.Icon name="question circle" size="large" verticalAlign="middle" />
+                <List.Content>
+                  <List.Header as="a" href="https://uzh-bf.github.io/klicker-uzh/docs/faq/faq">
+                    FAQ
+                  </List.Header>
+                  <List.Description>Frequently Asked Questions</List.Description>
                 </List.Content>
               </List.Item>
             </List>
