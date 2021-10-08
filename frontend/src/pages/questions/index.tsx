@@ -143,23 +143,6 @@ function Index(): React.ReactElement {
     try {
       // archive the questions
       await archiveQuestions({
-        //refetchQueries: [{ query: QuestionPoolQuery }],
-        update: (store, { data: { selectedItems } }) => {
-          const data = store.readQuery({
-            query: QuestionPoolQuery,
-          })
-          // @ts-ignore
-          data.questions = data.questions.map((question, index) => {
-            if (question.id === selectedItems[index].id) {
-              let newQuestion = question
-              newQuestion.isArchived = true
-              return newQuestion
-            } else {
-              return question
-            }
-          })
-          store.writeQuery({ query: QuestionPoolQuery, data })
-        },
         variables: { ids: selectedItems.ids },
       })
 
