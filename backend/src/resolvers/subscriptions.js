@@ -30,6 +30,7 @@ const subscriptionTypes = {
   FEEDBACK_RESPONSE_ADDED: 'feedbackResponseAdded',
   FEEDBACK_RESPONSE_DELETED: 'feedbackResponseDeleted',
   PUBLIC_FEEDBACK_ADDED: 'publicFeedbackAdded',
+  PUBLIC_FEEDBACK_REMOVED: 'publicFeedbackRemoved',
   SESSION_UPDATED: 'sessionUpdated',
   RUNNING_SESSION_UPDATED: 'runningSessionUpdated',
 }
@@ -41,6 +42,7 @@ module.exports = {
   // export subscriptions
   confusionAdded: subscriptionWithSessionId(subscriptionTypes.CONFUSION_ADDED),
   publicFeedbackAdded: subscriptionWithSessionId(subscriptionTypes.PUBLIC_FEEDBACK_ADDED),
+  publicFeedbackRemoved: subscriptionWithSessionId(subscriptionTypes.PUBLIC_FEEDBACK_REMOVED),
   feedbackAdded: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_ADDED),
   feedbackResolved: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_RESOLVED),
   feedbackDeleted: subscriptionWithSessionId(subscriptionTypes.FEEDBACK_DELETED),

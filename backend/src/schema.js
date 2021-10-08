@@ -81,6 +81,7 @@ const {
   confusionAdded,
   feedbackAdded,
   publicFeedbackAdded,
+  publicFeedbackRemoved,
   sessionUpdated,
   runningSessionUpdated,
   feedbackDeleted,
@@ -191,6 +192,7 @@ const typeDefs = [
     feedbackResponseAdded(sessionId: ID!): Session_FeedbackResponse_Added
     feedbackResponseDeleted(sessionId: ID!): Session_FeedbackResponse_Deleted
     publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
+    publicFeedbackRemoved(sessionId: ID!): ID
     sessionUpdated(sessionId: ID!): Session_Public_Update
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
@@ -273,6 +275,7 @@ const resolvers = {
     confusionAdded,
     feedbackAdded,
     publicFeedbackAdded,
+    publicFeedbackRemoved,
     sessionUpdated,
     runningSessionUpdated,
     feedbackDeleted,

@@ -7,6 +7,7 @@ import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
 import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
+import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
@@ -60,6 +61,18 @@ function FeedbackArea({
         const newItem = subscriptionData.data.publicFeedbackAdded
         if (prev.joinQA.map((item) => item.id).includes(newItem.id)) return prev
         return { ...prev, joinQA: [newItem, ...prev.joinQA] }
+      },
+    })
+
+    const publicFeedbackRemoved = subscribeToMore({
+      document: PublicFeedbackRemovedSubscription,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return {
+          ...prev,
+          joinQA: prev.joinQA.filter((feedback) => feedback.id !== subscriptionData.data.publicFeedbackRemoved),
+        }
       },
     })
 
@@ -144,6 +157,7 @@ function FeedbackArea({
       feedbackResolved && feedbackResolved()
       feedbackResponseAdded && feedbackResponseAdded()
       feedbackResponseDeleted && feedbackResponseDeleted()
+      publicFeedbackRemoved && publicFeedbackRemoved()
     }
   }, [subscribeToMore, sessionId])
 

@@ -16,6 +16,7 @@ const {
   pubsub,
   FEEDBACK_ADDED,
   PUBLIC_FEEDBACK_ADDED,
+  PUBLIC_FEEDBACK_REMOVED,
   FEEDBACK_DELETED,
   FEEDBACK_RESOLVED,
   FEEDBACK_RESPONSE_ADDED,
@@ -127,6 +128,11 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
     const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
     pubsub.publish(PUBLIC_FEEDBACK_ADDED, {
       [PUBLIC_FEEDBACK_ADDED]: savedFeedbackWithId,
+      sessionId,
+    })
+  } else {
+    pubsub.publish(PUBLIC_FEEDBACK_REMOVED, {
+      [PUBLIC_FEEDBACK_REMOVED]: feedbackId,
       sessionId,
     })
   }
