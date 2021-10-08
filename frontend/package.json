@@ -10,7 +10,7 @@
     "@apollo/client": "3.4.10",
     "@babel/preset-env": "7.15.4",
     "@fingerprintjs/fingerprintjs": "2.1.4",
-    "@formatjs/cli": "4.2.33",
+    "@formatjs/cli": "4.3.1",
     "@formatjs/intl-datetimeformat": "4.2.3",
     "@formatjs/intl-getcanonicallocales": "1.7.3",
     "@formatjs/intl-numberformat": "7.2.3",
