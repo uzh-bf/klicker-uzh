@@ -149,11 +149,15 @@ function Index(): React.ReactElement {
             query: QuestionPoolQuery,
           })
           // @ts-ignore
-          data.questions = data.questions.map((question, index) =>
-            question.id === selectedItems[index].id
-              ? (question.isArchived = true)
-              : (question.isArchived = question.isArchived)
-          )
+          data.questions = data.questions.map((question, index) => {
+            if (question.id === selectedItems[index].id) {
+              let newQuestion = question
+              newQuestion.isArchived = true
+              return newQuestion
+            } else {
+              return question
+            }
+          })
           store.writeQuery({ query: QuestionPoolQuery, data })
         },
         variables: { ids: selectedItems.ids },

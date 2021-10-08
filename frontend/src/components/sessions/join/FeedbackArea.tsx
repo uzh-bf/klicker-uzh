@@ -133,7 +133,6 @@ function FeedbackArea({
       variables: { sessionId },
       updateQuery: (prev, { subscriptionData }) => {
         if (!subscriptionData.data) return prev
-        console.log(prev, subscriptionData.data.feedbackResponseDeleted)
         return {
           ...prev,
           joinQA: prev.joinQA.map((feedback) => {
