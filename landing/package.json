@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@socialgouv/matomo-next": "1.2.2",
-    "axios": "0.21.1",
+    "axios": "0.22.0",
     "fomantic-ui-css": "2.8.8",
     "next": "11.1.2",
     "react": "17.0.2",
