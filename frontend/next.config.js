@@ -30,6 +30,7 @@ module.exports = (phase) => {
       persistQueries: APP_CFG.persistQueries,
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
+      supportEmail: APP_CFG.supportEmail,
       withFingerprinting: SECURITY_CFG.fingerprinting,
       withAai: APP_CFG.withAai,
     },

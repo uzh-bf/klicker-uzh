@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import getConfig from 'next/config'
 import { Button, List, Input } from 'semantic-ui-react'
 
 import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/hooks/useLogging'
+
+const { publicRuntimeConfig } = getConfig()
 
 const links = [
   {
@@ -41,7 +44,7 @@ function Index(): React.ReactElement {
           <p>Want to participate in a poll?</p>
           <Input
             fluid
-            label="app.klicker.uzh.ch/join/"
+            label={`${publicRuntimeConfig.baseUrl}/join/`}
             placeholder="account id"
             value={shortname}
             onChange={(e): void => setShortname(e.target.value)}
@@ -84,8 +87,8 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="mail" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="mailto:klicker.support@uzh.ch">
-                    klicker.support@uzh.ch
+                  <List.Header as="a" href={`mailto:${publicRuntimeConfig.supportEmail}`}>
+                    {publicRuntimeConfig.supportEmail}
                   </List.Header>
                   <List.Description>Support</List.Description>
                 </List.Content>

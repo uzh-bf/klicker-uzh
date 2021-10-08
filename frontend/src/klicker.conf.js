@@ -54,6 +54,11 @@ module.exports = convict({
       env: 'APP_PORT',
       format: 'port',
     },
+    supportEmail: {
+      default: "klicker.support@uzh.ch",
+      env: 'APP_SUPPORT_EMAIL',
+      format: "email",
+    },
     trustProxy: {
       default: false,
       env: 'APP_TRUST_PROXY',
