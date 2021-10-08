@@ -12,7 +12,7 @@ services:
 
   # the frontend for KlickerUZH
   frontend:
-    restart: always
+    restart: unless-stopped
     image: ghcr.io/uzh-bf/klicker-uzh/frontend:v1.6.1
     # ports:
     #   - 3000:3000
@@ -32,7 +32,7 @@ services:
 
   # the backend for KlickerUZH
   backend:
-    restart: always
+    restart: unless-stopped
     image: ghcr.io/uzh-bf/klicker-uzh/backend:v1.6.1
     # ports:
     #   - 4000:4000
@@ -73,7 +73,7 @@ services:
   # redis instance to support session execution
   # instance data must be persisted
   redis_exec:
-    restart: always
+    restart: unless-stopped
     image: redis:5.0.9
     # ports:
     #   - 6379:6379
@@ -86,7 +86,7 @@ services:
   # redis instance for page caching and rate limiting
   # this instance does not require persistence
   redis_cache:
-    restart: always
+    restart: unless-stopped
     image: redis:5.0.9
     # ports:
     #   - 6379:6379
@@ -96,7 +96,7 @@ services:
   # mongodb database
   # it is recommended to run this service outside of docker
   mongodb:
-    restart: always
+    restart: unless-stopped
     image: mongo:4.0
     environment:
       MONGO_INITDB_ROOT_USERNAME: klicker
@@ -110,7 +110,7 @@ services:
 
   # minio storage platform for S3
   minio:
-    restart: always
+    restart: unless-stopped
     image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
     environment:
       MINIO_ROOT_USER: minioadmin
