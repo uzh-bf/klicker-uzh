@@ -18,7 +18,7 @@ src/stories/
 !next-env.d.ts
 !postcss.config.js
 !tailwind.config.js
-!sentry.*.ts
+!sentry.*.js
 !semantic.json
 !polyfills.ts
 !tsconfig.server.json

@@ -1,21 +1,7 @@
 {
-  "name": "klicker-react",
-  "version": "1.6.1",
-  "homepage": "https://www.klicker.uzh.ch",
-  "repository": "https://github.com/uzh-bf/klicker-api.git",
-  "bugs": "https://github.com/uzh-bf/klicker-uzh",
-  "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
-  ],
-  "contributors": [
-    "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
-    "Pascal Zehnder <pascal.zehnder@bf.uzh.ch",
-    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
-    "Jokkis80 <jokki@windowslive.com>",
-    "mnmldev <aleloewe@gmail.com>",
-    "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
-  ],
+  "name": "@klicker-uzh/frontend",
+  "version": "1.6.2-rc.1",
+  "main": "server.ts",
   "engines": {
     "node": ">=14"
   },

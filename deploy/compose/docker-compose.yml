@@ -1,0 +1,150 @@
+version: '3.7'
+
+services:
+  # proxy for domain names with SSL termination
+  # the example config for the KlickerUZH includes the following rules:
+  # app.klicker.uzh.ch -> frontend on port 3000
+  # api.klicker.uzh.ch -> backend on port 4000
+  # s3.klicker.uzh.ch -> minio on port 9000
+  # TODO: add an example nginx configuration with domain names and letsencrypt
+  # proxy:
+  #   image: nginx:1.21.3
+
+  # the frontend for KlickerUZH
+  frontend:
+    restart: unless-stopped
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend:v1.6.1
+    # ports:
+    #   - 3000:3000
+    environment:
+      API_ENDPOINT: https://app.klicker.uzh.ch/graphql
+      API_ENDPOINT_WS: wss://api.klicker.uzh.ch/graphql
+      APP_BASE_URL: https://app.klicker.uzh.ch
+      APP_JOIN_URL: app.klicker.uzh.ch/join
+      APP_TRUST_PROXY: 'true'
+      APP_WITH_AAI: 'false'
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_HOST: redis_cache
+      CACHE_REDIS_TLS: 'false'
+      S3_ROOT_URL: https://s3.klicker.uzh.ch/images
+    networks:
+      - klicker
+
+  # the backend for KlickerUZH
+  backend:
+    restart: unless-stopped
+    image: ghcr.io/uzh-bf/klicker-uzh/backend:v1.6.1
+    # ports:
+    #   - 4000:4000
+    environment:
+      APP_BASE_URL: app.klicker.uzh.ch
+      APP_COOKIE_DOMAIN: klicker.uzh.ch
+      APP_DOMAIN: api.klicker.uzh.ch
+      APP_HTTPS: 'true'
+      APP_SECURE: 'true'
+      APP_SECRET: abcdabcd
+      APP_TRUST_PROXY: 'true'
+      CACHE_REDIS_HOST: redis_cache
+      CACHE_REDIS_PORT: 6379
+      CACHE_REDIS_TLS: 'false'
+      EXEC_REDIS_HOST: redis_exec
+      EXEC_REDIS_PORT: 6379
+      EXEC_REDIS_TLS: 'false'
+      EMAIL_FROM:
+      EMAIL_HOST:
+      EMAIL_PORT:
+      EMAIL_USER:
+      EMAIL_PASSWORD:
+      MONGO_URL: mongodb:27017/klicker?authSource=admin
+      MONGO_USER: klicker
+      MONGO_PASSWORD: klicker
+      S3_ENABLED: 'true'
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_ENDPOINT: https://s3.klicker.uzh.ch
+      S3_BUCKET: images
+      SECURITY_CORS_CREDENTIALS: 'true'
+      SECURITY_CORS_ORIGIN: https://app.klicker.uzh.ch
+      SECURITY_HSTS_ENABLED: 'false'
+      SECURITY_RATE_LIMIT_ENABLED: 'true'
+    networks:
+      - klicker
+
+  # redis instance to support session execution
+  # instance data must be persisted
+  redis_exec:
+    restart: unless-stopped
+    image: redis:5.0.9
+    # ports:
+    #   - 6379:6379
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    networks:
+      - klicker
+
+  # redis instance for page caching and rate limiting
+  # this instance does not require persistence
+  redis_cache:
+    restart: unless-stopped
+    image: redis:5.0.9
+    # ports:
+    #   - 6379:6379
+    networks:
+      - klicker
+
+  # mongodb database
+  # it is recommended to run this service outside of docker
+  mongodb:
+    restart: unless-stopped
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    # ports:
+    #   - 27017:27017
+    networks:
+      - klicker
+    volumes:
+      - mongo-data:/data/db
+
+  # minio storage platform for S3
+  minio:
+    restart: unless-stopped
+    image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: https://app.klicker.uzh.ch
+    ports:
+      # - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+
+  # this helper service will check and initialize the bucket "images" and halt afterwards. feel free to remove it once the setup is done
+  create_minio_buckets:
+    image: minio/mc:RELEASE.2021-10-07T04-19-58Z
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    entrypoint: >
+      /bin/sh -c '
+      sleep 5;
+      /usr/bin/mc config host add s3 http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} --api S3v4;
+      [[ ! -z "`/usr/bin/mc ls s3 | grep images`" ]] || /usr/bin/mc mb s3/images;
+      /usr/bin/mc policy set public s3/images;
+      exit 0;
+      '
+
+volumes:
+  redis-data:
+  minio-data:
+  mongo-data:
+
+networks:
+  klicker:
+    driver: bridge

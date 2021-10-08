@@ -1,7 +1,32 @@
 {
-  "name": "klicker-uzh",
-  "version": "1.6.1",
+  "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
+  "version": "1.6.2-rc.1",
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uzh-bf/klicker-uzh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uzh-bf/klicker-uzh/issues"
+  },
+  "homepage": "https://www.klicker.uzh.ch/",
+  "maintainers": [
+    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+  ],
+  "contributors": [
+    "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
+    "Pascal Zehnder <pascal.zehnder@bf.uzh.ch",
+    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
+    "Jokkis80 <jokki@windowslive.com>",
+    "mnmldev <aleloewe@gmail.com>",
+    "Luca Locher <luca.locher@bf.uzh.ch>",
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+  ],
   "scripts": {
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
@@ -13,17 +38,8 @@
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "prepare": "husky install"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/uzh-bf/klicker-uzh.git"
-  },
-  "license": "AGPL-3.0",
-  "bugs": {
-    "url": "https://github.com/uzh-bf/klicker-uzh/issues"
-  },
-  "homepage": "https://www.klicker.uzh.ch/",
   "devDependencies": {
     "standard-version": "9.3.1",
-    "husky": "^7.0.0"
+    "husky": "7.0.2"
   }
 }
