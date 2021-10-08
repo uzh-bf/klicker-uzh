@@ -10,6 +10,7 @@ import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/Publ
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
+import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -114,11 +115,35 @@ function FeedbackArea({
       },
     })
 
+    const feedbackResponseDeleted = subscribeToMore({
+      document: FeedbackResponseDeletedSubscription,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        console.log(prev, subscriptionData.data.feedbackResponseDeleted)
+        return {
+          ...prev,
+          joinQA: prev.joinQA.map((feedback) => {
+            if (feedback.id === subscriptionData.data.feedbackResponseDeleted.feedbackId) {
+              return {
+                ...feedback,
+                responses: feedback.responses.filter(
+                  (response) => response.id !== subscriptionData.data.feedbackResponseDeleted.id
+                ),
+              }
+            }
+            return feedback
+          }),
+        }
+      },
+    })
+
     return () => {
       publicFeedbackAdded && publicFeedbackAdded()
       feedbackDeleted && feedbackDeleted()
       feedbackResolved && feedbackResolved()
       feedbackResponseAdded && feedbackResponseAdded()
+      feedbackResponseDeleted && feedbackResponseDeleted()
     }
   }, [subscribeToMore, sessionId])
 
