@@ -7,7 +7,7 @@ module.exports = {
   projectName: 'klicker-uzh',
   scripts: ['https://buttons.github.io/buttons.js'],
   stylesheets: ['https://fonts.googleapis.com/css?family=Open+Sans'],
-  favicon: 'img/favicon.png',
+  favicon: 'static/img/KlickerUZH_Orange_Favicon.png',
   customFields: {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
@@ -38,9 +38,8 @@ module.exports = {
   plugins: [],
   themeConfig: {
     navbar: {
-      title: '',
       logo: {
-        src: 'img/klicker_uzh_logo.png',
+        src: 'static/img/KlickerUZH_Gray_BG.png',
       },
       items: [
         {
@@ -49,8 +48,18 @@ module.exports = {
           position: 'left',
         },
         {
+          to: 'blog/',
+          label: 'Updates',
+          position: 'left',
+        },
+        {
           to: 'docs/faq/faq',
           label: 'FAQ',
+          position: 'left',
+        },
+        {
+          to: 'docs/faq/changelog',
+          label: 'Release Notes',
           position: 'left',
         },
         {
@@ -64,7 +73,7 @@ module.exports = {
       links: [],
       copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       logo: {
-        src: 'img/favicon.png',
+        src: 'static/img/KlickerUZH_Orange_Square.png',
       },
     },
     algolia: {

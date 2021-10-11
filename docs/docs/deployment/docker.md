@@ -1,6 +1,6 @@
 ---
 id: deployment_docker
-title: Deploying the Klicker UZH
+title: Deploying the KlickerUZH
 ---
 
 As described in the section on the Klicker [Architecture](deployment/architecture.md), a Klicker application is composed of both instances of the frontend service as well as instances of the backend service. To deploy the KlickerUZH to production, we recommend using a cloud service backed by Kubernetes, as this will offer the best scalability and reliability guarantees. However, a deployment using Docker Compose allows running the KlickerUZH on any compatible VM, and might be preferably for testing or small deployments.
