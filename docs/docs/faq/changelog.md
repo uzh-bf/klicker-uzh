@@ -1,7 +1,7 @@
 ---
 id: changelog
-title: Changelog
-sidebar_label: Changelog
+title: Release Notes
+sidebar_label: Release Notes
 ---
 
 ## Upcoming - v1.7.0 (TBD)
