@@ -1,6 +1,5 @@
 {
   "name": "@klicker-uzh/docs",
-  "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
   "version": "1.6.2-rc.2",
   "devDependencies": {
     "cross-env": "6.0.3",
