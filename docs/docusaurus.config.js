@@ -1,13 +1,13 @@
 module.exports = {
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
-  url: 'https://uzh-bf.github.io',
+  url: 'https://klicker-uzh-docs.vercel.app',
   baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
   scripts: ['https://buttons.github.io/buttons.js'],
   stylesheets: ['https://fonts.googleapis.com/css?family=Open+Sans'],
-  favicon: 'static/img/KlickerUZH_Orange_Favicon.png',
+  favicon: 'img/KlickerUZH_Orange_Favicon.png',
   customFields: {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
@@ -25,12 +25,15 @@ module.exports = {
       {
         docs: {
           showLastUpdateAuthor: false,
-          showLastUpdateTime: true,
+          showLastUpdateTime: false,
           sidebarPath: require.resolve('./sidebars.json'),
+          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/docs',
         },
         blog: {},
+        pages: {},
+        sitemap: {},
         theme: {
-          customCss: [require.resolve('./src/css/customTheme.css')],
+          customCss: [require.resolve('./src/css/custom.css')],
         },
       },
     ],
@@ -39,7 +42,8 @@ module.exports = {
   themeConfig: {
     navbar: {
       logo: {
-        src: 'static/img/KlickerUZH_Gray_BG.png',
+        src: 'img/KlickerUZH_Gray_BG.png',
+        href: '/docs',
       },
       items: [
         {
@@ -73,7 +77,8 @@ module.exports = {
       links: [],
       copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       logo: {
-        src: 'static/img/KlickerUZH_Orange_Square.png',
+        src: 'img/KlickerUZH_Orange_Square.png',
+        href: 'https://www.klicker.uzh.ch',
       },
     },
     algolia: {
