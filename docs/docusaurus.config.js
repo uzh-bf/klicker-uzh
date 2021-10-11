@@ -62,8 +62,7 @@ module.exports = {
     },
     footer: {
       links: [],
-      copyright:
-        'Copyright 2021 @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.',
+      copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       logo: {
         src: 'img/favicon.png',
       },
