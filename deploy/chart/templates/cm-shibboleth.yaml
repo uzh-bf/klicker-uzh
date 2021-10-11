@@ -1,0 +1,14 @@
+{{- if .Values.shibboleth.enabled }}
+{{- $protocol := ternary "https" "http" .Values.security.https.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-shibboleth
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  AAI_ISSUER: {{ .Values.shibboleth.hostname | quote }}
+  AAI_AUDIENCE: {{ .Values.backend.hostname | quote }}
+  COOKIE_DOMAIN: {{ .Values.security.domain | quote }}
+  REDIRECT_LOCATION: "{{ $protocol }}://{{ .Values.frontend.hostname }}/entrypoint"
+{{- end }}

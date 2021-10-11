@@ -86,3 +86,27 @@ backend:
     limits:
       cpu: 1000m
       memory: 600Mi
+
+shibboleth:
+  enabled: true
+
+  hostname: aai.klicker.uzh.ch
+
+  ingress:
+    hosts:
+      - host: aai.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-shibboleth-tls
+        hosts:
+          - aai.klicker.uzh.ch
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi

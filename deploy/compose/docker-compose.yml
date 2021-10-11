@@ -12,7 +12,7 @@ services:
 
   # the frontend for KlickerUZH
   frontend:
-    restart: always
+    restart: unless-stopped
     image: ghcr.io/uzh-bf/klicker-uzh/frontend:v1.6.1
     # ports:
     #   - 3000:3000
@@ -32,7 +32,7 @@ services:
 
   # the backend for KlickerUZH
   backend:
-    restart: always
+    restart: unless-stopped
     image: ghcr.io/uzh-bf/klicker-uzh/backend:v1.6.1
     # ports:
     #   - 4000:4000
@@ -73,10 +73,11 @@ services:
   # redis instance to support session execution
   # instance data must be persisted
   redis_exec:
-    restart: always
+    restart: unless-stopped
     image: redis:5.0.9
     # ports:
     #   - 6379:6379
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis-data:/data
     networks:
@@ -85,7 +86,7 @@ services:
   # redis instance for page caching and rate limiting
   # this instance does not require persistence
   redis_cache:
-    restart: always
+    restart: unless-stopped
     image: redis:5.0.9
     # ports:
     #   - 6379:6379
@@ -95,7 +96,7 @@ services:
   # mongodb database
   # it is recommended to run this service outside of docker
   mongodb:
-    restart: always
+    restart: unless-stopped
     image: mongo:4.0
     environment:
       MONGO_INITDB_ROOT_USERNAME: klicker
@@ -104,10 +105,12 @@ services:
     #   - 27017:27017
     networks:
       - klicker
+    volumes:
+      - mongo-data:/data/db
 
   # minio storage platform for S3
   minio:
-    restart: always
+    restart: unless-stopped
     image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -120,9 +123,27 @@ services:
       - minio-data:/data
     command: server /data --console-address ":9001"
 
+  # this helper service will check and initialize the bucket "images" and halt afterwards. feel free to remove it once the setup is done
+  create_minio_buckets:
+    image: minio/mc:RELEASE.2021-10-07T04-19-58Z
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    entrypoint: >
+      /bin/sh -c '
+      sleep 5;
+      /usr/bin/mc config host add s3 http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} --api S3v4;
+      [[ ! -z "`/usr/bin/mc ls s3 | grep images`" ]] || /usr/bin/mc mb s3/images;
+      /usr/bin/mc policy set public s3/images;
+      exit 0;
+      '
+
 volumes:
   redis-data:
   minio-data:
+  mongo-data:
 
 networks:
   klicker:

@@ -2,10 +2,11 @@
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
 
-The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture)):
+The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture)), as well as an additional Shibboleth service for integration with SwitchAAI:
 
-- [frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)
-- [backend](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
+- [Frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)
+- [Backend](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
+- [Shibboleth](https://github.com/uzh-bf/klicker-uzh/tree/dev/shibboleth) (subfolder)
 
 The following additional resources might be of interest to you:
 
@@ -15,15 +16,17 @@ The following additional resources might be of interest to you:
 
 ## Roadmap / Issues
 
-The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [landing page](https://www.klicker.uzh.ch/roadmap). Please feel free to add any issues and comments you might have to the [issue section](https://github.com/orgs/uzh-bf/projects/4) of our main GitHub page.
+The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/roadmap). Please feel free to add any issues or feature requests you might have to the [Github Issues](https://github.com/orgs/uzh-bf/projects/4), or start a new discussion on [Github Discussions](https://github.com/uzh-bf/klicker-uzh/discussions).
 
 ## Deployment
 
 If you would like to deploy an instance of the KlickerUZH at your institution, please have a look at the corresponding documentation with regards to the [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture), [Requirements](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_requirements), and further [Instructions](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_docker).
 
+We also provide a set of examples and resources for Docker-based deployments. The `deploy` directory contains examples for Docker Compose deployments, as well as a Helm chart for a Kubernetes deployment (recommended for production).
+
 ## Contributing
 
-We welcome any contributions to the KlickerUZH project. Before considering any contribution, we recommend that you create an issue to discuss your proposed addition with the project contributors. Please also make sure to follow our [Contributing Guidelines](https://uzh-bf.github.io/klicker-uzh/docs/contributing/contributing_guidelines), as your PR might need amendments otherwise.
+We welcome any contributions to the KlickerUZH project. Before considering any contribution, we recommend that you create a discussion to discuss your proposed addition with the project maintainers and other contributors. Please also make sure to follow our [Contributing Guidelines](https://uzh-bf.github.io/klicker-uzh/docs/contributing/contributing_guidelines), as your PR might need amendments otherwise.
 
 ## License
 

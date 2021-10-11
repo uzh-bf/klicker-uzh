@@ -2,6 +2,155 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.1...v1.6.2-rc.2) (2021-10-08)
+
+
+### Bug Fixes
+
+* **docs:** update link to roadmap ([6711114](https://github.com/uzh-bf/klicker-uzh/commit/67111146ed04aafdfeaf820afa7dc616894ca810))
+* **frontend:** versioning of questions ([0ffd292](https://github.com/uzh-bf/klicker-uzh/commit/0ffd292571ab33582aad2ccc5776dc097899726e))
+
+
+### Other
+
+* **backend:** update email credentials for local instance ([e1af305](https://github.com/uzh-bf/klicker-uzh/commit/e1af3054d46dd4b7f0169d11c5d881fc2d2430ca))
+
+
+### Enhancements
+
+* add subscriptions for unpublishing feedback and deletion of feedback responses ([#2553](https://github.com/uzh-bf/klicker-uzh/issues/2553)) ([61391f7](https://github.com/uzh-bf/klicker-uzh/commit/61391f771e614dc7402dd4c4027987731a6e44fd))
+* **deploy:** use minio initialization service across compose files ([026e16c](https://github.com/uzh-bf/klicker-uzh/commit/026e16cb7e2c478e4eba4543ce134149ba7c372c))
+* **deploy:** use unless-stopped to prevent restarting services unnecessarily ([72cff46](https://github.com/uzh-bf/klicker-uzh/commit/72cff46be75b51c6dfde42e7a5bdb43f87a0d654))
+
+### [1.6.2-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.0...v1.6.2-rc.1) (2021-10-07)
+
+
+### Other
+
+* improve consistency of package meta files ([76de246](https://github.com/uzh-bf/klicker-uzh/commit/76de246d907e7bc8449bdf35976e184d37fe8a58))
+
+### [1.6.2-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.3...v1.6.2-rc.0) (2021-10-07)
+
+
+### Bug Fixes
+
+* **landing:** ensure that links to roadmap and repository are valid ([#2551](https://github.com/uzh-bf/klicker-uzh/issues/2551)) ([4192fa2](https://github.com/uzh-bf/klicker-uzh/commit/4192fa2dbd6b63dde92f21301cbfa7c49919cf3d))
+
+
+### Other
+
+* **deploy:** update appVersion ([486fcf5](https://github.com/uzh-bf/klicker-uzh/commit/486fcf59697a18062a08e3ee4c0730557e14b250))
+* **frontend:** ensure that sentry config is in JS files ([07c1191](https://github.com/uzh-bf/klicker-uzh/commit/07c11918ae50ced2e50bab6834dfac1ee3da9dc3))
+* **frontend:** update default CSP rules ([aab46d8](https://github.com/uzh-bf/klicker-uzh/commit/aab46d8f1e3d81dee8d021bf0e384a333f42a32a))
+
+### [1.6.2-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.2...v1.6.2-beta.3) (2021-10-07)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the shibboleth service is packaged in the shib image ([456c8e8](https://github.com/uzh-bf/klicker-uzh/commit/456c8e8f0c8fe7795d57d5d4b22a34e58ee8b16c))
+
+
+### Other
+
+* **deploy:** bump appVersion ([0509f53](https://github.com/uzh-bf/klicker-uzh/commit/0509f53343d29a3d89b1724c8c81e9abf0b3ead6))
+
+### [1.6.2-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.1...v1.6.2-beta.2) (2021-10-07)
+
+
+### Features
+
+* **deploy:** add helm entities for shibboleth service ([68c291f](https://github.com/uzh-bf/klicker-uzh/commit/68c291fde671e26b74022602eb61c3afd6263408))
+
+
+### Bug Fixes
+
+* Add image name ([e2ed6f2](https://github.com/uzh-bf/klicker-uzh/commit/e2ed6f25d193cf61af341412cf7b8cd4d3458410))
+* add the USER role if people login using AAI ([54231bf](https://github.com/uzh-bf/klicker-uzh/commit/54231bfec5bb02a7f1cc481027f1899b2604a6f1))
+* Allow internal cluster comms between mod_shib and apache ([d528d9d](https://github.com/uzh-bf/klicker-uzh/commit/d528d9db4e5a27c3a61f7db603a286adf327856d))
+* Build all tags (github blocks overwriting latest..) ([15e476c](https://github.com/uzh-bf/klicker-uzh/commit/15e476c3f73b4479a8a53f41b9c08fd9085e6fa1))
+* Domain without preceding dot ([f989083](https://github.com/uzh-bf/klicker-uzh/commit/f98908336c3940ef6fee8d34e96eefce3f8f8350))
+* Location header with : ([c060d34](https://github.com/uzh-bf/klicker-uzh/commit/c060d34451ecac70499f34326244ef3651019d8a))
+* missing semicolon ([f54aa16](https://github.com/uzh-bf/klicker-uzh/commit/f54aa16a48141acd8ab698e11c189bd53189729d))
+* Ordering of setcookie ([8af2400](https://github.com/uzh-bf/klicker-uzh/commit/8af2400b5ba6b7769976170971ef93492a3c1781))
+* Path in header() ([70648e6](https://github.com/uzh-bf/klicker-uzh/commit/70648e660f09633f820e979e2b9230d64b5415bf))
+* Path to docker-shibboleth ([a68c672](https://github.com/uzh-bf/klicker-uzh/commit/a68c672ccf2e0c8e602124a10062ac298cca63e8))
+* Set handlerSSL to false ([9f0a873](https://github.com/uzh-bf/klicker-uzh/commit/9f0a873c78418b0a0bb0751e94247b22526ca5aa))
+* Set target ([ab3339e](https://github.com/uzh-bf/klicker-uzh/commit/ab3339e4e2aebca12f8a5555c45c473081943426))
+* Try with handlerSSL ([58a84a4](https://github.com/uzh-bf/klicker-uzh/commit/58a84a492ed86c7800486ba6ed6d6aa885818cf5))
+* Update absolute path in htaccess ([c545c65](https://github.com/uzh-bf/klicker-uzh/commit/c545c65d17b09f2848bec0c9aa6aca6f702f6961))
+* Update command override for http container ([1bd96d3](https://github.com/uzh-bf/klicker-uzh/commit/1bd96d3f2a3539ad07b835423cef5aff7aeda57f))
+* Use ServerName directive for https ([593dc71](https://github.com/uzh-bf/klicker-uzh/commit/593dc71eec74a6679af51244b4e6e6e7b210c8a0))
+* Use slim response header for redirect ([284321c](https://github.com/uzh-bf/klicker-uzh/commit/284321c67fdcced17b806aee0ecebc8836afc444))
+* Writing to stdout ([aa60908](https://github.com/uzh-bf/klicker-uzh/commit/aa60908d8efa0ce14dc6f8a1e7bf30854f3f3c8b))
+
+
+### Enhancements
+
+* **deploy:** add the chart appVersion as SENTRY_RELEASE ([af6601c](https://github.com/uzh-bf/klicker-uzh/commit/af6601c542c67afb66bfa9301a4f2004d23d17c6))
+* **deploy:** add the frontend trace sample rate to the config map ([579493a](https://github.com/uzh-bf/klicker-uzh/commit/579493a09e5c011116c02f8165b109cdc3102618))
+
+
+### Documentation
+
+* **deploy:** add docker-compose sample with isolated network and traefik reverse proxy ([#2550](https://github.com/uzh-bf/klicker-uzh/issues/2550)) ([3dc6812](https://github.com/uzh-bf/klicker-uzh/commit/3dc68128b2ebfa9884ce52451894d607d59a8ae0))
+* **deploy:** add redis persistance command to docker compose example ([1b5775b](https://github.com/uzh-bf/klicker-uzh/commit/1b5775b7bc71382df0620135860280a3ba89c610))
+* **deploy:** add redis persistence command to traefik example ([02d06aa](https://github.com/uzh-bf/klicker-uzh/commit/02d06aa397ec2578ed95e2dacd254d24cec2704d))
+
+
+### Other
+
+* adapt README for new shibboleth service and wording for deployments ([4ce9a43](https://github.com/uzh-bf/klicker-uzh/commit/4ce9a43363034c2cabc47fe464c3dddd25fba6d0))
+* **ci:** add workflow for shibboleth image ([2e7c453](https://github.com/uzh-bf/klicker-uzh/commit/2e7c453734f2012760c7f4d26f70ee099fad29de))
+* **deploy:** remove cruft swp file ([695c165](https://github.com/uzh-bf/klicker-uzh/commit/695c165f69bcda7bbde22731a8435c7ebafaae73))
+* **landing:** add next/lint ([6c26adf](https://github.com/uzh-bf/klicker-uzh/commit/6c26adfde272f2062a7104c769541e34bebf6516))
+* **README:** adjust linking to shibboleth subdirectory ([ff9ee4f](https://github.com/uzh-bf/klicker-uzh/commit/ff9ee4fb3586b7fe0b8160e2073ef891290cbc59))
+* **shibboleth:** merge klicker-aai repo into klicker-uzh ([f9ae729](https://github.com/uzh-bf/klicker-uzh/commit/f9ae7294287087f5b9a192b8ac8cc708b906879d))
+
+### [1.6.2-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-beta.0...v1.6.2-beta.1) (2021-10-02)
+
+
+### Other
+
+* adjust autoscale sensitivity and appVersion ([885a382](https://github.com/uzh-bf/klicker-uzh/commit/885a382bf674bfbe7906893a32a5f836bc959122))
+
+### [1.6.2-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-alpha.0...v1.6.2-beta.0) (2021-10-02)
+
+
+### Other
+
+* **frontend:** add more default CSP rules based on sentry issues ([20f6e8e](https://github.com/uzh-bf/klicker-uzh/commit/20f6e8e15045b800e413f2079fce07b0f4f4f017))
+
+### [1.6.2-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.1...v1.6.2-alpha.0) (2021-10-01)
+
+
+### Bug Fixes
+
+* feedback channel - removed response timestamp from question block in student view ([0c08c2d](https://github.com/uzh-bf/klicker-uzh/commit/0c08c2d08ef6469e7fa90e3167b6e37d396ea9b9))
+
+
+### Other
+
+* adapted readmes to new monorepo structure ([f4aba82](https://github.com/uzh-bf/klicker-uzh/commit/f4aba8252b6eb4790633f6563a6e16c7f28fb085))
+* added new feedback channel features to landing page ([118853d](https://github.com/uzh-bf/klicker-uzh/commit/118853d4cf950105c3ff1ca1e4b95219a5526dae))
+* **deploy:** add an example docker-compose ([75291b2](https://github.com/uzh-bf/klicker-uzh/commit/75291b2eec832e15e777d5851cc190cafd1ae568))
+
+
+### Enhancements
+
+* add APP_HOST configuration with all interfaces as a default ([0b42321](https://github.com/uzh-bf/klicker-uzh/commit/0b423216fa7f052aea10f0ca74e0ced14e1a5c1f))
+* listen on localhost when in development ([85d9980](https://github.com/uzh-bf/klicker-uzh/commit/85d998079d4648a664348ec74e0c709b8dec0fc1))
+
+### [1.5.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.5.4...v1.5.5) (2021-03-14)
+
+### [1.5.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.5.2...v1.5.3) (2020-09-23)
+
+### [1.5.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.5.1...v1.5.2) (2020-09-22)
+
+### [1.5.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.5.0...v1.5.1) (2020-09-08)
+
+## [1.5.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.5.0-rc.4...v1.5.0) (2020-05-24)
+
 ### [1.6.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-rc.8...v1.6.1) (2021-09-24)
 
 

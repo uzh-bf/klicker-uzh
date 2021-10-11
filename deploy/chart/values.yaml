@@ -65,6 +65,7 @@ analytics:
       dsn: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
       org: uzh-bf
       project: klicker-react
+      sampleRate: 0.25
     backend:
       enabled: false
   logrocket:
@@ -99,8 +100,8 @@ frontend:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -133,11 +134,34 @@ backend:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
+
+shibboleth:
+  enabled: false
+
+  replicaCount: 1
+
+  hostname: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/shibboleth
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources: {}

@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  klicker-httpd:
+    build: .
+    ports:
+      - '8080:8080'
+    command: /usr/libexec/s2i/run
+    volumes:
+      - shib-socket:/var/run/shibboleth
+
+  klicker-shib:
+    build: .
+    volumes:
+      - './sp-cert.pem:/etc/shibboleth/sp-cert.pem:ro'
+      - './sp-key.pem:/etc/shibboleth/sp-key.pem:ro'
+      - shib-socket:/var/run/shibboleth
+
+volumes:
+  shib-socket:
