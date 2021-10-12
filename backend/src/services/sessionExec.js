@@ -3,8 +3,9 @@ const v8n = require('v8n')
 const _trim = require('lodash/trim')
 const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
-const { v5: uuidv5, v4: uuidv4 } = require('uuid')
+const { v5: uuidv5 } = require('uuid')
 const mongoose = require('mongoose')
+
 const { ObjectId } = mongoose.Types
 
 const CFG = require('../klicker.conf.js')

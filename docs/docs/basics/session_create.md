@@ -7,7 +7,7 @@ Once you are back on the [Question Pool](question_pool.md) screen and can see yo
 
 Every session consists of blocks of one or more questions. During an ongoing session, the speaker activates these question blocks one after the other. The audience can respond to questions within a block simultaneously; multiple blocks are activated in sequence.
 
-![Session Basic](assets/session_basic.gif)
+![Session Basic](/img/session_basic.gif)
 
 The following steps need to be done to create a new session:
 
@@ -19,7 +19,7 @@ The following steps need to be done to create a new session:
 
 It is possible to create new questions and duplicate or edit existing ones even when you are in the session creation process. This allows you to iteratively work on your session and your questions.
 
-![Session Advanced](assets/session_advanced.gif)
+![Session Advanced](/img/session_advanced.gif)
 
 After the session creation is complete, either save and close the session creation or save and start the session. You will be redirected to the [Running Session](session_running.md) screen.
 

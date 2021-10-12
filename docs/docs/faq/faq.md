@@ -82,4 +82,4 @@ The functionalities of KlickerUZH should also be available on the tablet. We tri
 
 ## Where is my data stored?
 
-Your data is stored at a service partner (SWITCH) of the University of Zurich based in Switzerland and will not be used for commercial purposes. The service partner agreed to the data protection guidelines of the University of Zurich. Likewise, the data will not be passed on or sold to third parties. Further details can be found in our detailed Privacy Policy or Terms of Service.
+Your data is stored at a service partner (Microsoft Azure) of the University of Zurich based in Switzerland and will not be used for commercial purposes. The service partner agreed to the data protection guidelines of the University of Zurich. Likewise, the data will not be passed on or sold to third parties. Further details can be found in our detailed Privacy Policy or Terms of Service.
