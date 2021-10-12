@@ -7,6 +7,9 @@
   RewriteRule    ^/privacy$ index.html  [L]
   RewriteRule    ^/roadmap$ index.html  [L]
 
+  # rewrite docs to docs/
+  RewriteRule ^/docs https://www.klicker.uzh.ch/docs/ [L]
+
   # redirect everything else to the new klicker
   # except needed assets and routes of the landing SPA
   RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|docs|docs/|img/|_next/|static/|images/|page-data) [NC]
