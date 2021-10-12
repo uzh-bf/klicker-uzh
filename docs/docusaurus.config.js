@@ -44,7 +44,7 @@ module.exports = {
     navbar: {
       logo: {
         src: 'img/KlickerUZH_Gray_BG.png',
-        href: '/docs',
+        href: '/',
       },
       items: [
         {
