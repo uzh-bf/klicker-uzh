@@ -10,11 +10,9 @@
     "start": "docusaurus start",
     "start:watch": "nodemon -w siteConfig.js -w sidebars.json -w ../docs -w ../website --ignore ../website/i18n",
     "build": "docusaurus build",
-    "publish-gh-pages": "docusaurus-publish",
     "write-translations": "docusaurus-write-translations",
     "version": "docusaurus-version",
     "rename-version": "docusaurus-rename-version",
-    "publish:rschlaefli": "cross-env GIT_USER=rschlaefli CURRENT_BRANCH=dev npm run publish-gh-pages",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "docusaurus": "docusaurus"
