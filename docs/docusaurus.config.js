@@ -2,7 +2,7 @@ module.exports = {
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
   url: 'https://klicker-uzh-docs.vercel.app',
-  baseUrl: '/',
+  baseUrl: '/docs/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
   scripts: ['https://buttons.github.io/buttons.js'],
@@ -28,6 +28,7 @@ module.exports = {
           showLastUpdateTime: false,
           sidebarPath: require.resolve('./sidebars.json'),
           editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/docs',
+          routeBasePath: '/',
         },
         blog: {},
         pages: {},
@@ -47,22 +48,22 @@ module.exports = {
       },
       items: [
         {
-          to: 'docs/',
+          to: '/',
           label: 'Docs',
           position: 'left',
         },
+        // {
+        //   to: 'blog/',
+        //   label: 'Updates',
+        //   position: 'left',
+        // },
         {
-          to: 'blog/',
-          label: 'Updates',
-          position: 'left',
-        },
-        {
-          to: 'docs/faq/faq',
+          to: 'faq/faq',
           label: 'FAQ',
           position: 'left',
         },
         {
-          to: 'docs/faq/changelog',
+          to: 'faq/changelog',
           label: 'Release Notes',
           position: 'left',
         },
