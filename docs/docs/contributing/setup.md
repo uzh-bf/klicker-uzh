@@ -24,7 +24,7 @@ Download the KlickerUZH application code to your machine by cloning the main rep
 
 Once you have installed the Docker environment, you can easily start a local instance of MongoDB, Redis, and other auxiliary services for development. The easiest way is to make use of the prepared Docker Compose file, as provided in the repository at https://github.com/uzh-bf/klicker-uzh/blob/dev/docker-compose.yml.
 
-Executing `docker-compose up` in your command line while inside repository will run instances of redis and mongodb available on their corresponding local ports (6379/6380 and 27017). Additional services include minio for a local simulation of cloud S3 storage, and sendria for a local development email service for transactional emails.
+Executing `docker-compose up` in your command line while inside repository will run instances of `redis` and `mongodb` available on their corresponding local ports (`6379`/`6380` and `27017`). Additional services include `minio` for a local simulation of cloud S3 storage, and `sendria` for a local development email service for transactional emails.
 
 To run the services in the background (without occupying a command line window), simply use `docker-compose up -d`.
 
@@ -40,4 +40,4 @@ To be able to run NodeJS applications like the KlickerUZH `frontend` and `backen
 
 Once you have completed all of the previous steps (i.e., you have started the Docker dependencies with Docker Compose, you have copied the `.env.template` to `.env`, you have installed the NPM dependencies in both `frontend` and `backend`), you are ready to start the KlickerUZH in development mode. To do so, simply run `npm run dev` in both the `frontend` and `backend` directory from your command line.
 
-The `backend` service should then show a GraphQL development environment at `http://localhost:4000/graphql`. The `frontend` service should serve the application frontend at `http://localhost:3000`.
+The `backend` service should then show a GraphQL development environment at `http://localhost:4000/graphql`. The `frontend` service should serve the application frontend at `http://localhost:3000`. The `sendria` email inbox is accessible on `http://localhost:1080` and will show any emails that are sent by your instance of the KlickerUZH (e.g., new user activation and password reset).
