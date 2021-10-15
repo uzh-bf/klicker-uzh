@@ -32,7 +32,7 @@ function Index(): React.ReactElement {
   return (
     // TODO: internationalization
     <StaticLayout pageTitle="Klicker">
-      <div className="p-10">
+      <div className="p-2">
         <h1 className="mb-3 text-3xl leading-8 text-center">
           Klicker
           <span className="text-base leading-4 align-top border-gray-300">UZH</span>
@@ -118,18 +118,19 @@ function Index(): React.ReactElement {
             </List>
           </div>
         </div>
-
-        <List className="">
-          {links.map(
-            (link): React.ReactElement => (
-              <List.Item>
-                <Link href={link.href}>
-                  <Button primary>{link.label}</Button>
-                </Link>
-              </List.Item>
-            )
-          )}
-        </List>
+        <div className="pt-4 pb-4">
+          <List horizontal>
+            {links.map(
+              (link): React.ReactElement => (
+                <List.Item>
+                  <Link href={link.href}>
+                    <Button primary>{link.label}</Button>
+                  </Link>
+                </List.Item>
+              )
+            )}
+          </List>
+        </div>
       </div>
     </StaticLayout>
   )
