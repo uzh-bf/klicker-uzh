@@ -17,9 +17,9 @@ function StaticLayout({ children, pageTitle }: Props): React.ReactElement {
       <div className="">
         <main className="m-auto md:w-2/3">{children}</main>
 
-        <footer>
+        <footer className="flex-shrink">
           <hr className="m-0" />
-          <p className="p-5 text-xs text-center text-gray-400 bg-gray-100 border-gray-30">
+          <p className="p-8 m-0 text-xs leading-2 text-center text-gray-400 bg-gray-100 border-gray-300">
             &copy;
             {new Date().getFullYear()} IBF Teaching Center, Department of Banking and Finance, University of Zurich. All
             rights reserved.
