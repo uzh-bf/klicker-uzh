@@ -71,6 +71,12 @@
       "value": "Zurück"
     }
   ],
+  "common.button.close": [
+    {
+      "type": 0,
+      "value": "Schliessen"
+    }
+  ],
   "common.button.continue": [
     {
       "type": 0,

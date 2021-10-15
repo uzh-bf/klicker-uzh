@@ -59,6 +59,12 @@
       "value": "Back"
     }
   ],
+  "common.button.close": [
+    {
+      "type": 0,
+      "value": "Close"
+    }
+  ],
   "common.button.continue": [
     {
       "type": 0,

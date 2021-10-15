@@ -11,6 +11,7 @@
   "common.SC.label": "Single Choice (SC)",
   "common.SC.short": "SC",
   "common.button.back": "Zurück",
+  "common.button.close": "Schliessen",
   "common.button.continue": "Weiter",
   "common.button.discard": "Verwerfen",
   "common.button.login": "Login",

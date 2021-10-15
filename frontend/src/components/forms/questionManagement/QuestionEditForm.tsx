@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
@@ -127,6 +127,10 @@ function QuestionEditForm({
 }: Props): React.ReactElement {
   const intl = useIntl()
 
+  // use changed state to track changes in the editing process
+  const [changed, setChange] = useState(false)
+  const [valueState, setValueState] = useState(null)
+
   // if the active version would be out of array bounds, we are creating a new one
   const isNewVersion = activeVersion === versions.length
 
@@ -173,13 +177,59 @@ function QuestionEditForm({
           }: any): React.ReactElement => {
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
+            console.log(changed)
+
+            // TODO: change hacky solution to something more solid - set changed to false after initial mount and errorneous setting to true
+            useEffect(() => {
+              setTimeout(function () {
+                setChange(false)
+              }, 1000)
+            }, [])
+
+            useEffect(() => {
+              if (valueState != undefined) {
+                if (
+                  values.title !== valueState.title ||
+                  values.tags !== valueState.tags ||
+                  values.files !== valueState.files ||
+                  values.options !== valueState.options ||
+                  values.content
+                    .getCurrentContent()
+                    .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
+                ) {
+                  // TODO: remove debugging stuff
+                  if (values.title !== valueState.title) console.log('title changed')
+                  if (values.tags !== valueState.tags) console.log('tags changed')
+                  if (values.files !== valueState.files) console.log('files changed')
+                  if (values.options !== valueState.options) console.log('options changed')
+                  if (
+                    values.content
+                      .getCurrentContent()
+                      .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
+                  )
+                    console.log('content changed')
+                  else console.log('this should never happen') // TODO: content changes also everytime one clicks into the content window or leaves it - all other fields are fine
+                  // ----------- end of debugging stuff ------------
+
+                  setChange(true)
+                }
+              }
+              setValueState(values)
+            }, [values])
 
             return (
               <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
                 <div className="actionArea">
-                  <Button className="discard" size="large" type="button" onClick={handleDiscard}>
-                    <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                  </Button>
+                  {!changed && (
+                    <Button className="close" size="large" type="button" onClick={handleDiscard}>
+                      <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                    </Button>
+                  )}
+                  {changed && (
+                    <Button className="discard" size="large" type="button" onClick={handleDiscard}>
+                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    </Button>
+                  )}
 
                   <div className="infoMessage">
                     <Message compact success size="small">
@@ -197,7 +247,7 @@ function QuestionEditForm({
                   <Button
                     primary
                     className="save"
-                    disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                    disabled={!_isEmpty(errors) || !changed}
                     loading={loading && isSubmitting}
                     size="large"
                     type="submit"
