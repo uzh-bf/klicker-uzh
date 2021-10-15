@@ -203,12 +203,12 @@ function QuestionEditForm({
                   if (values.files !== valueState.files) console.log('files changed')
                   if (values.options !== valueState.options) console.log('options changed')
                   if (
-                    values.content
-                      .getCurrentContent()
-                      .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
+                    values.content.getCurrentContent().getPlainText('\u0001') !==
+                    valueState.content.getCurrentContent().getPlainText('\u0001')
                   )
                     console.log('content changed')
-                  else console.log('this should never happen') // TODO: content changes also everytime one clicks into the content window or leaves it - all other fields are fine
+                  // TODO: content changes also everytime one clicks into the content window or leaves it - all other fields are fine
+                  else console.log('this should never happen') // TODO: unfortunately this happens when switching away from the content window
                   // ----------- end of debugging stuff ------------
 
                   setChange(true)
