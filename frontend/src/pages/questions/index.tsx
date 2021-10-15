@@ -143,7 +143,6 @@ function Index(): React.ReactElement {
     try {
       // archive the questions
       await archiveQuestions({
-        refetchQueries: [{ query: QuestionPoolQuery }],
         variables: { ids: selectedItems.ids },
       })
 

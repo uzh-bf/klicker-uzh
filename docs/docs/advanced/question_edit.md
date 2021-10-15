@@ -19,4 +19,4 @@ If you edit a question, a new version of the question is created automatically (
 
 6. **Save:** Press the _Save_ button to save the edited question or the new created version.
 
-![Edit a Question](assets/question_edit.png)
+![Edit a Question](/img/question_edit.png)

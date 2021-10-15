@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
@@ -58,6 +58,11 @@ function Question({
       isDragging: monitor.isDragging(),
     }),
   })
+
+  useEffect(() => {
+    setActiveVersion(versions.length - 1)
+    console.log(versions)
+  }, [versions])
 
   return (
     <div

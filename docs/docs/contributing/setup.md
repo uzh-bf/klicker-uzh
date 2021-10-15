@@ -10,72 +10,34 @@ To develop on the KlickerUZH, your development environment needs to be setup cor
 Please ensure that the following dependencies are available in your development environment:
 
 - Docker 18.0X+: https://www.docker.com/get-started
-- NodeJS 10 LTS: https://nodejs.org/en
+- NodeJS 14 LTS: https://nodejs.org/en
 
 For specific installation instructions, please follow the documentation of the corresponding dependency.
 
 ## Downloading the Repositories
 
-Download the KlickerUZH application code to your machine by cloning the two main repositories:
+Download the KlickerUZH application code to your machine by cloning the main repository:
 
-- `git clone https://github.com/uzh-bf/klicker-react.git`
-- `git clone https://github.com/uzh-bf/klicker-api.git`
-
-Upon success the klicker-uzh repository is only necessary if you would like to work on the documentation or other auxiliary materials.
+- `git clone https://github.com/uzh-bf/klicker-uzh.git`
 
 ## Database and Cache Setup
 
-Once you have installed the Docker environment, you can easily start a local instance of MongoDB and Redis for development. The easiest way is to make use of the prepared Docker Compose file, as provided in the klicker-api repository at https://github.com/uzh-bf/klicker-api/blob/master/docker-compose.yml.
+Once you have installed the Docker environment, you can easily start a local instance of MongoDB, Redis, and other auxiliary services for development. The easiest way is to make use of the prepared Docker Compose file, as provided in the repository at https://github.com/uzh-bf/klicker-uzh/blob/dev/docker-compose.yml.
 
-Executing `docker-compose up` in your command line while inside the klicker-api repository will run both an instance of redis and mongodb available on their corresponding local ports (6379 and 27017). To run the services in the background (without occupying a command line window), simply use `docker-compose up -d`.
+Executing `docker-compose up` in your command line while inside repository will run instances of `redis` and `mongodb` available on their corresponding local ports (`6379`/`6380` and `27017`). Additional services include `minio` for a local simulation of cloud S3 storage, and `sendria` for a local development email service for transactional emails.
+
+To run the services in the background (without occupying a command line window), simply use `docker-compose up -d`.
 
 ## Configuration with .env
 
-In a production environment, the KlickerUZH is configured by passing in environment variables into the running Docker container (as explained in detail in [Deployment with Docker](deployment/docker.md)). To simulated this behavior in a development environment, we make use of a `.env` or dotenv configuration file. This file will be loaded into the application environment at runtime.
+In a production environment, the KlickerUZH is configured by passing in environment variables into the running Docker container (as explained in detail in [Deployment with Docker](deployment/docker.md)). To simulate this behavior in a development environment, we make use of a `.env` (dotenv) configuration file. This file will be loaded into the application environment at runtime.
 
-The klicker-react and klicker-api both have to be parametrized with a `.env` file to be able to run. Basic `.env` files for the two services could look as follows:
-
-klicker-react/.env
-
-```
-API_ENDPOINT=http://localhost:4000/graphql
-API_ENDPOINT_WS=ws://localhost:4000/graphql
-APP_BASE_URL=http://localhost:3000
-CACHE_REDIS_ENABLED=true
-CACHE_REDIS_HOST=localhost
-S3_ROOT_URL=<ENDPOINT>/<BUCKET>
-SECURITY_FINGERPRINTING=true
-```
-
-klicker-api/.env
-
-```
-APP_DOMAIN=localhost
-APP_SECRET=hello-world
-CACHE_REDIS_ENABLED=true
-CACHE_REDIS_HOST=localhost
-MONGO_URL=klicker:klicker@localhost:27017/klicker?authSource=admin
-MONGO_URL_TEST=klicker:klicker@localhost:27017/klicker-test?authSource=admin
-
-EMAIL_FROM=<FROM_EMAIL>
-EMAIL_HOST=smtp.mailtrap.io
-EMAIL_PORT=2525
-EMAIL_USER=<MAILTRAP_USER>
-EMAIL_PASSWORD=<MAILTRAP_PASSWORD>
-
-S3_ENABLED=true
-S3_ACCESS_KEY=<S3_ACCESS_KEY>
-S3_SECRET_KEY=<S3_SECRET_KEY>
-S3_ENDPOINT=<S3_ENDPOINT>
-S3_BUCKET=<S3_BUCKET>
-```
-
-Please note that the parts in brackets need to be filled in order for the application to run without errors.
+The frontend and backend both have to be parametrized with a `.env` file to be able to run. Basic `.env` files for the two services are available in the repository at `.env.template` and should be copied to `.env` in the corresponding folder. Further adjustments can be made if necessary, but the application should run locally without any changes.
 
 ## Running the Application
 
-To be able to run a NodeJS application, its NPM dependencies need to be installed. Do this by running `npm install` in both repositories. This will fetch the exact package versions that the KlickerUZH has been developed with, ensuring that you will not encounter errors due to updated packages.
+To be able to run NodeJS applications like the KlickerUZH `frontend` and `backend`, NPM dependencies need to be installed. Do this by running `npm install` in both the `frontend` and `backend` folder. This will fetch the exact package versions that the KlickerUZH has been developed with, ensuring that you will not encounter errors due to updated packages.
 
-Once you have completed all of the previous steps (including completing the configuration files), you are ready to start the KlickerUZH in development mode. To do so, simply run `npm run dev` in both repositories from your command line.
+Once you have completed all of the previous steps (i.e., you have started the Docker dependencies with Docker Compose, you have copied the `.env.template` to `.env`, you have installed the NPM dependencies in both `frontend` and `backend`), you are ready to start the KlickerUZH in development mode. To do so, simply run `npm run dev` in both the `frontend` and `backend` directory from your command line.
 
-The klicker-api service should then show a GraphQL development environment at `http://localhost:4000/graphql`. The klicker-react service should serve the application frontend at `http://localhost:3000`.
+The `backend` service should then show a GraphQL development environment at `http://localhost:4000/graphql`. The `frontend` service should serve the application frontend at `http://localhost:3000`. The `sendria` email inbox is accessible on `http://localhost:1080` and will show any emails that are sent by your instance of the KlickerUZH (e.g., new user activation and password reset).
