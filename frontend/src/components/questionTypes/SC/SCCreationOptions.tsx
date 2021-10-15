@@ -1,7 +1,6 @@
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import { FormattedMessage } from 'react-intl'
-import { Form, Icon } from 'semantic-ui-react'
+import { Form, Icon, Popup } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
@@ -45,23 +44,35 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
     (index: number): any =>
     (): void =>
       handleChange(reorder(choices, index, index + 1))
+  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div className="SCCreationOptions">
       <Form.Field required error={dirty && invalid}>
         <label htmlFor="options">
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
-          <a data-tip data-for="SCCreationHelp">
-            <Icon name="question circle" />
-          </a>
-        </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
-          <FormattedMessage
-            defaultMessage="Add answering options the respondents can choose from."
-            id="createQuestion.optionsSC.tooltip"
+          <Popup
+            content={
+              <FormattedMessage
+                defaultMessage="Add answering options the respondents can choose from."
+                id="createQuestion.optionsSC.tooltip"
+              />
+            }
+            trigger={
+              <a data-tip>
+                <Icon name="question circle" />
+              </a>
+            }
+            position="right center"
+            size="small"
+            style={PopupStyle}
+            mouseEnterDelay={250}
+            mouseLeaveDelay={250}
+            wide
+            inverted
           />
-        </ReactTooltip>
+        </label>
 
         <div className="options">
           {choices.map(

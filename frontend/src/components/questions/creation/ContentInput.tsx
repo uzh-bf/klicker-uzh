@@ -1,9 +1,8 @@
 // import dynamic from 'next/dynamic'
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import Editor from 'draft-js-plugins-editor'
 import createToolbarPlugin /* Separator */ from 'draft-js-static-toolbar-plugin'
-import { Form, Icon } from 'semantic-ui-react'
+import { Form, Icon, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import {
   ItalicButton,
@@ -32,6 +31,7 @@ const defaultProps = {
 const toolbarPlugin = createToolbarPlugin()
 const plugins = [toolbarPlugin]
 const { Toolbar } = toolbarPlugin
+const PopupStyle = { opacity: 0.9 }
 
 function ContentInput({ value, onChange, error, touched, disabled }: Props): React.ReactElement {
   return (
@@ -39,17 +39,28 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
       <Form.Field required error={touched && error}>
         <label htmlFor="content">
           <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
-          <a data-tip data-for="contentHelp">
-            <Icon name="question circle" />
-          </a>
-        </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="contentHelp" place="right">
-          <FormattedMessage
-            defaultMessage="Enter the question you want to ask the audience."
-            id="createQuestion.contentInput.tooltip"
+          <Popup
+            content={
+              <FormattedMessage
+                defaultMessage="Enter the question you want to ask the audience."
+                id="createQuestion.contentInput.tooltip"
+              />
+            }
+            trigger={
+              <a data-tip>
+                <Icon name="question circle" />
+              </a>
+            }
+            position="right center"
+            size="small"
+            style={PopupStyle}
+            mouseEnterDelay={250}
+            mouseLeaveDelay={250}
+            wide
+            inverted
           />
-        </ReactTooltip>
+        </label>
 
         <Editor editorState={value} plugins={plugins} readOnly={disabled} onChange={onChange} />
 
