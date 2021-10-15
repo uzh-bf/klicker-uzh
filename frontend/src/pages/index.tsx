@@ -32,7 +32,7 @@ function Index(): React.ReactElement {
   return (
     // TODO: internationalization
     <StaticLayout pageTitle="Klicker">
-      <div className="p-2">
+      <div className="pt-4">
         <h1 className="mb-3 text-3xl leading-8 text-center">
           Klicker
           <span className="text-base leading-4 align-top border-gray-300">UZH</span>
