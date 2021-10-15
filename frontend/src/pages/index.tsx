@@ -59,7 +59,7 @@ function Index(): React.ReactElement {
 
         <div className="flex justify-between flex-col lg:flex-row">
           <a
-            className="block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 lg:w-96 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
+            className="flex-1 block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
             href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
@@ -68,7 +68,7 @@ function Index(): React.ReactElement {
             <p>Learn more about Klicker.</p>
           </a>
           <a
-            className="block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 lg:w-96 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
+            className="flex-1 block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
             href="https://www.klicker.uzh.ch/roadmap"
             rel="noopener noreferrer"
             target="_blank"
@@ -76,7 +76,7 @@ function Index(): React.ReactElement {
             <h2 className="text-lg text-black">Roadmap</h2>
             <p>Defined goals and milestones.</p>
           </a>
-          <div className="block p-4 mb-1 leading-6 text-black bg-blue-50 border border-blue-400 border-solid lg:mr-0 lg:p-4 lg:w-96">
+          <div className="flex-1 block p-4 mb-1 leading-6 text-black bg-blue-50 border border-blue-400 border-solid lg:mr-0 lg:p-4">
             <h2 className="text-lg text-black">Ressources</h2>
             <List divided relaxed>
               <List.Item>
