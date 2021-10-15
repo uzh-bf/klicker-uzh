@@ -15,7 +15,7 @@ function StaticLayout({ children, pageTitle }: Props): React.ReactElement {
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="">
-        <main className="m-auto w-11/12">{children}</main>
+        <main className="m-auto md:w-2/3">{children}</main>
 
         <footer>
           <hr className="m-0" />
