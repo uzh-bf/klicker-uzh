@@ -178,12 +178,10 @@ function QuestionEditForm({
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
 
-            // TODO: change hacky solution to something more solid - set changed to false after initial mount and errorneous setting to true
-            console.log(changed)
             useEffect(() => {
               setTimeout(function () {
                 setChange(false)
-              }, 1000)
+              }, 100)
             }, [])
 
             useEffect(() => {
