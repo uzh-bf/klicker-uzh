@@ -177,9 +177,9 @@ function QuestionEditForm({
           }: any): React.ReactElement => {
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
-            console.log(changed)
 
             // TODO: change hacky solution to something more solid - set changed to false after initial mount and errorneous setting to true
+            console.log(changed)
             useEffect(() => {
               setTimeout(function () {
                 setChange(false)
@@ -197,33 +197,16 @@ function QuestionEditForm({
                     .getCurrentContent()
                     .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
                 ) {
-                  // TODO: remove debugging stuff and refactor code to be more compact once everything works
-                  if (values.title !== valueState.title) {
-                    console.log('title changed')
-                    setChange(true)
-                  }
-                  if (values.tags !== valueState.tags) {
-                    console.log('tags changed')
-                    setChange(true)
-                  }
-                  if (values.files !== valueState.files) {
-                    console.log('files changed')
-                    setChange(true)
-                  }
-                  if (values.options !== valueState.options) {
-                    console.log('options changed')
-                    setChange(true)
-                  }
                   if (
+                    values.title !== valueState.title ||
+                    values.tags !== valueState.tags ||
+                    values.files !== valueState.files ||
+                    values.options !== valueState.options ||
                     values.content.getCurrentContent().getPlainText('\u0001') !==
-                    valueState.content.getCurrentContent().getPlainText('\u0001')
+                      valueState.content.getCurrentContent().getPlainText('\u0001')
                   ) {
-                    console.log('content changed')
                     setChange(true)
-                  } else console.log('this should never happen')
-                  // ----------- end of debugging stuff ------------
-
-                  //setChange(true)
+                  }
                 }
               }
               setValueState(values)
