@@ -197,21 +197,33 @@ function QuestionEditForm({
                     .getCurrentContent()
                     .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
                 ) {
-                  // TODO: remove debugging stuff
-                  if (values.title !== valueState.title) console.log('title changed')
-                  if (values.tags !== valueState.tags) console.log('tags changed')
-                  if (values.files !== valueState.files) console.log('files changed')
-                  if (values.options !== valueState.options) console.log('options changed')
+                  // TODO: remove debugging stuff and refactor code to be more compact once everything works
+                  if (values.title !== valueState.title) {
+                    console.log('title changed')
+                    setChange(true)
+                  }
+                  if (values.tags !== valueState.tags) {
+                    console.log('tags changed')
+                    setChange(true)
+                  }
+                  if (values.files !== valueState.files) {
+                    console.log('files changed')
+                    setChange(true)
+                  }
+                  if (values.options !== valueState.options) {
+                    console.log('options changed')
+                    setChange(true)
+                  }
                   if (
                     values.content.getCurrentContent().getPlainText('\u0001') !==
                     valueState.content.getCurrentContent().getPlainText('\u0001')
-                  )
+                  ) {
                     console.log('content changed')
-                  // TODO: content changes also everytime one clicks into the content window or leaves it - all other fields are fine
-                  else console.log('this should never happen') // TODO: unfortunately this happens when switching away from the content window
+                    setChange(true)
+                  } else console.log('this should never happen')
                   // ----------- end of debugging stuff ------------
 
-                  setChange(true)
+                  //setChange(true)
                 }
               }
               setValueState(values)
