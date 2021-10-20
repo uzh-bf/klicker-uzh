@@ -1,6 +1,5 @@
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
-import { Icon } from 'semantic-ui-react'
+import { Icon, Popup } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
 import Ellipsis from '../common/Ellipsis'
@@ -36,30 +35,62 @@ function QuestionSingle({
   onDelete,
 }: Props): React.ReactElement {
   const intl = useIntl()
+  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div data-tip className="questionSingle" data-for={`questionTooltip${id}`}>
-      <div className="top">
-        <div className="type">{generateTypesShort(intl)[type]}</div>
+      {id && description && onDelete && (
+        <Popup
+          content={<span>{description}</span>}
+          trigger={
+            <div>
+              <div className="top">
+                <div className="type">{generateTypesShort(intl)[type]}</div>
+                <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+                  <Icon name="trash" />
+                </button>
+              </div>
+              <div className="title">
+                <Ellipsis>{title}</Ellipsis>
+                {version >= 0 && <span> {`(v${version + 1})`}</span>}
+              </div>
+            </div>
+          }
+          position="right center"
+          size="small"
+          style={PopupStyle}
+          mouseEnterDelay={250}
+          mouseLeaveDelay={250}
+          wide
+          inverted
+        />
+      )}
 
-        {onDelete && (
-          <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
-            <Icon name="trash" />
-          </button>
-        )}
+      {!(id && description && onDelete) && (
+        <>
+          <div className="top">
+            <div className="type">{generateTypesShort(intl)[type]}</div>
 
-        {hasParticipantCount && totalParticipants >= 0 && (
-          <div className="responseCount">
-            <Icon name="user outline" />
-            {totalParticipants}
+            {onDelete && (
+              <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+                <Icon name="trash" />
+              </button>
+            )}
+
+            {hasParticipantCount && totalParticipants >= 0 && (
+              <div className="responseCount">
+                <Icon name="user outline" />
+                {totalParticipants}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="title">
-        <Ellipsis>{title}</Ellipsis>
-        {version >= 0 && <span> {`(v${version + 1})`}</span>}
-      </div>
+          <div className="title">
+            <Ellipsis>{title}</Ellipsis>
+            {version >= 0 && <span> {`(v${version + 1})`}</span>}
+          </div>
+        </>
+      )}
 
       <style jsx>
         {`
@@ -98,11 +129,6 @@ function QuestionSingle({
           }
         `}
       </style>
-      {id && description && (
-        <ReactTooltip effect="solid" id={`questionTooltip${id}`} place="right" type="info">
-          <span>{description}</span>
-        </ReactTooltip>
-      )}
     </div>
   )
 }

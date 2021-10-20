@@ -50,7 +50,12 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
         {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
       </button>
 
-      <button className={clsx('toggle', { correct })} type="button" onClick={onCorrectToggle}>
+      <button
+        className={clsx('toggle', { correct, disabled: inputMode })}
+        disabled={inputMode}
+        type="button"
+        onClick={onCorrectToggle}
+      >
         {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
       </button>
 
