@@ -100,7 +100,7 @@
     "react-table": "7.7.0",
     "react-tagcloud": "2.1.1",
     "react-toast-notifications": "2.5.1",
-    "recharts": "2.1.2",
+    "recharts": "2.1.5",
     "sanitize-html": "2.4.0",
     "semantic-ui-react": "2.0.3",
     "styled-jsx-plugin-sass": "1.0.0",
