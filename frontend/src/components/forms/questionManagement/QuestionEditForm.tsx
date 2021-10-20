@@ -6,7 +6,9 @@ import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
+import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
+import { is } from 'immutable'
 
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -112,6 +114,16 @@ const typeComponents = {
   SC: SCCreationOptions,
 }
 
+function areValuesTheSame(initialValues, values) {
+  const initialValuesWithoutContent = omit(['content'], initialValues)
+  const valuesWithoutContent = omit(['content'], values)
+
+  const initialContent = initialValues.content.getCurrentContent()
+  const content = values.content.getCurrentContent()
+
+  return equals(initialValuesWithoutContent, valuesWithoutContent) && is(initialContent, content)
+}
+
 function QuestionEditForm({
   activeVersion,
   editSuccess,
@@ -126,10 +138,6 @@ function QuestionEditForm({
   versions,
 }: Props): React.ReactElement {
   const intl = useIntl()
-
-  // use changed state to track changes in the editing process
-  const [changed, setChange] = useState(false)
-  const [valueState, setValueState] = useState(null)
 
   // if the active version would be out of array bounds, we are creating a new one
   const isNewVersion = activeVersion === versions.length
@@ -178,47 +186,22 @@ function QuestionEditForm({
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
 
-            useEffect(() => {
-              setTimeout(function () {
-                setChange(false)
-              }, 100)
-            }, [])
+            // use changed state to track changes in the editing process
+            const [hasAnythingChanged, setHasAnythingChanged] = useState(false)
 
             useEffect(() => {
-              if (valueState != undefined) {
-                if (
-                  values.title !== valueState.title ||
-                  values.tags !== valueState.tags ||
-                  values.files !== valueState.files ||
-                  values.options !== valueState.options ||
-                  values.content
-                    .getCurrentContent()
-                    .getPlainText('\u0001' !== valueState.content.getCurrentContent().getPlainText('\u0001'))
-                ) {
-                  if (
-                    values.title !== valueState.title ||
-                    values.tags !== valueState.tags ||
-                    values.files !== valueState.files ||
-                    values.options !== valueState.options ||
-                    values.content.getCurrentContent().getPlainText('\u0001') !==
-                      valueState.content.getCurrentContent().getPlainText('\u0001')
-                  ) {
-                    setChange(true)
-                  }
-                }
-              }
-              setValueState(values)
+              setHasAnythingChanged(!areValuesTheSame(initialValues, values))
             }, [values])
 
             return (
               <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
                 <div className="actionArea">
-                  {!changed && (
+                  {!hasAnythingChanged && (
                     <Button className="close" size="large" type="button" onClick={handleDiscard}>
                       <FormattedMessage defaultMessage="Close" id="common.button.close" />
                     </Button>
                   )}
-                  {changed && (
+                  {hasAnythingChanged && (
                     <Button className="discard" size="large" type="button" onClick={handleDiscard}>
                       <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
                     </Button>
@@ -240,7 +223,7 @@ function QuestionEditForm({
                   <Button
                     primary
                     className="save"
-                    disabled={!_isEmpty(errors) || !changed}
+                    disabled={!_isEmpty(errors) || !hasAnythingChanged}
                     loading={loading && isSubmitting}
                     size="large"
                     type="submit"
