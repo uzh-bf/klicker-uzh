@@ -3,9 +3,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import getConfig from 'next/config'
 import { Button, List, Input } from 'semantic-ui-react'
+import Image from 'next/image'
 
 import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/hooks/useLogging'
+
+import KlickerLogoImageSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -32,17 +35,16 @@ function Index(): React.ReactElement {
   return (
     // TODO: internationalization
     <StaticLayout pageTitle="Klicker">
-      <div className="pt-4">
-        <h1 className="mb-3 text-3xl leading-8 text-center">
-          Klicker
-          <span className="text-base leading-4 align-top border-gray-300">UZH</span>
-        </h1>
+      <div className="flex flex-col items-center pt-4">
+        <div>
+          <Image alt="KlickerUZH Logo" src={KlickerLogoImageSrc} />
+        </div>
 
         <p className="p-1 mb-4 italic text-center border-gray-300">
           Welcome to the open source instant audience response system.
         </p>
 
-        <div className="p-4 mb-4 border border-blue-400 border-solid bg-blue-50">
+        <div className="self-stretch p-4 mb-4 border border-blue-400 border-solid bg-blue-50">
           <p className="">Want to participate in a poll?</p>
           <div className="flex flex-col md:flex-row">
             <Input
@@ -64,7 +66,7 @@ function Index(): React.ReactElement {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between lg:flex-row">
+        <div className="flex flex-col self-stretch justify-between lg:flex-row">
           <a
             className="flex-1 block p-4 mb-1 text-black border border-blue-400 border-solid bg-blue-50 lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
             href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
@@ -125,7 +127,8 @@ function Index(): React.ReactElement {
             </List>
           </div>
         </div>
-        <div className="pt-4 pb-4">
+
+        <div className="self-start pt-4 pb-4">
           <List horizontal>
             {links.map(
               (link): React.ReactElement => (
