@@ -9,6 +9,7 @@
   "common.MC.label": "Multiple Choice (MC)",
   "common.SC.label": "Single Choice (SC)",
   "common.button.back": "Back",
+  "common.button.close": "Close",
   "common.button.continue": "Continue",
   "common.button.discard": "Discard",
   "common.button.login": "Login",
