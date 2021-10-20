@@ -47,6 +47,7 @@
   "createQuestion.optionsFREE.label": "Einschränkungen",
   "createQuestion.optionsFREE.tooltip": "Wählen Sie das erlaubte Format für eingehende Freitextantworten.",
   "createQuestion.optionsSC.label": "Verfügbare Auswahlmöglichkeiten",
+  "createQuestion.optionsSC.solutionToggle.tooltip": "Klicken Sie hier, um die Antwortmöglichkeit als korrekt (grün hervorgehoben) oder inkorrekt zu markieren.",
   "createQuestion.optionsSC.tooltip": "Fügen Sie Auswahlmöglichkeiten hinzu, aus denen die Teilnehmenden wählen können.",
   "createQuestion.previewLabel": "Teilnehmer-Vorschau",
   "createQuestion.questionType.label": "Fragetyp",
