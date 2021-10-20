@@ -80,7 +80,7 @@ function Participants({
 
                 <Table.Body>
                   {participants.map((participant) => (
-                    <Table.Row>
+                    <Table.Row key={participant}>
                       <Table.Cell>{participant}</Table.Cell>
                     </Table.Row>
                   ))}

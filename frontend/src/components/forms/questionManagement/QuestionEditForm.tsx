@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
@@ -6,7 +6,9 @@ import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
+import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
+import { is } from 'immutable'
 
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -112,6 +114,16 @@ const typeComponents = {
   SC: SCCreationOptions,
 }
 
+function areValuesTheSame(initialValues, values) {
+  const initialValuesWithoutContent = omit(['content'], initialValues)
+  const valuesWithoutContent = omit(['content'], values)
+
+  const initialContent = initialValues.content.getCurrentContent()
+  const content = values.content.getCurrentContent()
+
+  return equals(initialValuesWithoutContent, valuesWithoutContent) && is(initialContent, content)
+}
+
 function QuestionEditForm({
   activeVersion,
   editSuccess,
@@ -174,12 +186,26 @@ function QuestionEditForm({
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
 
+            // use changed state to track changes in the editing process
+            const [hasAnythingChanged, setHasAnythingChanged] = useState(false)
+
+            useEffect(() => {
+              setHasAnythingChanged(!areValuesTheSame(initialValues, values))
+            }, [values])
+
             return (
               <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
                 <div className="actionArea">
-                  <Button className="discard" size="large" type="button" onClick={handleDiscard}>
-                    <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                  </Button>
+                  {!hasAnythingChanged && (
+                    <Button className="close" size="large" type="button" onClick={handleDiscard}>
+                      <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                    </Button>
+                  )}
+                  {hasAnythingChanged && (
+                    <Button className="discard" size="large" type="button" onClick={handleDiscard}>
+                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    </Button>
+                  )}
 
                   <div className="infoMessage">
                     <Message compact success size="small">
@@ -197,7 +223,7 @@ function QuestionEditForm({
                   <Button
                     primary
                     className="save"
-                    disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                    disabled={!_isEmpty(errors) || !hasAnythingChanged}
                     loading={loading && isSubmitting}
                     size="large"
                     type="submit"
@@ -345,8 +371,7 @@ function QuestionEditForm({
               margin-bottom: 1rem;
             }
 
-            // HACK: currently one field item in question div to full-fill bigger font-size
-            .questionInput > :global(.field > label) {
+            .questionInput :global(.field > label) {
               font-size: 1.2rem;
             }
 

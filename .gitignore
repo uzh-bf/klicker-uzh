@@ -1,10 +1,10 @@
-__pycache__/
-node_modules/
+**/__pycache__/
+**/node_modules/
 .vscode/
 
 *.archive
 secrets*.yaml
 .env
 
-*.DS_Store
+**/.DS_Store
 *.pem

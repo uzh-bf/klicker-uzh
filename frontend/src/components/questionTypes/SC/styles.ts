@@ -17,7 +17,7 @@ export default css`
   .option {
     display: flex;
     background-color: white;
-    border: 1px solid grey;
+    border: 2px solid grey;
     position: relative;
     overflow: hidden;
 
@@ -44,7 +44,7 @@ export default css`
   }
 
   .option.correct {
-    border-color: green;
+    border: 2px solid green;
   }
 
   input,
@@ -77,5 +77,9 @@ export default css`
 
   .toggle.correct {
     background-color: green;
+  }
+
+  .toggle.disabled {
+    background-color: lightgrey;
   }
 `
