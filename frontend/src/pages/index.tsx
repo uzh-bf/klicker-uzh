@@ -38,28 +38,35 @@ function Index(): React.ReactElement {
           <span className="text-base leading-4 align-top border-gray-300">UZH</span>
         </h1>
 
-        <p className="p-1 mb-4 italic text-center border-gray-300">Welcome to the open source instant audience response system.</p>
+        <p className="p-1 mb-4 italic text-center border-gray-300">
+          Welcome to the open source instant audience response system.
+        </p>
 
-        <div className="p-4 mb-4 bg-blue-50 border border-blue-400 border-solid">
+        <div className="p-4 mb-4 border border-blue-400 border-solid bg-blue-50">
           <p className="">Want to participate in a poll?</p>
           <div className="flex flex-col md:flex-row">
             <Input
-              className="flex-grow mr-0 md:mr-3"
               fluid
+              className="flex-grow mr-0 md:mr-3"
               label={`${publicRuntimeConfig.baseUrl}/join/`}
               placeholder="account id"
               value={shortname}
               onChange={(e): void => setShortname(e.target.value)}
             />
-            <Button className="w-full md:w-auto" primary disabled={!shortname || shortname === ''} onClick={redirectToJoin}>
+            <Button
+              primary
+              className="w-full md:w-auto"
+              disabled={!shortname || shortname === ''}
+              onClick={redirectToJoin}
+            >
               Participate
             </Button>
           </div>
         </div>
 
-        <div className="flex justify-between flex-col lg:flex-row">
+        <div className="flex flex-col justify-between lg:flex-row">
           <a
-            className="flex-1 block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
+            className="flex-1 block p-4 mb-1 text-black border border-blue-400 border-solid bg-blue-50 lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
             href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
@@ -68,7 +75,7 @@ function Index(): React.ReactElement {
             <p>Learn more about Klicker.</p>
           </a>
           <a
-            className="flex-1 block p-4 mb-1 text-black bg-blue-50 border border-blue-400 border-solid lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
+            className="flex-1 block p-4 mb-1 text-black border border-blue-400 border-solid bg-blue-50 lg:cursor-pointer lg:mr-2 lg:p-4 hover:bg-blue-100 hover:text-black hover:shadow-2xl"
             href="https://www.klicker.uzh.ch/roadmap"
             rel="noopener noreferrer"
             target="_blank"
@@ -76,8 +83,8 @@ function Index(): React.ReactElement {
             <h2 className="text-lg text-black">Roadmap</h2>
             <p>Defined goals and milestones.</p>
           </a>
-          <div className="flex-1 block p-4 mb-1 leading-6 text-black bg-blue-50 border border-blue-400 border-solid lg:mr-0 lg:p-4">
-            <h2 className="text-lg text-black">Ressources</h2>
+          <div className="flex-1 block p-4 mb-1 text-black border border-blue-400 border-solid bg-blue-50 lg:mr-0 lg:p-4">
+            <h2 className="text-lg text-black">Resources</h2>
             <List divided relaxed>
               <List.Item>
                 <List.Icon name="mail" size="large" verticalAlign="middle" />
