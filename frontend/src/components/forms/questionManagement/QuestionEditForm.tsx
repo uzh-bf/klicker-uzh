@@ -388,8 +388,7 @@ function QuestionEditForm({
               margin-bottom: 1rem;
             }
 
-            // HACK: currently one field item in question div to full-fill bigger font-size
-            .questionInput > :global(.field > label) {
+            .questionInput :global(.field > label) {
               font-size: 1.2rem;
             }
 

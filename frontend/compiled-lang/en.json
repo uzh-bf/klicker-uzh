@@ -299,6 +299,12 @@
       "value": "Available Choices"
     }
   ],
+  "createQuestion.optionsSC.solutionToggle.tooltip": [
+    {
+      "type": 0,
+      "value": "Toggle to define whether the option is correct (marked in green) or incorrect (marked in red)."
+    }
+  ],
   "createQuestion.optionsSC.tooltip": [
     {
       "type": 0,

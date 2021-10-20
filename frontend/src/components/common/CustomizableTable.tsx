@@ -6,6 +6,10 @@ import { defineMessages, useIntl } from 'react-intl'
 import EditTableRowForm from '../forms/EditTableRowForm'
 
 const messages = defineMessages({
+  backButton: {
+    id: 'common.button.back',
+    defaultMessage: 'Back',
+  },
   confirmDeletion: {
     id: 'customizableTable.deleteEntity',
     defaultMessage: 'Delete Entity',
@@ -173,7 +177,7 @@ function CustomizableTable({
         </Table.Body>
       </Table>
       <Confirm
-        cancelButton={intl.formatMessage({ id: 'common.button.back' })}
+        cancelButton={intl.formatMessage(messages.backButton)}
         confirmButton={intl.formatMessage(messages.confirmDeletion)}
         content={intl.formatMessage(messages.confirmDeletionDescription, { activeId })}
         open={deletionConfirmation}
@@ -181,7 +185,7 @@ function CustomizableTable({
         onConfirm={(): Promise<void> => handleDeletion(activeId, true)}
       />
       <Confirm
-        cancelButton={intl.formatMessage({ id: 'common.button.back' })}
+        cancelButton={intl.formatMessage(messages.backButton)}
         confirmButton={intl.formatMessage(messages.confirmAbortion)}
         content={intl.formatMessage(messages.confirmAbortionDescription, { activeId })}
         open={abortConfirmation}
