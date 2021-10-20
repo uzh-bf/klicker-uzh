@@ -44,7 +44,6 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
     (index: number): any =>
     (): void =>
       handleChange(reorder(choices, index, index + 1))
-  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div className="SCCreationOptions">
@@ -53,24 +52,24 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
           <Popup
+            inverted
+            wide
             content={
               <FormattedMessage
                 defaultMessage="Add answering options the respondents can choose from."
                 id="createQuestion.optionsSC.tooltip"
               />
             }
+            mouseEnterDelay={250}
+            mouseLeaveDelay={250}
+            position="right center"
+            size="small"
+            style={{ opacity: 0.9 }}
             trigger={
               <a data-tip>
                 <Icon name="question circle" />
               </a>
             }
-            position="right center"
-            size="small"
-            style={PopupStyle}
-            mouseEnterDelay={250}
-            mouseLeaveDelay={250}
-            wide
-            inverted
           />
         </label>
 
