@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/frontend",
-  "version": "1.6.2-rc.2",
+  "version": "1.6.2-rc.3",
   "main": "server.ts",
   "engines": {
     "node": ">=14"

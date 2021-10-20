@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.2...v1.6.2-rc.3) (2021-10-20)
+
+
+### Features
+
+* **frontend:** introduce diffing for question editing state ([#2585](https://github.com/uzh-bf/klicker-uzh/issues/2585)) ([b634be4](https://github.com/uzh-bf/klicker-uzh/commit/b634be494bc3925168bbaa8acb976987ebc94f22))
+
+
+### Refactors
+
+* **frontend:** replace react-d3-cloud with react-tagcloud ([0fe0168](https://github.com/uzh-bf/klicker-uzh/commit/0fe0168e5b5148bfca5cb6562fe9be0d9ff0f22c))
+
+
+### Enhancements
+
+* **docs:** Rework documentation for Docusaurus 2 ([#2572](https://github.com/uzh-bf/klicker-uzh/issues/2572)) ([2f4b3dc](https://github.com/uzh-bf/klicker-uzh/commit/2f4b3dcc4eec504ba65340d61e07a847be495870))
+* **frontend:** rework tooltips to use only semantic-ui popups ([#2577](https://github.com/uzh-bf/klicker-uzh/issues/2577)) ([0e61559](https://github.com/uzh-bf/klicker-uzh/commit/0e61559cf2ca2f0861270273d35117519e4e6d45))
+
+
+### Other
+
+* **ci:** add codeql to repository ([8118268](https://github.com/uzh-bf/klicker-uzh/commit/8118268f36f84de76a0858f0b3a566d0c0d7dfe4))
+* create a dependabot config file ([65c5a03](https://github.com/uzh-bf/klicker-uzh/commit/65c5a0398036f922dca2b88a40ab8b51990208e1))
+* **deploy:** bump appVersion ([5ec24ec](https://github.com/uzh-bf/klicker-uzh/commit/5ec24ece89d54e0e7ebbb506e3c02b842e9c44b6))
+* **deploy:** bump appVersion ([39cfda9](https://github.com/uzh-bf/klicker-uzh/commit/39cfda9cfadb963ac4997469f3bd981c22907fc1))
+* **docs:** remove cruft websiteV1 ([ae7e3c5](https://github.com/uzh-bf/klicker-uzh/commit/ae7e3c5e0497ab9c4527b7a847ded4b5c2a6e2f7))
+
 ### [1.6.2-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.1...v1.6.2-rc.2) (2021-10-08)
 
 
