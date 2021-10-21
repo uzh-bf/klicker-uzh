@@ -71,6 +71,12 @@
       "value": "Zurück"
     }
   ],
+  "common.button.close": [
+    {
+      "type": 0,
+      "value": "Schliessen"
+    }
+  ],
   "common.button.continue": [
     {
       "type": 0,
@@ -309,6 +315,12 @@
     {
       "type": 0,
       "value": "Verfügbare Auswahlmöglichkeiten"
+    }
+  ],
+  "createQuestion.optionsSC.solutionToggle.tooltip": [
+    {
+      "type": 0,
+      "value": "Klicken Sie hier, um die Antwortmöglichkeit als korrekt (grün hervorgehoben) oder inkorrekt zu markieren."
     }
   ],
   "createQuestion.optionsSC.tooltip": [

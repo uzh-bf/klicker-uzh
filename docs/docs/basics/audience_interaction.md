@@ -1,5 +1,4 @@
 ---
-id: audience_interaction
 title: Audience Interaction
 ---
 
@@ -7,11 +6,11 @@ While previous releases of Klicker UZH already allowed limited audience interact
 
 Enabling it during the running session (as illustrated under [Running Session](session_running.md)) toggles the dialog on the right side of the students screens, which may be used for questions, feeback or similar interaction:
 
-![Audience View Interaction](assets/audience_view_interaction.png)
+![Audience View Interaction](/img/audience_view_interaction.png)
 
 Depending on the lecturers settings, the questions / feedback will become visible to everyone immediately or at a moderators discretion. Once a question of a fellow student or an answer from the lecturer is available, it will be possible to indicate support (thumb up) or confusion (question mark). Any contributions will stay visible for the duration of the session or until the lecturer / moderator removes them.
 
-![Lecturer View Interaction](assets/lecturer_view_interaction.png)
+![Lecturer View Interaction](/img/lecturer_view_interaction.png)
 
 On the lecturers screen, there are many additional settings. Whenever the audience interaction itself is enabled, all provided questions / feedback will be listed. The following settings can be made:
 
@@ -35,6 +34,6 @@ The lecturer / moderator can organize all incoming questions / feedback:
 
 Finally, the screenshot below shows the referenced feedback site, which can be used if only pinned questions together with their upvotes shall be shown on a screen (e.g. to the lecturer):
 
-![Lecturer View Feedback Site](assets/lecturer_view_feedbackSite.png)
+![Lecturer View Feedback Site](/img/lecturer_view_feedbackSite.png)
 
 Click on [Evaluation (Results)](evaluation.md) to continue.

@@ -1,21 +1,7 @@
 {
-  "name": "klicker-react",
-  "version": "1.6.1",
-  "homepage": "https://www.klicker.uzh.ch",
-  "repository": "https://github.com/uzh-bf/klicker-api.git",
-  "bugs": "https://github.com/uzh-bf/klicker-uzh",
-  "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
-  ],
-  "contributors": [
-    "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
-    "Pascal Zehnder <pascal.zehnder@bf.uzh.ch",
-    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
-    "Jokkis80 <jokki@windowslive.com>",
-    "mnmldev <aleloewe@gmail.com>",
-    "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
-  ],
+  "name": "@klicker-uzh/frontend",
+  "version": "1.6.2",
+  "main": "server.ts",
   "engines": {
     "node": ">=14"
   },
@@ -55,7 +41,7 @@
     "cors": "2.8.5",
     "cross-env": "7.0.3",
     "crypto-hash": "1.3.0",
-    "d3": "7.0.1",
+    "d3": "6.7.0",
     "dayjs": "1.10.6",
     "dotenv": "10.0.0",
     "draft-js": "0.11.7",
@@ -78,6 +64,7 @@
     "graphql-ws": "5.4.1",
     "gulp": "4.0.2",
     "helmet": "4.6.0",
+    "immutable": "3.8.2",
     "intl": "1.2.5",
     "intl-pluralrules": "1.3.0",
     "ioredis": "4.27.9",
@@ -102,7 +89,6 @@
     "react-beautiful-dnd": "13.1.0",
     "react-circular-progressbar": "2.0.4",
     "react-csv": "2.0.3",
-    "react-d3-cloud": "1.0.0",
     "react-dnd": "11.1.3",
     "react-dnd-html5-backend": "11.1.3",
     "react-dom": "17.0.2",
@@ -113,9 +99,9 @@
     "react-rangeslider": "2.2.0",
     "react-sizeme": "3.0.2",
     "react-table": "7.7.0",
+    "react-tagcloud": "2.1.1",
     "react-toast-notifications": "2.5.1",
-    "react-tooltip": "4.2.21",
-    "recharts": "2.1.2",
+    "recharts": "2.1.5",
     "sanitize-html": "2.4.0",
     "semantic-ui-react": "2.0.3",
     "styled-jsx-plugin-sass": "1.0.0",

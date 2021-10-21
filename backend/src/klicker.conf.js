@@ -26,6 +26,11 @@ module.exports = convict({
       env: 'APP_GZIP',
       format: 'Boolean',
     },
+    host: {
+      default: '0.0.0.0',
+      env: 'APP_HOST',
+      format: String,
+    },
     https: {
       default: false,
       env: 'APP_HTTPS',

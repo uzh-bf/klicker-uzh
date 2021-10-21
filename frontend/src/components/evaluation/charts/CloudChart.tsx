@@ -1,5 +1,5 @@
 import React from 'react'
-import WordCloud from 'react-d3-cloud'
+import { TagCloud } from 'react-tagcloud'
 
 interface Props {
   data?: {
@@ -15,27 +15,14 @@ const defaultProps = {
   data: [],
 }
 
-const fontSizeMapper = (word): number => (1 + Math.log2(word.value)) * 40
-const rotate = (word): number => word.value % 90
-
-function CloudChart({ data, size }: Props): React.ReactElement {
+function CloudChart({ data }: Props): React.ReactElement {
   return (
-    <div className="cloudChart">
-      <WordCloud
-        data={data.map(({ value, count }): any => ({ text: value, value: count }))}
-        fontSize={fontSizeMapper}
-        height={600}
-        rotate={rotate}
-        width={size.width || 600}
-      />
-
-      <style jsx>{`
-        .cloudChart {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-          width: 100%;
+    <div className="flex w-full h-full p-4">
+      <TagCloud colorOptions={{ luminosity: 'dark' }} maxSize={60} minSize={18} shuffle={false} tags={data} />
+      <style global jsx>{`
+        .tag-cloud-tag {
+          padding: 4px;
+          padding-right: 16px;
         }
       `}</style>
     </div>

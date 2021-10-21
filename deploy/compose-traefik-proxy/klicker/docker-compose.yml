@@ -1,0 +1,143 @@
+# first start traefik to create the network
+# then edit services.env:
+# * replace your-domain.example with the correct one
+# * define your own secrets and passwords
+# * enter email credentials
+# edit this file with the proper domain name
+# then start this service stack
+
+# this setup uses a single domain with path prefixes for backend and minio to avoid CORS issues. feel free to change that
+
+# all environment variables are put in services.env !
+
+version: "3"
+
+services:
+  # the frontend for KlickerUZH
+  frontend:
+    restart: unless-stopped
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend:v1.6.2-alpha.0
+    env_file: services.env
+    networks:
+      - traefik_proxy
+      - default
+    healthcheck:
+     disable: true # TODO: The healthcheck keeps reporting "starting", so traefik ignores this container
+    labels:
+    # traefik:v1
+      #- "traefik.enable=true"
+      #- "traefik.docker.network=traefik_proxy"
+      #- "traefik.port=3000"
+      #- "traefik.klicker-front.frontend.rule=Host:your-domain.example"
+    # traefik:v2
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.services.klicker-frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.klicker-frontend.rule=Host(`your-domain.example`)"
+      - "traefik.http.routers.klicker-frontend.entrypoints=websecure"
+      - "traefik.http.routers.klicker-frontend.service=klicker-frontend"
+      - "traefik.http.routers.klicker-frontend.tls.certresolver=my-letsencrypt"
+      - "de.wie-ei.autostart=true"
+
+  # the backend for KlickerUZH
+  backend:
+    restart: unless-stopped
+    image: ghcr.io/uzh-bf/klicker-uzh/backend:v1.6.2-alpha.0
+    env_file: services.env
+    networks:
+      - traefik_proxy
+      - default
+    healthcheck:
+     disable: true # TODO: The healthcheck keeps reporting "starting", so traefik ignores this container
+    labels:
+    # traefik:v1
+      #- "traefik.enable=true"
+      #- "traefik.docker.network=traefik_proxy"
+      #- "traefik.port=4000"
+      #- "traefik.klick-back.frontend.rule=Host:your-domain.example;PathPrefix:/graphql"
+    # traefik:v2
+      - "traefik.enable=true"
+      - "traefik.http.services.klicker-backend.loadbalancer.server.port=4000"
+      - "traefik.http.routers.klicker-frontend.rule=Host(`your-domain.example`) && PathPrefix(`/graphql`)"
+      - "traefik.http.routers.klicker-backend.entrypoints=websecure"
+      - "traefik.http.routers.klicker-backend.service=klicker-backend"
+      - "traefik.http.routers.klicker-backend.tls.certresolver=my-letsencrypt"
+      - "de.wie-ei.autostart=true"
+
+  # redis instance to support session execution
+  # instance data must be persisted
+  redis_exec:
+    restart: unless-stopped
+    image: redis:5.0.9
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      #- /data/klicker/redis_exec/:/data
+      - redis_exec:/data
+
+  # redis instance for page caching and rate limiting
+  # this instance does not require persistence
+  redis_cache:
+    restart: unless-stopped
+    image: redis:5.0.9
+
+  # mongodb database
+  # it is recommended to run this service outside of docker
+  mongodb:
+    restart: unless-stopped
+    image: mongo:4.0
+    env_file: services.env
+    volumes:
+      #- /data/klicker/mongo/:/data/db
+      - mongo-data:/data/db
+
+  # minio storage platform for S3
+  minio:
+    restart: unless-stopped
+    image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
+    env_file: services.env
+    volumes:
+      #- /data/klicker/minio/:/data
+      - minio-data:/data
+
+    command: server /data --console-address ":9001"
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+    # traefik:v1
+      #- "traefik.enable=true"
+      #- "traefik.docker.network=traefik_proxy"
+      #- "traefik.port=9000"
+      #- "traefik.klick-minio.frontend.rule=Host:your-domain.example;PathPrefix:/images"
+    # traefik:v2
+      - "traefik.enable=true"
+      - "traefik.http.services.klicker-minio.loadbalancer.server.port=4000"
+      - "traefik.http.routers.klicker-minio.rule=Host(`your-domain.example`) && PathPrefix(`/images`)"
+      - "traefik.http.routers.klicker-minio.entrypoints=websecure"
+      - "traefik.http.routers.klicker-minio.service=klicker-minio"
+      - "traefik.http.routers.klicker-minio.tls.certresolver=my-letsencrypt"
+      - "de.wie-ei.autostart=true"
+      
+  create_minio_buckets:
+    # this helper service will check and initialize the bucket "images" and halt afterwards. feel free to remove it once the setup is done
+    image: minio/mc
+    env_file: services.env
+    depends_on:
+      - minio
+    entrypoint: >
+       /bin/sh -c '
+       sleep 5;
+       /usr/bin/mc config host add s3 http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} --api S3v4;
+       [[ ! -z "`/usr/bin/mc ls s3 | grep images`" ]] || /usr/bin/mc mb s3/images;
+       /usr/bin/mc policy set public s3/images;
+       exit 0;
+       '
+# either use these volumes, or bind mounts like indicated above
+volumes:
+  redis-data:
+  minio-data:
+  mongo-data:
+
+networks:
+  traefik_proxy:
+    external: true

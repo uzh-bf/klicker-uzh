@@ -75,7 +75,7 @@ module.exports = (phase) => {
 
   if (SERVICES_CFG.sentry.enabled) {
     config = withSentryConfig(config, {
-      silent: true,
+      // silent: true,
     })
   }
 

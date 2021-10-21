@@ -36,7 +36,6 @@ function PublicFeedback({
             <p className="mb-0 prose-sm prose">{content}</p>
             <div className="flex flex-row items-end mt-1 text-gray-500">
               <div className="text-sm text-gray-500">{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-              <div className="ml-4">{resolved && resolvedAt && dayjs(resolvedAt).format('DD.MM.YYYY HH:mm')}</div>
             </div>
           </div>
           <div className="flex-initial mt-1 mr-1">

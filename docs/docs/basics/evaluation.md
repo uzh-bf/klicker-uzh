@@ -5,7 +5,7 @@ title: Evaluation
 
 The evaluation screen provides different charts for all questions asked within a session. Once you click on _Evaluation (Results)_ on your _Running Session_, this page will open in a new browser tab. It is recommended to keep both tabs active, as you will need both screens over the course of the entire session.
 
-![Evaluation](assets/evaluation_1.png)
+![Evaluation](/img/evaluation_1.png)
 
 Depending on the question type the evaluation screen might look different. Additionally, some
 charts are not available for all question types. The two screens show all features.
@@ -21,6 +21,6 @@ charts are not available for all question types. The two screens show all featur
 9. **Export CSV:** Clicking this button exports all collected results in a CSV format.
 10. **Export PDF:** Clicking this button opens the print preview, which can be used to print the current session evaluations to a PDF.
 
-![Evaluation](assets/evaluation_2.png)
+![Evaluation](/img/evaluation_2.png)
 
 This step concludes the basic tutorial which led you through all of the basic features that the KlickerUZH offers. If you would like to see how you can edit, archive, or delete questions, or how you can update certain user settings, please continue with the _Advanced Tutorial_ section.

@@ -5,7 +5,7 @@ title: Create a Question
 
 Upon clicking the "Create Question" button on the question pool, you will be redirected to the following view:
 
-![Create Question](assets/question_create.png)
+![Create Question](/img/question_create.png)
 
 Before preparing a session, all questions that are to be contained need to be created. Every one of these questions has the following attributes:
 
