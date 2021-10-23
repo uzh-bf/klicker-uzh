@@ -43,13 +43,13 @@ module.exports = {
   themeConfig: {
     navbar: {
       logo: {
-        src: 'img/KlickerUZH_Gray_BG.png',
+        src: 'img/KlickerUZH_Gray_Transparent.png',
         href: '/',
       },
       items: [
         {
-          to: '/',
-          label: 'Docs',
+          to: 'introduction/getting_started',
+          label: 'Getting Started',
           position: 'left',
         },
         // {
@@ -78,7 +78,7 @@ module.exports = {
       links: [],
       copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       logo: {
-        src: 'img/KlickerUZH_Orange_Square.png',
+        src: 'img/KlickerUZH_Gray_Transparent.png',
         href: 'https://www.klicker.uzh.ch',
       },
     },
