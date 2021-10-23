@@ -1,7 +1,5 @@
 ---
 title: Getting Started
-sidebar_label: Getting Started
-slug: /
 ---
 
 KlickerUZH is a web application that supports the interaction between speakers and their audience in various ways. During a Klicker session (e.g., a lecture), a speaker may pose questions to be answered by participants over their devices. If so desired by the speaker, the audience may ask questions to which the lecturer can leave a response from within the tool (Q&A). Next to the well-known speaker-to-audience interaction, this enables interactions initiated by the audience, which can serve as a useful orientation to the lecturer.
