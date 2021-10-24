@@ -1,6 +1,8 @@
 import { Message, Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useEffect, useState } from 'react'
+import { useIntl, defineMessages } from 'react-intl'
+
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
@@ -37,6 +39,13 @@ function FeedbackChannel({
 }: Props) {
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, { withSearch: true })
   const [feedbackLength, setFeedbackLength] = useState(0)
+  const intl = useIntl()
+  const messages = defineMessages({
+    notificationTitle: {
+      defaultMessage: 'New Question / Feedback',
+      id: 'feedbackchannel.notifications.title',
+    },
+  })
 
   if (Notification.permission !== 'granted') {
     Notification.requestPermission((permission) => {
@@ -62,7 +71,7 @@ function FeedbackChannel({
   useEffect(() => {
     if (feedbacks.length > feedbackLength) {
       if (Notification.permission === 'granted') {
-        createNotification('New Feedback / Question', feedbacks[feedbacks.length - 1].content)
+        createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
       }
       setFeedbackLength(feedbacks.length)
     } else {

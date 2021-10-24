@@ -487,6 +487,12 @@
       "value": "Visualization"
     }
   ],
+  "feedbackchannel.notifications.title": [
+    {
+      "type": 0,
+      "value": "New Question / Feedback"
+    }
+  ],
   "fileDropzone.button.delete": [
     {
       "type": 0,
