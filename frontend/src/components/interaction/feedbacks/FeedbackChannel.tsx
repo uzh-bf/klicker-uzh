@@ -41,7 +41,6 @@ function FeedbackChannel({
   if (Notification.permission !== 'granted') {
     Notification.requestPermission((permission) => {
       if (permission === 'granted') {
-        console.log('Notification permission granted')
         setFeedbackLength(feedbacks.length)
       }
     })
@@ -63,7 +62,6 @@ function FeedbackChannel({
   useEffect(() => {
     if (feedbacks.length > feedbackLength) {
       if (Notification.permission === 'granted') {
-        console.log(feedbacks)
         createNotification('New Feedback / Question', feedbacks[feedbacks.length - 1].content)
       }
       setFeedbackLength(feedbacks.length)
