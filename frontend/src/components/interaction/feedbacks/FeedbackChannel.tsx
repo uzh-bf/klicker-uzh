@@ -1,5 +1,6 @@
 import { Message, Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { useEffect } from 'react'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
@@ -35,6 +36,34 @@ function FeedbackChannel({
   handleDeleteFeedbackResponse,
 }: Props) {
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, { withSearch: true })
+
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission((permission) => {
+      if (permission === 'granted') {
+        console.log('Notification permission granted')
+      }
+    })
+  }
+
+  function createNotification(title: string, text: string, icon?: string) {
+    if (icon) {
+      const notification = new Notification(title, {
+        body: text,
+        icon,
+      })
+    } else {
+      const notification = new Notification(title, {
+        body: text,
+      })
+    }
+  }
+
+  useEffect(() => {
+    console.log(feedbacks)
+    if (Notification.permission === 'granted') {
+      createNotification('New Feedback / Question', feedbacks[feedbacks.length - 1].content)
+    }
+  }, [feedbacks.length])
 
   return (
     <div>
