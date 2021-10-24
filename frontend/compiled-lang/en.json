@@ -1033,6 +1033,12 @@
       "value": "You are not permitted to join this session"
     }
   ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "A new Klicker question is available"
+    }
+  ],
   "joinSession.string.responseIgnored": [
     {
       "type": 0,

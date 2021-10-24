@@ -1049,6 +1049,12 @@
       "value": "Sie sind nicht berechtigt, an dieser Session teilzunehmen."
     }
   ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "Eine neue Klicker-Frage ist verfügbar"
+    }
+  ],
   "joinSession.string.responseIgnored": [
     {
       "type": 0,

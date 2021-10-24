@@ -5,7 +5,7 @@ import _get from 'lodash/get'
 import v8n from 'v8n'
 import dayjs from 'dayjs'
 import getConfig from 'next/config'
-import { FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
 import { Icon, Message } from 'semantic-ui-react'
@@ -84,6 +84,39 @@ function QuestionArea({
     inputValid: false,
     inputValue: undefined,
   })
+
+  const intl = useIntl()
+  const intlMessages = defineMessages({
+    newQuestionNotification: {
+      defaultMessage: 'A new Klicker question is available',
+      id: 'joinSession.string.questionNotification',
+    },
+  })
+
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission()
+  }
+
+  function createNotification(title: string, text: string, icon?: string) {
+    if (icon) {
+      const notification = new Notification(title, {
+        body: text,
+        icon,
+      })
+    } else {
+      const notification = new Notification(title, {
+        body: text,
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (questions.length > 0) {
+      if (Notification.permission === 'granted') {
+        createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
+      }
+    }
+  }, [questions.length])
 
   useEffect((): void => {
     try {
