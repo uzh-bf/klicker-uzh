@@ -58,13 +58,13 @@ module.exports = {
           position: 'left',
         },
         {
-          to: 'blog/',
-          label: 'Project Updates',
+          to: 'faq/changelog',
+          label: 'Release Notes',
           position: 'left',
         },
         {
-          to: 'faq/changelog',
-          label: 'Release Notes',
+          to: 'blog/',
+          label: 'Project Updates',
           position: 'left',
         },
         {
