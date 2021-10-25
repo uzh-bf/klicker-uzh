@@ -4,7 +4,7 @@ This folder contains the GraphQL API backend of the [KlickerUZH](https://www.kli
 
 ### Requirements
 
-To develop on the KlickerUZH, NodeJS 10.x LTS and Docker 18.0x or later are required. Additionally, the `frontend` service needs to be running and correctly configured on your machine. The dependencies can be installed by simply running `npm install` with NPM 6+. Please refer to [Development Setup](https://uzh-bf.github.io/klicker-uzh/docs/contributing/contributing_setup) for more detailed information on the development setup.
+To develop on the KlickerUZH, NodeJS 10.x LTS and Docker 18.0x or later are required. Additionally, the `frontend` service needs to be running and correctly configured on your machine. The dependencies can be installed by simply running `npm install` with NPM 6+. Please refer to [Development Setup](https://www.klicker.uzh.ch/docs/contributing/contributing_setup) for more detailed information on the development setup.
 
 ### Repository Structure
 
