@@ -78,6 +78,23 @@ function StudentLayout({
     )
   }, [feedbackIds])
 
+  const NotificationBadge = ({ count, interactionEnabled }) => {
+    if (interactionEnabled && count < 10 && count > 0) {
+      return (
+        <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
+          {count}
+        </div>
+      )
+    } else if (interactionEnabled && count > 9) {
+      return (
+        <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
+          9+
+        </div>
+      )
+    }
+    return <></>
+  }
+
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
@@ -91,16 +108,7 @@ function StudentLayout({
               onClick={sidebar.handleToggleSidebarVisible}
               className="absolute z-0"
             />
-            {isInteractionEnabled && totalCount < 10 && totalCount > 0 && (
-              <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
-                {totalCount}
-              </div>
-            )}
-            {isInteractionEnabled && totalCount > 9 && (
-              <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
-                9+
-              </div>
-            )}
+            <NotificationBadge count={totalCount} interactionEnabled={isInteractionEnabled} />
           </div>
 
           <h1 className="pageTitle">
