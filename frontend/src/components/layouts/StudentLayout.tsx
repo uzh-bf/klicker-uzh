@@ -47,17 +47,33 @@ function StudentLayout({
 
   const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
 
+  // TODO: replace by real count (sum of all menus that have not been read yet)
+  const count = 10
+
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
-          <Button
-            basic
-            active={sidebar.sidebarVisible}
-            disabled={sidebarItems.length === 1}
-            icon="content"
-            onClick={sidebar.handleToggleSidebarVisible}
-          />
+          <div className="relative h-10 mt-0 w-11">
+            <Button
+              basic
+              active={sidebar.sidebarVisible}
+              disabled={sidebarItems.length === 1}
+              icon="content"
+              onClick={sidebar.handleToggleSidebarVisible}
+              className="absolute z-0"
+            />
+            {count < 10 && (
+              <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
+                {count}
+              </div>
+            )}
+            {count > 9 && (
+              <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
+                9+
+              </div>
+            )}
+          </div>
 
           <h1 className="pageTitle">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
