@@ -52,14 +52,14 @@ module.exports = {
           label: 'Getting Started',
           position: 'left',
         },
-        // {
-        //   to: 'blog/',
-        //   label: 'Updates',
-        //   position: 'left',
-        // },
         {
           to: 'faq/faq',
           label: 'FAQ',
+          position: 'left',
+        },
+        {
+          to: 'blog/',
+          label: 'Project Updates',
           position: 'left',
         },
         {
