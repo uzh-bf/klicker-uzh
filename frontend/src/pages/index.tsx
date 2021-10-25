@@ -54,7 +54,7 @@ function Index(): React.ReactElement {
         <div className="boxes">
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -63,7 +63,7 @@ function Index(): React.ReactElement {
           </a>
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -94,9 +94,9 @@ function Index(): React.ReactElement {
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
                   <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap">
-                    klicker-roadmap
+                    Public Roadmap
                   </List.Header>
-                  <List.Description>Public Github Roadmap</List.Description>
+                  <List.Description>Public Roadmap</List.Description>
                 </List.Content>
               </List.Item>
               <List.Item>
@@ -105,7 +105,7 @@ function Index(): React.ReactElement {
                   <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh">
                     uzh-bf/klicker-uzh
                   </List.Header>
-                  <List.Description>Public Github Repository</List.Description>
+                  <List.Description>Github Repository</List.Description>
                 </List.Content>
               </List.Item>
             </List>
