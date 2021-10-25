@@ -235,8 +235,10 @@ export default function Index() {
                     </List.Item>
                   </List>
                   The project documentation is available{' '}
-                  <a href="https://www.klicker.uzh.ch/docs">online</a> and is
-                  being updated for every release.
+                  <a href="https://www.klicker.uzh.ch/docs/introduction/getting_started">
+                    online
+                  </a>{' '}
+                  and is being updated for every release.
                 </FeatureOverview>
               </Grid.Column>
               <Grid.Column verticalAlign="middle" width={9}>
