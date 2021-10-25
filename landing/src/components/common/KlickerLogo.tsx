@@ -1,26 +1,7 @@
 import React from 'react'
-import Image from 'next/image'
-
-import KlickerUZHLogoSrc from '../../../public/img/KlickerUZH_Gray.png'
 
 function KlickerLogo({ width }) {
-  return (
-    <span
-      className="relative"
-      style={{
-        // height: 'auto',
-        width,
-      }}
-    >
-      <Image
-        src={KlickerUZHLogoSrc}
-        layout="fixed"
-        alt="KlickerUZH Logo"
-        height={width / 3}
-        width={width}
-      />
-    </span>
-  )
+  return <img src="img/KlickerUZH_Gray.png" height={width / 3} width={width} />
 }
 
 KlickerLogo.defaultProps = { width: 100 }
