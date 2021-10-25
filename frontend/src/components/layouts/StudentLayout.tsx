@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
@@ -13,6 +13,7 @@ interface Props {
   sidebar: any
   subscribeToMore: () => void
   title: string
+  questionIds: any
 }
 
 const defaultProps = {
@@ -28,28 +29,38 @@ function StudentLayout({
   pageTitle,
   sidebar,
   title,
+  questionIds,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
 
-  const activeQuestionItem = {
+  let activeQuestionItem = {
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
     name: 'activeQuestion',
-    unseenItems: 10,
+    unseenItems: 0,
   }
-  const feedbackChannelItem = {
+  let feedbackChannelItem = {
     href: 'feedbackChannel',
     label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
     name: 'feedbackChannel',
-    unseenItems: 5,
+    unseenItems: 0,
   }
 
-  const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
-  const reducer = (previousValue, currentValue) => previousValue + currentValue
-  const sidebarCount = sidebarItems.map((item: any) => item.unseenItems).reduce(reducer)
+  const [totalCount, setTotalCount] = useState(0)
+  const [sidebarItems, setSidebarItems] = useState(
+    isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
+  )
+
+  const countreducer = (previousValue: number, currentValue: number) => previousValue + currentValue
+
+  useEffect(() => {
+    activeQuestionItem.unseenItems = questionIds.length
+    setSidebarItems(isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem])
+    setTotalCount(sidebarItems.map((item: any) => item.unseenItems).reduce(countreducer))
+  }, [questionIds])
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
@@ -64,12 +75,12 @@ function StudentLayout({
               onClick={sidebar.handleToggleSidebarVisible}
               className="absolute z-0"
             />
-            {sidebarCount < 10 && sidebarCount > 0 && (
+            {totalCount < 10 && totalCount > 0 && (
               <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
-                {sidebarCount}
+                {totalCount}
               </div>
             )}
-            {sidebarCount > 9 && (
+            {totalCount > 9 && (
               <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
                 9+
               </div>

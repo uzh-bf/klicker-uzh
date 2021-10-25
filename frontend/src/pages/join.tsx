@@ -228,6 +228,8 @@ function Join(): React.ReactElement {
       ? intl.formatMessage(messages.activeQuestionTitle)
       : intl.formatMessage(messages.feedbackChannelTitle)
 
+  const questionIds = activeInstances.map((question: any) => question.questionId)
+
   return (
     <StudentLayout
       isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
@@ -250,6 +252,7 @@ function Join(): React.ReactElement {
         })
       }
       title={title}
+      questionIds={questionIds}
     >
       <div className="joinSession">
         {activeInstances.length > 0 ? (
