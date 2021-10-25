@@ -38,17 +38,18 @@ function StudentLayout({
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
     name: 'activeQuestion',
+    unseenItems: 10,
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
     name: 'feedbackChannel',
+    unseenItems: 5,
   }
 
   const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
-
-  // TODO: replace by real count (sum of all menus that have not been read yet)
-  const count = 10
+  const reducer = (previousValue, currentValue) => previousValue + currentValue
+  const sidebarCount = sidebarItems.map((item: any) => item.unseenItems).reduce(reducer)
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
@@ -63,12 +64,12 @@ function StudentLayout({
               onClick={sidebar.handleToggleSidebarVisible}
               className="absolute z-0"
             />
-            {count < 10 && (
+            {sidebarCount < 10 && sidebarCount > 0 && (
               <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
-                {count}
+                {sidebarCount}
               </div>
             )}
-            {count > 9 && (
+            {sidebarCount > 9 && (
               <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
                 9+
               </div>

@@ -13,6 +13,7 @@ interface Props {
     label: React.ReactElement
     name: string
     icon?: any
+    unseenItems: number
   }[]
   visible?: boolean
 }
@@ -37,7 +38,7 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
           width="wide"
         >
           {items.map(
-            ({ name, className, href, icon, label }): React.ReactElement => (
+            ({ name, className, href, icon, label, unseenItems }): React.ReactElement => (
               <SidebarItem
                 active={name === activeItem}
                 className={className}
@@ -45,6 +46,7 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
                 icon={icon}
                 key={name}
                 name={name}
+                unseenItems={unseenItems}
               >
                 {label}
               </SidebarItem>
