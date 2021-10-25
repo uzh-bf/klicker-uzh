@@ -75,12 +75,12 @@ function StudentLayout({
               onClick={sidebar.handleToggleSidebarVisible}
               className="absolute z-0"
             />
-            {totalCount < 10 && totalCount > 0 && (
+            {isInteractionEnabled && totalCount < 10 && totalCount > 0 && (
               <div className="absolute z-10 w-5 h-5 rounded-xl text-white text-sm text-center bg-red-600 right-0 top-0.5">
                 {totalCount}
               </div>
             )}
-            {totalCount > 9 && (
+            {isInteractionEnabled && totalCount > 9 && (
               <div className="absolute right-0 pt-[0.1rem] z-10 w-5 h-5 text-xs text-center text-white bg-red-600 rounded-xl top-0.5">
                 9+
               </div>
