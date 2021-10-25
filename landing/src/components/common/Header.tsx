@@ -6,12 +6,14 @@ import KlickerLogo from './KlickerLogo'
 
 function Header() {
   return (
-    <header className="bg-white">
+    <header className="bg-white border-b-[#dc6027] border-b-[2px]">
       <Container>
         <div className="flex flex-col items-center justify-between lg:flex-row">
           <div className="mt-4 lg:my-1 lg:w-52">
-            <Link href="/">
-              <KlickerLogo width={150} />
+            <Link href="/" passHref>
+              <a>
+                <KlickerLogo width={150} />
+              </a>
             </Link>
           </div>
 
