@@ -50,6 +50,8 @@ function Join(): React.ReactElement {
   const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
   const [extraMessage, setExtraMessage] = useState(null as string)
 
+  const [feedbackIds, setFeedbackIds] = useState([])
+
   const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
   const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
@@ -223,12 +225,16 @@ function Join(): React.ReactElement {
     }
   }
 
+  const questionIds = activeInstances.map((question: any) => question.questionId)
+
+  const onNewFeedbackIds = async (ids: any) => {
+    setFeedbackIds(ids)
+  }
+
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage(messages.activeQuestionTitle)
       : intl.formatMessage(messages.feedbackChannelTitle)
-
-  const questionIds = activeInstances.map((question: any) => question.questionId)
 
   return (
     <StudentLayout
@@ -253,6 +259,7 @@ function Join(): React.ReactElement {
       }
       title={title}
       questionIds={questionIds}
+      feedbackIds={feedbackIds}
     >
       <div className="joinSession">
         {activeInstances.length > 0 ? (
@@ -283,6 +290,7 @@ function Join(): React.ReactElement {
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
+            handleFeedbackIds={onNewFeedbackIds}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
             sessionId={sessionId}

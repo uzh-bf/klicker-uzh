@@ -14,6 +14,7 @@ interface Props {
   subscribeToMore: () => void
   title: string
   questionIds: any
+  feedbackIds?: any
 }
 
 const defaultProps = {
@@ -30,6 +31,7 @@ function StudentLayout({
   sidebar,
   title,
   questionIds,
+  feedbackIds,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
@@ -54,13 +56,27 @@ function StudentLayout({
     isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
   )
 
-  const countreducer = (previousValue: number, currentValue: number) => previousValue + currentValue
+  useEffect(() => {
+    activeQuestionItem.unseenItems = questionIds.length
+    feedbackChannelItem.unseenItems = feedbackIds.length
+    setSidebarItems(isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem])
+    setTotalCount(
+      sidebarItems
+        .map((item: any) => item.unseenItems)
+        .reduce((previousValue: number, currentValue: number) => previousValue + currentValue)
+    )
+  }, [questionIds])
 
   useEffect(() => {
     activeQuestionItem.unseenItems = questionIds.length
+    feedbackChannelItem.unseenItems = feedbackIds.length
     setSidebarItems(isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem])
-    setTotalCount(sidebarItems.map((item: any) => item.unseenItems).reduce(countreducer))
-  }, [questionIds])
+    setTotalCount(
+      sidebarItems
+        .map((item: any) => item.unseenItems)
+        .reduce((previousValue: number, currentValue: number) => previousValue + currentValue)
+    )
+  }, [feedbackIds])
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>

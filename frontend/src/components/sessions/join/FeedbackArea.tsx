@@ -21,6 +21,7 @@ interface Props {
   handleNewFeedback: any
   handleUpvoteFeedback: any
   handleReactToFeedbackResponse: any
+  handleFeedbackIds: any
   shortname: string
   upvotedFeedbacks: any
   setUpvotedFeedbacks: any
@@ -40,6 +41,7 @@ function FeedbackArea({
   handleNewFeedback,
   handleUpvoteFeedback,
   handleReactToFeedbackResponse,
+  handleFeedbackIds,
   shortname,
   upvotedFeedbacks,
   setUpvotedFeedbacks,
@@ -198,6 +200,14 @@ function FeedbackArea({
       })),
     }))
   }, [data?.joinQA, upvotedFeedbacks, reactions])
+
+  useEffect(() => {
+    // forward all feedback ids (visible resolved and open questions) to the join-page
+    const feedbackIds = processedFeedbacks.open
+      .map((feedback: any) => feedback.id)
+      .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
+    handleFeedbackIds(feedbackIds)
+  }, [processedFeedbacks])
 
   const onNewFeedback = (): void => {
     setFeedbackInputValue('')
