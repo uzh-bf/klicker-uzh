@@ -7,3 +7,7 @@
   --ifm-color-primary-lighter: rgb(102, 212, 189);
   --ifm-color-primary-lightest: rgb(146, 224, 208);
 }
+
+.navbar {
+  border-bottom: 2px solid #dc6027;
+}
