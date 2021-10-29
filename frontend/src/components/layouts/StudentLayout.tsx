@@ -54,13 +54,29 @@ function StudentLayout({
   const [sidebarItems, setSidebarItems] = useState(
     isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
   )
-  const [unseenQuestions, setUnseenQuestions] = useState(questionIds ? questionIds.length : 0)
-  const [unseenFeedbacks, setUnseenFeedbacks] = useState(feedbackIds ? feedbackIds.length : 0)
+
+  const [unseenQuestions, setUnseenQuestions] = useState(0)
+  const [unseenFeedbacks, setUnseenFeedbacks] = useState(0)
 
   useEffect(() => {
-    setUnseenQuestions(questionIds.length)
+    if (sidebar.activeItem == 'activeQuestion' && questionIds) {
+      questionIds.map((questionId: string) => {
+        sessionStorage.setItem(questionId, 'true')
+      })
+    } else if (feedbackIds) {
+      feedbackIds.map((feedbackId: string) => {
+        sessionStorage.setItem(feedbackId, 'true')
+      })
+    }
+  })
+
+  useEffect(() => {
+    setUnseenQuestions(questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length)
     setUnseenFeedbacks(feedbackIds.length)
-    setTotalCount(questionIds.length + feedbackIds.length)
+    setTotalCount(
+      questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length +
+        feedbackIds.length
+    )
   }, [questionIds, feedbackIds])
 
   const NotificationBadge = ({ count, interactionEnabled }) => {

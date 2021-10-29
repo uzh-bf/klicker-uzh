@@ -57,17 +57,19 @@ function Sidebar({
           >
             {items[0].label}
           </SidebarItem>
-          <SidebarItem
-            active={items[1].name === activeItem}
-            className={items[1].className}
-            handleSidebarItemClick={handleSidebarItemClick(items[1].href)}
-            icon={items[1].icon}
-            key={items[1].name}
-            name={items[1].name}
-            unseenItems={unseenFeedbacks}
-          >
-            {items[1].label}
-          </SidebarItem>
+          {items[1] && (
+            <SidebarItem
+              active={items[1].name === activeItem}
+              className={items[1].className}
+              handleSidebarItemClick={handleSidebarItemClick(items[1].href)}
+              icon={items[1].icon}
+              key={items[1].name}
+              name={items[1].name}
+              unseenItems={unseenFeedbacks}
+            >
+              {items[1].label}
+            </SidebarItem>
+          )}
 
           <div className="extras">
             <div className="langSwitcher">
