@@ -225,7 +225,7 @@ function Join(): React.ReactElement {
     }
   }
 
-  const questionIds = activeInstances.map((question: any) => question.questionId)
+  const questionIds = activeInstances.map((instance: any) => instance.id)
 
   const onNewFeedbackIds = async (ids: any) => {
     setFeedbackIds(ids)
