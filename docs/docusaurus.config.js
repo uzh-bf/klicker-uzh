@@ -1,7 +1,8 @@
 module.exports = {
+  trailingSlash: false,
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
-  url: 'https://www.klicker.uzh.ch/docs/',
+  url: 'https://www.klicker.uzh.ch',
   baseUrl: '/docs/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
