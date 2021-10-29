@@ -206,7 +206,24 @@ function FeedbackArea({
     const feedbackIds = processedFeedbacks.open
       .map((feedback: any) => feedback.id)
       .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
-    handleFeedbackIds(feedbackIds)
+    const responseIds = processedFeedbacks.open
+      .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+      .map((feedback) =>
+        feedback.responses.map((response: any) => {
+          return response.id
+        })
+      )
+      .concat(
+        processedFeedbacks.resolved
+          .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+          .map((feedback) =>
+            feedback.responses.map((response: any) => {
+              return response.id
+            })
+          )
+      )
+      .flat()
+    handleFeedbackIds(feedbackIds, responseIds)
   }, [processedFeedbacks])
 
   const onNewFeedback = (): void => {

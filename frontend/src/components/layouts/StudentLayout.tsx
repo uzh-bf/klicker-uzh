@@ -15,6 +15,7 @@ interface Props {
   title: string
   questionIds: any
   feedbackIds?: any
+  responseIds?: any
 }
 
 const defaultProps = {
@@ -32,12 +33,14 @@ function StudentLayout({
   title,
   questionIds,
   feedbackIds,
+  responseIds,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
 
+  console.log(responseIds)
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
@@ -67,15 +70,25 @@ function StudentLayout({
       feedbackIds.map((feedbackId: string) => {
         sessionStorage.setItem(feedbackId, 'true')
       })
+
+      if (responseIds) {
+        responseIds.map((responseId: string) => {
+          sessionStorage.setItem(responseId, 'true')
+        })
+      }
     }
   })
 
   useEffect(() => {
     setUnseenQuestions(questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length)
-    setUnseenFeedbacks(feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length)
+    setUnseenFeedbacks(
+      feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length +
+        responseIds.filter((responseId: string) => sessionStorage.getItem(responseId) !== 'true').length
+    )
     setTotalCount(
       questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length +
-        feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length
+        feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length +
+        responseIds.filter((responseId: string) => sessionStorage.getItem(responseId) !== 'true').length
     )
   }, [questionIds, feedbackIds])
 

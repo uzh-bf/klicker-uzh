@@ -51,6 +51,7 @@ function Join(): React.ReactElement {
   const [extraMessage, setExtraMessage] = useState(null as string)
 
   const [feedbackIds, setFeedbackIds] = useState([])
+  const [responseIds, setResponseIds] = useState([])
 
   const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
   const [reactions, setReactions] = useStickyState({}, 'responseReactions')
@@ -227,8 +228,9 @@ function Join(): React.ReactElement {
 
   const questionIds = activeInstances.map((instance: any) => instance.id)
 
-  const onNewFeedbackIds = async (ids: any) => {
-    setFeedbackIds(ids)
+  const onNewFeedbackIds = async (fIds: any, rIds: any) => {
+    setFeedbackIds(fIds)
+    setResponseIds(rIds)
   }
 
   const title =
@@ -260,6 +262,7 @@ function Join(): React.ReactElement {
       title={title}
       questionIds={questionIds}
       feedbackIds={feedbackIds}
+      responseIds={responseIds}
     >
       <div className="joinSession">
         {activeInstances.length > 0 ? (
