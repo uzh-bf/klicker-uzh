@@ -13,9 +13,10 @@ interface Props {
     label: React.ReactElement
     name: string
     icon?: any
-    unseenItems: number
   }[]
   visible?: boolean
+  unseenQuestions: number
+  unseenFeedbacks: number
 }
 
 const defaultProps = {
@@ -24,7 +25,15 @@ const defaultProps = {
   visible: false,
 }
 
-function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick }: Props): React.ReactElement {
+function Sidebar({
+  activeItem,
+  children,
+  items,
+  visible,
+  handleSidebarItemClick,
+  unseenQuestions,
+  unseenFeedbacks,
+}: Props): React.ReactElement {
   return (
     <div className="sidebar">
       <SemanticSidebar.Pushable>
@@ -37,21 +46,29 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
           visible={visible}
           width="wide"
         >
-          {items.map(
-            ({ name, className, href, icon, label, unseenItems }): React.ReactElement => (
-              <SidebarItem
-                active={name === activeItem}
-                className={className}
-                handleSidebarItemClick={handleSidebarItemClick(href)}
-                icon={icon}
-                key={name}
-                name={name}
-                unseenItems={unseenItems}
-              >
-                {label}
-              </SidebarItem>
-            )
-          )}
+          <SidebarItem
+            active={items[0].name === activeItem}
+            className={items[0].className}
+            handleSidebarItemClick={handleSidebarItemClick(items[0].href)}
+            icon={items[0].icon}
+            key={items[0].name}
+            name={items[0].name}
+            unseenItems={unseenQuestions}
+          >
+            {items[0].label}
+          </SidebarItem>
+          <SidebarItem
+            active={items[1].name === activeItem}
+            className={items[1].className}
+            handleSidebarItemClick={handleSidebarItemClick(items[1].href)}
+            icon={items[1].icon}
+            key={items[1].name}
+            name={items[1].name}
+            unseenItems={unseenFeedbacks}
+          >
+            {items[1].label}
+          </SidebarItem>
+
           <div className="extras">
             <div className="langSwitcher">
               <LanguageSwitcher />

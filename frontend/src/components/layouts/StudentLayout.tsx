@@ -38,33 +38,29 @@ function StudentLayout({
     subscribeToMore()
   }, [])
 
-  let activeQuestionItem = {
+  const activeQuestionItem = {
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
     name: 'activeQuestion',
-    unseenItems: questionIds ? questionIds.length : 0,
   }
-  let feedbackChannelItem = {
+
+  const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
     name: 'feedbackChannel',
-    unseenItems: feedbackIds ? feedbackIds.length : 0,
   }
 
   const [totalCount, setTotalCount] = useState(0)
   const [sidebarItems, setSidebarItems] = useState(
     isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
   )
+  const [unseenQuestions, setUnseenQuestions] = useState(questionIds ? questionIds.length : 0)
+  const [unseenFeedbacks, setUnseenFeedbacks] = useState(feedbackIds ? feedbackIds.length : 0)
 
   useEffect(() => {
-    activeQuestionItem.unseenItems = questionIds.length
-    feedbackChannelItem.unseenItems = feedbackIds.length
-    setSidebarItems(isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem])
-    setTotalCount(
-      sidebarItems
-        .map((item: any) => item.unseenItems)
-        .reduce((previousValue: number, currentValue: number) => previousValue + currentValue)
-    )
+    setUnseenQuestions(questionIds.length)
+    setUnseenFeedbacks(feedbackIds.length)
+    setTotalCount(questionIds.length + feedbackIds.length)
   }, [questionIds, feedbackIds])
 
   const NotificationBadge = ({ count, interactionEnabled }) => {
@@ -112,6 +108,8 @@ function StudentLayout({
             handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
             items={sidebarItems}
             visible={sidebar.sidebarVisible}
+            unseenQuestions={unseenQuestions}
+            unseenFeedbacks={unseenFeedbacks}
           >
             {children}
           </Sidebar>
