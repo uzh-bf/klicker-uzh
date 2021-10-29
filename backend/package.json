@@ -110,5 +110,8 @@
     "*.graphql": [
       "prettier --write"
     ]
+  },
+  "volta": {
+    "node": "14.18.1"
   }
 }
