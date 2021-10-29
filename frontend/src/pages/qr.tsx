@@ -1,6 +1,6 @@
 import React from 'react'
 import getConfig from 'next/config'
-import QRCode from 'qrcode.react'
+import { QRCode } from 'react-qrcode-logo'
 import { useRouter } from 'next/router'
 
 import StaticLayout from '../components/layouts/StaticLayout'
@@ -23,7 +23,14 @@ function QR(): React.ReactElement {
     <StaticLayout pageTitle="QR">
       <div className="link">{joinLink.replace(/^https?:\/\//, '')}</div>
       <div className="qr">
-        <QRCode size={700} value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} />
+        <QRCode
+          eyeRadius={20}
+          logoHeight={100}
+          logoImage="https://www.klicker.uzh.ch/docs/img/KlickerUZH_Gray_BG.png"
+          logoWidth={300}
+          size={700}
+          value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}
+        />
       </div>
 
       <style jsx>{`

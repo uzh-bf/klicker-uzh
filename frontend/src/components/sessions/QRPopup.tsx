@@ -1,7 +1,7 @@
 import React from 'react'
 import { Popup, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import QRCode from 'qrcode.react'
+import { QRCode } from 'react-qrcode-logo'
 import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
