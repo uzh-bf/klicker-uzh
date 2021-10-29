@@ -42,13 +42,13 @@ function StudentLayout({
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
     name: 'activeQuestion',
-    unseenItems: 0,
+    unseenItems: questionIds ? questionIds.length : 0,
   }
   let feedbackChannelItem = {
     href: 'feedbackChannel',
     label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
     name: 'feedbackChannel',
-    unseenItems: 0,
+    unseenItems: feedbackIds ? feedbackIds.length : 0,
   }
 
   const [totalCount, setTotalCount] = useState(0)
@@ -65,18 +65,7 @@ function StudentLayout({
         .map((item: any) => item.unseenItems)
         .reduce((previousValue: number, currentValue: number) => previousValue + currentValue)
     )
-  }, [questionIds])
-
-  useEffect(() => {
-    activeQuestionItem.unseenItems = questionIds.length
-    feedbackChannelItem.unseenItems = feedbackIds.length
-    setSidebarItems(isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem])
-    setTotalCount(
-      sidebarItems
-        .map((item: any) => item.unseenItems)
-        .reduce((previousValue: number, currentValue: number) => previousValue + currentValue)
-    )
-  }, [feedbackIds])
+  }, [questionIds, feedbackIds])
 
   const NotificationBadge = ({ count, interactionEnabled }) => {
     if (interactionEnabled && count < 10 && count > 0) {
