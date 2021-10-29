@@ -72,10 +72,10 @@ function StudentLayout({
 
   useEffect(() => {
     setUnseenQuestions(questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length)
-    setUnseenFeedbacks(feedbackIds.length)
+    setUnseenFeedbacks(feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length)
     setTotalCount(
       questionIds.filter((questionId: string) => sessionStorage.getItem(questionId) !== 'true').length +
-        feedbackIds.length
+        feedbackIds.filter((feedbackId: string) => sessionStorage.getItem(feedbackId) !== 'true').length
     )
   }, [questionIds, feedbackIds])
 
