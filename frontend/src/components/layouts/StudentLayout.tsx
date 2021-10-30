@@ -72,20 +72,6 @@ function StudentLayout({
     setTotalUnseenCount(unseenQuestionCount + unseenFeedbackCount + unseenResponseCount)
   }, [questionIds, feedbackIds, responseIds])
 
-  const activeQuestionItem = {
-    href: 'activeQuestion',
-    label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
-    name: 'activeQuestion',
-  }
-
-  const feedbackChannelItem = {
-    href: 'feedbackChannel',
-    label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
-    name: 'feedbackChannel',
-  }
-
-  const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
-
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
@@ -95,7 +81,7 @@ function StudentLayout({
               basic
               active={sidebar.sidebarVisible}
               className="absolute z-0"
-              disabled={sidebarItems.length === 1}
+              disabled={!isInteractionEnabled}
               icon="content"
               onClick={sidebar.handleToggleSidebarVisible}
             />
@@ -112,7 +98,7 @@ function StudentLayout({
           <Sidebar
             activeItem={sidebar.activeItem}
             handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
-            items={sidebarItems}
+            isInteractionEnabled={isInteractionEnabled}
             unseenFeedbacks={unseenFeedbacks}
             unseenQuestions={unseenQuestions}
             visible={sidebar.sidebarVisible}

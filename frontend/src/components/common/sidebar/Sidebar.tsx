@@ -1,5 +1,6 @@
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 import SidebarItem from './SidebarItem'
 import LanguageSwitcher from './LanguageSwitcher'
 
@@ -7,32 +8,25 @@ interface Props {
   activeItem?: string
   children: React.ReactNode
   handleSidebarItemClick: any
-  items?: {
-    className?: any
-    href: string
-    label: React.ReactElement
-    name: string
-    icon?: any
-  }[]
   visible?: boolean
   unseenQuestions: number
   unseenFeedbacks: number
+  isInteractionEnabled: boolean
 }
 
 const defaultProps = {
   activeItem: 'questionPool',
-  items: [],
   visible: false,
 }
 
 function Sidebar({
   activeItem,
   children,
-  items,
   visible,
   handleSidebarItemClick,
   unseenQuestions,
   unseenFeedbacks,
+  isInteractionEnabled,
 }: Props): React.ReactElement {
   return (
     <div className="sidebar">
@@ -47,27 +41,27 @@ function Sidebar({
           width="wide"
         >
           <SidebarItem
-            active={items[0].name === activeItem}
-            className={items[0].className}
-            handleSidebarItemClick={handleSidebarItemClick(items[0].href)}
-            icon={items[0].icon}
-            key={items[0].name}
-            name={items[0].name}
+            active={activeItem === 'activeQuestion'}
+            // className={items[0].className}
+            handleSidebarItemClick={handleSidebarItemClick('activeQuestion')}
+            icon="question"
+            key="activeQuestion"
+            name="activeQuestion"
             unseenItems={unseenQuestions}
           >
-            {items[0].label}
+            <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
           </SidebarItem>
-          {items[1] && (
+          {isInteractionEnabled && (
             <SidebarItem
-              active={items[1].name === activeItem}
-              className={items[1].className}
-              handleSidebarItemClick={handleSidebarItemClick(items[1].href)}
-              icon={items[1].icon}
-              key={items[1].name}
-              name={items[1].name}
+              active={activeItem === 'feedbackChannel'}
+              // className={items[1].className}
+              handleSidebarItemClick={handleSidebarItemClick('feedbackChannel')}
+              icon="talk"
+              key="feedbackChannel"
+              name="feedbackChannel"
               unseenItems={unseenFeedbacks}
             >
-              {items[1].label}
+              <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />
             </SidebarItem>
           )}
 
