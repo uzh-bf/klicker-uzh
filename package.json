@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.6.2",
+  "version": "1.6.3-alpha.0",
   "engines": {
     "node": ">=14"
   },
@@ -41,5 +41,8 @@
   "devDependencies": {
     "standard-version": "9.3.1",
     "husky": "7.0.2"
+  },
+  "volta": {
+    "node": "14.18.1"
   }
 }

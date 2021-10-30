@@ -1,7 +1,8 @@
 module.exports = {
+  trailingSlash: false,
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
-  url: 'https://klicker-uzh-docs.vercel.app',
+  url: 'https://www.klicker.uzh.ch',
   baseUrl: '/docs/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
@@ -44,7 +45,7 @@ module.exports = {
     navbar: {
       logo: {
         src: 'img/KlickerUZH_Gray_Transparent.png',
-        href: '/',
+        href: 'introduction/getting_started',
       },
       items: [
         {
@@ -52,11 +53,6 @@ module.exports = {
           label: 'Getting Started',
           position: 'left',
         },
-        // {
-        //   to: 'blog/',
-        //   label: 'Updates',
-        //   position: 'left',
-        // },
         {
           to: 'faq/faq',
           label: 'FAQ',
@@ -65,6 +61,11 @@ module.exports = {
         {
           to: 'faq/changelog',
           label: 'Release Notes',
+          position: 'left',
+        },
+        {
+          to: 'blog/',
+          label: 'Project Updates',
           position: 'left',
         },
         {

@@ -56,7 +56,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
             <div className="flex flex-col flex-1 md:pr-4">
               <div className="p-4 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
                 <a
-                  href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
+                  href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -70,7 +70,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
                 </a>
               </div>
               <div className="p-4 mt-2 border border-solid rounded-lg hover:bg-gray-200 hover:cursor-pointer">
-                <a href="https://uzh-bf.github.io/klicker-uzh/docs/faq/faq" rel="noopener noreferrer" target="_blank">
+                <a href="https://www.klicker.uzh.ch/docs/faq/faq" rel="noopener noreferrer" target="_blank">
                   <Header size="small">
                     <Icon name="question" />
 
