@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2...v1.6.3-alpha.0) (2021-10-25)
+
+
+### Bug Fixes
+
+* **docs:** ensure that logo links to getting started ([b0c75f5](https://github.com/uzh-bf/klicker-uzh/commit/b0c75f5592605ed253f79e9cf96826b469c78f33))
+* **docs:** update slug of getting started ([a2bd289](https://github.com/uzh-bf/klicker-uzh/commit/a2bd289b68c03c4dfe2078462d26b503cbc6cb66))
+* **docs:** use getting started when linking to docs ([d89d8ff](https://github.com/uzh-bf/klicker-uzh/commit/d89d8ff42bc0863b3d0987090f17ceaa3fd9dca4))
+* **landing:** don't use next/image as we export the page ([03694a8](https://github.com/uzh-bf/klicker-uzh/commit/03694a88bb7aa0f2c1a4c5826809ed7bad0dee12))
+
+
+### Dependencies
+
+* **docs:** upgrade docusaurus ([9e15df8](https://github.com/uzh-bf/klicker-uzh/commit/9e15df8c3eebe1786f30e54db0a01c8760a2249c))
+
+
+### Enhancements
+
+* **docs:** ensure that primary color matches uzh red ([00cd39b](https://github.com/uzh-bf/klicker-uzh/commit/00cd39bf90fa28f7d2dad4eb92333a755fe044a3))
+* **docs:** update ordering in top menu ([0ffa3ff](https://github.com/uzh-bf/klicker-uzh/commit/0ffa3ff3b81e643ce39f62a1570bc8dfd4b73155))
+* **docs:** use logo with transparent background ([cd9a7c8](https://github.com/uzh-bf/klicker-uzh/commit/cd9a7c8a865bb0c54f7422935d7843568e940b67))
+* **landing:** use klicker logo across landing page and update docs links ([54b2f6d](https://github.com/uzh-bf/klicker-uzh/commit/54b2f6d75bc75fd9cb1443c5bcd3415e1e14ae0b))
+
+
+### Other
+
+* **deploy:** bump appVersion ([1664390](https://github.com/uzh-bf/klicker-uzh/commit/1664390d6271e27aed7fd4a1f676009cb4755ebd))
+* **deploy:** bump appVersion to 1.6.3-alpha.0 ([5f75f2f](https://github.com/uzh-bf/klicker-uzh/commit/5f75f2f8d5c9897e1dc6e24a301bd54dd7fbf148))
+* **docs:** add bottom border in uzh orange ([0d7ef9f](https://github.com/uzh-bf/klicker-uzh/commit/0d7ef9fb6dda1b332eae540fda8f2c70a7cfaf54))
+* **docs:** add initial project update to blog ([2005c9e](https://github.com/uzh-bf/klicker-uzh/commit/2005c9e4406db0eea4a223e9dea9b89c8a560163))
+* **landing:** add orange bottom border on landing page ([54feecb](https://github.com/uzh-bf/klicker-uzh/commit/54feecb9e1acf2dc618d48fbb5914c11869a5afa))
+* update docs links across entire app and READMEs ([0bcba26](https://github.com/uzh-bf/klicker-uzh/commit/0bcba26257dae41e638e4a53829a903a1898909b))
+
 ### [1.6.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.3...v1.6.2) (2021-10-21)
 
 ### [1.6.2-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2-rc.2...v1.6.2-rc.3) (2021-10-20)

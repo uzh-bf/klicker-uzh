@@ -13,7 +13,7 @@ import { polyfill } from './polyfills'
 import crypto from 'crypto'
 
 // import the configuration
-import CFG from './src/klicker.conf.js'
+import CFG from './klicker.conf.js'
 
 // log the configuration
 console.log('[klicker-react] Successfully loaded configuration')
