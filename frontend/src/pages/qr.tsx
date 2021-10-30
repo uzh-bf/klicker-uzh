@@ -24,12 +24,11 @@ function QR(): React.ReactElement {
       <div className="link">{joinLink.replace(/^https?:\/\//, '')}</div>
       <div className="qr">
         <QRCode
-          eyeRadius={20}
           logoHeight={100}
           logoImage="https://www.klicker.uzh.ch/docs/img/KlickerUZH_Gray_BG.png"
           logoWidth={300}
           size={700}
-          value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}
+          value={joinLink}
         />
       </div>
 
