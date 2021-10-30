@@ -9,6 +9,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
 import { Icon, Message } from 'semantic-ui-react'
+import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
@@ -93,28 +94,13 @@ function QuestionArea({
     },
   })
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  }
-
-  function createNotification(title: string, text: string, icon?: string) {
-    if (icon) {
-      const notification = new Notification(title, {
-        body: text,
-        icon,
-      })
-    } else {
-      const notification = new Notification(title, {
-        body: text,
-      })
-    }
-  }
+  useEffect(() => {
+    requestNotificationPermissions()
+  })
 
   useEffect(() => {
     if (questions.length > 0) {
-      if (Notification.permission === 'granted') {
-        createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
-      }
+      createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
     }
   }, [questions.length])
 

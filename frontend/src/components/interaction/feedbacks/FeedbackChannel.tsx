@@ -1,8 +1,8 @@
 import { Message, Button } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 import { useEffect, useState } from 'react'
-import { useIntl, defineMessages } from 'react-intl'
+import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 
+import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
@@ -47,36 +47,19 @@ function FeedbackChannel({
     },
   })
 
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission((permission) => {
+  useEffect(() => {
+    requestNotificationPermissions((permission) => {
       if (permission === 'granted') {
         setFeedbackLength(feedbacks.length)
       }
     })
-  }
-
-  function createNotification(title: string, text: string, icon?: string) {
-    if (icon) {
-      const notification = new Notification(title, {
-        body: text,
-        icon,
-      })
-    } else {
-      const notification = new Notification(title, {
-        body: text,
-      })
-    }
-  }
+  }, [])
 
   useEffect(() => {
     if (feedbacks.length > feedbackLength) {
-      if (Notification.permission === 'granted') {
-        createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
-      }
-      setFeedbackLength(feedbacks.length)
-    } else {
-      setFeedbackLength(feedbacks.length)
+      createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
     }
+    setFeedbackLength(feedbacks.length)
   }, [feedbacks.length])
 
   return (
