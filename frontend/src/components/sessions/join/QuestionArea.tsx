@@ -96,7 +96,7 @@ function QuestionArea({
 
   useEffect(() => {
     requestNotificationPermissions()
-  })
+  }, [])
 
   useEffect(() => {
     if (questions.length > 0) {
