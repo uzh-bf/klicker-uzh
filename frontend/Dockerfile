@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:14-alpine
+FROM node:14.18.1-alpine
 
 # root application directory
 ENV KLICKER_DIR="/app"
@@ -27,7 +27,7 @@ RUN set -x && npm run build
 
 # run next in production mode
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/src/server.js"]
 
 # add labels
 ARG VERSION="canary"

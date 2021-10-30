@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/frontend",
   "version": "1.6.3-alpha.0",
-  "main": "server.ts",
+  "exports": "./dist/server.js",
   "engines": {
     "node": ">=14"
   },
@@ -140,12 +140,12 @@
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
-    "dev": "cross-env NODE_ICU_DATA=node_modules/full-icu NODE_ENV=development nodemon --ext 'js,ts,tsx,graphql,json' -w .env -w package.json -w server.ts -w src/klicker.conf.js -w 'src/graphql/**/*.graphql' --exec \"rimraf .next && ts-node --project tsconfig.server.json -r dotenv/config server.ts\"",
-    "dev:inspect": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w server.ts -w src/klicker.conf.js --inspect --exec \"ts-node --project tsconfig.server.json -r dotenv/config server.ts\"",
-    "dev:ndb": "cross-env NODE_ENV=development ndb ts-node --project tsconfig.server.json -r dotenv/config server.ts",
+    "dev": "cross-env NODE_ICU_DATA=node_modules/full-icu NODE_ENV=development nodemon --ext 'js,ts,tsx,graphql,json' -w .env -w package.json -w src/server.ts -w src/klicker.conf.js -w 'src/graphql/**/*.graphql' --exec \"rimraf .next && ts-node --project tsconfig.server.json -r dotenv/config src/server.ts\"",
+    "dev:inspect": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w src/server.ts -w src/klicker.conf.js --inspect --exec \"ts-node --project tsconfig.server.json -r dotenv/config src/server.ts\"",
+    "dev:ndb": "cross-env NODE_ENV=development ndb ts-node --project tsconfig.server.json -r dotenv/config src/server.ts",
     "dev:no-custom-server": "next dev",
-    "format": "prettier --write \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" server.ts",
-    "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" server.ts",
+    "format": "prettier --write \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" src/server.ts",
+    "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" src/server.ts",
     "gql-gen": "gql-gen",
     "lint": "next lint",
     "lint:staged": "lint-staged",

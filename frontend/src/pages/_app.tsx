@@ -8,7 +8,7 @@ import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
-import { polyfill } from '../../polyfills'
+import { polyfill } from '../polyfills'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
