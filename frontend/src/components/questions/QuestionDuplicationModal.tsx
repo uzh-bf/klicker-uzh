@@ -104,34 +104,64 @@ function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props
           // Depending on original question type, populate newly created question instance
           // with missing fields.
           const prepForm = versions
+          let duplicateData = null
           switch (type) {
             case QUESTION_TYPES.FREE:
-              prepForm[initializeVersion].options = []
-              prepForm[initializeVersion].options[type] = {
-                choices: [],
-                randomized: false,
-                restrictions: {
-                  max: null,
-                  min: null,
+              duplicateData = {
+                ...prepForm[initializeVersion],
+                options: {
+                  [type]: {
+                    ...prepForm[initializeVersion].options[type],
+                    choices: [],
+                    randomized: false,
+                    restrictions: {
+                      max: null,
+                      min: null,
+                    },
+                  },
                 },
               }
               break
             case QUESTION_TYPES.FREE_RANGE:
-              prepForm[initializeVersion].options[type].choices = []
-              prepForm[initializeVersion].options[type].randomized = false
-              break
-            case QUESTION_TYPES.MC:
-              prepForm[initializeVersion].options[type].randomized = false
-              prepForm[initializeVersion].options[type].restrictions = {
-                max: null,
-                min: null,
+              duplicateData = {
+                ...prepForm[initializeVersion],
+                options: {
+                  [type]: {
+                    ...prepForm[initializeVersion].options[type],
+                    choices: [],
+                    randomized: false,
+                  },
+                },
               }
               break
             case QUESTION_TYPES.SC:
-              prepForm[initializeVersion].options[type].randomized = false
-              prepForm[initializeVersion].options[type].restrictions = {
-                max: null,
-                min: null,
+              duplicateData = {
+                ...prepForm[initializeVersion],
+                options: {
+                  [type]: {
+                    ...prepForm[initializeVersion].options[type],
+                    randomized: false,
+                    restrictions: {
+                      max: null,
+                      min: null,
+                    },
+                  },
+                },
+              }
+              break
+            case QUESTION_TYPES.MC:
+              duplicateData = {
+                ...prepForm[initializeVersion],
+                options: {
+                  [type]: {
+                    ...prepForm[initializeVersion].options[type],
+                    randomized: false,
+                    restrictions: {
+                      max: null,
+                      min: null,
+                    },
+                  },
+                },
               }
               break
             default:
@@ -139,11 +169,11 @@ function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props
           }
 
           const initialValues = {
-            content: prepForm[initializeVersion].content
-              ? EditorState.createWithContent(convertFromRaw(JSON.parse(prepForm[initializeVersion].content)))
-              : EditorState.createWithContent(ContentState.createFromText(prepForm[initializeVersion].description)),
-            files: prepForm[initializeVersion].files || [],
-            options: prepForm[initializeVersion].options[type] || {},
+            content: duplicateData.content
+              ? EditorState.createWithContent(convertFromRaw(JSON.parse(duplicateData.content)))
+              : EditorState.createWithContent(ContentState.createFromText(duplicateData.description)),
+            files: duplicateData.files || [],
+            options: duplicateData.options[type] || {},
             tags: tags.map((tag): string => tag.name),
             title: title + duplicateTitle,
             type,
