@@ -12,7 +12,7 @@ The KlickerUZH consists of two main services (see [Architecture](https://www.kli
 
 In addition to key application components, this repository also includes the codebases for our landing page (www.klicker.uzh.ch) and documentation (www.klicker.uzh.ch/docs), as well as deployment scripts and examples:
 
-- [Landing](https://github.com/uzh-bf/klicker-uzh/tree/dev/landing>) (subfolder)
+- [Landing](https://github.com/uzh-bf/klicker-uzh/tree/dev/landing) (subfolder)
 - [Docs](https://github.com/uzh-bf/klicker-uzh/tree/dev/docs) (subfolder)
 - [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/dev/deploy) (subfolder)
 
