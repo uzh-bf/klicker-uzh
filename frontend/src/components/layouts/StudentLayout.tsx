@@ -47,27 +47,27 @@ function StudentLayout({
   const [unseenFeedbacks, setUnseenFeedbacks] = useState(0)
 
   useEffect(() => {
-    if (sidebar.activeItem == 'activeQuestion' && questionIds) {
-      questionIds.map((questionId: string) => {
-        sessionStorage.setItem(questionId, 'true')
+    if (sidebar.activeItem === 'activeQuestion' && questionIds) {
+      questionIds.forEach((questionId: string) => {
+        sessionStorage?.setItem(questionId, 'true')
       })
     } else if (feedbackIds) {
-      feedbackIds.map((feedbackId: string) => {
-        sessionStorage.setItem(feedbackId, 'true')
+      feedbackIds.forEach((feedbackId: string) => {
+        sessionStorage?.setItem(feedbackId, 'true')
       })
 
       if (responseIds) {
         responseIds.forEach((responseId: string) => {
-          sessionStorage.setItem(responseId, 'true')
+          sessionStorage?.setItem(responseId, 'true')
         })
       }
     }
   }, [questionIds, feedbackIds, responseIds])
 
   useEffect(() => {
-    const unseenQuestionCount = questionIds.filter((questionId: string) => !sessionStorage.getItem(questionId)).length
-    const unseenFeedbackCount = feedbackIds.filter((feedbackId: string) => !sessionStorage.getItem(feedbackId)).length
-    const unseenResponseCount = responseIds.filter((responseId: string) => !sessionStorage.getItem(responseId)).length
+    const unseenQuestionCount = questionIds.filter((questionId: string) => !sessionStorage?.getItem(questionId)).length
+    const unseenFeedbackCount = feedbackIds.filter((feedbackId: string) => !sessionStorage?.getItem(feedbackId)).length
+    const unseenResponseCount = responseIds.filter((responseId: string) => !sessionStorage?.getItem(responseId)).length
     setUnseenQuestions(unseenQuestionCount)
     setUnseenFeedbacks(unseenFeedbackCount + unseenResponseCount)
     setTotalUnseenCount(unseenQuestionCount + unseenFeedbackCount + unseenResponseCount)

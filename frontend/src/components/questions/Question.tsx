@@ -61,7 +61,6 @@ function Question({
 
   useEffect(() => {
     setActiveVersion(versions.length - 1)
-    console.log(versions)
   }, [versions])
 
   return (
