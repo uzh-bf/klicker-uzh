@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.3...v1.6.3-alpha.4) (2021-10-31)
+
+
+### Features
+
+* **frontend:** notification badges for new activated questions and new feedbacks on mobile menu ([#2596](https://github.com/uzh-bf/klicker-uzh/issues/2596)) ([754a70e](https://github.com/uzh-bf/klicker-uzh/commit/754a70e666a0019d7b15d84c1dc6cb78404f535f))
+
+
+### Other
+
+* **deploy:** bump appVersion to v1.6.3-alpha.3 ([45226cc](https://github.com/uzh-bf/klicker-uzh/commit/45226ccf4b76059a6f6077e620c08b366c667bc3))
+
+
+### Enhancements
+
+* **frontend:** browser notifications for incoming feedbacks (lecturer) and questions (student) ([#2590](https://github.com/uzh-bf/klicker-uzh/issues/2590)) ([6dba614](https://github.com/uzh-bf/klicker-uzh/commit/6dba614052da4d257f0bedeeccada7be4e1b0201))
+
 ### [1.6.3-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.2...v1.6.3-alpha.3) (2021-10-31)
 
 
