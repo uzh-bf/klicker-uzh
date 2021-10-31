@@ -1,32 +1,21 @@
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import Image from 'next/image'
-import SidebarItem from './SidebarItem'
 import LanguageSwitcher from './LanguageSwitcher'
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.svg'
 
 interface Props {
-  activeItem?: string
   children: React.ReactNode
-  handleSidebarItemClick: any
-  items?: {
-    className?: any
-    href: string
-    label: React.ReactElement
-    name: string
-    icon?: any
-    disabled?: boolean
-  }[]
   visible?: boolean
+  items?: React.ReactElement[]
 }
 
 const defaultProps = {
-  activeItem: 'questionPool',
-  items: [],
   visible: false,
+  items: [],
 }
 
-function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick }: Props): React.ReactElement {
+function Sidebar({ children, items, visible }: Props): React.ReactElement {
   return (
     <div className="sidebar">
       <SemanticSidebar.Pushable>
@@ -39,21 +28,8 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
           visible={visible}
           width="wide"
         >
-          {items.map(
-            ({ name, className, href, icon, label, disabled }): React.ReactElement => (
-              <SidebarItem
-                active={name === activeItem}
-                className={className}
-                disabled={disabled}
-                handleSidebarItemClick={handleSidebarItemClick(href)}
-                icon={icon}
-                key={name}
-                name={name}
-              >
-                {label}
-              </SidebarItem>
-            )
-          )}
+          {items}
+
           <div className="flex flex-col justify-between h-full">
             <div className="p-4">
               <LanguageSwitcher />
