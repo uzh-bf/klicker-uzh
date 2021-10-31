@@ -12,6 +12,9 @@ const SERVICES_CFG = CFG.get('services')
 
 module.exports = (phase) => {
   let config = {
+    images: {
+      domains: [S3_CFG.rootDomain],
+    },
     productionBrowserSourceMaps: true,
     // env: {
     //   __DEV__: PHASE_DEVELOPMENT_SERVER,
