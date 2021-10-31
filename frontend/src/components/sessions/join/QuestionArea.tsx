@@ -49,6 +49,13 @@ const messages = {
   ),
 }
 
+const intlMessages = defineMessages({
+  newQuestionNotification: {
+    defaultMessage: 'A new Klicker question is available',
+    id: 'joinSession.string.questionNotification',
+  },
+})
+
 interface Props {
   message?: string
   active: boolean
@@ -87,12 +94,6 @@ function QuestionArea({
   })
 
   const intl = useIntl()
-  const intlMessages = defineMessages({
-    newQuestionNotification: {
-      defaultMessage: 'A new Klicker question is available',
-      id: 'joinSession.string.questionNotification',
-    },
-  })
 
   useEffect(() => {
     requestNotificationPermissions()
