@@ -112,7 +112,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
                 />
                 <SupportEntry
                   href="https://github.com/uzh-bf/klicker-uzh/discussions"
-                  icon="talk outline"
+                  icon="talk"
                   subtitle="A place for discussions and questions regarding the KlickerUZH"
                   title="Community"
                 />
