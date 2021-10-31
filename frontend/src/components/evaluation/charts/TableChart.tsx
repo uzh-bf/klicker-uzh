@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import _sortBy from 'lodash/sortBy'
 import { useMutation } from '@apollo/client'
-import { Button, Table } from 'semantic-ui-react'
+import { Button, Table, Icon } from 'semantic-ui-react'
 
+import clsx from 'clsx'
 import { QUESTION_GROUPS } from '../../../constants'
 import DeleteResponseMutation from '../../../graphql/mutations/DeleteResponseMutation.graphql'
 import SessionEvaluationQuery from '../../../graphql/queries/SessionEvaluationQuery.graphql'
@@ -56,37 +57,52 @@ function TableChart({
 
   return (
     <div className="tableChart">
-      <Table sortable striped>
+      <Table sortable striped className="!border-none">
         <Table.Header>
-          <Table.HeaderCell collapsing sorted={sortBy === 'count' ? sortDirection : null} onClick={onSort('count')}>
+          <Table.HeaderCell
+            collapsing
+            className={clsx('p-1 cursor-pointer', sortBy === 'count' && 'bg-gray-100')}
+            onClick={onSort('count')}
+          >
             Count
+            {sortBy === 'count' &&
+              (sortDirection === 'ascending' ? <Icon name="angle up" /> : <Icon name="angle down" />)}
           </Table.HeaderCell>
-          <Table.HeaderCell sorted={sortBy === 'value' ? sortDirection : null} onClick={onSort('value')}>
+          <Table.HeaderCell
+            className={clsx('p-1 cursor-pointer', sortBy === 'value' && 'bg-gray-100')}
+            onClick={onSort('value')}
+          >
             Value
+            {sortBy === 'value' &&
+              (sortDirection === 'ascending' ? <Icon name="angle up" /> : <Icon name="angle down" />)}
           </Table.HeaderCell>
 
           {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
             <Table.HeaderCell
               collapsing
-              sorted={sortBy === 'percentage' ? sortDirection : null}
+              className={clsx('p-1 cursor-pointer', sortBy === 'percentage' && 'bg-gray-100')}
               onClick={onSort('percentage')}
             >
               %
+              {sortBy === 'percentage' &&
+                (sortDirection === 'ascending' ? <Icon name="angle up" /> : <Icon name="angle down" />)}
             </Table.HeaderCell>
           )}
 
           {isSolutionShown && (
             <Table.HeaderCell
               collapsing
-              sorted={sortBy === 'correct' ? sortDirection : null}
+              className={clsx('p-1 cursor-pointer', sortBy === 'correct' && 'bg-gray-100')}
               onClick={onSort('correct')}
             >
               T/F
+              {sortBy === 'correct' &&
+                (sortDirection === 'ascending' ? <Icon name="angle up" /> : <Icon name="angle down" />)}
             </Table.HeaderCell>
           )}
 
           {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
-            <Table.HeaderCell collapsing className="noPrint">
+            <Table.HeaderCell collapsing className="p-1 noPrint">
               Actions
             </Table.HeaderCell>
           )}
@@ -106,6 +122,7 @@ function TableChart({
                   <Table.Cell className="noPrint">
                     <Button
                       icon="trash"
+                      size="tiny"
                       onClick={async (): Promise<void> => {
                         await deleteResponse({
                           optimisticResponse: {

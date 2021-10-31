@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
 import Sidebar from '../common/sidebar/Sidebar'
+import SidebarItem from '../common/sidebar/SidebarItem'
 
 interface Props {
   actionArea?: React.ReactElement
@@ -50,6 +51,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
       name: 'runningSession',
     },
     {
+      disabled: router.pathname === '/questions',
       className: 'createSession',
       href: '/questions?creationMode=true',
       label: <FormattedMessage defaultMessage="Create Session" id="createSession.title" />,
@@ -79,7 +81,20 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
         <div className="flex flex-1 overflow-hidden bg-white content">
           <Sidebar
             handleSidebarItemClick={handleSidebarItemClick}
-            items={sidebarItems}
+            items={sidebarItems.map(
+              ({ name, className, href, label, disabled }): React.ReactElement => (
+                <SidebarItem
+                  active={name === sidebar.activeItem}
+                  className={className}
+                  disabled={disabled}
+                  handleSidebarItemClick={handleSidebarItemClick(href)}
+                  key={name}
+                  name={name}
+                >
+                  {label}
+                </SidebarItem>
+              )
+            )}
             visible={isSidebarVisible}
             {...sidebar}
           >

@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
 import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
+import SidebarItem from '../common/sidebar/SidebarItem'
+import NotificationBadge from '../common/NotificationBadge'
 
 interface Props {
   children: React.ReactNode
@@ -13,6 +15,9 @@ interface Props {
   sidebar: any
   subscribeToMore: () => void
   title: string
+  questionIds: any
+  feedbackIds?: any
+  responseIds?: any
 }
 
 const defaultProps = {
@@ -28,36 +33,61 @@ function StudentLayout({
   pageTitle,
   sidebar,
   title,
+  questionIds,
+  feedbackIds,
+  responseIds,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
 
-  const activeQuestionItem = {
-    href: 'activeQuestion',
-    label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
-    name: 'activeQuestion',
-  }
-  const feedbackChannelItem = {
-    href: 'feedbackChannel',
-    label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
-    name: 'feedbackChannel',
-  }
+  const [totalUnseenCount, setTotalUnseenCount] = useState(0)
+  const [unseenQuestions, setUnseenQuestions] = useState(0)
+  const [unseenFeedbacks, setUnseenFeedbacks] = useState(0)
 
-  const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
+  useEffect(() => {
+    if (sidebar.activeItem == 'activeQuestion' && questionIds) {
+      questionIds.map((questionId: string) => {
+        sessionStorage.setItem(questionId, 'true')
+      })
+    } else if (feedbackIds) {
+      feedbackIds.map((feedbackId: string) => {
+        sessionStorage.setItem(feedbackId, 'true')
+      })
+
+      if (responseIds) {
+        responseIds.forEach((responseId: string) => {
+          sessionStorage.setItem(responseId, 'true')
+        })
+      }
+    }
+  }, [questionIds, feedbackIds, responseIds])
+
+  useEffect(() => {
+    const unseenQuestionCount = questionIds.filter((questionId: string) => !sessionStorage.getItem(questionId)).length
+    const unseenFeedbackCount = feedbackIds.filter((feedbackId: string) => !sessionStorage.getItem(feedbackId)).length
+    const unseenResponseCount = responseIds.filter((responseId: string) => !sessionStorage.getItem(responseId)).length
+    setUnseenQuestions(unseenQuestionCount)
+    setUnseenFeedbacks(unseenFeedbackCount + unseenResponseCount)
+    setTotalUnseenCount(unseenQuestionCount + unseenFeedbackCount + unseenResponseCount)
+  }, [questionIds, feedbackIds, responseIds])
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
-          <Button
-            basic
-            active={sidebar.sidebarVisible}
-            disabled={sidebarItems.length === 1}
-            icon="content"
-            onClick={sidebar.handleToggleSidebarVisible}
-          />
+          <div className="relative h-10 mt-0 w-11">
+            <Button
+              basic
+              active={sidebar.sidebarVisible}
+              className="absolute z-0"
+              disabled={!isInteractionEnabled}
+              icon="content"
+              onClick={sidebar.handleToggleSidebarVisible}
+            />
+            {isInteractionEnabled && <NotificationBadge count={totalUnseenCount} />}
+          </div>
 
           <h1 className="pageTitle">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
@@ -67,9 +97,30 @@ function StudentLayout({
 
         <div className="content">
           <Sidebar
-            activeItem={sidebar.activeItem}
-            handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
-            items={sidebarItems}
+            items={[
+              <SidebarItem
+                active={sidebar.activeItem === 'activeQuestion'}
+                handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('activeQuestion')}
+                icon="question"
+                key="activeQuestion"
+                name="activeQuestion"
+                unseenItems={unseenQuestions}
+              >
+                <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
+              </SidebarItem>,
+              isInteractionEnabled && (
+                <SidebarItem
+                  active={sidebar.activeItem === 'feedbackChannel'}
+                  handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('feedbackChannel')}
+                  icon="talk"
+                  key="feedbackChannel"
+                  name="feedbackChannel"
+                  unseenItems={unseenFeedbacks}
+                >
+                  <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />
+                </SidebarItem>
+              ),
+            ].filter(Boolean)}
             visible={sidebar.sidebarVisible}
           >
             {children}
