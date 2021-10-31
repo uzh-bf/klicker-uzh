@@ -497,6 +497,12 @@
       "value": "Diagramm"
     }
   ],
+  "feedbackchannel.notifications.title": [
+    {
+      "type": 0,
+      "value": "Neue Frage / Feedback"
+    }
+  ],
   "fileDropzone.button.delete": [
     {
       "type": 0,
@@ -1041,6 +1047,12 @@
     {
       "type": 0,
       "value": "Sie sind nicht berechtigt, an dieser Session teilzunehmen."
+    }
+  ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "Eine neue Klicker-Frage ist verfügbar"
     }
   ],
   "joinSession.string.responseIgnored": [

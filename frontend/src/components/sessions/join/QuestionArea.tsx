@@ -5,10 +5,11 @@ import _get from 'lodash/get'
 import v8n from 'v8n'
 import dayjs from 'dayjs'
 import getConfig from 'next/config'
-import { FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
 import { Icon, Message } from 'semantic-ui-react'
+import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
@@ -48,6 +49,13 @@ const messages = {
   ),
 }
 
+const intlMessages = defineMessages({
+  newQuestionNotification: {
+    defaultMessage: 'A new Klicker question is available',
+    id: 'joinSession.string.questionNotification',
+  },
+})
+
 interface Props {
   message?: string
   active: boolean
@@ -84,6 +92,21 @@ function QuestionArea({
     inputValid: false,
     inputValue: undefined,
   })
+
+  const intl = useIntl()
+
+  useEffect(() => {
+    requestNotificationPermissions()
+  }, [])
+
+  useEffect(() => {
+    if (!sessionStorage?.getItem(`notification ${questions[0].id}`)) {
+      if (questions.length > 0) {
+        createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
+      }
+      sessionStorage?.setItem(`notification ${questions[0].id}`, 'sent')
+    }
+  }, [questions.length])
 
   useEffect((): void => {
     try {
