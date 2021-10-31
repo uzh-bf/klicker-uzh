@@ -1,12 +1,22 @@
-# klicker-uzh &middot;
+# KlickerUZH
 
-`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
+![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray.png)
 
-The KlickerUZH consists of two main services (see [Architecture](https://www.klicker.uzh.ch/docs/deployment/deployment_architecture)), as well as an additional Shibboleth service for integration with SwitchAAI:
+`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
+
+The KlickerUZH consists of two main services (see [Architecture](https://www.klicker.uzh.ch/docs/deployment/deployment_architecture)), as well as an additional Shibboleth service for integration with [SwitchAAI](https://www.switch.ch/aai/):
 
 - [Frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)
 - [Backend](https://github.com/uzh-bf/klicker-uzh/tree/dev/backend) (subfolder)
 - [Shibboleth](https://github.com/uzh-bf/klicker-uzh/tree/dev/shibboleth) (subfolder)
+
+In addition to key application components, this repository also includes the codebases for our landing page (www.klicker.uzh.ch) and documentation (www.klicker.uzh.ch/docs), as well as deployment scripts and examples:
+
+- [Landing](<(https://github.com/uzh-bf/klicker-uzh/tree/dev/landing)>) (subfolder)
+- [Docs](<(https://github.com/uzh-bf/klicker-uzh/tree/dev/docs)>) (subfolder)
+- [Deployment](<(https://github.com/uzh-bf/klicker-uzh/tree/dev/deploy)>) (subfolder)
+
+## Further Resources
 
 The following additional resources might be of interest to you:
 
