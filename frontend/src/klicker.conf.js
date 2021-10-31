@@ -119,6 +119,11 @@ module.exports = convict({
     format: ['production', 'development', 'test'],
   },
   s3: {
+    rootDomain: {
+      default: undefined,
+      env: 'S3_ROOT_DOMAIN',
+      format: String,
+    },
     rootUrl: {
       default: undefined,
       env: 'S3_ROOT_URL',

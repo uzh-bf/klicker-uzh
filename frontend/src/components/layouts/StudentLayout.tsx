@@ -4,6 +4,7 @@ import { Button, Icon } from 'semantic-ui-react'
 
 import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
+import SidebarItem from '../common/sidebar/SidebarItem'
 import NotificationBadge from '../common/NotificationBadge'
 
 interface Props {
@@ -96,13 +97,31 @@ function StudentLayout({
 
         <div className="content">
           <Sidebar
-            activeItem={sidebar.activeItem}
-            handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
-            isInteractionEnabled={isInteractionEnabled}
-            unseenFeedbacks={unseenFeedbacks}
-            unseenQuestions={unseenQuestions}
+            items={[
+              <SidebarItem
+                active={sidebar.activeItem === 'activeQuestion'}
+                handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('activeQuestion')}
+                icon="question"
+                key="activeQuestion"
+                name="activeQuestion"
+                unseenItems={unseenQuestions}
+              >
+                <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
+              </SidebarItem>,
+              isInteractionEnabled && (
+                <SidebarItem
+                  active={sidebar.activeItem === 'feedbackChannel'}
+                  handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('feedbackChannel')}
+                  icon="talk"
+                  key="feedbackChannel"
+                  name="feedbackChannel"
+                  unseenItems={unseenFeedbacks}
+                >
+                  <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />
+                </SidebarItem>
+              ),
+            ].filter(Boolean)}
             visible={sidebar.sidebarVisible}
-            generic={false}
           >
             {children}
           </Sidebar>

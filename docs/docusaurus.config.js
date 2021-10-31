@@ -59,13 +59,13 @@ module.exports = {
           position: 'left',
         },
         {
-          to: 'faq/changelog',
-          label: 'Release Notes',
+          to: 'blog',
+          label: 'Project Updates',
           position: 'left',
         },
         {
-          to: 'blog/',
-          label: 'Project Updates',
+          href: 'https://klicker-uzh.feedbear.com/updates',
+          label: 'Release Notes',
           position: 'left',
         },
         {

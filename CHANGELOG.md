@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.2...v1.6.3-alpha.3) (2021-10-31)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that images config does not break build ([322d717](https://github.com/uzh-bf/klicker-uzh/commit/322d717504536ae539966b56145a01d470e8b4d8))
+
+### [1.6.3-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.1...v1.6.3-alpha.2) (2021-10-31)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that the images config is only used in a server setting ([fe14616](https://github.com/uzh-bf/klicker-uzh/commit/fe14616c89e6cb2b282ac94eb59f3c7785d56f4d))
+
+### [1.6.3-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.0...v1.6.3-alpha.1) (2021-10-31)
+
+
+### Bug Fixes
+
+* **docs:** ensure that docs root directory reroutes correctly ([610588f](https://github.com/uzh-bf/klicker-uzh/commit/610588feba721acb3f30ad6c432b0a916a954c2e))
+* **docs:** update link on blog post to new release notes on feedbear ([b618d3c](https://github.com/uzh-bf/klicker-uzh/commit/b618d3c69ddb1db90e132a05cd1da860425b96e6))
+* **frontend:** disable the session creation button in the sidebar if the question pool is active ([c0632c6](https://github.com/uzh-bf/klicker-uzh/commit/c0632c66486ccf9836ca220d27e7aa266b399dae))
+* **frontend:** rework table chart sorting to custom implementation ([c66b57f](https://github.com/uzh-bf/klicker-uzh/commit/c66b57f9ee4d5364336f1989860fcd3b4585c8a9))
+* **frontend:** use next/link for the support entry outgoing links ([822c21f](https://github.com/uzh-bf/klicker-uzh/commit/822c21fbf63b5d6623701c81b9ff6908500c48f4))
+
+
+### Dependencies
+
+* **frontend:** upgrade minor dependencies and nextjs ([c1bb22d](https://github.com/uzh-bf/klicker-uzh/commit/c1bb22d2cb2cec4c2b760a02ee74c3b44effd7e9))
+
+
+### Enhancements
+
+* **frontend:** add qr logo to popup on session cockpit ([eba406d](https://github.com/uzh-bf/klicker-uzh/commit/eba406d88201bb84f32e378e53129ba3c30bda43))
+* **frontend:** apply next/image to the preview images on the student view ([ad64548](https://github.com/uzh-bf/klicker-uzh/commit/ad6454823d61fa3dc8245f5531f3aca4d3d888dd))
+* **frontend:** replace qrcode.react with react-qrcode-logo ([752c409](https://github.com/uzh-bf/klicker-uzh/commit/752c409e58b3b1814be450e439230b2535043a36))
+* **frontend:** rework the support modal with more information and links to the feedbear page ([33ad401](https://github.com/uzh-bf/klicker-uzh/commit/33ad401181f3d58e8ee5afc09aa8f96b3494eba1))
+* **frontend:** update the logo in the sidebar ([53feae0](https://github.com/uzh-bf/klicker-uzh/commit/53feae02c9122d57e103d55c59c3d0e41eea9f06))
+
+
+### Other
+
+* add volta pin for node 14.18 ([058d936](https://github.com/uzh-bf/klicker-uzh/commit/058d936b5fb3346ac76834f89515f96cd6bb1a4f))
+* **deploy:** ensure that appVersion is prefixed with a v ([d6bd4b6](https://github.com/uzh-bf/klicker-uzh/commit/d6bd4b602abca136ec85ffde1eb5e6e273c17997))
+* **deploy:** logrocket toggle ([d27721b](https://github.com/uzh-bf/klicker-uzh/commit/d27721b21aeb1e1f1362f4f941662cdb7d280c79))
+* **docs:** pin node version with volta ([b01758d](https://github.com/uzh-bf/klicker-uzh/commit/b01758d937214f18bb09c7912f037399d46e9e2c))
+* **docs:** remove the release notes and add a link to the feedbear release notes page ([722c491](https://github.com/uzh-bf/klicker-uzh/commit/722c491c292a5176d22bfdbf5131bde544954fff))
+* **frontend:** restructure frontend so server is located in src ([4d03957](https://github.com/uzh-bf/klicker-uzh/commit/4d03957f4b61e080a7e4e6220bca37d94cf81def))
+* pin node to 14.18 across services ([c2f9389](https://github.com/uzh-bf/klicker-uzh/commit/c2f938995ea1b668e792654ff611f3bf942f96ac))
+* pin the npm version with volta ([497248e](https://github.com/uzh-bf/klicker-uzh/commit/497248e6ff66760d46b8bf2eb037a2b2af9f2561))
+* **README:** add klicker logo to readme and extend text for auxiliary components ([7dc9e58](https://github.com/uzh-bf/klicker-uzh/commit/7dc9e581a0afadf5d4ca4ef9009ba62cf5bda0fb))
+* **README:** fix link to landing subfolder ([65edcef](https://github.com/uzh-bf/klicker-uzh/commit/65edcef089a4a62678ab9dc54717032f11c6c663))
+* **README:** fix links to docs, landing, and deployment subfolders ([dc3efc6](https://github.com/uzh-bf/klicker-uzh/commit/dc3efc62ac0bc904b07c3e3ab5044bc61a8a52e0))
+* **README:** remove the markdown header ([b559893](https://github.com/uzh-bf/klicker-uzh/commit/b5598937778865af7c097100a8941d29231070cd))
+* remove cruft README files in subfolders ([fbabfd0](https://github.com/uzh-bf/klicker-uzh/commit/fbabfd08f2b58361995a1772a39e3afbe57eac28))
+* update .htaccess files for landing and docs ([a9c7241](https://github.com/uzh-bf/klicker-uzh/commit/a9c7241e599014b967a4eab399ed927e9785a818))
+
 ### [1.6.3-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.2...v1.6.3-alpha.0) (2021-10-25)
 
 
