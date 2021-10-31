@@ -1,7 +1,9 @@
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
+import Image from 'next/image'
 import SidebarItem from './SidebarItem'
 import LanguageSwitcher from './LanguageSwitcher'
+import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.svg'
 
 interface Props {
   activeItem?: string
@@ -50,13 +52,12 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
               </SidebarItem>
             )
           )}
-          <div className="extras">
-            <div className="langSwitcher">
+          <div className="flex flex-col justify-between h-full">
+            <div className="p-4">
               <LanguageSwitcher />
             </div>
-            <div className="logo">
-              Klicker
-              <span className="high">UZH</span>
+            <div className="p-4">
+              <Image alt="KlickerUZH Logo" src={KlickerLogoSrc} />
             </div>
           </div>
         </SemanticSidebar>
@@ -79,30 +80,6 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
 
             display: flex !important;
             flex-direction: column;
-
-            .extras {
-              display: flex;
-              flex-direction: column;
-
-              justify-content: space-between;
-            }
-
-            .langSwitcher {
-              padding: 1rem;
-            }
-
-            .logo {
-              color: $color-primary-strong;
-              padding: 2rem 1rem;
-              font-size: 2rem;
-              line-height: 2rem;
-
-              .high {
-                font-size: 1rem;
-                line-height: 1rem;
-                vertical-align: top;
-              }
-            }
 
             @include desktop-tablet-only {
               width: 15rem !important;

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="103.68015mm"
+   height="25.160643mm"
+   viewBox="0 0 103.68015 25.160643"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   sodipodi:docname="KlickerUZH_Gray_BG.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="1"
+     inkscape:pagecheckerboard="false"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="4"
+     inkscape:cx="168.125"
+     inkscape:cy="32.125"
+     inkscape:window-width="3440"
+     inkscape:window-height="1376"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     width="97.68015mm"
+     fit-margin-left="3"
+     fit-margin-top="3"
+     fit-margin-right="3"
+     fit-margin-bottom="3" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-2.5613887,-4.2524598)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:24.6944px;line-height:1.25;font-family:TheSans;-inkscape-font-specification:'TheSans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="3.8327806"
+       y="26.166159"
+       id="text3045"><tspan
+         sodipodi:role="line"
+         id="tspan3043"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:24.6944px;font-family:TheSans;-inkscape-font-specification:'TheSans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         x="3.8327806"
+         y="26.166159">Klicker</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.1111px;line-height:1.25;font-family:TheSans;-inkscape-font-specification:'TheSans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#a3adb7;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="77.460602"
+       y="16.777452"
+       id="text16037"><tspan
+         sodipodi:role="line"
+         id="tspan16035"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.1111px;font-family:TheSans;-inkscape-font-specification:'TheSans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#a3adb7;fill-opacity:1;stroke-width:0.264583"
+         x="77.460602"
+         y="16.777452">UZH</tspan></text>
+  </g>
+</svg>
