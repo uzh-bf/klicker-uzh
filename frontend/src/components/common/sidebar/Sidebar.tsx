@@ -15,6 +15,7 @@ interface Props {
     label: React.ReactElement
     name: string
     icon?: any
+    disabled?: boolean
   }[]
   visible?: boolean
 }
@@ -39,10 +40,11 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
           width="wide"
         >
           {items.map(
-            ({ name, className, href, icon, label }): React.ReactElement => (
+            ({ name, className, href, icon, label, disabled }): React.ReactElement => (
               <SidebarItem
                 active={name === activeItem}
                 className={className}
+                disabled={disabled}
                 handleSidebarItemClick={handleSidebarItemClick(href)}
                 icon={icon}
                 key={name}
