@@ -99,11 +99,11 @@ function QuestionArea({
   }, [])
 
   useEffect(() => {
-    if (!sessionStorage.getItem('notification ' + questions[0].id)) {
+    if (!sessionStorage?.getItem(`notification ${questions[0].id}`)) {
       if (questions.length > 0) {
         createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
       }
-      sessionStorage.setItem('notification ' + questions[0].id, 'sent')
+      sessionStorage?.setItem(`notification ${questions[0].id}`, 'sent')
     }
   }, [questions.length])
 
