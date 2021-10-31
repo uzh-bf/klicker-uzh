@@ -34,6 +34,6 @@
       "contributing/contributing_guidelines",
       "contributing/contributing_setup"
     ],
-    "FAQ & Changelog": ["faq/changelog", "faq/faq"]
+    "FAQ": ["faq/faq"]
   }
 }
