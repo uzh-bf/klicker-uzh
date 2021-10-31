@@ -56,8 +56,11 @@ function FeedbackChannel({
   }, [])
 
   useEffect(() => {
-    if (feedbacks.length > feedbackLength) {
-      createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
+    if (!sessionStorage.getItem('feedback ' + feedbacks[feedbacks.length - 1].id)) {
+      if (feedbacks.length > feedbackLength) {
+        createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
+      }
+      sessionStorage.setItem('feedback ' + feedbacks[feedbacks.length - 1].id, 'notified')
     }
     setFeedbackLength(feedbacks.length)
   }, [feedbacks.length])
