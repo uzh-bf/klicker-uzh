@@ -59,7 +59,7 @@ module.exports = {
           position: 'left',
         },
         {
-          to: 'blog/',
+          to: 'blog',
           label: 'Project Updates',
           position: 'left',
         },
