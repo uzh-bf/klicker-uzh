@@ -50,6 +50,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
       name: 'runningSession',
     },
     {
+      disabled: router.pathname === '/questions',
       className: 'createSession',
       href: '/questions?creationMode=true',
       label: <FormattedMessage defaultMessage="Create Session" id="createSession.title" />,

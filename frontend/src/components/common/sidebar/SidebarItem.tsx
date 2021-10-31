@@ -8,17 +8,27 @@ interface Props {
   handleSidebarItemClick: any
   icon?: any
   name: string
+  disabled?: boolean
 }
 
 const defaultProps = {
   active: false,
   className: undefined,
   icon: undefined,
+  disabled: false,
 }
 
-function SidebarItem({ active, children, className, icon, name, handleSidebarItemClick }: Props): React.ReactElement {
+function SidebarItem({
+  active,
+  children,
+  className,
+  icon,
+  name,
+  handleSidebarItemClick,
+  disabled,
+}: Props): React.ReactElement {
   return (
-    <Menu.Item active={active} className={className} name={name} onClick={handleSidebarItemClick}>
+    <Menu.Item active={active} className={className} disabled={disabled} name={name} onClick={handleSidebarItemClick}>
       {icon && <Icon name={icon} />}
       {children}
     </Menu.Item>
