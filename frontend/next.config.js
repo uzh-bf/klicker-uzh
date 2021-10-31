@@ -12,9 +12,11 @@ const SERVICES_CFG = CFG.get('services')
 
 module.exports = (phase) => {
   let config = {
-    images: (PHASE_DEVELOPMENT_SERVER || PHASE_PRODUCTION_SERVER) && {
-      domains: [S3_CFG.rootDomain],
-    },
+    images: [PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER].includes(phase)
+      ? {
+          domains: [S3_CFG.rootDomain],
+        }
+      : undefined,
     productionBrowserSourceMaps: true,
     // env: {
     //   __DEV__: PHASE_DEVELOPMENT_SERVER,

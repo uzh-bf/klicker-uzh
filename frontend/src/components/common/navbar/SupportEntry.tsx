@@ -1,11 +1,11 @@
-import { Header, Icon } from 'semantic-ui-react'
+import { Header, Icon, SemanticICONS } from 'semantic-ui-react'
 import Link from 'next/link'
 
 interface Props {
   title: string
   subtitle?: string
   href: string
-  icon?: string
+  icon?: SemanticICONS
 }
 
 const defaultProps = {
