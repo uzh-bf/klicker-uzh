@@ -3,7 +3,7 @@ name: klicker-uzh
 description: A Helm chart for the KlickerUZH
 type: application
 version: 0.1.0
-appVersion: "v1.6.3-alpha.0"
+appVersion: "v1.6.3-alpha.3"
 dependencies:
   - name: redis
     version: 15.3.2
