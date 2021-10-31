@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
 const { withSentryConfig } = require('@sentry/nextjs')
-const { PHASE_PRODUCTION_BUILD } = require('next/constants')
+const { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 const CFG = require('./src/klicker.conf.js')
 
 const API_CFG = CFG.get('api')
@@ -12,7 +12,7 @@ const SERVICES_CFG = CFG.get('services')
 
 module.exports = (phase) => {
   let config = {
-    images: {
+    images: (PHASE_DEVELOPMENT_SERVER || PHASE_PRODUCTION_SERVER) && {
       domains: [S3_CFG.rootDomain],
     },
     productionBrowserSourceMaps: true,
