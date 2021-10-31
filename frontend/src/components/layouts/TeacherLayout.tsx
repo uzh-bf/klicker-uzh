@@ -81,6 +81,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
             handleSidebarItemClick={handleSidebarItemClick}
             items={sidebarItems}
             visible={isSidebarVisible}
+            generic={true}
             {...sidebar}
           >
             {typeof children === 'function' ? children() : children}

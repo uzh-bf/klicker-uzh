@@ -7,15 +7,17 @@ interface Props {
   children: React.ReactNode
   className?: string
   handleSidebarItemClick: any
+  generic: boolean
   icon?: any
   name: string
-  unseenItems: number
+  unseenItems?: number
 }
 
 const defaultProps = {
   active: false,
   className: undefined,
   icon: undefined,
+  generic: true,
 }
 
 function SidebarItem({
@@ -23,24 +25,29 @@ function SidebarItem({
   children,
   className,
   icon,
+  generic,
   name,
   handleSidebarItemClick,
   unseenItems,
 }: Props): React.ReactElement {
   return (
     <Menu.Item active={active} className={className} name={name} onClick={handleSidebarItemClick}>
-      <div className="relative flex flex-row items-center h-5">
-        <div className="absolute flex flex-row w-full text-center">
-          {icon && (
-            <div>
-              <Icon name={icon} />
-            </div>
-          )}
-          <div className="ml-4">{children}</div>
-        </div>
+      {generic && icon && <Icon name={icon} />}
+      {generic && children}
+      {!generic && (
+        <div className="relative flex flex-row items-center h-5">
+          <div className="absolute flex flex-row w-full text-center">
+            {icon && (
+              <div>
+                <Icon name={icon} />
+              </div>
+            )}
+            <div className="ml-4">{children}</div>
+          </div>
 
-        <NotificationBadge count={unseenItems} />
-      </div>
+          {unseenItems !== 0 && <NotificationBadge count={unseenItems} />}
+        </div>
+      )}
     </Menu.Item>
   )
 }

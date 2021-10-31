@@ -8,10 +8,18 @@ interface Props {
   activeItem?: string
   children: React.ReactNode
   handleSidebarItemClick: any
+  generic: boolean
   visible?: boolean
-  unseenQuestions: number
-  unseenFeedbacks: number
-  isInteractionEnabled: boolean
+  items?: {
+    className?: any
+    href: string
+    label: React.ReactElement
+    name: string
+    icon?: any
+  }[]
+  unseenQuestions?: number
+  unseenFeedbacks?: number
+  isInteractionEnabled?: boolean
 }
 
 const defaultProps = {
@@ -22,7 +30,9 @@ const defaultProps = {
 function Sidebar({
   activeItem,
   children,
+  items,
   visible,
+  generic,
   handleSidebarItemClick,
   unseenQuestions,
   unseenFeedbacks,
@@ -40,22 +50,42 @@ function Sidebar({
           visible={visible}
           width="wide"
         >
-          <SidebarItem
-            active={activeItem === 'activeQuestion'}
-            // className={items[0].className}
-            handleSidebarItemClick={handleSidebarItemClick('activeQuestion')}
-            icon="question"
-            key="activeQuestion"
-            name="activeQuestion"
-            unseenItems={unseenQuestions}
-          >
-            <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
-          </SidebarItem>
-          {isInteractionEnabled && (
+          {generic &&
+            items.map(
+              ({ name, className, href, icon, label }): React.ReactElement => (
+                <SidebarItem
+                  active={name === activeItem}
+                  className={className}
+                  handleSidebarItemClick={handleSidebarItemClick(href)}
+                  generic={generic}
+                  icon={icon}
+                  key={name}
+                  name={name}
+                >
+                  {label}
+                </SidebarItem>
+              )
+            )}
+          {!generic && (
+            <SidebarItem
+              active={activeItem === 'activeQuestion'}
+              // className={items[0].className}
+              handleSidebarItemClick={handleSidebarItemClick('activeQuestion')}
+              generic={generic}
+              icon="question"
+              key="activeQuestion"
+              name="activeQuestion"
+              unseenItems={unseenQuestions}
+            >
+              <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
+            </SidebarItem>
+          )}
+          {!generic && isInteractionEnabled && (
             <SidebarItem
               active={activeItem === 'feedbackChannel'}
               // className={items[1].className}
               handleSidebarItemClick={handleSidebarItemClick('feedbackChannel')}
+              generic={generic}
               icon="talk"
               key="feedbackChannel"
               name="feedbackChannel"

@@ -102,6 +102,7 @@ function StudentLayout({
             unseenFeedbacks={unseenFeedbacks}
             unseenQuestions={unseenQuestions}
             visible={sidebar.sidebarVisible}
+            generic={false}
           >
             {children}
           </Sidebar>
