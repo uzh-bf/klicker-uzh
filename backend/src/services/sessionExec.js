@@ -216,6 +216,7 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
       id: newResponseId,
       content: response,
       createdAt: new Date(),
+      resolvedAt: new Date(),
     },
     sessionId,
   })
