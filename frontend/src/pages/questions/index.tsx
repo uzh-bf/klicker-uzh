@@ -11,6 +11,9 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
+import { InitialFlagState, useFlags } from '@happykit/flags/client'
+import { getFlags } from '@happykit/flags/server'
+import { GetServerSideProps } from 'next'
 
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
@@ -37,6 +40,7 @@ import {
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import { withApollo } from '../../lib/apollo'
+import { AppFlags } from '../../@types/AppFlags'
 
 const messages = defineMessages({
   pageTitle: {
@@ -49,8 +53,15 @@ const messages = defineMessages({
   },
 })
 
-function Index(): React.ReactElement {
+interface Props {
+  initialFlagState: InitialFlagState<AppFlags>
+}
+
+function Index({ initialFlagState }: Props): React.ReactElement {
   useLogging()
+
+  const featureFlags = useFlags({ initialState: initialFlagState })
+  console.log(featureFlags)
 
   const intl = useIntl()
   const router = useRouter()
@@ -469,9 +480,10 @@ function Index(): React.ReactElement {
                 handleSetItemsChecked={handleSelectItems}
                 isArchiveActive={filters.archive}
                 itemsChecked={selectedItems.ids}
+                key="action-bar"
                 questions={processedQuestions}
               />,
-              <div className="questionList">
+              <div className="questionList" key="question-list">
                 <QuestionList
                   creationMode={creationMode}
                   isArchiveActive={filters.archive}
@@ -543,6 +555,11 @@ function Index(): React.ReactElement {
       `}</style>
     </TeacherLayout>
   )
+}
+
+export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+  const { initialFlagState } = await getFlags<AppFlags>({ context })
+  return { props: { initialFlagState } }
 }
 
 export default withApollo()(Index)

@@ -12,4 +12,5 @@ declare interface Window {
   INIT?: boolean
   INIT_LR?: boolean
   requestIdleCallback: any
+  gtag: any
 }
