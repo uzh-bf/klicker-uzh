@@ -5,7 +5,6 @@ import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
-import getConfig from 'next/config'
 import { ApolloProvider } from '@apollo/client'
 
 import { useApollo } from '../lib/apollo'
@@ -18,11 +17,9 @@ import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
 
-const { publicRuntimeConfig } = getConfig()
-
-if (publicRuntimeConfig.happyKitEnvKey) {
+if (process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY) {
   const { configure } = require('@happykit/flags/config')
-  configure({ envKey: publicRuntimeConfig.happyKitEnvKey })
+  configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
 }
 
 function Klicker({ Component, pageProps, locale, messages }) {

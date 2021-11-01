@@ -94,4 +94,10 @@ function DeleteAccount(): React.ReactElement {
   )
 }
 
+export async function getStaticProps() {
+  return {
+    props: {},
+  }
+}
+
 export default DeleteAccount

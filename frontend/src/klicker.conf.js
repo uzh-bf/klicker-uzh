@@ -292,6 +292,11 @@ module.exports = convict({
         format: String,
         sensitive: true,
       },
+      persistedUsers: {
+        default: 'roland.schlaefli@bf.uzh.ch',
+        env: 'NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS',
+        format: String,
+      },
     },
     googleAnalytics: {
       trackingId: {

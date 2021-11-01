@@ -143,4 +143,10 @@ function Registration(): React.ReactElement {
   )
 }
 
+export async function getStaticProps() {
+  return {
+    props: {},
+  }
+}
+
 export default Registration
