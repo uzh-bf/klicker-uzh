@@ -20,7 +20,7 @@ import UpdatedSessionSubscription from '../../graphql/subscriptions/UpdateSessio
 import useLogging from '../../lib/hooks/useLogging'
 import useFingerprint from '../../lib/hooks/useFingerprint'
 import JoinQAQuery from '../../graphql/queries/JoinQAQuery.graphql'
-import { initializeApollo } from '../../lib/apollo'
+import { APOLLO_STATE_PROP_NAME, initializeApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -363,35 +363,29 @@ function Join(): React.ReactElement {
   )
 }
 
-export async function getStaticProps({ params }) {
-  console.log('i am on the server', params)
-
+export async function getServerSideProps({ query }) {
   const apolloClient = initializeApollo()
 
-  await apolloClient.query({
-    query: JoinSessionQuery,
-    variables: {
-      shortname: params.shortname,
-    },
-  })
-
-  await apolloClient.query({
-    query: JoinQAQuery,
-    variables: {
-      shortname: params.shortname,
-    },
-  })
+  await Promise.all([
+    apolloClient.query({
+      query: JoinSessionQuery,
+      variables: {
+        shortname: query.shortname,
+      },
+    }),
+    apolloClient.query({
+      query: JoinQAQuery,
+      variables: {
+        shortname: query.shortname,
+      },
+    }),
+  ])
 
   return {
     props: {
-      initialApolloState: apolloClient.cache.extract(),
+      [APOLLO_STATE_PROP_NAME]: apolloClient.cache.extract(),
     },
-    revalidate: 3,
   }
-}
-
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
 }
 
 export default Join

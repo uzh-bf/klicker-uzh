@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
@@ -10,9 +10,7 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
-import { useFlags } from '@happykit/flags/client'
 
-import { UserContext } from '../../lib/userContext'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
@@ -37,7 +35,7 @@ import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import { AppFlags } from '../../@types/AppFlags'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 
 const messages = defineMessages({
   pageTitle: {
@@ -50,16 +48,8 @@ const messages = defineMessages({
   },
 })
 
-function Index(): React.ReactElement {
+function Index({ featureFlags }): React.ReactElement {
   useLogging()
-
-  const user = useContext(UserContext)
-
-  const featureFlags = useFlags<AppFlags>({
-    revalidateOnFocus: false,
-    user: user && { key: user.id },
-  })
-  console.log(featureFlags)
 
   const intl = useIntl()
   const router = useRouter()
@@ -555,4 +545,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default Index
+export default withFeatureFlags(Index)
