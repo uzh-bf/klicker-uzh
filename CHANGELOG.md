@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.12...v1.6.3-alpha.13) (2021-11-01)
+
+
+### Refactors
+
+* **frontend:** move to the new apollo example with a user context in _app ([#2609](https://github.com/uzh-bf/klicker-uzh/issues/2609)) ([e4ba7f6](https://github.com/uzh-bf/klicker-uzh/commit/e4ba7f6ec1f3b001abf54180119e09797d2654e1))
+
+
+### Other
+
+* **frontend:** lockfile maintenance ([aa1400c](https://github.com/uzh-bf/klicker-uzh/commit/aa1400c6e2df4941f7b2e62cb66c9ba70b2ddcda))
+
+
+### Enhancements
+
+* **frontend:** use static generation capabilities and apply feature flags conditionally ([#2611](https://github.com/uzh-bf/klicker-uzh/issues/2611)) ([acb2b18](https://github.com/uzh-bf/klicker-uzh/commit/acb2b18838f49d81352b11141003fac129b242a1))
+
 ### [1.6.3-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.11...v1.6.3-alpha.12) (2021-11-01)
 
 
