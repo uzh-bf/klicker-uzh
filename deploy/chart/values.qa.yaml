@@ -16,6 +16,10 @@ analytics:
     frontend:
       environment: qa
 
+
+featureFlags:
+  envKey: flags_pub_preview_313968481835942464
+
 frontend:
   hostname: app.klicker-qa.bf-app.ch
 

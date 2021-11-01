@@ -17,6 +17,8 @@
     "@formatjs/intl-pluralrules": "4.1.5",
     "@formatjs/intl-relativetimeformat": "9.3.2",
     "@formatjs/intl-utils": "3.8.4",
+    "@happykit/analytics": "1.0.1",
+    "@happykit/flags": "1.1.0",
     "@next/bundle-analyzer": "12.0.1",
     "@sentry/nextjs": "6.13.3",
     "@tailwindcss/typography": "0.4.1",

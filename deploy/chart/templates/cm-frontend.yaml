@@ -26,10 +26,10 @@ data:
   SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.frontend | quote }}
   SECURITY_FRAMEGUARD_ENABLED: {{ .Values.security.frameguard.enabled | quote }}
   SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
-  SERVICES_GOOGLE_ANALYTICS_ENABLED: {{ .Values.analytics.google.enabled | quote }}
-  SERVICES_GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.analytics.google.trackingId | quote }}
+  NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.analytics.google.trackingId | quote }}
+  NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY: {{ .Values.analytics.happyKit.publicKey | quote }}
+  NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
   SERVICES_LOGROCKET_APP_ID: {{ .Values.analytics.logrocket.appId | quote }}
-  SERVICES_LOGROCKET_ENABLED: {{ .Values.analytics.logrocket.enabled | quote }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
