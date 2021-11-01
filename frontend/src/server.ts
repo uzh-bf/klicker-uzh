@@ -73,7 +73,7 @@ const pages = [
   {
     cached: CACHE_CFG.pages.join,
     mapParams: (req) => ({ shortname: req.params.shortname }),
-    renderPath: '/join',
+    renderPath: '/join/[shortname]',
     url: '/join/:shortname',
   },
   {

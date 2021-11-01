@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { useQuery } from '@apollo/client'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
-import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
@@ -29,12 +27,13 @@ interface Props {
   handleUpvoteFeedback: any
   handleReactToFeedbackResponse: any
   handleFeedbackIds: any
-  shortname: string
   upvotedFeedbacks: any
   setUpvotedFeedbacks: any
   reactions: any
   setReactions: any
   sessionId: string
+  subscribeToMore: any
+  data: any
 }
 
 const defaultProps = {
@@ -49,19 +48,15 @@ function FeedbackArea({
   handleUpvoteFeedback,
   handleReactToFeedbackResponse,
   handleFeedbackIds,
-  shortname,
   upvotedFeedbacks,
   setUpvotedFeedbacks,
   reactions,
   setReactions,
   sessionId,
+  subscribeToMore,
+  data,
 }: Props): React.ReactElement {
   const intl = useIntl()
-
-  const { data, subscribeToMore } = useQuery(JoinQAQuery, {
-    variables: { shortname },
-    pollInterval: 60000,
-  })
 
   useEffect(() => {
     const publicFeedbackAdded = subscribeToMore({

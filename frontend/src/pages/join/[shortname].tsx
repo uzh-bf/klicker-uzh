@@ -5,20 +5,22 @@ import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
-import useStickyState from '../lib/hooks/useStickyState'
 
-import StudentLayout from '../components/layouts/StudentLayout'
-import FeedbackArea from '../components/sessions/join/FeedbackArea'
-import QuestionArea from '../components/sessions/join/QuestionArea'
+import useStickyState from '../../lib/hooks/useStickyState'
+import StudentLayout from '../../components/layouts/StudentLayout'
+import FeedbackArea from '../../components/sessions/join/FeedbackArea'
+import QuestionArea from '../../components/sessions/join/QuestionArea'
 // import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
-import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphql'
-import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
-import UpvoteFeedbackMutation from '../graphql/mutations/UpvoteFeedbackMutation.graphql'
-import ReactToFeedbackResponseMutation from '../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
-import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
-import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
-import useLogging from '../lib/hooks/useLogging'
-import useFingerprint from '../lib/hooks/useFingerprint'
+import AddFeedbackMutation from '../../graphql/mutations/AddFeedbackMutation.graphql'
+import AddResponseMutation from '../../graphql/mutations/AddResponseMutation.graphql'
+import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutation.graphql'
+import ReactToFeedbackResponseMutation from '../../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
+import JoinSessionQuery from '../../graphql/queries/JoinSessionQuery.graphql'
+import UpdatedSessionSubscription from '../../graphql/subscriptions/UpdateSessionSubscription.graphql'
+import useLogging from '../../lib/hooks/useLogging'
+import useFingerprint from '../../lib/hooks/useFingerprint'
+import JoinQAQuery from '../../graphql/queries/JoinQAQuery.graphql'
+import { initializeApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -62,6 +64,11 @@ function Join(): React.ReactElement {
   const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
+  })
+
+  const { data: dataQA, subscribeToMore: subscribeToMoreQA } = useQuery(JoinQAQuery, {
+    variables: { shortname: router.query.shortname },
+    pollInterval: 60000,
   })
 
   const { shortname }: { shortname?: string } = router.query
@@ -289,6 +296,7 @@ function Join(): React.ReactElement {
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
+            data={dataQA}
             handleFeedbackIds={onNewFeedbackIds}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
@@ -298,7 +306,7 @@ function Join(): React.ReactElement {
             sessionId={sessionId}
             setReactions={setReactions}
             setUpvotedFeedbacks={setUpvotedFeedbacks}
-            shortname={shortname}
+            subscribeToMore={subscribeToMoreQA}
             upvotedFeedbacks={upvotedFeedbacks}
           />
         )}
@@ -353,6 +361,37 @@ function Join(): React.ReactElement {
       `}</style>
     </StudentLayout>
   )
+}
+
+export async function getStaticProps({ params }) {
+  console.log('i am on the server', params)
+
+  const apolloClient = initializeApollo()
+
+  await apolloClient.query({
+    query: JoinSessionQuery,
+    variables: {
+      shortname: params.shortname,
+    },
+  })
+
+  await apolloClient.query({
+    query: JoinQAQuery,
+    variables: {
+      shortname: params.shortname,
+    },
+  })
+
+  return {
+    props: {
+      initialApolloState: apolloClient.cache.extract(),
+    },
+    revalidate: 3,
+  }
+}
+
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
 }
 
 export default Join
