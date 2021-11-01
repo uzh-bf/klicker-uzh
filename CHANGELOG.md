@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.7...v1.6.3-alpha.8) (2021-11-01)
+
+
+### Bug Fixes
+
+* **frontend:** make the happykit flags integration conditional on the variable ([0b158ed](https://github.com/uzh-bf/klicker-uzh/commit/0b158ed52e81b95b2a30db60f3d124beb6ee802e))
+* update happykit flag integration ([0ddf6e5](https://github.com/uzh-bf/klicker-uzh/commit/0ddf6e5ad48c71d66288b81695b6de9a0524ea1c))
+
+
+### Dependencies
+
+* **frontend:** upgrade next to latest patch release ([304a206](https://github.com/uzh-bf/klicker-uzh/commit/304a20619587768514e888ae3f084a0d720b14e6))
+
+
+### Enhancements
+
+* **frontend:** make the question title clickable ([a6fa181](https://github.com/uzh-bf/klicker-uzh/commit/a6fa1813d558afbc0d0c12cd556aa1dcc71608e9))
+
 ### [1.6.3-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.6...v1.6.3-alpha.7) (2021-11-01)
 
 
