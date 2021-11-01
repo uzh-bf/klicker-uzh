@@ -40,9 +40,8 @@ const pages = [
   { url: '/user/registration' },
   { url: '/questions/create' },
   {
-    cached: CACHE_CFG.pages.qr,
     mapParams: (req) => ({ shortname: req.params.shortname }),
-    renderPath: '/qr',
+    renderPath: '/qr/[shortname]',
     url: '/qr/:shortname',
   },
   {
@@ -73,7 +72,7 @@ const pages = [
   {
     cached: CACHE_CFG.pages.join,
     mapParams: (req) => ({ shortname: req.params.shortname }),
-    renderPath: '/join',
+    renderPath: '/join/[shortname]',
     url: '/join/:shortname',
   },
   {

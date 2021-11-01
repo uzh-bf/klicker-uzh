@@ -32,6 +32,7 @@ data:
   {{ end }}
   {{- if .Values.featureFlags.envKey }}
   NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
+  NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS: {{ .Values.featureFlags.persistedUsers | quote }}
   {{ end }}
   {{- if .Values.analytics.logrocket.appId }}
   SERVICES_LOGROCKET_APP_ID: {{ .Values.analytics.logrocket.appId | quote }}
