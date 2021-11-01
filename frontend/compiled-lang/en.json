@@ -955,6 +955,36 @@
       "value": "Active Question"
     }
   ],
+  "joinSession.feedbackArea.feedbackPlaceholder": [
+    {
+      "type": 0,
+      "value": "Post a question or feedback..."
+    }
+  ],
+  "joinSession.feedbackArea.open": [
+    {
+      "type": 0,
+      "value": "Open"
+    }
+  ],
+  "joinSession.feedbackArea.postedAt": [
+    {
+      "type": 0,
+      "value": "Posted on"
+    }
+  ],
+  "joinSession.feedbackArea.resolved": [
+    {
+      "type": 0,
+      "value": "Resolved"
+    }
+  ],
+  "joinSession.feedbackArea.resolvedAt": [
+    {
+      "type": 0,
+      "value": "Resolved on"
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,

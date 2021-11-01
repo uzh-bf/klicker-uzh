@@ -29,7 +29,6 @@ function Klicker(props) {
 
       {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID && <GoogleAnalytics />}
       {process.env.NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY && <HappyKitAnalytics />}
-      {process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY && <HappyKitFlags />}
 
       <DndProvider backend={HTML5Backend}>
         <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
