@@ -30,6 +30,7 @@ module.exports = (phase) => {
       apiUrl: API_CFG.endpoint,
       apiUrlWS: API_CFG.endpointWS,
       baseUrl: APP_CFG.baseUrl,
+      happyKitEnvKey: SERVICES_CFG.happyKit.envKey,
       joinUrl: APP_CFG.joinUrl,
       logrocketAppID: SERVICES_CFG.logrocket.appId,
       persistQueries: APP_CFG.persistQueries,

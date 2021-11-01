@@ -5,8 +5,7 @@ import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
-import { configure } from '@happykit/flags/config'
-
+import getConfig from 'next/config'
 import { polyfill } from '../polyfills'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
 import GoogleAnalytics from '../lib/GoogleAnalytics'
@@ -14,7 +13,12 @@ import GoogleAnalytics from '../lib/GoogleAnalytics'
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
 
-configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
+const { publicRuntimeConfig } = getConfig()
+
+if (publicRuntimeConfig.happyKitEnvKey) {
+  const { configure } = require('@happykit/flags/config')
+  configure({ envKey: publicRuntimeConfig.happyKitEnvKey })
+}
 
 function Klicker(props) {
   const { Component, pageProps, locale, messages } = props
