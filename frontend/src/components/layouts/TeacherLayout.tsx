@@ -2,7 +2,10 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import clsx from 'clsx'
+import { useQuery } from '@apollo/client'
 
+import { UserContext } from '../../lib/userContext'
+import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
 import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
 import Sidebar from '../common/sidebar/Sidebar'
@@ -26,6 +29,8 @@ const defaultProps = {
 
 function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, sidebar }: Props): React.ReactElement {
   const router = useRouter()
+
+  const { data } = useQuery(AccountSummaryQuery)
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(false)
 
@@ -65,46 +70,48 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
   ]
 
   return (
-    <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className={clsx('flex flex-col', fixedHeight ? 'h-screen min-h-[initial]' : 'h-[initial] min-h-screen')}>
-        {navbar && (
-          <div className="flex-initial print:hidden">
-            <Navbar
-              handleSidebarToggle={(): void => setIsSidebarVisible((prevState): boolean => !prevState)}
-              sidebarVisible={isSidebarVisible}
-              title={sidebarItems.find((item) => item.name === sidebar.activeItem)?.label}
-              {...navbar}
-            />
+    <UserContext.Provider value={data?.user}>
+      <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
+        <div className={clsx('flex flex-col', fixedHeight ? 'h-screen min-h-[initial]' : 'h-[initial] min-h-screen')}>
+          {navbar && (
+            <div className="flex-initial print:hidden">
+              <Navbar
+                handleSidebarToggle={(): void => setIsSidebarVisible((prevState): boolean => !prevState)}
+                sidebarVisible={isSidebarVisible}
+                title={sidebarItems.find((item) => item.name === sidebar.activeItem)?.label}
+                {...navbar}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-1 overflow-hidden bg-white content">
+            <Sidebar
+              handleSidebarItemClick={handleSidebarItemClick}
+              items={sidebarItems.map(
+                ({ name, className, href, label, disabled }): React.ReactElement => (
+                  <SidebarItem
+                    active={name === sidebar.activeItem}
+                    className={className}
+                    disabled={disabled}
+                    handleSidebarItemClick={handleSidebarItemClick(href)}
+                    key={name}
+                    name={name}
+                  >
+                    {label}
+                  </SidebarItem>
+                )
+              )}
+              visible={isSidebarVisible}
+              {...sidebar}
+            >
+              {typeof children === 'function' ? children() : children}
+            </Sidebar>
           </div>
-        )}
 
-        <div className="flex flex-1 overflow-hidden bg-white content">
-          <Sidebar
-            handleSidebarItemClick={handleSidebarItemClick}
-            items={sidebarItems.map(
-              ({ name, className, href, label, disabled }): React.ReactElement => (
-                <SidebarItem
-                  active={name === sidebar.activeItem}
-                  className={className}
-                  disabled={disabled}
-                  handleSidebarItemClick={handleSidebarItemClick(href)}
-                  key={name}
-                  name={name}
-                >
-                  {label}
-                </SidebarItem>
-              )
-            )}
-            visible={isSidebarVisible}
-            {...sidebar}
-          >
-            {typeof children === 'function' ? children() : children}
-          </Sidebar>
+          <div className="flex-initial print:hidden">{actionArea}</div>
         </div>
-
-        <div className="flex-initial print:hidden">{actionArea}</div>
-      </div>
-    </CommonLayout>
+      </CommonLayout>
+    </UserContext.Provider>
   )
 }
 

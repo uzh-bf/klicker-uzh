@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useContext } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-// import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
-import { InitialFlagState, useFlags } from '@happykit/flags/client'
-import { getFlags } from '@happykit/flags/server'
-import { GetServerSideProps } from 'next'
+import { useFlags } from '@happykit/flags/client'
 
+import { UserContext } from '../../lib/userContext'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
@@ -32,7 +31,6 @@ import SessionCreationForm from '../../components/forms/sessionCreation/SessionC
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import ActionBar from '../../components/questions/ActionBar'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
 import {
@@ -53,19 +51,15 @@ const messages = defineMessages({
   },
 })
 
-interface Props {
-  initialFlagState: InitialFlagState<AppFlags>
-}
-
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context })
-  return { props: { initialFlagState } }
-}
-
-function Index({ initialFlagState }: Props): React.ReactElement {
+function Index(): React.ReactElement {
   useLogging()
 
-  const featureFlags = useFlags<AppFlags>({ initialState: initialFlagState, revalidateOnFocus: false })
+  const user = useContext(UserContext)
+
+  const featureFlags = useFlags<AppFlags>({
+    revalidateOnFocus: false,
+    user: user && { key: user.id },
+  })
   console.log(featureFlags)
 
   const intl = useIntl()
