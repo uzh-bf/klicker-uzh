@@ -965,6 +965,36 @@
       "value": "Alle Feedbacks"
     }
   ],
+  "joinSession.feedbackArea.feedbackPlaceholder": [
+    {
+      "type": 0,
+      "value": "Posten Sie ein Feedback oder eine Frage..."
+    }
+  ],
+  "joinSession.feedbackArea.open": [
+    {
+      "type": 0,
+      "value": "Offen"
+    }
+  ],
+  "joinSession.feedbackArea.postedAt": [
+    {
+      "type": 0,
+      "value": "Gepostet am"
+    }
+  ],
+  "joinSession.feedbackArea.resolved": [
+    {
+      "type": 0,
+      "value": "Erledigt"
+    }
+  ],
+  "joinSession.feedbackArea.resolvedAt": [
+    {
+      "type": 0,
+      "value": "Erledigt am"
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,

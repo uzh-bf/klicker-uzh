@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { useQuery } from '@apollo/client'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
@@ -14,6 +14,13 @@ import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/Fe
 import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
+
+const messages = defineMessages({
+  feedbackPlaceholder: {
+    id: 'joinSession.feedbackArea.feedbackPlaceholder',
+    defaultMessage: 'Post a question or feedback...',
+  },
+})
 
 interface Props {
   active: boolean
@@ -49,6 +56,8 @@ function FeedbackArea({
   setReactions,
   sessionId,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const { data, subscribeToMore } = useQuery(JoinQAQuery, {
     variables: { shortname },
     pollInterval: 60000,
@@ -172,7 +181,7 @@ function FeedbackArea({
     if (data?.joinQA) {
       const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
       setProcessedFeedbacks({
-        resolved: sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved),
+        resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
         open: sortBy((o: any) => -dayjs(o.createdAt).unix(), open),
       })
     }
@@ -280,7 +289,7 @@ function FeedbackArea({
               <TextArea
                 className="h-24"
                 name="feedbackInput"
-                placeholder="Post a question or feedback..."
+                placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
                 value={feedbackInputValue}
                 onChange={(e): void => setFeedbackInputValue(e.target.value)}
@@ -299,7 +308,9 @@ function FeedbackArea({
           <div>
             {processedFeedbacks.open.length > 0 && (
               <div>
-                <h2 className="!mb-2">Open</h2>
+                <h2 className="!mb-2">
+                  <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+                </h2>
                 {processedFeedbacks.open.map(
                   ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
                     <div className="mt-2 first:mt-0" key={id}>
@@ -324,7 +335,9 @@ function FeedbackArea({
             )}
             {processedFeedbacks.resolved.length > 0 && (
               <div className="mt-4">
-                <h2 className="!mb-2">Resolved</h2>
+                <h2 className="!mb-2">
+                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+                </h2>
                 {processedFeedbacks.resolved.map(
                   ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
                     <div className="mt-2 first:mt-0" key={id}>
