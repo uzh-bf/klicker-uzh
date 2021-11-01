@@ -37,7 +37,6 @@ import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import { withApollo } from '../../lib/apollo'
 import { AppFlags } from '../../@types/AppFlags'
 
 const messages = defineMessages({
@@ -556,4 +555,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withApollo()(Index)
+export default Index

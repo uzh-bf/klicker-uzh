@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import _debounce from 'lodash/debounce'
+// import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
@@ -7,11 +7,10 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import useStickyState from '../lib/hooks/useStickyState'
 
-import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
+// import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
 import UpvoteFeedbackMutation from '../graphql/mutations/UpvoteFeedbackMutation.graphql'
@@ -56,7 +55,7 @@ function Join(): React.ReactElement {
   const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
   const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
-  const [newConfusionTS] = useMutation(AddConfusionTSMutation)
+  // const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
   const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
@@ -120,24 +119,24 @@ function Join(): React.ReactElement {
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
   // handle creation of a new confusion timestep
-  const onNewConfusionTS = _debounce(
-    async ({ difficulty = 0, speed = 0 }): Promise<void> => {
-      try {
-        newConfusionTS({
-          variables: {
-            difficulty,
-            fp: fingerprint,
-            sessionId,
-            speed,
-          },
-        })
-      } catch ({ message }) {
-        console.error(message)
-      }
-    },
-    4000,
-    { trailing: true }
-  )
+  // const onNewConfusionTS = _debounce(
+  //   async ({ difficulty = 0, speed = 0 }): Promise<void> => {
+  //     try {
+  //       newConfusionTS({
+  //         variables: {
+  //           difficulty,
+  //           fp: fingerprint,
+  //           sessionId,
+  //           speed,
+  //         },
+  //       })
+  //     } catch ({ message }) {
+  //       console.error(message)
+  //     }
+  //   },
+  //   4000,
+  //   { trailing: true }
+  // )
 
   // handle creation of a new feedback
   const onNewFeedback = async ({ content }): Promise<void> => {
@@ -240,9 +239,12 @@ function Join(): React.ReactElement {
 
   return (
     <StudentLayout
+      feedbackIds={feedbackIds}
       isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
       isInteractionEnabled={settings.isConfusionBarometerActive || settings.isFeedbackChannelActive}
       pageTitle={`Join ${shortname}`}
+      questionIds={questionIds}
+      responseIds={responseIds}
       sidebar={{
         activeItem: sidebarActiveItem,
         handleSidebarActiveItemChange: onSidebarActiveItemChange,
@@ -260,9 +262,6 @@ function Join(): React.ReactElement {
         })
       }
       title={title}
-      questionIds={questionIds}
-      feedbackIds={feedbackIds}
-      responseIds={responseIds}
     >
       <div className="joinSession">
         {activeInstances.length > 0 ? (
@@ -290,10 +289,10 @@ function Join(): React.ReactElement {
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
+            handleFeedbackIds={onNewFeedbackIds}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
-            handleFeedbackIds={onNewFeedbackIds}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
             sessionId={sessionId}
@@ -356,4 +355,4 @@ function Join(): React.ReactElement {
   )
 }
 
-export default withApollo({ ssr: true })(Join)
+export default Join

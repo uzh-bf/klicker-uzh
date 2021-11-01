@@ -5,7 +5,6 @@ import { useMutation } from '@apollo/client'
 import { Message, Icon } from 'semantic-ui-react'
 
 import { FormattedMessage } from 'react-intl'
-import { withApollo } from '../lib/apollo'
 import ParticipantLoginForm from '../components/forms/ParticipantLoginForm'
 import StaticLayout from '../components/layouts/StaticLayout'
 import LoginParticipantMutation from '../graphql/mutations/LoginParticipantMutation.graphql'
@@ -47,4 +46,4 @@ function Login(): React.ReactElement {
   )
 }
 
-export default withApollo()(Login)
+export default Login
