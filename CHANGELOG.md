@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.13...v1.6.3-alpha.14) (2021-11-01)
+
+
+### Bug Fixes
+
+* **frontend:** use publicRuntimeConfig instead of NEXT_PUBLIC envs and ensure pages are not static ([1142e46](https://github.com/uzh-bf/klicker-uzh/commit/1142e46bfd941ea131484180cc336ad011028244))
+
 ### [1.6.3-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.12...v1.6.3-alpha.13) (2021-11-01)
 
 
