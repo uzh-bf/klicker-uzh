@@ -16,7 +16,7 @@ analytics:
     frontend:
       environment: qa
   google:
-    trackingId: G-0X8MP67657
+    trackingId: G-GWEK0XHXDR
   happyKit:
     publicKey: analytics_pub_1312f90ec4
 

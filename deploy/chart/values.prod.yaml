@@ -26,7 +26,7 @@ analytics:
   logrocket:
     appId: vqm2qj/klicker
   google:
-    trackingId: UA-33258666-18
+    trackingId: G-YZ03P9HQGL
   happyKit:
     publicKey: analytics_pub_1312f90ec4
 
