@@ -45,6 +45,7 @@
     "crypto-hash": "1.3.0",
     "d3": "6.7.0",
     "dayjs": "1.10.7",
+    "deepmerge": "4.2.2",
     "dotenv": "10.0.0",
     "draft-js": "0.11.7",
     "draft-js-buttons": "2.0.2",
@@ -116,8 +117,6 @@
     "yup": "0.32.11"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "1.21.8",
-    "@graphql-codegen/fragment-matcher": "1.17.8",
     "@storybook/addon-actions": "6.3.12",
     "@storybook/addon-essentials": "6.3.12",
     "@storybook/addon-links": "6.3.12",
@@ -148,7 +147,6 @@
     "dev:no-custom-server": "next dev",
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" src/server.ts",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" src/server.ts",
-    "gql-gen": "gql-gen",
     "lint": "next lint",
     "lint:staged": "lint-staged",
     "start": "cross-env NODE_ENV=production NODE_ICU_DATA=node_modules/full-icu node -r dotenv/config dist/server",

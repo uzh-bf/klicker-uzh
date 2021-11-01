@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react'
+import React, { StrictMode, useEffect, useState } from 'react'
 import App, { AppContext } from 'next/app'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
@@ -6,9 +6,9 @@ import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
 import getConfig from 'next/config'
-import { useQuery } from '@apollo/client'
+import { ApolloProvider } from '@apollo/client'
 
-import { withApollo } from '../lib/apollo'
+import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
 import GoogleAnalytics from '../lib/GoogleAnalytics'
@@ -25,10 +25,23 @@ if (publicRuntimeConfig.happyKitEnvKey) {
   configure({ envKey: publicRuntimeConfig.happyKitEnvKey })
 }
 
-function Klicker(props) {
-  const { data } = useQuery(AccountSummaryQuery)
+function Klicker({ Component, pageProps, locale, messages }) {
+  const [user, setUser] = useState(null)
 
-  const { Component, pageProps, locale, messages } = props
+  const apolloClient = useApollo(pageProps)
+
+  useEffect(() => {
+    const fetch = async () => {
+      const result = await apolloClient.query({
+        query: AccountSummaryQuery,
+        networkPolicy: 'cache-first',
+      })
+      if (result.data?.user?.id) {
+        setUser(result.data.user)
+      }
+    }
+    fetch()
+  }, [apolloClient])
 
   return (
     <>
@@ -41,13 +54,15 @@ function Klicker(props) {
 
       <DndProvider backend={HTML5Backend}>
         <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
-          <ToastProvider autoDismiss>
-            <StrictMode>
-              <UserContext.Provider value={data?.user}>
-                <Component {...pageProps} />
+          <ApolloProvider client={apolloClient}>
+            <ToastProvider autoDismiss>
+              <UserContext.Provider value={user}>
+                <StrictMode>
+                  <Component {...pageProps} />
+                </StrictMode>
               </UserContext.Provider>
-            </StrictMode>
-          </ToastProvider>
+            </ToastProvider>
+          </ApolloProvider>
         </IntlProvider>
       </DndProvider>
     </>
@@ -118,4 +133,4 @@ function getMessages(locales: string | string[] = ['en']) {
   return [locale, langBundle]
 }
 
-export default withApollo()(Klicker)
+export default Klicker
