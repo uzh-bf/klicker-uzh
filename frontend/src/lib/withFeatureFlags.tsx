@@ -4,7 +4,7 @@ import { useContext } from 'react'
 import { AppFlags } from '../@types/AppFlags'
 import { UserContext } from './userContext'
 
-const PERSIST_EMAILS = ['roland.schlaefli@bf.uzh.ch']
+const PERSIST_EMAILS = process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY.split(',')
 
 function FeatureFlagWrapper({ children }) {
   const user = useContext(UserContext)
