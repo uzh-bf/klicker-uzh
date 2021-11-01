@@ -14,7 +14,6 @@ import { useToasts } from 'react-toast-notifications'
 import { InitialFlagState, useFlags } from '@happykit/flags/client'
 import { getFlags } from '@happykit/flags/server'
 import { GetServerSideProps } from 'next'
-import { FlagBagProvider } from '@happykit/flags/context'
 
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
@@ -58,10 +57,16 @@ interface Props {
   initialFlagState: InitialFlagState<AppFlags>
 }
 
+export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+  const { initialFlagState } = await getFlags<AppFlags>({ context })
+  return { props: { initialFlagState } }
+}
+
 function Index({ initialFlagState }: Props): React.ReactElement {
   useLogging()
 
   const featureFlags = useFlags<AppFlags>({ initialState: initialFlagState, revalidateOnFocus: false })
+  console.log(featureFlags)
 
   const intl = useIntl()
   const router = useRouter()
@@ -432,136 +437,129 @@ function Index({ initialFlagState }: Props): React.ReactElement {
   }
 
   return (
-    <FlagBagProvider value={featureFlags}>
-      <TeacherLayout
-        fixedHeight
-        actionArea={renderActionArea(_get(data, 'runningSession.id'))}
-        navbar={{
-          search: {
-            handleSearch: _debounce(handleSearch, 200),
-            handleSortByChange,
-            handleSortOrderToggle,
-            sortBy: sort.by,
-            sortingTypes: QUESTION_SORTINGS,
-            sortOrder: sort.asc,
-            withSorting: true,
-          },
-          title: intl.formatMessage(messages.title),
-        }}
-        pageTitle={intl.formatMessage(messages.pageTitle)}
-        sidebar={{ activeItem: 'questionPool' }}
-      >
-        <div className="questionPool">
-          <div className="tagList">
-            <TagList
-              activeTags={filters.tags}
-              activeType={filters.type}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              handleToggleArchive={onToggleArchive}
-              isArchiveActive={filters.archive}
-            />
-          </div>
-          <div className="wrapper">
-            {((): React.ReactElement | React.ReactElement[] => {
-              if (!data || loading) {
-                return <Loader active />
-              }
-
-              return [
-                <ActionBar
-                  creationMode={creationMode}
-                  deletionConfirmation={deletionConfirmation}
-                  handleArchiveQuestions={onArchiveQuestions}
-                  handleCreationModeToggle={onCreationModeToggle}
-                  handleDeleteQuestions={onDeleteQuestions}
-                  handleQuickBlock={onQuickBlock}
-                  handleQuickBlocks={onQuickBlocks}
-                  handleResetItemsChecked={handleResetSelection}
-                  handleSetItemsChecked={handleSelectItems}
-                  isArchiveActive={filters.archive}
-                  itemsChecked={selectedItems.ids}
-                  key="action-bar"
-                  questions={processedQuestions}
-                />,
-                <div className="questionList" key="question-list">
-                  <QuestionList
-                    creationMode={creationMode}
-                    isArchiveActive={filters.archive}
-                    questions={processedQuestions}
-                    selectedItems={selectedItems}
-                    onQuestionChecked={handleSelectItem}
-                  />
-                </div>,
-              ]
-            })()}
-          </div>
+    <TeacherLayout
+      fixedHeight
+      actionArea={renderActionArea(_get(data, 'runningSession.id'))}
+      navbar={{
+        search: {
+          handleSearch: _debounce(handleSearch, 200),
+          handleSortByChange,
+          handleSortOrderToggle,
+          sortBy: sort.by,
+          sortingTypes: QUESTION_SORTINGS,
+          sortOrder: sort.asc,
+          withSorting: true,
+        },
+        title: intl.formatMessage(messages.title),
+      }}
+      pageTitle={intl.formatMessage(messages.pageTitle)}
+      sidebar={{ activeItem: 'questionPool' }}
+    >
+      <div className="questionPool">
+        <div className="tagList">
+          <TagList
+            activeTags={filters.tags}
+            activeType={filters.type}
+            handleReset={handleReset}
+            handleTagClick={handleTagClick}
+            handleToggleArchive={onToggleArchive}
+            isArchiveActive={filters.archive}
+          />
         </div>
+        <div className="wrapper">
+          {((): React.ReactElement | React.ReactElement[] => {
+            if (!data || loading) {
+              return <Loader active />
+            }
 
-        <style jsx>{`
-          @import 'src/theme';
+            return [
+              <ActionBar
+                creationMode={creationMode}
+                deletionConfirmation={deletionConfirmation}
+                handleArchiveQuestions={onArchiveQuestions}
+                handleCreationModeToggle={onCreationModeToggle}
+                handleDeleteQuestions={onDeleteQuestions}
+                handleQuickBlock={onQuickBlock}
+                handleQuickBlocks={onQuickBlocks}
+                handleResetItemsChecked={handleResetSelection}
+                handleSetItemsChecked={handleSelectItems}
+                isArchiveActive={filters.archive}
+                itemsChecked={selectedItems.ids}
+                key="action-bar"
+                questions={processedQuestions}
+              />,
+              <div className="questionList" key="question-list">
+                <QuestionList
+                  creationMode={creationMode}
+                  isArchiveActive={filters.archive}
+                  questions={processedQuestions}
+                  selectedItems={selectedItems}
+                  onQuestionChecked={handleSelectItem}
+                />
+              </div>,
+            ]
+          })()}
+        </div>
+      </div>
 
-          .questionPool {
-            display: flex;
-            flex-direction: column;
+      <style jsx>{`
+        @import 'src/theme';
+
+        .questionPool {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+
+          overflow-y: auto;
+
+          .tagList {
+            height: 100%;
+            flex: 1;
+            background: $color-primary-05p;
+            padding: 0.5rem;
+          }
+
+          .wrapper {
             height: 100%;
 
+            .questionList {
+              height: 95%;
+
+              margin: 0 auto;
+              max-width: $max-width;
+
+              padding: 0.5rem;
+            }
+          }
+
+          @include desktop-tablet-only {
+            flex-flow: row wrap;
             overflow-y: auto;
 
             .tagList {
-              height: 100%;
-              flex: 1;
-              background: $color-primary-05p;
-              padding: 0.5rem;
+              overflow-y: auto;
+              flex: 0 0 17rem;
+
+              border-right: 1px solid $color-primary-50p;
             }
 
             .wrapper {
-              height: 100%;
+              flex: 1;
+              padding: 0.5rem;
 
               .questionList {
-                height: 95%;
-
-                margin: 0 auto;
-                max-width: $max-width;
-
-                padding: 0.5rem;
-              }
-            }
-
-            @include desktop-tablet-only {
-              flex-flow: row wrap;
-              overflow-y: auto;
-
-              .tagList {
                 overflow-y: auto;
-                flex: 0 0 17rem;
-
-                border-right: 1px solid $color-primary-50p;
               }
-
-              .wrapper {
-                flex: 1;
-                padding: 0.5rem;
-
-                .questionList {
-                  overflow-y: auto;
-                }
-              }
-            }
-
-            @include desktop-only {
-              padding: 0;
             }
           }
-        `}</style>
-      </TeacherLayout>
-    </FlagBagProvider>
-  )
-}
 
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context })
-  return { props: { initialFlagState } }
+          @include desktop-only {
+            padding: 0;
+          }
+        }
+      `}</style>
+    </TeacherLayout>
+  )
 }
 
 export default withApollo()(Index)
