@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.8...v1.6.3-alpha.9) (2021-11-01)
+
+
+### Bug Fixes
+
+* **backend:** ensure feedbacks have a resolvedAt property ([2e9b7ad](https://github.com/uzh-bf/klicker-uzh/commit/2e9b7ad2a02ce2dd01b8a076f79e759e03dcf1a3))
+* **backend:** ensure resolvedAt is also returned in the respondToFeedback subscription ([59eaddd](https://github.com/uzh-bf/klicker-uzh/commit/59eaddd96283dc3a4b3fd54393294914079f4569))
+
+
+### Enhancements
+
+* **frontend:** add translations for missing strings on feedback area and switch sorting of resolved questions ([31c7149](https://github.com/uzh-bf/klicker-uzh/commit/31c71495dec085c270b98e50b9eb04d044116b0e))
+
 ### [1.6.3-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.7...v1.6.3-alpha.8) (2021-11-01)
 
 
