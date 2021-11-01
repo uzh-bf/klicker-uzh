@@ -97,14 +97,20 @@ frontend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 150Mi
+    limits:
+      cpu: 400m
+      memory: 300Mi
 
   autoscaling:
     enabled: false
     minReplicas: 3
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 70
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
 
@@ -131,14 +137,20 @@ backend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 75Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
 
   autoscaling:
     enabled: false
     minReplicas: 3
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 70
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
 
@@ -162,9 +174,15 @@ shibboleth:
     port: 8080
 
   ingress:
-    enabled: true
+    enabled: false
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources: {}
+  resources:
+    requests:
+      cpu: 20m
+      memory: 50Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi

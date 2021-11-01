@@ -15,7 +15,10 @@ analytics:
   sentry:
     frontend:
       environment: qa
-
+  google:
+    trackingId: G-0X8MP67657
+  happyKit:
+    publicKey: analytics_pub_1312f90ec4
 
 featureFlags:
   envKey: flags_pub_preview_313968481835942464

@@ -54,14 +54,6 @@ frontend:
         hosts:
           - app.klicker.uzh.ch
 
-  resources:
-    requests:
-      cpu: 100m
-      memory: 150Mi
-    limits:
-      cpu: 400m
-      memory: 300Mi
-
 backend:
   replicaCount: 1
 
@@ -84,20 +76,13 @@ backend:
         hosts:
           - api.klicker.uzh.ch
 
-  resources:
-    requests:
-      cpu: 100m
-      memory: 75Mi
-    limits:
-      cpu: 200m
-      memory: 200Mi
-
 shibboleth:
   enabled: true
 
   hostname: aai.klicker.uzh.ch
 
   ingress:
+    enabled: true
     hosts:
       - host: aai.klicker.uzh.ch
         paths:
@@ -107,11 +92,3 @@ shibboleth:
       - secretName: klicker-prod-shibboleth-tls
         hosts:
           - aai.klicker.uzh.ch
-
-  resources:
-    requests:
-      cpu: 20m
-      memory: 50Mi
-    limits:
-      cpu: 100m
-      memory: 100Mi

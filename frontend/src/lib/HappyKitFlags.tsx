@@ -1,7 +1,9 @@
+const { configure } = require('@happykit/flags/config')
+
+configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
+
 function HappyKitFlags() {
-  const { configure } = require('@happykit/flags/config')
-  configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
-  return <></>
+  return null
 }
 
 export default HappyKitFlags

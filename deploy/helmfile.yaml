@@ -19,24 +19,24 @@ releases:
   #     - chart/values.stage.yaml
   #     - chart/secrets.stage.yaml
 
-  # - name: klicker-qa
-  #   namespace: klicker-qa
-  #   createNamespace: true
-  #   chart: ./chart
-  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-  #   installed: true
-  #   values:
-  #     - chart/values.yaml
-  #     - chart/values.qa.yaml
-  #     - chart/secrets.qa.yaml
-
-  - name: klicker-prod
-    namespace: klicker-prod
+  - name: klicker-qa
+    namespace: klicker-qa
     createNamespace: true
     chart: ./chart
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
     installed: true
     values:
       - chart/values.yaml
-      - chart/values.prod.yaml
-      - chart/secrets.prod.yaml
+      - chart/values.qa.yaml
+      - chart/secrets.qa.yaml
+
+  # - name: klicker-prod
+  #   namespace: klicker-prod
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/values.prod.yaml
+  #     - chart/secrets.prod.yaml
