@@ -1,17 +1,14 @@
-/* eslint-disable react/prop-types, no-undef, no-underscore-dangle */
-
-import * as React from 'react'
+import { useContext } from 'react'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
-import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 
+import { UserContext } from '../../../lib/userContext'
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
-import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -45,7 +42,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
   const router = useRouter()
 
   const [logout] = useMutation(LogoutMutation)
-  const { data } = useQuery(AccountSummaryQuery)
+
+  const user = useContext(UserContext)
 
   return (
     <div className="navbar">
@@ -75,13 +73,13 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
       )}
 
       <div className="accountArea">
-        {((): React.ReactElement => {
-          const accountId = _get(data, 'user.id')
-          const userEmail = _get(data, 'user.email')
-          const accountShort = _get(data, 'user.shortname')
+        {(() => {
+          const accountId = user?.id
+          const userEmail = user?.email
+          const accountShort = user?.shortname
           // const userHash = _get(data, 'user.hmac')
-          const role = _get(data, 'user.role')
-          const runningSessionId = _get(data, 'user.runningSession.id')
+          const role = user?.role
+          const runningSessionId = user?.runningSession?.id
 
           if (typeof window !== 'undefined') {
             if (window.INIT_LR) {
