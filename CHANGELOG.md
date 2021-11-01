@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.6...v1.6.3-alpha.7) (2021-11-01)
+
+
+### Other
+
+* **deploy:** adapt autoscaling and replica settings ([5876c14](https://github.com/uzh-bf/klicker-uzh/commit/5876c1409c2da7deaa0b11f6c9ffaac022d4ab11))
+* **deploy:** adapt resource quota based on initial monitoring ([071b9b0](https://github.com/uzh-bf/klicker-uzh/commit/071b9b0d6e70b5f8970ed788177b0febb379ef38))
+
+
+### Enhancements
+
+* **frontend:** integrate feature flags with happykit ([#2605](https://github.com/uzh-bf/klicker-uzh/issues/2605)) ([7c313ef](https://github.com/uzh-bf/klicker-uzh/commit/7c313eff8c8d1dff2fe0add582056f347006e2c6))
+
 ### [1.6.3-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.5...v1.6.3-alpha.6) (2021-11-01)
 
 
