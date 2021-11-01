@@ -41,7 +41,7 @@ const messages = defineMessages({
   },
 })
 
-function Join(): React.ReactElement {
+function Join({ shortname }): React.ReactElement {
   useLogging({ logRocket: false })
 
   const intl = useIntl()
@@ -63,15 +63,13 @@ function Join(): React.ReactElement {
   const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
   const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
-    variables: { shortname: router.query.shortname },
+    variables: { shortname },
   })
 
   const { data: dataQA, subscribeToMore: subscribeToMoreQA } = useQuery(JoinQAQuery, {
-    variables: { shortname: router.query.shortname },
+    variables: { shortname },
     pollInterval: 60000,
   })
-
-  const { shortname }: { shortname?: string } = router.query
 
   useEffect(() => {
     // if we need to login before being able to access the session, redirect to the login
@@ -384,6 +382,7 @@ export async function getServerSideProps({ query }) {
   return {
     props: {
       [APOLLO_STATE_PROP_NAME]: apolloClient.cache.extract(),
+      shortname: query.shortname,
     },
   }
 }
