@@ -8,11 +8,15 @@ import Head from 'next/head'
 
 import { polyfill } from '../polyfills'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
-import HappyKitFlags from '../lib/HappyKitFlags'
 import GoogleAnalytics from '../lib/GoogleAnalytics'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
+
+if (process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY) {
+  const { configure } = require('@happykit/flags/config')
+  configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
+}
 
 function Klicker(props) {
   const { Component, pageProps, locale, messages } = props
