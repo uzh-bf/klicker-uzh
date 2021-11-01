@@ -1,9 +1,13 @@
+import getConfig from 'next/config'
+
+const { publicRuntimeConfig } = getConfig()
+
 const UNTRACKED_PATHS = ['/user/login']
 
 function HappyKitAnalytics() {
   const { useAnalytics } = require('@happykit/analytics')
   useAnalytics({
-    publicKey: process.env.NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY,
+    publicKey: publicRuntimeConfig.happyKitAnalyticsKey,
     skip: (pageView) => UNTRACKED_PATHS.includes(pageView.pathname),
   })
   return <></>

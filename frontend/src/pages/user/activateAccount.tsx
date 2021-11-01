@@ -75,10 +75,4 @@ function ActivateAccount(): React.ReactElement {
   )
 }
 
-export async function getStaticProps() {
-  return {
-    props: {},
-  }
-}
-
 export default ActivateAccount

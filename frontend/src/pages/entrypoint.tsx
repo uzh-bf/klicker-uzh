@@ -26,10 +26,4 @@ function Entrypoint(): React.ReactElement {
   return null
 }
 
-export async function getStaticProps() {
-  return {
-    props: {},
-  }
-}
-
 export default Entrypoint

@@ -1,10 +1,13 @@
 import { useFlags } from '@happykit/flags/client'
 import { useContext } from 'react'
+import getConfig from 'next/config'
 
 import { AppFlags } from '../@types/AppFlags'
 import { UserContext } from './userContext'
 
-const PERSIST_EMAILS = (process.env.NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS ?? '').split(',')
+const { publicRuntimeConfig } = getConfig()
+
+const PERSIST_EMAILS = (publicRuntimeConfig.happyKitPersistedUsers ?? '').split(',')
 
 function FeatureFlagWrapper({ children }) {
   const user = useContext(UserContext)
@@ -19,7 +22,7 @@ function FeatureFlagWrapper({ children }) {
 
 function withFeatureFlags(Component) {
   const withHOC = (props) => {
-    if (process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY) {
+    if (publicRuntimeConfig.happyKitFlagEnvKey) {
       return (
         <FeatureFlagWrapper>
           {(featureFlags) => <Component featureFlags={featureFlags} {...props} />}
