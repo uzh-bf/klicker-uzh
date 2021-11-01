@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.5...v1.6.3-alpha.6) (2021-11-01)
+
+
+### Other
+
+* ensure that yaml updater changes appVersion ([4b937a6](https://github.com/uzh-bf/klicker-uzh/commit/4b937a6295781b030d365f7eec008450992630d9))
+
 ### [1.6.3-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.4...v1.6.3-alpha.5) (2021-11-01)
 
 
