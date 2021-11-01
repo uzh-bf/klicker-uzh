@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.10...v1.6.3-alpha.11) (2021-11-01)
+
+
+### Bug Fixes
+
+* **frontend:** try happykit config with publicRuntimeConfig ([e509c27](https://github.com/uzh-bf/klicker-uzh/commit/e509c27e632d6e034c0b242d696362b55b668506))
+
 ### [1.6.3-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.9...v1.6.3-alpha.10) (2021-11-01)
 
 
