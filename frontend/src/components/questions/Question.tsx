@@ -43,6 +43,8 @@ function Question({
   creationMode,
   isArchived,
 }: Props): React.ReactElement {
+  const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
+
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
   const { description } = versions[activeVersion]
   const [collectedProps, drag] = useDrag({
@@ -89,7 +91,16 @@ function Question({
               <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
             </Label>
           )}{' '}
-          {title}
+          <a
+            className="cursor-pointer"
+            role="button"
+            tabIndex={0}
+            type="button"
+            onClick={() => setIsModificationModalOpen(true)}
+            onKeyDown={() => setIsModificationModalOpen(true)}
+          >
+            {title}
+          </a>
         </h2>
 
         <div className="versionChooser">
@@ -110,7 +121,13 @@ function Question({
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
+          <QuestionDetails
+            description={description}
+            isModificationModalOpen={isModificationModalOpen}
+            lastUsed={lastUsed}
+            questionId={id}
+            setIsModificationModalOpen={setIsModificationModalOpen}
+          />
         </div>
       </div>
 
