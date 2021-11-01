@@ -69,11 +69,14 @@ analytics:
     backend:
       enabled: false
   logrocket:
-    enabled: false
-    appId: vqm2qj/klicker
+    appId:
   google:
-    enabled: false
-    trackingId: UA-33258666-18
+    trackingId:
+  happyKit:
+    publicKey:
+
+featureFlags:
+  envKey:
 
 frontend:
   replicaCount: 1

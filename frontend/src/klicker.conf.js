@@ -279,15 +279,24 @@ module.exports = convict({
     },
   },
   services: {
-    googleAnalytics: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_GOOGLE_ANALYTICS_ENABLED',
-        format: Boolean,
+    happyKit: {
+      envKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY',
+        format: String,
+        sensitive: true,
       },
+      publicKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY',
+        format: String,
+        sensitive: true,
+      },
+    },
+    googleAnalytics: {
       trackingId: {
         default: undefined,
-        env: 'SERVICES_GOOGLE_ANALYTICS_TRACKING_ID',
+        env: 'NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID',
         format: String,
         sensitive: true,
       },
@@ -298,11 +307,6 @@ module.exports = convict({
         env: 'SERVICES_LOGROCKET_APP_ID',
         format: String,
         sensitive: true,
-      },
-      enabled: {
-        default: false,
-        env: 'SERVICES_LOGROCKET_ENABLED',
-        format: Boolean,
       },
     },
     sentry: {

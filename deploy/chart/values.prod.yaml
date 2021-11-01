@@ -24,9 +24,14 @@ analytics:
     frontend:
       environment: prod
   logrocket:
-    enabled: false
+    appId: vqm2qj/klicker
   google:
-    enabled: true
+    trackingId: UA-33258666-18
+  happyKit:
+    publicKey: analytics_pub_1312f90ec4
+
+featureFlags:
+  envKey: flags_pub_313968481835942464
 
 frontend:
   replicaCount: 1
