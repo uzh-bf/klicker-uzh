@@ -308,11 +308,6 @@ module.exports = convict({
         format: String,
         sensitive: true,
       },
-      enabled: {
-        default: false,
-        env: 'SERVICES_LOGROCKET_ENABLED',
-        format: Boolean,
-      },
     },
     sentry: {
       dsn: {

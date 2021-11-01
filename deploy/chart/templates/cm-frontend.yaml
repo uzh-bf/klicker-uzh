@@ -30,7 +30,6 @@ data:
   NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY: {{ .Values.analytics.happyKit.publicKey | quote }}
   NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
   SERVICES_LOGROCKET_APP_ID: {{ .Values.analytics.logrocket.appId | quote }}
-  SERVICES_LOGROCKET_ENABLED: {{ .Values.analytics.logrocket.enabled | quote }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
