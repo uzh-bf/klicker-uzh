@@ -63,7 +63,7 @@
     "formik": "2.2.9",
     "full-icu": "1.4.0",
     "glob": "7.2.0",
-    "graphql": "15.5.2",
+    "graphql": "15.7.2",
     "graphql-ws": "5.5.5",
     "gulp": "4.0.2",
     "helmet": "4.6.0",
