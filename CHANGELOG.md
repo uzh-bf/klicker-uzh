@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.9...v1.6.3-alpha.10) (2021-11-01)
+
+
+### Refactors
+
+* **frontend:** ensure that happykit is initialized before using it ([bdbe18d](https://github.com/uzh-bf/klicker-uzh/commit/bdbe18d88e6954476d8054d34f5dab4f3f2206bb))
+
 ### [1.6.3-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.8...v1.6.3-alpha.9) (2021-11-01)
 
 
