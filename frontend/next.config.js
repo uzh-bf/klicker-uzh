@@ -26,7 +26,10 @@ module.exports = (phase) => {
     },
     // custom runtime configuration
     publicRuntimeConfig: {
-      analyticsTrackingID: SERVICES_CFG.googleAnalytics.trackingId,
+      googleAnalyticsTrackingId: SERVICES_CFG.googleAnalytics.trackingId,
+      happyKitAnalyticsKey: SERVICES_CFG.happyKit.publicKey,
+      happyKitFlagEnvKey: SERVICES_CFG.happyKit.envKey,
+      happyKitPersistedUsers: SERVICES_CFG.happyKit.persistedUsers,
       apiUrl: API_CFG.endpoint,
       apiUrlWS: API_CFG.endpointWS,
       baseUrl: APP_CFG.baseUrl,

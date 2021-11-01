@@ -78,10 +78,4 @@ function RequestPassword(): React.ReactElement {
   )
 }
 
-export async function getStaticProps() {
-  return {
-    props: {},
-  }
-}
-
 export default RequestPassword

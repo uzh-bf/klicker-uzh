@@ -6,6 +6,7 @@ import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
 import { ApolloProvider } from '@apollo/client'
+import getConfig from 'next/config'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
@@ -17,9 +18,11 @@ import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
 
-if (process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY) {
+const { publicRuntimeConfig } = getConfig()
+
+if (publicRuntimeConfig.happyKitFlagEnvKey) {
   const { configure } = require('@happykit/flags/config')
-  configure({ envKey: process.env.NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY })
+  configure({ envKey: publicRuntimeConfig.happyKitFlagEnvKey })
 }
 
 function Klicker({ Component, pageProps, locale, messages }) {
@@ -46,8 +49,8 @@ function Klicker({ Component, pageProps, locale, messages }) {
         <meta content="width=device-width, initial-scale=1" name="viewport" />
       </Head>
 
-      {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID && <GoogleAnalytics />}
-      {process.env.NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY && <HappyKitAnalytics />}
+      {publicRuntimeConfig.googleAnalyticsTrackingId && <GoogleAnalytics />}
+      {publicRuntimeConfig.happyKitAnalyticsKey && <HappyKitAnalytics />}
 
       <DndProvider backend={HTML5Backend}>
         <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
