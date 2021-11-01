@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/frontend",
-  "version": "1.6.3-alpha.9",
+  "version": "1.6.3-alpha.10",
   "exports": "./dist/server.js",
   "engines": {
     "node": ">=14"
