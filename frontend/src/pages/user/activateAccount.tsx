@@ -8,7 +8,6 @@ import { useRouter } from 'next/router'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
 import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -76,4 +75,4 @@ function ActivateAccount(): React.ReactElement {
   )
 }
 
-export default withApollo()(ActivateAccount)
+export default ActivateAccount

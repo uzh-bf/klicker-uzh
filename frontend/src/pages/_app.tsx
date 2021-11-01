@@ -6,9 +6,14 @@ import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
 import getConfig from 'next/config'
+import { useQuery } from '@apollo/client'
+
+import { withApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
 import GoogleAnalytics from '../lib/GoogleAnalytics'
+import { UserContext } from '../lib/userContext'
+import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
@@ -21,6 +26,8 @@ if (publicRuntimeConfig.happyKitEnvKey) {
 }
 
 function Klicker(props) {
+  const { data } = useQuery(AccountSummaryQuery)
+
   const { Component, pageProps, locale, messages } = props
 
   return (
@@ -36,7 +43,9 @@ function Klicker(props) {
         <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
           <ToastProvider autoDismiss>
             <StrictMode>
-              <Component {...pageProps} />
+              <UserContext.Provider value={data?.user}>
+                <Component {...pageProps} />
+              </UserContext.Provider>
             </StrictMode>
           </ToastProvider>
         </IntlProvider>
@@ -109,4 +118,4 @@ function getMessages(locales: string | string[] = ['en']) {
   return [locale, langBundle]
 }
 
-export default Klicker
+export default withApollo()(Klicker)

@@ -16,7 +16,6 @@ import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
 import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
-import { withApollo } from '../../lib/apollo'
 
 function Print(): React.ReactElement<any> {
   useLogging()
@@ -227,4 +226,4 @@ function Print(): React.ReactElement<any> {
   )
 }
 
-export default withApollo()(Print)
+export default Print

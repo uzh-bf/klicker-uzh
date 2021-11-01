@@ -8,7 +8,6 @@ import { useRouter } from 'next/router'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ResolveAccountDeletionMutation from '../../graphql/mutations/ResolveAccountDeletionMutation.graphql'
 import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -95,4 +94,4 @@ function DeleteAccount(): React.ReactElement {
   )
 }
 
-export default withApollo()(DeleteAccount)
+export default DeleteAccount
