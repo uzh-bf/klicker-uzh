@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.11...v1.6.3-alpha.12) (2021-11-01)
+
+
+### Other
+
+* **ci:** disable docker container build on dev pushes ([1093446](https://github.com/uzh-bf/klicker-uzh/commit/1093446f7b707d92ef923661883e16aaa5f5a7a9))
+
+
+### Refactors
+
+* **frontend:** move user info to a context on the TeacherLayout ([873eeb1](https://github.com/uzh-bf/klicker-uzh/commit/873eeb13e0b5dc447d554028feb8bf4e7ea0c9bb))
+
 ### [1.6.3-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.10...v1.6.3-alpha.11) (2021-11-01)
 
 
