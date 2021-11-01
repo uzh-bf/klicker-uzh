@@ -1,8 +1,18 @@
 import { Message, Button } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { useEffect, useState } from 'react'
+import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+
+import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+
+const messages = defineMessages({
+  notificationTitle: {
+    defaultMessage: 'New Question / Feedback',
+    id: 'feedbackchannel.notifications.title',
+  },
+})
 
 interface Props {
   feedbacks?: any[]
@@ -35,6 +45,26 @@ function FeedbackChannel({
   handleDeleteFeedbackResponse,
 }: Props) {
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, { withSearch: true })
+  const [feedbackLength, setFeedbackLength] = useState(0)
+  const intl = useIntl()
+
+  useEffect(() => {
+    requestNotificationPermissions((permission) => {
+      if (permission === 'granted') {
+        setFeedbackLength(feedbacks.length)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!sessionStorage?.getItem(`feedback ${feedbacks[feedbacks.length - 1]?.id}`)) {
+      if (feedbacks.length > feedbackLength) {
+        createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
+      }
+      sessionStorage?.setItem(`feedback ${feedbacks[feedbacks.length - 1]?.id}`, 'notified')
+    }
+    setFeedbackLength(feedbacks.length)
+  }, [feedbacks.length])
 
   return (
     <div>

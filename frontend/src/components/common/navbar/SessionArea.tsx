@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Button, Icon, Menu, Modal } from 'semantic-ui-react'
 import Image from 'next/image'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.svg'
+import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
 import SupportEntry from './SupportEntry'
 
 const messages = defineMessages({
@@ -112,7 +112,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
                 />
                 <SupportEntry
                   href="https://github.com/uzh-bf/klicker-uzh/discussions"
-                  icon="talk outline"
+                  icon="talk"
                   subtitle="A place for discussions and questions regarding the KlickerUZH"
                   title="Community"
                 />

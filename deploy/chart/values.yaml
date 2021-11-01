@@ -98,10 +98,10 @@ frontend:
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 6
     targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 70
 
   nodeSelector: {}
 
@@ -132,10 +132,10 @@ backend:
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 6
     targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 70
 
   nodeSelector: {}
 
@@ -146,7 +146,7 @@ backend:
 shibboleth:
   enabled: false
 
-  replicaCount: 1
+  replicaCount: 2
 
   hostname: ''
 

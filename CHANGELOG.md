@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.5...v1.6.3-alpha.6) (2021-11-01)
+
+
+### Other
+
+* ensure that yaml updater changes appVersion ([4b937a6](https://github.com/uzh-bf/klicker-uzh/commit/4b937a6295781b030d365f7eec008450992630d9))
+
+### [1.6.3-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.4...v1.6.3-alpha.5) (2021-11-01)
+
+
+### Bug Fixes
+
+* **frontend:** replace svg logo with png version ([d541829](https://github.com/uzh-bf/klicker-uzh/commit/d541829c0a2d6c274e7301487b9e2534aaa4fe9f))
+
+
+### Other
+
+* **deploy:** bump appVersion to v1.6.3-alpha.4 ([268cb76](https://github.com/uzh-bf/klicker-uzh/commit/268cb76e51ddcd3d3acb92a2b61027b5d8da16a5))
+* setup custom yaml updater and ensure docs versioning is updated as well ([0d3232c](https://github.com/uzh-bf/klicker-uzh/commit/0d3232c32fb954579222065d08d53a1013061b57))
+
+### [1.6.3-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.3...v1.6.3-alpha.4) (2021-10-31)
+
+
+### Features
+
+* **frontend:** notification badges for new activated questions and new feedbacks on mobile menu ([#2596](https://github.com/uzh-bf/klicker-uzh/issues/2596)) ([754a70e](https://github.com/uzh-bf/klicker-uzh/commit/754a70e666a0019d7b15d84c1dc6cb78404f535f))
+
+
+### Other
+
+* **deploy:** bump appVersion to v1.6.3-alpha.3 ([45226cc](https://github.com/uzh-bf/klicker-uzh/commit/45226ccf4b76059a6f6077e620c08b366c667bc3))
+
+
+### Enhancements
+
+* **frontend:** browser notifications for incoming feedbacks (lecturer) and questions (student) ([#2590](https://github.com/uzh-bf/klicker-uzh/issues/2590)) ([6dba614](https://github.com/uzh-bf/klicker-uzh/commit/6dba614052da4d257f0bedeeccada7be4e1b0201))
+
+### [1.6.3-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.2...v1.6.3-alpha.3) (2021-10-31)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that images config does not break build ([322d717](https://github.com/uzh-bf/klicker-uzh/commit/322d717504536ae539966b56145a01d470e8b4d8))
+
+### [1.6.3-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.1...v1.6.3-alpha.2) (2021-10-31)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that the images config is only used in a server setting ([fe14616](https://github.com/uzh-bf/klicker-uzh/commit/fe14616c89e6cb2b282ac94eb59f3c7785d56f4d))
+
 ### [1.6.3-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.0...v1.6.3-alpha.1) (2021-10-31)
 
 

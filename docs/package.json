@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/docs",
-  "version": "1.6.2",
+  "version": "1.6.3-alpha.6",
   "devDependencies": {
     "cross-env": "6.0.3",
     "nodemon": "2.0.12"
