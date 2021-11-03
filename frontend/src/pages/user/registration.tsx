@@ -93,12 +93,12 @@ function Registration(): React.ReactElement {
                   } catch ({ message }) {
                     if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
                       setFieldError('shortname', 'NOT_AVAILABLE')
-                      push(['trackEvent', 'User', 'Shortname Not Available'])
+                      push(['trackEvent', 'Error', 'Shortname Not Available'])
                     }
 
                     if (message === Errors.EMAIL_NOT_AVAILABLE) {
                       setFieldError('email', 'NOT_AVAILABLE')
-                      push(['trackEvent', 'User', 'Email Not Available'])
+                      push(['trackEvent', 'Error', 'Email Not Available'])
                     }
 
                     setSubmitting(false)
