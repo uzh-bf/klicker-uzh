@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 // import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
 import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'

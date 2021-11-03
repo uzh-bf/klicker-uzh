@@ -4,6 +4,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ResolveAccountDeletionMutation from '../../graphql/mutations/ResolveAccountDeletionMutation.graphql'
@@ -58,6 +59,7 @@ function DeleteAccount(): React.ReactElement {
                 loading={loading}
                 onClick={(): void => {
                   deleteAccount({ variables: { deletionToken: router.query.deletionToken } })
+                  push(['trackEvent', 'User', 'Account Deleted'])
                 }}
               >
                 <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />

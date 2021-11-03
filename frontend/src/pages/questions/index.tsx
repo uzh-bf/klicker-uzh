@@ -10,6 +10,7 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
+import { push } from '@socialgouv/matomo-next'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
@@ -129,6 +130,7 @@ function Index({ featureFlags }): React.ReactElement {
   const onToggleArchive = (): void => {
     handleResetSelection()
     handleToggleArchive()
+    push(['trackEvent', 'Question Pool', 'Archive Toggled'])
   }
 
   // handle archiving a question
@@ -141,6 +143,8 @@ function Index({ featureFlags }): React.ReactElement {
       await archiveQuestions({
         variables: { ids: selectedItems.ids },
       })
+
+      push(['trackEvent', 'Question Pool', 'Questions Archived', selectedItems.ids.length])
 
       addToast(
         <FormattedMessage
@@ -185,6 +189,8 @@ function Index({ featureFlags }): React.ReactElement {
         })),
       },
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
   }
 
   // build a separate block for each checked question
@@ -207,6 +213,8 @@ function Index({ featureFlags }): React.ReactElement {
         ],
       })),
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
   }
 
   // handle creating a new session
@@ -242,6 +250,8 @@ function Index({ featureFlags }): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Modified'])
         } else {
           // create a new session
           result = await createSession({
@@ -254,6 +264,8 @@ function Index({ featureFlags }): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Created'])
         }
 
         // start the session immediately if the respective button was clicked
@@ -266,6 +278,7 @@ function Index({ featureFlags }): React.ReactElement {
             ],
             variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
           })
+          push(['trackEvent', 'Question Pool', 'Session Started'])
           router.push('/sessions/running')
         } else {
           const ToastContent = (
@@ -337,6 +350,8 @@ function Index({ featureFlags }): React.ReactElement {
           },
           variables: { ids: questionIds },
         })
+
+        push(['trackEvent', 'Question Pool', 'Questions Deleted', questionIds.length])
 
         handleResetSelection()
 

@@ -51,7 +51,10 @@ function Klicker({ Component, pageProps, locale, messages }) {
   const apolloClient = useApollo(pageProps)
 
   useEffect(() => {
-    init({ url: publicRuntimeConfig.matomoSiteUrl, siteId: publicRuntimeConfig.matomoSiteId })
+    init({
+      url: publicRuntimeConfig.matomoSiteUrl,
+      siteId: publicRuntimeConfig.matomoSiteId,
+    })
   }, [])
 
   useEffect(() => {
