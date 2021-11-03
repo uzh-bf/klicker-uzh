@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.17...v1.6.3-alpha.18) (2021-11-03)
+
+
+### Other
+
+* remove useLogging and other analytics cruft ([af36505](https://github.com/uzh-bf/klicker-uzh/commit/af365051c8b5f309e73302927bf88cfdb04839d2))
+
+
+### Enhancements
+
+* incorporate matomo for site analytics ([f6112d2](https://github.com/uzh-bf/klicker-uzh/commit/f6112d23589a5b43e2716584d463cbfacd4894e5))
+
 ### [1.6.3-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.16...v1.6.3-alpha.17) (2021-11-03)
 
 
