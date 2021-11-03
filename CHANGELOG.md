@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.15...v1.6.3-alpha.16) (2021-11-03)
+
+
+### Bug Fixes
+
+* ensure unauthenticated pages are excluded ([447088e](https://github.com/uzh-bf/klicker-uzh/commit/447088e67ecaabda489745fbd66070cd2fc9fbac))
+
+
+### Other
+
+* **deploy:** increase resources ([51d3391](https://github.com/uzh-bf/klicker-uzh/commit/51d3391afc627af4cb415d504d730f26647d4742))
+
 ### [1.6.3-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.14...v1.6.3-alpha.15) (2021-11-03)
 
 
