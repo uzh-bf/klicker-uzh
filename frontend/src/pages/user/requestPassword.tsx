@@ -5,7 +5,6 @@ import { Message } from 'semantic-ui-react'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
-import useLogging from '../../lib/hooks/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
 
 const messages = defineMessages({
@@ -16,8 +15,6 @@ const messages = defineMessages({
 })
 
 function RequestPassword(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
 
   const [requestPassword, { data, loading, error }] = useMutation(RequestPasswordMutation)

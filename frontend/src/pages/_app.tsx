@@ -8,6 +8,7 @@ import Head from 'next/head'
 import { ApolloProvider } from '@apollo/client'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
+import { init } from '@socialgouv/matomo-next'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
@@ -28,6 +29,9 @@ if (publicRuntimeConfig.happyKitFlagEnvKey) {
 
 const UNAUTHENTICATED_PAGES = [
   '/',
+  '/login',
+  '/404',
+  '/entrypoint',
   '/user/login',
   '/user/activateAccount',
   '/user/deleteAccount',
@@ -46,7 +50,9 @@ function Klicker({ Component, pageProps, locale, messages }) {
 
   const apolloClient = useApollo(pageProps)
 
-  console.log(router.pathname)
+  useEffect(() => {
+    init({ url: publicRuntimeConfig.matomoSiteUrl, siteId: publicRuntimeConfig.matomoSiteId })
+  }, [])
 
   useEffect(() => {
     const fetch = async () => {

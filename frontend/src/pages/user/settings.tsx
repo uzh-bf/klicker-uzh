@@ -2,7 +2,6 @@ import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
 
 const messages = defineMessages({
@@ -17,8 +16,6 @@ const messages = defineMessages({
 })
 
 function Settings(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
 
   return (

@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
 import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
@@ -106,8 +105,6 @@ export function extractInstancesFromSession(session): any {
 }
 
 function Evaluation(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
 

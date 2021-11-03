@@ -306,6 +306,18 @@ module.exports = convict({
         sensitive: true,
       },
     },
+    matomo: {
+      siteUrl: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_MATOMO_URL',
+        format: 'url',
+      },
+      siteId: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_MATOMO_SITE_ID',
+        format: Number,
+      },
+    },
     sentry: {
       dsn: {
         default: undefined,

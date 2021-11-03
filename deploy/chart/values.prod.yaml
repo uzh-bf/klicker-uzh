@@ -27,6 +27,9 @@ analytics:
     trackingId: G-YZ03P9HQGL
   happyKit:
     publicKey: analytics_pub_1312f90ec4
+  matomo:
+    siteUrl: https://webstats.uzh.ch/
+    siteId: 411
 
 featureFlags:
   envKey: flags_pub_313968481835942464
