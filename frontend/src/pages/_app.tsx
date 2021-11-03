@@ -34,6 +34,9 @@ const UNAUTHENTICATED_PAGES = [
   '/user/registration',
   '/user/requestPassword',
   '/user/resetPassword',
+  '/join/[shortname]',
+  '/qr/[shortname]',
+  '/sessions/evaluation',
 ]
 
 function Klicker({ Component, pageProps, locale, messages }) {
@@ -57,14 +60,10 @@ function Klicker({ Component, pageProps, locale, messages }) {
       }
     }
 
-    if (
-      UNAUTHENTICATED_PAGES.includes(router.pathname) ||
-      router.pathname.includes('/join') ||
-      router.pathname.includes('/sessions/public')
-    ) {
+    if (!UNAUTHENTICATED_PAGES.includes(router.pathname)) {
       fetch()
     }
-  }, [apolloClient, router])
+  }, [apolloClient, router.pathname])
 
   return (
     <>
