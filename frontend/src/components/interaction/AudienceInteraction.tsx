@@ -101,7 +101,7 @@ function AudienceInteraction({
                       },
                     },
                   })
-                  push(['trackEvent', 'Running Session', 'Toggled Feedback Channel', String(!isFeedbackChannelActive)])
+                  push(['trackEvent', 'Running Session', 'Feedback Channel Toggled', String(!isFeedbackChannelActive)])
                 }}
               />
               <FormattedMessage
@@ -131,7 +131,7 @@ function AudienceInteraction({
                   push([
                     'trackEvent',
                     'Running Session',
-                    'Toggled Feedback Moderation',
+                    'Feedback Moderation Toggled',
                     String(!isFeedbackChannelPublic),
                   ])
                 }}
