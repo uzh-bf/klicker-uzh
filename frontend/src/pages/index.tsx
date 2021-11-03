@@ -115,10 +115,10 @@ function Index(): React.ReactElement {
         <List className="userLinks">
           {links.map(
             (link): React.ReactElement => (
-              <List.Item>
-                <Link href={link.href}>
+              <List.Item key={link.label}>
+                <a href={link.href} target="_self">
                   <Button primary>{link.label}</Button>
-                </Link>
+                </a>
               </List.Item>
             )
           )}
