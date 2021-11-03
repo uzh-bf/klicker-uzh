@@ -9,7 +9,6 @@ import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
 
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
-import useLogging from '../../lib/hooks/useLogging'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
@@ -46,8 +45,6 @@ const messages = defineMessages({
 })
 
 function Running(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()

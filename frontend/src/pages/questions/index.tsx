@@ -12,7 +12,6 @@ import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import CreateSessionMutation from '../../graphql/mutations/CreateSessionMutation.graphql'
@@ -49,8 +48,6 @@ const messages = defineMessages({
 })
 
 function Index({ featureFlags }): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()

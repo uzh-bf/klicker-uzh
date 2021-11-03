@@ -6,7 +6,6 @@ import { useRouter } from 'next/router'
 import { useToasts } from 'react-toast-notifications'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
-import useLogging from '../../lib/hooks/useLogging'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
@@ -26,8 +25,6 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()

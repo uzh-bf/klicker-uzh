@@ -72,6 +72,9 @@ analytics:
     trackingId:
   happyKit:
     publicKey:
+  matomo:
+    siteUrl:
+    siteId:
 
 featureFlags:
   envKey:

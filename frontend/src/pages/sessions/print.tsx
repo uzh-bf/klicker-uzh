@@ -14,12 +14,9 @@ import Possibilities from '../../components/evaluation/Possibilities'
 import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
-import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 
 function Print(): React.ReactElement<any> {
-  useLogging()
-
   const router = useRouter()
 
   const isPublic = !!router.query.public

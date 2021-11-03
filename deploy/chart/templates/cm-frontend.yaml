@@ -34,6 +34,10 @@ data:
   NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
   NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS: {{ .Values.featureFlags.persistedUsers | quote }}
   {{ end }}
+  {{- if .Values.analytics.matomo.siteUrl }}
+  NEXT_PUBLIC_MATOMO_URL: {{ .Values.analytics.matomo.siteUrl | quote }}
+  NEXT_PUBLIC_MATOMO_SITE_ID: {{ .Values.analytics.matomo.siteId | quote }}
+  {{ end }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
