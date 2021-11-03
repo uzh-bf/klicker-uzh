@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.14...v1.6.3-alpha.15) (2021-11-03)
+
+
+### Bug Fixes
+
+* ensure that people are not redirected from login due to spurious UNAUTHORIZED errors ([c6afa6e](https://github.com/uzh-bf/klicker-uzh/commit/c6afa6ec25324ba3b6d1811359f9305e733f0ea2))
+
+
+### Other
+
+* **deploy:** upgrade to GA4 ([899c927](https://github.com/uzh-bf/klicker-uzh/commit/899c9273542b276786c5b5a56ec87018adafe16f))
+
 ### [1.6.3-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.13...v1.6.3-alpha.14) (2021-11-01)
 
 
