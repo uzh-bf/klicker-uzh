@@ -3,6 +3,7 @@ import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import { Icon, Menu } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 
 import { UserContext } from '../../../lib/userContext'
 import AccountArea from './AccountArea'
@@ -101,6 +102,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
                   onLogout={async (): Promise<void> => {
                     // logout
                     await logout()
+
+                    push(['trackEvent', 'User', 'Logged Out'])
 
                     // redirect to the landing page
                     router.push('/')

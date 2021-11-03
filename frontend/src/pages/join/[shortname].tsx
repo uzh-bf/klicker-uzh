@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
@@ -116,6 +117,7 @@ function Join({ shortname }): React.ReactElement {
     (): void => {
       setSidebarActiveItem(newSidebarActiveItem)
       setSidebarVisible(false)
+      push(['trackEvent', 'Join Session', 'Sidebar Item Changed', newSidebarActiveItem])
     }
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
@@ -187,6 +189,8 @@ function Join({ shortname }): React.ReactElement {
       } else {
         newFeedback({ variables: { content, fp: fingerprint, sessionId } })
       }
+
+      push(['trackEvent', 'Join Session', 'Feedback Added'])
     } catch ({ message }) {
       console.error(message)
     }
@@ -209,6 +213,8 @@ function Join({ shortname }): React.ReactElement {
         console.error(e)
       }
     }
+
+    push(['trackEvent', 'Join Session', 'Response Submitted'])
   }
 
   const onUpvoteFeedback = async ({ feedbackId, undo }) => {
@@ -217,6 +223,8 @@ function Join({ shortname }): React.ReactElement {
     } catch ({ message }) {
       console.error(message)
     }
+
+    push(['trackEvent', 'Join Session', 'Feedback Upvoted'])
   }
 
   const onReactToFeedbackResponse = async ({ feedbackId, responseId, positive, negative }) => {
@@ -225,6 +233,8 @@ function Join({ shortname }): React.ReactElement {
     } catch (e) {
       console.error(e)
     }
+
+    push(['trackEvent', 'Join Session', 'Feedback Response Reacted'])
   }
 
   const questionIds = activeInstances.map((instance: any) => instance.id)

@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
+import { push } from '@socialgouv/matomo-next'
 
 import { Icon, Message } from 'semantic-ui-react'
 import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
@@ -208,6 +209,8 @@ function QuestionArea({
         handleNewResponse({ instanceId, response: { value: String(inputValue) } })
       }
     }
+
+    push(['trackEvent', 'Join Session', 'Question Skipped'])
 
     // update the stored responses
     if (typeof window !== 'undefined') {

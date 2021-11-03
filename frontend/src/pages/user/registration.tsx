@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
@@ -88,13 +89,16 @@ function Registration(): React.ReactElement {
                         useCase,
                       },
                     })
+                    push(['trackEvent', 'User', 'Signed Up'])
                   } catch ({ message }) {
                     if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
                       setFieldError('shortname', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'User', 'Shortname Not Available'])
                     }
 
                     if (message === Errors.EMAIL_NOT_AVAILABLE) {
                       setFieldError('email', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'User', 'Email Not Available'])
                     }
 
                     setSubmitting(false)

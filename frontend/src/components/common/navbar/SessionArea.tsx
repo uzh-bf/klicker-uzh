@@ -1,9 +1,8 @@
-/* eslint-disable react/prop-types, react/no-array-index-key */
-
-import * as React from 'react'
+import { useState } from 'react'
 import { Button, Icon, Menu, Modal } from 'semantic-ui-react'
 import Image from 'next/image'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { push } from '@socialgouv/matomo-next'
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
 import SupportEntry from './SupportEntry'
 
@@ -26,9 +25,9 @@ const defaultProps = {
   sessionId: undefined,
 }
 
-function SessionArea({ sessionId }: Props): React.ReactElement {
+function SessionArea({ sessionId }: Props) {
   const intl = useIntl()
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
 
   return (
     <>
@@ -52,7 +51,10 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
         trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
         // width={200}
         onClose={() => setOpen(false)}
-        onOpen={() => setOpen(true)}
+        onOpen={() => {
+          setOpen(true)
+          push(['trackEvent', 'User', 'Opened Support Area'])
+        }}
       >
         <Modal.Content>
           <div className="flex flex-col flex-wrap gap-8 md:gap-16 md:flex-row">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../components/layouts/StaticLayout'
 
@@ -20,7 +21,10 @@ function Index(): React.ReactElement {
 
   const [shortname, setShortname] = useState('')
 
-  const redirectToJoin = (): Promise<boolean> => router.replace(`/join/${shortname}`)
+  const redirectToJoin = (): Promise<boolean> => {
+    push(['trackEvent', 'Landing', 'Participation Clicked'])
+    return router.replace(`/join/${shortname}`)
+  }
 
   return (
     // TODO: internationalization

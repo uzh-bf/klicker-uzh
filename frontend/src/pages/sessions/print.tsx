@@ -6,6 +6,7 @@ import { FormattedMessage } from 'react-intl'
 import { useRouter } from 'next/router'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { Button, Checkbox } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
 import { toValueArray } from '../../lib/utils/math'

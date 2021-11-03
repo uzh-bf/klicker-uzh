@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
 import { useLazyQuery } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 
@@ -14,6 +15,8 @@ function Entrypoint(): React.ReactElement {
   useEffect((): void => {
     checkAccountStatus()
     if (data && data.checkAccountStatus) {
+      push(['trackEvent', 'AAI Entrypoint', 'User Logged In'])
+
       Cookies.set('userId', data.checkAccountStatus, { secure: true })
       router.push('/questions')
     }

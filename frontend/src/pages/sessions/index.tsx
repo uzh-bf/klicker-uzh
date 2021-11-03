@@ -4,6 +4,7 @@ import { useMutation } from '@apollo/client'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import { useToasts } from 'react-toast-notifications'
+import { push } from '@socialgouv/matomo-next'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'

@@ -7,6 +7,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import getConfig from 'next/config'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
@@ -73,6 +74,8 @@ function Login(): React.ReactElement {
               if (loginResult.data.login) {
                 Cookies.set('userId', loginResult.data.login, { secure: true })
               }
+
+              push(['trackEvent', 'User', 'Logged In'])
 
               // redirect to question pool
               router.push('/questions')
