@@ -23,8 +23,6 @@ analytics:
   sentry:
     frontend:
       environment: prod
-  logrocket:
-    appId: vqm2qj/klicker
   google:
     trackingId: G-YZ03P9HQGL
   happyKit:

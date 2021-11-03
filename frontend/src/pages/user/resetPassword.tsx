@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
-import useLogging from '../../lib/hooks/useLogging'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
 
 const messages = defineMessages({
@@ -18,10 +17,6 @@ const messages = defineMessages({
 })
 
 function ResetPassword(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const intl = useIntl()
   const router = useRouter()
 

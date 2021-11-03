@@ -219,10 +219,9 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
     // secure the server with helmet
     if (isProd) {
       const { csp, expectCt, frameguard, hsts, referrerPolicy } = SECURITY_CFG
-      const { googleAnalytics, logrocket } = SERVICES_CFG
+      const { googleAnalytics } = SERVICES_CFG
 
       const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
-      const optionalLogrocket = logrocket.enabled ? ['cdn.lr-in.com', 'r.lr-in.com'] : []
 
       server.use(
         helmet({
@@ -231,13 +230,13 @@ Promise.all([app.prepare(), ...SUPPORTED_LOCALES.map(polyfill)])
             // generating nonces is currently not correctly supported by nextjs
             directives: {
               childSrc: [...csp.childSrc],
-              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics, ...optionalLogrocket],
+              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics],
               defaultSrc: csp.defaultSrc,
               fontSrc: csp.fontSrc,
               frameAncestors: frameguard.enabled && frameguard.ancestors,
               imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalGoogleAnalytics],
               reportUri: csp.reportUri,
-              scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalGoogleAnalytics],
+              scriptSrc: [...csp.scriptSrc, ...optionalGoogleAnalytics],
               scriptSrcElem: [...optionalGoogleAnalytics],
               styleSrc: [...csp.styleSrc, ...optionalGoogleAnalytics],
               workerSrc: [...csp.workerSrc],

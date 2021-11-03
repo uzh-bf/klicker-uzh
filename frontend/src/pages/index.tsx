@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 
 import StaticLayout from '../components/layouts/StaticLayout'
-import useLogging from '../lib/hooks/useLogging'
 
 const links = [
   {
@@ -18,8 +16,6 @@ const links = [
 ]
 
 function Index(): React.ReactElement {
-  useLogging({ logRocket: false })
-
   const router = useRouter()
 
   const [shortname, setShortname] = useState('')

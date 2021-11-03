@@ -306,14 +306,6 @@ module.exports = convict({
         sensitive: true,
       },
     },
-    logrocket: {
-      appId: {
-        default: undefined,
-        env: 'SERVICES_LOGROCKET_APP_ID',
-        format: String,
-        sensitive: true,
-      },
-    },
     sentry: {
       dsn: {
         default: undefined,

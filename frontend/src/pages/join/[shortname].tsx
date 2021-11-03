@@ -17,7 +17,6 @@ import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutati
 import ReactToFeedbackResponseMutation from '../../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
 import JoinSessionQuery from '../../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../../graphql/subscriptions/UpdateSessionSubscription.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 import useFingerprint from '../../lib/hooks/useFingerprint'
 import JoinQAQuery from '../../graphql/queries/JoinQAQuery.graphql'
 import { APOLLO_STATE_PROP_NAME, initializeApollo } from '../../lib/apollo'
@@ -42,8 +41,6 @@ const messages = defineMessages({
 })
 
 function Join({ shortname }): React.ReactElement {
-  useLogging({ logRocket: false })
-
   const intl = useIntl()
   const router = useRouter()
 

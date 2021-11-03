@@ -68,8 +68,6 @@ analytics:
       sampleRate: 0.25
     backend:
       enabled: false
-  logrocket:
-    appId:
   google:
     trackingId:
   happyKit:
