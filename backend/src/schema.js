@@ -126,7 +126,7 @@ const typeDefs = [
     allUsers: [User]!
     checkAccountStatus: ID
     checkAvailability(email: String, shortname: String): User_Availability!
-    joinQA(shortname: String!): [Session_Feedback_Public!]!
+    joinQA(shortname: String!): [Session_Feedback_Public!]
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session

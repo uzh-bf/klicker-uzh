@@ -364,6 +364,7 @@ function Join({ shortname }): React.ReactElement {
 export async function getServerSideProps({ query }) {
   const apolloClient = initializeApollo()
 
+  // try {
   await Promise.all([
     apolloClient.query({
       query: JoinSessionQuery,
@@ -378,6 +379,9 @@ export async function getServerSideProps({ query }) {
       },
     }),
   ])
+  // } catch (error) {
+  //   console.log(error)
+  // }
 
   return {
     props: {

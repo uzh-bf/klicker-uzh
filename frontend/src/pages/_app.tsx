@@ -7,6 +7,7 @@ import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
 import { ApolloProvider } from '@apollo/client'
 import getConfig from 'next/config'
+import { useRouter } from 'next/router'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
@@ -25,10 +26,24 @@ if (publicRuntimeConfig.happyKitFlagEnvKey) {
   configure({ envKey: publicRuntimeConfig.happyKitFlagEnvKey })
 }
 
+const UNAUTHENTICATED_PAGES = [
+  '/',
+  '/user/login',
+  '/user/activateAccount',
+  '/user/deleteAccount',
+  '/user/registration',
+  '/user/requestPassword',
+  '/user/resetPassword',
+]
+
 function Klicker({ Component, pageProps, locale, messages }) {
+  const router = useRouter()
+
   const [user, setUser] = useState(null)
 
   const apolloClient = useApollo(pageProps)
+
+  console.log(router.pathname)
 
   useEffect(() => {
     const fetch = async () => {
@@ -36,12 +51,20 @@ function Klicker({ Component, pageProps, locale, messages }) {
         query: AccountSummaryQuery,
         networkPolicy: 'cache-first',
       })
-      if (result.data?.user?.id) {
+
+      if (result?.data?.user?.id) {
         setUser(result.data.user)
       }
     }
-    fetch()
-  }, [apolloClient])
+
+    if (
+      UNAUTHENTICATED_PAGES.includes(router.pathname) ||
+      router.pathname.includes('/join') ||
+      router.pathname.includes('/sessions/public')
+    ) {
+      fetch()
+    }
+  }, [apolloClient, router])
 
   return (
     <>
