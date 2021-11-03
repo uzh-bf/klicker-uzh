@@ -34,7 +34,6 @@ module.exports = (phase) => {
       apiUrlWS: API_CFG.endpointWS,
       baseUrl: APP_CFG.baseUrl,
       joinUrl: APP_CFG.joinUrl,
-      logrocketAppID: SERVICES_CFG.logrocket.appId,
       persistQueries: APP_CFG.persistQueries,
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,

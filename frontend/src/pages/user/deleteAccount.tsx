@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ResolveAccountDeletionMutation from '../../graphql/mutations/ResolveAccountDeletionMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -17,10 +16,6 @@ const messages = defineMessages({
 })
 
 function DeleteAccount(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const router = useRouter()
   const intl = useIntl()
 

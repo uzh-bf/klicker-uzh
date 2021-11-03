@@ -34,11 +34,6 @@ data:
   NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
   NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS: {{ .Values.featureFlags.persistedUsers | quote }}
   {{ end }}
-  {{- if .Values.analytics.logrocket.appId }}
-  SERVICES_LOGROCKET_APP_ID: {{ .Values.analytics.logrocket.appId | quote }}
-  {{ end }}
-  SERVICES_GOOGLE_ANALYTICS_ENABLED: "true"
-  SERVICES_GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.analytics.google.trackingId | quote }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}

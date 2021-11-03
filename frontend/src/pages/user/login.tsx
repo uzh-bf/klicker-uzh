@@ -11,7 +11,6 @@ import getConfig from 'next/config'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -23,10 +22,6 @@ const messages = defineMessages({
 })
 
 function Login(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const intl = useIntl()
   const router = useRouter()
 

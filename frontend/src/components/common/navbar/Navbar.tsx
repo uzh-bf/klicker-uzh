@@ -75,26 +75,11 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
       <div className="accountArea">
         {(() => {
           const accountId = user?.id
-          const userEmail = user?.email
           const accountShort = user?.shortname
-          // const userHash = _get(data, 'user.hmac')
           const role = user?.role
           const runningSessionId = user?.runningSession?.id
 
           if (typeof window !== 'undefined') {
-            if (window.INIT_LR) {
-              try {
-                const LogRocket = require('logrocket')
-
-                LogRocket.identify(accountId, {
-                  email: userEmail,
-                  name: accountShort,
-                })
-              } catch (e) {
-                //
-              }
-            }
-
             if (publicRuntimeConfig.sentryDSN) {
               try {
                 const Sentry = require('@sentry/nextjs')

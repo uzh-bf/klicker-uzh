@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -17,10 +16,6 @@ const messages = defineMessages({
 })
 
 function ActivateAccount(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const client = useApolloClient()
   const router = useRouter()
   const intl = useIntl()
