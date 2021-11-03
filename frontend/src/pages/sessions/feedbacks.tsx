@@ -3,6 +3,7 @@ import { useQuery } from '@apollo/client'
 import Head from 'next/head'
 import { Icon, Dropdown } from 'semantic-ui-react'
 import dayjs from 'dayjs'
+
 import PinnedFeedbacksQuery from '../../graphql/queries/PinnedFeedbacksQuery.graphql'
 
 function Feedbacks() {

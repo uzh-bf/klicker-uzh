@@ -2,6 +2,7 @@ import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
@@ -46,6 +47,7 @@ function RequestPassword(): React.ReactElement {
                 loading={loading}
                 onSubmit={({ email }): void => {
                   requestPassword({ variables: { email } })
+                  push(['trackEvent', 'User', 'Password Requested'])
                 }}
               />
 
