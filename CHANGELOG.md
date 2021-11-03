@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.18...v1.6.3-alpha.19) (2021-11-03)
+
+
+### Enhancements
+
+* **frontend:** incorporate matomo events for improved observability ([#2616](https://github.com/uzh-bf/klicker-uzh/issues/2616)) ([2317818](https://github.com/uzh-bf/klicker-uzh/commit/2317818e5844fd8307459dce9f65cf32ebb009b8))
+
 ### [1.6.3-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.17...v1.6.3-alpha.18) (2021-11-03)
 
 
