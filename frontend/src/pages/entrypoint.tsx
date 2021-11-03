@@ -15,7 +15,7 @@ function Entrypoint(): React.ReactElement {
   useEffect((): void => {
     checkAccountStatus()
     if (data && data.checkAccountStatus) {
-      push(['trackEvent', 'AAI Entrypoint', 'User Logged In'])
+      push(['trackEvent', 'User', 'AAI Login'])
 
       Cookies.set('userId', data.checkAccountStatus, { secure: true })
       router.push('/questions')
