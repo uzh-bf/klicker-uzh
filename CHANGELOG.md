@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.19...v1.6.3-alpha.20) (2021-11-04)
+
+
+### Other
+
+* add data axtraction script for feedback channel usage analysis ([738216a](https://github.com/uzh-bf/klicker-uzh/commit/738216a637b02a918952b21b30ce8a77a61edcba))
+* **frontend:** ensure that question skipped is not logged when a response is added ([3619264](https://github.com/uzh-bf/klicker-uzh/commit/3619264245ab34f2fe8f81ba1a7095bde7c9f382))
+
 ### [1.6.3-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.18...v1.6.3-alpha.19) (2021-11-03)
 
 
