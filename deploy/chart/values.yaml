@@ -101,16 +101,16 @@ frontend:
   resources:
     requests:
       cpu: 200m
-      memory: 200Mi
+      memory: 300Mi
     limits:
       cpu: 500m
-      memory: 300Mi
+      memory: 400Mi
 
   autoscaling:
     enabled: false
-    minReplicas: 3
+    minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 75
+    targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
@@ -148,9 +148,9 @@ backend:
 
   autoscaling:
     enabled: false
-    minReplicas: 3
+    minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 75
+    targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
