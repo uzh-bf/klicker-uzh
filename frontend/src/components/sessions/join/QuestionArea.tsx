@@ -208,9 +208,9 @@ function QuestionArea({
       } else if (QUESTION_GROUPS.FREE.includes(type)) {
         handleNewResponse({ instanceId, response: { value: String(inputValue) } })
       }
+    } else {
+      push(['trackEvent', 'Join Session', 'Question Skipped'])
     }
-
-    push(['trackEvent', 'Join Session', 'Question Skipped'])
 
     // update the stored responses
     if (typeof window !== 'undefined') {
