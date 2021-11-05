@@ -6,6 +6,7 @@ import { FormattedMessage } from 'react-intl'
 import { useRouter } from 'next/router'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { Button, Checkbox } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
 import { toValueArray } from '../../lib/utils/math'
@@ -14,13 +15,9 @@ import Possibilities from '../../components/evaluation/Possibilities'
 import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
-import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
-import { withApollo } from '../../lib/apollo'
 
 function Print(): React.ReactElement<any> {
-  useLogging()
-
   const router = useRouter()
 
   const isPublic = !!router.query.public
@@ -227,4 +224,4 @@ function Print(): React.ReactElement<any> {
   )
 }
 
-export default withApollo()(Print)
+export default Print

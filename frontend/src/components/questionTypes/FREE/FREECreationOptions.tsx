@@ -1,7 +1,6 @@
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import _get from 'lodash/get'
-import { Form, Icon, Input } from 'semantic-ui-react'
+import { Form, Icon, Input, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QUESTION_TYPES } from '../../../constants'
@@ -40,6 +39,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
       restrictions: { ...value.restrictions, min: newMin },
     })
   }
+  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div className="FREECreationOptions">
@@ -47,17 +47,28 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
         <Form.Field required error={dirty && invalid}>
           <label htmlFor="options">
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
-            <a data-tip data-for="FREECreationHelp">
-              <Icon name="question circle" />
-            </a>
-          </label>
 
-          <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
-            <FormattedMessage
-              defaultMessage="Choose the allowed format of incoming responses."
-              id="createQuestion.optionsFREE.tooltip"
+            <Popup
+              content={
+                <FormattedMessage
+                  defaultMessage="Choose the allowed format of incoming responses."
+                  id="createQuestion.optionsFREE.tooltip"
+                />
+              }
+              trigger={
+                <a data-tip>
+                  <Icon name="question circle" />
+                </a>
+              }
+              position="right center"
+              size="small"
+              style={PopupStyle}
+              mouseEnterDelay={250}
+              mouseLeaveDelay={250}
+              wide
+              inverted
             />
-          </ReactTooltip>
+          </label>
 
           {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 

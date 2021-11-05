@@ -15,6 +15,14 @@ analytics:
   sentry:
     frontend:
       environment: qa
+  google:
+    trackingId: G-GWEK0XHXDR
+  happyKit:
+    publicKey: analytics_pub_1312f90ec4
+
+featureFlags:
+  envKey: flags_pub_preview_313968481835942464
+  persistedUsers: 'roland.schlaefli@bf.uzh.ch'
 
 frontend:
   hostname: app.klicker-qa.bf-app.ch

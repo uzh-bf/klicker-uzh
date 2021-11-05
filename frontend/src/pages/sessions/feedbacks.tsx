@@ -3,13 +3,13 @@ import { useQuery } from '@apollo/client'
 import Head from 'next/head'
 import { Icon, Dropdown } from 'semantic-ui-react'
 import dayjs from 'dayjs'
+
 import PinnedFeedbacksQuery from '../../graphql/queries/PinnedFeedbacksQuery.graphql'
-import { withApollo } from '../../lib/apollo'
 
 function Feedbacks() {
   const [sortBy, setSortBy] = useState('upvotes')
 
-  const { data, loading, error, startPolling, stopPolling, subscribeToMore } = useQuery(PinnedFeedbacksQuery, {
+  const { data, loading, error } = useQuery(PinnedFeedbacksQuery, {
     pollInterval: 10000,
   })
 
@@ -61,4 +61,4 @@ function Feedbacks() {
   )
 }
 
-export default withApollo()(Feedbacks)
+export default Feedbacks

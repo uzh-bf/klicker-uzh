@@ -1,5 +1,6 @@
 import React from 'react'
-import { Card, Image, Modal } from 'semantic-ui-react'
+import { Card, Image as SemanticImage, Modal } from 'semantic-ui-react'
+import Image from 'next/image'
 import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
@@ -25,7 +26,7 @@ function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
         const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
         const previewImage = (
           <Card>
-            <Image crossOrigin="anonymous" height="auto" src={fileSrc} width="100%" />
+            <Image alt={description} crossOrigin="anonymous" height={80} objectFit="cover" src={fileSrc} width={100} />
             {!isCompact && <Card.Content extra>#{ix + 1}</Card.Content>}
           </Card>
         )
@@ -35,7 +36,7 @@ function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
             <Modal closeIcon trigger={previewImage}>
               {description && <Modal.Header>{description}</Modal.Header>}
               <Modal.Content image>
-                <Image crossOrigin="anonymous" src={fileSrc} />
+                <SemanticImage alt={description} crossOrigin="anonymous" src={fileSrc} />
               </Modal.Content>
             </Modal>
           </div>
@@ -48,7 +49,7 @@ function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
 
           .file {
             margin-right: 0.3rem;
-            width: 60px;
+            width: 100px;
 
             :global(.extra) {
               padding: 0 0.3rem;

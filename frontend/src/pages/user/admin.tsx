@@ -4,8 +4,6 @@ import _debounce from 'lodash/debounce'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 import AdminArea from '../../components/admin/AdminArea'
 
 const messages = defineMessages({
@@ -20,8 +18,6 @@ const messages = defineMessages({
 })
 
 function Admin(): React.ReactElement {
-  useLogging()
-
   const { handleSearch, filters } = useSortingAndFiltering()
 
   const intl = useIntl()
@@ -42,4 +38,4 @@ function Admin(): React.ReactElement {
   )
 }
 
-export default withApollo()(Admin)
+export default Admin

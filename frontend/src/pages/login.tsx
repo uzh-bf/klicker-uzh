@@ -3,9 +3,9 @@ import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
 import { useMutation } from '@apollo/client'
 import { Message, Icon } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { FormattedMessage } from 'react-intl'
-import { withApollo } from '../lib/apollo'
 import ParticipantLoginForm from '../components/forms/ParticipantLoginForm'
 import StaticLayout from '../components/layouts/StaticLayout'
 import LoginParticipantMutation from '../graphql/mutations/LoginParticipantMutation.graphql'
@@ -36,6 +36,8 @@ function Login(): React.ReactElement {
 
           // save the user id in a cookie
           if (loginResult.data.loginParticipant) {
+            push(['trackEvent', 'Participant Auth', 'Participant Logged In'])
+
             Cookies.set('participantId', loginResult.data.loginParticipant, { secure: true })
 
             // redirect to the join page
@@ -47,4 +49,4 @@ function Login(): React.ReactElement {
   )
 }
 
-export default withApollo()(Login)
+export default Login

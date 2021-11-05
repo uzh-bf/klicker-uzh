@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../components/layouts/StaticLayout'
-import useLogging from '../lib/hooks/useLogging'
 
 const links = [
   {
@@ -18,13 +17,14 @@ const links = [
 ]
 
 function Index(): React.ReactElement {
-  useLogging({ logRocket: false })
-
   const router = useRouter()
 
   const [shortname, setShortname] = useState('')
 
-  const redirectToJoin = (): Promise<boolean> => router.replace(`/join/${shortname}`)
+  const redirectToJoin = (): Promise<boolean> => {
+    push(['trackEvent', 'Landing', 'Participation Clicked'])
+    return router.replace(`/join/${shortname}`)
+  }
 
   return (
     // TODO: internationalization
@@ -54,7 +54,7 @@ function Index(): React.ReactElement {
         <div className="boxes">
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -63,7 +63,7 @@ function Index(): React.ReactElement {
           </a>
           <a
             className="box hoverable"
-            href="https://uzh-bf.github.io/klicker-uzh/"
+            href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -93,28 +93,19 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/projects/4">
-                    klicker-roadmap
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap">
+                    Public Roadmap
                   </List.Header>
-                  <List.Description>Public Github Roadmap</List.Description>
+                  <List.Description>Public Roadmap</List.Description>
                 </List.Content>
               </List.Item>
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-react">
-                    uzh-bf/klicker-react
+                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh">
+                    uzh-bf/klicker-uzh
                   </List.Header>
-                  <List.Description>Frontend</List.Description>
-                </List.Content>
-              </List.Item>
-              <List.Item>
-                <List.Icon name="github" size="large" verticalAlign="middle" />
-                <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-api">
-                    uzh-bf/klicker-api
-                  </List.Header>
-                  <List.Description>Backend (API)</List.Description>
+                  <List.Description>Github Repository</List.Description>
                 </List.Content>
               </List.Item>
             </List>
@@ -124,10 +115,10 @@ function Index(): React.ReactElement {
         <List className="userLinks">
           {links.map(
             (link): React.ReactElement => (
-              <List.Item>
-                <Link href={link.href}>
+              <List.Item key={link.label}>
+                <a href={link.href} target="_self">
                   <Button primary>{link.label}</Button>
-                </Link>
+                </a>
               </List.Item>
             )
           )}
@@ -255,6 +246,12 @@ function Index(): React.ReactElement {
       `}</style>
     </StaticLayout>
   )
+}
+
+export async function getStaticProps() {
+  return {
+    props: {},
+  }
 }
 
 export default Index

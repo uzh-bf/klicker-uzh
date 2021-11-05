@@ -3,13 +3,12 @@ import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -19,10 +18,6 @@ const messages = defineMessages({
 })
 
 function Registration(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const intl = useIntl()
 
   const [register, { data, error, loading }] = useMutation(RegistrationMutation)
@@ -94,13 +89,16 @@ function Registration(): React.ReactElement {
                         useCase,
                       },
                     })
+                    push(['trackEvent', 'User', 'Signed Up'])
                   } catch ({ message }) {
                     if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
                       setFieldError('shortname', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'Error', 'Shortname Not Available'])
                     }
 
                     if (message === Errors.EMAIL_NOT_AVAILABLE) {
                       setFieldError('email', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'Error', 'Email Not Available'])
                     }
 
                     setSubmitting(false)
@@ -144,4 +142,4 @@ function Registration(): React.ReactElement {
   )
 }
 
-export default withApollo()(Registration)
+export default Registration

@@ -17,5 +17,5 @@ To archive a question and see all archived questions follow these steps:
 
 All archived questions are no longer visible within the question pool, unless the archive is displayed explicitly.
 
-![Archive Question](assets/question_archive.png)
-![Archived Question](assets/question_archived.png)
+![Archive Question](/img/question_archive.png)
+![Archived Question](/img/question_archived.png)

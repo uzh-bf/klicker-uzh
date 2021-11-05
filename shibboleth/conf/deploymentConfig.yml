@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  generation: 2
+  labels:
+    app: klicker-aai
+    openshift.io/deployment-config.name: klicker-aai
+  name: klicker-aai
+  namespace: klicker
+spec:
+  replicas: 1
+  selector:
+    app: klicker-aai
+  template:
+    metadata:
+      labels:
+        app: klicker-aai
+    spec:
+      containers:
+        - command:
+            - /usr/libexec/s2i/run
+          image: docker.io/uzhbf/klicker-aai
+          imagePullPolicy: Always
+          name: httpd
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/run/shibboleth
+              name: shib-socket
+            # - mountPath: /etc/httpd/conf.d/shib.conf
+            #   name: shib-conf
+            #   readOnly: true
+            #   subPath: shib.conf
+        - image: docker.io/uzhbf/klicker-aai
+          imagePullPolicy: Always
+          name: shibd
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/shibboleth/sp-cert.pem
+              name: sp-cert
+              readOnly: true
+              subPath: sp-cert.pem
+            - mountPath: /etc/shibboleth/sp-key.pem
+              name: sp-key
+              readOnly: true
+              subPath: sp-key.pem
+            - mountPath: /var/run/shibboleth
+              name: shib-socket
+            # - mountPath: /etc/shibboleth/shibboleth2.xml
+            #   name: shibboleth2
+            #   readOnly: true
+            #   subPath: shibboleth2.xml
+            # - mountPath: /etc/shibboleth/attribute-policy.xml
+            #   name: attribute-policy
+            #   readOnly: true
+            #   subPath: attribute-policy.xml
+            # - mountPath: /etc/shibboleth/attribute-map.xml
+            #   name: attribute-map
+            #   readOnly: true
+            #   subPath: attribute-map.xml
+            # - mountPath: /etc/shibboleth/SWITCHaaiRootCA.crt.pem
+            #   name: root-cert
+            #   readOnly: true
+            #   subPath: SWITCHaaiRootCA.crt.pem
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: sp-cert
+          secret:
+            defaultMode: 0440
+            items:
+              - key: sp-cert.pem
+                path: sp-cert.pem
+            secretName: aai-sp-cert
+        - name: sp-key
+          secret:
+            defaultMode: 0440
+            items:
+              - key: sp-key.pem
+                path: sp-key.pem
+            secretName: aai-sp-key
+        - emptyDir: {}
+          name: shib-socket
+        # - configMap:
+        #     defaultMode: 0440
+        #     name: shib-conf-prod
+        #   name: shib-conf
+        # - configMap:
+        #     defaultMode: 0440
+        #     name: shibboleth2-prod
+        #   name: shibboleth2
+        # - configMap:
+        #     defaultMode: 0440
+        #     name: shib-policy-prod
+        #   name: attribute-policy
+        # - configMap:
+        #     defaultMode: 0440
+        #     name: shib-map-prod
+        #   name: attribute-map
+        # - configMap:
+        #     defaultMode: 0440
+        #     name: shib-root-cert
+        #   name: root-cert

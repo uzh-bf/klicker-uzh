@@ -4,16 +4,15 @@ import { useMutation } from '@apollo/client'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import { useToasts } from 'react-toast-notifications'
+import { push } from '@socialgouv/matomo-next'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
-import useLogging from '../../lib/hooks/useLogging'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -27,8 +26,6 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -104,4 +101,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withApollo()(Index)
+export default Index

@@ -1,0 +1,3 @@
+subscription PublicFeedbackRemoved($sessionId: ID!) {
+  publicFeedbackRemoved(sessionId: $sessionId)
+}

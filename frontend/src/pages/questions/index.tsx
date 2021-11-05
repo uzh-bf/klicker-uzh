@@ -5,14 +5,14 @@ import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-// import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
+import { push } from '@socialgouv/matomo-next'
 
-import useLogging from '../../lib/hooks/useLogging'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import CreateSessionMutation from '../../graphql/mutations/CreateSessionMutation.graphql'
@@ -29,14 +29,13 @@ import SessionCreationForm from '../../components/forms/sessionCreation/SessionC
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import ActionBar from '../../components/questions/ActionBar'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
 import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import { withApollo } from '../../lib/apollo'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 
 const messages = defineMessages({
   pageTitle: {
@@ -49,9 +48,7 @@ const messages = defineMessages({
   },
 })
 
-function Index(): React.ReactElement {
-  useLogging()
-
+function Index({ featureFlags }): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -135,6 +132,7 @@ function Index(): React.ReactElement {
   const onToggleArchive = (): void => {
     handleResetSelection()
     handleToggleArchive()
+    push(['trackEvent', 'Question Pool', 'Archive Toggled'])
   }
 
   // handle archiving a question
@@ -145,9 +143,10 @@ function Index(): React.ReactElement {
     try {
       // archive the questions
       await archiveQuestions({
-        refetchQueries: [{ query: QuestionPoolQuery }],
         variables: { ids: selectedItems.ids },
       })
+
+      push(['trackEvent', 'Question Pool', 'Questions Archived', selectedItems.ids.length])
 
       addToast(
         <FormattedMessage
@@ -192,6 +191,8 @@ function Index(): React.ReactElement {
         })),
       },
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
   }
 
   // build a separate block for each checked question
@@ -214,6 +215,8 @@ function Index(): React.ReactElement {
         ],
       })),
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
   }
 
   // handle creating a new session
@@ -249,6 +252,8 @@ function Index(): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Modified'])
         } else {
           // create a new session
           result = await createSession({
@@ -261,6 +266,8 @@ function Index(): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Created'])
         }
 
         // start the session immediately if the respective button was clicked
@@ -273,6 +280,7 @@ function Index(): React.ReactElement {
             ],
             variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
           })
+          push(['trackEvent', 'Question Pool', 'Session Started'])
           router.push('/sessions/running')
         } else {
           const ToastContent = (
@@ -344,6 +352,8 @@ function Index(): React.ReactElement {
           },
           variables: { ids: questionIds },
         })
+
+        push(['trackEvent', 'Question Pool', 'Questions Deleted', questionIds.length])
 
         handleResetSelection()
 
@@ -478,9 +488,10 @@ function Index(): React.ReactElement {
                 handleQuesionViewChange={onChangeQuestionView}
                 isArchiveActive={filters.archive}
                 itemsChecked={selectedItems.ids}
+                key="action-bar"
                 questions={processedQuestions}
               />,
-              <div className="questionList">
+              <div className="questionList" key="question-list">
                 <QuestionList
                   creationMode={creationMode}
                   isArchiveActive={filters.archive}
@@ -555,4 +566,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withApollo()(Index)
+export default withFeatureFlags(Index)

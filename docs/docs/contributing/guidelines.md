@@ -5,11 +5,11 @@ title: Contributing Guidelines
 
 When contributing to any KlickerUZH service or project, please ensure that you follow our guidelines. These have mainly been set to ensure consistency within our projects and should not be a cause of inconvenience.
 
-Before considering any contribution, we recommend that you create an issue to discuss your proposed addition with the project contributors. If you have any questions, please feel free to reach out.
+Before considering any contribution, we recommend that you create a discussion (https://github.com/uzh-bf/klicker-uzh/discussions) to discuss your proposed addition with the project contributors. If you have any questions, please feel free to reach out.
 
 ## Code Style
 
-The code style of KlickerUZH is checked using ESLint (https://eslint.org/). Our configuration is based on the Airbnb Javascript style guide (https://github.com/airbnb/javascript). Some rules have been overridden to fit the style of our project. The linter can be manually executed with `npm run lint`; it will automatically run on pre-commit.
+The code style of KlickerUZH is checked using ESLint (https://eslint.org/). The linter can be manually executed with `npm run lint`; it will automatically run on pre-commit.
 
 ## Formatting
 

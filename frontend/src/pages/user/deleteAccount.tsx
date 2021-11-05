@@ -4,11 +4,10 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ResolveAccountDeletionMutation from '../../graphql/mutations/ResolveAccountDeletionMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -18,10 +17,6 @@ const messages = defineMessages({
 })
 
 function DeleteAccount(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const router = useRouter()
   const intl = useIntl()
 
@@ -64,6 +59,7 @@ function DeleteAccount(): React.ReactElement {
                 loading={loading}
                 onClick={(): void => {
                   deleteAccount({ variables: { deletionToken: router.query.deletionToken } })
+                  push(['trackEvent', 'User', 'Account Deleted'])
                 }}
               >
                 <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
@@ -95,4 +91,4 @@ function DeleteAccount(): React.ReactElement {
   )
 }
 
-export default withApollo()(DeleteAccount)
+export default DeleteAccount

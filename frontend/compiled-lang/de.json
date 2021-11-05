@@ -71,6 +71,12 @@
       "value": "Zurück"
     }
   ],
+  "common.button.close": [
+    {
+      "type": 0,
+      "value": "Schliessen"
+    }
+  ],
   "common.button.continue": [
     {
       "type": 0,
@@ -311,6 +317,12 @@
       "value": "Verfügbare Auswahlmöglichkeiten"
     }
   ],
+  "createQuestion.optionsSC.solutionToggle.tooltip": [
+    {
+      "type": 0,
+      "value": "Klicken Sie hier, um die Antwortmöglichkeit als korrekt (grün hervorgehoben) oder inkorrekt zu markieren."
+    }
+  ],
   "createQuestion.optionsSC.tooltip": [
     {
       "type": 0,
@@ -483,6 +495,12 @@
     {
       "type": 0,
       "value": "Diagramm"
+    }
+  ],
+  "feedbackchannel.notifications.title": [
+    {
+      "type": 0,
+      "value": "Neue Frage / Feedback"
     }
   ],
   "fileDropzone.button.delete": [
@@ -947,6 +965,36 @@
       "value": "Alle Feedbacks"
     }
   ],
+  "joinSession.feedbackArea.feedbackPlaceholder": [
+    {
+      "type": 0,
+      "value": "Posten Sie ein Feedback oder eine Frage..."
+    }
+  ],
+  "joinSession.feedbackArea.open": [
+    {
+      "type": 0,
+      "value": "Offen"
+    }
+  ],
+  "joinSession.feedbackArea.postedAt": [
+    {
+      "type": 0,
+      "value": "Gepostet am"
+    }
+  ],
+  "joinSession.feedbackArea.resolved": [
+    {
+      "type": 0,
+      "value": "Erledigt"
+    }
+  ],
+  "joinSession.feedbackArea.resolvedAt": [
+    {
+      "type": 0,
+      "value": "Erledigt am"
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,
@@ -1029,6 +1077,12 @@
     {
       "type": 0,
       "value": "Sie sind nicht berechtigt, an dieser Session teilzunehmen."
+    }
+  ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "Eine neue Klicker-Frage ist verfügbar"
     }
   ],
   "joinSession.string.responseIgnored": [

@@ -39,6 +39,11 @@ module.exports = convict({
       env: 'APP_JOIN_URL',
       format: 'url',
     },
+    host: {
+      default: '0.0.0.0',
+      env: 'APP_HOST',
+      format: String,
+    },
     persistQueries: {
       default: false,
       env: 'APP_PERSIST_QUERIES',
@@ -114,6 +119,11 @@ module.exports = convict({
     format: ['production', 'development', 'test'],
   },
   s3: {
+    rootDomain: {
+      default: undefined,
+      env: 'S3_ROOT_DOMAIN',
+      format: String,
+    },
     rootUrl: {
       default: undefined,
       env: 'S3_ROOT_URL',
@@ -134,6 +144,11 @@ module.exports = convict({
       },
     },
     csp: {
+      childSrc: {
+        default: ["'self'", 'blob:*', 'forms.clickup.com'],
+        env: 'SECURITY_CSP_CHILD_SRC',
+        format: Array,
+      },
       connectSrc: {
         default: ["'self'", process.env.API_ENDPOINT, process.env.API_ENDPOINT_WS],
         env: 'SECURITY_CSP_CONNECT_SRC',
@@ -155,12 +170,12 @@ module.exports = convict({
         format: Boolean,
       },
       fontSrc: {
-        default: ["'self'", 'fonts.gstatic.com'],
+        default: ["'self'", 'data:*', 'fonts.gstatic.com'],
         env: 'SECURITY_CSP_FONT_SRC',
         format: Array,
       },
       imgSrc: {
-        default: ["'self'", 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.co'],
+        default: ["'self'", 'data:*', 'blob:*', 'www.switch.ch', 'www.gstatic.com', 'tc-klicker-prod.s3.amazonaws.com'],
         env: 'SECURITY_CSP_IMG_SRC',
         format: Array,
       },
@@ -170,7 +185,7 @@ module.exports = convict({
         format: 'url',
       },
       scriptSrc: {
-        default: ["'self'", "'unsafe-inline'"],
+        default: ["'self'", "'unsafe-inline'", 'blob:*'],
         env: 'SECURITY_CSP_SCRIPT_SRC',
         format: Array,
       },
@@ -183,6 +198,11 @@ module.exports = convict({
           'cdnjs.cloudflare.com',
         ],
         env: 'SECURITY_CSP_STYLE_SRC',
+        format: Array,
+      },
+      workerSrc: {
+        default: ["'self'", 'blob:*'],
+        env: 'SECURITY_CSP_WORKER_SRC',
         format: Array,
       },
     },
@@ -259,30 +279,43 @@ module.exports = convict({
     },
   },
   services: {
-    googleAnalytics: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_GOOGLE_ANALYTICS_ENABLED',
-        format: Boolean,
+    happyKit: {
+      envKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY',
+        format: String,
+        sensitive: true,
       },
+      publicKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY',
+        format: String,
+        sensitive: true,
+      },
+      persistedUsers: {
+        default: 'roland.schlaefli@bf.uzh.ch',
+        env: 'NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS',
+        format: String,
+      },
+    },
+    googleAnalytics: {
       trackingId: {
         default: undefined,
-        env: 'SERVICES_GOOGLE_ANALYTICS_TRACKING_ID',
+        env: 'NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID',
         format: String,
         sensitive: true,
       },
     },
-    logrocket: {
-      appId: {
+    matomo: {
+      siteUrl: {
         default: undefined,
-        env: 'SERVICES_LOGROCKET_APP_ID',
-        format: String,
-        sensitive: true,
+        env: 'NEXT_PUBLIC_MATOMO_URL',
+        format: 'url',
       },
-      enabled: {
-        default: false,
-        env: 'SERVICES_LOGROCKET_ENABLED',
-        format: Boolean,
+      siteId: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_MATOMO_SITE_ID',
+        format: Number,
       },
     },
     sentry: {
@@ -322,7 +355,7 @@ module.exports = convict({
         format: 'url',
       },
       tracesSampleRate: {
-        default: 1,
+        default: 1.0,
         env: 'SENTRY_SAMPLE_RATE',
         format: Number,
       },
