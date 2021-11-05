@@ -36,6 +36,7 @@ const messages = defineMessages({
 
 interface Props {
   creationMode?: boolean
+  questionView?: string
   deletionConfirmation: boolean
   handleArchiveQuestions: any
   handleCreationModeToggle: any
@@ -44,21 +45,27 @@ interface Props {
   handleQuickBlocks: any
   handleSetItemsChecked: any
   handleResetItemsChecked: any
+  handleQuesionViewChange: any
   isArchiveActive?: boolean
+  isViewToggleVisible?: boolean
   itemsChecked?: string[]
   questions?: any[]
 }
 
 const defaultProps = {
   creationMode: false,
+  questionView: 'list',
   isArchiveActive: false,
+  isViewToggleVisible: false,
   itemsChecked: [],
   questions: [],
 }
 
 function ActionBar({
   isArchiveActive,
+  isViewToggleVisible,
   creationMode,
+  questionView,
   deletionConfirmation,
   itemsChecked,
   handleArchiveQuestions,
@@ -68,6 +75,7 @@ function ActionBar({
   handleQuickBlocks,
   handleSetItemsChecked,
   handleResetItemsChecked,
+  handleQuesionViewChange,
   questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -300,6 +308,20 @@ function ActionBar({
             />
           </span>
         </Label>
+
+        {/* buttons to change between question view formats */}
+        {isViewToggleVisible && (
+          <div className="ml-1">
+            <Button.Group className="order-1">
+              <Button icon active={questionView === 'list'} onClick={(): void => handleQuesionViewChange('list')}>
+                <Icon name="list" />
+              </Button>
+              <Button icon active={questionView === 'grid'} onClick={(): void => handleQuesionViewChange('grid')}>
+                <Icon name="grid layout" />
+              </Button>
+            </Button.Group>
+          </div>
+        )}
 
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
