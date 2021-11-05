@@ -27,7 +27,7 @@ function ConfusionDialog({ title, value, handleChange, labels }: Props): React.R
           handleChange(props.onChangeValue)
           setButtonState(false)
           clearTimeout()
-          setTimeout(setButtonState, 60000, true)
+          setTimeout(setButtonState, 5000, true)
         }}
         color={value == props.onChangeValue ? 'blue' : null}
         disabled={!buttonState}
@@ -38,9 +38,9 @@ function ConfusionDialog({ title, value, handleChange, labels }: Props): React.R
   }
 
   return (
-    <div className="confusionSlider mb-10">
+    <div className="mb-10 confusionSlider">
       <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
-      {title && <div className="text-base m-0 mb-2">{title}</div>}
+      {title && <div className="m-0 mb-2 text-base">{title}</div>}
 
       <div>
         <ConfusionButton onChangeValue={-1}>{labels.min}</ConfusionButton>

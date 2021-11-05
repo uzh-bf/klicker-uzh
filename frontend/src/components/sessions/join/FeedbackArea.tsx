@@ -215,53 +215,67 @@ function FeedbackArea({
     }))
   }, [data?.joinQA, upvotedFeedbacks, reactions])
 
-  useEffect((): void => {
-    try {
-      if (window.sessionStorage) {
-        const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
-        setConfusionDifficulty(confusion.confusionDifficulty)
-        setConfusionSpeed(confusion.confusionSpeed)
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
+  // useEffect((): void => {
+  //   try {
+  //     if (window.sessionStorage) {
+  //       const prevSpeed = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusionSpeed`)).speed
+  //       const prevDifficulty = JSON.parse(
+  //         sessionStorage.getItem(`${shortname}-${sessionId}-confusionDifficulty`)
+  //       ).difficulty
+  //       setConfusionSpeed(prevSpeed)
+  //       setConfusionDifficulty(prevDifficulty)
+  //       console.log(prevSpeed)
+  //       console.log(prevDifficulty)
+  //     }
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }, [])
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
     if (selector === 'speed') {
-      await setSpeedAsync(newValue)
+      setConfusionSpeed(newValue)
+      console.log('speed: ' + newValue)
+      console.log('saved difficulty: ' + confusionDifficulty)
+      handleNewConfusionTS({
+        difficulty: confusionDifficulty ? confusionDifficulty : 0,
+        speed: newValue,
+      })
     } else if (selector === 'difficulty') {
-      await setDifficultyAsync(newValue)
+      setConfusionDifficulty(newValue)
+      console.log('difficulty: ' + newValue)
+      console.log('saved speed: ' + confusionSpeed)
+      handleNewConfusionTS({
+        difficulty: newValue,
+        speed: confusionSpeed ? confusionSpeed : 0,
+      })
     }
-    handleNewConfusionTS({
-      difficulty: confusionDifficulty,
-      speed: confusionSpeed,
-    })
 
-    // update the confusion cookie
-    try {
-      if (window.sessionStorage) {
-        sessionStorage.setItem(
-          `${shortname}-${sessionId}-confusion`,
-          JSON.stringify({
-            difficulty: confusionDifficulty,
-            speed: confusionSpeed,
-            timestamp: dayjs().unix(),
-          })
-        )
-      }
-    } catch (e) {
-      console.error(e)
-    }
+    // update stored the confusion data for availability on reload
+    // console.log('confusion data updated')
+    // try {
+    //   if (window.sessionStorage) {
+    //     sessionStorage.setItem(
+    //       `${shortname}-${sessionId}-confusionSpeed`,
+    //       JSON.stringify({
+    //         speed: confusionSpeed,
+    //         timestamp: dayjs().unix(),
+    //       })
+    //     )
+    //     sessionStorage.setItem(
+    //       `${shortname}-${sessionId}-confusionDifficulty`,
+    //       JSON.stringify({
+    //         difficulty: confusionDifficulty,
+    //         timestamp: dayjs().unix(),
+    //       })
+    //     )
+    //   }
+    // } catch (e) {
+    //   console.error(e)
+    // }
   }
 
-  const setSpeedAsync = async (newValue: any) => {
-    setConfusionSpeed(newValue)
-  }
-  const setDifficultyAsync = async (newValue: any) => {
-    setConfusionDifficulty(newValue)
-  }
   useEffect(() => {
     // forward all feedback ids (visible resolved and open questions) to the join-page
     const feedbackIds = processedFeedbacks.open
@@ -415,34 +429,30 @@ function FeedbackArea({
           </div>
         )}
       </div>
-      {console.log(isConfusionBarometerActive)}
-      {
-        // CHANGES FROM HERE ON
-        isConfusionBarometerActive && (
-          <div className="float-bottom">
-            <ConfusionDialog
-              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
-              labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-              title={
-                <h2 className="sectionTitle">
-                  <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
-                </h2>
-              }
-              value={confusionSpeed}
-            />
-            <ConfusionDialog
-              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
-              labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-              title={
-                <h2 className="sectionTitle">
-                  <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
-                </h2>
-              }
-              value={confusionDifficulty}
-            />
-          </div>
-        )
-      }
+      {isConfusionBarometerActive && (
+        <div className="float-bottom">
+          <ConfusionDialog
+            handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+            labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
+            title={
+              <h2 className="sectionTitle">
+                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+              </h2>
+            }
+            value={confusionSpeed}
+          />
+          <ConfusionDialog
+            handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+            labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
+            title={
+              <h2 className="sectionTitle">
+                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+              </h2>
+            }
+            value={confusionDifficulty}
+          />
+        </div>
+      )}
     </div>
   )
 }

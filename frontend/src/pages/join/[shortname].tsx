@@ -122,16 +122,18 @@ function Join({ shortname }): React.ReactElement {
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
-  // handle creation of a new confusion timestep
+  // handle creation of a new confusion timestep with debounce for aggregation
   const onNewConfusionTS = _debounce(
     async ({ difficulty = 0, speed = 0 }): Promise<void> => {
+      console.log('received speed: ' + speed + '; received difficulty: ' + difficulty)
+
       try {
         newConfusionTS({
           variables: {
+            speed,
             difficulty,
             fp: fingerprint,
             sessionId,
-            speed,
           },
         })
       } catch ({ message }) {
