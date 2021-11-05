@@ -30,13 +30,13 @@ releases:
   #     - chart/values.qa.yaml
   #     - chart/secrets.qa.yaml
 
-  - name: klicker-prod
-    namespace: klicker-prod
-    createNamespace: true
-    chart: ./chart
-    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
-    values:
-      - chart/values.yaml
-      - chart/values.prod.yaml
-      - chart/secrets.prod.yaml
+  # - name: klicker-prod
+  #   namespace: klicker-prod
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/values.prod.yaml
+  #     - chart/secrets.prod.yaml
