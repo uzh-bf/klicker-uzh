@@ -35,7 +35,6 @@ module.exports = (phase) => {
       happyKitAnalyticsKey: SERVICES_CFG.happyKit.publicKey,
       happyKitFlagEnvKey: SERVICES_CFG.happyKit.envKey,
       happyKitPersistedUsers: SERVICES_CFG.happyKit.persistedUsers,
-      joinUrl: APP_CFG.joinUrl,
       persistQueries: APP_CFG.persistQueries,
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
@@ -45,6 +44,8 @@ module.exports = (phase) => {
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
       rootDir: __dirname,
+      joinUrl: APP_CFG.joinUrl,
+      baseUrl: APP_CFG.baseUrl,
     },
     // setup custom webpack configuration
     webpack: (webpackConfig, { dev }) => {
