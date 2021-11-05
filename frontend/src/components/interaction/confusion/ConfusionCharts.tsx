@@ -69,18 +69,6 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
     aggrDifficulty['0'] ? aggrDifficulty['0'] : 0,
     aggrDifficulty['1'] ? aggrDifficulty['1'] : 0,
   ]
-  // console.log('running speed array: ' + speedRunning)
-  // console.log('running difficulty array: ' + difficultyRunning)
-
-  // console.log(
-  //   'new data element: \n' +
-  //     filteredConfusion.map((element) => [
-  //       'speed: ' + element.speed,
-  //       'difficulty: ' + element.difficulty,
-  //       'timestamp: ' + element.timestamp,
-  //       '\n',
-  //     ])
-  // )
 
   return (
     <>

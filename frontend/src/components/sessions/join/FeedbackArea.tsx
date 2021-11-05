@@ -224,8 +224,6 @@ function FeedbackArea({
   //       ).difficulty
   //       setConfusionSpeed(prevSpeed)
   //       setConfusionDifficulty(prevDifficulty)
-  //       console.log(prevSpeed)
-  //       console.log(prevDifficulty)
   //     }
   //   } catch (e) {
   //     console.error(e)
@@ -236,16 +234,12 @@ function FeedbackArea({
     // send the new confusion entry to the server
     if (selector === 'speed') {
       setConfusionSpeed(newValue)
-      //console.log('speed: ' + newValue)
-      //console.log('saved difficulty: ' + confusionDifficulty)
       handleNewConfusionTS({
         difficulty: confusionDifficulty ? confusionDifficulty : 0,
         speed: newValue,
       })
     } else if (selector === 'difficulty') {
       setConfusionDifficulty(newValue)
-      //console.log('difficulty: ' + newValue)
-      //console.log('saved speed: ' + confusionSpeed)
       handleNewConfusionTS({
         difficulty: newValue,
         speed: confusionSpeed ? confusionSpeed : 0,
@@ -253,7 +247,6 @@ function FeedbackArea({
     }
 
     // update stored the confusion data for availability on reload
-    // console.log('confusion data updated')
     // try {
     //   if (window.sessionStorage) {
     //     sessionStorage.setItem(
