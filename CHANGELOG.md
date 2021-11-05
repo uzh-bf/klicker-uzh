@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.21...v1.6.3-alpha.22) (2021-11-05)
+
+
+### Bug Fixes
+
+* move joinLink to serverRuntimeConfig ([a37ca95](https://github.com/uzh-bf/klicker-uzh/commit/a37ca95cebd0a9c779167bbda988da61230a4352))
+
 ### [1.6.3-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.20...v1.6.3-alpha.21) (2021-11-05)
 
 
