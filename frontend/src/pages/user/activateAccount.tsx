@@ -4,11 +4,10 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useApolloClient } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -18,10 +17,6 @@ const messages = defineMessages({
 })
 
 function ActivateAccount(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const client = useApolloClient()
   const router = useRouter()
   const intl = useIntl()
@@ -32,6 +27,8 @@ function ActivateAccount(): React.ReactElement {
     client
       .mutate({ mutation: ActivateAccountMutation, variables: { activationToken: router.query.activationToken } })
       .then((): void => setSuccess(true))
+
+    push(['trackEvent', 'User', 'Account Activated'])
   }, [])
 
   return (
@@ -76,4 +73,4 @@ function ActivateAccount(): React.ReactElement {
   )
 }
 
-export default withApollo()(ActivateAccount)
+export default ActivateAccount

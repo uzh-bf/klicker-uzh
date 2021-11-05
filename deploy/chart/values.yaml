@@ -22,7 +22,7 @@ redis:
         cpu: 100m
         memory: 50Mi
       limits:
-        cpu: 500m
+        cpu: 200m
         memory: 200Mi
 
   replica:
@@ -33,11 +33,11 @@ redis:
 
     resources:
       requests:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       limits:
-        cpu: 150m
-        memory: 100Mi
+        cpu: 200m
+        memory: 200Mi
 
 
 security:
@@ -65,14 +65,19 @@ analytics:
       dsn: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
       org: uzh-bf
       project: klicker-react
+      sampleRate: 0.25
     backend:
       enabled: false
-  logrocket:
-    enabled: false
-    appId: vqm2qj/klicker
   google:
-    enabled: false
-    trackingId: UA-33258666-18
+    trackingId:
+  happyKit:
+    publicKey:
+  matomo:
+    siteUrl:
+    siteId:
+
+featureFlags:
+  envKey:
 
 frontend:
   replicaCount: 1
@@ -93,14 +98,20 @@ frontend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources: {}
+  resources:
+    requests:
+      cpu: 200m
+      memory: 300Mi
+    limits:
+      cpu: 500m
+      memory: 400Mi
 
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
 
@@ -127,17 +138,52 @@ backend:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
 
-  resources: {}
+  resources:
+    requests:
+      cpu: 200m
+      memory: 150Mi
+    limits:
+      cpu: 300m
+      memory: 300Mi
 
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 85
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 75
 
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
+
+shibboleth:
+  enabled: false
+
+  replicaCount: 2
+
+  hostname: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/shibboleth
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: false
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi

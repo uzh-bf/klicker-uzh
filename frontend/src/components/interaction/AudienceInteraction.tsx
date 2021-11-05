@@ -3,6 +3,7 @@ import { useMutation } from '@apollo/client'
 import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import clsx from 'clsx'
+import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -100,6 +101,7 @@ function AudienceInteraction({
                       },
                     },
                   })
+                  push(['trackEvent', 'Running Session', 'Feedback Channel Toggled', String(!isFeedbackChannelActive)])
                 }}
               />
               <FormattedMessage
@@ -126,6 +128,12 @@ function AudienceInteraction({
                       },
                     },
                   })
+                  push([
+                    'trackEvent',
+                    'Running Session',
+                    'Feedback Moderation Toggled',
+                    String(!isFeedbackChannelPublic),
+                  ])
                 }}
               />
               <div className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
@@ -158,12 +166,15 @@ function AudienceInteraction({
               handleActiveToggle={() => null}
               handleDeleteFeedback={(feedbackId: string): void => {
                 deleteFeedback({ variables: { feedbackId, sessionId } })
+                push(['trackEvent', 'Running Session', 'Feedback Deleted'])
               }}
               handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
                 deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
+                push(['trackEvent', 'Running Session', 'Feedback Response Deleted'])
               }}
               handlePinFeedback={(feedbackId: string, pinState: boolean) => {
                 pinFeedback({ variables: { sessionId, feedbackId, pinState } })
+                push(['trackEvent', 'Running Session', 'Feedback Pinned', String(pinState)])
               }}
               handlePublicToggle={(): void => {
                 updateSettings({
@@ -175,12 +186,15 @@ function AudienceInteraction({
               }}
               handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
                 publishFeedback({ variables: { sessionId, feedbackId, publishState } })
+                push(['trackEvent', 'Running Session', 'Feedback Published', String(publishState)])
               }}
               handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
                 resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
+                push(['trackEvent', 'Running Session', 'Feedback Resolved', String(resolvedState)])
               }}
               handleRespondToFeedback={(feedbackId: string, response: string) => {
                 respondToFeedback({ variables: { sessionId, feedbackId, response } })
+                push(['trackEvent', 'Running Session', 'Feedback Response Added', response.length])
               }}
               isActive={isFeedbackChannelActive}
               isPublic={isFeedbackChannelPublic}

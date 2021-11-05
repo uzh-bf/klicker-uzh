@@ -1,6 +1,7 @@
 import React from 'react'
 import clsx from 'clsx'
-import { Icon, Button, Input } from 'semantic-ui-react'
+import { Icon, Button, Input, Popup } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import styles from './styles'
 
@@ -36,9 +37,31 @@ function SCCreationOption({
         <Icon name="trash" />
       </button>
 
-      <button className={clsx('toggle', { correct })} disabled={disabled} type="button" onClick={handleCorrectToggle}>
-        {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-      </button>
+      <Popup
+        inverted
+        wide
+        content={
+          <FormattedMessage
+            defaultMessage="Toggle to define whether the option is correct (marked in green) or incorrect (marked in red)."
+            id="createQuestion.optionsSC.solutionToggle.tooltip"
+          />
+        }
+        mouseEnterDelay={250}
+        mouseLeaveDelay={250}
+        position="right center"
+        size="small"
+        style={{ opacity: 0.9 }}
+        trigger={
+          <button
+            className={clsx('toggle', { correct })}
+            disabled={disabled}
+            type="button"
+            onClick={handleCorrectToggle}
+          >
+            {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
+          </button>
+        }
+      />
 
       <Input
         disabled={disabled}

@@ -2,16 +2,15 @@ import React, { useState } from 'react'
 import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 // import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
 import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
 import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -107,8 +106,6 @@ export function extractInstancesFromSession(session): any {
 }
 
 function Evaluation(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
 
@@ -217,4 +214,4 @@ function Evaluation(): React.ReactElement {
   )
 }
 
-export default withApollo()(Evaluation)
+export default Evaluation

@@ -12,15 +12,22 @@ interface Props {
   description: string
   lastUsed?: any[]
   questionId: string
+  isModificationModalOpen: boolean
+  setIsModificationModalOpen: any
 }
 
 const defaultProps = {
   lastUsed: [],
 }
 
-function QuestionDetails({ questionId, description, lastUsed }: Props): React.ReactElement {
+function QuestionDetails({
+  questionId,
+  description,
+  lastUsed,
+  isModificationModalOpen,
+  setIsModificationModalOpen,
+}: Props): React.ReactElement {
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
-  const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
 
   const truncatedDesc = _truncate(description, { length: 250 })
 

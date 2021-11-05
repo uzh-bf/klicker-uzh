@@ -2,12 +2,11 @@ import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
-import useLogging from '../../lib/hooks/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -17,8 +16,6 @@ const messages = defineMessages({
 })
 
 function RequestPassword(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
 
   const [requestPassword, { data, loading, error }] = useMutation(RequestPasswordMutation)
@@ -50,6 +47,7 @@ function RequestPassword(): React.ReactElement {
                 loading={loading}
                 onSubmit={({ email }): void => {
                   requestPassword({ variables: { email } })
+                  push(['trackEvent', 'User', 'Password Requested'])
                 }}
               />
 
@@ -79,4 +77,4 @@ function RequestPassword(): React.ReactElement {
   )
 }
 
-export default withApollo()(RequestPassword)
+export default RequestPassword

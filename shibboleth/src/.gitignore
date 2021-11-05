@@ -1,0 +1,6 @@
+.idea/
+/coverage/
+/vendor/
+/logs/*
+!/logs/README.md
+/var/cache/*

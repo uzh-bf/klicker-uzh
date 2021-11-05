@@ -1,28 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { Button, Grid, Image, List, Message } from "semantic-ui-react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react'
+import { Button, Grid, Image, List, Message } from 'semantic-ui-react'
+import axios from 'axios'
 
-import KlickerUZH from "../components/common/KlickerUZH";
-import Slider from "../components/slider/Slider";
-import Section from "../components/section/Section";
-import FeatureOverview from "../components/section/FeatureOverview";
+import KlickerUZH from '../components/common/KlickerUZH'
+import KlickerLogo from '../components/common/KlickerLogo'
+import Slider from '../components/slider/Slider'
+import Section from '../components/section/Section'
+import FeatureOverview from '../components/section/FeatureOverview'
 
 async function pingKlickerEndpoint({
   serviceName,
   callback,
-  path = "",
-  method = "get",
+  path = '',
+  method = 'get',
 }) {
   try {
     await axios({
       method,
       url: `https://${serviceName}.klicker.uzh.ch${path}`,
       timeout: 1500,
-    } as any);
-    callback(true);
+    } as any)
+    callback(true)
   } catch (error) {
-    console.log(error);
-    callback(false);
+    console.log(error)
+    callback(false)
   }
 }
 
@@ -30,11 +31,11 @@ function Buttons() {
   return (
     <>
       <a
-        href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
+        href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
         target="_blank"
         rel="noopener noreferrer"
       >
-        <Button primary>Get Started</Button>
+        <Button primary>Getting Started</Button>
       </a>
       <a
         href="https://app.klicker.uzh.ch/user/login"
@@ -44,7 +45,7 @@ function Buttons() {
         <Button primary>Login</Button>
       </a>
     </>
-  );
+  )
 }
 function GetInvolvedButton() {
   return (
@@ -53,20 +54,20 @@ function GetInvolvedButton() {
         <Button primary>Get Involved</Button>
       </a>
     </>
-  );
+  )
 }
 
 export default function Index() {
-  const [isAppAvailable, setIsAppAvailable] = useState(null);
+  const [isAppAvailable, setIsAppAvailable] = useState(null)
   // const [isApiAvailable, setIsApiAvailable] = useState(null)
   // const [isAaiAvailable, setIsAaiAvailable] = useState(null)
 
   useEffect(() => {
     async function pingKlickerEndpoints() {
       pingKlickerEndpoint({
-        serviceName: "app",
+        serviceName: 'app',
         callback: setIsAppAvailable,
-      });
+      })
       // pingKlickerEndpoint({
       //   serviceName: 'api',
       //   callback: setIsApiAvailable,
@@ -79,8 +80,8 @@ export default function Index() {
       // })
     }
 
-    pingKlickerEndpoints();
-  }, []);
+    pingKlickerEndpoints()
+  }, [])
 
   return (
     <div>
@@ -89,7 +90,7 @@ export default function Index() {
           <Message error>
             The Klicker is unavailable at the moment. We are trying to fix the
             problem as quickly as possible. <br />
-            You can get updates on our{" "}
+            You can get updates on our{' '}
             <a
               target="_blank"
               rel="noopener noreferrer"
@@ -100,7 +101,7 @@ export default function Index() {
             . Please excuse the inconvenience and try again later.
             <Message.List>
               <Message.Item>
-                Frontend - {isAppAvailable ? "UP" : "DOWN"}
+                Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
               </Message.Item>
               {/* <Message.Item>
               Backend - {isApiAvailable ? 'UP' : 'DOWN'}
@@ -115,35 +116,35 @@ export default function Index() {
 
       <Slider>
         <Slider.Item
-          title={<KlickerUZH />}
+          title={<KlickerLogo width={150} />}
           description="The question pool enables lecturers to manage all of their past and future questions in one place."
           imageSrc="/img/question_pool_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
-          title={<KlickerUZH />}
+          title={<KlickerLogo width={150} />}
           description="The dedicated evaluation screen offers a clean presentation of the results."
           imageSrc="/img/evaluation_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
-          title={<KlickerUZH />}
+          title={<KlickerLogo width={150} />}
           description="The running session cockpit guides through the previously created sessions."
           imageSrc="/img/running_session_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
-          title={<KlickerUZH />}
+          title={<KlickerLogo width={150} />}
           description="The elaborated Q&amp;A and feedback channel allows for even more interaction in the classroom."
           imageSrc="/img/feedback_channel_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
-          title={<KlickerUZH />}
+          title={<KlickerLogo width={150} />}
           description="Get involved today and help us to develop an interactive open-source tool for lecturers and students at universities!"
           imageSrc="/img/development_mac_small.png"
         >
@@ -228,14 +229,16 @@ export default function Index() {
                       <List.Icon name="github" />
                       <List.Content>
                         <a href="https://github.com/uzh-bf/klicker-uzh">
-                          klicker-uzh - Github
+                          Github - klicker-uzh
                         </a>
                       </List.Content>
                     </List.Item>
                   </List>
-                  The project documentation is available{" "}
-                  <a href="https://uzh-bf.github.io/klicker-uzh/">online</a> and
-                  is being updated for every release.
+                  The project documentation is available{' '}
+                  <a href="https://www.klicker.uzh.ch/docs/introduction/getting_started">
+                    online
+                  </a>{' '}
+                  and is being updated for every release.
                 </FeatureOverview>
               </Grid.Column>
               <Grid.Column verticalAlign="middle" width={9}>
@@ -246,5 +249,5 @@ export default function Index() {
         </Section>
       </div>
     </div>
-  );
+  )
 }

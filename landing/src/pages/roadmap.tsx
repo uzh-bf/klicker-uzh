@@ -196,19 +196,16 @@ export default function Roadmap() {
       <div className="p-4 mt-8 md:mt-16">
         <h1>Public Roadmap</h1>
         <p className="prose prose-lg max-w-none">
-          Our public roadmap is directly integrated with our project management
-          software, allowing you to see what milestones we are currently working
-          on.
+          Our public roadmap allows you to see what we are currently working on,
+          as well as to contribute your own feature requests and bug reports.
         </p>
-
-        <iframe
-          className="clickup-embed"
-          src="https://sharing.clickup.com/b/h/5-74501758-2/8696b18d0f64dc6"
-          onWheel={() => null}
-          width="100%"
-          height="700px"
-          style={{ background: 'transparent', border: '1px solid #ccc' }}
-        ></iframe>
+        <a
+          href="https://klicker-uzh.feedbear.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Button primary>Go to public roadmap</Button>
+        </a>
       </div>
     </div>
   )

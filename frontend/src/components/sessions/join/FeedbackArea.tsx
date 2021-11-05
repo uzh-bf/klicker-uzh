@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { useQuery } from '@apollo/client'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
-import JoinQAQuery from '../../../graphql/queries/JoinQAQuery.graphql'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
+import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
 import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
+import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
+
 import PublicFeedback from './PublicFeedback'
+
+const messages = defineMessages({
+  feedbackPlaceholder: {
+    id: 'joinSession.feedbackArea.feedbackPlaceholder',
+    defaultMessage: 'Post a question or feedback...',
+  },
+})
 
 interface Props {
   active: boolean
@@ -19,7 +27,7 @@ interface Props {
   handleNewFeedback: any
   handleUpvoteFeedback: any
   handleReactToFeedbackResponse: any
-  shortname: string
+  handleFeedbackIds: any
   upvotedFeedbacks: any
   setUpvotedFeedbacks: any
   reactions: any
@@ -27,6 +35,9 @@ interface Props {
   sessionId: string
   isConfusionBarometerActive: boolean
   handleNewConfusionTS: any
+  subscribeToMore: any
+  data: any
+  shortname: string
 }
 
 const defaultProps = {
@@ -40,7 +51,7 @@ function FeedbackArea({
   handleNewFeedback,
   handleUpvoteFeedback,
   handleReactToFeedbackResponse,
-  shortname,
+  handleFeedbackIds,
   upvotedFeedbacks,
   setUpvotedFeedbacks,
   reactions,
@@ -48,14 +59,14 @@ function FeedbackArea({
   sessionId,
   isConfusionBarometerActive,
   handleNewConfusionTS,
+  shortname,
+  subscribeToMore,
+  data,
 }: Props): React.ReactElement {
   const [confusionDifficulty, setConfusionDifficulty] = useState()
   const [confusionSpeed, setConfusionSpeed] = useState()
 
-  const { data, subscribeToMore } = useQuery(JoinQAQuery, {
-    variables: { shortname },
-    pollInterval: 60000,
-  })
+  const intl = useIntl()
 
   useEffect(() => {
     const publicFeedbackAdded = subscribeToMore({
@@ -66,6 +77,18 @@ function FeedbackArea({
         const newItem = subscriptionData.data.publicFeedbackAdded
         if (prev.joinQA.map((item) => item.id).includes(newItem.id)) return prev
         return { ...prev, joinQA: [newItem, ...prev.joinQA] }
+      },
+    })
+
+    const publicFeedbackRemoved = subscribeToMore({
+      document: PublicFeedbackRemovedSubscription,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return {
+          ...prev,
+          joinQA: prev.joinQA.filter((feedback) => feedback.id !== subscriptionData.data.publicFeedbackRemoved),
+        }
       },
     })
 
@@ -121,11 +144,35 @@ function FeedbackArea({
       },
     })
 
+    const feedbackResponseDeleted = subscribeToMore({
+      document: FeedbackResponseDeletedSubscription,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return {
+          ...prev,
+          joinQA: prev.joinQA.map((feedback) => {
+            if (feedback.id === subscriptionData.data.feedbackResponseDeleted.feedbackId) {
+              return {
+                ...feedback,
+                responses: feedback.responses.filter(
+                  (response) => response.id !== subscriptionData.data.feedbackResponseDeleted.id
+                ),
+              }
+            }
+            return feedback
+          }),
+        }
+      },
+    })
+
     return () => {
       publicFeedbackAdded && publicFeedbackAdded()
       feedbackDeleted && feedbackDeleted()
       feedbackResolved && feedbackResolved()
       feedbackResponseAdded && feedbackResponseAdded()
+      feedbackResponseDeleted && feedbackResponseDeleted()
+      publicFeedbackRemoved && publicFeedbackRemoved()
     }
   }, [subscribeToMore, sessionId])
 
@@ -139,7 +186,7 @@ function FeedbackArea({
     if (data?.joinQA) {
       const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
       setProcessedFeedbacks({
-        resolved: sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved),
+        resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
         open: sortBy((o: any) => -dayjs(o.createdAt).unix(), open),
       })
     }
@@ -215,6 +262,30 @@ function FeedbackArea({
   const setDifficultyAsync = async (newValue: any) => {
     setConfusionDifficulty(newValue)
   }
+  useEffect(() => {
+    // forward all feedback ids (visible resolved and open questions) to the join-page
+    const feedbackIds = processedFeedbacks.open
+      .map((feedback: any) => feedback.id)
+      .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
+    const responseIds = processedFeedbacks.open
+      .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+      .map((feedback) =>
+        feedback.responses.map((response: any) => {
+          return response.id
+        })
+      )
+      .concat(
+        processedFeedbacks.resolved
+          .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+          .map((feedback) =>
+            feedback.responses.map((response: any) => {
+              return response.id
+            })
+          )
+      )
+      .flat()
+    handleFeedbackIds(feedbackIds, responseIds)
+  }, [processedFeedbacks])
 
   const onNewFeedback = (): void => {
     setFeedbackInputValue('')
@@ -270,7 +341,7 @@ function FeedbackArea({
               <TextArea
                 className="h-24"
                 name="feedbackInput"
-                placeholder="Post a question or feedback..."
+                placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
                 value={feedbackInputValue}
                 onChange={(e): void => setFeedbackInputValue(e.target.value)}
@@ -289,7 +360,9 @@ function FeedbackArea({
           <div>
             {processedFeedbacks.open.length > 0 && (
               <div>
-                <h2 className="!mb-2">Open</h2>
+                <h2 className="!mb-2">
+                  <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+                </h2>
                 {processedFeedbacks.open.map(
                   ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
                     <div className="mt-2 first:mt-0" key={id}>
@@ -314,7 +387,9 @@ function FeedbackArea({
             )}
             {processedFeedbacks.resolved.length > 0 && (
               <div className="mt-4">
-                <h2 className="!mb-2">Resolved</h2>
+                <h2 className="!mb-2">
+                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+                </h2>
                 {processedFeedbacks.resolved.map(
                   ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
                     <div className="mt-2 first:mt-0" key={id}>

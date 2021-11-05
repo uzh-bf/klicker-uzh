@@ -59,6 +59,12 @@
       "value": "Back"
     }
   ],
+  "common.button.close": [
+    {
+      "type": 0,
+      "value": "Close"
+    }
+  ],
   "common.button.continue": [
     {
       "type": 0,
@@ -131,6 +137,12 @@
       "value": "Admin"
     }
   ],
+  "common.string.difficulty": [
+    {
+      "type": 0,
+      "value": "Difficulty"
+    }
+  ],
   "common.string.logout": [
     {
       "type": 0,
@@ -153,6 +165,12 @@
     {
       "type": 0,
       "value": "Settings"
+    }
+  ],
+  "common.string.speed": [
+    {
+      "type": 0,
+      "value": "Speed"
     }
   ],
   "common.string.username": [
@@ -291,6 +309,12 @@
     {
       "type": 0,
       "value": "Available Choices"
+    }
+  ],
+  "createQuestion.optionsSC.solutionToggle.tooltip": [
+    {
+      "type": 0,
+      "value": "Toggle to define whether the option is correct (marked in green) or incorrect (marked in red)."
     }
   ],
   "createQuestion.optionsSC.tooltip": [
@@ -473,6 +497,12 @@
     {
       "type": 0,
       "value": "Visualization"
+    }
+  ],
+  "feedbackchannel.notifications.title": [
+    {
+      "type": 0,
+      "value": "New Question / Feedback"
     }
   ],
   "fileDropzone.button.delete": [
@@ -937,6 +967,36 @@
       "value": "Active Question"
     }
   ],
+  "joinSession.feedbackArea.feedbackPlaceholder": [
+    {
+      "type": 0,
+      "value": "Post a question or feedback..."
+    }
+  ],
+  "joinSession.feedbackArea.open": [
+    {
+      "type": 0,
+      "value": "Open"
+    }
+  ],
+  "joinSession.feedbackArea.postedAt": [
+    {
+      "type": 0,
+      "value": "Posted on"
+    }
+  ],
+  "joinSession.feedbackArea.resolved": [
+    {
+      "type": 0,
+      "value": "Resolved"
+    }
+  ],
+  "joinSession.feedbackArea.resolvedAt": [
+    {
+      "type": 0,
+      "value": "Resolved on"
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,
@@ -1013,6 +1073,12 @@
     {
       "type": 0,
       "value": "You are not permitted to join this session"
+    }
+  ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "A new Klicker question is available"
     }
   ],
   "joinSession.string.responseIgnored": [
@@ -1392,7 +1458,7 @@
   "runningSession.confusion.info": [
     {
       "type": 0,
-      "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
+      "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time. It displays all feedbacks that were shared by students throughout the past 10 minutes"
     }
   ],
   "runningSession.confusion.speed.Range": [
@@ -1525,6 +1591,12 @@
     {
       "type": 0,
       "value": "Audience Interaction"
+    }
+  ],
+  "runningSession.title.confusionbarometer": [
+    {
+      "type": 0,
+      "value": "Confusion Barometer"
     }
   ],
   "session.authMode.aai": [

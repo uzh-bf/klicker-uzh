@@ -1,3 +1,5 @@
+ErrorDocument 404 /404.html
+
 <IfModule mod_rewrite.c>
   RewriteEngine  on
   RewriteBase    /
@@ -9,10 +11,10 @@
 
   # redirect everything else to the new klicker
   # except needed assets and routes of the landing SPA
-  RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|img/|_next/|static/|images/|page-data) [NC]
-  RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
-  RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=301]
- </IfModule>
+  # RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|docs|docs/|img/|_next/|static/|images/|page-data) [NC]
+  # RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
+  # RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=302]
+</IfModule>
 
 <IfModule mod_deflate.c>
   # Compress HTML, CSS, JavaScript, Text, XML and fonts

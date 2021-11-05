@@ -1,5 +1,6 @@
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import useCookie from '../../../lib/hooks/useCookie'
 
@@ -29,7 +30,10 @@ function LanguageSwitcher(): React.ReactElement {
         defaultValue={locale}
         options={languageOptions}
         placeholder="Select Language"
-        onChange={(_, data): void => setLocale(data.value)}
+        onChange={(_, data): void => {
+          setLocale(data.value)
+          push(['trackEvent', 'User', 'Language Changed', String(data.value)])
+        }}
       />
     </div>
   )

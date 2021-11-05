@@ -1,18 +1,7 @@
 {
-  "name": "klicker-api",
-  "version": "1.6.1",
+  "name": "@klicker-uzh/backend",
+  "version": "1.6.3-alpha.21",
   "main": "src/server.js",
-  "homepage": "https://www.klicker.uzh.ch",
-  "repository": "https://github.com/uzh-bf/klicker-api.git",
-  "bugs": "https://github.com/uzh-bf/klicker-uzh",
-  "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
-  ],
-  "contributors": [
-    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
-    "Jokkis80 <jokki@windowslive.com>",
-    "Luca Locher <luca.locher@bf.uzh.ch>"
-  ],
   "engines": {
     "node": ">=14"
   },
@@ -121,5 +110,9 @@
     "*.graphql": [
       "prettier --write"
     ]
+  },
+  "volta": {
+    "node": "14.18.1",
+    "npm": "6.14.15"
   }
 }

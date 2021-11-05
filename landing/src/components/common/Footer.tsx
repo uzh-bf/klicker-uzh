@@ -1,9 +1,8 @@
 import React from 'react'
 import { Container, Grid, List } from 'semantic-ui-react'
-import { Element } from 'react-scroll'
 import Link from 'next/link'
 
-import KlickerUZH from './KlickerUZH'
+import KlickerLogo from './KlickerLogo'
 
 function Footer() {
   return (
@@ -12,7 +11,7 @@ function Footer() {
         <Grid.Row>
           <Grid.Column>
             <strong>
-              <KlickerUZH color="white" fontSize={1.2} />
+              <KlickerLogo width={150} />
             </strong>
 
             <p>
@@ -37,8 +36,6 @@ function Footer() {
               <br />
               8032 Zurich
             </address>
-
-            <Element name="footer" />
           </Grid.Column>
           <Grid.Column>
             <List>

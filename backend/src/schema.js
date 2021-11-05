@@ -81,11 +81,13 @@ const {
   confusionAdded,
   feedbackAdded,
   publicFeedbackAdded,
+  publicFeedbackRemoved,
   sessionUpdated,
   runningSessionUpdated,
   feedbackDeleted,
   feedbackResolved,
   feedbackResponseAdded,
+  feedbackResponseDeleted,
 } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
@@ -124,7 +126,7 @@ const typeDefs = [
     allUsers: [User]!
     checkAccountStatus: ID
     checkAvailability(email: String, shortname: String): User_Availability!
-    joinQA(shortname: String!): [Session_Feedback_Public!]!
+    joinQA(shortname: String!): [Session_Feedback_Public!]
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session
@@ -188,7 +190,9 @@ const typeDefs = [
     feedbackDeleted(sessionId: ID!): ID
     feedbackResolved(sessionId: ID!): Session_Feedback_ResolvedStateChange
     feedbackResponseAdded(sessionId: ID!): Session_FeedbackResponse_Added
+    feedbackResponseDeleted(sessionId: ID!): Session_FeedbackResponse_Deleted
     publicFeedbackAdded(sessionId: ID!): Session_Feedback_Public
+    publicFeedbackRemoved(sessionId: ID!): ID
     sessionUpdated(sessionId: ID!): Session_Public_Update
     runningSessionUpdated(sessionId: ID!): Session_Update
   }
@@ -271,11 +275,13 @@ const resolvers = {
     confusionAdded,
     feedbackAdded,
     publicFeedbackAdded,
+    publicFeedbackRemoved,
     sessionUpdated,
     runningSessionUpdated,
     feedbackDeleted,
     feedbackResolved,
     feedbackResponseAdded,
+    feedbackResponseDeleted,
   },
   // map our own types
   Question: {

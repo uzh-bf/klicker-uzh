@@ -1,7 +1,8 @@
 import React from 'react'
 import { Popup, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import QRCode from 'qrcode.react'
+import { QRCode } from 'react-qrcode-logo'
+import Link from 'next/link'
 import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
@@ -11,6 +12,10 @@ interface Props {
 }
 
 function QRPopup({ shortname }: Props): React.ReactElement {
+  const joinUrl = publicRuntimeConfig.joinUrl
+    ? `${publicRuntimeConfig.joinUrl}/${shortname}`
+    : `${publicRuntimeConfig.baseUrl}/join/${shortname}`
+
   return (
     <Popup
       basic
@@ -27,24 +32,28 @@ function QRPopup({ shortname }: Props): React.ReactElement {
       }
     >
       <Popup.Content>
-        <div className="popupContent">
-          <div className="link">
-            <strong>
-              {publicRuntimeConfig.joinUrl
-                ? `${publicRuntimeConfig.joinUrl}/${shortname}`
-                : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
-            </strong>
+        <div>
+          <div className="font-bold">
+            <Link href={joinUrl}>{joinUrl}</Link>
           </div>
 
-          <div className="qr">
-            <QRCode size={200} value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} />
+          <div>
+            <QRCode
+              logoHeight={40}
+              logoImage="https://www.klicker.uzh.ch/docs/img/KlickerUZH_Gray_BG.png"
+              logoWidth={120}
+              size={300}
+              value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}
+            />
           </div>
 
-          <a href={`/qr/${shortname}`} rel="noopener noreferrer" target="_blank">
-            <Button fluid primary>
-              <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
-            </Button>
-          </a>
+          <Link passHref href={`/qr/${shortname}`}>
+            <a target="_blank">
+              <Button fluid primary>
+                <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
+              </Button>
+            </a>
+          </Link>
         </div>
       </Popup.Content>
     </Popup>

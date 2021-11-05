@@ -48,7 +48,7 @@ class WebSocketLink extends ApolloLink {
   }
 }
 
-export default function createApolloClient(initialState, ctx) {
+export default function createApolloClient() {
   const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
   const isBrowser = typeof window !== 'undefined'
@@ -59,7 +59,7 @@ export default function createApolloClient(initialState, ctx) {
       QuestionOptions: ['SCQuestionOptions', 'FREEQuestionOptions'],
       QuestionOptions_Public: ['SCQuestionOptions_Public', 'FREEQuestionOptions_Public'],
     },
-  }).restore(initialState || {})
+  })
 
   // initialize the basic http link for both SSR and client-side usage
   let httpLink: any = createPersistedQueryLink({ sha256 }).concat(
@@ -125,6 +125,6 @@ export default function createApolloClient(initialState, ctx) {
     cache,
     connectToDevTools: isBrowser,
     link,
-    ssrMode: Boolean(ctx), // Disables forceFetch on the server (so queries are only run once)
+    ssrMode: !isBrowser,
   })
 }
