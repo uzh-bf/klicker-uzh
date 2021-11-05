@@ -47,6 +47,7 @@ interface Props {
   handleResetItemsChecked: any
   handleQuesionViewChange: any
   isArchiveActive?: boolean
+  isViewToggleVisible?: boolean
   itemsChecked?: string[]
   questions?: any[]
 }
@@ -55,12 +56,14 @@ const defaultProps = {
   creationMode: false,
   questionView: 'list',
   isArchiveActive: false,
+  isViewToggleVisible: false,
   itemsChecked: [],
   questions: [],
 }
 
 function ActionBar({
   isArchiveActive,
+  isViewToggleVisible,
   creationMode,
   questionView,
   deletionConfirmation,
@@ -307,16 +310,18 @@ function ActionBar({
         </Label>
 
         {/* buttons to change between question view formats */}
-        <div className="ml-1">
-          <Button.Group className="order-1">
-            <Button icon active={questionView == 'list'} onClick={(): void => handleQuesionViewChange('list')}>
-              <Icon name="list" />
-            </Button>
-            <Button icon active={questionView == 'grid'} onClick={(): void => handleQuesionViewChange('grid')}>
-              <Icon name="grid layout" />
-            </Button>
-          </Button.Group>
-        </div>
+        {isViewToggleVisible && (
+          <div className="ml-1">
+            <Button.Group className="order-1">
+              <Button icon active={questionView === 'list'} onClick={(): void => handleQuesionViewChange('list')}>
+                <Icon name="list" />
+              </Button>
+              <Button icon active={questionView === 'grid'} onClick={(): void => handleQuesionViewChange('grid')}>
+                <Icon name="grid layout" />
+              </Button>
+            </Button.Group>
+          </div>
+        )}
 
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}

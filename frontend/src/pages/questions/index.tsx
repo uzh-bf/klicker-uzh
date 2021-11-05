@@ -12,6 +12,7 @@ import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
 
+import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
@@ -48,7 +49,7 @@ const messages = defineMessages({
   },
 })
 
-function Index({ featureFlags }): React.ReactElement {
+function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -386,7 +387,10 @@ function Index({ featureFlags }): React.ReactElement {
   }
 
   const onChangeQuestionView = (newView: string): void => {
-    setQuestionView(newView)
+    if (featureFlags?.flags?.questionPoolGridLayout) {
+      setQuestionView(newView)
+      push(['trackEvent', 'Question Pool', 'View Mode Toggled', newView])
+    }
   }
 
   const renderActionArea = (runningSessionId): React.ReactElement => {
@@ -476,29 +480,30 @@ function Index({ featureFlags }): React.ReactElement {
             return [
               <ActionBar
                 creationMode={creationMode}
-                questionView={questionView}
                 deletionConfirmation={deletionConfirmation}
                 handleArchiveQuestions={onArchiveQuestions}
                 handleCreationModeToggle={onCreationModeToggle}
                 handleDeleteQuestions={onDeleteQuestions}
+                handleQuesionViewChange={onChangeQuestionView}
                 handleQuickBlock={onQuickBlock}
                 handleQuickBlocks={onQuickBlocks}
                 handleResetItemsChecked={handleResetSelection}
                 handleSetItemsChecked={handleSelectItems}
-                handleQuesionViewChange={onChangeQuestionView}
                 isArchiveActive={filters.archive}
+                isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
                 itemsChecked={selectedItems.ids}
                 key="action-bar"
+                questionView={questionView}
                 questions={processedQuestions}
               />,
               <div className="questionList" key="question-list">
                 <QuestionList
                   creationMode={creationMode}
                   isArchiveActive={filters.archive}
+                  questionView={questionView}
                   questions={processedQuestions}
                   selectedItems={selectedItems}
                   onQuestionChecked={handleSelectItem}
-                  questionView={questionView}
                 />
               </div>,
             ]
