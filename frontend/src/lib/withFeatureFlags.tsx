@@ -2,7 +2,7 @@ import { useFlags } from '@happykit/flags/client'
 import { useContext } from 'react'
 import getConfig from 'next/config'
 
-import { AppFlags } from '../@types/AppFlags'
+import { AppFlags, FeatureFlags } from '../@types/AppFlags'
 import { UserContext } from './userContext'
 
 const { publicRuntimeConfig } = getConfig()
@@ -25,7 +25,7 @@ function withFeatureFlags(Component) {
     if (publicRuntimeConfig.happyKitFlagEnvKey) {
       return (
         <FeatureFlagWrapper>
-          {(featureFlags) => <Component featureFlags={featureFlags} {...props} />}
+          {(featureFlags: FeatureFlags) => <Component featureFlags={featureFlags} {...props} />}
         </FeatureFlagWrapper>
       )
     }
