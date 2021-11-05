@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.20...v1.6.3-alpha.21) (2021-11-05)
+
+
+### Enhancements
+
+* **frontend:** added tabular question view ([#2618](https://github.com/uzh-bf/klicker-uzh/issues/2618)) ([e4d2e99](https://github.com/uzh-bf/klicker-uzh/commit/e4d2e9956067383e958cbbffed4955a4923ee8df))
+
+
+### Other
+
+* **deploy:** add julius.schlapbach@bf.uzh.ch to persisted users ([b5c10c4](https://github.com/uzh-bf/klicker-uzh/commit/b5c10c4212ee06a9c518a59f0f2da0fca3bd9ea0))
+* **deploy:** update autoscaling settings ([f2f9101](https://github.com/uzh-bf/klicker-uzh/commit/f2f9101928dab0e294a06a228f441bd863c84ac4))
+* **frontend:** add missing .env keys to template ([357794c](https://github.com/uzh-bf/klicker-uzh/commit/357794c866ab2b2bcd3f3feffabe016a6d9e35cc))
+
 ### [1.6.3-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.19...v1.6.3-alpha.20) (2021-11-04)
 
 

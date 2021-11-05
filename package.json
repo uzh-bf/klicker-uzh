@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.6.3-alpha.20",
+  "version": "1.6.3-alpha.21",
   "engines": {
     "node": ">=14"
   },
