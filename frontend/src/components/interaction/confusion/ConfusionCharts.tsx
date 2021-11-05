@@ -26,9 +26,10 @@ const messages = defineMessages({
 
 interface Props {
   confusionTS: any[]
+  forceRerender: any
 }
 
-function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
+function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElement {
   const intl = useIntl()
 
   // check if the time difference between now and a given timestamp is less than a specified duration in seconds

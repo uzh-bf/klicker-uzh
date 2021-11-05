@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import ConfusionCharts from './ConfusionCharts'
@@ -28,12 +28,21 @@ const defaultProps = {
 
 function ConfusionBarometer({ confusionTS, isActive, subscribeToMore }: Props): React.ReactElement {
   const intl = useIntl()
+  const [forceRerender, setForceRerender] = useState(0)
 
   useEffect((): void => {
     if (subscribeToMore) {
       subscribeToMore()
     }
   }, [subscribeToMore])
+
+  // force rerender the charts once every minute
+  useEffect(() => {
+    const timeoutHandle = window.setTimeout(() => {
+      window.clearTimeout(timeoutHandle)
+      setForceRerender(forceRerender + 1)
+    }, 60000)
+  })
 
   return (
     <div className="confusionBarometer">
@@ -47,7 +56,7 @@ function ConfusionBarometer({ confusionTS, isActive, subscribeToMore }: Props): 
       <div className="flex flex-row">
         {isActive && confusionTS.length !== 0 && (
           <div className="mt-4">
-            <ConfusionCharts confusionTS={confusionTS} />
+            <ConfusionCharts confusionTS={confusionTS} forceRerender={forceRerender} />
           </div>
         )}
         {isActive && confusionTS.length === 0 && (
