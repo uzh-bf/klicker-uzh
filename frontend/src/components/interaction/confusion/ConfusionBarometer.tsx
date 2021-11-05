@@ -53,7 +53,14 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
           onChange={handleActiveToggle}
         />
       </div>
-      <div className="flex flex-row">{isActive && <ConfusionCharts confusionTS={confusionTS} />}</div>
+      <div className="flex flex-row">
+        {isActive && confusionTS.length !== 0 && <ConfusionCharts confusionTS={confusionTS} />}
+        {isActive && confusionTS.length === 0 && (
+          <div className="font-bold">
+            <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
         @import 'src/theme';

@@ -27,9 +27,6 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
 
       <div className="chart">
         {((): React.ReactElement => {
-          if (runningValue?.reduce((a, b) => a + b, 0) === 0 || !runningValue) {
-            return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
-          }
           const histData = runningValue.map((val, index) => {
             return { value: val, title: xlabel[index] }
           })
@@ -42,8 +39,6 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
                   <Bar dataKey="value" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
-              <div>Running Average: {runningValue.map((val: any) => val + ',')}</div>
-              <div>Number of Datapoints: {runningValue?.reduce((a, b) => a + b, 0)}</div>
             </>
           )
         })()}
