@@ -20,6 +20,10 @@ interface Props {
 }
 
 function ConfusionSection({ data, title, xlabel }: Props): React.ReactElement {
+  /*console.log(
+    'received update ' + data.map(({ timestamp, value, valueRunning }): any => ['valueRunning: ' + valueRunning, '\n'])
+  )*/
+
   return (
     <div className="confusionSection">
       <h3>{title}</h3>
@@ -37,7 +41,7 @@ function ConfusionSection({ data, title, xlabel }: Props): React.ReactElement {
             counter++
             return { value: elem, title: xlabel[counter - 1] }
           })
-          console.log(HistData)
+          //console.log(HistData)
 
           return (
             <>

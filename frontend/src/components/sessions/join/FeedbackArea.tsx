@@ -236,16 +236,16 @@ function FeedbackArea({
     // send the new confusion entry to the server
     if (selector === 'speed') {
       setConfusionSpeed(newValue)
-      console.log('speed: ' + newValue)
-      console.log('saved difficulty: ' + confusionDifficulty)
+      //console.log('speed: ' + newValue)
+      //console.log('saved difficulty: ' + confusionDifficulty)
       handleNewConfusionTS({
         difficulty: confusionDifficulty ? confusionDifficulty : 0,
         speed: newValue,
       })
     } else if (selector === 'difficulty') {
       setConfusionDifficulty(newValue)
-      console.log('difficulty: ' + newValue)
-      console.log('saved speed: ' + confusionSpeed)
+      //console.log('difficulty: ' + newValue)
+      //console.log('saved speed: ' + confusionSpeed)
       handleNewConfusionTS({
         difficulty: newValue,
         speed: confusionSpeed ? confusionSpeed : 0,

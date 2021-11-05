@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import _sumBy from 'lodash/sumBy'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
@@ -31,80 +31,68 @@ interface Props {
 function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
   const intl = useIntl()
 
-  const parsedTS = confusionTS.reduce((acc, { createdAt, speed, difficulty }): any[] => {
-    console.log([...acc, { difficulty, speed }])
-    const tempAcc = [...acc, { difficulty, speed }]
-    // check if the time difference between now and a given timestamp is less than a specified duration in seconds
-    const compareTimeToNow = (arr: any, differenceSec: number) => {
-      const now = new Date()
-      if (
-        parseInt(arr[0]) * 60 * 60 + parseInt(arr[1]) * 60 + parseInt(arr[2]) + differenceSec <
-        now.getHours() * 60 * 60 + now.getMinutes() * 60 + now.getSeconds()
-      ) {
-        return false
-      }
-      return true
+  // check if the time difference between now and a given timestamp is less than a specified duration in seconds
+  const compareTimeToNow = (arr: any, differenceSec: number) => {
+    const now = new Date()
+    if (
+      parseInt(arr[0]) * 60 * 60 + parseInt(arr[1]) * 60 + parseInt(arr[2]) + differenceSec <
+      now.getHours() * 60 * 60 + now.getMinutes() * 60 + now.getSeconds()
+    ) {
+      return false
     }
+    return true
+  }
 
-    const difficultyEntries = tempAcc
-      .filter((element: any) => {
-        if (element.timestamp) {
-          return compareTimeToNow(element.timestamp.split(':'), 600)
-        }
-      })
-      .map((element: any) => element.difficulty)
+  // compute arrays with the aggregated values in the specified timeframe
+  const aggrSpeed = {}
+  const aggrDifficulty = {}
+  const filteredConfusion = confusionTS
+    .map((element: any) => {
+      return {
+        speed: element.speed.toString(),
+        difficulty: element.difficulty.toString(),
+        timestamp: dayjs(element.createdAt).format('H:mm:ss'),
+      }
+    })
+    .filter((element: any) => compareTimeToNow(element.timestamp.split(':'), 600))
 
-    const speedEntries = tempAcc
-      .filter((element: any) => {
-        if (element.timestamp) {
-          return compareTimeToNow(element.timestamp.split(':'), 600)
-        }
-      })
-      .map((element: any) => element.speed)
+  filteredConfusion.forEach((value) => (aggrSpeed[value.speed] = (aggrSpeed[value.speed] || 0) + 1))
+  filteredConfusion.forEach((value) => (aggrDifficulty[value.difficulty] = (aggrDifficulty[value.difficulty] || 0) + 1))
 
-    const reducer = (accumulator: number) => accumulator + 1
-    const difficultyRunning = [
-      Math.abs(difficultyEntries.filter((elem: any) => elem == -1).reduce(reducer, 0)),
-      Math.abs(difficultyEntries.filter((elem: any) => elem == 0).reduce(reducer, 0)),
-      Math.abs(difficultyEntries.filter((elem: any) => elem == 1).reduce(reducer, 0)),
-    ]
-    const speedRunning = [
-      Math.abs(speedEntries.filter((elem: any) => elem == -1).reduce(reducer, 0)),
-      Math.abs(speedEntries.filter((elem: any) => elem == 0).reduce(reducer, 0)),
-      Math.abs(speedEntries.filter((elem: any) => elem == 1).reduce(reducer, 0)),
-    ]
+  const speedRunning = [
+    aggrSpeed['-1'] ? aggrSpeed['-1'] : 0,
+    aggrSpeed['0'] ? aggrSpeed['0'] : 0,
+    aggrSpeed['1'] ? aggrSpeed['1'] : 0,
+  ]
+  const difficultyRunning = [
+    aggrDifficulty['-1'] ? aggrDifficulty['-1'] : 0,
+    aggrDifficulty['0'] ? aggrDifficulty['0'] : 0,
+    aggrDifficulty['1'] ? aggrDifficulty['1'] : 0,
+  ]
+  console.log('running speed array: ' + speedRunning)
+  console.log('running difficulty array: ' + difficultyRunning)
 
-    return [
-      ...acc,
-      {
-        difficulty,
-        difficultyRunning,
-        speed,
-        speedRunning,
-        timestamp: dayjs(createdAt).format('H:mm:ss'),
-      },
-    ]
-  }, [])
+  console.log(
+    'new data element: \n' +
+      filteredConfusion.map((element) => [
+        'speed: ' + element.speed,
+        'difficulty: ' + element.difficulty,
+        'timestamp: ' + element.timestamp,
+        '\n',
+      ])
+  )
 
   return (
     <>
       <ConfusionSection
-        data={parsedTS.map(({ timestamp, difficulty, difficultyRunning }): any => ({
-          timestamp,
-          value: difficulty,
-          valueRunning: difficultyRunning,
-        }))}
+        data={[{ valueRunning: [0, 0, 0] }]}
         title={intl.formatMessage(messages.difficultyTitle)}
         // TODO: replace this line again by an intl string collection later on
         //xlabel={intl.formatMessage(messages.difficultyRange)}
         xlabel={['easy', 'optimal', 'hard']}
       />
       <ConfusionSection
-        data={parsedTS.map(({ timestamp, speed, speedRunning }): any => ({
-          timestamp,
-          value: speed,
-          valueRunning: speedRunning,
-        }))}
+        data={[{ valueRunning: [0, 0, 0] }]}
         title={intl.formatMessage(messages.speedTitle)}
         // TODO: replace this line again by an intl string collection later on
         //xlabel={intl.formatMessage(messages.speedRange)}
