@@ -98,6 +98,7 @@ function AudienceInteraction({
                       sessionId,
                       settings: {
                         isFeedbackChannelActive: !isFeedbackChannelActive,
+                        isConfusionBarometerActive: !isConfusionBarometerActive,
                       },
                     },
                   })
@@ -210,17 +211,6 @@ function AudienceInteraction({
           <div className="flex-1 mb-10">
             <ConfusionBarometer
               confusionTS={confusionTS}
-              handleActiveToggle={(): void => {
-                updateSettings({
-                  refetchQueries: [{ query: RunningSessionQuery }],
-                  variables: {
-                    sessionId,
-                    settings: {
-                      isConfusionBarometerActive: !isConfusionBarometerActive,
-                    },
-                  },
-                })
-              }}
               isActive={isConfusionBarometerActive}
               subscribeToMore={(): void => {
                 subscribeToMore({

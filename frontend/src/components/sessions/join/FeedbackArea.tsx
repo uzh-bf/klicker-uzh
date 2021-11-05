@@ -335,7 +335,7 @@ function FeedbackArea({
   return (
     <div
       className={clsx(
-        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex',
+        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex h-[93vh] md:h-full',
         active ? 'flex' : 'hidden'
       )}
     >
@@ -362,7 +362,8 @@ function FeedbackArea({
         </div>
       )}
 
-      <div className="flex flex-col justify-between h-full mt-4">
+      {/* max-h-[35vh] overflow-scroll md:max-h-full */}
+      <div className="flex-1 mt-4 mb-auto overflow-y-auto">
         {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
           <div>
             {processedFeedbacks.open.length > 0 && (
@@ -423,12 +424,12 @@ function FeedbackArea({
         )}
       </div>
       {isConfusionBarometerActive && (
-        <div className="float-bottom">
+        <div className="mt-5 mb-2">
           <ConfusionDialog
             handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             title={
-              <h2 className="sectionTitle">
+              <h2 className="text-center sectionTitle md:text-left">
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
               </h2>
             }
@@ -438,7 +439,7 @@ function FeedbackArea({
             handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             title={
-              <h2 className="sectionTitle">
+              <h2 className="text-center sectionTitle md:text-left">
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
               </h2>
             }

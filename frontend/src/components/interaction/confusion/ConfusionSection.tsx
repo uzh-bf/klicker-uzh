@@ -1,17 +1,4 @@
-import { iterate } from 'localforage'
-import React, { PureComponent } from 'react'
-/*import {
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Label,
-} from 'recharts'*/
-import { FormattedMessage } from 'react-intl'
+import React from 'react'
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface Props {
@@ -22,7 +9,7 @@ interface Props {
 
 function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactElement {
   return (
-    <div className="confusionSection">
+    <div className="confusionSection min-w-[300px]">
       <h3>{title}</h3>
 
       <div className="chart">

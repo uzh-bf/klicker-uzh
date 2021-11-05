@@ -325,9 +325,10 @@ function Join({ shortname }): React.ReactElement {
 
         .joinSession {
           display: flex;
-          min-height: -moz-calc(100vh - 8rem);
-          min-height: -webkit-calc(100vh - 8rem);
-          min-height: calc(100vh - 8rem);
+          height: -moz-calc(100vh - 8rem);
+          height: -webkit-calc(100vh - 8rem);
+          height: calc(100vh - 8rem);
+
           width: 100%;
 
           background-color: lightgray;

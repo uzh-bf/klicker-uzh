@@ -17,7 +17,7 @@ interface Props {
     speed: number
   }[]
   isActive?: boolean
-  handleActiveToggle: any
+
   subscribeToMore?: any
 }
 
@@ -26,7 +26,7 @@ const defaultProps = {
   isActive: false,
 }
 
-function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscribeToMore }: Props): React.ReactElement {
+function ConfusionBarometer({ confusionTS, isActive, subscribeToMore }: Props): React.ReactElement {
   const intl = useIntl()
 
   useEffect((): void => {
@@ -44,17 +44,12 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
         />
       </div>
 
-      <div className="mb-4">
-        <Checkbox
-          toggle
-          checked={isActive}
-          defaultChecked={isActive}
-          label={intl.formatMessage(messages.activated)}
-          onChange={handleActiveToggle}
-        />
-      </div>
       <div className="flex flex-row">
-        {isActive && confusionTS.length !== 0 && <ConfusionCharts confusionTS={confusionTS} />}
+        {isActive && confusionTS.length !== 0 && (
+          <div className="mt-4">
+            <ConfusionCharts confusionTS={confusionTS} />
+          </div>
+        )}
         {isActive && confusionTS.length === 0 && (
           <div className="font-bold">
             <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
