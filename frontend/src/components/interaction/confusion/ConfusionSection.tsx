@@ -8,10 +8,6 @@ interface Props {
 }
 
 function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactElement {
-  if (isNaN(runningValue)) {
-    runningValue = 0.01
-  }
-
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>

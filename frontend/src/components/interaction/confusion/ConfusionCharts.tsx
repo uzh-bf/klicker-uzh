@@ -64,8 +64,10 @@ function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElem
   }, [confusionTS, forceRerender])
 
   console.log(confusionTS)
+  console.log(speedRunning)
+  console.log(difficultyRunning)
 
-  if (confusionTS.length === 0) {
+  if (confusionTS.length === 0 || isNaN(speedRunning) || isNaN(difficultyRunning)) {
     return (
       <div className="font-bold">
         <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
