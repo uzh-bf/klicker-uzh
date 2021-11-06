@@ -37,4 +37,4 @@ data:
   EXEC_REDIS_TLS: {{ .Values.backend.redis.tls | quote }}
   {{ end }}
 
-  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  # SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
