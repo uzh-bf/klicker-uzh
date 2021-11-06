@@ -1,29 +1,23 @@
 import React from 'react'
-import { BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts'
+import GaugeChart from 'react-gauge-chart'
 
 interface Props {
-  runningValue: any[]
+  runningValue: number
   title: string
-  xlabel: string[]
+  xlabel: string
 }
 
 function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactElement {
-  const histData = runningValue.map((val, index) => {
-    return { value: val, title: xlabel[index] }
-  })
-
-  console.log(histData)
+  if (isNaN(runningValue)) {
+    runningValue = 0.01
+  }
 
   return (
     <div>
-      <h3>{title}</h3>
-      <div className="w-full h-32">
-        <ResponsiveContainer height="100%" width="100%">
-          <BarChart data={histData}>
-            <XAxis dataKey="title" />
-            <Bar dataKey="value" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
+      <h3 className="inline-block mr-3">{title}</h3>
+      <p className="inline-block">{'(' + xlabel + ')'}</p>
+      <div className="w-full h-38">
+        <GaugeChart id="gauge-chart" nrOfLevels={20} percent={runningValue} hideText={true} animate={false} />
       </div>
     </div>
   )

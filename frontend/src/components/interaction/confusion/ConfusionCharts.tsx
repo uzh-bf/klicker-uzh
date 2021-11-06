@@ -31,8 +31,8 @@ interface Props {
 function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElement {
   const intl = useIntl()
 
-  const [speedRunning, setSpeedRunning] = useState([0, 0, 0])
-  const [difficultyRunning, setDifficultyRunning] = useState([0, 0, 0])
+  const [speedRunning, setSpeedRunning] = useState(0)
+  const [difficultyRunning, setDifficultyRunning] = useState(0)
 
   useEffect(() => {
     const aggrSpeed = {}
@@ -52,13 +52,18 @@ function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElem
       aggrDifficulty[value.difficulty] = (aggrDifficulty[value.difficulty] || 0) + 1
     })
 
-    setSpeedRunning([aggrSpeed['-1'] || 0, aggrSpeed['0'] || 0, aggrSpeed['1'] || 0])
-    setDifficultyRunning([aggrDifficulty['-1'] || 0, aggrDifficulty['0'] || 0, aggrDifficulty['1'] || 0])
+    setSpeedRunning(
+      ((aggrSpeed['0'] || 0) * 0.5 + (aggrSpeed['1'] || 0)) /
+        ((aggrSpeed['-1'] || 0) + (aggrSpeed['0'] || 0) + (aggrSpeed['1'] || 0))
+    )
+
+    setDifficultyRunning(
+      ((aggrDifficulty['0'] || 0) * 0.5 + (aggrDifficulty['1'] || 0)) /
+        ((aggrDifficulty['-1'] || 0) + (aggrDifficulty['0'] || 0) + (aggrDifficulty['1'] || 0))
+    )
   }, [confusionTS, forceRerender])
 
   console.log(confusionTS)
-  console.log(speedRunning)
-  console.log(difficultyRunning)
 
   if (confusionTS.length === 0) {
     return (
@@ -73,16 +78,12 @@ function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElem
       <ConfusionSection
         runningValue={speedRunning}
         title={intl.formatMessage(messages.difficultyTitle)}
-        // TODO: replace this line again by an intl string collection later on
-        // xlabel={intl.formatMessage(messages.difficultyRange)}
-        xlabel={['easy', 'optimal', 'hard']}
+        xlabel={intl.formatMessage(messages.difficultyRange)}
       />
       <ConfusionSection
         runningValue={difficultyRunning}
         title={intl.formatMessage(messages.speedTitle)}
-        // TODO: replace this line again by an intl string collection later on
-        // xlabel={intl.formatMessage(messages.speedRange)}
-        xlabel={['slow', 'optimal', 'fast']}
+        xlabel={intl.formatMessage(messages.speedRange)}
       />
     </div>
   )

@@ -96,6 +96,7 @@
     "react-dropzone": "11.4.2",
     "react-focus-lock": "2.5.2",
     "react-ga": "3.3.0",
+    "react-gauge-chart": "^0.4.0",
     "react-intl": "5.21.0",
     "react-qrcode-logo": "2.5.0",
     "react-rangeslider": "2.2.0",
