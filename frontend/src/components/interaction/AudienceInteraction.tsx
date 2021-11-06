@@ -27,6 +27,7 @@ interface Props {
   isFeedbackChannelPublic: boolean
   isConfusionBarometerActive: boolean
   subscribeToMore: any
+  confusionFlag: boolean
 }
 
 function AudienceInteraction({
@@ -38,6 +39,7 @@ function AudienceInteraction({
   isFeedbackChannelPublic,
   isConfusionBarometerActive,
   subscribeToMore,
+  confusionFlag,
 }: Props) {
   useEffect(() => {
     return subscribeToMore({
@@ -98,7 +100,7 @@ function AudienceInteraction({
                       sessionId,
                       settings: {
                         isFeedbackChannelActive: !isFeedbackChannelActive,
-                        isConfusionBarometerActive: !isConfusionBarometerActive,
+                        isConfusionBarometerActive: !isConfusionBarometerActive && confusionFlag,
                       },
                     },
                   })
@@ -199,27 +201,29 @@ function AudienceInteraction({
             </div>
           </div>
 
-          <div className="flex-initial p-4 w-[350px] bg-gray-200">
-            <ConfusionBarometer
-              confusionTS={confusionTS}
-              subscribeToMore={(): void => {
-                subscribeToMore({
-                  document: ConfusionAddedSubscription,
-                  updateQuery: (prev, { subscriptionData }): any => {
-                    if (!subscriptionData.data) return prev
-                    return {
-                      ...prev,
-                      runningSession: {
-                        ...prev.runningSession,
-                        confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
-                      },
-                    }
-                  },
-                  variables: { sessionId },
-                })
-              }}
-            />
-          </div>
+          {confusionFlag && (
+            <div className="flex-initial p-4 w-[350px] bg-gray-200">
+              <ConfusionBarometer
+                confusionTS={confusionTS}
+                subscribeToMore={(): void => {
+                  subscribeToMore({
+                    document: ConfusionAddedSubscription,
+                    updateQuery: (prev, { subscriptionData }): any => {
+                      if (!subscriptionData.data) return prev
+                      return {
+                        ...prev,
+                        runningSession: {
+                          ...prev.runningSession,
+                          confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
+                        },
+                      }
+                    },
+                    variables: { sessionId },
+                  })
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
