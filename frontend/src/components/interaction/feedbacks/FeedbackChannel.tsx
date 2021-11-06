@@ -16,9 +16,7 @@ const messages = defineMessages({
 
 interface Props {
   feedbacks?: any[]
-  handleActiveToggle: any
   handleDeleteFeedback: any
-  handlePublicToggle: any
   handlePinFeedback: (id: string, pinState: boolean) => void
   handlePublishFeedback: (id: string, publishState: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void

@@ -22,6 +22,7 @@ const {
   FEEDBACK_RESOLVED,
   FEEDBACK_RESPONSE_ADDED,
   FEEDBACK_RESPONSE_DELETED,
+  CONFUSION_ADDED,
 } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
@@ -360,11 +361,11 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  // const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
-  // pubsub.publish(CONFUSION_ADDED, {
-  //   [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
-  //   sessionId,
-  // })
+  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+  pubsub.publish(CONFUSION_ADDED, {
+    [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
+    sessionId,
+  })
 
   // return the updated session
   return session

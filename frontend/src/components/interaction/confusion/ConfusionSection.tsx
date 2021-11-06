@@ -8,43 +8,23 @@ interface Props {
 }
 
 function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactElement {
+  const histData = runningValue.map((val, index) => {
+    return { value: val, title: xlabel[index] }
+  })
+
+  console.log(histData)
+
   return (
-    <div className="confusionSection min-w-[300px]">
+    <div className="flex-1">
       <h3>{title}</h3>
-
-      <div className="chart">
-        {((): React.ReactElement => {
-          const histData = runningValue.map((val, index) => {
-            return { value: val, title: xlabel[index] }
-          })
-
-          return (
-            <>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart width={150} height={40} data={histData}>
-                  <XAxis dataKey="title" />
-                  <Bar dataKey="value" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </>
-          )
-        })()}
+      <div>
+        <ResponsiveContainer height="100%" width="100%">
+          <BarChart data={histData}>
+            <XAxis dataKey="title" />
+            <Bar dataKey="value" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
-
-      <style jsx>{`
-        .confusionSection {
-          display: flex;
-          flex-direction: column;
-
-          height: 15rem;
-
-          .chart {
-            flex: 1;
-
-            height: 10rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }

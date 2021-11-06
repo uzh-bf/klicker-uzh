@@ -102,7 +102,11 @@ function AudienceInteraction({
                       },
                     },
                   })
-                  push(['trackEvent', 'Running Session', 'Feedback Channel Toggled', String(!isFeedbackChannelActive)])
+                  push([
+                    'trackEvent',
+                    'Running Session',
+                    !isFeedbackChannelActive ? 'Feedback Channel Activated' : 'Feedback Channel Deactivated',
+                  ])
                 }}
               />
               <FormattedMessage
@@ -160,58 +164,44 @@ function AudienceInteraction({
       )}
 
       {isFeedbackChannelActive && (
-        <div className="flex flex-col md:flex-row">
-          <div className="flex-1 mb-8 md:mb-0">
-            <FeedbackChannel
-              feedbacks={feedbacks}
-              handleActiveToggle={() => null}
-              handleDeleteFeedback={(feedbackId: string): void => {
-                deleteFeedback({ variables: { feedbackId, sessionId } })
-                push(['trackEvent', 'Running Session', 'Feedback Deleted'])
-              }}
-              handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
-                deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
-                push(['trackEvent', 'Running Session', 'Feedback Response Deleted'])
-              }}
-              handlePinFeedback={(feedbackId: string, pinState: boolean) => {
-                pinFeedback({ variables: { sessionId, feedbackId, pinState } })
-                push(['trackEvent', 'Running Session', 'Feedback Pinned', String(pinState)])
-              }}
-              handlePublicToggle={(): void => {
-                updateSettings({
-                  variables: {
-                    sessionId,
-                    settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
-                  },
-                })
-              }}
-              handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
-                publishFeedback({ variables: { sessionId, feedbackId, publishState } })
-                push(['trackEvent', 'Running Session', 'Feedback Published', String(publishState)])
-              }}
-              handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
-                resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
-                push(['trackEvent', 'Running Session', 'Feedback Resolved', String(resolvedState)])
-              }}
-              handleRespondToFeedback={(feedbackId: string, response: string) => {
-                respondToFeedback({ variables: { sessionId, feedbackId, response } })
-                push(['trackEvent', 'Running Session', 'Feedback Response Added', response.length])
-              }}
-              isActive={isFeedbackChannelActive}
-              isPublic={isFeedbackChannelPublic}
-            />
+        <div className="flex flex-row gap-4">
+          <div className="flex flex-col flex-1 md:flex-row">
+            <div className="flex-1 mb-8 md:mb-0">
+              <FeedbackChannel
+                feedbacks={feedbacks}
+                handleDeleteFeedback={(feedbackId: string): void => {
+                  deleteFeedback({ variables: { feedbackId, sessionId } })
+                  push(['trackEvent', 'Running Session', 'Feedback Deleted'])
+                }}
+                handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
+                  deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
+                  push(['trackEvent', 'Running Session', 'Feedback Response Deleted'])
+                }}
+                handlePinFeedback={(feedbackId: string, pinState: boolean) => {
+                  pinFeedback({ variables: { sessionId, feedbackId, pinState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Pinned', String(pinState)])
+                }}
+                handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
+                  publishFeedback({ variables: { sessionId, feedbackId, publishState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Published', String(publishState)])
+                }}
+                handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
+                  resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Resolved', String(resolvedState)])
+                }}
+                handleRespondToFeedback={(feedbackId: string, response: string) => {
+                  respondToFeedback({ variables: { sessionId, feedbackId, response } })
+                  push(['trackEvent', 'Running Session', 'Feedback Response Added', response.length])
+                }}
+                isActive={isFeedbackChannelActive}
+                isPublic={isFeedbackChannelPublic}
+              />
+            </div>
           </div>
-        </div>
-      )}
-      {isFeedbackChannelActive && (
-        <>
-          <div className="mt-16 text-2xl font-bold print:hidden">
-            <FormattedMessage defaultMessage="Confusion Barometer" id="runningSession.title.confusionbarometer" />
-          </div>
-          <div className="flex-1 mb-10">
+
+          <div className="flex-initial p-4 w-[350px] bg-gray-200">
             <ConfusionBarometer
               confusionTS={confusionTS}
-              isActive={isConfusionBarometerActive}
               subscribeToMore={(): void => {
                 subscribeToMore({
                   document: ConfusionAddedSubscription,
@@ -230,7 +220,7 @@ function AudienceInteraction({
               }}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   )
