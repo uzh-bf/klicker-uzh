@@ -24,7 +24,7 @@ analytics:
     frontend:
       environment: prod
   google:
-    trackingId: G-YZ03P9HQGL
+    trackingId:
   happyKit:
     publicKey: analytics_pub_1312f90ec4
   matomo:
