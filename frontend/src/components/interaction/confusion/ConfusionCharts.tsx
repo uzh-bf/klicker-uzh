@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import _sumBy from 'lodash/sumBy'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 
