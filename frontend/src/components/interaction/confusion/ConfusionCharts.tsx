@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import _sumBy from 'lodash/sumBy'
+import React from 'react'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
 
