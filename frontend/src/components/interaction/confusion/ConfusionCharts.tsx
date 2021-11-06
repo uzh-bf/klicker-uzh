@@ -44,7 +44,7 @@ function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElem
         difficulty: element.difficulty.toString(),
         timestamp: dayjs(element.createdAt),
       }))
-      .filter((element: any) => dayjs().diff(element.timestamp, 'minute') <= 1)
+      .filter((element: any) => dayjs().diff(element.timestamp, 'minute') <= 10)
 
     // TODO: rebuild this using reduce based on the above array, without needing explicit assignment in forEach
     filteredConfusion.forEach((value) => {
