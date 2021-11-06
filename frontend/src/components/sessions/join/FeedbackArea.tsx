@@ -215,20 +215,17 @@ function FeedbackArea({
     }))
   }, [data?.joinQA, upvotedFeedbacks, reactions])
 
-  // useEffect((): void => {
-  //   try {
-  //     if (window.sessionStorage) {
-  //       const prevSpeed = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusionSpeed`)).speed
-  //       const prevDifficulty = JSON.parse(
-  //         sessionStorage.getItem(`${shortname}-${sessionId}-confusionDifficulty`)
-  //       ).difficulty
-  //       setConfusionSpeed(prevSpeed)
-  //       setConfusionDifficulty(prevDifficulty)
-  //     }
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-  // }, [])
+  useEffect((): void => {
+    try {
+      const confusion = window.sessionStorage?.getItem(`${shortname}-${sessionId}-confusion`)
+      if (confusion) {
+        setConfusionSpeed(JSON.parse(confusion).prevSpeed)
+        setConfusionDifficulty(JSON.parse(confusion).prevDifficulty)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
@@ -245,28 +242,6 @@ function FeedbackArea({
         speed: confusionSpeed ? confusionSpeed : 0,
       })
     }
-
-    // update stored the confusion data for availability on reload
-    // try {
-    //   if (window.sessionStorage) {
-    //     sessionStorage.setItem(
-    //       `${shortname}-${sessionId}-confusionSpeed`,
-    //       JSON.stringify({
-    //         speed: confusionSpeed,
-    //         timestamp: dayjs().unix(),
-    //       })
-    //     )
-    //     sessionStorage.setItem(
-    //       `${shortname}-${sessionId}-confusionDifficulty`,
-    //       JSON.stringify({
-    //         difficulty: confusionDifficulty,
-    //         timestamp: dayjs().unix(),
-    //       })
-    //     )
-    //   }
-    // } catch (e) {
-    //   console.error(e)
-    // }
   }
 
   useEffect(() => {
