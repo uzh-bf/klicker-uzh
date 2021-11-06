@@ -398,7 +398,7 @@ function FeedbackArea({
           </div>
         )}
       </div>
-      {isConfusionBarometerActive && isConfusionBarometerActive && (
+      {isFeedbackChannelActive && isConfusionBarometerActive && (
         <div className="mt-5 mb-2">
           <ConfusionDialog
             handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
