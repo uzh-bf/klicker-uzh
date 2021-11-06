@@ -22,7 +22,7 @@ redis:
         cpu: 100m
         memory: 50Mi
       limits:
-        cpu: 200m
+        cpu: 500m
         memory: 200Mi
 
   replica:
@@ -101,10 +101,10 @@ frontend:
   resources:
     requests:
       cpu: 200m
-      memory: 300Mi
+      memory: 100Mi
     limits:
       cpu: 500m
-      memory: 400Mi
+      memory: 200Mi
 
   autoscaling:
     enabled: false
@@ -141,10 +141,10 @@ backend:
   resources:
     requests:
       cpu: 200m
-      memory: 150Mi
+      memory: 80Mi
     limits:
-      cpu: 300m
-      memory: 300Mi
+      cpu: 500m
+      memory: 150Mi
 
   autoscaling:
     enabled: false
@@ -183,7 +183,7 @@ shibboleth:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 75Mi
     limits:
       cpu: 100m
       memory: 100Mi

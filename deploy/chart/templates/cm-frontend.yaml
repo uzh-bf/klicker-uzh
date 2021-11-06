@@ -11,7 +11,6 @@ data:
   API_ENDPOINT_WS: "{{ $wsprotocol }}://{{ .Values.backend.hostname }}/graphql"
   APP_BASE_URL: "{{ $protocol }}://{{ .Values.frontend.hostname }}"
   APP_JOIN_URL: "{{ .Values.frontend.hostname }}/join"
-  APP_PERSIST_QUERIES: "false"
   APP_TRUST_PROXY: "true"
   APP_WITH_AAI: {{ .Values.frontend.displayAAI | quote }}
   CACHE_REDIS_HOST: {{ .Release.Name }}-redis-master
@@ -26,18 +25,26 @@ data:
   SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.frontend | quote }}
   SECURITY_FRAMEGUARD_ENABLED: {{ .Values.security.frameguard.enabled | quote }}
   SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
+
+  {{- if .Values.analytics.google.trackingId }}
   NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID: {{ .Values.analytics.google.trackingId | quote }}
+  {{ end }}
+
   {{- if .Values.analytics.happyKit.publicKey }}
   NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY: {{ .Values.analytics.happyKit.publicKey | quote }}
   {{ end }}
+
   {{- if .Values.featureFlags.envKey }}
   NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY: {{ .Values.featureFlags.envKey | quote }}
   NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS: {{ .Values.featureFlags.persistedUsers | quote }}
   {{ end }}
+
   {{- if .Values.analytics.matomo.siteUrl }}
   NEXT_PUBLIC_MATOMO_URL: {{ .Values.analytics.matomo.siteUrl | quote }}
   NEXT_PUBLIC_MATOMO_SITE_ID: {{ .Values.analytics.matomo.siteId | quote }}
   {{ end }}
+
+  {{- if .Values.analytics.sentry.frontend.enabled }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
@@ -45,3 +52,4 @@ data:
   SENTRY_ENV: {{ .Values.analytics.sentry.frontend.environment | quote }}
   SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
   SENTRY_SAMPLE_RATE: {{ .Values.analytics.sentry.frontend.sampleRate | quote }}
+  {{ end }}

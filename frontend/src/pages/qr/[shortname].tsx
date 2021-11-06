@@ -4,16 +4,13 @@ import { QRCode } from 'react-qrcode-logo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 
-const { publicRuntimeConfig } = getConfig()
+const { serverRuntimeConfig } = getConfig()
 
-function QR({ shortname }): React.ReactElement {
-  const joinLink = publicRuntimeConfig.joinUrl
-    ? `${publicRuntimeConfig.joinUrl}/${shortname}`
-    : `${publicRuntimeConfig.baseUrl}/join/${shortname}`
-
+function QR({ joinLink }): React.ReactElement {
+  console.log(joinLink)
   return (
     <StaticLayout pageTitle="QR">
-      <div className="mb-8 text-lg font-bold link">{joinLink.replace(/^https?:\/\//, '')}</div>
+      <div className="mb-8 text-lg font-bold link">{joinLink?.replace(/^https?:\/\//, '')}</div>
       <div className="flex items-center justify-center">
         <QRCode
           logoHeight={100}
@@ -28,9 +25,13 @@ function QR({ shortname }): React.ReactElement {
 }
 
 export async function getStaticProps({ params }) {
+  const joinLink = serverRuntimeConfig.joinUrl
+    ? `${serverRuntimeConfig.joinUrl}/${params.shortname}`
+    : `${serverRuntimeConfig.baseUrl}/join/${params.shortname}`
+
   return {
     props: {
-      shortname: params.shortname,
+      joinLink,
     },
   }
 }
