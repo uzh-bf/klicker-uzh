@@ -68,7 +68,7 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
   }
 
   return (
-    <div className="flex flex-col">
+    <div>
       <ConfusionSection
         runningValue={speedRunning}
         title={intl.formatMessage(messages.difficultyTitle)}
