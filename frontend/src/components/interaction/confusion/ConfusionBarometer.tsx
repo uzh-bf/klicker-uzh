@@ -24,11 +24,11 @@ const defaultProps = {
 }
 
 function ConfusionBarometer({ confusionTS, subscribeToMore }: Props): React.ReactElement {
-  useEffect((): void => {
-    if (subscribeToMore) {
-      subscribeToMore()
-    }
-  }, [subscribeToMore])
+  // useEffect((): void => {
+  //   if (subscribeToMore) {
+  //     subscribeToMore()
+  //   }
+  // }, [subscribeToMore])
 
   return <ConfusionCharts confusionTS={confusionTS} />
 }
