@@ -24,13 +24,21 @@ const defaultProps = {
 }
 
 function ConfusionBarometer({ confusionTS, subscribeToMore }: Props): React.ReactElement {
+  const [forceRerender, setForceRerender] = useState(0)
+
+  useEffect(() => {
+    const timeoutHandle = window.setTimeout(() => {
+      window.clearTimeout(timeoutHandle)
+      setForceRerender(forceRerender + 1)
+    }, 60000)
+  })
   // useEffect((): void => {
   //   if (subscribeToMore) {
   //     subscribeToMore()
   //   }
   // }, [subscribeToMore])
 
-  return <ConfusionCharts confusionTS={confusionTS} />
+  return <ConfusionCharts confusionTS={confusionTS} forceRerender={forceRerender} />
 }
 
 ConfusionBarometer.defaultProps = defaultProps

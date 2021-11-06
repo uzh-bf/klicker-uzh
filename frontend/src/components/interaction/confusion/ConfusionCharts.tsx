@@ -25,9 +25,10 @@ const messages = defineMessages({
 
 interface Props {
   confusionTS: any[]
+  forceRerender: any
 }
 
-function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
+function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElement {
   const intl = useIntl()
 
   const [speedRunning, setSpeedRunning] = useState([0, 0, 0])
@@ -43,7 +44,7 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
         difficulty: element.difficulty.toString(),
         timestamp: dayjs(element.createdAt),
       }))
-      .filter((element: any) => dayjs().diff(element.timestamp, 'minute') <= 10)
+      .filter((element: any) => dayjs().diff(element.timestamp, 'minute') <= 1)
 
     // TODO: rebuild this using reduce based on the above array, without needing explicit assignment in forEach
     filteredConfusion.forEach((value) => {
@@ -53,7 +54,7 @@ function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
 
     setSpeedRunning([aggrSpeed['-1'] || 0, aggrSpeed['0'] || 0, aggrSpeed['1'] || 0])
     setDifficultyRunning([aggrDifficulty['-1'] || 0, aggrDifficulty['0'] || 0, aggrDifficulty['1'] || 0])
-  }, [confusionTS])
+  }, [confusionTS, forceRerender])
 
   console.log(confusionTS)
   console.log(speedRunning)
