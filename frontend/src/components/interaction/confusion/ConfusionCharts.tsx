@@ -30,42 +30,18 @@ interface Props {
 
 function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElement {
   const intl = useIntl()
-
   const [speedRunning, setSpeedRunning] = useState(0)
   const [difficultyRunning, setDifficultyRunning] = useState(0)
 
   useEffect(() => {
-    const aggrSpeed = {}
-    const aggrDifficulty = {}
-
-    const filteredConfusion = confusionTS
-      .map((element: any) => ({
-        speed: element.speed.toString(),
-        difficulty: element.difficulty.toString(),
-        timestamp: dayjs(element.createdAt),
-      }))
-      .filter((element: any) => dayjs().diff(element.timestamp, 'minute') <= 10)
-
-    // TODO: rebuild this using reduce based on the above array, without needing explicit assignment in forEach
-    filteredConfusion.forEach((value) => {
-      aggrSpeed[value.speed] = (aggrSpeed[value.speed] || 0) + 1
-      aggrDifficulty[value.difficulty] = (aggrDifficulty[value.difficulty] || 0) + 1
-    })
-
-    setSpeedRunning(
-      ((aggrSpeed['0'] || 0) * 0.5 + (aggrSpeed['1'] || 0)) /
-        ((aggrSpeed['-1'] || 0) + (aggrSpeed['0'] || 0) + (aggrSpeed['1'] || 0))
+    const filteredConfusion = confusionTS.filter(
+      (element: any) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
     )
-
-    setDifficultyRunning(
-      ((aggrDifficulty['0'] || 0) * 0.5 + (aggrDifficulty['1'] || 0)) /
-        ((aggrDifficulty['-1'] || 0) + (aggrDifficulty['0'] || 0) + (aggrDifficulty['1'] || 0))
-    )
+    const reducerSpeed = (previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5
+    const reducerDifficulty = (previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5
+    setSpeedRunning(filteredConfusion.reduce(reducerSpeed, 0) / filteredConfusion.length)
+    setDifficultyRunning(filteredConfusion.reduce(reducerDifficulty, 0) / filteredConfusion.length)
   }, [confusionTS, forceRerender])
-
-  console.log(confusionTS)
-  console.log(speedRunning)
-  console.log(difficultyRunning)
 
   if (confusionTS.length === 0 || isNaN(speedRunning) || isNaN(difficultyRunning)) {
     return (
