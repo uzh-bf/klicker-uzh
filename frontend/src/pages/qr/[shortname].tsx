@@ -10,7 +10,7 @@ function QR({ joinLink }): React.ReactElement {
   console.log(joinLink)
   return (
     <StaticLayout pageTitle="QR">
-      <div className="mb-8 text-lg font-bold link">{joinLink?.replace(/^https?:\/\//, '')}</div>
+      <div className="mb-8 font-bold text-7xl link">{joinLink?.replace(/^https?:\/\//, '')}</div>
       <div className="flex items-center justify-center">
         <QRCode
           logoHeight={100}

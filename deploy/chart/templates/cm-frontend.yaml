@@ -1,5 +1,6 @@
 {{- $protocol := ternary "https" "http" .Values.security.https.enabled -}}
 {{- $wsprotocol := ternary "wss" "ws" .Values.security.https.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,6 +10,7 @@ metadata:
 data:
   API_ENDPOINT: "{{ $protocol }}://{{ .Values.backend.hostname }}/graphql"
   API_ENDPOINT_WS: "{{ $wsprotocol }}://{{ .Values.backend.hostname }}/graphql"
+  API_ENDPOINT_SSR: "http://{{ $fullName }}-backend:4000/graphql"
   APP_BASE_URL: "{{ $protocol }}://{{ .Values.frontend.hostname }}"
   APP_JOIN_URL: "{{ .Values.frontend.hostname }}/join"
   APP_TRUST_PROXY: "true"
