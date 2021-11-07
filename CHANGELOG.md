@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.22...v1.6.3-alpha.23) (2021-11-07)
+
+
+### Other
+
+* **deploy:** add BW to persisted users ([61c4c80](https://github.com/uzh-bf/klicker-uzh/commit/61c4c80a9195f2aad7c13bab5f58fd5762ad3f89))
+* **deploy:** make GA optional and update resources ([e2cb019](https://github.com/uzh-bf/klicker-uzh/commit/e2cb019e42a2fb23898c16fca64d07d28ca4cfde))
+* **deps:** upgrade node -> 16 and bump minor package versions ([#2620](https://github.com/uzh-bf/klicker-uzh/issues/2620)) ([41d784a](https://github.com/uzh-bf/klicker-uzh/commit/41d784a785a0cf75e99b0452861272e37cecb981))
+
 ### [1.6.3-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.21...v1.6.3-alpha.22) (2021-11-05)
 
 
