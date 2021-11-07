@@ -1,6 +1,57 @@
-version: '3'
+version: '3.9'
 
 services:
+  frontend:
+    profiles:
+      - full
+    build:
+      context: frontend
+    ports:
+      - 3000:3000
+    environment:
+      API_ENDPOINT: http://localhost:4000/graphql
+      API_ENDPOINT_WS: ws://localhost:4000/graphql
+      API_ENDPOINT_SSR: http://backend:4000/graphql
+      APP_BASE_URL: http://localhost:3000
+      APP_JOIN_URL: localhost:3000/join
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_HOST: redis_cache
+      S3_ROOT_DOMAIN: localhost:9000
+      S3_ROOT_URL: http://localhost:9000/images
+    networks:
+      - klicker-dev
+
+  backend:
+    profiles:
+      - full
+    build:
+      context: backend
+    ports:
+      - 4000:4000
+    environment:
+      APP_DOMAIN: localhost
+      APP_HTTPS:
+      APP_SECRET: abcdabcd
+      CACHE_REDIS_HOST: redis_cache
+      CACHE_REDIS_PORT: 6379
+      EXEC_REDIS_HOST: redis_exec
+      EXEC_REDIS_PORT: 6379
+      EMAIL_FROM: klicker.support@uzh.ch
+      EMAIL_HOST: sendria
+      EMAIL_PORT: 1025
+      EMAIL_USER:
+      EMAIL_PASSWORD:
+      MONGO_URL: mongodb:27017/klicker?authSource=admin
+      MONGO_USER: klicker
+      MONGO_PASSWORD: klicker
+      S3_ENABLED: true
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: images
+    networks:
+      - klicker-dev
+
   # redis instance to support session execution
   redis_exec:
     image: redis:5.0.9
