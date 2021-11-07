@@ -101,10 +101,10 @@ frontend:
   resources:
     requests:
       cpu: 200m
-      memory: 100Mi
+      memory: 125Mi
     limits:
       cpu: 500m
-      memory: 200Mi
+      memory: 250Mi
 
   autoscaling:
     enabled: false
@@ -141,10 +141,10 @@ backend:
   resources:
     requests:
       cpu: 200m
-      memory: 80Mi
+      memory: 125Mi
     limits:
       cpu: 500m
-      memory: 150Mi
+      memory: 200Mi
 
   autoscaling:
     enabled: false
@@ -182,7 +182,7 @@ shibboleth:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 10m
       memory: 75Mi
     limits:
       cpu: 100m

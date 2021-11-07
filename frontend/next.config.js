@@ -76,9 +76,9 @@ module.exports = (phase) => {
     },
   }
 
-  if (phase === PHASE_PRODUCTION_BUILD) {
+  if (process.env.ANALYZE && phase === PHASE_PRODUCTION_BUILD) {
     const withBundleAnalyzer = require('@next/bundle-analyzer')({
-      enabled: process.env.ANALYZE === 'true',
+      enabled: process.env.ANALYZE,
     })
     config = withBundleAnalyzer(config)
   }
