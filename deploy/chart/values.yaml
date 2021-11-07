@@ -101,17 +101,17 @@ frontend:
   resources:
     requests:
       cpu: 200m
-      memory: 230Mi
+      memory: 200Mi
     limits:
       cpu: 400m
-      memory: 460Mi
+      memory: 400Mi
 
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 85
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
 
   nodeSelector: {}
 
@@ -150,8 +150,8 @@ backend:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 75
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
 
   nodeSelector: {}
 
@@ -162,7 +162,7 @@ backend:
 shibboleth:
   enabled: false
 
-  replicaCount: 2
+  replicaCount: 0
 
   hostname: ''
 
