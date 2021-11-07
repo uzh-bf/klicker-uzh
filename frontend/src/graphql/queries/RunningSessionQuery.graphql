@@ -11,6 +11,7 @@ query RunningSession {
       id
       status
       timeLimit
+      randomSelection
       expiresAt
       instances {
         id

@@ -1,5 +1,9 @@
-mutation ModifyQuestionBlock($sessionId: ID!, $id: ID!, $timeLimit: Int) {
-  modifyQuestionBlock(sessionId: $sessionId, id: $id, questionBlockSettings: { timeLimit: $timeLimit }) {
+mutation ModifyQuestionBlock($sessionId: ID!, $id: ID!, $timeLimit: Int, $randomSelection: Int) {
+  modifyQuestionBlock(
+    sessionId: $sessionId
+    id: $id
+    questionBlockSettings: { timeLimit: $timeLimit, randomSelection: $randomSelection }
+  ) {
     id
     startedAt
     activeStep
@@ -8,6 +12,7 @@ mutation ModifyQuestionBlock($sessionId: ID!, $id: ID!, $timeLimit: Int) {
       id
       status
       timeLimit
+      randomSelection
       expiresAt
       instances {
         id

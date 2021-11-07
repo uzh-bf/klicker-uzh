@@ -25,8 +25,10 @@ interface Props {
   timeLimit?: number
   questionBlockId?: string
   sessionId?: string
+  randomSelection?: number
   handleResetQuestionBlock?: () => void
   handleActivateQuestionBlock?: () => void
+  withQuestionBlockExperiments?: boolean
 }
 
 const defaultProps = {
@@ -35,6 +37,8 @@ const defaultProps = {
   noVersions: false,
   status: 'PLANNED',
   timeLimit: undefined,
+  randomSelection: undefined,
+  withQuestionBlockExperiments: false,
 }
 
 const messages = defineMessages({
@@ -56,9 +60,11 @@ function QuestionBlock({
   status,
   questions,
   timeLimit,
+  randomSelection,
   noDetails,
   questionBlockId,
   sessionId,
+  withQuestionBlockExperiments,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -102,9 +108,11 @@ function QuestionBlock({
 
               <BlockSettingsForm
                 disabled={status === 'ACTIVE'}
+                initialRandomSelection={randomSelection}
                 initialTimeLimit={timeLimit}
                 questionBlockId={questionBlockId}
                 sessionId={sessionId}
+                withQuestionBlockExperiments={withQuestionBlockExperiments}
               />
             </Dropdown.Menu>
           </Dropdown>

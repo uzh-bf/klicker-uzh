@@ -508,7 +508,19 @@
   "form.blockSettings.header": [
     {
       "type": 0,
-      "value": "Set time limit"
+      "value": "Control block execution"
+    }
+  ],
+  "form.blockSettings.randomSelection.description": [
+    {
+      "type": 0,
+      "value": "If random selection is activated, each student will receive only one of the questions within the block selected at random."
+    }
+  ],
+  "form.blockSettings.randomSelection.label": [
+    {
+      "type": 0,
+      "value": "Random selection"
     }
   ],
   "form.blockSettings.timeLimit": [

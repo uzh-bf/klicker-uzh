@@ -9,6 +9,8 @@ import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 
+import { PageWithFeatureFlags } from 'src/@types/AppFlags'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
@@ -45,7 +47,7 @@ const messages = defineMessages({
   },
 })
 
-function Running(): React.ReactElement {
+function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -257,6 +259,7 @@ function Running(): React.ReactElement {
                   },
                   variables: { sessionId: id },
                 })}
+                withQuestionBlockExperiments={featureFlags?.flags?.questionBlockExperiments}
               />
             </div>
 
@@ -277,4 +280,4 @@ function Running(): React.ReactElement {
   )
 }
 
-export default Running
+export default withFeatureFlags(Running)
