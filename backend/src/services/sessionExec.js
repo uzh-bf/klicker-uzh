@@ -827,10 +827,10 @@ const fetchRunningSessionData = async (userId) => {
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0
+    speedRunning = 0.5
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0
+    difficultyRunning = 0.5
   }
   // overwrite confusionTS data sent to user by filtered and aggregated values
   runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }

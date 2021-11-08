@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { defineMessages } from 'react-intl'
 import ConfusionCharts from './ConfusionCharts'
 
@@ -19,28 +19,17 @@ interface Props {
 
 const defaultProps = {
   confusionTS: [],
+  confusionValues: { speed: 0.5, difficulty: 0.5 },
 }
 
 function ConfusionBarometer({ confusionValues, subscribeToMore }: Props): React.ReactElement {
-  const [forceRerender, setForceRerender] = useState(0)
-
-  useEffect(() => {
-    const timeoutHandle = window.setTimeout(() => {
-      window.clearTimeout(timeoutHandle)
-      setForceRerender(forceRerender + 1)
-    }, 60000)
-    return () => {
-      window.clearTimeout(timeoutHandle)
-    }
-  })
-
   // useEffect((): void => {
   //   if (subscribeToMore) {
   //     subscribeToMore()
   //   }
   // }, [subscribeToMore])
 
-  return <ConfusionCharts confusionValues={confusionValues} forceRerender={forceRerender} />
+  return <ConfusionCharts confusionValues={confusionValues} />
 }
 
 ConfusionBarometer.defaultProps = defaultProps

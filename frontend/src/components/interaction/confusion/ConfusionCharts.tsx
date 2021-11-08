@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react'
-import dayjs from 'dayjs'
+import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
@@ -25,10 +24,9 @@ const messages = defineMessages({
 
 interface Props {
   confusionValues: any
-  forceRerender: any
 }
 
-function ConfusionCharts({ confusionValues, forceRerender }: Props): React.ReactElement {
+function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   const intl = useIntl()
 
   // TODO: check that there are values!
