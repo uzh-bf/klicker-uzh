@@ -332,8 +332,6 @@ function Join({ shortname }): React.ReactElement {
 
         .joinSession {
           display: flex;
-          height: -moz-calc(100vh - 8rem);
-          height: -webkit-calc(100vh - 8rem);
           height: calc(100vh - 8rem);
 
           width: 100%;
