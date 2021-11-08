@@ -108,7 +108,7 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
           blocks,
           settings,
           startedAt,
-          confusionTS,
+          confusionValues,
           feedbacks,
           participants,
         } = data.runningSession
@@ -263,15 +263,15 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             </div>
 
             <AudienceInteraction
-              confusionTS={confusionTS}
+              confusionValues={confusionValues}
               feedbacks={feedbacks}
+              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
               isConfusionBarometerActive={settings.isConfusionBarometerActive}
               isFeedbackChannelActive={settings.isFeedbackChannelActive}
               isFeedbackChannelPublic={settings.isFeedbackChannelPublic}
               sessionId={id}
               sessionName={name}
               subscribeToMore={subscribeToMore}
-              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
             />
           </div>
         )

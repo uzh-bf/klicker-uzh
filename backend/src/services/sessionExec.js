@@ -5,6 +5,7 @@ const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 const { v5: uuidv5 } = require('uuid')
 const mongoose = require('mongoose')
+const dayjs = require('dayjs')
 
 const { ObjectId } = mongoose.Types
 
@@ -344,7 +345,6 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
  */
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // TODO: participant auth
-
   const session = await getRunningSession(sessionId)
 
   // if the confusion barometer is not activated, do not allow new additions
@@ -357,6 +357,18 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 
   // save the updated session
   await session.save()
+
+  /* const filteredConfusion = session.confusionTS.filter(
+    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
+  )
+
+  const speedRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.length
+
+  const difficultyRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.length */
 
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
@@ -793,6 +805,46 @@ async function resetQuestionBlock({ sessionId, blockId }) {
   return getRunningSession(sessionId)
 }
 
+/**
+ * Aggregates confusion data into what is really required by the client
+ */
+const fetchRunningSessionData = async (userId) => {
+  const user = await UserModel.findById(userId).populate('runningSession')
+  // deep copy object to allow for modifications
+  const runningSession = JSON.parse(JSON.stringify(user.runningSession))
+
+  const filteredConfusion = runningSession.confusionTS.filter(
+    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
+  )
+  let speedRunning = 0
+  let difficultyRunning = 0
+
+  speedRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.length
+  difficultyRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.length
+
+  if (Number.isNaN(speedRunning)) {
+    speedRunning = 0
+  }
+  if (Number.isNaN(difficultyRunning)) {
+    difficultyRunning = 0
+  }
+  // overwrite confusionTS data sent to user by filtered and aggregated values
+  runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
+
+  // readd mongoDB id-field and empty confusionTS
+  runningSession.id = runningSession._id
+  runningSession.blocks.forEach((block) => {
+    // eslint-disable-next-line no-param-reassign
+    block.id = block._id
+  })
+  runningSession.confusionTS = []
+  return runningSession
+}
+
 module.exports = {
   getRunningSession,
   addResponse,
@@ -811,4 +863,5 @@ module.exports = {
   publishFeedback,
   upvoteFeedback,
   reactToFeedbackResponse,
+  fetchRunningSessionData,
 }

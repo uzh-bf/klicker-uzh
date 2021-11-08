@@ -46,8 +46,8 @@ const sessionsByPVQuery = (parentValue, args, { loaders }) => {
 }
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
-  const user = await UserModel.findById(auth.sub).populate('runningSession')
-  return user.runningSession
+  const result = await SessionExecService.fetchRunningSessionData(auth.sub)
+  return result
 }
 
 const pinnedFeedbacksQuery = async (parentValue, args, { auth }) => {

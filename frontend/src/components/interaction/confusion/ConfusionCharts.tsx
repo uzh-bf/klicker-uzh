@@ -24,26 +24,15 @@ const messages = defineMessages({
 })
 
 interface Props {
-  confusionTS: any[]
+  confusionValues: any
   forceRerender: any
 }
 
-function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElement {
+function ConfusionCharts({ confusionValues, forceRerender }: Props): React.ReactElement {
   const intl = useIntl()
-  const [speedRunning, setSpeedRunning] = useState(0)
-  const [difficultyRunning, setDifficultyRunning] = useState(0)
 
-  useEffect(() => {
-    const filteredConfusion = confusionTS.filter(
-      (element: any) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
-    )
-    const reducerSpeed = (previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5
-    const reducerDifficulty = (previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5
-    setSpeedRunning(filteredConfusion.reduce(reducerSpeed, 0) / filteredConfusion.length)
-    setDifficultyRunning(filteredConfusion.reduce(reducerDifficulty, 0) / filteredConfusion.length)
-  }, [confusionTS, forceRerender])
-
-  if (confusionTS.length === 0 || isNaN(speedRunning) || isNaN(difficultyRunning)) {
+  // TODO: check that there are values!
+  if (Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
     return (
       <div className="font-bold">
         <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
@@ -54,12 +43,12 @@ function ConfusionCharts({ confusionTS, forceRerender }: Props): React.ReactElem
   return (
     <div>
       <ConfusionSection
-        runningValue={speedRunning}
+        runningValue={confusionValues.speed}
         title={intl.formatMessage(messages.difficultyTitle)}
         xlabel={intl.formatMessage(messages.difficultyRange)}
       />
       <ConfusionSection
-        runningValue={difficultyRunning}
+        runningValue={confusionValues.difficulty}
         title={intl.formatMessage(messages.speedTitle)}
         xlabel={intl.formatMessage(messages.speedRange)}
       />

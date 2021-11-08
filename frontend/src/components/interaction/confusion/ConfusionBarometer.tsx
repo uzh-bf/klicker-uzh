@@ -10,11 +10,10 @@ const messages = defineMessages({
 })
 
 interface Props {
-  confusionTS?: {
-    createdAt: string
-    difficulty: number
+  confusionValues?: {
     speed: number
-  }[]
+    difficulty: number
+  }
   subscribeToMore?: any
 }
 
@@ -22,7 +21,7 @@ const defaultProps = {
   confusionTS: [],
 }
 
-function ConfusionBarometer({ confusionTS, subscribeToMore }: Props): React.ReactElement {
+function ConfusionBarometer({ confusionValues, subscribeToMore }: Props): React.ReactElement {
   const [forceRerender, setForceRerender] = useState(0)
 
   useEffect(() => {
@@ -41,7 +40,7 @@ function ConfusionBarometer({ confusionTS, subscribeToMore }: Props): React.Reac
   //   }
   // }, [subscribeToMore])
 
-  return <ConfusionCharts confusionTS={confusionTS} forceRerender={forceRerender} />
+  return <ConfusionCharts confusionValues={confusionValues} forceRerender={forceRerender} />
 }
 
 ConfusionBarometer.defaultProps = defaultProps

@@ -21,7 +21,7 @@ import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedba
 interface Props {
   sessionId: string
   sessionName: string
-  confusionTS: any[]
+  confusionValues: any
   feedbacks: any[]
   isFeedbackChannelActive: boolean
   isFeedbackChannelPublic: boolean
@@ -33,7 +33,7 @@ interface Props {
 function AudienceInteraction({
   sessionId,
   sessionName,
-  confusionTS,
+  confusionValues,
   feedbacks,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
@@ -204,7 +204,7 @@ function AudienceInteraction({
           {hasConfusionFlag && (
             <div className="flex-initial p-4 w-[350px] bg-gray-200">
               <ConfusionBarometer
-                confusionTS={confusionTS}
+                confusionValues={confusionValues}
                 subscribeToMore={(): void => {
                   subscribeToMore({
                     document: ConfusionAddedSubscription,
