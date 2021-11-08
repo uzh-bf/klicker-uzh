@@ -1,8 +1,5 @@
 import React, { useState } from 'react'
-import Head from 'next/head'
 import { Button } from 'semantic-ui-react'
-
-import { createLinks } from '../../../lib/utils/css'
 
 interface Props {
   handleChange: any
@@ -18,22 +15,24 @@ const defaultProps = {
 }
 
 function ConfusionDialog({ title, value, handleChange, labels }: Props): React.ReactElement {
-  const [buttonState, setButtonState] = useState(true)
+  const [isConfusionEnabled, setConfusionEnabled] = useState(true)
 
-  const ConfusionButton = (props) => {
+  const ConfusionButton = ({ children, onChangeValue }) => {
+    let confusionButtonTimer
+
     return (
       <Button
-        onClick={(): void => {
-          handleChange(props.onChangeValue)
-          setButtonState(false)
-          clearTimeout()
-          setTimeout(setButtonState, 60000, true)
-        }}
         className="min-w-[32%] md:min-w-[0%]"
-        color={value === props.onChangeValue ? 'blue' : undefined}
-        disabled={!buttonState}
+        color={value === onChangeValue ? 'blue' : undefined}
+        disabled={!isConfusionEnabled}
+        onClick={(): void => {
+          handleChange(onChangeValue)
+          setConfusionEnabled(false)
+          clearTimeout(confusionButtonTimer)
+          confusionButtonTimer = setTimeout(setConfusionEnabled, 60000, true)
+        }}
       >
-        {props.children}
+        {children}
       </Button>
     )
   }

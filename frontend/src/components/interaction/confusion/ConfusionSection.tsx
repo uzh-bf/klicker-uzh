@@ -11,15 +11,9 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>
-      <p className="inline-block">{'(' + xlabel + ')'}</p>
+      <p className="inline-block">{`(${xlabel})`}</p>
       <div className="w-full h-38">
-        <GaugeChart
-          id={`gauge-chart-${title}`}
-          nrOfLevels={20}
-          percent={runningValue}
-          hideText={true}
-          animate={false}
-        />
+        <GaugeChart animate={true} hideText={true} id={`gauge-chart-${title}`} nrOfLevels={20} percent={runningValue} />
       </div>
     </div>
   )
