@@ -1455,12 +1455,6 @@
       "value": "Difficulty"
     }
   ],
-  "runningSession.confusion.info": [
-    {
-      "type": 0,
-      "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time. It displays all feedbacks that were shared by students throughout the past 10 minutes"
-    }
-  ],
   "runningSession.confusion.speed.Range": [
     {
       "type": 0,
@@ -1591,12 +1585,6 @@
     {
       "type": 0,
       "value": "Audience Interaction"
-    }
-  ],
-  "runningSession.title.confusionbarometer": [
-    {
-      "type": 0,
-      "value": "Confusion Barometer"
     }
   ],
   "session.authMode.aai": [
