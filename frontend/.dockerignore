@@ -20,5 +20,4 @@ src/stories/
 !tailwind.config.js
 !sentry.*.js
 !semantic.json
-!polyfills.ts
 !tsconfig.server.json
