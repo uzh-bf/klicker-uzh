@@ -232,14 +232,14 @@ function FeedbackArea({
     if (selector === 'speed') {
       setConfusionSpeed(newValue)
       handleNewConfusionTS({
-        difficulty: confusionDifficulty ? confusionDifficulty : 0,
+        difficulty: confusionDifficulty ?? 0,
         speed: newValue,
       })
     } else if (selector === 'difficulty') {
       setConfusionDifficulty(newValue)
       handleNewConfusionTS({
         difficulty: newValue,
-        speed: confusionSpeed ? confusionSpeed : 0,
+        speed: confusionSpeed ?? 0,
       })
     }
   }

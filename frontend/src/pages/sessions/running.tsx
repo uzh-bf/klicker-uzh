@@ -271,7 +271,7 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               sessionId={id}
               sessionName={name}
               subscribeToMore={subscribeToMore}
-              confusionFlag={featureFlags?.flags?.confusionBarometer}
+              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
             />
           </div>
         )

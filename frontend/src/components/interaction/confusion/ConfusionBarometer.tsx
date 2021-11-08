@@ -30,7 +30,11 @@ function ConfusionBarometer({ confusionTS, subscribeToMore }: Props): React.Reac
       window.clearTimeout(timeoutHandle)
       setForceRerender(forceRerender + 1)
     }, 60000)
+    return () => {
+      window.clearTimeout(timeoutHandle)
+    }
   })
+
   // useEffect((): void => {
   //   if (subscribeToMore) {
   //     subscribeToMore()

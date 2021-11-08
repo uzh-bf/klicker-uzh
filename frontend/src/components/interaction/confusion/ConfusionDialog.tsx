@@ -30,7 +30,7 @@ function ConfusionDialog({ title, value, handleChange, labels }: Props): React.R
           setTimeout(setButtonState, 60000, true)
         }}
         className="min-w-[32%] md:min-w-[0%]"
-        color={value == props.onChangeValue ? 'blue' : null}
+        color={value === props.onChangeValue ? 'blue' : undefined}
         disabled={!buttonState}
       >
         {props.children}
@@ -40,7 +40,6 @@ function ConfusionDialog({ title, value, handleChange, labels }: Props): React.R
 
   return (
     <div className="mb-10 confusionSlider">
-      <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
       {title && <div className="m-0 mb-2 text-base">{title}</div>}
 
       <div className="text-center md:text-left">
