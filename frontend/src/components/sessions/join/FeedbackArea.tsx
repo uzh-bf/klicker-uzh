@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
-import { Form, Button, TextArea } from 'semantic-ui-react'
+import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
@@ -12,6 +12,7 @@ import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/Fe
 import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
 
 import PublicFeedback from './PublicFeedback'
+import useStickyState from '../../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   feedbackPlaceholder: {
@@ -57,6 +58,11 @@ function FeedbackArea({
   data,
 }: Props): React.ReactElement {
   const intl = useIntl()
+
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'qa-survey-student-visible'
+  )
 
   useEffect(() => {
     const publicFeedbackAdded = subscribeToMore({
@@ -302,8 +308,8 @@ function FeedbackArea({
         {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
           <div>
             {processedFeedbacks.resolved.length > 0 && (
-              <div className="mt-4">
-                <h2 className="!mb-2">
+              <div>
+                <h2 className="!mb-1 !text-lg">
                   <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
                 </h2>
                 {processedFeedbacks.resolved.reverse().map(
@@ -328,9 +334,10 @@ function FeedbackArea({
                 )}
               </div>
             )}
+
             {processedFeedbacks.open.length > 0 && (
               <div>
-                <h2 className="!mb-2">
+                <h2 className="!mb-1 !text-lg mt-2">
                   <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
                 </h2>
                 {processedFeedbacks.open.map(
@@ -355,6 +362,31 @@ function FeedbackArea({
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <div className="fixed bottom-0 left-0 right-0">
+            <Message
+              warning
+              className="!rounded-none"
+              content={
+                <FormattedMessage
+                  defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                  id="joinSession.feedbackArea.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6Igb" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
+              }
+              icon="bullhorn"
+              size="large"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
           </div>
         )}
       </div>

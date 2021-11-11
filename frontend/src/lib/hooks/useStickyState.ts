@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import localForage from 'localforage'
 
 function useStickyState(defaultValue, key) {
+  const [hasInitialized, setHasInitialized] = useState(false)
   const [value, setValue] = useState(defaultValue)
 
   useEffect(() => {
@@ -11,16 +12,22 @@ function useStickyState(defaultValue, key) {
         setValue(stickyValue)
       } catch {
         setValue(defaultValue)
+      } finally {
+        setHasInitialized(true)
       }
     }
     get()
   }, [])
 
   useEffect(() => {
-    localForage.setItem(key, value)
+    try {
+      localForage.setItem(key, value)
+    } catch (e) {
+      console.error(e)
+    }
   }, [key, value])
 
-  return [value, setValue]
+  return [value, setValue, hasInitialized]
 }
 
 export default useStickyState
