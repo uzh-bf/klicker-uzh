@@ -11,11 +11,11 @@ function ConfusionSection({ runningValue, title, labels }: Props): React.ReactEl
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>
-      <div className="w-full h-38">
+      <div className="min-w-full min-h-[175px] ">
         <ReactSpeedometer
-          width={300}
-          height={200}
-          //fluidWidth={true}
+          //width={300}
+          //height={200}
+          fluidWidth={true}
           minValue={0}
           maxValue={1}
           value={runningValue}
