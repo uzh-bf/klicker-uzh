@@ -22,7 +22,7 @@ function ConfusionDialog({ title, value, handleChange, labels }: Props): React.R
 
     return (
       <Button
-        className="min-w-[32%] md:min-w-[0%]"
+        className="min-w-[32%] md:min-w-[120px]"
         color={value === onChangeValue ? 'blue' : undefined}
         disabled={!isConfusionEnabled}
         onClick={(): void => {

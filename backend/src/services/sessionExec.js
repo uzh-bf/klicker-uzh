@@ -355,9 +355,6 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // push a new timestep into the array
   session.confusionTS.push({ difficulty, speed })
 
-  // save the updated session
-  await session.save()
-
   const filteredConfusion = session.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
@@ -380,7 +377,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // overwrite confusionTS data sent to user by filtered and aggregated values
   session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
 
-  // readd mongoDB id-field and empty confusionTS
+  // readd mongoDB id-field
   session.id = session._id
   session.blocks.forEach((block) => {
     // eslint-disable-next-line no-param-reassign
@@ -397,6 +394,8 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
     sessionId,
   })
 
+  // save the updated session
+  await session.save()
   // return the updated session
   return session
 }

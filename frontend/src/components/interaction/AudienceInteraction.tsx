@@ -210,7 +210,6 @@ function AudienceInteraction({
                     document: ConfusionAddedSubscription,
                     updateQuery: (prev, { subscriptionData }): any => {
                       if (!subscriptionData.data) return prev
-                      console.log(subscriptionData.data)
                       return {
                         ...prev,
                         runningSession: {
