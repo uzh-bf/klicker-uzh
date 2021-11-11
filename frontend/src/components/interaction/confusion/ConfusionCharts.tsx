@@ -4,17 +4,33 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import ConfusionSection from './ConfusionSection'
 
 const messages = defineMessages({
-  difficultyRange: {
-    defaultMessage: 'easy - hard',
-    id: 'runningSession.confusion.difficulty.Range',
+  difficultyRangeMin: {
+    defaultMessage: 'easy',
+    id: 'runningSession.confusion.difficulty.RangeMin',
+  },
+  difficultyRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.difficulty.RangeMid',
+  },
+  difficultyRangeMax: {
+    defaultMessage: 'difficult',
+    id: 'runningSession.confusion.difficulty.RangeMax',
   },
   difficultyTitle: {
     defaultMessage: 'Difficulty',
     id: 'runningSession.confusion.difficulty.Title',
   },
-  speedRange: {
-    defaultMessage: 'slow - fast',
-    id: 'runningSession.confusion.speed.Range',
+  speedRangeMin: {
+    defaultMessage: 'slow',
+    id: 'runningSession.confusion.speed.RangeMin',
+  },
+  speedRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.speed.RangeMid',
+  },
+  speedRangeMax: {
+    defaultMessage: 'fast',
+    id: 'runningSession.confusion.speed.RangeMax',
   },
   speedTitle: {
     defaultMessage: 'Speed',
@@ -29,7 +45,6 @@ interface Props {
 function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   const intl = useIntl()
 
-  // TODO: check that there are values!
   if (Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
     return (
       <div className="font-bold">
@@ -38,17 +53,28 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
     )
   }
 
+  const speedLabels = {
+    min: intl.formatMessage(messages.speedRangeMin),
+    mid: intl.formatMessage(messages.speedRangeMid),
+    max: intl.formatMessage(messages.speedRangeMax),
+  }
+  const difficultyLabels = {
+    min: intl.formatMessage(messages.difficultyRangeMin),
+    mid: intl.formatMessage(messages.difficultyRangeMid),
+    max: intl.formatMessage(messages.difficultyRangeMax),
+  }
+
   return (
     <div>
       <ConfusionSection
         runningValue={confusionValues.speed}
         title={intl.formatMessage(messages.difficultyTitle)}
-        xlabel={intl.formatMessage(messages.difficultyRange)}
+        labels={speedLabels}
       />
       <ConfusionSection
         runningValue={confusionValues.difficulty}
         title={intl.formatMessage(messages.speedTitle)}
-        xlabel={intl.formatMessage(messages.speedRange)}
+        labels={difficultyLabels}
       />
     </div>
   )

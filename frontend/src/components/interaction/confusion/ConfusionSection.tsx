@@ -4,10 +4,10 @@ import ReactSpeedometer from 'react-d3-speedometer'
 interface Props {
   runningValue: number
   title: string
-  xlabel: string
+  labels: any
 }
 
-function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactElement {
+function ConfusionSection({ runningValue, title, labels }: Props): React.ReactElement {
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>
@@ -28,7 +28,8 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
           paddingHorizontal={5}
           customSegmentLabels={[
             {
-              text: 'Slow',
+              text: labels.min,
+              // @ts-ignore
               position: 'OUTSIDE',
               color: '#000000',
             },
@@ -37,7 +38,8 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
               color: '#000000',
             },
             {
-              text: 'Optimal',
+              text: labels.mid,
+              // @ts-ignore
               position: 'OUTSIDE',
               color: '#000000',
             },
@@ -46,15 +48,14 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
               color: '#000000',
             },
             {
-              text: 'Fast',
+              text: labels.max,
+              // @ts-ignore
               position: 'OUTSIDE',
               color: '#000000',
             },
           ]}
           currentValueText=" "
-          // textColor={'#000000'}
           // needlecolor='#000000'
-          // ringWidth={47}
         />
       </div>
     </div>

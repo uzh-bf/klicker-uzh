@@ -19,6 +19,30 @@ const messages = defineMessages({
     id: 'joinSession.feedbackArea.feedbackPlaceholder',
     defaultMessage: 'Post a question or feedback...',
   },
+  difficultyRangeMin: {
+    defaultMessage: 'easy',
+    id: 'runningSession.confusion.difficulty.RangeMin',
+  },
+  difficultyRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.difficulty.RangeMid',
+  },
+  difficultyRangeMax: {
+    defaultMessage: 'difficult',
+    id: 'runningSession.confusion.difficulty.RangeMax',
+  },
+  speedRangeMin: {
+    defaultMessage: 'slow',
+    id: 'runningSession.confusion.speed.RangeMin',
+  },
+  speedRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.speed.RangeMid',
+  },
+  speedRangeMax: {
+    defaultMessage: 'fast',
+    id: 'runningSession.confusion.speed.RangeMax',
+  },
 })
 
 interface Props {
@@ -402,7 +426,11 @@ function FeedbackArea({
         <div className="mt-5 mb-2">
           <ConfusionDialog
             handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
-            labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
+            labels={{
+              min: intl.formatMessage(messages.speedRangeMin),
+              mid: intl.formatMessage(messages.speedRangeMid),
+              max: intl.formatMessage(messages.speedRangeMax),
+            }}
             title={
               <h2 className="text-center sectionTitle md:text-left">
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
@@ -412,7 +440,11 @@ function FeedbackArea({
           />
           <ConfusionDialog
             handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
-            labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
+            labels={{
+              min: intl.formatMessage(messages.difficultyRangeMin),
+              mid: intl.formatMessage(messages.difficultyRangeMid),
+              max: intl.formatMessage(messages.difficultyRangeMax),
+            }}
             title={
               <h2 className="text-center sectionTitle md:text-left">
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />

@@ -1443,10 +1443,22 @@
       "value": "Unpublished"
     }
   ],
-  "runningSession.confusion.difficulty.Range": [
+  "runningSession.confusion.difficulty.RangeMax": [
     {
       "type": 0,
-      "value": "easy - hard"
+      "value": "difficult"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMin": [
+    {
+      "type": 0,
+      "value": "easy"
     }
   ],
   "runningSession.confusion.difficulty.Title": [
@@ -1455,10 +1467,22 @@
       "value": "Difficulty"
     }
   ],
-  "runningSession.confusion.speed.Range": [
+  "runningSession.confusion.speed.RangeMax": [
     {
       "type": 0,
-      "value": "slow - fast"
+      "value": "fast"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMin": [
+    {
+      "type": 0,
+      "value": "slow"
     }
   ],
   "runningSession.confusion.speed.Title": [
