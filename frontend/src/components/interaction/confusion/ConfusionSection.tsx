@@ -1,5 +1,5 @@
 import React from 'react'
-import GaugeChart from 'react-gauge-chart'
+import ReactSpeedometer from 'react-d3-speedometer'
 
 interface Props {
   runningValue: number
@@ -11,9 +11,51 @@ function ConfusionSection({ runningValue, title, xlabel }: Props): React.ReactEl
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>
-      <p className="inline-block">{`(${xlabel})`}</p>
+      {/*<p className="inline-block">{`(${xlabel})`}</p>*/}
       <div className="w-full h-38">
-        <GaugeChart animate={true} hideText={true} id={`gauge-chart-${title}`} nrOfLevels={20} percent={runningValue} />
+        <ReactSpeedometer
+          width={300}
+          height={200}
+          //fluidWidth={true}
+          minValue={0}
+          maxValue={1}
+          value={runningValue}
+          startColor="#FF0000"
+          endColor="#00FF00"
+          needleColor="steelblue"
+          customSegmentStops={[0, 0.15, 0.3, 0.7, 0.85, 1]}
+          segmentColors={['#e72e06', '#ffff31', '#42ff42', '#ffff31', '#e72e06']}
+          paddingHorizontal={5}
+          customSegmentLabels={[
+            {
+              text: 'Slow',
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+            {
+              text: '',
+              color: '#000000',
+            },
+            {
+              text: 'Optimal',
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+            {
+              text: '',
+              color: '#000000',
+            },
+            {
+              text: 'Fast',
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+          ]}
+          currentValueText=" "
+          // textColor={'#000000'}
+          // needlecolor='#000000'
+          // ringWidth={47}
+        />
       </div>
     </div>
   )
