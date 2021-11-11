@@ -11,7 +11,6 @@ function ConfusionSection({ runningValue, title, labels }: Props): React.ReactEl
   return (
     <div>
       <h3 className="inline-block mr-3">{title}</h3>
-      {/*<p className="inline-block">{`(${xlabel})`}</p>*/}
       <div className="w-full h-38">
         <ReactSpeedometer
           width={300}

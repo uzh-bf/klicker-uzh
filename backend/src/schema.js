@@ -185,7 +185,7 @@ const typeDefs = [
   }
 
   type Subscription {
-    confusionAdded(sessionId: ID!): Session_ConfusionTimestep
+    confusionAdded(sessionId: ID!): Session_ConfusionValues
     feedbackAdded(sessionId: ID!): Session_Feedback
     feedbackDeleted(sessionId: ID!): ID
     feedbackResolved(sessionId: ID!): Session_Feedback_ResolvedStateChange

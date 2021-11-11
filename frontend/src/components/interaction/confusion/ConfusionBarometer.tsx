@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { defineMessages } from 'react-intl'
 import ConfusionCharts from './ConfusionCharts'
 
@@ -18,16 +18,15 @@ interface Props {
 }
 
 const defaultProps = {
-  confusionTS: [],
   confusionValues: { speed: 0.5, difficulty: 0.5 },
 }
 
 function ConfusionBarometer({ confusionValues, subscribeToMore }: Props): React.ReactElement {
-  // useEffect((): void => {
-  //   if (subscribeToMore) {
-  //     subscribeToMore()
-  //   }
-  // }, [subscribeToMore])
+  useEffect((): void => {
+    if (subscribeToMore) {
+      subscribeToMore()
+    }
+  }, [subscribeToMore])
 
   return <ConfusionCharts confusionValues={confusionValues} />
 }

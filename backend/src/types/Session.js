@@ -160,6 +160,7 @@ module.exports = `
   }
 
   type Session_ConfusionValues {
+    id: ID!
     speed: Float!
     difficulty: Float!
   }

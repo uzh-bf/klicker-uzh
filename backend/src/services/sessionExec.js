@@ -358,24 +358,42 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // save the updated session
   await session.save()
 
-  /* const filteredConfusion = session.confusionTS.filter(
+  const filteredConfusion = session.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
+  let speedRunning = 0
+  let difficultyRunning = 0
 
-  const speedRunning =
+  speedRunning =
     filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
     filteredConfusion.length
-
-  const difficultyRunning =
+  difficultyRunning =
     filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
-    filteredConfusion.length */
+    filteredConfusion.length
 
-  // extract the saved confusion timestep and convert it to a plain object
+  if (Number.isNaN(speedRunning)) {
+    speedRunning = 0.5
+  }
+  if (Number.isNaN(difficultyRunning)) {
+    difficultyRunning = 0.5
+  }
+  // overwrite confusionTS data sent to user by filtered and aggregated values
+  session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
+
+  // readd mongoDB id-field and empty confusionTS
+  session.id = session._id
+  session.blocks.forEach((block) => {
+    // eslint-disable-next-line no-param-reassign
+    block.id = block._id
+  })
+
+  // add the computed confusion values to the subscribtion content and
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
   const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+
   pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
+    [CONFUSION_ADDED]: { speed: speedRunning, difficulty: difficultyRunning, id: savedConfusion._id },
     sessionId,
   })
 

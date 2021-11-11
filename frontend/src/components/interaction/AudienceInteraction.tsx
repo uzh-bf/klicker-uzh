@@ -210,11 +210,15 @@ function AudienceInteraction({
                     document: ConfusionAddedSubscription,
                     updateQuery: (prev, { subscriptionData }): any => {
                       if (!subscriptionData.data) return prev
+                      console.log(subscriptionData.data)
                       return {
                         ...prev,
                         runningSession: {
                           ...prev.runningSession,
-                          confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
+                          confusionValues: {
+                            speed: subscriptionData.data.confusionAdded.speed,
+                            difficulty: subscriptionData.data.confusionAdded.difficulty,
+                          },
                         },
                       }
                     },
