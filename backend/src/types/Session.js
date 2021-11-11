@@ -78,7 +78,6 @@ module.exports = `
     user: User!
 
     blocks: [Session_QuestionBlock!]!
-    confusionTS: [Session_ConfusionTimestep!]!
     confusionValues: Session_ConfusionValues
     feedbacks: [Session_Feedback!]!
     participants: [Session_Participant]!

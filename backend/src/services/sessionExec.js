@@ -827,8 +827,8 @@ async function resetQuestionBlock({ sessionId, blockId }) {
  */
 const fetchRunningSessionData = async (userId) => {
   const user = await UserModel.findById(userId).populate('runningSession')
-  // deep copy object to allow for modifications
-  const runningSession = JSON.parse(JSON.stringify(user.runningSession))
+
+  const { runningSession } = user
 
   const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
@@ -858,7 +858,6 @@ const fetchRunningSessionData = async (userId) => {
     // eslint-disable-next-line no-param-reassign
     block.id = block._id
   })
-  runningSession.confusionTS = []
   return runningSession
 }
 

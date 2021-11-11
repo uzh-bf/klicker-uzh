@@ -31,11 +31,6 @@ query RunningSession {
         }
       }
     }
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
     confusionValues {
       speed
       difficulty
