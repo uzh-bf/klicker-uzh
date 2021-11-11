@@ -2,13 +2,6 @@ import React, { useEffect } from 'react'
 import { defineMessages } from 'react-intl'
 import ConfusionCharts from './ConfusionCharts'
 
-const messages = defineMessages({
-  activated: {
-    defaultMessage: 'Activated',
-    id: 'common.string.activated',
-  },
-})
-
 interface Props {
   confusionValues?: {
     speed: number

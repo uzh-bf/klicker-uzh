@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -6,6 +6,8 @@ import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
+// import ConfusionBarometer from './confusion/ConfusionBarometer'
+import useStickyState from '../../lib/hooks/useStickyState'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
@@ -41,6 +43,11 @@ function AudienceInteraction({
   subscribeToMore,
   hasConfusionFlag,
 }: Props) {
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'qa-survey-lecturer-visible'
+  )
+
   useEffect(() => {
     return subscribeToMore({
       document: FeedbackAddedSubscription,
@@ -150,7 +157,6 @@ function AudienceInteraction({
           </div>
         </div>
       </div>
-
       {!isFeedbackChannelActive && (
         <Message
           info
@@ -164,7 +170,6 @@ function AudienceInteraction({
           icon="info"
         />
       )}
-
       {isFeedbackChannelActive && (
         <div className="flex flex-col gap-4 md:flex-row">
           <div className="flex flex-col flex-1 md:flex-row">
@@ -228,6 +233,29 @@ function AudienceInteraction({
             </div>
           )}
         </div>
+      )}
+
+      {isFeedbackChannelActive && hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+        <Message
+          warning
+          className="print:hidden"
+          content={
+            <FormattedMessage
+              defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+              id="runningSession.audienceInteraction.survey"
+              values={{
+                link: (
+                  <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
+                    link
+                  </a>
+                ),
+              }}
+            />
+          }
+          icon="bullhorn"
+          size="tiny"
+          onDismiss={() => setIsSurveyBannerVisible(false)}
+        />
       )}
     </div>
   )

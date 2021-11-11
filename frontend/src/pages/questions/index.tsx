@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
-import { Loader } from 'semantic-ui-react'
+import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
 
@@ -37,6 +37,7 @@ import {
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import withFeatureFlags from '../../lib/withFeatureFlags'
+import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   pageTitle: {
@@ -59,6 +60,11 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
   }, [])
+
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'interaction-survey-visible'
+  )
 
   const [creationMode, setCreationMode] = useState(
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId
@@ -509,6 +515,30 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             ]
           })()}
         </div>
+
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <div className="fixed bottom-0 left-0 right-0">
+            <Message
+              warning
+              className="!rounded-none"
+              content={
+                <FormattedMessage
+                  defaultMessage="We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see {link}, duration ca. 10min)."
+                  id="questionPool.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6IiJ" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
+              }
+              icon="bullhorn"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
+          </div>
+        )}
       </div>
 
       <style jsx>{`
