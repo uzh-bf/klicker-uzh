@@ -307,9 +307,37 @@ function FeedbackArea({
       <div className="flex flex-col justify-between h-full mt-4">
         {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
           <div>
+            {processedFeedbacks.resolved.length > 0 && (
+              <div>
+                <h2 className="!mb-1 !text-lg">
+                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+                </h2>
+                {processedFeedbacks.resolved.reverse().map(
+                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
+                    <div className="mt-2 mb-4 first:mt-0" key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        resolved={resolved}
+                        resolvedAt={resolvedAt}
+                        responses={responses}
+                        upvoted={upvoted}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
             {processedFeedbacks.open.length > 0 && (
               <div>
-                <h2 className="!mb-2">
+                <h2 className="!mb-1 !text-lg mt-2">
                   <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
                 </h2>
                 {processedFeedbacks.open.map(
@@ -328,34 +356,6 @@ function FeedbackArea({
                           handlePositiveResponseReaction(responseId, id)
                         }
                         onUpvoteFeedback={() => onUpvoteFeedback(id)}
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-
-            {processedFeedbacks.resolved.length > 0 && (
-              <div className="mt-4">
-                <h2 className="!mb-2">
-                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
-                </h2>
-                {processedFeedbacks.resolved.map(
-                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
-                    <div className="mt-2 first:mt-0" key={id}>
-                      <PublicFeedback
-                        content={content}
-                        createdAt={createdAt}
-                        resolved={resolved}
-                        resolvedAt={resolvedAt}
-                        responses={responses}
-                        upvoted={upvoted}
-                        onNegativeResponseReaction={(responseId: string) =>
-                          handleNegativeResponseReaction(responseId, id)
-                        }
-                        onPositiveResponseReaction={(responseId: string) =>
-                          handlePositiveResponseReaction(responseId, id)
-                        }
                       />
                     </div>
                   )
