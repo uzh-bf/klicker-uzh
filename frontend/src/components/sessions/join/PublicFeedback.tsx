@@ -36,7 +36,7 @@ function PublicFeedback({
           <div className="flex-1 p-2 pl-4">
             <p className="mb-0 prose-sm prose">{content}</p>
             <div className="flex flex-row items-end mt-1 text-gray-500">
-              <div className="text-sm text-gray-500">
+              <div className="text-xs text-gray-500">
                 {resolved ? (
                   <FormattedMessage defaultMessage="Resolved on" id="joinSession.feedbackArea.resolvedAt" />
                 ) : (
@@ -69,7 +69,7 @@ function PublicFeedback({
             >
               <div className="flex-1">
                 <p className="mb-0 prose-sm prose">{response.content}</p>
-                <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                <div className="mt-1 text-xs text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>
               <div className="flex-initial">
                 <Button
