@@ -1,5 +1,6 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
+import { Icon, Popup } from 'semantic-ui-react'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -36,6 +37,11 @@ const messages = defineMessages({
     defaultMessage: 'Speed',
     id: 'runningSession.confusion.speed.Title',
   },
+  confusionInfo: {
+    defaultMessage:
+      'The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time.',
+    id: 'runningSession.confusion.info',
+  },
 })
 
 interface Props {
@@ -66,6 +72,23 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
 
   return (
     <div>
+      <div className="float-right">
+        <Popup
+          content={intl.formatMessage(messages.confusionInfo)}
+          trigger={
+            <a data-tip>
+              <Icon className="icon" name="question circle" />
+            </a>
+          }
+          position="left center"
+          size="small"
+          style={{ opacity: 0.9 }}
+          mouseEnterDelay={250}
+          mouseLeaveDelay={250}
+          wide
+          inverted
+        />
+      </div>
       <ConfusionSection
         runningValue={confusionValues.speed}
         title={intl.formatMessage(messages.difficultyTitle)}
