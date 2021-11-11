@@ -995,6 +995,20 @@
       "value": "Erledigt am"
     }
   ],
+  "joinSession.feedbackArea.survey": [
+    {
+      "type": 0,
+      "value": "Wenn Sie am Feedback-Channel (Q&A) teilgenommen haben, wären wir Ihnen sehr dankbar für ein kurzes Feedback per 2-minütiger Umfrage ("
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": ")."
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,
@@ -1285,6 +1299,20 @@
       "value": " Fragen ausgewählt"
     }
   ],
+  "questionPool.survey": [
+    {
+      "type": 0,
+      "value": "Wir befragen aktuell Dozierende zum Thema Interaktion in der Lehre. Mit einer Teilnahme an unserer Umfrage können Sie die weitere Entwicklung des KlickerUZH massgeblich beeinflussen (siehe "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": ", Dauer ca. 10min). Herzlichen Dank!"
+    }
+  ],
   "questionPool.title": [
     {
       "type": 0,
@@ -1351,6 +1379,20 @@
     {
       "type": 0,
       "value": "Die Publikumsinteraktion erlaubt es Ihrem Publikum, Fragen zu stellen und Ihnen während der Session Feedback zu geben."
+    }
+  ],
+  "runningSession.audienceInteraction.survey": [
+    {
+      "type": 0,
+      "value": "Wenn Sie unseren Feedback-Channel (Q&A) in der Lehre eingesetzt haben, wären wir Ihnen sehr dankbar für ein kurzes Feedback per 2-minütiger Umfrage ("
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": ")."
     }
   ],
   "runningSession.blockActions.activateBlock": [
