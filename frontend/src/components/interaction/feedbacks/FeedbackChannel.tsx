@@ -6,6 +6,7 @@ import { requestNotificationPermissions, createNotification } from '../../../lib
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+import useStickyState from '../../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   notificationTitle: {
@@ -42,6 +43,11 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'qa-survey-lecturer-visible'
+  )
+
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, { withSearch: true })
   const [feedbackLength, setFeedbackLength] = useState(0)
   const intl = useIntl()
@@ -115,6 +121,29 @@ function FeedbackChannel({
               </div>
             </div>
           )
+        )}
+
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <Message
+            warning
+            className="print:hidden"
+            content={
+              <FormattedMessage
+                defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                id="runningSession.audienceInteraction.survey"
+                values={{
+                  link: (
+                    <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
+                      link
+                    </a>
+                  ),
+                }}
+              />
+            }
+            icon="bullhorn"
+            size="tiny"
+            onDismiss={() => setIsSurveyBannerVisible(false)}
+          />
         )}
       </div>
     </div>
