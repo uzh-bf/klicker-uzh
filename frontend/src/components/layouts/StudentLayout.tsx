@@ -75,13 +75,13 @@ function StudentLayout({
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className="studentLayout">
-        <div className="header">
+      <div className="flex flex-col min-h-full">
+        <div className="border-0 !border-b border-solid border-gray-300  flex justify-between flex-initial p-[0.3rem] items-center md:!hidden">
           <div className="relative h-10 mt-0 w-11">
             <Button
               basic
               active={sidebar.sidebarVisible}
-              className="absolute z-0"
+              className="absolute z-0 !m-0"
               disabled={!isInteractionEnabled}
               icon="content"
               onClick={sidebar.handleToggleSidebarVisible}
@@ -89,13 +89,13 @@ function StudentLayout({
             {isInteractionEnabled && <NotificationBadge count={totalUnseenCount} />}
           </div>
 
-          <h1 className="pageTitle">
+          <h1 className="m-0 !text-lg">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
           </h1>
-          <Button basic icon="refresh" onClick={(): void => window.location.reload()} />
+          <Button className="!m-0" basic icon="refresh" onClick={(): void => window.location.reload()} />
         </div>
 
-        <div className="content">
+        <div className="flex flex-1">
           <Sidebar
             items={[
               <SidebarItem
@@ -126,52 +126,6 @@ function StudentLayout({
             {children}
           </Sidebar>
         </div>
-
-        <style jsx>
-          {`
-            @import 'src/theme';
-
-            .studentLayout {
-              display: flex;
-              flex-direction: column;
-
-              min-height: 100%;
-
-              .header {
-                flex: 0 0 auto;
-
-                display: flex;
-                justify-content: space-between;
-
-                align-items: center;
-
-                border-bottom: 1px solid lightgrey;
-                padding: 0.3rem;
-
-                :global(button) {
-                  margin: 0;
-                }
-              }
-
-              .pageTitle {
-                font-size: 1.1rem !important;
-                margin: 0;
-              }
-
-              .content {
-                flex: 1;
-
-                display: flex;
-              }
-
-              @include desktop-tablet-only {
-                .header {
-                  display: none;
-                }
-              }
-            }
-          `}
-        </style>
       </div>
     </CommonLayout>
   )

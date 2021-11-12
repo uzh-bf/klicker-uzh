@@ -297,9 +297,13 @@ function Join({ shortname }): React.ReactElement {
           />
         ) : (
           <div
-            className={clsx('questionArea', {
-              inactive: sidebarActiveItem !== 'activeQuestion',
-            })}
+            className={clsx(
+              'questionArea',
+              {
+                inactive: sidebarActiveItem !== 'activeQuestion',
+              },
+              'md:!block'
+            )}
           >
             <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
           </div>
