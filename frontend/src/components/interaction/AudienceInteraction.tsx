@@ -199,7 +199,7 @@ function AudienceInteraction({
             </div>
           </div>
 
-          {hasConfusionFlag && (
+          {hasConfusionFlag && isConfusionBarometerActive && (
             <div className="flex-initial p-4 w-[350px] bg-gray-200">
               <ConfusionBarometer
                 confusionValues={confusionValues}

@@ -6,7 +6,6 @@ module.exports = {
 
     return `
     createSession / modifySession {
-      confusionTS: ${confusionTS}
       feedbacks: ${feedbacks}
       blocks: [${blocks.map(
         ({ status, instances }) => `

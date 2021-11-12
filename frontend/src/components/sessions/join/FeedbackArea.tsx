@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
+import localForage from 'localforage'
 import dayjs from 'dayjs'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
@@ -246,15 +247,18 @@ function FeedbackArea({
   }, [data?.joinQA, upvotedFeedbacks, reactions])
 
   useEffect((): void => {
-    try {
-      const confusion = window.sessionStorage?.getItem(`${shortname}-${sessionId}-confusion`)
-      if (confusion) {
-        setConfusionSpeed(JSON.parse(confusion).prevSpeed)
-        setConfusionDifficulty(JSON.parse(confusion).prevDifficulty)
+    const exec = async () => {
+      try {
+        const confusion: any = await localForage.getItem(`${shortname}-${sessionId}-confusion`)
+        if (confusion) {
+          setConfusionSpeed(confusion.prevSpeed)
+          setConfusionDifficulty(confusion.prevDifficulty)
+        }
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
     }
+    exec()
   }, [])
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
@@ -454,6 +458,7 @@ function FeedbackArea({
           </div>
         )}
       </div>
+
       {isFeedbackChannelActive && isConfusionBarometerActive && (
         <div className="mt-5 mb-2">
           <ConfusionDialog

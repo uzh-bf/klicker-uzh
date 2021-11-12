@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+import localForage from 'localforage'
 
 import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
@@ -134,13 +135,11 @@ function Join({ shortname }): React.ReactElement {
             sessionId,
           },
         })
-        window.sessionStorage?.setItem(
-          `${shortname}-${sessionId}-confusion`,
-          JSON.stringify({
-            prevSpeed: speed,
-            prevDifficulty: difficulty,
-          })
-        )
+        localForage.setItem(`${shortname}-${sessionId}-confusion`, {
+          prevSpeed: speed,
+          prevDifficulty: difficulty,
+        })
+        push(['trackEvent', 'Join Session', 'Confusion Interacted', `speed=${speed},difficulty=${difficulty}`])
       } catch ({ message }) {
         console.error(message)
       }
@@ -158,39 +157,6 @@ function Join({ shortname }): React.ReactElement {
     try {
       if (settings.isFeedbackChannelPublic) {
         newFeedback({
-          // optimistically add the feedback to the array already
-          // optimisticResponse: {
-          //   addFeedback: {
-          //     __typename: 'Session_Feedback',
-          //     content,
-          //     // randomly generate an id, will be replaced by server response
-          //     id: Math.round(Math.random() * -1000000),
-          //     votes: 0,
-          //     pinned: false,
-          //     resolved: false,
-          //     createdAt: '',
-          //     resolvedAt: null,
-          //     responses: [],
-          //   },
-          // },
-          // update the cache after the mutation has completed
-          // update: (store, { data: { addFeedback } }): void => {
-          //   const query = {
-          //     query: JoinSessionQuery,
-          //     variables: { shortname: router.query.shortname },
-          //   }
-
-          //   // get the data from the store
-          //   // replace the feedbacks
-          //   const queryData: any = store.readQuery(query)
-          //   queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
-
-          //   // write the updated data to the store
-          //   store.writeQuery({
-          //     ...query,
-          //     data: queryData,
-          //   })
-          // },
           variables: { content, fp: fingerprint, sessionId },
         })
       } else {
