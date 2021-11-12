@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.3-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.23...v1.6.3-alpha.24) (2021-11-12)
+
+
+### Bug Fixes
+
+* **frontend:** both student view parts visible when starting on mobile feedback view and expanding window size ([02bdc09](https://github.com/uzh-bf/klicker-uzh/commit/02bdc09c66935ef119e07a5fcb8e8bdf2d07ff61))
+* **frontend:** fixed feedback ordering on student view ([6d6902d](https://github.com/uzh-bf/klicker-uzh/commit/6d6902d63abe1f65e7c5b81adcdc80e17c1e0f14))
+* typo in docker compose file ([953bc12](https://github.com/uzh-bf/klicker-uzh/commit/953bc1259c569ec513f4df8a6a2eb151ee484678))
+
+
+### Other
+
+* add question pool image to README ([1a8c958](https://github.com/uzh-bf/klicker-uzh/commit/1a8c958717aa3d9ac03a784b4e764e1f706ff049))
+* **frontend:** add links and mentions of our active surveys ([#2625](https://github.com/uzh-bf/klicker-uzh/issues/2625)) ([4bf67a0](https://github.com/uzh-bf/klicker-uzh/commit/4bf67a06aebe7e8d2fcac4f07144f822944383fc))
+* **frontend:** convert studentView to tailwind ([aa0d15e](https://github.com/uzh-bf/klicker-uzh/commit/aa0d15e169876654c3e0299f38881e2cf77be70a))
+* **landing:** add scaled question pool image ([2d1e007](https://github.com/uzh-bf/klicker-uzh/commit/2d1e007321777a0eb8038d1ba21b23d96b59193a))
+* **README:** use scaled question pool image ([732143a](https://github.com/uzh-bf/klicker-uzh/commit/732143a247f08475064aba1fee6e915b53673fc5))
+
 ### [1.6.3-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.22...v1.6.3-alpha.23) (2021-11-07)
 
 
