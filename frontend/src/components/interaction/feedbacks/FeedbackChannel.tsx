@@ -74,12 +74,13 @@ function FeedbackChannel({
     <div>
       <FeedbackSearchAndFilters disabled={sortedFeedbacks?.length === 0} {...filterProps} />
 
-      <div className="mt-4 overflow-y-auto">
+      <div className="flex flex-col gap-2 overflow-y-auto">
         {feedbacks.length === 0 && (
           <Message info>
             <FormattedMessage defaultMessage="No feedbacks received yet..." id="runningSession.info.nofeedbacks" />
           </Message>
         )}
+
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
           <Message info>
             <FormattedMessage
@@ -88,6 +89,7 @@ function FeedbackChannel({
             />
           </Message>
         )}
+
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
             <div className="flex flex-row mt-4 print:mt-2 first:mt-0" key={id}>

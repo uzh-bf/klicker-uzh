@@ -50,6 +50,14 @@ const runningSessionQuery = async (parentValue, args, { auth }) => {
   return result
 }
 
+const runningSessionIdQuery = async (parentValue, _, { auth }) => {
+  const user = await UserModel.findById(auth.sub)
+  if (user) {
+    return user.runningSession
+  }
+  return null
+}
+
 const pinnedFeedbacksQuery = async (parentValue, args, { auth }) => {
   const user = await UserModel.findById(auth.sub).populate('runningSession')
   return user.runningSession.feedbacks.filter((feedback) => feedback.pinned)
@@ -161,6 +169,7 @@ module.exports = {
   allRunningSessions: allRunningSessionsQuery,
   allSessions: allSessionsQuery,
   runningSession: runningSessionQuery,
+  runningSessionId: runningSessionIdQuery,
   pinnedFeedbacks: pinnedFeedbacksQuery,
   session: sessionQuery,
   sessionByPV: sessionByPVQuery,

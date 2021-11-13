@@ -8,6 +8,7 @@ import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 import { push } from '@socialgouv/matomo-next'
+import localForage from 'localforage'
 
 import { Icon, Message } from 'semantic-ui-react'
 import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
@@ -110,9 +111,9 @@ function QuestionArea({
   }, [questions.length])
 
   useEffect((): void => {
-    try {
-      if (window.localStorage) {
-        const storedResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`)) || {
+    const exec = async () => {
+      try {
+        const storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
           responses: [],
         }
 
@@ -126,15 +127,12 @@ function QuestionArea({
 
         setActiveQuestion(remaining[0])
         setRemainingQuestions(remaining)
-      } else {
-        const remaining = questions.map((_, ix): number => ix)
-        setActiveQuestion(remaining[0])
-        setRemainingQuestions(remaining)
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
     }
-  }, [])
+    exec()
+  }, [sessionId, shortname, questions])
 
   const onActiveChoicesChange =
     (type): any =>
@@ -215,17 +213,15 @@ function QuestionArea({
     // update the stored responses
     if (typeof window !== 'undefined') {
       try {
-        if (window.localStorage) {
-          const prevResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`))
-          localStorage.setItem(
-            `${shortname}-${sessionId}-responses`,
-            JSON.stringify(
-              prevResponses
-                ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
-                : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-            )
+        const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
+        await localForage.setItem(
+          `${shortname}-${sessionId}-responses`,
+          JSON.stringify(
+            prevResponses
+              ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
+              : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
           )
-        }
+        )
       } catch (e) {
         console.error(e)
       }
@@ -247,7 +243,7 @@ function QuestionArea({
 
   return (
     <div className={clsx('questionArea', { active })}>
-      <h1 className="header">
+      <h1 className="hidden p-4 mb-0 md:block md:!text-lg">
         {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
@@ -349,10 +345,6 @@ function QuestionArea({
             display: flex;
           }
 
-          .header {
-            display: none;
-          }
-
           .space {
             margin: 1rem;
           }
@@ -410,12 +402,6 @@ function QuestionArea({
 
             border: 1px solid $color-primary;
             margin-right: 0.25rem;
-
-            .header {
-              font-size: 1.2rem !important;
-              display: block;
-              margin: 1rem;
-            }
 
             .collapser,
             .files {

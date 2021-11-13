@@ -5,6 +5,7 @@ import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import localForage from 'localforage'
 import dayjs from 'dayjs'
+import { Transition } from '@headlessui/react'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
@@ -91,6 +92,7 @@ function FeedbackArea({
 }: Props): React.ReactElement {
   const [confusionDifficulty, setConfusionDifficulty] = useState()
   const [confusionSpeed, setConfusionSpeed] = useState()
+  const [isConfusionVisible, setIsConfusionVisible] = useState(false)
 
   const intl = useIntl()
 
@@ -344,18 +346,18 @@ function FeedbackArea({
   return (
     <div
       className={clsx(
-        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex h-[93vh] md:h-full',
+        'bg-white p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex max-h-93vh',
         active ? 'flex' : 'hidden'
       )}
     >
-      <h1 className="hidden md:block">Feedback-Channel</h1>
+      <h1 className="hidden mb-2 md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
-        <div>
+        <div className="mb-4">
           <Form>
             <Form.Field className="!mb-2">
               <TextArea
-                className="h-24"
+                className="h-12 !prose-sm prose focus:h-24"
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
@@ -364,7 +366,7 @@ function FeedbackArea({
               />
             </Form.Field>
 
-            <Button primary disabled={!feedbackInputValue} type="submit" onClick={onNewFeedback}>
+            <Button primary disabled={!feedbackInputValue} size="small" type="submit" onClick={onNewFeedback}>
               <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </Form>
@@ -372,17 +374,17 @@ function FeedbackArea({
       )}
 
       {/* max-h-[35vh] overflow-scroll md:max-h-full */}
-      <div className="flex-1 mt-4 mb-auto overflow-y-auto">
-        {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
-          <div>
-            {processedFeedbacks.resolved.length > 0 && (
-              <div>
-                <h2 className="!mb-1 !text-lg">
-                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
-                </h2>
+      {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
+        <>
+          {processedFeedbacks.resolved.length > 0 && (
+            <div className="mb-4">
+              <h2 className="!mb-1 !text-base">
+                <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+              </h2>
+              <div className="flex flex-col gap-2">
                 {processedFeedbacks.resolved.reverse().map(
                   ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
-                    <div className="mt-2 mb-4 first:mt-0" key={id}>
+                    <div key={id}>
                       <PublicFeedback
                         content={content}
                         createdAt={createdAt}
@@ -401,16 +403,18 @@ function FeedbackArea({
                   )
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {processedFeedbacks.open.length > 0 && (
-              <div>
-                <h2 className="!mb-1 !text-lg mt-2">
-                  <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
-                </h2>
+          {processedFeedbacks.open.length > 0 && (
+            <div>
+              <h2 className="!mb-1 !text-base">
+                <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+              </h2>
+              <div className="flex flex-col h-auto gap-2 overflow-x-auto">
                 {processedFeedbacks.open.map(
                   ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
-                    <div className="mt-2 first:mt-0" key={id}>
+                    <div key={id}>
                       <PublicFeedback
                         content={content}
                         createdAt={createdAt}
@@ -429,65 +433,69 @@ function FeedbackArea({
                   )
                 )}
               </div>
-            )}
-          </div>
-        )}
-
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
-          <div className="fixed bottom-0 left-0 right-0">
-            <Message
-              warning
-              className="!rounded-none"
-              content={
-                <FormattedMessage
-                  defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                  id="joinSession.feedbackArea.survey"
-                  values={{
-                    link: (
-                      <a href="https://hi.switchy.io/6Igb" rel="noreferrer" target="_blank">
-                        link
-                      </a>
-                    ),
-                  }}
-                />
-              }
-              icon="bullhorn"
-              size="large"
-              onDismiss={() => setIsSurveyBannerVisible(false)}
-            />
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
 
       {isFeedbackChannelActive && isConfusionBarometerActive && (
-        <div className="mt-5 mb-2">
-          <ConfusionDialog
-            handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
-            labels={{
-              min: intl.formatMessage(messages.speedRangeMin),
-              mid: intl.formatMessage(messages.speedRangeMid),
-              max: intl.formatMessage(messages.speedRangeMax),
-            }}
-            title={
-              <h2 className="text-center sectionTitle md:text-left">
-                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
-              </h2>
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
+          <div className="flex flex-col gap-4">
+            <ConfusionDialog
+              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+              icons={{
+                min: '🐌',
+                mid: '😀',
+                max: '🏎',
+              }}
+              labels={{
+                min: intl.formatMessage(messages.speedRangeMin),
+                mid: intl.formatMessage(messages.speedRangeMid),
+                max: intl.formatMessage(messages.speedRangeMax),
+              }}
+              title={<FormattedMessage defaultMessage="Speed" id="common.string.speed" />}
+              value={confusionSpeed}
+            />
+            <ConfusionDialog
+              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+              icons={{
+                min: '😴',
+                mid: '😀',
+                max: '🤯',
+              }}
+              labels={{
+                min: intl.formatMessage(messages.difficultyRangeMin),
+                mid: intl.formatMessage(messages.difficultyRangeMid),
+                max: intl.formatMessage(messages.difficultyRangeMax),
+              }}
+              title={<FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />}
+              value={confusionDifficulty}
+            />
+          </div>
+        </div>
+      )}
+
+      {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+        <div className="fixed bottom-0 left-0 right-0">
+          <Message
+            warning
+            className="!rounded-none"
+            content={
+              <FormattedMessage
+                defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                id="joinSession.feedbackArea.survey"
+                values={{
+                  link: (
+                    <a href="https://hi.switchy.io/6Igb" rel="noreferrer" target="_blank">
+                      link
+                    </a>
+                  ),
+                }}
+              />
             }
-            value={confusionSpeed}
-          />
-          <ConfusionDialog
-            handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
-            labels={{
-              min: intl.formatMessage(messages.difficultyRangeMin),
-              mid: intl.formatMessage(messages.difficultyRangeMid),
-              max: intl.formatMessage(messages.difficultyRangeMax),
-            }}
-            title={
-              <h2 className="text-center sectionTitle md:text-left">
-                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
-              </h2>
-            }
-            value={confusionDifficulty}
+            icon="bullhorn"
+            size="large"
+            onDismiss={() => setIsSurveyBannerVisible(false)}
           />
         </div>
       )}

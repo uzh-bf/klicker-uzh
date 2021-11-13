@@ -248,7 +248,7 @@ function Join({ shortname }): React.ReactElement {
       }
       title={title}
     >
-      <div className="joinSession">
+      <div className="flex w-full gap-1 bg-gray-300 joinSession md:min-h-full md:p-2">
         {activeInstances.length > 0 ? (
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
@@ -301,12 +301,7 @@ function Join({ shortname }): React.ReactElement {
         @import 'src/theme';
 
         .joinSession {
-          display: flex;
-          height: calc(100vh - 8rem);
-
-          width: 100%;
-
-          background-color: lightgray;
+          min-height: calc(100vh - 8rem);
 
           > * {
             flex: 0 0 50%;
@@ -322,9 +317,6 @@ function Join({ shortname }): React.ReactElement {
           }
 
           @include desktop-tablet-only {
-            padding: 1rem;
-            min-height: 100%;
-
             .questionArea {
               border: 1px solid $color-primary;
               background-color: white;
@@ -334,7 +326,6 @@ function Join({ shortname }): React.ReactElement {
             .feedbackArea {
               border: 1px solid $color-primary;
               background-color: white;
-              margin-left: 0.25rem;
 
               &.inactive {
                 display: block;

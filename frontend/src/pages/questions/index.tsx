@@ -450,7 +450,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={renderActionArea(_get(data, 'runningSession.id'))}
+      actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),

@@ -70,86 +70,82 @@ function AudienceInteraction({
 
   return (
     <div>
-      <div className="flex flex-row justify-between">
+      <div className="flex flex-col flex-wrap justify-between gap-4 md:flex-row">
         <div className="text-2xl font-bold print:hidden">
           <FormattedMessage defaultMessage="Audience Interaction" id="runningSession.title.audienceinteraction" />
         </div>
+
         <div className="hidden print:block">
           <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
         </div>
-        <div className="flex items-center mr-2 print:hidden">
+
+        <div className="flex flex-col flex-wrap self-start gap-4 md:flex-row print:hidden">
           {isFeedbackChannelActive && (
-            <a className="mr-10" href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-              <Button icon labelPosition="left" size="small">
-                <Icon name="external" />
-                <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
-              </Button>
-            </a>
+            <div className="order-3 md:order-1">
+              <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
+                <Button text labelPosition="left" size="small">
+                  <Icon name="external" />
+                  <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
+                </Button>
+              </a>
+            </div>
           )}
 
-          <div className="inline-block float-bottom">
-            <span className="flex">
-              <Checkbox
-                toggle
-                checked={isFeedbackChannelActive}
-                label=""
-                onChange={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId,
-                      settings: {
-                        isFeedbackChannelActive: !isFeedbackChannelActive,
-                        isConfusionBarometerActive: !isConfusionBarometerActive && hasConfusionFlag,
-                      },
+          <div className="flex items-center order-1 md:order-2">
+            <Checkbox
+              toggle
+              checked={isFeedbackChannelActive}
+              label=""
+              onChange={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isFeedbackChannelActive: !isFeedbackChannelActive,
+                      isConfusionBarometerActive: !isConfusionBarometerActive && hasConfusionFlag,
                     },
-                  })
-                  push([
-                    'trackEvent',
-                    'Running Session',
-                    !isFeedbackChannelActive ? 'Feedback Channel Activated' : 'Feedback Channel Deactivated',
-                  ])
-                }}
-              />
-              <FormattedMessage
-                defaultMessage="Enable Audience Interaction"
-                id="runningSession.switches.enableaudienceinteraction"
-              />
-            </span>
+                  },
+                })
+                push([
+                  'trackEvent',
+                  'Running Session',
+                  !isFeedbackChannelActive ? 'Feedback Channel Activated' : 'Feedback Channel Deactivated',
+                ])
+              }}
+            />
+            <FormattedMessage
+              defaultMessage="Enable Audience Interaction"
+              id="runningSession.switches.enableaudienceinteraction"
+            />
           </div>
-          <div className="inline-block float-bottom">
-            <span className="flex">
-              <Checkbox
-                toggle
-                checked={!isFeedbackChannelPublic}
-                className="ml-8"
-                disabled={!isFeedbackChannelActive}
-                label=""
-                onChange={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId,
-                      settings: {
-                        isFeedbackChannelPublic: !isFeedbackChannelPublic,
-                      },
+
+          <div className="flex items-center order-2 md:order-3">
+            <Checkbox
+              toggle
+              checked={!isFeedbackChannelPublic}
+              disabled={!isFeedbackChannelActive}
+              label=""
+              onChange={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isFeedbackChannelPublic: !isFeedbackChannelPublic,
                     },
-                  })
-                  push([
-                    'trackEvent',
-                    'Running Session',
-                    'Feedback Moderation Toggled',
-                    String(!isFeedbackChannelPublic),
-                  ])
-                }}
-              />
-              <div className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
-                <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
-              </div>
+                  },
+                })
+                push(['trackEvent', 'Running Session', 'Feedback Moderation Toggled', String(!isFeedbackChannelPublic)])
+              }}
+            />
+            <span className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+              <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
             </span>
           </div>
         </div>
       </div>
+
       {!isFeedbackChannelActive && (
         <Message
           info
@@ -163,6 +159,7 @@ function AudienceInteraction({
           icon="info"
         />
       )}
+
       {isFeedbackChannelActive && (
         <div className="flex flex-col gap-4 md:flex-row">
           <div className="flex flex-col flex-1 md:flex-row">
