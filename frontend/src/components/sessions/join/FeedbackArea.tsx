@@ -217,7 +217,7 @@ function FeedbackArea({
     if (data?.joinQA) {
       const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
       setProcessedFeedbacks({
-        resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
+        resolved: sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved),
         open: sortBy((o: any) => -dayjs(o.createdAt).unix(), open),
       })
     }
@@ -381,7 +381,7 @@ function FeedbackArea({
               icons={{
                 min: '🐌',
                 mid: '😀',
-                max: '🏎',
+                max: '🦘',
               }}
               labels={{
                 min: intl.formatMessage(messages.speedRangeMin),
