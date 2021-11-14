@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.25...v1.7.0-alpha.0) (2021-11-14)
+
+
+### Features
+
+* **frontend:** reintroduce confusion barometer ([#2619](https://github.com/uzh-bf/klicker-uzh/issues/2619)) ([040881b](https://github.com/uzh-bf/klicker-uzh/commit/040881bc5bfd11ac70681bf90435d12974cedbd1))
+
 ### [1.6.3-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.24...v1.6.3-alpha.25) (2021-11-12)
 
 
