@@ -15,13 +15,15 @@ function QuestionTags({ tags, type }: Props): React.ReactElement {
     <div className="questionTags">
       {tags.map(
         (tag): React.ReactElement => (
-          <div className="tag" key={tag.id}>
+          <div className="border border-b-0 border-solid border-primary tag bg-primary-bg" key={tag.id}>
             {tag.name}
           </div>
         )
       )}
 
-      <div className="type tag">{generateTypesShort(intl)[type]}</div>
+      <div className="font-bold border border-b-0 border-l-0 border-solid border-primary tag bg-primary-50">
+        {generateTypesShort(intl)[type]}
+      </div>
 
       <style jsx>{`
         @import 'src/theme';
@@ -31,22 +33,9 @@ function QuestionTags({ tags, type }: Props): React.ReactElement {
           flex-flow: row wrap;
 
           .tag {
-            background-color: #f1f1f1;
             padding: 0.3rem 0.5rem;
             flex: 1;
             text-align: center;
-            border-left: solid 1px $color-primary;
-            border-top: 1px solid $color-primary;
-
-            &:last-child {
-              border-right: solid 1px $color-primary;
-            }
-          }
-
-          .type {
-            font-weight: bold;
-            background-color: rgba(33, 133, 208, 0.36);
-            // rgba(33, 133, 208, 0.36) // rgba(242, 113, 28, 0.58)
           }
 
           @include desktop-tablet-only {
@@ -55,7 +44,6 @@ function QuestionTags({ tags, type }: Props): React.ReactElement {
             justify-content: flex-end;
 
             .tag {
-              //background: none;
               padding: 0.5rem 1rem;
               flex: 0 1 auto;
             }

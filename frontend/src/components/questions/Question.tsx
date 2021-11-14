@@ -85,7 +85,7 @@ function Question({
       </div>
 
       <div className="wrapper">
-        <h2 className="title">
+        <h2 className="title text-primary-strong">
           {isArchived && (
             <Label color="red" size="tiny">
               <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
@@ -169,7 +169,6 @@ function Question({
             flex-flow: column nowrap;
 
             .title {
-              color: $color-primary-strong;
               font-size: $font-size-h1;
               margin: 0;
               margin-top: 0.2rem;
