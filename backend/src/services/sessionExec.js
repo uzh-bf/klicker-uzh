@@ -6,6 +6,7 @@ const { ForbiddenError, UserInputError } = require('apollo-server-express')
 const { v5: uuidv5 } = require('uuid')
 const mongoose = require('mongoose')
 const dayjs = require('dayjs')
+const { sortBy } = require('ramda')
 
 const { ObjectId } = mongoose.Types
 
@@ -743,7 +744,12 @@ async function joinQA({ shortname, auth }) {
     verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
-  return settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : []
+  return settings.isFeedbackChannelActive
+    ? sortBy(
+        (o) => -dayjs(o.resolvedAt).unix(),
+        feedbacks.filter((feedback) => feedback.published)
+      )
+    : []
 }
 
 /**
