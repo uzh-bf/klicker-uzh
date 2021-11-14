@@ -746,7 +746,7 @@ async function joinQA({ shortname, auth }) {
 
   return settings.isFeedbackChannelActive
     ? sortBy(
-        (o) => -dayjs(o.resolvedAt).unix(),
+        (o) => (o.resolvedAt ? -dayjs(o.resolvedAt).unix() : -dayjs(o.createdAt).unix()),
         feedbacks.filter((feedback) => feedback.published)
       )
     : []

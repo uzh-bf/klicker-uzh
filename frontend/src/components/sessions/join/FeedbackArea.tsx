@@ -216,9 +216,11 @@ function FeedbackArea({
   useEffect(() => {
     if (data?.joinQA) {
       const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
+      const resolvedSorted = sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved)
+      const openSorted = sortBy((o: any) => -dayjs(o.createdAt).unix(), open)
       setProcessedFeedbacks({
-        resolved: sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved),
-        open: sortBy((o: any) => -dayjs(o.createdAt).unix(), open),
+        resolved: resolvedSorted,
+        open: openSorted,
       })
     }
   }, [data?.joinQA])
@@ -284,7 +286,7 @@ function FeedbackArea({
       .map((feedback: any) => feedback.id)
       .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
     const responseIds = processedFeedbacks.open
-      .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+      .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
       .map((feedback) =>
         feedback.responses.map((response: any) => {
           return response.id
@@ -292,7 +294,7 @@ function FeedbackArea({
       )
       .concat(
         processedFeedbacks.resolved
-          .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+          .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
           .map((feedback) =>
             feedback.responses.map((response: any) => {
               return response.id
@@ -419,7 +421,7 @@ function FeedbackArea({
                 <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
               </h2>
               <div className="flex flex-col gap-2">
-                {processedFeedbacks.resolved.reverse().map(
+                {processedFeedbacks.resolved.map(
                   ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
                     <div key={id}>
                       <PublicFeedback
