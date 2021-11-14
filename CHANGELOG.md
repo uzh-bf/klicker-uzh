@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.0...v1.7.0-alpha.1) (2021-11-14)
+
+
+### Bug Fixes
+
+* **backend:** return feedbacks for Q&A in the same sort order as expected ([64696ce](https://github.com/uzh-bf/klicker-uzh/commit/64696cea684c86681d37136a0612a7417253ad41))
+* **frontend:** improve sorting of feedbacks on join session ([34aa30b](https://github.com/uzh-bf/klicker-uzh/commit/34aa30b2069537008cbfb7dc3aa38c95f31edaeb))
+* **frontend:** reverse sorting of resolved feedbacks ([dd9f59b](https://github.com/uzh-bf/klicker-uzh/commit/dd9f59b294d1659d64e3401b6e3db25b77b67b08))
+
+
+### Other
+
+* **frontend:** push web vitals ([9328608](https://github.com/uzh-bf/klicker-uzh/commit/9328608315318dabc91abdc30e1afad4c2cfecac))
+* **frontend:** reverse order of route path and web vital name ([8d222c7](https://github.com/uzh-bf/klicker-uzh/commit/8d222c7d6bdbed962f07111cfe6955fb1cad7dd4))
+
 ## [1.7.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.25...v1.7.0-alpha.0) (2021-11-14)
 
 
