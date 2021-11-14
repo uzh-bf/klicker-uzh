@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { Button } from 'semantic-ui-react'
+import Slider from 'rc-slider'
+import 'rc-slider/assets/index.css'
 
 interface Props {
   handleChange: any
@@ -15,7 +17,16 @@ const defaultProps = {
   value: undefined,
 }
 
-const ConfusionButton = ({ children, value, changeValue, onClick, disabled, withIcon }) => {
+function ConfusionLabel({ icon, label }) {
+  return (
+    <div className="flex flex-row items-center text-xl">
+      {icon && <i className="icon">{icon}</i>}
+      {label}
+    </div>
+  )
+}
+
+function ConfusionButton({ children, value, changeValue, onClick, disabled, withIcon }) {
   return (
     <Button
       basic
@@ -79,6 +90,56 @@ function ConfusionDialog({ title, value, handleChange, labels, icons }: Props): 
             {icons?.max && <i className="icon">{icons.max}</i>}
             {labels.max}
           </ConfusionButton>
+        </div>
+        <div className="mt-8 mb-8 px-28">
+          <Slider
+            disabled={!isConfusionEnabled}
+            dotStyle={{
+              width: 10,
+              height: 10,
+            }}
+            handleStyle={{
+              width: 20,
+              height: 20,
+            }}
+            included={false}
+            marks={{
+              '-1': {
+                label: <ConfusionLabel icon={icons?.min} label={labels.min} />,
+                style: {
+                  color: 'rgba(240, 43, 30, 0.7)',
+                },
+              },
+              '-0.5': {
+                label: <ConfusionLabel label={`rather ${labels.min}`} />,
+                style: {
+                  color: 'rgba(245, 114, 0, 0.7)',
+                },
+              },
+              '0': {
+                label: <ConfusionLabel icon={icons?.mid} label={labels.mid} />,
+                style: {
+                  color: 'rgba(22, 171, 57, 0.7)',
+                },
+              },
+              '0.5': {
+                label: <ConfusionLabel label={`rather ${labels.max}`} />,
+                style: {
+                  color: 'rgba(245, 114, 0, 0.7)',
+                },
+              },
+              '1': {
+                label: <ConfusionLabel icon={icons?.max} label={labels.max} />,
+                style: {
+                  color: 'rgba(240, 43, 30, 0.7)',
+                },
+              },
+            }}
+            max={1}
+            min={-1}
+            step={0.5}
+            onAfterChange={handleClick}
+          />
         </div>
       </div>
     </div>
