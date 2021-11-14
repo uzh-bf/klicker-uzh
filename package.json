@@ -28,6 +28,7 @@
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
   ],
   "scripts": {
+    "cypress:open": "cypress open",
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
