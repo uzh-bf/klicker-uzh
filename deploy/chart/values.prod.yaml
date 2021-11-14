@@ -81,6 +81,8 @@ backend:
 shibboleth:
   enabled: true
 
+  replicaCount: 1
+
   hostname: aai.klicker.uzh.ch
 
   ingress:
