@@ -1,76 +1,107 @@
 import React from 'react'
-import _sumBy from 'lodash/sumBy'
-import dayjs from 'dayjs'
-import { defineMessages, useIntl } from 'react-intl'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
+import { Icon, Popup } from 'semantic-ui-react'
 
 import ConfusionSection from './ConfusionSection'
 
 const messages = defineMessages({
-  difficultyRange: {
-    defaultMessage: 'easy - hard',
-    id: 'runningSession.confusion.difficulty.Range',
+  difficultyRangeMin: {
+    defaultMessage: 'easy',
+    id: 'runningSession.confusion.difficulty.RangeMin',
+  },
+  difficultyRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.difficulty.RangeMid',
+  },
+  difficultyRangeMax: {
+    defaultMessage: 'difficult',
+    id: 'runningSession.confusion.difficulty.RangeMax',
   },
   difficultyTitle: {
     defaultMessage: 'Difficulty',
     id: 'runningSession.confusion.difficulty.Title',
   },
-  speedRange: {
-    defaultMessage: 'slow - fast',
-    id: 'runningSession.confusion.speed.Range',
+  speedRangeMin: {
+    defaultMessage: 'slow',
+    id: 'runningSession.confusion.speed.RangeMin',
+  },
+  speedRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.speed.RangeMid',
+  },
+  speedRangeMax: {
+    defaultMessage: 'fast',
+    id: 'runningSession.confusion.speed.RangeMax',
   },
   speedTitle: {
     defaultMessage: 'Speed',
     id: 'runningSession.confusion.speed.Title',
   },
+  confusionInfo: {
+    defaultMessage:
+      'The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time.',
+    id: 'runningSession.confusion.info',
+  },
 })
 
 interface Props {
-  confusionTS: any[]
+  confusionValues: any
 }
 
-function ConfusionCharts({ confusionTS }: Props): React.ReactElement {
+function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   const intl = useIntl()
 
-  const parsedTS = confusionTS.reduce((acc, { createdAt, speed, difficulty }): any[] => {
-    const tempAcc = [...acc, { difficulty, speed }]
+  if (!confusionValues || Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
+    return (
+      <div className="font-bold">
+        <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
+      </div>
+    )
+  }
 
-    // calculate the running average for difficulty and speed
-    const difficultyRunning = _sumBy(tempAcc, 'difficulty') / tempAcc.length
-    const speedRunning = _sumBy(tempAcc, 'speed') / tempAcc.length
-
-    return [
-      ...acc,
-      {
-        difficulty,
-        difficultyRunning,
-        speed,
-        speedRunning,
-        timestamp: dayjs(createdAt).format('H:mm:ss'),
-      },
-    ]
-  }, [])
+  const speedLabels = {
+    min: intl.formatMessage(messages.speedRangeMin),
+    mid: intl.formatMessage(messages.speedRangeMid),
+    max: intl.formatMessage(messages.speedRangeMax),
+  }
+  const difficultyLabels = {
+    min: intl.formatMessage(messages.difficultyRangeMin),
+    mid: intl.formatMessage(messages.difficultyRangeMid),
+    max: intl.formatMessage(messages.difficultyRangeMax),
+  }
 
   return (
-    <>
-      <ConfusionSection
-        data={parsedTS.map(({ timestamp, difficulty, difficultyRunning }): any => ({
-          timestamp,
-          value: difficulty,
-          valueRunning: difficultyRunning,
-        }))}
-        title={intl.formatMessage(messages.difficultyTitle)}
-        ylabel={intl.formatMessage(messages.difficultyRange)}
-      />
-      <ConfusionSection
-        data={parsedTS.map(({ timestamp, speed, speedRunning }): any => ({
-          timestamp,
-          value: speed,
-          valueRunning: speedRunning,
-        }))}
-        title={intl.formatMessage(messages.speedTitle)}
-        ylabel={intl.formatMessage(messages.speedRange)}
-      />
-    </>
+    <div className="w-full">
+      <div className="float-right">
+        <Popup
+          inverted
+          wide
+          content={intl.formatMessage(messages.confusionInfo)}
+          mouseEnterDelay={250}
+          mouseLeaveDelay={250}
+          position="left center"
+          size="small"
+          style={{ opacity: 0.9 }}
+          trigger={
+            <a data-tip>
+              <Icon className="icon" name="question circle" />
+            </a>
+          }
+        />
+      </div>
+      <div className="w-full">
+        <ConfusionSection
+          labels={speedLabels}
+          runningValue={confusionValues.speed}
+          title={intl.formatMessage(messages.difficultyTitle)}
+        />
+        <ConfusionSection
+          labels={difficultyLabels}
+          runningValue={confusionValues.difficulty}
+          title={intl.formatMessage(messages.speedTitle)}
+        />
+      </div>
+    </div>
   )
 }
 

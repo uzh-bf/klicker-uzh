@@ -38,37 +38,37 @@ function QuestionSingle({
   const PopupStyle = { opacity: 0.9 }
 
   return (
-    <div data-tip className="questionSingle" data-for={`questionTooltip${id}`}>
+    <div data-tip className="questionSingle border-primary bg-primary-bg" data-for={`questionTooltip${id}`}>
       {id && description && onDelete && (
         <Popup
+          inverted
+          wide
           content={<span>{description}</span>}
+          mouseEnterDelay={250}
+          mouseLeaveDelay={250}
+          position="right center"
+          size="small"
+          style={PopupStyle}
           trigger={
             <div>
-              <div className="top">
+              <div className="top bg-primary-20">
                 <div className="type">{generateTypesShort(intl)[type]}</div>
                 <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
                   <Icon name="trash" />
                 </button>
               </div>
-              <div className="title">
+              <div className="title text-primary-strong">
                 <Ellipsis>{title}</Ellipsis>
                 {version >= 0 && <span> {`(v${version + 1})`}</span>}
               </div>
             </div>
           }
-          position="right center"
-          size="small"
-          style={PopupStyle}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          wide
-          inverted
         />
       )}
 
       {!(id && description && onDelete) && (
         <>
-          <div className="top">
+          <div className="top bg-primary-20">
             <div className="type">{generateTypesShort(intl)[type]}</div>
 
             {onDelete && (
@@ -85,7 +85,7 @@ function QuestionSingle({
             )}
           </div>
 
-          <div className="title">
+          <div className="title text-primary-strong">
             <Ellipsis>{title}</Ellipsis>
             {version >= 0 && <span> {`(v${version + 1})`}</span>}
           </div>
@@ -94,19 +94,13 @@ function QuestionSingle({
 
       <style jsx>
         {`
-          @import 'src/theme';
-
           .questionSingle {
-            border: 1px solid $color-primary !important;
-            background-color: $color-primary-background;
-
             .top,
             .title {
               padding: 0.3rem;
             }
 
             .top {
-              background-color: $color-primary-20p;
               display: flex;
               justify-content: space-between;
               text-align: center;
@@ -124,7 +118,6 @@ function QuestionSingle({
             .title {
               line-break: loose;
               text-align: center;
-              color: $color-primary-strong;
             }
           }
         `}

@@ -47,7 +47,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
   const user = useContext(UserContext)
 
   return (
-    <div className="navbar">
+    <div className="text-gray-50 navbar bg-primary-strong">
       <div className="sideArea">
         <Menu borderless className="noBorder">
           <Menu.Item icon active={sidebarVisible} className="sidebar" name="sidebar" onClick={handleSidebarToggle}>
@@ -118,19 +118,13 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
       <style jsx>{`
         @import 'src/theme';
 
-        $background-color: $color-primary-strong;
-
         .navbar {
-          color: $color-white;
-
           display: flex;
           align-items: center;
           flex-flow: row wrap;
           justify-content: space-between;
 
           padding: 0;
-
-          background-color: $background-color;
 
           z-index: 100;
 
@@ -148,10 +142,10 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
             :global(.sidebar),
             :global(.menu) {
-              color: $color-white;
+              color: white;
               border-radius: 0;
               font-size: $font-size-h1;
-              background-color: $background-color;
+              background-color: $color-primary-strong;
             }
 
             :global(.sidebar.active) {
@@ -176,7 +170,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
             :global(.menu),
             :global(.ui.dropdown .menu > .item) {
-              background-color: $background-color;
+              background-color: $color-primary-strong;
               color: $color-white;
 
               :global(.item) {

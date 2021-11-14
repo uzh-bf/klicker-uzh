@@ -42,6 +42,7 @@ const {
   joinSession,
   joinQA,
   runningSession,
+  runningSessionId,
   pinnedFeedbacks,
   sessionByPV,
   sessionsByPV,
@@ -129,6 +130,7 @@ const typeDefs = [
     joinQA(shortname: String!): [Session_Feedback_Public!]
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
+    runningSessionId: ID
     runningSession: Session
     pinnedFeedbacks: [Session_Feedback!]!
     session(id: ID!): Session
@@ -185,7 +187,7 @@ const typeDefs = [
   }
 
   type Subscription {
-    confusionAdded(sessionId: ID!): Session_ConfusionTimestep
+    confusionAdded(sessionId: ID!): Session_ConfusionValues
     feedbackAdded(sessionId: ID!): Session_Feedback
     feedbackDeleted(sessionId: ID!): ID
     feedbackResolved(sessionId: ID!): Session_Feedback_ResolvedStateChange
@@ -219,6 +221,7 @@ const resolvers = {
     joinQA,
     question,
     runningSession,
+    runningSessionId,
     pinnedFeedbacks,
     session,
     sessionPublic: session,

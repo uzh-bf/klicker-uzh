@@ -78,7 +78,7 @@ module.exports = `
     user: User!
 
     blocks: [Session_QuestionBlock!]!
-    confusionTS: [Session_ConfusionTimestep!]!
+    confusionValues: Session_ConfusionValues
     feedbacks: [Session_Feedback!]!
     participants: [Session_Participant]!
 
@@ -156,6 +156,12 @@ module.exports = `
     speed: Int!
 
     createdAt: DateTime!
+  }
+
+  type Session_ConfusionValues {
+    id: ID!
+    speed: Float!
+    difficulty: Float!
   }
 
   type Session_Feedback {

@@ -21,11 +21,11 @@ const defaultProps = {
 
 function SCAnswerOptions({ value, disabled, options, onChange }: Props): React.ReactElement {
   return (
-    <div className="options">
+    <div className="flex flex-col gap-2 options">
       {options.map(
         (option, index): React.ReactElement => (
           <div className={clsx('option', { active: value.includes(index) })} key={option.id}>
-            <Button fluid disabled={disabled} onClick={onChange(index)}>
+            <Button fluid className="mr-0" disabled={disabled} onClick={onChange(index)}>
               {option.name}
             </Button>
           </div>
@@ -35,27 +35,15 @@ function SCAnswerOptions({ value, disabled, options, onChange }: Props): React.R
       <style jsx>{`
         @import 'src/theme';
 
-        $button-border-width: 2px;
-
         .options > .option {
-          &:not(:last-child) {
-            margin-bottom: 0.5rem !important;
-          }
-
-          :global(button),
-          :global(button.disabled) {
-            border: $button-border-width solid lightgray !important;
-            background-color: lightgray !important;
-          }
-
           &.active {
             :global(button),
             :global(button.disabled) {
-              border: $button-border-width solid rgb(0, 97, 0) !important;
+              border: 2px solid rgb(0, 97, 0) !important;
               background-color: rgb(198, 239, 206) !important;
               color: rgb(0, 97, 0) !important;
 
-              animation: bounce 0.5s;
+              animation: bounce 0.3s;
             }
           }
         }
@@ -67,7 +55,7 @@ function SCAnswerOptions({ value, disabled, options, onChange }: Props): React.R
             transform: translateX(0);
           }
           50% {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
           }
         }
       `}</style>
