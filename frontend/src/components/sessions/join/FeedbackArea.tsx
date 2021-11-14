@@ -344,20 +344,15 @@ function FeedbackArea({
   }
 
   return (
-    <div
-      className={clsx(
-        'bg-white p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex max-h-93vh',
-        active ? 'flex' : 'hidden'
-      )}
-    >
+    <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
       <h1 className="hidden mb-2 md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
-        <div className="mb-4">
-          <Form>
-            <Form.Field className="!mb-2">
+        <div>
+          <Form className="flex flex-col">
+            <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className="h-12 !prose-sm prose focus:h-24"
+                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && 'h-24')}
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
@@ -366,81 +361,23 @@ function FeedbackArea({
               />
             </Form.Field>
 
-            <Button primary disabled={!feedbackInputValue} size="small" type="submit" onClick={onNewFeedback}>
+            <Button
+              primary
+              className="self-end !mr-0"
+              disabled={!feedbackInputValue}
+              size="tiny"
+              type="submit"
+              onClick={onNewFeedback}
+            >
               <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </Form>
         </div>
       )}
 
-      {/* max-h-[35vh] overflow-scroll md:max-h-full */}
-      {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
-        <>
-          {processedFeedbacks.resolved.length > 0 && (
-            <div className="mb-4">
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
-              </h2>
-              <div className="flex flex-col gap-2">
-                {processedFeedbacks.resolved.reverse().map(
-                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
-                    <div key={id}>
-                      <PublicFeedback
-                        content={content}
-                        createdAt={createdAt}
-                        resolved={resolved}
-                        resolvedAt={resolvedAt}
-                        responses={responses}
-                        upvoted={upvoted}
-                        onNegativeResponseReaction={(responseId: string) =>
-                          handleNegativeResponseReaction(responseId, id)
-                        }
-                        onPositiveResponseReaction={(responseId: string) =>
-                          handlePositiveResponseReaction(responseId, id)
-                        }
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-
-          {processedFeedbacks.open.length > 0 && (
-            <div>
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
-              </h2>
-              <div className="flex flex-col h-auto gap-2 overflow-x-auto">
-                {processedFeedbacks.open.map(
-                  ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
-                    <div key={id}>
-                      <PublicFeedback
-                        content={content}
-                        createdAt={createdAt}
-                        resolved={resolved}
-                        responses={responses}
-                        upvoted={upvoted}
-                        onNegativeResponseReaction={(responseId: string) =>
-                          handleNegativeResponseReaction(responseId, id)
-                        }
-                        onPositiveResponseReaction={(responseId: string) =>
-                          handlePositiveResponseReaction(responseId, id)
-                        }
-                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
       {isFeedbackChannelActive && isConfusionBarometerActive && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white">
-          <div className="flex flex-col gap-4">
+        <div>
+          <div className="flex flex-col gap-2">
             <ConfusionDialog
               handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
               icons={{
@@ -473,6 +410,71 @@ function FeedbackArea({
             />
           </div>
         </div>
+      )}
+
+      {/* max-h-[35vh] overflow-scroll md:max-h-full */}
+      {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
+        <>
+          {processedFeedbacks.resolved.length > 0 && (
+            <div className="mt-4">
+              <h2 className="!mb-1 !text-base">
+                <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+              </h2>
+              <div className="flex flex-col gap-2">
+                {processedFeedbacks.resolved.reverse().map(
+                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
+                    <div key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        resolved={resolved}
+                        resolvedAt={resolvedAt}
+                        responses={responses}
+                        upvoted={upvoted}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
+          {processedFeedbacks.open.length > 0 && (
+            <div className="mt-4">
+              <h2 className="!mb-1 !text-base">
+                <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+              </h2>
+              <div className="flex flex-col h-auto gap-2 overflow-x-auto">
+                {processedFeedbacks.open.map(
+                  ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
+                    <div key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        resolved={resolved}
+                        responses={responses}
+                        upvoted={upvoted}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (

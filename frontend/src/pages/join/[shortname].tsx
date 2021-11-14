@@ -248,7 +248,7 @@ function Join({ shortname }): React.ReactElement {
       }
       title={title}
     >
-      <div className="flex w-full gap-1 bg-gray-300 joinSession md:min-h-full md:p-2">
+      <div className="flex w-full min-h-full gap-2 bg-gray-300 md:p-2">
         {activeInstances.length > 0 ? (
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
@@ -264,11 +264,8 @@ function Join({ shortname }): React.ReactElement {
         ) : (
           <div
             className={clsx(
-              'questionArea',
-              {
-                inactive: sidebarActiveItem !== 'activeQuestion',
-              },
-              'md:!block'
+              'flex-1 bg-white md:flex md:flex-col md:shadow md:rounded-xl p-4',
+              sidebarActiveItem !== 'activeQuestion' && 'hidden'
             )}
           >
             <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
@@ -296,44 +293,6 @@ function Join({ shortname }): React.ReactElement {
           />
         )}
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .joinSession {
-          min-height: calc(100vh - 8rem);
-
-          > * {
-            flex: 0 0 50%;
-          }
-
-          .questionArea,
-          .feedbackArea {
-            padding: 1rem;
-
-            &.inactive {
-              display: none;
-            }
-          }
-
-          @include desktop-tablet-only {
-            .questionArea {
-              border: 1px solid $color-primary;
-              background-color: white;
-              margin-right: 0.25rem;
-            }
-
-            .feedbackArea {
-              border: 1px solid $color-primary;
-              background-color: white;
-
-              &.inactive {
-                display: block;
-              }
-            }
-          }
-        }
-      `}</style>
     </StudentLayout>
   )
 }

@@ -74,7 +74,7 @@ function FeedbackChannel({
     <div>
       <FeedbackSearchAndFilters disabled={sortedFeedbacks?.length === 0} {...filterProps} />
 
-      <div className="flex flex-col gap-2 overflow-y-auto">
+      <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
         {feedbacks.length === 0 && (
           <Message info>
             <FormattedMessage defaultMessage="No feedbacks received yet..." id="runningSession.info.nofeedbacks" />
@@ -92,7 +92,7 @@ function FeedbackChannel({
 
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
-            <div className="flex flex-row mt-4 print:mt-2 first:mt-0" key={id}>
+            <div className="flex flex-row print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
@@ -126,26 +126,27 @@ function FeedbackChannel({
         )}
 
         {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
-          <Message
-            warning
-            className="print:hidden"
-            content={
-              <FormattedMessage
-                defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                id="runningSession.audienceInteraction.survey"
-                values={{
-                  link: (
-                    <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
-                      link
-                    </a>
-                  ),
-                }}
-              />
-            }
-            icon="bullhorn"
-            size="tiny"
-            onDismiss={() => setIsSurveyBannerVisible(false)}
-          />
+          <div className="mt-2 print:hidden">
+            <Message
+              warning
+              content={
+                <FormattedMessage
+                  defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                  id="runningSession.audienceInteraction.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
+              }
+              icon="bullhorn"
+              size="tiny"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
+          </div>
         )}
       </div>
     </div>

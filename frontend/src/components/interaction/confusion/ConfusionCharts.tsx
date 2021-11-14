@@ -51,7 +51,7 @@ interface Props {
 function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   const intl = useIntl()
 
-  if (Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
+  if (!confusionValues || Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
     return (
       <div className="font-bold">
         <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
@@ -71,34 +71,36 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   }
 
   return (
-    <div>
+    <div className="w-full">
       <div className="float-right">
         <Popup
+          inverted
+          wide
           content={intl.formatMessage(messages.confusionInfo)}
+          mouseEnterDelay={250}
+          mouseLeaveDelay={250}
+          position="left center"
+          size="small"
+          style={{ opacity: 0.9 }}
           trigger={
             <a data-tip>
               <Icon className="icon" name="question circle" />
             </a>
           }
-          position="left center"
-          size="small"
-          style={{ opacity: 0.9 }}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          wide
-          inverted
         />
       </div>
-      <ConfusionSection
-        runningValue={confusionValues.speed}
-        title={intl.formatMessage(messages.difficultyTitle)}
-        labels={speedLabels}
-      />
-      <ConfusionSection
-        runningValue={confusionValues.difficulty}
-        title={intl.formatMessage(messages.speedTitle)}
-        labels={difficultyLabels}
-      />
+      <div className="w-full">
+        <ConfusionSection
+          labels={speedLabels}
+          runningValue={confusionValues.speed}
+          title={intl.formatMessage(messages.difficultyTitle)}
+        />
+        <ConfusionSection
+          labels={difficultyLabels}
+          runningValue={confusionValues.difficulty}
+          title={intl.formatMessage(messages.speedTitle)}
+        />
+      </div>
     </div>
   )
 }

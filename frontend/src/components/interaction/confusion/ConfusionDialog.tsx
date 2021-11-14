@@ -46,8 +46,8 @@ function ConfusionDialog({ title, value, handleChange, labels, icons }: Props): 
   }
   return (
     <div>
-      <div className="flex flex-col gap-1 md:flex-row md:text-left">
-        {title && <h2 className="!mb-0 !text-lg md:w-24">{title}</h2>}
+      <div className="flex flex-col gap-1 md:text-left">
+        {title && <h2 className="!mb-0 !text-base md:w-24">{title}</h2>}
         <div className="flex flex-row gap-2">
           <ConfusionButton
             changeValue={-1}

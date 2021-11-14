@@ -161,9 +161,9 @@ function AudienceInteraction({
       )}
 
       {isFeedbackChannelActive && (
-        <div className="flex flex-col gap-4 md:flex-row">
+        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap">
           <div className="flex flex-col flex-1 md:flex-row">
-            <div className="flex-1 mb-8 md:mb-0">
+            <div className="flex-1">
               <FeedbackChannel
                 feedbacks={feedbacks}
                 handleDeleteFeedback={(feedbackId: string): void => {
@@ -197,7 +197,7 @@ function AudienceInteraction({
           </div>
 
           {hasConfusionFlag && isConfusionBarometerActive && (
-            <div className="flex-initial p-4 w-[350px] bg-gray-200">
+            <div className="flex-initial md:mt-4 p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
               <ConfusionBarometer
                 confusionValues={confusionValues}
                 subscribeToMore={(): void => {

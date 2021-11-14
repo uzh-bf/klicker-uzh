@@ -7,24 +7,18 @@ interface Props {
   labels: any
 }
 
+const RED_COLOR = 'rgba(240, 43, 30, 0.7)'
+const ORANGE_COLOR = 'rgba(245, 114, 0, 0.7)'
+const GREEN_COLOR = 'rgba(22, 171, 57, 0.7)'
+
 function ConfusionSection({ runningValue, title, labels }: Props): React.ReactElement {
   return (
-    <div>
-      <h3 className="inline-block mr-3">{title}</h3>
-      <div className="min-w-full min-h-[175px] ">
+    <div className="w-full">
+      <h3>{title}</h3>
+      <div className="w-full min-h-[180px]">
         <ReactSpeedometer
-          //width={300}
-          //height={200}
-          fluidWidth={true}
-          minValue={0}
-          maxValue={1}
-          value={runningValue}
-          startColor="#FF0000"
-          endColor="#00FF00"
-          needleColor="steelblue"
-          customSegmentStops={[0, 0.15, 0.3, 0.7, 0.85, 1]}
-          segmentColors={['#e72e06', '#ffff31', '#42ff42', '#ffff31', '#e72e06']}
-          paddingHorizontal={5}
+          fluidWidth
+          currentValueText=" "
           customSegmentLabels={[
             {
               text: labels.min,
@@ -53,8 +47,15 @@ function ConfusionSection({ runningValue, title, labels }: Props): React.ReactEl
               color: '#000000',
             },
           ]}
-          currentValueText=" "
-          // needlecolor='#000000'
+          customSegmentStops={[0, 0.1, 0.25, 0.75, 0.9, 1]}
+          height={200}
+          maxValue={1}
+          minValue={0}
+          needleColor="#dc6027"
+          needleHeightRatio={0.4}
+          segmentColors={[RED_COLOR, ORANGE_COLOR, GREEN_COLOR, ORANGE_COLOR, RED_COLOR]}
+          startColor="#FF0000"
+          value={runningValue}
         />
       </div>
     </div>

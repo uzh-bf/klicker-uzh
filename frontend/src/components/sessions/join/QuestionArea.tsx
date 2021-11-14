@@ -242,15 +242,21 @@ function QuestionArea({
   const currentQuestion = questions[activeQuestion]
 
   return (
-    <div className={clsx('questionArea', { active })}>
-      <h1 className="hidden p-4 mb-0 md:block md:!text-lg">
+    <div
+      className={clsx(
+        'questionArea bg-white flex-1 md:flex md:flex-col md:shadow md:rounded-xl p-4',
+        active ? 'flex' : 'hidden'
+      )}
+    >
+      <h1 className="hidden mb-2 md:block md:!text-lg">
         {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
+
       {((): React.ReactElement => {
         if (remainingQuestions.length === 0) {
           return (
-            <div className="padded">
+            <div>
               {message && <Message warning>{message}</Message>}
               <FormattedMessage
                 defaultMessage="You have already answered all active questions."
@@ -266,8 +272,8 @@ function QuestionArea({
         const contentState = content ? convertFromRaw(JSON.parse(content)) : null
 
         return (
-          <div>
-            <div className="actions">
+          <div className="flex flex-col gap-2">
+            <div className="">
               <ActionMenu
                 activeIndex={questions.length - remainingQuestions.length}
                 expiresAt={expiresAt}
@@ -279,18 +285,18 @@ function QuestionArea({
               />
             </div>
 
-            <div className="collapser">
+            <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-primary border border-solid rounded">
               <QuestionDescription content={contentState} description={description} />
             </div>
 
             {publicRuntimeConfig.s3root && files.length > 0 && (
-              <div className="files">
+              <div className="flex-initial">
                 <QuestionFiles files={files} />
               </div>
             )}
 
-            <div className="options">
-              {messages[type]}
+            <div className="flex-1 mt-4">
+              <div className="mb-2 font-bold">{messages[type]}</div>
 
               {((): React.ReactElement => {
                 if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -322,104 +328,6 @@ function QuestionArea({
           </div>
         )
       })()}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionArea {
-          display: none;
-
-          flex: 1;
-
-          background-color: white;
-
-          > div {
-            display: flex;
-
-            flex-direction: column;
-
-            flex: 1;
-          }
-
-          &.active {
-            display: flex;
-          }
-
-          .space {
-            margin: 1rem;
-          }
-
-          .padded {
-            :global(.message) {
-              margin-bottom: 1rem;
-            }
-          }
-
-          .options,
-          .padded {
-            padding: 1rem;
-          }
-
-          .files,
-          .collapser {
-            flex: 0 0 auto;
-            background-color: $color-primary-20p;
-            padding: 0.5rem;
-            border-bottom: 1px solid $color-primary;
-          }
-
-          .collapser {
-            border-top: 1px solid $color-primary;
-
-            flex: 0 0 auto;
-            line-height: 1.2rem;
-            margin: 0.5rem;
-            margin-bottom: 0.3rem;
-            min-height: 6rem;
-            overflow: hidden;
-            word-wrap: break-word;
-
-            :global(p) {
-              margin-top: 0;
-              margin-bottom: 0.6rem;
-            }
-
-            :global(p:last-child) {
-              margin-bottom: 0;
-            }
-          }
-
-          .files {
-          }
-
-          .options {
-            flex: 1 1 50%;
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid $color-primary;
-            margin-right: 0.25rem;
-
-            .collapser,
-            .files {
-              margin: 0 1rem;
-              border: 1px solid $color-primary;
-            }
-
-            .files {
-              border-top: 0;
-            }
-
-            .options {
-              padding: 0;
-              margin: 1rem 1rem 0 1rem;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }
