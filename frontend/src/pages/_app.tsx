@@ -1,5 +1,5 @@
 import React, { StrictMode, useEffect, useState } from 'react'
-import App, { AppContext } from 'next/app'
+import App, { AppContext, NextWebVitalsMetric } from 'next/app'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
@@ -7,8 +7,8 @@ import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
 import { ApolloProvider } from '@apollo/client'
 import getConfig from 'next/config'
-import { useRouter } from 'next/router'
-import { init } from '@socialgouv/matomo-next'
+import Router, { useRouter } from 'next/router'
+import { init, push } from '@socialgouv/matomo-next'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
@@ -162,6 +162,16 @@ function getMessages(locales: string | string[] = ['en']) {
     return ['en', import('../../compiled-lang/en.json')]
   }
   return [locale, langBundle]
+}
+
+export function reportWebVitals(metric: NextWebVitalsMetric) {
+  push([
+    'trackEvent',
+    'Web Vitals',
+    metric.name,
+    Router.pathname,
+    Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+  ])
 }
 
 export default Klicker
