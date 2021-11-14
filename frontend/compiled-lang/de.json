@@ -1485,10 +1485,22 @@
       "value": "Unveröffentlicht"
     }
   ],
-  "runningSession.confusion.difficulty.Range": [
+  "runningSession.confusion.difficulty.RangeMax": [
     {
       "type": 0,
-      "value": "einfach - schwierig"
+      "value": "schwierig"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMin": [
+    {
+      "type": 0,
+      "value": "einfach"
     }
   ],
   "runningSession.confusion.difficulty.Title": [
@@ -1503,10 +1515,22 @@
       "value": "Mit dem Confusion-Barometer können Sie Feedback zu Geschwindigkeit und Schwierigkeit Ihrer Vorlesung einholen."
     }
   ],
-  "runningSession.confusion.speed.Range": [
+  "runningSession.confusion.speed.RangeMax": [
     {
       "type": 0,
-      "value": "langsam - schnell"
+      "value": "schnell"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMin": [
+    {
+      "type": 0,
+      "value": "langsam"
     }
   ],
   "runningSession.confusion.speed.Title": [

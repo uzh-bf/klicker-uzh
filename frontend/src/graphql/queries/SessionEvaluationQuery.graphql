@@ -18,12 +18,6 @@ query EvaluateSession($sessionId: ID!) {
         createdAt
       }
     }
-    confusionTS {
-      id
-      difficulty
-      speed
-      createdAt
-    }
     blocks {
       id
       status

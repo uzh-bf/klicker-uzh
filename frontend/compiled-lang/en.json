@@ -125,16 +125,16 @@
       "value": "Search..."
     }
   ],
-  "common.string.activated": [
-    {
-      "type": 0,
-      "value": "Activated"
-    }
-  ],
   "common.string.admin": [
     {
       "type": 0,
       "value": "Admin"
+    }
+  ],
+  "common.string.difficulty": [
+    {
+      "type": 0,
+      "value": "Difficulty"
     }
   ],
   "common.string.logout": [
@@ -159,6 +159,12 @@
     {
       "type": 0,
       "value": "Settings"
+    }
+  ],
+  "common.string.speed": [
+    {
+      "type": 0,
+      "value": "Speed"
     }
   ],
   "common.string.username": [
@@ -1473,10 +1479,22 @@
       "value": "Unpublished"
     }
   ],
-  "runningSession.confusion.difficulty.Range": [
+  "runningSession.confusion.difficulty.RangeMax": [
     {
       "type": 0,
-      "value": "easy - hard"
+      "value": "difficult"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMin": [
+    {
+      "type": 0,
+      "value": "easy"
     }
   ],
   "runningSession.confusion.difficulty.Title": [
@@ -1491,10 +1509,22 @@
       "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
     }
   ],
-  "runningSession.confusion.speed.Range": [
+  "runningSession.confusion.speed.RangeMax": [
     {
       "type": 0,
-      "value": "slow - fast"
+      "value": "fast"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMin": [
+    {
+      "type": 0,
+      "value": "slow"
     }
   ],
   "runningSession.confusion.speed.Title": [

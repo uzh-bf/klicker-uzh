@@ -1,7 +1,5 @@
 query QuestionPool {
-  runningSession {
-    id
-  }
+  runningSessionId
   questions: allQuestions {
     id
     title

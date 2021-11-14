@@ -31,10 +31,9 @@ query RunningSession {
         }
       }
     }
-    confusionTS {
-      difficulty
+    confusionValues {
       speed
-      createdAt
+      difficulty
     }
     feedbacks {
       ...FeedbackFields

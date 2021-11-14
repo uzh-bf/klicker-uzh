@@ -42,6 +42,7 @@ const Session = new mongoose.Schema(
 
     blocks: [{ type: QuestionBlock, required: true }],
     confusionTS: [ConfusionTimestep],
+
     feedbacks: [Feedback],
 
     execution: { type: Number, default: 0 },

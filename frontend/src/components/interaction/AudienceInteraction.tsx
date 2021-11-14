@@ -5,12 +5,12 @@ import { FormattedMessage } from 'react-intl'
 import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 
+import ConfusionBarometer from './confusion/ConfusionBarometer'
 // import ConfusionBarometer from './confusion/ConfusionBarometer'
-import useStickyState from '../../lib/hooks/useStickyState'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-// import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
 import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
@@ -22,29 +22,26 @@ import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedba
 interface Props {
   sessionId: string
   sessionName: string
-  confusionTS: any[]
+  confusionValues: any
   feedbacks: any[]
   isFeedbackChannelActive: boolean
   isFeedbackChannelPublic: boolean
   isConfusionBarometerActive: boolean
   subscribeToMore: any
+  hasConfusionFlag: boolean
 }
 
 function AudienceInteraction({
   sessionId,
   sessionName,
-  confusionTS,
+  confusionValues,
   feedbacks,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
   isConfusionBarometerActive,
   subscribeToMore,
+  hasConfusionFlag,
 }: Props) {
-  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
-    true,
-    'qa-survey-lecturer-visible'
-  )
-
   useEffect(() => {
     return subscribeToMore({
       document: FeedbackAddedSubscription,
@@ -63,92 +60,92 @@ function AudienceInteraction({
     })
   }, [subscribeToMore, sessionId])
 
-  const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
-  const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
-  const [pinFeedback, { loading: isPinFeedbackLoading }] = useMutation(PinFeedbackMutation)
-  const [publishFeedback, { loading: isPublishFeedbackLoading }] = useMutation(PublishFeedbackMutation)
-  const [resolveFeedback, { loading: isResolveFeedbackLoading }] = useMutation(ResolveFeedbackMutation)
-  const [respondToFeedback, { loading: isRespondToFeedbackLoading }] = useMutation(RespondToFeedbackMutation)
-  const [deleteFeedbackResponse, { loading: isDeleteFeedbackResponseLoading }] =
-    useMutation(DeleteFeedbackResponseMutation)
+  const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
+  const [updateSettings] = useMutation(UpdateSessionSettingsMutation)
+  const [pinFeedback] = useMutation(PinFeedbackMutation)
+  const [publishFeedback] = useMutation(PublishFeedbackMutation)
+  const [resolveFeedback] = useMutation(ResolveFeedbackMutation)
+  const [respondToFeedback] = useMutation(RespondToFeedbackMutation)
+  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseMutation)
 
   return (
     <div>
-      <div className="flex flex-row justify-between">
+      <div className="flex flex-col flex-wrap justify-between gap-4 md:flex-row">
         <div className="text-2xl font-bold print:hidden">
           <FormattedMessage defaultMessage="Audience Interaction" id="runningSession.title.audienceinteraction" />
         </div>
+
         <div className="hidden print:block">
           <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
         </div>
-        <div className="flex items-center mr-2 print:hidden">
+
+        <div className="flex flex-col flex-wrap self-start gap-4 md:flex-row print:hidden">
           {isFeedbackChannelActive && (
-            <a className="mr-10" href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-              <Button icon labelPosition="left" size="small">
-                <Icon name="external" />
-                <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
-              </Button>
-            </a>
+            <div className="order-3 md:order-1">
+              <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
+                <Button text labelPosition="left" size="small">
+                  <Icon name="external" />
+                  <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
+                </Button>
+              </a>
+            </div>
           )}
 
-          <div className="inline-block float-bottom">
-            <span className="flex">
-              <Checkbox
-                toggle
-                checked={isFeedbackChannelActive}
-                label=""
-                onChange={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId,
-                      settings: {
-                        isFeedbackChannelActive: !isFeedbackChannelActive,
-                      },
+          <div className="flex items-center order-1 md:order-2">
+            <Checkbox
+              toggle
+              checked={isFeedbackChannelActive}
+              label=""
+              onChange={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isFeedbackChannelActive: !isFeedbackChannelActive,
+                      isConfusionBarometerActive: !isConfusionBarometerActive && hasConfusionFlag,
                     },
-                  })
-                  push(['trackEvent', 'Running Session', 'Feedback Channel Toggled', String(!isFeedbackChannelActive)])
-                }}
-              />
-              <FormattedMessage
-                defaultMessage="Enable Audience Interaction"
-                id="runningSession.switches.enableaudienceinteraction"
-              />
-            </span>
+                  },
+                })
+                push([
+                  'trackEvent',
+                  'Running Session',
+                  !isFeedbackChannelActive ? 'Feedback Channel Activated' : 'Feedback Channel Deactivated',
+                ])
+              }}
+            />
+            <FormattedMessage
+              defaultMessage="Enable Audience Interaction"
+              id="runningSession.switches.enableaudienceinteraction"
+            />
           </div>
-          <div className="inline-block float-bottom">
-            <span className="flex">
-              <Checkbox
-                toggle
-                checked={!isFeedbackChannelPublic}
-                className="ml-8"
-                disabled={!isFeedbackChannelActive}
-                label=""
-                onChange={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId,
-                      settings: {
-                        isFeedbackChannelPublic: !isFeedbackChannelPublic,
-                      },
+
+          <div className="flex items-center order-2 md:order-3">
+            <Checkbox
+              toggle
+              checked={!isFeedbackChannelPublic}
+              disabled={!isFeedbackChannelActive}
+              label=""
+              onChange={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isFeedbackChannelPublic: !isFeedbackChannelPublic,
                     },
-                  })
-                  push([
-                    'trackEvent',
-                    'Running Session',
-                    'Feedback Moderation Toggled',
-                    String(!isFeedbackChannelPublic),
-                  ])
-                }}
-              />
-              <div className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
-                <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
-              </div>
+                  },
+                })
+                push(['trackEvent', 'Running Session', 'Feedback Moderation Toggled', String(!isFeedbackChannelPublic)])
+              }}
+            />
+            <span className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+              <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
             </span>
           </div>
         </div>
       </div>
+
       {!isFeedbackChannelActive && (
         <Message
           info
@@ -162,106 +159,70 @@ function AudienceInteraction({
           icon="info"
         />
       )}
+
       {isFeedbackChannelActive && (
-        <div className="flex flex-col md:flex-row">
-          <div className="flex-1 mb-8 md:mb-0">
-            <FeedbackChannel
-              feedbacks={feedbacks}
-              handleActiveToggle={() => null}
-              handleDeleteFeedback={(feedbackId: string): void => {
-                deleteFeedback({ variables: { feedbackId, sessionId } })
-                push(['trackEvent', 'Running Session', 'Feedback Deleted'])
-              }}
-              handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
-                deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
-                push(['trackEvent', 'Running Session', 'Feedback Response Deleted'])
-              }}
-              handlePinFeedback={(feedbackId: string, pinState: boolean) => {
-                pinFeedback({ variables: { sessionId, feedbackId, pinState } })
-                push(['trackEvent', 'Running Session', 'Feedback Pinned', String(pinState)])
-              }}
-              handlePublicToggle={(): void => {
-                updateSettings({
-                  variables: {
-                    sessionId,
-                    settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
-                  },
-                })
-              }}
-              handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
-                publishFeedback({ variables: { sessionId, feedbackId, publishState } })
-                push(['trackEvent', 'Running Session', 'Feedback Published', String(publishState)])
-              }}
-              handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
-                resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
-                push(['trackEvent', 'Running Session', 'Feedback Resolved', String(resolvedState)])
-              }}
-              handleRespondToFeedback={(feedbackId: string, response: string) => {
-                respondToFeedback({ variables: { sessionId, feedbackId, response } })
-                push(['trackEvent', 'Running Session', 'Feedback Response Added', response.length])
-              }}
-              isActive={isFeedbackChannelActive}
-              isPublic={isFeedbackChannelPublic}
-            />
+        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap">
+          <div className="flex flex-col flex-1 md:flex-row">
+            <div className="flex-1">
+              <FeedbackChannel
+                feedbacks={feedbacks}
+                handleDeleteFeedback={(feedbackId: string): void => {
+                  deleteFeedback({ variables: { feedbackId, sessionId } })
+                  push(['trackEvent', 'Running Session', 'Feedback Deleted'])
+                }}
+                handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
+                  deleteFeedbackResponse({ variables: { sessionId, feedbackId, responseId } })
+                  push(['trackEvent', 'Running Session', 'Feedback Response Deleted'])
+                }}
+                handlePinFeedback={(feedbackId: string, pinState: boolean) => {
+                  pinFeedback({ variables: { sessionId, feedbackId, pinState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Pinned', String(pinState)])
+                }}
+                handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
+                  publishFeedback({ variables: { sessionId, feedbackId, publishState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Published', String(publishState)])
+                }}
+                handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
+                  resolveFeedback({ variables: { sessionId, feedbackId, resolvedState } })
+                  push(['trackEvent', 'Running Session', 'Feedback Resolved', String(resolvedState)])
+                }}
+                handleRespondToFeedback={(feedbackId: string, response: string) => {
+                  respondToFeedback({ variables: { sessionId, feedbackId, response } })
+                  push(['trackEvent', 'Running Session', 'Feedback Response Added', response.length])
+                }}
+                isActive={isFeedbackChannelActive}
+                isPublic={isFeedbackChannelPublic}
+              />
+            </div>
           </div>
 
-          {/* <div className="flex-1 md:pl-4 max-w-[40%]">
-          <ConfusionBarometer
-            confusionTS={confusionTS}
-            handleActiveToggle={(): void => {
-              updateSettings({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: {
-                  sessionId,
-                  settings: {
-                    isConfusionBarometerActive: !isConfusionBarometerActive,
-                  },
-                },
-              })
-            }}
-            isActive={isConfusionBarometerActive}
-            subscribeToMore={(): void => {
-              subscribeToMore({
-                document: ConfusionAddedSubscription,
-                updateQuery: (prev, { subscriptionData }): any => {
-                  if (!subscriptionData.data) return prev
-                  return {
-                    ...prev,
-                    runningSession: {
-                      ...prev.runningSession,
-                      confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
+          {hasConfusionFlag && isConfusionBarometerActive && (
+            <div className="flex-initial md:mt-4 p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
+              <ConfusionBarometer
+                confusionValues={confusionValues}
+                subscribeToMore={(): void => {
+                  subscribeToMore({
+                    document: ConfusionAddedSubscription,
+                    updateQuery: (prev, { subscriptionData }): any => {
+                      if (!subscriptionData.data) return prev
+                      return {
+                        ...prev,
+                        runningSession: {
+                          ...prev.runningSession,
+                          confusionValues: {
+                            speed: subscriptionData.data.confusionAdded.speed,
+                            difficulty: subscriptionData.data.confusionAdded.difficulty,
+                          },
+                        },
+                      }
                     },
-                  }
-                },
-                variables: { sessionId },
-              })
-            }}
-          />
-        </div> */}
+                    variables: { sessionId },
+                  })
+                }}
+              />
+            </div>
+          )}
         </div>
-      )}
-
-      {isFeedbackChannelActive && hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
-        <Message
-          warning
-          className="print:hidden"
-          content={
-            <FormattedMessage
-              defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-              id="runningSession.audienceInteraction.survey"
-              values={{
-                link: (
-                  <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
-                    link
-                  </a>
-                ),
-              }}
-            />
-          }
-          icon="bullhorn"
-          size="tiny"
-          onDismiss={() => setIsSurveyBannerVisible(false)}
-        />
       )}
     </div>
   )

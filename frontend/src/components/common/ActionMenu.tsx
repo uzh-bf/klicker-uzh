@@ -29,9 +29,9 @@ function ActionMenu({
   timeLimit,
 }: Props): React.ReactElement {
   return (
-    <div className="actionMenu">
+    <div className="flex flex-row gap-2 border-t border-primary-20">
       {expiresAt && (
-        <div className="countdown">
+        <div className="flex-initial w-12">
           <Countdown
             circularDisplay
             isActive
@@ -41,11 +41,19 @@ function ActionMenu({
           />
         </div>
       )}
-      <div className="progress">
-        <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
+      <div className="flex-1">
+        <Progress autoSuccess className="!m-0 !p-1" progress="ratio" total={numItems} value={activeIndex} />
       </div>
-      <div className="actions">
-        <Button fluid disabled={isSubmitDisabled} primary={!isSkipModeActive} onClick={onSubmit}>
+      <div className="flex-initial w-24 actions">
+        <Button
+          fluid
+          basic={isSkipModeActive}
+          className="!mr-0 h-full"
+          disabled={isSubmitDisabled}
+          primary={!isSkipModeActive}
+          size="tiny"
+          onClick={onSubmit}
+        >
           {isSkipModeActive ? (
             <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
           ) : (
@@ -53,45 +61,6 @@ function ActionMenu({
           )}
         </Button>
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .actionMenu {
-          align-items: center;
-          border-top: 1px solid $color-primary-20p;
-          display: flex;
-          flex-direction: row;
-
-          padding: 0.3rem;
-
-          .countdown {
-            flex: 0 0 3rem;
-            padding-right: 0.5rem;
-          }
-
-          .progress {
-            flex: 1;
-            margin-right: 0.5rem;
-
-            :global(.ui.progress) {
-              margin: 0;
-            }
-          }
-
-          .actions {
-            flex: 0 0 7rem;
-
-            :global(button.primary.button) {
-              margin: 0;
-            }
-          }
-
-          @include desktop-tablet-only {
-            padding: 0.5rem 1rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }
