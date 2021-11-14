@@ -155,13 +155,9 @@ function Join({ shortname }): React.ReactElement {
     }
 
     try {
-      if (settings.isFeedbackChannelPublic) {
-        newFeedback({
-          variables: { content, fp: fingerprint, sessionId },
-        })
-      } else {
-        newFeedback({ variables: { content, fp: fingerprint, sessionId } })
-      }
+      newFeedback({
+        variables: { content, fp: fingerprint, sessionId },
+      })
 
       push(['trackEvent', 'Join Session', 'Feedback Added'])
     } catch ({ message }) {
