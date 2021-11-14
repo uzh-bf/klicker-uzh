@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react'
-import { defineMessages } from 'react-intl'
 import ConfusionCharts from './ConfusionCharts'
 
 interface Props {

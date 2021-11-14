@@ -5,7 +5,6 @@ import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import localForage from 'localforage'
 import dayjs from 'dayjs'
-import { Transition } from '@headlessui/react'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
@@ -92,7 +91,6 @@ function FeedbackArea({
 }: Props): React.ReactElement {
   const [confusionDifficulty, setConfusionDifficulty] = useState()
   const [confusionSpeed, setConfusionSpeed] = useState()
-  const [isConfusionVisible, setIsConfusionVisible] = useState(false)
 
   const intl = useIntl()
 

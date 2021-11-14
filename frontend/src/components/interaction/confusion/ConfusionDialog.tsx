@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
 interface Props {
   handleChange: any

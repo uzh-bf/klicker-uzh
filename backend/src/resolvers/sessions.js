@@ -46,8 +46,7 @@ const sessionsByPVQuery = (parentValue, args, { loaders }) => {
 }
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
-  const result = await SessionExecService.fetchRunningSessionData(auth.sub)
-  return result
+  return SessionExecService.fetchRunningSessionData(auth.sub)
 }
 
 const runningSessionIdQuery = async (parentValue, _, { auth }) => {
