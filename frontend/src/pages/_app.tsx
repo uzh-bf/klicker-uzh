@@ -168,8 +168,8 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
   push([
     'trackEvent',
     'Web Vitals',
-    metric.name,
     Router.pathname,
+    metric.name,
     Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
   ])
 }
