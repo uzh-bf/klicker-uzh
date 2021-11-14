@@ -125,12 +125,6 @@
       "value": "Search..."
     }
   ],
-  "common.string.activated": [
-    {
-      "type": 0,
-      "value": "Activated"
-    }
-  ],
   "common.string.admin": [
     {
       "type": 0,
@@ -1507,6 +1501,12 @@
     {
       "type": 0,
       "value": "Difficulty"
+    }
+  ],
+  "runningSession.confusion.info": [
+    {
+      "type": 0,
+      "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
     }
   ],
   "runningSession.confusion.speed.RangeMax": [
