@@ -11,6 +11,7 @@ import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
+import EvaluationConfusion from '../../components/evaluation/EvaluationConfusion'
 
 const messages = defineMessages({
   pageTitle: {
@@ -124,7 +125,6 @@ function Evaluation(): React.ReactElement {
 
         const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(session)
         const { feedbacks, confusionTS } = session
-        console.log(session)
 
         return (
           <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
@@ -202,9 +202,9 @@ function Evaluation(): React.ReactElement {
                       <FeedbackTableChart feedbacks={feedbacks} />
                     </div>
                   )}
-                  {/* sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
-                    <ConfusionCharts confusionTS={confusionTS} />
-                  ) */}
+                  {sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
+                    <EvaluationConfusion confusionTS={confusionTS} />
+                  )}
                 </EvaluationLayout>
               )
             }}
