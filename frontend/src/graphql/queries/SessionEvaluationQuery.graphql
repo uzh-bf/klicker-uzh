@@ -77,5 +77,10 @@ query EvaluateSession($sessionId: ID!) {
         }
       }
     }
+    confusionTS {
+      speed
+      difficulty
+      createdAt
+    }
   }
 }

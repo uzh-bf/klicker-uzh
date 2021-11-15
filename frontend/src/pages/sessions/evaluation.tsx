@@ -124,6 +124,7 @@ function Evaluation(): React.ReactElement {
 
         const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(session)
         const { feedbacks, confusionTS } = session
+        console.log(session)
 
         return (
           <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
