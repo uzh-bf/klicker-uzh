@@ -1,18 +1,21 @@
-import React from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
+import { Input } from 'semantic-ui-react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts'
 
 interface EvaluationConfusionProps {
   confusionTS: any
 }
 const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
-  console.log(confusionTS)
   let confusionValues = []
+  const xIntervalDefault = 120
+  const runningWindowDefault = 3
+  const [xInterval, setXInterval] = useState(xIntervalDefault)
+  const [runningWindow, setRunningWindow] = useState(runningWindowDefault)
 
-  // current settings: timesteps in plot 120 seconds, running average window 120 * 3 seconds
-  // TODO: make runningWindow parameters available to the user and set some default values
-  const xDataInterval = 120
-  const runningAvgFactor = 3
+  // default settings: timesteps in plot 120 seconds, running average window 120 * 3 seconds
+  const xDataInterval = xInterval ? xInterval : 120
+  const runningAvgFactor = runningWindow ? runningWindow : 3
   const peakValue = 1 // hightest value that can be returned from a feedback (both positive and negative)
 
   if (confusionTS.length > 1) {
@@ -57,8 +60,6 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
     }
   }
 
-  console.log(confusionValues)
-
   /* TIME INDEPENDENT AGGREGATION APPROACH
 
   const aggregationNumber = 5
@@ -91,7 +92,31 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
 
   return (
     <>
-      <ResponsiveContainer width={700} height="40%" className="mb-4">
+      <div>{'Current Interval length: ' + xDataInterval + ' seconds'}</div>
+      <div>{'Current Running Window length: ' + runningWindow + ' times interval'}</div>
+      <Input
+        placeholder="Interval: min. 60s"
+        onChange={(e, data) => {
+          if (Number(data.value) >= 60) {
+            setXInterval(Number(data.value))
+          } else if (data.value === '') {
+            setXInterval(xIntervalDefault)
+          }
+        }}
+        key="intervalInput"
+      />
+      <Input
+        placeholder="Window Factor: min. 1"
+        onChange={(e, data) => {
+          if (Number(data.value) >= 1) {
+            setRunningWindow(Number(data.value))
+          } else if (data.value === '') {
+            setRunningWindow(runningWindowDefault)
+          }
+        }}
+        key="windowLengthInput"
+      />
+      <ResponsiveContainer width={700} height="40%" className="mb-4" key="speedConfusion">
         <LineChart width={730} height={250} data={confusionValues} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
@@ -113,7 +138,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
           <Line type="monotone" dataKey="speed" stroke="#8884d8" />
         </LineChart>
       </ResponsiveContainer>
-      <ResponsiveContainer width={700} height="40%">
+      <ResponsiveContainer width={700} height="40%" key="difficultyConfusion">
         <LineChart width={730} height={250} data={confusionValues} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
