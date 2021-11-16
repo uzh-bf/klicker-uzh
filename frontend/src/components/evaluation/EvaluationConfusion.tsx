@@ -95,14 +95,9 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
   return (
     <>
       <div className="flex flex-col h-full lg:flex-row">
-        <div className="h-full">
-          <ResponsiveContainer width={700} height="40%" className="mb-4" key="speedConfusion">
-            <LineChart
-              width={730}
-              height={250}
-              data={confusionValues}
-              margin={{ top: 15, right: 30, left: 20, bottom: 5 }}
-            >
+        <div className="w-full h-full lg:w-1/2">
+          <ResponsiveContainer width="100%" height="40%" className="mb-4" key="speedConfusion">
+            <LineChart height={250} data={confusionValues} margin={{ top: 15, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
@@ -127,13 +122,8 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               <Line type="monotone" dataKey="speed" stroke="#8884d8" />
             </LineChart>
           </ResponsiveContainer>
-          <ResponsiveContainer width={700} height="40%" key="difficultyConfusion">
-            <LineChart
-              width={730}
-              height={250}
-              data={confusionValues}
-              margin={{ top: 15, right: 30, left: 20, bottom: 5 }}
-            >
+          <ResponsiveContainer width="100%" height="40%" key="difficultyConfusion">
+            <LineChart height={250} data={confusionValues} margin={{ top: 15, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
