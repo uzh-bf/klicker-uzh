@@ -93,12 +93,12 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
         <ConfusionSection
           labels={speedLabels}
           runningValue={confusionValues.speed}
-          title={intl.formatMessage(messages.difficultyTitle)}
+          title={intl.formatMessage(messages.speedTitle)}
         />
         <ConfusionSection
           labels={difficultyLabels}
           runningValue={confusionValues.difficulty}
-          title={intl.formatMessage(messages.speedTitle)}
+          title={intl.formatMessage(messages.difficultyTitle)}
         />
       </div>
     </div>

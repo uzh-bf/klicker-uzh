@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useMutation } from '@apollo/client'
 import localForage from 'localforage'
 import _debounce from 'lodash/debounce'
@@ -69,48 +69,46 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
   }, [])
 
   // handle creation of a new confusion timestep with debounce for aggregation
-  const handleNewConfusionTS = _debounce(
-    async ({ difficulty = 0, speed = 0 }): Promise<void> => {
-      try {
-        // newConfusionTS({
-        //   variables: {
-        //     speed,
-        //     difficulty,
-        //     // fp: fingerprint,
-        //     sessionId,
-        //   },
-        // })
-        localForage.setItem(`${shortname}-${sessionId}-confusion`, {
-          prevSpeed: speed,
-          prevDifficulty: difficulty,
-        })
-        push(['trackEvent', 'Join Session', 'Confusion Interacted', `speed=${speed},difficulty=${difficulty}`])
-      } catch ({ message }) {
-        console.error(message)
-      } finally {
-        setConfusionEnabled(false)
-        if (confusionButtonTimeout.current) {
-          clearTimeout(confusionButtonTimeout.current)
-        }
-        confusionButtonTimeout.current = setTimeout(setConfusionEnabled, 60000, true)
+  const handleNewConfusionTS = async ({ speed = 0, difficulty = 0 }): Promise<void> => {
+    try {
+      newConfusionTS({
+        variables: {
+          speed,
+          difficulty,
+          // fp: fingerprint,
+          sessionId,
+        },
+      })
+      localForage.setItem(`${shortname}-${sessionId}-confusion`, {
+        prevSpeed: speed,
+        prevDifficulty: difficulty,
+      })
+      push(['trackEvent', 'Join Session', 'Confusion Interacted', `speed=${speed},difficulty=${difficulty}`])
+    } catch ({ message }) {
+      console.error(message)
+    } finally {
+      setConfusionEnabled(false)
+      if (confusionButtonTimeout.current) {
+        clearTimeout(confusionButtonTimeout.current)
       }
-    },
-    4000,
-    { trailing: true, maxWait: 10000 }
-  )
+      confusionButtonTimeout.current = setTimeout(setConfusionEnabled, 60000, true)
+    }
+  }
+
+  const debouncedHandleNewConfusionTS = useCallback(_debounce(handleNewConfusionTS, 4000, { trailing: true }), [])
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
-    handleNewConfusionTS({
-      difficulty: selector === 'difficulty' ? newValue : confusionDifficulty ?? 0,
-      speed: selector === 'speed' ? newValue : confusionSpeed ?? 0,
-    })
-
     // send the new confusion entry to the server
     if (selector === 'speed') {
       setConfusionSpeed(newValue)
     } else if (selector === 'difficulty') {
       setConfusionDifficulty(newValue)
     }
+
+    debouncedHandleNewConfusionTS({
+      speed: selector === 'speed' ? newValue : confusionSpeed,
+      difficulty: selector === 'difficulty' ? newValue : confusionDifficulty,
+    })
   }
 
   return (
