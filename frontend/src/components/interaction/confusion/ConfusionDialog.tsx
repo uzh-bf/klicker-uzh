@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react'
+import React from 'react'
 import { Button } from 'semantic-ui-react'
-import Slider from 'rc-slider'
-import 'rc-slider/assets/index.css'
+import * as Slider from '@radix-ui/react-slider'
 
 interface Props {
+  disabled?: boolean
   handleChange: any
   labels: any
   icons?: any
@@ -12,6 +12,7 @@ interface Props {
 }
 
 const defaultProps = {
+  disabled: false,
   title: undefined,
   icons: undefined,
   value: undefined,
@@ -35,7 +36,7 @@ function ConfusionButton({ children, value, changeValue, onClick, disabled, with
       disabled={disabled}
       icon={withIcon}
       labelPosition={withIcon ? 'left' : undefined}
-      size="small"
+      size="tiny"
       onClick={() => onClick(changeValue)}
     >
       {children}
@@ -43,55 +44,68 @@ function ConfusionButton({ children, value, changeValue, onClick, disabled, with
   )
 }
 
-function ConfusionDialog({ title, value, handleChange, labels, icons }: Props): React.ReactElement {
-  const [isConfusionEnabled, setConfusionEnabled] = useState(true)
-  const confusionButtonTimeout = useRef<any>()
-
-  const handleClick = (val) => {
-    handleChange(val)
-    setConfusionEnabled(false)
-    if (confusionButtonTimeout.current) {
-      clearTimeout(confusionButtonTimeout.current)
-    }
-    confusionButtonTimeout.current = setTimeout(setConfusionEnabled, 60000, true)
-  }
+function ConfusionDialog({ title, value, disabled, handleChange, labels, icons }: Props): React.ReactElement {
   return (
     <div>
       <div className="flex flex-col gap-1 md:text-left">
         {title && <h2 className="!mb-0 !text-base md:w-24">{title}</h2>}
-        <div className="flex flex-row gap-2">
+        <div className="flex flex-row flex-wrap gap-2">
           <ConfusionButton
             changeValue={-1}
-            disabled={!isConfusionEnabled}
+            disabled={disabled}
             value={value}
             withIcon={!!icons?.min}
-            onClick={handleClick}
+            onClick={handleChange}
           >
             {icons?.min && <i className="icon">{icons.min}</i>}
             {labels.min}
           </ConfusionButton>
           <ConfusionButton
             changeValue={0}
-            disabled={!isConfusionEnabled}
+            disabled={disabled}
             value={value}
             withIcon={!!icons?.mid}
-            onClick={handleClick}
+            onClick={handleChange}
           >
             {icons?.mid && <i className="icon">{icons.mid}</i>}
             {labels.mid}
           </ConfusionButton>
           <ConfusionButton
             changeValue={1}
-            disabled={!isConfusionEnabled}
+            disabled={disabled}
             value={value}
             withIcon={!!icons?.max}
-            onClick={handleClick}
+            onClick={handleChange}
           >
             {icons?.max && <i className="icon">{icons.max}</i>}
             {labels.max}
           </ConfusionButton>
         </div>
-        <div className="mt-8 mb-8 px-28">
+        <div>
+          <Slider.Root
+            className="relative flex items-center w-full h-20 select-none"
+            defaultValue={[0]}
+            disabled={disabled}
+            max={1}
+            min={-1}
+            step={0.5}
+            value={[value]}
+            onValueChange={([newValue]) => handleChange(newValue)}
+          >
+            <Slider.Track className="relative flex-1 h-3 bg-gray-300 rounded">
+              <Slider.Range className="absolute h-full bg-red-400 rounded-full" />
+            </Slider.Track>
+            <Slider.Thumb className="block p-1 bg-white border border-solid rounded-full shadow-lg cursor-move">
+              <div className="text-3xl">{icons.mid}</div>
+            </Slider.Thumb>
+          </Slider.Root>
+          <div className="flex flex-row justify-between">
+            <div>{icons.min}</div>
+            <div>{icons.mid}</div>
+            <div>{icons.max}</div>
+          </div>
+        </div>
+        {/* <div className="mt-8 mb-8 px-28">
           <Slider
             disabled={!isConfusionEnabled}
             dotStyle={{
@@ -140,7 +154,7 @@ function ConfusionDialog({ title, value, handleChange, labels, icons }: Props): 
             step={0.5}
             onAfterChange={handleClick}
           />
-        </div>
+        </div> */}
       </div>
     </div>
   )
