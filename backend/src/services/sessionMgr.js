@@ -1130,7 +1130,13 @@ async function modifyQuestionBlock({ sessionId, id, questionBlockSettings, userI
     return session
   }
 
-  session.blocks[blockIndex].timeLimit = questionBlockSettings.timeLimit
+  if (questionBlockSettings.timeLimit) {
+    session.blocks[blockIndex].timeLimit = questionBlockSettings.timeLimit
+  }
+
+  if (questionBlockSettings.randomSelection) {
+    session.blocks[blockIndex].randomSelection = questionBlockSettings.randomSelection
+  }
 
   return session.save()
 }
