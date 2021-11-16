@@ -96,7 +96,19 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis type="number" domain={[-1, 1]} />
-          <Tooltip />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">{`speed : ${
+                    Math.round(Number(payload[0].value) * 100) / 100
+                  }`}</div>
+                )
+              }
+
+              return null
+            }}
+          />
           <Legend />
           <Line type="monotone" dataKey="speed" stroke="#8884d8" />
         </LineChart>
@@ -106,7 +118,19 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis type="number" domain={[-1, 1]} />
-          <Tooltip />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">{`difficulty : ${
+                    Math.round(Number(payload[0].value) * 100) / 100
+                  }`}</div>
+                )
+              }
+
+              return null
+            }}
+          />
           <Legend />
           <Line type="monotone" dataKey="difficulty" stroke="#82ca9d" />
         </LineChart>
