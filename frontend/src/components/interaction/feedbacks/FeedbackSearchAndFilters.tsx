@@ -50,15 +50,16 @@ function FeedbackSearchAndFilters({
   const intl = useIntl()
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
-      <div className="flex flex-col items-end md:flex-row">
+      <div className="flex flex-col items-center md:items-end md:flex-row">
         {withSearch && (
           <Input
-            className="w-full md:w-96 md:mr-8"
+            className="w-full md:w-64 md:mr-8"
             placeholder={intl.formatMessage(messages.searchPlaceholder)}
             value={searchString}
             onChange={(e) => setSearchString(e.target.value)}
           />
         )}
+
         <div className="flex flex-row justify-between flex-initial mt-4 mb-1 md:mt-0">
           <div className="inline-block">
             <span className="flex items-center">

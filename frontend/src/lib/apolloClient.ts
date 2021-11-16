@@ -104,7 +104,7 @@ export default function createApolloClient() {
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         // TODO: log errors to sentry?
-        graphQLErrors.forEach(({ message, path, locations }) => {
+        graphQLErrors.forEach(({ message, path, locations, extensions }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
 
           // redirect the user to the login page on errors

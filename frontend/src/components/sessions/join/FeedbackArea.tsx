@@ -1,22 +1,47 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
-import { Form, Button, TextArea } from 'semantic-ui-react'
+import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
+import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
 import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
-
 import PublicFeedback from './PublicFeedback'
+import useStickyState from '../../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   feedbackPlaceholder: {
     id: 'joinSession.feedbackArea.feedbackPlaceholder',
     defaultMessage: 'Post a question or feedback...',
+  },
+  difficultyRangeMin: {
+    defaultMessage: 'easy',
+    id: 'runningSession.confusion.difficulty.RangeMin',
+  },
+  difficultyRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.difficulty.RangeMid',
+  },
+  difficultyRangeMax: {
+    defaultMessage: 'difficult',
+    id: 'runningSession.confusion.difficulty.RangeMax',
+  },
+  speedRangeMin: {
+    defaultMessage: 'slow',
+    id: 'runningSession.confusion.speed.RangeMin',
+  },
+  speedRangeMid: {
+    defaultMessage: 'optimal',
+    id: 'runningSession.confusion.speed.RangeMid',
+  },
+  speedRangeMax: {
+    defaultMessage: 'fast',
+    id: 'runningSession.confusion.speed.RangeMax',
   },
 })
 
@@ -32,8 +57,10 @@ interface Props {
   reactions: any
   setReactions: any
   sessionId: string
+  isConfusionBarometerActive: boolean
   subscribeToMore: any
   data: any
+  shortname: string
 }
 
 const defaultProps = {
@@ -53,10 +80,17 @@ function FeedbackArea({
   reactions,
   setReactions,
   sessionId,
+  isConfusionBarometerActive,
+  shortname,
   subscribeToMore,
   data,
 }: Props): React.ReactElement {
   const intl = useIntl()
+
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'qa-survey-student-visible'
+  )
 
   useEffect(() => {
     const publicFeedbackAdded = subscribeToMore({
@@ -175,9 +209,11 @@ function FeedbackArea({
   useEffect(() => {
     if (data?.joinQA) {
       const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
+      const resolvedSorted = sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved)
+      const openSorted = sortBy((o: any) => -dayjs(o.createdAt).unix(), open)
       setProcessedFeedbacks({
-        resolved: sortBy((o: any) => dayjs(o.resolvedAt).unix(), resolved),
-        open: sortBy((o: any) => -dayjs(o.createdAt).unix(), open),
+        resolved: resolvedSorted,
+        open: openSorted,
       })
     }
   }, [data?.joinQA])
@@ -211,7 +247,7 @@ function FeedbackArea({
       .map((feedback: any) => feedback.id)
       .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
     const responseIds = processedFeedbacks.open
-      .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+      .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
       .map((feedback) =>
         feedback.responses.map((response: any) => {
           return response.id
@@ -219,7 +255,7 @@ function FeedbackArea({
       )
       .concat(
         processedFeedbacks.resolved
-          .filter((feedback) => feedback.responses && !(feedback.responses.length == 0))
+          .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
           .map((feedback) =>
             feedback.responses.map((response: any) => {
               return response.id
@@ -269,20 +305,15 @@ function FeedbackArea({
   }
 
   return (
-    <div
-      className={clsx(
-        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex',
-        active ? 'flex' : 'hidden'
-      )}
-    >
-      <h1 className="hidden md:block">Feedback-Channel</h1>
+    <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
+      <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
         <div>
-          <Form>
-            <Form.Field className="!mb-2">
+          <Form className="flex flex-col">
+            <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className="h-24"
+                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && 'h-24')}
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
@@ -291,51 +322,36 @@ function FeedbackArea({
               />
             </Form.Field>
 
-            <Button primary disabled={!feedbackInputValue} type="submit" onClick={onNewFeedback}>
+            <Button
+              primary
+              className="self-end !mr-0"
+              disabled={!feedbackInputValue}
+              size="tiny"
+              type="submit"
+              onClick={onNewFeedback}
+            >
               <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </Form>
         </div>
       )}
 
-      <div className="flex flex-col justify-between h-full mt-4">
-        {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
-          <div>
-            {processedFeedbacks.open.length > 0 && (
-              <div>
-                <h2 className="!mb-2">
-                  <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
-                </h2>
-                {processedFeedbacks.open.map(
-                  ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
-                    <div className="mt-2 first:mt-0" key={id}>
-                      <PublicFeedback
-                        content={content}
-                        createdAt={createdAt}
-                        resolved={resolved}
-                        responses={responses}
-                        upvoted={upvoted}
-                        onNegativeResponseReaction={(responseId: string) =>
-                          handleNegativeResponseReaction(responseId, id)
-                        }
-                        onPositiveResponseReaction={(responseId: string) =>
-                          handlePositiveResponseReaction(responseId, id)
-                        }
-                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-            {processedFeedbacks.resolved.length > 0 && (
-              <div className="mt-4">
-                <h2 className="!mb-2">
-                  <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
-                </h2>
+      {isFeedbackChannelActive && isConfusionBarometerActive && (
+        <ConfusionBarometer sessionId={sessionId} shortname={shortname} />
+      )}
+
+      {/* max-h-[35vh] overflow-scroll md:max-h-full */}
+      {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
+        <>
+          {processedFeedbacks.resolved.length > 0 && (
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
+              </h2>
+              <div className="flex flex-col gap-2">
                 {processedFeedbacks.resolved.map(
                   ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
-                    <div className="mt-2 first:mt-0" key={id}>
+                    <div key={id}>
                       <PublicFeedback
                         content={content}
                         createdAt={createdAt}
@@ -354,10 +370,65 @@ function FeedbackArea({
                   )
                 )}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {processedFeedbacks.open.length > 0 && (
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Open Questions" id="joinSession.feedbackArea.open" />
+              </h2>
+              <div className="flex flex-col h-auto gap-2 overflow-x-auto">
+                {processedFeedbacks.open.map(
+                  ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
+                    <div key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        resolved={resolved}
+                        responses={responses}
+                        upvoted={upvoted}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+        <div className="fixed bottom-0 left-0 right-0">
+          <Message
+            warning
+            className="!rounded-none"
+            content={
+              <FormattedMessage
+                defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                id="joinSession.feedbackArea.survey"
+                values={{
+                  link: (
+                    <a href="https://hi.switchy.io/6Igb" rel="noreferrer" target="_blank">
+                      link
+                    </a>
+                  ),
+                }}
+              />
+            }
+            icon="bullhorn"
+            size="large"
+            onDismiss={() => setIsSurveyBannerVisible(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

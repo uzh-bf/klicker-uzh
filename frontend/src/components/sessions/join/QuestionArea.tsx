@@ -8,6 +8,7 @@ import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 import { push } from '@socialgouv/matomo-next'
+import localForage from 'localforage'
 
 import { Icon, Message } from 'semantic-ui-react'
 import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
@@ -110,14 +111,14 @@ function QuestionArea({
   }, [questions.length])
 
   useEffect((): void => {
-    try {
-      if (window.localStorage) {
-        const storedResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`)) || {
+    const exec = async () => {
+      try {
+        const storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
           responses: [],
         }
 
         const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
-          if (storedResponses.responses.includes(`${id}-${execution}`)) {
+          if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
             return indices
           }
 
@@ -126,15 +127,12 @@ function QuestionArea({
 
         setActiveQuestion(remaining[0])
         setRemainingQuestions(remaining)
-      } else {
-        const remaining = questions.map((_, ix): number => ix)
-        setActiveQuestion(remaining[0])
-        setRemainingQuestions(remaining)
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
     }
-  }, [])
+    exec()
+  }, [sessionId, shortname, questions])
 
   const onActiveChoicesChange =
     (type): any =>
@@ -215,17 +213,15 @@ function QuestionArea({
     // update the stored responses
     if (typeof window !== 'undefined') {
       try {
-        if (window.localStorage) {
-          const prevResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`))
-          localStorage.setItem(
-            `${shortname}-${sessionId}-responses`,
-            JSON.stringify(
-              prevResponses
-                ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
-                : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-            )
+        const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
+        await localForage.setItem(
+          `${shortname}-${sessionId}-responses`,
+          JSON.stringify(
+            prevResponses
+              ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
+              : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
           )
-        }
+        )
       } catch (e) {
         console.error(e)
       }
@@ -246,15 +242,21 @@ function QuestionArea({
   const currentQuestion = questions[activeQuestion]
 
   return (
-    <div className={clsx('questionArea', { active })}>
-      <h1 className="header">
+    <div
+      className={clsx(
+        'questionArea bg-white flex-1 md:flex md:flex-col md:shadow md:rounded-xl p-4',
+        active ? 'flex' : 'hidden'
+      )}
+    >
+      <h1 className="hidden mb-2 md:block md:!text-lg">
         {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
+
       {((): React.ReactElement => {
         if (remainingQuestions.length === 0) {
           return (
-            <div className="padded">
+            <div>
               {message && <Message warning>{message}</Message>}
               <FormattedMessage
                 defaultMessage="You have already answered all active questions."
@@ -270,8 +272,8 @@ function QuestionArea({
         const contentState = content ? convertFromRaw(JSON.parse(content)) : null
 
         return (
-          <div>
-            <div className="actions">
+          <div className="flex flex-col gap-2">
+            <div className="">
               <ActionMenu
                 activeIndex={questions.length - remainingQuestions.length}
                 expiresAt={expiresAt}
@@ -283,18 +285,18 @@ function QuestionArea({
               />
             </div>
 
-            <div className="collapser">
+            <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-primary border border-solid rounded">
               <QuestionDescription content={contentState} description={description} />
             </div>
 
             {publicRuntimeConfig.s3root && files.length > 0 && (
-              <div className="files">
+              <div className="flex-initial">
                 <QuestionFiles files={files} />
               </div>
             )}
 
-            <div className="options">
-              {messages[type]}
+            <div className="flex-1 mt-4">
+              <div className="mb-2 font-bold">{messages[type]}</div>
 
               {((): React.ReactElement => {
                 if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -326,114 +328,6 @@ function QuestionArea({
           </div>
         )
       })()}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionArea {
-          display: none;
-
-          flex: 1;
-
-          background-color: white;
-
-          > div {
-            display: flex;
-
-            flex-direction: column;
-
-            flex: 1;
-          }
-
-          &.active {
-            display: flex;
-          }
-
-          .header {
-            display: none;
-          }
-
-          .space {
-            margin: 1rem;
-          }
-
-          .padded {
-            :global(.message) {
-              margin-bottom: 1rem;
-            }
-          }
-
-          .options,
-          .padded {
-            padding: 1rem;
-          }
-
-          .files,
-          .collapser {
-            flex: 0 0 auto;
-            background-color: $color-primary-20p;
-            padding: 0.5rem;
-            border-bottom: 1px solid $color-primary;
-          }
-
-          .collapser {
-            border-top: 1px solid $color-primary;
-
-            flex: 0 0 auto;
-            line-height: 1.2rem;
-            margin: 0.5rem;
-            margin-bottom: 0.3rem;
-            min-height: 6rem;
-            overflow: hidden;
-            word-wrap: break-word;
-
-            :global(p) {
-              margin-top: 0;
-              margin-bottom: 0.6rem;
-            }
-
-            :global(p:last-child) {
-              margin-bottom: 0;
-            }
-          }
-
-          .files {
-          }
-
-          .options {
-            flex: 1 1 50%;
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid $color-primary;
-            margin-right: 0.25rem;
-
-            .header {
-              font-size: 1.2rem !important;
-              display: block;
-              margin: 1rem;
-            }
-
-            .collapser,
-            .files {
-              margin: 0 1rem;
-              border: 1px solid $color-primary;
-            }
-
-            .files {
-              border-top: 0;
-            }
-
-            .options {
-              padding: 0;
-              margin: 1rem 1rem 0 1rem;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

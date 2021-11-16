@@ -2,6 +2,8 @@
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
+![Klicker Question Pool](https://www.klicker.uzh.ch/img/question_pool_scaled.png)
+
 The KlickerUZH consists of two main services (see [Architecture](https://www.klicker.uzh.ch/docs/deployment/deployment_architecture)), as well as an additional Shibboleth service for integration with [SwitchAAI](https://www.switch.ch/aai/):
 
 - [Frontend](https://github.com/uzh-bf/klicker-uzh/tree/dev/frontend) (subfolder)

@@ -195,12 +195,12 @@ function ActionBar({
   const itemCount = itemsChecked.length
 
   return (
-    <div className="actionBar">
+    <div className="actionBar md:max-w-7xl md:m-auto">
       <div className="actionButtons">
         <Dropdown
           button
           labeled
-          className="primary icon"
+          className="primary icon !mr-0"
           direction="left"
           disabled={isAnyModalOpen}
           icon="plus square"
@@ -347,8 +347,6 @@ function ActionBar({
           }
 
           .actionBar {
-            padding: 1rem;
-
             .actionButtons,
             .creationButtons {
               flex: 1;
@@ -373,12 +371,6 @@ function ActionBar({
               flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
-              padding: 0;
-
-              margin: 0 auto;
-              max-width: $max-width;
-
-              padding: 0 0.5rem;
 
               .creationButtons,
               .actionButtons {

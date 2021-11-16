@@ -1,17 +1,17 @@
 import clsx from 'clsx'
-// import _debounce from 'lodash/debounce'
+import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+import localForage from 'localforage'
 
 import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import FeedbackArea from '../../components/sessions/join/FeedbackArea'
 import QuestionArea from '../../components/sessions/join/QuestionArea'
-// import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from '../../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../../graphql/mutations/AddResponseMutation.graphql'
 import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutation.graphql'
@@ -55,7 +55,6 @@ function Join({ shortname }): React.ReactElement {
   const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
   const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
-  // const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
   const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
@@ -122,26 +121,6 @@ function Join({ shortname }): React.ReactElement {
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
-  // handle creation of a new confusion timestep
-  // const onNewConfusionTS = _debounce(
-  //   async ({ difficulty = 0, speed = 0 }): Promise<void> => {
-  //     try {
-  //       newConfusionTS({
-  //         variables: {
-  //           difficulty,
-  //           fp: fingerprint,
-  //           sessionId,
-  //           speed,
-  //         },
-  //       })
-  //     } catch ({ message }) {
-  //       console.error(message)
-  //     }
-  //   },
-  //   4000,
-  //   { trailing: true }
-  // )
-
   // handle creation of a new feedback
   const onNewFeedback = async ({ content }): Promise<void> => {
     if (!newFeedback) {
@@ -149,46 +128,9 @@ function Join({ shortname }): React.ReactElement {
     }
 
     try {
-      if (settings.isFeedbackChannelPublic) {
-        newFeedback({
-          // optimistically add the feedback to the array already
-          // optimisticResponse: {
-          //   addFeedback: {
-          //     __typename: 'Session_Feedback',
-          //     content,
-          //     // randomly generate an id, will be replaced by server response
-          //     id: Math.round(Math.random() * -1000000),
-          //     votes: 0,
-          //     pinned: false,
-          //     resolved: false,
-          //     createdAt: '',
-          //     resolvedAt: null,
-          //     responses: [],
-          //   },
-          // },
-          // update the cache after the mutation has completed
-          // update: (store, { data: { addFeedback } }): void => {
-          //   const query = {
-          //     query: JoinSessionQuery,
-          //     variables: { shortname: router.query.shortname },
-          //   }
-
-          //   // get the data from the store
-          //   // replace the feedbacks
-          //   const queryData: any = store.readQuery(query)
-          //   queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
-
-          //   // write the updated data to the store
-          //   store.writeQuery({
-          //     ...query,
-          //     data: queryData,
-          //   })
-          // },
-          variables: { content, fp: fingerprint, sessionId },
-        })
-      } else {
-        newFeedback({ variables: { content, fp: fingerprint, sessionId } })
-      }
+      newFeedback({
+        variables: { content, fp: fingerprint, sessionId },
+      })
 
       push(['trackEvent', 'Join Session', 'Feedback Added'])
     } catch ({ message }) {
@@ -275,7 +217,7 @@ function Join({ shortname }): React.ReactElement {
       }
       title={title}
     >
-      <div className="joinSession">
+      <div className="flex w-full min-h-full gap-2 bg-gray-300 md:p-2">
         {activeInstances.length > 0 ? (
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
@@ -290,9 +232,10 @@ function Join({ shortname }): React.ReactElement {
           />
         ) : (
           <div
-            className={clsx('questionArea', {
-              inactive: sidebarActiveItem !== 'activeQuestion',
-            })}
+            className={clsx(
+              'flex-1 bg-white md:flex md:flex-col md:shadow md:rounded-xl p-4',
+              sidebarActiveItem !== 'activeQuestion' && 'hidden'
+            )}
           >
             <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
           </div>
@@ -306,64 +249,18 @@ function Join({ shortname }): React.ReactElement {
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
+            isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             reactions={reactions}
             sessionId={sessionId}
             setReactions={setReactions}
             setUpvotedFeedbacks={setUpvotedFeedbacks}
+            shortname={shortname}
             subscribeToMore={subscribeToMoreQA}
             upvotedFeedbacks={upvotedFeedbacks}
           />
         )}
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .joinSession {
-          display: flex;
-          min-height: -moz-calc(100vh - 8rem);
-          min-height: -webkit-calc(100vh - 8rem);
-          min-height: calc(100vh - 8rem);
-          width: 100%;
-
-          background-color: lightgray;
-
-          > * {
-            flex: 0 0 50%;
-          }
-
-          .questionArea,
-          .feedbackArea {
-            padding: 1rem;
-
-            &.inactive {
-              display: none;
-            }
-          }
-
-          @include desktop-tablet-only {
-            padding: 1rem;
-            min-height: 100%;
-
-            .questionArea {
-              border: 1px solid $color-primary;
-              background-color: white;
-              margin-right: 0.25rem;
-            }
-
-            .feedbackArea {
-              border: 1px solid $color-primary;
-              background-color: white;
-              margin-left: 0.25rem;
-
-              &.inactive {
-                display: block;
-              }
-            }
-          }
-        }
-      `}</style>
     </StudentLayout>
   )
 }
@@ -371,24 +268,24 @@ function Join({ shortname }): React.ReactElement {
 export async function getServerSideProps({ query }) {
   const apolloClient = initializeApollo()
 
-  // try {
-  await Promise.all([
-    apolloClient.query({
-      query: JoinSessionQuery,
-      variables: {
-        shortname: query.shortname,
-      },
-    }),
-    apolloClient.query({
-      query: JoinQAQuery,
-      variables: {
-        shortname: query.shortname,
-      },
-    }),
-  ])
-  // } catch (error) {
-  //   console.log(error)
-  // }
+  try {
+    await Promise.all([
+      apolloClient.query({
+        query: JoinSessionQuery,
+        variables: {
+          shortname: query.shortname,
+        },
+      }),
+      apolloClient.query({
+        query: JoinQAQuery,
+        variables: {
+          shortname: query.shortname,
+        },
+      }),
+    ])
+  } catch (error) {
+    console.log(error)
+  }
 
   return {
     props: {

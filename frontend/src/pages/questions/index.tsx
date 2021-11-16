@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
-import { Loader } from 'semantic-ui-react'
+import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
 
@@ -37,6 +37,7 @@ import {
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import withFeatureFlags from '../../lib/withFeatureFlags'
+import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   pageTitle: {
@@ -59,6 +60,11 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
   }, [])
+
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'interaction-survey-visible'
+  )
 
   const [creationMode, setCreationMode] = useState(
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId
@@ -444,7 +450,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={renderActionArea(_get(data, 'runningSession.id'))}
+      actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),
@@ -460,8 +466,8 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="questionPool">
-        <div className="tagList">
+      <div className="flex flex-col h-full overflow-y-auto md:flex-row md:flex-wrap">
+        <div className="flex-1 h-full p-4 md:overflow-y-auto bg-primary-10 md:flex-initial md:width-[17rem]">
           <TagList
             activeTags={filters.tags}
             activeType={filters.type}
@@ -471,7 +477,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             isArchiveActive={filters.archive}
           />
         </div>
-        <div className="wrapper">
+        <div className="h-full p-4 md:flex-1">
           {((): React.ReactElement | React.ReactElement[] => {
             if (!data || loading) {
               return <Loader active />
@@ -496,7 +502,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                 questionView={questionView}
                 questions={processedQuestions}
               />,
-              <div className="questionList" key="question-list">
+              <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
                 <QuestionList
                   creationMode={creationMode}
                   isArchiveActive={filters.archive}
@@ -509,64 +515,31 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             ]
           })()}
         </div>
-      </div>
 
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionPool {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-
-          overflow-y: auto;
-
-          .tagList {
-            height: 100%;
-            flex: 1;
-            background: $color-primary-05p;
-            padding: 0.5rem;
-          }
-
-          .wrapper {
-            height: 100%;
-
-            .questionList {
-              height: 95%;
-
-              margin: 0 auto;
-              max-width: $max-width;
-
-              padding: 0.5rem;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-            overflow-y: auto;
-
-            .tagList {
-              overflow-y: auto;
-              flex: 0 0 17rem;
-
-              border-right: 1px solid $color-primary-50p;
-            }
-
-            .wrapper {
-              flex: 1;
-              padding: 0.5rem;
-
-              .questionList {
-                overflow-y: auto;
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <div className="fixed bottom-0 left-0 right-0">
+            <Message
+              warning
+              className="!rounded-none"
+              content={
+                <FormattedMessage
+                  defaultMessage="We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see {link}, duration ca. 10min)."
+                  id="questionPool.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6IiJ" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
               }
-            }
-          }
-
-          @include desktop-only {
-            padding: 0;
-          }
-        }
-      `}</style>
+              icon="bullhorn"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
+          </div>
+        )}
+      </div>
     </TeacherLayout>
   )
 }

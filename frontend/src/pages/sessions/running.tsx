@@ -8,6 +8,8 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+import { PageWithFeatureFlags } from '../../@types/AppFlags'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 
 import { PageWithFeatureFlags } from 'src/@types/AppFlags'
 import withFeatureFlags from '../../lib/withFeatureFlags'
@@ -108,7 +110,7 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
           blocks,
           settings,
           startedAt,
-          confusionTS,
+          confusionValues,
           feedbacks,
           participants,
         } = data.runningSession
@@ -264,8 +266,9 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             </div>
 
             <AudienceInteraction
-              confusionTS={confusionTS}
+              confusionValues={confusionValues}
               feedbacks={feedbacks}
+              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
               isConfusionBarometerActive={settings.isConfusionBarometerActive}
               isFeedbackChannelActive={settings.isFeedbackChannelActive}
               isFeedbackChannelPublic={settings.isFeedbackChannelPublic}

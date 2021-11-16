@@ -61,11 +61,7 @@ security:
 analytics:
   sentry:
     frontend:
-      enabled: true
-      dsn: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
-      org: uzh-bf
-      project: klicker-react
-      sampleRate: 0.25
+      enabled: false
     backend:
       enabled: false
   google:

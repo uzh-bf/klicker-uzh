@@ -31,8 +31,6 @@ const defaultProps = {
 function FREEAnswerOptions({ disabled, onChange, options, value, questionType }: Props): React.ReactElement {
   return (
     <div className="ui form freeAnswerOptions">
-      {/* <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head> */}
-
       {((): React.ReactElement => {
         if (
           questionType === QUESTION_TYPES.FREE_RANGE &&
@@ -54,16 +52,6 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
                 </strong>
                 : {options.restrictions.max}
               </div>
-              {/* <Slider
-                disabled={disabled}
-                handleLabel={value}
-                max={options.restrictions.max}
-                min={options.restrictions.min}
-                orientation="horizontal"
-                tooltip={false}
-                value={value}
-                onChange={onChange}
-              /> */}
               <Input
                 disabled={disabled}
                 max={options.restrictions.max}
@@ -142,29 +130,6 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
             height: 100%;
             min-height: 10rem;
             width: 100%;
-          }
-
-          :global(.rangeslider__fill) {
-            background-color: $color-primary;
-          }
-
-          :global(.rangeslider__handle) {
-            padding: 1rem;
-
-            &:after {
-              display: none;
-            }
-
-            &:focus {
-              outline: none;
-            }
-          }
-
-          :global(.rangeslider__handle-label) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate3d(-50%, -50%, 0);
           }
         }
       `}</style>

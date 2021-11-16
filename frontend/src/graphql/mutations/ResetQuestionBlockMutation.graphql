@@ -26,11 +26,6 @@ mutation ResetQuestionBlock($sessionId: ID!, $blockId: ID!) {
         }
       }
     }
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
     feedbacks {
       id
       content

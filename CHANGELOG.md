@@ -2,6 +2,81 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.3...v1.7.0-alpha.4) (2021-11-16)
+
+
+### Enhancements
+
+* **frontend:** add alternative confusion input with a 5-point slider ([#2629](https://github.com/uzh-bf/klicker-uzh/issues/2629)) ([f27ef82](https://github.com/uzh-bf/klicker-uzh/commit/f27ef820a3e4e6d739a00560fda07313f81d7523))
+
+## [1.7.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.2...v1.7.0-alpha.3) (2021-11-16)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that words break naturally and that there is no max-width on join ([560681c](https://github.com/uzh-bf/klicker-uzh/commit/560681ca29a59b76db7e0d8b2c4314dc1aaab24b))
+
+## [1.7.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.1...v1.7.0-alpha.2) (2021-11-16)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that storedResponses do not break the join screen ([848c07e](https://github.com/uzh-bf/klicker-uzh/commit/848c07ee8aceac000c976b17a63f2c933a4f333c))
+
+
+### Other
+
+* add happo config ([751e6ca](https://github.com/uzh-bf/klicker-uzh/commit/751e6ca393ef5116124f872e2c82b98c7e815de1))
+* **deploy:** add new instance ([f76a35d](https://github.com/uzh-bf/klicker-uzh/commit/f76a35da374cdce8cb18b57bc7b0141b4f319f91))
+
+## [1.7.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.0...v1.7.0-alpha.1) (2021-11-14)
+
+
+### Bug Fixes
+
+* **backend:** return feedbacks for Q&A in the same sort order as expected ([64696ce](https://github.com/uzh-bf/klicker-uzh/commit/64696cea684c86681d37136a0612a7417253ad41))
+* **frontend:** improve sorting of feedbacks on join session ([34aa30b](https://github.com/uzh-bf/klicker-uzh/commit/34aa30b2069537008cbfb7dc3aa38c95f31edaeb))
+* **frontend:** reverse sorting of resolved feedbacks ([dd9f59b](https://github.com/uzh-bf/klicker-uzh/commit/dd9f59b294d1659d64e3401b6e3db25b77b67b08))
+
+
+### Other
+
+* **frontend:** push web vitals ([9328608](https://github.com/uzh-bf/klicker-uzh/commit/9328608315318dabc91abdc30e1afad4c2cfecac))
+* **frontend:** reverse order of route path and web vital name ([8d222c7](https://github.com/uzh-bf/klicker-uzh/commit/8d222c7d6bdbed962f07111cfe6955fb1cad7dd4))
+
+## [1.7.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.25...v1.7.0-alpha.0) (2021-11-14)
+
+
+### Features
+
+* **frontend:** reintroduce confusion barometer ([#2619](https://github.com/uzh-bf/klicker-uzh/issues/2619)) ([040881b](https://github.com/uzh-bf/klicker-uzh/commit/040881bc5bfd11ac70681bf90435d12974cedbd1))
+
+### [1.6.3-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.24...v1.6.3-alpha.25) (2021-11-12)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that shib service is deployed on klicker-prod ([e4e3cbd](https://github.com/uzh-bf/klicker-uzh/commit/e4e3cbd7e81ca866ce368a5e80198334dbe5eaaa))
+* **frontend:** add try/catch in SSR of join page ([7ea1b8d](https://github.com/uzh-bf/klicker-uzh/commit/7ea1b8d8cf59cf436554d2d251d9dcd1ccfa434e))
+
+### [1.6.3-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.23...v1.6.3-alpha.24) (2021-11-12)
+
+
+### Bug Fixes
+
+* **frontend:** both student view parts visible when starting on mobile feedback view and expanding window size ([02bdc09](https://github.com/uzh-bf/klicker-uzh/commit/02bdc09c66935ef119e07a5fcb8e8bdf2d07ff61))
+* **frontend:** fixed feedback ordering on student view ([6d6902d](https://github.com/uzh-bf/klicker-uzh/commit/6d6902d63abe1f65e7c5b81adcdc80e17c1e0f14))
+* typo in docker compose file ([953bc12](https://github.com/uzh-bf/klicker-uzh/commit/953bc1259c569ec513f4df8a6a2eb151ee484678))
+
+
+### Other
+
+* add question pool image to README ([1a8c958](https://github.com/uzh-bf/klicker-uzh/commit/1a8c958717aa3d9ac03a784b4e764e1f706ff049))
+* **frontend:** add links and mentions of our active surveys ([#2625](https://github.com/uzh-bf/klicker-uzh/issues/2625)) ([4bf67a0](https://github.com/uzh-bf/klicker-uzh/commit/4bf67a06aebe7e8d2fcac4f07144f822944383fc))
+* **frontend:** convert studentView to tailwind ([aa0d15e](https://github.com/uzh-bf/klicker-uzh/commit/aa0d15e169876654c3e0299f38881e2cf77be70a))
+* **landing:** add scaled question pool image ([2d1e007](https://github.com/uzh-bf/klicker-uzh/commit/2d1e007321777a0eb8038d1ba21b23d96b59193a))
+* **README:** use scaled question pool image ([732143a](https://github.com/uzh-bf/klicker-uzh/commit/732143a247f08475064aba1fee6e915b53673fc5))
+
 ### [1.6.3-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.3-alpha.22...v1.6.3-alpha.23) (2021-11-07)
 
 

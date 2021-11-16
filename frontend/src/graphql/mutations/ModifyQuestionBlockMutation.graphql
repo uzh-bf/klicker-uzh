@@ -33,11 +33,6 @@ mutation ModifyQuestionBlock($sessionId: ID!, $id: ID!, $timeLimit: Int, $random
         }
       }
     }
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
     feedbacks {
       id
       content

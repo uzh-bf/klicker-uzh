@@ -24,19 +24,36 @@ releases:
     createNamespace: true
     chart: ./chart
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: false
+    installed: true
     values:
       - chart/values.yaml
       - chart/values.qa.yaml
       - chart/secrets.qa.yaml
 
-  - name: klicker-prod
-    namespace: klicker-prod
-    createNamespace: true
-    chart: ./chart
-    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
-    values:
-      - chart/values.yaml
-      - chart/values.prod.yaml
-      - chart/secrets.prod.yaml
+  # - name: klicker-prod
+  #   namespace: klicker-prod
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/values.prod.yaml
+  #     - chart/secrets.prod.yaml
+
+  # - name: klicker-faculties
+  #   namespace: klicker-faculties
+  #   createNamespace: true
+  #   chart: ./chart
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   values:
+  #     - chart/values.yaml
+  #     - chart/values.faculties.yaml
+  #     - chart/secrets.faculties.yaml
+  #     - frontend:
+  #         image:
+  #           tag: v1.7.0-alpha.1
+  #       backend:
+  #         image:
+  #           tag: v1.7.0-alpha.1

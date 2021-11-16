@@ -76,7 +76,7 @@ function QuestionBlock({
         </div>
       )}
 
-      {index >= 0 && <div className="index">Block {index}</div>}
+      {index >= 0 && <div className="index text-primary-strong">Block {index}</div>}
 
       {!noDetails && timeLimit > -1 && (
         <div className="timeLimit">
@@ -161,7 +161,6 @@ function QuestionBlock({
 
           .index {
             flex: 0 0 auto;
-            color: $color-primary-strong;
             font-weight: bold;
           }
 

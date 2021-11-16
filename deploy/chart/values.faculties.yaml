@@ -1,0 +1,74 @@
+s3:
+  endpoint: sos-ch-dk-2.exo.io
+  bucket: klicker-faculties
+  region: ch-dk-2
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker-faculties.bf-app.ch
+  hsts:
+    enabled: true
+  csp:
+    enabled: true
+  expectCt:
+    enabled: true
+  frameguard:
+    enabled: true
+
+frontend:
+  replicaCount: 1
+
+  displayAAI: false
+
+  hostname: app.klicker-faculties.bf-app.ch
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
+
+  ingress:
+    hosts:
+      - host: app.klicker-faculties.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-faculties-frontend-tls
+        hosts:
+          - app.klicker-faculties.bf-app.ch
+
+backend:
+  replicaCount: 1
+
+  hostname: api.klicker-faculties.bf-app.ch
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
+
+  redis:
+    tls: true
+
+  ingress:
+    hosts:
+      - host: api.klicker-faculties.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-faculties-backend-tls
+        hosts:
+          - api.klicker-faculties.bf-app.ch
+
+shibboleth:
+  enabled: false

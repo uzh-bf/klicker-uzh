@@ -17,12 +17,17 @@ const mapItems = (items): React.ReactElement[] => items.map((item): React.ReactE
 function ListWithHeader({ children, items, limit }: Props): React.ReactElement {
   return (
     <div className="listWithHeader">
-      {children && <span className="listHeader">{children}</span>}
+      {children && <span className="border-b listHeader border-primary">{children}</span>}
 
       {items.length > limit ? (
         <>
           <List>{mapItems(items.slice(0, limit))}</List>
-          <Popup hideOnScroll on="click" position="bottom center" trigger={<div className="more">...</div>}>
+          <Popup
+            hideOnScroll
+            on="click"
+            position="bottom center"
+            trigger={<div className="border-t more border-primary">...</div>}
+          >
             <div className="remainingPopup">
               <List>{mapItems(items.slice(limit))}</List>
             </div>
@@ -46,12 +51,10 @@ function ListWithHeader({ children, items, limit }: Props): React.ReactElement {
           }
 
           .listHeader {
-            border-bottom: 1px solid $color-primary;
             padding: 0.4rem 0;
           }
 
           .more {
-            border-top: 1px solid $color-primary;
             cursor: pointer;
             padding: 0.2rem 0;
             vertical-align: middle;
