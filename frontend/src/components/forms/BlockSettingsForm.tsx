@@ -114,7 +114,7 @@ function BlockSettingsForm({
                   <label htmlFor="randomSelection">
                     <FormattedMessage defaultMessage="Random selection" id="form.blockSettings.randomSelection.label" />
                   </label>
-                  <div className="p-2 mb-4 prose-sm prose bg-blue-100 border rounded">
+                  <div className="mb-4 prose-sm prose border rounded max-w-none">
                     <FormattedMessage
                       defaultMessage="If random selection is activated, each student will receive only one of the questions within the block selected at random."
                       id="form.blockSettings.randomSelection.description"

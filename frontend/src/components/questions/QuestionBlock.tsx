@@ -1,6 +1,6 @@
 import React from 'react'
 import clsx from 'clsx'
-import { Dropdown } from 'semantic-ui-react'
+import { Dropdown, Icon } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
 
 import BlockSettingsForm from '../forms/BlockSettingsForm'
@@ -69,57 +69,75 @@ function QuestionBlock({
   const intl = useIntl()
 
   return (
-    <div className={clsx('questionBlock', { active: status === 'ACTIVE' })}>
-      {!noDetails && (
-        <div className="sessionStatus">
-          <SessionStatusIcon status={status} />
-        </div>
+    <div
+      className={clsx(
+        'p-4 flex flex-col gap-2 bg-gray-50 border border-solid border-gray-100',
+        status === 'ACTIVE' && 'bg-green-100'
       )}
+    >
+      <div className="flex flex-row flex-wrap justify-between">
+        <div className="flex flex-row gap-1">
+          {!noDetails && (
+            <div>
+              <SessionStatusIcon status={status} />
+            </div>
+          )}
 
-      {index >= 0 && <div className="index text-primary-strong">Block {index}</div>}
-
-      {!noDetails && timeLimit > -1 && (
-        <div className="timeLimit">
-          <Countdown
-            countdownDuration={timeLimit}
-            countdownEnd={expiresAt}
-            countdownStepSize={1000}
-            isActive={status === 'ACTIVE'}
-            isCompleted={status === 'EXECUTED'}
-          />
+          {index >= 0 && <div className="font-bold text-primary-strong">Block {index}</div>}
         </div>
-      )}
 
-      {!noDetails && (
-        <div className="blockActions">
-          <Dropdown icon="settings">
-            <Dropdown.Menu>
-              <Dropdown.Item
-                disabled={status === 'ACTIVE'}
-                icon="play"
-                text={intl.formatMessage(messages.activateBlock)}
-                onClick={handleActivateQuestionBlock}
+        <div className="flex flex-row gap-4">
+          {!noDetails && timeLimit > -1 && (
+            <div>
+              <Countdown
+                countdownDuration={timeLimit}
+                countdownEnd={expiresAt}
+                countdownStepSize={1000}
+                isActive={status === 'ACTIVE'}
+                isCompleted={status === 'EXECUTED'}
               />
-              <Dropdown.Item
-                icon="undo"
-                text={intl.formatMessage(messages.resetBlockResults)}
-                onClick={handleResetQuestionBlock}
-              />
+            </div>
+          )}
 
-              <BlockSettingsForm
-                disabled={status === 'ACTIVE'}
-                initialRandomSelection={randomSelection}
-                initialTimeLimit={timeLimit}
-                questionBlockId={questionBlockId}
-                sessionId={sessionId}
-                withQuestionBlockExperiments={withQuestionBlockExperiments}
-              />
-            </Dropdown.Menu>
-          </Dropdown>
+          {!noDetails && randomSelection > 0 && (
+            <div>
+              <Icon name="puzzle piece" />
+              {randomSelection}/{questions.length}
+            </div>
+          )}
+
+          {!noDetails && (
+            <div>
+              <Dropdown icon="settings">
+                <Dropdown.Menu>
+                  <Dropdown.Item
+                    disabled={status === 'ACTIVE'}
+                    icon="play"
+                    text={intl.formatMessage(messages.activateBlock)}
+                    onClick={handleActivateQuestionBlock}
+                  />
+                  <Dropdown.Item
+                    icon="undo"
+                    text={intl.formatMessage(messages.resetBlockResults)}
+                    onClick={handleResetQuestionBlock}
+                  />
+
+                  <BlockSettingsForm
+                    disabled={status === 'ACTIVE'}
+                    initialRandomSelection={randomSelection}
+                    initialTimeLimit={timeLimit}
+                    questionBlockId={questionBlockId}
+                    sessionId={sessionId}
+                    withQuestionBlockExperiments={withQuestionBlockExperiments}
+                  />
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      <div className="questions">
+      <div className="flex flex-col gap-2">
         {questions.map(
           (question): React.ReactElement => (
             <QuestionSingle
@@ -132,72 +150,6 @@ function QuestionBlock({
           )
         )}
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionBlock {
-          display: flex;
-
-          background-color: #eaeaea;
-          border: 2px solid #c5c5c5;
-          flex-flow: row wrap;
-          padding: 0.4rem;
-
-          &.active {
-            border: 2px solid rgb(0, 97, 0);
-            background-color: rgb(198, 293, 206);
-          }
-
-          .sessionStatus {
-            flex: 0 0 auto;
-            font-size: 1.1rem;
-            text-align: left;
-
-            > :global(icon) {
-              margin: 0;
-            }
-          }
-
-          .index {
-            flex: 0 0 auto;
-            font-weight: bold;
-          }
-
-          .timeLimit,
-          .showSolution,
-          .blockActions {
-            flex: 1 1 auto;
-            margin-bottom: 0.2rem;
-          }
-
-          .timeLimit {
-            text-align: center;
-          }
-
-          .blockActions {
-            text-align: right;
-          }
-
-          .showSolution {
-            text-align: center;
-          }
-
-          .questions {
-            flex: 0 0 100%;
-            height: 100%;
-            background-color: white;
-
-            > :global(*) {
-              border: 1px solid grey;
-
-              &:not(:first-child) {
-                margin-top: 0.2rem;
-              }
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }
