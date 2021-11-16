@@ -118,7 +118,7 @@ function QuestionArea({
         }
 
         const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
-          if (storedResponses.responses.includes(`${id}-${execution}`)) {
+          if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
             return indices
           }
 
