@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.2...v1.7.0-alpha.3) (2021-11-16)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that words break naturally and that there is no max-width on join ([560681c](https://github.com/uzh-bf/klicker-uzh/commit/560681ca29a59b76db7e0d8b2c4314dc1aaab24b))
+
 ## [1.7.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.1...v1.7.0-alpha.2) (2021-11-16)
 
 
