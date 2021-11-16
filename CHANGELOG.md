@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.4...v1.7.0-alpha.5) (2021-11-16)
+
+
+### Enhancements
+
+* add random selection of questions within a block for experimental polling ([#2622](https://github.com/uzh-bf/klicker-uzh/issues/2622)) ([005c952](https://github.com/uzh-bf/klicker-uzh/commit/005c9526837aff8097382ed57ad68d7a0426eae9))
+
 ## [1.7.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.3...v1.7.0-alpha.4) (2021-11-16)
 
 
