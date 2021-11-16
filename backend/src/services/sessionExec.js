@@ -700,6 +700,14 @@ const joinSession = async ({ shortname, auth }) => {
     verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
+  let openInstances = currentBlock.instances.filter((instance) => instance.isOpen)
+
+  if (currentBlock.randomSelection > 0) {
+    const index = Math.floor(Math.random() * openInstances.length)
+    openInstances = [openInstances[index]]
+    // cleanCache(shortname)
+  }
+
   return {
     id,
     settings,
@@ -708,26 +716,24 @@ const joinSession = async ({ shortname, auth }) => {
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
-    activeInstances: currentBlock.instances
-      .filter((instance) => instance.isOpen)
-      .map(({ id: instanceId, question, version: instanceVersion }) => {
-        const version = question.versions[instanceVersion]
+    activeInstances: openInstances.map(({ id: instanceId, question, version: instanceVersion }) => {
+      const version = question.versions[instanceVersion]
 
-        // get the files that correspond to the current question version
-        const files = FileModel.find({ _id: { $in: version.files } })
+      // get the files that correspond to the current question version
+      const files = FileModel.find({ _id: { $in: version.files } })
 
-        return {
-          execution: currentBlock.execution,
-          questionId: question.id,
-          id: instanceId,
-          title: question.title,
-          type: question.type,
-          content: version.content,
-          description: version.description,
-          options: version.options,
-          files,
-        }
-      }),
+      return {
+        execution: currentBlock.execution,
+        questionId: question.id,
+        id: instanceId,
+        title: question.title,
+        type: question.type,
+        content: version.content,
+        description: version.description,
+        options: version.options,
+        files,
+      }
+    }),
   }
 }
 
