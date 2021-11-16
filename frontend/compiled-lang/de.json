@@ -974,7 +974,7 @@
   "joinSession.feedbackArea.open": [
     {
       "type": 0,
-      "value": "Offen"
+      "value": "Offene Fragen"
     }
   ],
   "joinSession.feedbackArea.postedAt": [
@@ -986,7 +986,7 @@
   "joinSession.feedbackArea.resolved": [
     {
       "type": 0,
-      "value": "Erledigt"
+      "value": "Erledigte Fragen"
     }
   ],
   "joinSession.feedbackArea.resolvedAt": [

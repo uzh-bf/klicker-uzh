@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea, Message } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
-import localForage from 'localforage'
 import dayjs from 'dayjs'
+import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
 import FeedbackDeletedSubscription from '../../../graphql/subscriptions/FeedbackDeletedSubscription.graphql'
 import FeedbackResolvedSubscription from '../../../graphql/subscriptions/FeedbackResolvedSubscription.graphql'
 import FeedbackResponseAddedSubscription from '../../../graphql/subscriptions/FeedbackResponseAddedSubscription.graphql'
-import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
 import FeedbackResponseDeletedSubscription from '../../../graphql/subscriptions/FeedbackResponseDeletedSubscription.graphql'
-
 import PublicFeedback from './PublicFeedback'
 import useStickyState from '../../../lib/hooks/useStickyState'
 
@@ -60,7 +58,6 @@ interface Props {
   setReactions: any
   sessionId: string
   isConfusionBarometerActive: boolean
-  handleNewConfusionTS: any
   subscribeToMore: any
   data: any
   shortname: string
@@ -84,14 +81,10 @@ function FeedbackArea({
   setReactions,
   sessionId,
   isConfusionBarometerActive,
-  handleNewConfusionTS,
   shortname,
   subscribeToMore,
   data,
 }: Props): React.ReactElement {
-  const [confusionDifficulty, setConfusionDifficulty] = useState()
-  const [confusionSpeed, setConfusionSpeed] = useState()
-
   const intl = useIntl()
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
@@ -248,38 +241,6 @@ function FeedbackArea({
     }))
   }, [data?.joinQA, upvotedFeedbacks, reactions])
 
-  useEffect((): void => {
-    const exec = async () => {
-      try {
-        const confusion: any = await localForage.getItem(`${shortname}-${sessionId}-confusion`)
-        if (confusion) {
-          setConfusionSpeed(confusion.prevSpeed)
-          setConfusionDifficulty(confusion.prevDifficulty)
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    exec()
-  }, [])
-
-  const onNewConfusionTS = async (newValue: any, selector: string) => {
-    // send the new confusion entry to the server
-    if (selector === 'speed') {
-      setConfusionSpeed(newValue)
-      handleNewConfusionTS({
-        difficulty: confusionDifficulty ?? 0,
-        speed: newValue,
-      })
-    } else if (selector === 'difficulty') {
-      setConfusionDifficulty(newValue)
-      handleNewConfusionTS({
-        difficulty: newValue,
-        speed: confusionSpeed ?? 0,
-      })
-    }
-  }
-
   useEffect(() => {
     // forward all feedback ids (visible resolved and open questions) to the join-page
     const feedbackIds = processedFeedbacks.open
@@ -345,7 +306,7 @@ function FeedbackArea({
 
   return (
     <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
-      <h1 className="hidden mb-2 md:block md:!text-lg">Feedback-Channel</h1>
+      <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
         <div>
@@ -376,49 +337,16 @@ function FeedbackArea({
       )}
 
       {isFeedbackChannelActive && isConfusionBarometerActive && (
-        <div>
-          <div className="flex flex-col gap-2">
-            <ConfusionDialog
-              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
-              icons={{
-                min: '🐌',
-                mid: '😀',
-                max: '🦘',
-              }}
-              labels={{
-                min: intl.formatMessage(messages.speedRangeMin),
-                mid: intl.formatMessage(messages.speedRangeMid),
-                max: intl.formatMessage(messages.speedRangeMax),
-              }}
-              title={<FormattedMessage defaultMessage="Speed" id="common.string.speed" />}
-              value={confusionSpeed}
-            />
-            <ConfusionDialog
-              handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
-              icons={{
-                min: '😴',
-                mid: '😀',
-                max: '🤯',
-              }}
-              labels={{
-                min: intl.formatMessage(messages.difficultyRangeMin),
-                mid: intl.formatMessage(messages.difficultyRangeMid),
-                max: intl.formatMessage(messages.difficultyRangeMax),
-              }}
-              title={<FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />}
-              value={confusionDifficulty}
-            />
-          </div>
-        </div>
+        <ConfusionBarometer sessionId={sessionId} shortname={shortname} />
       )}
 
       {/* max-h-[35vh] overflow-scroll md:max-h-full */}
       {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
         <>
           {processedFeedbacks.resolved.length > 0 && (
-            <div className="mt-4">
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
               </h2>
               <div className="flex flex-col gap-2">
                 {processedFeedbacks.resolved.map(
@@ -446,9 +374,9 @@ function FeedbackArea({
           )}
 
           {processedFeedbacks.open.length > 0 && (
-            <div className="mt-4">
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Open Questions" id="joinSession.feedbackArea.open" />
               </h2>
               <div className="flex flex-col h-auto gap-2 overflow-x-auto">
                 {processedFeedbacks.open.map(
