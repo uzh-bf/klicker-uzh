@@ -92,74 +92,99 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
 
   return (
     <>
-      <div>{'Current Interval length: ' + xDataInterval + ' seconds'}</div>
-      <div>{'Current Running Window length: ' + runningWindow + ' times interval'}</div>
-      <Input
-        placeholder="Interval: min. 60s"
-        onChange={(e, data) => {
-          if (Number(data.value) >= 60) {
-            setXInterval(Number(data.value))
-          } else if (data.value === '') {
-            setXInterval(xIntervalDefault)
-          }
-        }}
-        key="intervalInput"
-      />
-      <Input
-        placeholder="Window Factor: min. 1"
-        onChange={(e, data) => {
-          if (Number(data.value) >= 1) {
-            setRunningWindow(Number(data.value))
-          } else if (data.value === '') {
-            setRunningWindow(runningWindowDefault)
-          }
-        }}
-        key="windowLengthInput"
-      />
-      <ResponsiveContainer width={700} height="40%" className="mb-4" key="speedConfusion">
-        <LineChart width={730} height={250} data={confusionValues} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis type="number" domain={[-1, 1]} />
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                return (
-                  <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">{`speed : ${
-                    Math.round(Number(payload[0].value) * 100) / 100
-                  }`}</div>
-                )
-              }
+      <div className="flex flex-col h-full lg:flex-row">
+        <div className="h-full">
+          <ResponsiveContainer width={700} height="40%" className="mb-4" key="speedConfusion">
+            <LineChart
+              width={730}
+              height={250}
+              data={confusionValues}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis type="number" domain={[-1, 1]} />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">{`speed : ${
+                        Math.round(Number(payload[0].value) * 100) / 100
+                      }`}</div>
+                    )
+                  }
 
-              return null
-            }}
-          />
-          <Legend />
-          <Line type="monotone" dataKey="speed" stroke="#8884d8" />
-        </LineChart>
-      </ResponsiveContainer>
-      <ResponsiveContainer width={700} height="40%" key="difficultyConfusion">
-        <LineChart width={730} height={250} data={confusionValues} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis type="number" domain={[-1, 1]} />
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                return (
-                  <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">{`difficulty : ${
-                    Math.round(Number(payload[0].value) * 100) / 100
-                  }`}</div>
-                )
-              }
+                  return null
+                }}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="speed" stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
+          <ResponsiveContainer width={700} height="40%" key="difficultyConfusion">
+            <LineChart
+              width={730}
+              height={250}
+              data={confusionValues}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis type="number" domain={[-1, 1]} />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">{`difficulty : ${
+                        Math.round(Number(payload[0].value) * 100) / 100
+                      }`}</div>
+                    )
+                  }
 
-              return null
-            }}
-          />
-          <Legend />
-          <Line type="monotone" dataKey="difficulty" stroke="#82ca9d" />
-        </LineChart>
-      </ResponsiveContainer>
+                  return null
+                }}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="difficulty" stroke="#82ca9d" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="w-full p-3 border border-solid rounded-md lg:w-1/2 border-primary">
+          <div className="mb-2 font-bold ">User Settings:</div>
+          <div className="flex flex-row mb-2">
+            <div className="my-auto">Timesteps X-Axis:</div>
+            <Input
+              placeholder="min. 60s"
+              onChange={(e, data) => {
+                if (Number(data.value) >= 60) {
+                  setXInterval(Number(data.value))
+                } else if (data.value === '') {
+                  setXInterval(xIntervalDefault)
+                }
+              }}
+              key="intervalInput"
+              className="ml-3"
+            />
+          </div>
+          <div className="flex flex-row mb-2">
+            <div className="my-auto">Window Length:</div>
+            <Input
+              placeholder="min. 1"
+              onChange={(e, data) => {
+                if (Number(data.value) >= 1) {
+                  setRunningWindow(Number(data.value))
+                } else if (data.value === '') {
+                  setRunningWindow(runningWindowDefault)
+                }
+              }}
+              key="windowLengthInput"
+              className="ml-[1.35rem]"
+            />
+          </div>
+          <div className="mt-4">{'Displayed interval: ' + xDataInterval + ' seconds'}</div>
+          <div>{'Displayed running window: ' + runningWindow + ' times interval'}</div>
+        </div>
+      </div>
     </>
   )
 }
