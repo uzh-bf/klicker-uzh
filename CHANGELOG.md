@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.1...v1.7.0-alpha.2) (2021-11-16)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that storedResponses do not break the join screen ([848c07e](https://github.com/uzh-bf/klicker-uzh/commit/848c07ee8aceac000c976b17a63f2c933a4f333c))
+
+
+### Other
+
+* add happo config ([751e6ca](https://github.com/uzh-bf/klicker-uzh/commit/751e6ca393ef5116124f872e2c82b98c7e815de1))
+* **deploy:** add new instance ([f76a35d](https://github.com/uzh-bf/klicker-uzh/commit/f76a35da374cdce8cb18b57bc7b0141b4f319f91))
+
 ## [1.7.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.0...v1.7.0-alpha.1) (2021-11-14)
 
 
