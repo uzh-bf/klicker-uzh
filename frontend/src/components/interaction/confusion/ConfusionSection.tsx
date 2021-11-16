@@ -47,10 +47,10 @@ function ConfusionSection({ runningValue, title, labels }: Props): React.ReactEl
               color: '#000000',
             },
           ]}
-          customSegmentStops={[0, 0.1, 0.25, 0.75, 0.9, 1]}
+          customSegmentStops={[-2, -1.4, -0.7, 0.7, 1.4, 2]}
           height={200}
-          maxValue={1}
-          minValue={0}
+          maxValue={2}
+          minValue={-2}
           needleColor="#dc6027"
           needleHeightRatio={0.4}
           segmentColors={[RED_COLOR, ORANGE_COLOR, GREEN_COLOR, ORANGE_COLOR, RED_COLOR]}

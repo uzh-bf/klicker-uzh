@@ -839,6 +839,7 @@ const fetchRunningSessionData = async (userId) => {
   const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
+
   let speedRunning = 0
   let difficultyRunning = 0
 
@@ -850,20 +851,20 @@ const fetchRunningSessionData = async (userId) => {
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
+    speedRunning = 0
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
+    difficultyRunning = 0
   }
   // overwrite confusionTS data sent to user by filtered and aggregated values
   runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
 
   // readd mongoDB id-field and empty confusionTS
   runningSession.id = runningSession._id
-  runningSession.blocks.forEach((block) => {
-    // eslint-disable-next-line no-param-reassign
-    block.id = block._id
-  })
+  runningSession.blocks = runningSession.blocks.map((block) => ({
+    ...block,
+    id: block._id,
+  }))
   return runningSession
 }
 

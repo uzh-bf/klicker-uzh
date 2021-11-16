@@ -12,7 +12,6 @@ import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import FeedbackArea from '../../components/sessions/join/FeedbackArea'
 import QuestionArea from '../../components/sessions/join/QuestionArea'
-import AddConfusionTSMutation from '../../graphql/mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from '../../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../../graphql/mutations/AddResponseMutation.graphql'
 import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutation.graphql'
@@ -56,7 +55,6 @@ function Join({ shortname }): React.ReactElement {
   const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
   const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
-  const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
   const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
@@ -122,31 +120,6 @@ function Join({ shortname }): React.ReactElement {
     }
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
-
-  // handle creation of a new confusion timestep with debounce for aggregation
-  const onNewConfusionTS = _debounce(
-    async ({ difficulty = 0, speed = 0 }): Promise<void> => {
-      try {
-        newConfusionTS({
-          variables: {
-            speed,
-            difficulty,
-            fp: fingerprint,
-            sessionId,
-          },
-        })
-        localForage.setItem(`${shortname}-${sessionId}-confusion`, {
-          prevSpeed: speed,
-          prevDifficulty: difficulty,
-        })
-        push(['trackEvent', 'Join Session', 'Confusion Interacted', `speed=${speed},difficulty=${difficulty}`])
-      } catch ({ message }) {
-        console.error(message)
-      }
-    },
-    4000,
-    { trailing: true }
-  )
 
   // handle creation of a new feedback
   const onNewFeedback = async ({ content }): Promise<void> => {
@@ -273,7 +246,6 @@ function Join({ shortname }): React.ReactElement {
             active={sidebarActiveItem === 'feedbackChannel'}
             data={dataQA}
             handleFeedbackIds={onNewFeedbackIds}
-            handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}
             handleUpvoteFeedback={onUpvoteFeedback}
