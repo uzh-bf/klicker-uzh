@@ -4,6 +4,7 @@ query SessionDetails($id: ID!) {
     name
     blocks {
       id
+      randomSelection
       instances {
         version
         question {

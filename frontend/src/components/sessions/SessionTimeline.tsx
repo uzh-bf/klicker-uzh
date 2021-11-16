@@ -112,6 +112,7 @@ interface Props {
   authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
   storageMode?: 'SECRET' | 'COMPLETE'
   subscribeToMore: any
+  withQuestionBlockExperiments?: boolean
 }
 
 const defaultProps = {
@@ -120,6 +121,7 @@ const defaultProps = {
   isParticipantAuthenticationEnabled: false,
   isParticipantListVisible: false,
   participants: [],
+  withQuestionBlockExperiments: false,
 }
 
 function SessionTimeline({
@@ -146,6 +148,7 @@ function SessionTimeline({
   handleActiveBlock,
   handleNoActiveBlock,
   subscribeToMore,
+  withQuestionBlockExperiments,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
@@ -351,9 +354,11 @@ function SessionTimeline({
                     type: question.type,
                     version,
                   }))}
+                  randomSelection={block.randomSelection}
                   sessionId={sessionId}
                   status={block.status}
                   timeLimit={block.timeLimit}
+                  withQuestionBlockExperiments={withQuestionBlockExperiments}
                 />
               </div>
               {index === blocks.length - 1 && (
