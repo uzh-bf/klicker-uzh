@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.3...v1.7.0-alpha.4) (2021-11-16)
+
+
+### Enhancements
+
+* **frontend:** add alternative confusion input with a 5-point slider ([#2629](https://github.com/uzh-bf/klicker-uzh/issues/2629)) ([f27ef82](https://github.com/uzh-bf/klicker-uzh/commit/f27ef820a3e4e6d739a00560fda07313f81d7523))
+
 ## [1.7.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.2...v1.7.0-alpha.3) (2021-11-16)
 
 
