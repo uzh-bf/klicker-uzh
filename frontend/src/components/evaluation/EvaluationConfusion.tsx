@@ -12,11 +12,13 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
   const runningWindowDefault = 3
   const [xInterval, setXInterval] = useState(xIntervalDefault)
   const [runningWindow, setRunningWindow] = useState(runningWindowDefault)
+  const [xIntervalError, setXIntervalError] = useState(false)
+  const [runningWindowError, setRunningWindowError] = useState(false)
 
   // default settings: timesteps in plot 120 seconds, running average window 120 * 3 seconds
   const xDataInterval = xInterval ? xInterval : 120
   const runningAvgFactor = runningWindow ? runningWindow : 3
-  const peakValue = 1 // hightest value that can be returned from a feedback (both positive and negative)
+  const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
 
   if (confusionTS.length > 1) {
     const confusionInterval =
@@ -103,7 +105,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis type="number" domain={[-1, 1]} />
+              <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
@@ -130,7 +132,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis type="number" domain={[-1, 1]} />
+              <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
@@ -150,7 +152,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
           </ResponsiveContainer>
         </div>
         <div className="w-full p-3 border border-solid rounded-md lg:w-1/2 border-primary">
-          <div className="mb-2 font-bold ">User Settings:</div>
+          <div className="mb-2 font-bold ">Graph Settings:</div>
           <div className="flex flex-row mb-2">
             <div className="my-auto">Timesteps X-Axis:</div>
             <Input
@@ -158,10 +160,15 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               onChange={(e, data) => {
                 if (Number(data.value) >= 60) {
                   setXInterval(Number(data.value))
+                  setXIntervalError(false)
                 } else if (data.value === '') {
                   setXInterval(xIntervalDefault)
+                  setXIntervalError(false)
+                } else {
+                  setXIntervalError(true)
                 }
               }}
+              error={xIntervalError}
               key="intervalInput"
               className="ml-3"
             />
@@ -173,10 +180,15 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               onChange={(e, data) => {
                 if (Number(data.value) >= 1) {
                   setRunningWindow(Number(data.value))
+                  setRunningWindowError(false)
                 } else if (data.value === '') {
                   setRunningWindow(runningWindowDefault)
+                  setRunningWindowError(false)
+                } else {
+                  setRunningWindowError(true)
                 }
               }}
+              error={runningWindowError}
               key="windowLengthInput"
               className="ml-[1.35rem]"
             />
