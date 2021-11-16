@@ -101,7 +101,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               width={730}
               height={250}
               data={confusionValues}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 15, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -110,9 +110,13 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">{`speed : ${
-                        Math.round(Number(payload[0].value) * 100) / 100
-                      }`}</div>
+                      <>
+                        <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">
+                          {`speed : ${Math.round(Number(payload[0].value) * 100) / 100}\r\n`}
+                          <br />
+                          {`feedbacks : ${payload[0].payload.numOfElements}`}
+                        </div>
+                      </>
                     )
                   }
 
@@ -128,7 +132,7 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               width={730}
               height={250}
               data={confusionValues}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 15, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -137,9 +141,11 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     return (
-                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">{`difficulty : ${
-                        Math.round(Number(payload[0].value) * 100) / 100
-                      }`}</div>
+                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">
+                        {`difficulty : ${Math.round(Number(payload[0].value) * 100) / 100}`}
+                        <br />
+                        {`feedbacks : ${payload[0].payload.numOfElements}`}
+                      </div>
                     )
                   }
 
