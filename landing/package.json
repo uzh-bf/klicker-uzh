@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/landing",
-  "version": "1.7.0-alpha.3",
+  "version": "1.7.0-alpha.4",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
