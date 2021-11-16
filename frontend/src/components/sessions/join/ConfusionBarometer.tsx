@@ -72,14 +72,14 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
   const handleNewConfusionTS = _debounce(
     async ({ difficulty = 0, speed = 0 }): Promise<void> => {
       try {
-        newConfusionTS({
-          variables: {
-            speed,
-            difficulty,
-            // fp: fingerprint,
-            sessionId,
-          },
-        })
+        // newConfusionTS({
+        //   variables: {
+        //     speed,
+        //     difficulty,
+        //     // fp: fingerprint,
+        //     sessionId,
+        //   },
+        // })
         localForage.setItem(`${shortname}-${sessionId}-confusion`, {
           prevSpeed: speed,
           prevDifficulty: difficulty,
@@ -96,62 +96,57 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
       }
     },
     4000,
-    { trailing: true }
+    { trailing: true, maxWait: 10000 }
   )
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
+    handleNewConfusionTS({
+      difficulty: selector === 'difficulty' ? newValue : confusionDifficulty ?? 0,
+      speed: selector === 'speed' ? newValue : confusionSpeed ?? 0,
+    })
+
     // send the new confusion entry to the server
     if (selector === 'speed') {
       setConfusionSpeed(newValue)
-      handleNewConfusionTS({
-        difficulty: confusionDifficulty ?? 0,
-        speed: newValue,
-      })
     } else if (selector === 'difficulty') {
       setConfusionDifficulty(newValue)
-      handleNewConfusionTS({
-        difficulty: newValue,
-        speed: confusionSpeed ?? 0,
-      })
     }
   }
 
   return (
-    <div>
-      <div className="flex flex-col gap-2">
-        <ConfusionDialog
-          disabled={!isConfusionEnabled}
-          handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
-          icons={{
-            min: '🐌',
-            mid: '😀',
-            max: '🦘',
-          }}
-          labels={{
-            min: intl.formatMessage(messages.speedRangeMin),
-            mid: intl.formatMessage(messages.speedRangeMid),
-            max: intl.formatMessage(messages.speedRangeMax),
-          }}
-          title={<FormattedMessage defaultMessage="Speed" id="common.string.speed" />}
-          value={confusionSpeed}
-        />
-        <ConfusionDialog
-          disabled={!isConfusionEnabled}
-          handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
-          icons={{
-            min: '😴',
-            mid: '😀',
-            max: '🤯',
-          }}
-          labels={{
-            min: intl.formatMessage(messages.difficultyRangeMin),
-            mid: intl.formatMessage(messages.difficultyRangeMid),
-            max: intl.formatMessage(messages.difficultyRangeMax),
-          }}
-          title={<FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />}
-          value={confusionDifficulty}
-        />
-      </div>
+    <div className="flex flex-col gap-6">
+      <ConfusionDialog
+        disabled={!isConfusionEnabled}
+        handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+        icons={{
+          min: '🐌',
+          mid: '😀',
+          max: '🦘',
+        }}
+        labels={{
+          min: intl.formatMessage(messages.speedRangeMin),
+          mid: intl.formatMessage(messages.speedRangeMid),
+          max: intl.formatMessage(messages.speedRangeMax),
+        }}
+        title={<FormattedMessage defaultMessage="Speed" id="common.string.speed" />}
+        value={confusionSpeed}
+      />
+      <ConfusionDialog
+        disabled={!isConfusionEnabled}
+        handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+        icons={{
+          min: '😴',
+          mid: '😀',
+          max: '🤯',
+        }}
+        labels={{
+          min: intl.formatMessage(messages.difficultyRangeMin),
+          mid: intl.formatMessage(messages.difficultyRangeMid),
+          max: intl.formatMessage(messages.difficultyRangeMax),
+        }}
+        title={<FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />}
+        value={confusionDifficulty}
+      />
     </div>
   )
 }

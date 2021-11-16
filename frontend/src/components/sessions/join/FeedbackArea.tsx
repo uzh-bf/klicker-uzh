@@ -306,7 +306,7 @@ function FeedbackArea({
 
   return (
     <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
-      <h1 className="hidden mb-2 md:block md:!text-lg">Feedback-Channel</h1>
+      <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
         <div>
@@ -344,9 +344,9 @@ function FeedbackArea({
       {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
         <>
           {processedFeedbacks.resolved.length > 0 && (
-            <div className="mt-4">
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Resolved" id="joinSession.feedbackArea.resolved" />
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
               </h2>
               <div className="flex flex-col gap-2">
                 {processedFeedbacks.resolved.map(
@@ -374,9 +374,9 @@ function FeedbackArea({
           )}
 
           {processedFeedbacks.open.length > 0 && (
-            <div className="mt-4">
-              <h2 className="!mb-1 !text-base">
-                <FormattedMessage defaultMessage="Open" id="joinSession.feedbackArea.open" />
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Open Questions" id="joinSession.feedbackArea.open" />
               </h2>
               <div className="flex flex-col h-auto gap-2 overflow-x-auto">
                 {processedFeedbacks.open.map(

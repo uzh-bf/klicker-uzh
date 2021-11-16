@@ -1,6 +1,7 @@
 import React from 'react'
-import { Button } from 'semantic-ui-react'
+import { Icon, Button } from 'semantic-ui-react'
 import * as Slider from '@radix-ui/react-slider'
+import clsx from 'clsx'
 
 interface Props {
   disabled?: boolean
@@ -18,144 +19,54 @@ const defaultProps = {
   value: undefined,
 }
 
-function ConfusionLabel({ icon, label }) {
-  return (
-    <div className="flex flex-row items-center text-xl">
-      {icon && <i className="icon">{icon}</i>}
-      {label}
-    </div>
-  )
+const RANGE_COLOR_MAP = {
+  '-1': 'bg-red-200',
+  '-0.5': 'bg-yellow-200',
+  '0': 'bg-green-200',
+  '0.5': 'bg-yellow-200',
+  '1': 'bg-red-200',
 }
 
-function ConfusionButton({ children, value, changeValue, onClick, disabled, withIcon }) {
-  return (
-    <Button
-      basic
-      className="flex-1 !mr-0"
-      color={value === changeValue ? 'blue' : undefined}
-      disabled={disabled}
-      icon={withIcon}
-      labelPosition={withIcon ? 'left' : undefined}
-      size="tiny"
-      onClick={() => onClick(changeValue)}
-    >
-      {children}
-    </Button>
-  )
+const BORDER_COLOR_MAP = {
+  '-1': 'border-red-300',
+  '-0.5': 'border-yellow-300',
+  '0': 'border-green-300',
+  '0.5': 'border-yellow-300',
+  '1': 'border-red-300',
 }
 
 function ConfusionDialog({ title, value, disabled, handleChange, labels, icons }: Props): React.ReactElement {
   return (
-    <div>
-      <div className="flex flex-col gap-1 md:text-left">
-        {title && <h2 className="!mb-0 !text-base md:w-24">{title}</h2>}
-        <div className="flex flex-row flex-wrap gap-2">
-          <ConfusionButton
-            changeValue={-1}
-            disabled={disabled}
-            value={value}
-            withIcon={!!icons?.min}
-            onClick={handleChange}
-          >
-            {icons?.min && <i className="icon">{icons.min}</i>}
-            {labels.min}
-          </ConfusionButton>
-          <ConfusionButton
-            changeValue={0}
-            disabled={disabled}
-            value={value}
-            withIcon={!!icons?.mid}
-            onClick={handleChange}
-          >
-            {icons?.mid && <i className="icon">{icons.mid}</i>}
-            {labels.mid}
-          </ConfusionButton>
-          <ConfusionButton
-            changeValue={1}
-            disabled={disabled}
-            value={value}
-            withIcon={!!icons?.max}
-            onClick={handleChange}
-          >
-            {icons?.max && <i className="icon">{icons.max}</i>}
-            {labels.max}
-          </ConfusionButton>
+    <div className="flex flex-col md:text-left">
+      {title && <h2 className="!mb-[-20px] !text-base md:w-24 text-gray-600">{title}</h2>}
+      <Slider.Root
+        className="relative flex items-center w-full h-20 select-none"
+        defaultValue={[0]}
+        disabled={disabled}
+        max={1}
+        min={-1}
+        step={0.5}
+        value={[value]}
+        onValueChange={([newValue]) => handleChange(newValue)}
+      >
+        <div className="absolute bottom-0 left-0 right-0 flex flex-row justify-between mt-[-50px] text-3xl z-0">
+          <i className="icon !mr-0">{icons.min}</i>
+          <i className="icon !mr-0 z-0">{icons.mid}</i>
+          <i className="icon !mr-0">{icons.max}</i>
         </div>
-        <div>
-          <Slider.Root
-            className="relative flex items-center w-full h-20 select-none"
-            defaultValue={[0]}
-            disabled={disabled}
-            max={1}
-            min={-1}
-            step={0.5}
-            value={[value]}
-            onValueChange={([newValue]) => handleChange(newValue)}
-          >
-            <Slider.Track className="relative flex-1 h-3 bg-gray-300 rounded">
-              <Slider.Range className="absolute h-full bg-red-400 rounded-full" />
-            </Slider.Track>
-            <Slider.Thumb className="block p-1 bg-white border border-solid rounded-full shadow-lg cursor-move">
-              <div className="text-3xl">{icons.mid}</div>
-            </Slider.Thumb>
-          </Slider.Root>
-          <div className="flex flex-row justify-between">
-            <div>{icons.min}</div>
-            <div>{icons.mid}</div>
-            <div>{icons.max}</div>
-          </div>
-        </div>
-        {/* <div className="mt-8 mb-8 px-28">
-          <Slider
-            disabled={!isConfusionEnabled}
-            dotStyle={{
-              width: 10,
-              height: 10,
-            }}
-            handleStyle={{
-              width: 20,
-              height: 20,
-            }}
-            included={false}
-            marks={{
-              '-1': {
-                label: <ConfusionLabel icon={icons?.min} label={labels.min} />,
-                style: {
-                  color: 'rgba(240, 43, 30, 0.7)',
-                },
-              },
-              '-0.5': {
-                label: <ConfusionLabel label={`rather ${labels.min}`} />,
-                style: {
-                  color: 'rgba(245, 114, 0, 0.7)',
-                },
-              },
-              '0': {
-                label: <ConfusionLabel icon={icons?.mid} label={labels.mid} />,
-                style: {
-                  color: 'rgba(22, 171, 57, 0.7)',
-                },
-              },
-              '0.5': {
-                label: <ConfusionLabel label={`rather ${labels.max}`} />,
-                style: {
-                  color: 'rgba(245, 114, 0, 0.7)',
-                },
-              },
-              '1': {
-                label: <ConfusionLabel icon={icons?.max} label={labels.max} />,
-                style: {
-                  color: 'rgba(240, 43, 30, 0.7)',
-                },
-              },
-            }}
-            max={1}
-            min={-1}
-            step={0.5}
-            onAfterChange={handleClick}
-          />
-        </div> */}
-      </div>
+        <Slider.Track className="relative flex-1 h-3 bg-gray-300 rounded">
+          <Slider.Range className={clsx('absolute h-full rounded-full', RANGE_COLOR_MAP[String(value)])} />
+        </Slider.Track>
+        <Slider.Thumb
+          className={clsx(
+            'w-12 h-12 flex flex-col items-center justify-center bg-white border-3 border-solid rounded-full shadow-lg z-10',
+            disabled ? 'cursor-not-allowed' : 'cursor-move',
+            disabled ? 'border-gray-300' : BORDER_COLOR_MAP[value]
+          )}
+        >
+          {disabled && <Icon className="!mr-0 text-gray-400" name="lock" />}
+        </Slider.Thumb>
+      </Slider.Root>
     </div>
   )
 }

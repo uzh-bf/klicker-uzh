@@ -970,7 +970,7 @@
   "joinSession.feedbackArea.open": [
     {
       "type": 0,
-      "value": "Open"
+      "value": "Open Questions"
     }
   ],
   "joinSession.feedbackArea.postedAt": [
@@ -982,7 +982,7 @@
   "joinSession.feedbackArea.resolved": [
     {
       "type": 0,
-      "value": "Resolved"
+      "value": "Resolved Questions"
     }
   ],
   "joinSession.feedbackArea.resolvedAt": [
