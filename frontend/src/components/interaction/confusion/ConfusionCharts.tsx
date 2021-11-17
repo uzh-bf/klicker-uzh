@@ -1,6 +1,7 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { Icon, Popup } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
+import CustomTooltip from '../../common/CustomTooltip'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -73,16 +74,10 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   return (
     <div className="w-full">
       <div className="float-right">
-        <Popup
-          inverted
-          wide
+        <CustomTooltip
           content={intl.formatMessage(messages.confusionInfo)}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          position="left center"
-          size="small"
-          style={{ opacity: 0.9 }}
-          trigger={
+          position={'left center'}
+          iconObject={
             <a data-tip>
               <Icon className="icon" name="question circle" />
             </a>

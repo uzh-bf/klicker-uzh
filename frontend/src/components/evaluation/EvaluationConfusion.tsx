@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import dayjs from 'dayjs'
-import { Input, Popup, Icon } from 'semantic-ui-react'
+import { Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import CustomTooltip from '../common/CustomTooltip'
 
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts'
 
@@ -107,25 +108,14 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
       <div className="flex flex-col h-full lg:flex-row">
         <div className="w-full h-full lg:w-1/2">
           <div className="my-auto ml-2">
-            <Popup
+            <CustomTooltip
               content={
                 <FormattedMessage
                   defaultMessage="The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
                   id="evaluationSession.confusion.graphExplanation"
                 />
               }
-              trigger={
-                <a data-tip>
-                  <Icon name="question circle" />
-                </a>
-              }
-              position="right center"
-              size="small"
-              style={{ opacity: 0.9 }}
-              mouseEnterDelay={250}
-              mouseLeaveDelay={250}
-              wide
-              inverted
+              iconName={'question circle'}
             />
           </div>
           <ResponsiveContainer width="100%" height="40%" className="mb-4" key="speedConfusion">
@@ -201,25 +191,14 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               className="ml-3"
             />
             <div className="my-auto ml-2">
-              <Popup
+              <CustomTooltip
                 content={
                   <FormattedMessage
                     defaultMessage="With this field, the timestep size used on the x-axis of the plot can be chosen in seconds. The minimum timestep is 60 seconds, the default one 120 seconds."
                     id="evaluationSession.confusion.timestep"
                   />
                 }
-                trigger={
-                  <a data-tip>
-                    <Icon name="question circle" />
-                  </a>
-                }
-                position="right center"
-                size="small"
-                style={{ opacity: 0.9 }}
-                mouseEnterDelay={250}
-                mouseLeaveDelay={250}
-                wide
-                inverted
+                iconName={'question circle'}
               />
             </div>
           </div>
@@ -243,25 +222,14 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               className="ml-[1.35rem]"
             />
             <div className="my-auto ml-2">
-              <Popup
+              <CustomTooltip
                 content={
                   <FormattedMessage
                     defaultMessage="This field allows to set a custom factor (multiplied by the x-timestep) for the running window over which the average is computed. The minimum factor is 1, the default one is 3."
                     id="evaluationSession.confusion.windowLength"
                   />
                 }
-                trigger={
-                  <a data-tip>
-                    <Icon name="question circle" />
-                  </a>
-                }
-                position="right center"
-                size="small"
-                style={{ opacity: 0.9 }}
-                mouseEnterDelay={250}
-                mouseLeaveDelay={250}
-                wide
-                inverted
+                iconName={'question circle'}
               />
             </div>
           </div>
