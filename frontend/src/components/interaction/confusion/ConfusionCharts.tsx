@@ -51,6 +51,7 @@ interface Props {
 
 function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   const intl = useIntl()
+  console.log(confusionValues)
 
   if (!confusionValues || Number.isNaN(confusionValues.speed) || Number.isNaN(confusionValues.difficulty)) {
     return (

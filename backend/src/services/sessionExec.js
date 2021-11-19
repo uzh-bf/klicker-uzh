@@ -363,10 +363,10 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 2) * 0.25, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 2) * 0.25, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
@@ -839,15 +839,16 @@ const fetchRunningSessionData = async (userId) => {
   const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
+  console.log(filteredConfusion)
 
   let speedRunning = 0
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 2) * 0.25, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 2) * 0.25, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
