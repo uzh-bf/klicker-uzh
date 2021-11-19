@@ -35,6 +35,7 @@ query RunningSession {
     confusionValues {
       speed
       difficulty
+      numOfFeedbacks
     }
     feedbacks {
       ...FeedbackFields

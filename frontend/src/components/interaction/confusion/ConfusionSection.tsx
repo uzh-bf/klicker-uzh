@@ -3,6 +3,7 @@ import ReactSpeedometer from 'react-d3-speedometer'
 
 interface Props {
   runningValue: number
+  numOfFeedbacks: number
   title: string
   labels: any
 }
@@ -11,10 +12,13 @@ const RED_COLOR = 'rgba(240, 43, 30, 0.7)'
 const ORANGE_COLOR = 'rgba(245, 114, 0, 0.7)'
 const GREEN_COLOR = 'rgba(22, 171, 57, 0.7)'
 
-function ConfusionSection({ runningValue, title, labels }: Props): React.ReactElement {
+function ConfusionSection({ runningValue, numOfFeedbacks, title, labels }: Props): React.ReactElement {
   return (
     <div className="w-full">
-      <h3>{title}</h3>
+      <div className="w-full h-10 ">
+        <h3 className="inline-block mr-2">{title}</h3>
+        <div className="inline-block">({numOfFeedbacks} Feedbacks)</div>
+      </div>
       <div className="w-full min-h-[180px]">
         <ReactSpeedometer
           fluidWidth
