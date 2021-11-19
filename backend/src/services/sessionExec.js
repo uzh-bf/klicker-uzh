@@ -375,8 +375,6 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   if (Number.isNaN(difficultyRunning)) {
     difficultyRunning = 0
   }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
 
   // readd mongoDB id-field
   session.id = session._id
@@ -391,7 +389,12 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
 
   pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { speed: speedRunning, difficulty: difficultyRunning, id: savedConfusion._id },
+    [CONFUSION_ADDED]: {
+      speed: speedRunning,
+      difficulty: difficultyRunning,
+      numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+      id: savedConfusion._id,
+    },
     sessionId,
   })
 
@@ -862,8 +865,12 @@ const fetchRunningSessionData = async (userId) => {
   if (Number.isNaN(difficultyRunning)) {
     difficultyRunning = 0
   }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
+  // save computed aggregated values
+  runningSession.confusionValues = {
+    speed: speedRunning,
+    difficulty: difficultyRunning,
+    numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+  }
 
   // readd mongoDB id-field and empty confusionTS
   runningSession.id = runningSession._id

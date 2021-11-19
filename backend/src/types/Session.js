@@ -165,6 +165,7 @@ module.exports = `
     id: ID!
     speed: Float!
     difficulty: Float!
+    numOfFeedbacks: Int
   }
 
   type Session_Feedback {
