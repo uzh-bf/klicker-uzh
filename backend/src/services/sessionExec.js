@@ -363,17 +363,17 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
+    speedRunning = 0
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
+    difficultyRunning = 0
   }
   // overwrite confusionTS data sent to user by filtered and aggregated values
   session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
@@ -850,10 +850,10 @@ const fetchRunningSessionData = async (userId) => {
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
