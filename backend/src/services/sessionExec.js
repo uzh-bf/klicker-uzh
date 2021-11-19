@@ -839,7 +839,6 @@ const fetchRunningSessionData = async (userId) => {
   const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
-  console.log(filteredConfusion)
 
   let speedRunning = 0
   let difficultyRunning = 0
