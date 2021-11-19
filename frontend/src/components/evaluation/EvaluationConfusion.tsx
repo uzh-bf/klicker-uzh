@@ -65,8 +65,8 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
       confusionValues[k] =
         runningSum.numOfElements !== 0
           ? {
-              speed: runningSum.speed / (peakValue * runningSum.numOfElements),
-              difficulty: runningSum.difficulty / (peakValue * runningSum.numOfElements),
+              speed: runningSum.speed / runningSum.numOfElements,
+              difficulty: runningSum.difficulty / runningSum.numOfElements,
               numOfElements: runningSum.numOfElements,
             }
           : { speed: 0, difficulty: 0, numOfElements: 0 }
