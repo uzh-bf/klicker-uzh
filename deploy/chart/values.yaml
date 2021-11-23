@@ -158,7 +158,7 @@ backend:
 shibboleth:
   enabled: false
 
-  replicaCount: 0
+  replicaCount: 1
 
   hostname: ''
 

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/frontend",
-  "version": "1.7.0-alpha.1",
+  "version": "1.7.0-alpha.5",
   "exports": "./dist/server.js",
   "engines": {
     "node": ">=16"
@@ -20,6 +20,7 @@
     "@happykit/analytics": "1.0.1",
     "@happykit/flags": "1.1.0",
     "@headlessui/react": "1.4.2",
+    "@radix-ui/react-slider": "0.1.1",
     "@sentry/nextjs": "6.13.3",
     "@socialgouv/matomo-next": "1.2.2",
     "@tailwindcss/typography": "0.4.1",
@@ -99,7 +100,6 @@
     "react-ga": "3.3.0",
     "react-intl": "5.21.0",
     "react-qrcode-logo": "2.5.0",
-    "react-rangeslider": "2.2.0",
     "react-sizeme": "3.0.2",
     "react-table": "7.7.0",
     "react-tagcloud": "2.1.1",

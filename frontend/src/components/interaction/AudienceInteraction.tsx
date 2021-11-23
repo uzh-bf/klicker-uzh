@@ -6,7 +6,6 @@ import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
-// import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'

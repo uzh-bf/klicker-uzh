@@ -363,20 +363,18 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
+    speedRunning = 0
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
+    difficultyRunning = 0
   }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
 
   // readd mongoDB id-field
   session.id = session._id
@@ -391,7 +389,12 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
 
   pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { speed: speedRunning, difficulty: difficultyRunning, id: savedConfusion._id },
+    [CONFUSION_ADDED]: {
+      speed: speedRunning,
+      difficulty: difficultyRunning,
+      numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+      id: savedConfusion._id,
+    },
     sessionId,
   })
 
@@ -700,6 +703,14 @@ const joinSession = async ({ shortname, auth }) => {
     verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
+  let openInstances = currentBlock.instances.filter((instance) => instance.isOpen)
+
+  if (currentBlock.randomSelection > 0) {
+    const index = Math.floor(Math.random() * openInstances.length)
+    openInstances = [openInstances[index]]
+    // cleanCache(shortname)
+  }
+
   return {
     id,
     settings,
@@ -708,26 +719,24 @@ const joinSession = async ({ shortname, auth }) => {
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
-    activeInstances: currentBlock.instances
-      .filter((instance) => instance.isOpen)
-      .map(({ id: instanceId, question, version: instanceVersion }) => {
-        const version = question.versions[instanceVersion]
+    activeInstances: openInstances.map(({ id: instanceId, question, version: instanceVersion }) => {
+      const version = question.versions[instanceVersion]
 
-        // get the files that correspond to the current question version
-        const files = FileModel.find({ _id: { $in: version.files } })
+      // get the files that correspond to the current question version
+      const files = FileModel.find({ _id: { $in: version.files } })
 
-        return {
-          execution: currentBlock.execution,
-          questionId: question.id,
-          id: instanceId,
-          title: question.title,
-          type: question.type,
-          content: version.content,
-          description: version.description,
-          options: version.options,
-          files,
-        }
-      }),
+      return {
+        execution: currentBlock.execution,
+        questionId: question.id,
+        id: instanceId,
+        title: question.title,
+        type: question.type,
+        content: version.content,
+        description: version.description,
+        options: version.options,
+        files,
+      }
+    }),
   }
 }
 
@@ -839,31 +848,36 @@ const fetchRunningSessionData = async (userId) => {
   const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
+
   let speedRunning = 0
   let difficultyRunning = 0
 
   speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
     filteredConfusion.length
   difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
+    speedRunning = 0
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
+    difficultyRunning = 0
   }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
+  // save computed aggregated values
+  runningSession.confusionValues = {
+    speed: speedRunning,
+    difficulty: difficultyRunning,
+    numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+  }
 
   // readd mongoDB id-field and empty confusionTS
   runningSession.id = runningSession._id
-  runningSession.blocks.forEach((block) => {
-    // eslint-disable-next-line no-param-reassign
-    block.id = block._id
-  })
+  runningSession.blocks = runningSession.blocks.map((block) => ({
+    ...block,
+    id: block._id,
+  }))
   return runningSession
 }
 
