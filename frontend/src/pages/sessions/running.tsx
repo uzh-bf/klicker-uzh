@@ -10,7 +10,6 @@ import { Message, Icon } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import withFeatureFlags from '../../lib/withFeatureFlags'
-
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
@@ -259,6 +258,7 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                   },
                   variables: { sessionId: id },
                 })}
+                withQuestionBlockExperiments={featureFlags?.flags?.questionBlockExperiments}
               />
             </div>
 
