@@ -33,7 +33,7 @@ analytics:
 
 featureFlags:
   envKey: flags_pub_313968481835942464
-  persistedUsers: 'roland.schlaefli@bf.uzh.ch,julius.schlapbach@bf.uzh.ch,benjamin.wilding@bf.uzh.ch'
+  persistedUsers: 'roland.schlaefli@bf.uzh.ch,julius.schlapbach@bf.uzh.ch,benjamin.wilding@bf.uzh.ch,saskia.senn@bf.uzh.ch'
 
 frontend:
   replicaCount: 1
