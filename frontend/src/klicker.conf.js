@@ -279,6 +279,13 @@ module.exports = convict({
     },
   },
   services: {
+    chatwoot: {
+      websiteToken: {
+        default: undefined,
+        env: 'SERVICES_CHATWOOT_TOKEN',
+        format: String,
+      },
+    },
     happyKit: {
       envKey: {
         default: undefined,

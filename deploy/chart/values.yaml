@@ -75,6 +75,12 @@ analytics:
 featureFlags:
   envKey:
 
+services:
+  chatwoot:
+    enabled: false
+    baseUrl: https://app.chatwoot.com
+    websiteToken:
+
 frontend:
   replicaCount: 1
 
