@@ -55,3 +55,8 @@ data:
   SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
   SENTRY_SAMPLE_RATE: {{ .Values.analytics.sentry.frontend.sampleRate | quote }}
   {{ end }}
+
+  {{- if .Values.services.chatwoot.enabled }}
+  SERVICES_CHATWOOT_TOKEN: {{ .Values.services.chatwoot.websiteToken | quote }}
+  SERVICES_CHATWOOT_BASE_URL: {{ .Values.services.chatwoot.baseUrl | quote }}
+  {{ end }}
