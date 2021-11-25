@@ -404,10 +404,16 @@ function SessionTimeline({
           </Message>
         )}
       </div>
-      <div className="flex flex-row flex-wrap items-start justify-between flex-1 mt-2">
-        <div className="left">
+      <div className="flex flex-col flex-wrap items-start justify-between flex-1 mt-2 sm:flex-row">
+        <div className="flex w-full sm:block sm:w-max">
           {!isParticipantAuthenticationEnabled && (
-            <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
+            <Button
+              icon
+              labelPosition="left"
+              size="small"
+              className="flex flex-1 sm:block"
+              onClick={handlePauseSession}
+            >
               <Icon name="pause" />
               <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
             </Button>
@@ -428,7 +434,7 @@ function SessionTimeline({
         ) : (
           <Button
             // show dynamic buttons for all other sessions
-            className="!mr-0"
+            className="!mr-0 !mt-1.5 !w-full sm:!w-max sm:!mt-0"
             color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}

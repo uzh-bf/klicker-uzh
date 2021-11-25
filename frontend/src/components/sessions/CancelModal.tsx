@@ -15,7 +15,13 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
       open={isOpen}
       size="small"
       trigger={
-        <Button icon labelPosition="left" size="small" onClick={(): void => setIsOpen(true)}>
+        <Button
+          icon
+          labelPosition="left"
+          size="small"
+          className="flex flex-1 sm:block"
+          onClick={(): void => setIsOpen(true)}
+        >
           <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
           <Icon name="cancel" />
         </Button>
