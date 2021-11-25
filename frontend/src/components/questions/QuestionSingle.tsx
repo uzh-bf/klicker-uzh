@@ -40,7 +40,7 @@ function QuestionSingle({
   return (
     <div
       data-tip
-      className="border border-solid rounded shadow questionSingle border-primary bg-primary-bg"
+      className="border border-solid rounded shadow border-primary bg-primary-bg"
       data-for={`questionTooltip${id}`}
     >
       {id && description && onDelete && (
@@ -55,13 +55,13 @@ function QuestionSingle({
           style={PopupStyle}
           trigger={
             <div>
-              <div className="top bg-primary-20">
-                <div className="type">{generateTypesShort(intl)[type]}</div>
-                <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+              <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
+                <div className="font-bold">{generateTypesShort(intl)[type]}</div>
+                <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
                   <Icon name="trash" />
                 </button>
               </div>
-              <div className="title text-primary-strong">
+              <div className="text-center p-[0.3rem] text-primary-strong">
                 <Ellipsis>{title}</Ellipsis>
                 {version >= 0 && <span> {`(v${version + 1})`}</span>}
               </div>
@@ -72,11 +72,11 @@ function QuestionSingle({
 
       {!(id && description && onDelete) && (
         <>
-          <div className="top bg-primary-20">
-            <div className="type">{generateTypesShort(intl)[type]}</div>
+          <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
+            <div className="font-bold">{generateTypesShort(intl)[type]}</div>
 
             {onDelete && (
-              <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+              <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
                 <Icon name="trash" />
               </button>
             )}
@@ -89,43 +89,12 @@ function QuestionSingle({
             )}
           </div>
 
-          <div className="title text-primary-strong">
+          <div className="text-center p-[0.3rem] text-primary-strong">
             <Ellipsis>{title}</Ellipsis>
             {version >= 0 && <span> {`(v${version + 1})`}</span>}
           </div>
         </>
       )}
-
-      <style jsx>
-        {`
-          .questionSingle {
-            .top,
-            .title {
-              padding: 0.3rem;
-            }
-
-            .top {
-              display: flex;
-              justify-content: space-between;
-              text-align: center;
-
-              .type {
-                font-weight: bold;
-              }
-
-              .deleteButton {
-                padding: 3px;
-                margin: 0;
-              }
-            }
-
-            .title {
-              line-break: loose;
-              text-align: center;
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }
