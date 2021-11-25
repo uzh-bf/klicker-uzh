@@ -193,142 +193,164 @@ function SessionTimeline({
           </div>
         </div>
 
-        <div className="flex flex-row flex-wrap items-end">
-          <QRPopup shortname={shortname} />
-          <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-            <Button icon labelPosition="left" size="small">
-              <Icon name="external" />
-              <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
-            </Button>
-          </a>
-          <a href={`/sessions/evaluation/${sessionId}`} rel="noopener noreferrer" target="_blank">
-            <Button icon disabled={isFeedbackSession} labelPosition="left" size="small">
-              <Icon name="external" />
-              <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
-            </Button>
-          </a>
-          <Dropdown button simple className="icon small" icon="wrench">
-            <Dropdown.Menu direction="left">
-              <Dropdown.Header>
-                <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
-              </Dropdown.Header>
-              <Dropdown.Item>
-                <a href={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-                  <Icon name="external" />
-                  {publicRuntimeConfig.joinUrl
-                    ? `${publicRuntimeConfig.joinUrl}/${shortname}`
-                    : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
-                </a>
-              </Dropdown.Item>
-
-              <Dropdown.Header>
-                <FormattedMessage defaultMessage="Public Evaluation" id="runningSession.string.publicEvaluation" />
-              </Dropdown.Header>
-              <Dropdown.Item>
-                <Checkbox
-                  checked={isEvaluationPublic}
-                  defaultChecked={isEvaluationPublic}
-                  label={intl.formatMessage(messages.togglePublicEvaluation)}
-                  onChange={handleTogglePublicEvaluation}
-                />
-              </Dropdown.Item>
-              {isEvaluationPublic && (
+        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0">
+          <div className="flex flex-row flex-wrap w-full sm:w-max">
+            <QRPopup shortname={shortname} />
+            <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank" className="flex flex-1 sm:block">
+              <Button icon labelPosition="left" size="small" className="flex flex-1 sm:block">
+                <Icon name="external" />
+                <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
+              </Button>
+            </a>
+          </div>
+          <div className="flex flex-row flex-wrap w-full mt-1 sm:w-max sm:mt-0">
+            <a
+              href={`/sessions/evaluation/${sessionId}`}
+              rel="noopener noreferrer"
+              target="_blank"
+              className="flex flex-1 sm:block"
+            >
+              <Button
+                icon
+                disabled={isFeedbackSession}
+                labelPosition="left"
+                size="small"
+                className="flex flex-1 sm:block"
+              >
+                <Icon name="external" />
+                <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
+              </Button>
+            </a>
+            <Dropdown button simple className="icon small" icon="wrench">
+              <Dropdown.Menu direction="left">
+                <Dropdown.Header>
+                  <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
+                </Dropdown.Header>
                 <Dropdown.Item>
-                  <a href={`/sessions/public/${sessionId}`} rel="noopener noreferrer" target="_blank">
+                  <a
+                    href={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
                     <Icon name="external" />
-                    <FormattedMessage
-                      defaultMessage="To Public Evaluation"
-                      id="runningSession.button.publicEvaluation"
-                    />
+                    {publicRuntimeConfig.joinUrl
+                      ? `${publicRuntimeConfig.joinUrl}/${shortname}`
+                      : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
                   </a>
                 </Dropdown.Item>
-              )}
 
-              {isParticipantAuthenticationEnabled && [
-                <Dropdown.Header key="header">
-                  <FormattedMessage
-                    defaultMessage="Participant Authentication"
-                    id="runningSession.string.participantAuthentication"
+                <Dropdown.Header>
+                  <FormattedMessage defaultMessage="Public Evaluation" id="runningSession.string.publicEvaluation" />
+                </Dropdown.Header>
+                <Dropdown.Item>
+                  <Checkbox
+                    checked={isEvaluationPublic}
+                    defaultChecked={isEvaluationPublic}
+                    label={intl.formatMessage(messages.togglePublicEvaluation)}
+                    onChange={handleTogglePublicEvaluation}
                   />
-                </Dropdown.Header>,
-                // <Dropdown.Item>
-                //   <Checkbox
-                //     disabled
-                //     checked={isParticipantAuthenticationEnabled}
-                //     defaultChecked={isParticipantAuthenticationEnabled}
-                //     label={intl.formatMessage(messages.toggleParticipantAuthentication)}
-                //   />
-                // </Dropdown.Item>,
-                <Modal
-                  key="modal"
-                  open={isParticipantListVisible}
-                  trigger={
-                    <Menu.Item icon onClick={handleToggleParticipantList}>
-                      <Icon name="table" />
-                      <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
-                    </Menu.Item>
-                  }
-                  onClose={handleToggleParticipantList}
-                >
-                  <Modal.Header>
-                    <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
-                  </Modal.Header>
-                  <Modal.Content>
-                    {authenticationMode === 'AAI' && <Message info>AAI</Message>}
+                </Dropdown.Item>
+                {isEvaluationPublic && (
+                  <Dropdown.Item>
+                    <a href={`/sessions/public/${sessionId}`} rel="noopener noreferrer" target="_blank">
+                      <Icon name="external" />
+                      <FormattedMessage
+                        defaultMessage="To Public Evaluation"
+                        id="runningSession.button.publicEvaluation"
+                      />
+                    </a>
+                  </Dropdown.Item>
+                )}
 
-                    <Table celled>
-                      <Table.Header>
-                        <Table.Row>
-                          <Table.HeaderCell>
-                            <FormattedMessage defaultMessage="Username" id="common.string.username" />
-                          </Table.HeaderCell>
-                          {authenticationMode === 'PASSWORD' && (
+                {isParticipantAuthenticationEnabled && [
+                  <Dropdown.Header key="header">
+                    <FormattedMessage
+                      defaultMessage="Participant Authentication"
+                      id="runningSession.string.participantAuthentication"
+                    />
+                  </Dropdown.Header>,
+                  // <Dropdown.Item>
+                  //   <Checkbox
+                  //     disabled
+                  //     checked={isParticipantAuthenticationEnabled}
+                  //     defaultChecked={isParticipantAuthenticationEnabled}
+                  //     label={intl.formatMessage(messages.toggleParticipantAuthentication)}
+                  //   />
+                  // </Dropdown.Item>,
+                  <Modal
+                    key="modal"
+                    open={isParticipantListVisible}
+                    trigger={
+                      <Menu.Item icon onClick={handleToggleParticipantList}>
+                        <Icon name="table" />
+                        <FormattedMessage
+                          defaultMessage="Participant List"
+                          id="runningSession.string.participantList"
+                        />
+                      </Menu.Item>
+                    }
+                    onClose={handleToggleParticipantList}
+                  >
+                    <Modal.Header>
+                      <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
+                    </Modal.Header>
+                    <Modal.Content>
+                      {authenticationMode === 'AAI' && <Message info>AAI</Message>}
+
+                      <Table celled>
+                        <Table.Header>
+                          <Table.Row>
                             <Table.HeaderCell>
-                              <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                              <FormattedMessage defaultMessage="Username" id="common.string.username" />
                             </Table.HeaderCell>
-                          )}
-                        </Table.Row>
-                      </Table.Header>
-                      <Table.Body>
-                        {participants.map(({ username, password }) => (
-                          <Table.Row key={username}>
-                            <Table.Cell>{username}</Table.Cell>
                             {authenticationMode === 'PASSWORD' && (
-                              <Table.Cell>
-                                <span className="font-serif">{password}</span>
-                              </Table.Cell>
+                              <Table.HeaderCell>
+                                <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                              </Table.HeaderCell>
                             )}
                           </Table.Row>
-                        ))}
-                      </Table.Body>
-                    </Table>
-                  </Modal.Content>
+                        </Table.Header>
+                        <Table.Body>
+                          {participants.map(({ username, password }) => (
+                            <Table.Row key={username}>
+                              <Table.Cell>{username}</Table.Cell>
+                              {authenticationMode === 'PASSWORD' && (
+                                <Table.Cell>
+                                  <span className="font-serif">{password}</span>
+                                </Table.Cell>
+                              )}
+                            </Table.Row>
+                          ))}
+                        </Table.Body>
+                      </Table>
+                    </Modal.Content>
 
-                  <Modal.Actions>
-                    <CSVLink
-                      data={participants.map(pick(['username', authenticationMode === 'PASSWORD' && 'password']))}
-                      filename="participants.csv"
-                      headers={[
-                        { label: 'username', key: 'username' },
-                        { label: 'password', key: 'password' },
-                      ]}
-                    >
-                      <Button icon>
-                        <Icon name="file" />
-                        Download (CSV)
-                      </Button>
-                    </CSVLink>
-                  </Modal.Actions>
-                </Modal>,
-              ]}
-              {storageMode === 'COMPLETE' && (
-                <Dropdown.Item disabled>
-                  <Icon name="download" />
-                  <FormattedMessage defaultMessage="Export Responses" id="runningSession.string.downloadResponses" />
-                </Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
+                    <Modal.Actions>
+                      <CSVLink
+                        data={participants.map(pick(['username', authenticationMode === 'PASSWORD' && 'password']))}
+                        filename="participants.csv"
+                        headers={[
+                          { label: 'username', key: 'username' },
+                          { label: 'password', key: 'password' },
+                        ]}
+                      >
+                        <Button icon>
+                          <Icon name="file" />
+                          Download (CSV)
+                        </Button>
+                      </CSVLink>
+                    </Modal.Actions>
+                  </Modal>,
+                ]}
+                {storageMode === 'COMPLETE' && (
+                  <Dropdown.Item disabled>
+                    <Icon name="download" />
+                    <FormattedMessage defaultMessage="Export Responses" id="runningSession.string.downloadResponses" />
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
         </div>
       </div>
 
