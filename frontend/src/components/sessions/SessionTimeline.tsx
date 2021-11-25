@@ -179,18 +179,18 @@ function SessionTimeline({
   }, [runtime])
 
   return (
-    <div className="sessionTimeline">
-      <div className="topRow">
-        <div className="infos">
-          <div className="startingTime">
+    <div className="flex flex-col md:flex-row md:flex-wrap sessionTimeline">
+      <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
+        <div className="flex flex-row flex-wrap items-end">
+          <div>
             <Icon name="time" /> {startingTime}
           </div>
-          <div className="runningTime">
+          <div className="ml-8">
             <Icon name="play circle" /> {runtime}
           </div>
         </div>
 
-        <div className="actions">
+        <div className="flex flex-row flex-wrap items-end">
           <QRPopup shortname={shortname} />
           <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
             <Button icon labelPosition="left" size="small">
@@ -292,7 +292,7 @@ function SessionTimeline({
                             <Table.Cell>{username}</Table.Cell>
                             {authenticationMode === 'PASSWORD' && (
                               <Table.Cell>
-                                <span className="password">{password}</span>
+                                <span className="font-serif">{password}</span>
                               </Table.Cell>
                             )}
                           </Table.Row>
@@ -329,18 +329,27 @@ function SessionTimeline({
         </div>
       </div>
 
-      <div className="blocks">
+      <div className="flex flex-col flex-1 p-4 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-00full">
         {blocks.map(
           (block, index): React.ReactElement => (
-            <div className="blockWrap" key={block.id}>
-              <div className={clsx('waiting', { first: index === 0 })}>
+            <div
+              className="flex flex-col items-center blockWrap bg-timeline-mobile md:min-h-[200px] md:flex-row md:!bg-timeline-desktop"
+              key={block.id}
+            >
+              <div
+                className={clsx(
+                  'waiting my-[0.2rem] mx-0 py-2 px-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]',
+                  index === 0 && '!mt-0 !pt-0 md:!ml-0 md:!pl-0'
+                )}
+              >
                 <Icon
+                  className="!bg-white"
                   color={index === activeStep / 2 ? 'green' : undefined}
                   name={index === 0 ? 'video play' : 'pause circle outline'}
                   size="big"
                 />
               </div>
-              <div className="block">
+              <div className="block w-full flex-grow-1 md:m-1 md:w-[17rem]">
                 <QuestionBlock
                   expiresAt={block.expiresAt}
                   handleActivateQuestionBlock={(): void => handleActivateBlockById(block.id)}
@@ -362,8 +371,9 @@ function SessionTimeline({
                 />
               </div>
               {index === blocks.length - 1 && (
-                <div className="waiting last">
+                <div className="waiting my-[0.2rem] mx-0 py-2 px-0 !pb-0 !mb-0 md:!pr-0 md:!mr-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]">
                   <Icon
+                    className="bg-white"
                     color={activeStep === blocks.length * 2 ? 'red' : undefined}
                     name="stop circle outline"
                     size="big"
@@ -382,7 +392,7 @@ function SessionTimeline({
           </Message>
         )}
       </div>
-      <div className="buttons">
+      <div className="flex flex-row flex-wrap items-start justify-between flex-1 mt-2">
         <div className="left">
           {!isParticipantAuthenticationEnabled && (
             <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
@@ -396,6 +406,7 @@ function SessionTimeline({
         {isFeedbackSession ? (
           <Button
             // show the session finish button for feedback sessions
+            className="!mr-0"
             color="red"
             content={getMessage(intl, 2, 2).label}
             icon={getMessage(intl, 2, 2).icon}
@@ -405,6 +416,7 @@ function SessionTimeline({
         ) : (
           <Button
             // show dynamic buttons for all other sessions
+            className="!mr-0"
             color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}
@@ -417,94 +429,11 @@ function SessionTimeline({
         {`
           @import 'src/theme';
 
-          span.password {
-            font-family: Courier new, serif;
-          }
-
           .sessionTimeline {
-            display: flex;
-            flex-direction: column;
-
-            .topRow {
-              flex: 1;
-
-              justify-content: space-between;
-            }
-
-            .topRow,
-            .infos,
-            .actions {
-              display: flex;
-              flex-flow: row wrap;
-              align-items: flex-end;
-            }
-
-            .actions > a:last-child > :global(button) {
-              margin: 0;
-            }
-
-            .runningTime {
-              margin-left: 2rem;
-            }
-
-            .popupContent {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-
-              .qr {
-                margin-bottom: 1rem;
-                text-align: center;
-              }
-            }
-
-            .blocks {
-              flex: 1;
-
-              display: flex;
-              flex-direction: column;
-
-              border: 1px solid lightgray;
-              padding: 1rem;
-            }
-
             .blockWrap {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              min-height: 200px;
-
-              background: linear-gradient(
-                to right,
-                transparent 0%,
-                transparent calc(50% - 1.01px),
-                lightgrey calc(50% - 1px),
-                lightgrey calc(50% + 1px),
-                transparent calc(50% + 1.01px),
-                transparent 100%
-              );
-
-              .block {
-                flex: 1;
-                width: 100%;
-              }
-
               .waiting {
-                margin: 0.2rem 0;
-                padding: 0.5rem 0;
-
-                &.first {
-                  padding-top: 0;
-                  margin-top: 0;
-                }
-
-                &.last {
-                  padding-bottom: 0;
-                  margin-bottom: 0;
-                }
-
                 :global(i) {
-                  background-color: white;
+                  // background-color: white;
                   color: lightgrey;
                   margin-right: 0;
                 }
@@ -515,85 +444,6 @@ function SessionTimeline({
 
                 :global(i.red) {
                   color: red;
-                }
-              }
-            }
-
-            .buttons {
-              flex: 1;
-
-              display: flex;
-              flex-flow: row wrap;
-              justify-content: space-between;
-              align-items: flex-start;
-
-              margin-top: 0.5rem;
-
-              > :global(button) {
-                margin-right: 0;
-              }
-
-              .publicEvaluation {
-                display: flex;
-                flex-flow: row wrap;
-
-                a {
-                  margin-left: 1rem;
-                }
-              }
-            }
-
-            @include desktop-tablet-only {
-              flex-flow: row wrap;
-
-              .topRow {
-                flex: 0 0 100%;
-
-                padding-bottom: 0.5rem;
-              }
-
-              .blocks {
-                flex: 0 0 100%;
-
-                flex-direction: row;
-
-                padding: 0.5rem;
-
-                overflow-x: auto;
-                overflow-y: visible;
-              }
-
-              .blockWrap {
-                flex-direction: row;
-                background: linear-gradient(
-                  to bottom,
-                  transparent 0%,
-                  transparent calc(50% - 0.81px),
-                  lightgrey calc(50% - 0.8px),
-                  lightgrey calc(50% + 0.8px),
-                  transparent calc(50% + 0.81px),
-                  transparent 100%
-                );
-
-                .block,
-                .block:not(:first-child) {
-                  margin: 0.3rem;
-                  width: 17rem;
-                }
-
-                .waiting {
-                  margin: 0 0.2rem;
-                  padding: 0 0.7rem;
-
-                  &.first {
-                    padding-left: 0;
-                    margin-left: 0;
-                  }
-
-                  &.last {
-                    padding-right: 0;
-                    margin-right: 0;
-                  }
                 }
               }
             }
