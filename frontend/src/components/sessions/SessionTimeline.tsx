@@ -7,6 +7,9 @@ import getConfig from 'next/config'
 import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
+import { PlayIcon } from '@heroicons/react/solid'
+import { PauseIcon } from '@heroicons/react/outline'
+import { StopIcon } from '@heroicons/react/solid'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -179,7 +182,7 @@ function SessionTimeline({
   }, [runtime])
 
   return (
-    <div className="flex flex-col md:flex-row md:flex-wrap sessionTimeline">
+    <div className="flex flex-col md:flex-row md:flex-wrap">
       <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end">
           <div>
@@ -338,16 +341,25 @@ function SessionTimeline({
             >
               <div
                 className={clsx(
-                  'waiting my-[0.2rem] mx-0 py-2 px-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]',
+                  'my-[0.2rem] mx-0 py-2 px-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]',
                   index === 0 && '!mt-0 !pt-0 md:!ml-0 md:!pl-0'
                 )}
               >
-                <Icon
-                  className="!bg-white"
-                  color={index === activeStep / 2 ? 'green' : undefined}
-                  name={index === 0 ? 'video play' : 'pause circle outline'}
-                  size="big"
-                />
+                {index === 0 ? (
+                  <PlayIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      index === activeStep / 2 && '!text-green-700'
+                    )}
+                  />
+                ) : (
+                  <PauseIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      index === activeStep / 2 && '!text-green-700'
+                    )}
+                  />
+                )}
               </div>
               <div className="block w-full flex-grow-1 md:m-1 md:w-[17rem]">
                 <QuestionBlock
@@ -371,12 +383,12 @@ function SessionTimeline({
                 />
               </div>
               {index === blocks.length - 1 && (
-                <div className="waiting my-[0.2rem] mx-0 py-2 px-0 !pb-0 !mb-0 md:!pr-0 md:!mr-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]">
-                  <Icon
-                    className="bg-white"
-                    color={activeStep === blocks.length * 2 ? 'red' : undefined}
-                    name="stop circle outline"
-                    size="big"
+                <div className="my-[0.2rem] mx-0 py-2 px-0 !pb-0 !mb-0 md:!pr-0 md:!mr-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]">
+                  <StopIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      activeStep === blocks.length * 2 && '!text-red-600'
+                    )}
                   />
                 </div>
               )}
@@ -425,31 +437,6 @@ function SessionTimeline({
           />
         )}
       </div>
-      <style jsx>
-        {`
-          @import 'src/theme';
-
-          .sessionTimeline {
-            .blockWrap {
-              .waiting {
-                :global(i) {
-                  // background-color: white;
-                  color: lightgrey;
-                  margin-right: 0;
-                }
-
-                :global(i.green) {
-                  color: green;
-                }
-
-                :global(i.red) {
-                  color: red;
-                }
-              }
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }
