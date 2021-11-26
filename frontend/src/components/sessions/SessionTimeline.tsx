@@ -7,9 +7,8 @@ import getConfig from 'next/config'
 import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
-import { PlayIcon } from '@heroicons/react/solid'
+import { PlayIcon, StopIcon } from '@heroicons/react/solid'
 import { PauseIcon } from '@heroicons/react/outline'
-import { StopIcon } from '@heroicons/react/solid'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
