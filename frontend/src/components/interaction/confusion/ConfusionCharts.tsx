@@ -1,6 +1,5 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { Icon, Popup } from 'semantic-ui-react'
 import CustomTooltip from 'src/components/common/CustomTooltip'
 
 import ConfusionSection from './ConfusionSection'
@@ -91,7 +90,7 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
           <ConfusionSection labels={speedLabels} runningValue={confusionValues.speed} />
         </div>
         <div className="w-full">
-          <div className="w-full h-10 ">
+          <div className="w-full h-10">
             <h3 className="inline-block mr-2">{intl.formatMessage(messages.difficultyTitle)}</h3>
             <div className="inline-block">({confusionValues.numOfFeedbacks} Feedbacks)</div>
             <div className="hidden float-right sm:block lg:hidden">{tooltipConfusion}</div>
