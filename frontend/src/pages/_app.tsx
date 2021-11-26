@@ -9,6 +9,7 @@ import { ApolloProvider } from '@apollo/client'
 import getConfig from 'next/config'
 import Router, { useRouter } from 'next/router'
 import { init, push } from '@socialgouv/matomo-next'
+import Script from 'next/script'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
@@ -79,6 +80,31 @@ function Klicker({ Component, pageProps, locale, messages }) {
       <Head>
         <meta content="width=device-width, initial-scale=1" name="viewport" />
       </Head>
+
+      {publicRuntimeConfig.chatwootToken && (
+        <Script
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function(d,t) {
+              var BASE_URL="https://app.chatwoot.com";
+              var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+              g.src=BASE_URL+"/packs/js/sdk.js";
+              g.defer = true;
+              g.async = true;
+              s.parentNode.insertBefore(g,s);
+              g.onload=function(){
+                window.chatwootSDK.run({
+                  websiteToken: '${publicRuntimeConfig.chatwootToken}',
+                  baseUrl: BASE_URL
+                })
+              }
+            })(document,"script");
+          `,
+          }}
+          id="chatwoot-init"
+          strategy="afterInteractive"
+        />
+      )}
 
       {publicRuntimeConfig.googleAnalyticsTrackingId && <GoogleAnalytics />}
       {publicRuntimeConfig.happyKitAnalyticsKey && <HappyKitAnalytics />}
