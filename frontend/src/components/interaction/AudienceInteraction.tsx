@@ -196,7 +196,7 @@ function AudienceInteraction({
           </div>
 
           {hasConfusionFlag && isConfusionBarometerActive && (
-            <div className="flex-initial md:mt-4 p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
+            <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
               <ConfusionBarometer
                 confusionValues={confusionValues}
                 subscribeToMore={(): void => {

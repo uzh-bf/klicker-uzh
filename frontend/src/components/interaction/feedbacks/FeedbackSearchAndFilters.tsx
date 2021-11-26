@@ -60,7 +60,7 @@ function FeedbackSearchAndFilters({
           />
         )}
 
-        <div className="flex flex-row justify-between flex-initial mt-4 mb-1 md:mt-0">
+        <div className="flex flex-row flex-wrap justify-between flex-initial mt-4 mb-1 md:mt-0">
           <div className="inline-block">
             <span className="flex items-center">
               <Checkbox checked={showResolved} label="" onChange={() => setShowResolved((current) => !current)} />
@@ -107,10 +107,10 @@ function FeedbackSearchAndFilters({
       </div>
 
       <div className="flex flex-row">
-        <Button basic className="!mr-2" icon="print" onClick={() => window.print()} />
+        <Button basic className="!mt-4 md:!mt-0 !mr-2" icon="print" onClick={() => window.print()} />
         <Dropdown
           selection
-          className="mt-4 md:mt-0"
+          className="flex flex-1 mt-4 md:mt-0"
           disabled={disabled}
           options={[
             {

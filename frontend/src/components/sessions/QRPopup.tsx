@@ -23,7 +23,7 @@ function QRPopup({ shortname }: Props): React.ReactElement {
       on="click"
       position="bottom right"
       trigger={
-        <Button icon labelPosition="left" size="small" className="w-1/2 sm:w-max">
+        <Button icon labelPosition="left" size="small" className="w-[41%] sm:w-max">
           <Icon name="qrcode" />
           QR Code
         </Button>

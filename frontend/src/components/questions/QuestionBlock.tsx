@@ -109,7 +109,7 @@ function QuestionBlock({
           {!noDetails && (
             <div>
               <Dropdown icon="settings">
-                <Dropdown.Menu direction="right">
+                <Dropdown.Menu>
                   <Dropdown.Item
                     disabled={status === 'ACTIVE'}
                     icon="play"

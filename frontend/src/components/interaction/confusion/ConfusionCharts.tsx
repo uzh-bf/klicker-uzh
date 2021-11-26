@@ -1,6 +1,7 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { Icon, Popup } from 'semantic-ui-react'
+import CustomTooltip from 'src/components/common/CustomTooltip'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -59,6 +60,14 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
     )
   }
 
+  const tooltipConfusion = (
+    <CustomTooltip
+      content={intl.formatMessage(messages.confusionInfo)}
+      iconName={'question circle'}
+      position={'left center'}
+    />
+  )
+
   const speedLabels = {
     min: intl.formatMessage(messages.speedRangeMin),
     mid: intl.formatMessage(messages.speedRangeMid),
@@ -71,37 +80,24 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   }
 
   return (
-    <div className="w-full">
-      <div className="float-right">
-        <Popup
-          inverted
-          wide
-          content={intl.formatMessage(messages.confusionInfo)}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          position="left center"
-          size="small"
-          style={{ opacity: 0.9 }}
-          trigger={
-            <a data-tip>
-              <Icon className="icon" name="question circle" />
-            </a>
-          }
-        />
-      </div>
-      <div className="w-full">
-        <ConfusionSection
-          labels={speedLabels}
-          numOfFeedbacks={confusionValues.numOfFeedbacks}
-          runningValue={confusionValues.speed}
-          title={intl.formatMessage(messages.speedTitle)}
-        />
-        <ConfusionSection
-          labels={difficultyLabels}
-          numOfFeedbacks={confusionValues.numOfFeedbacks}
-          runningValue={confusionValues.difficulty}
-          title={intl.formatMessage(messages.difficultyTitle)}
-        />
+    <div className="flex flex-row w-full">
+      <div className="flex flex-col w-full sm:flex-row lg:flex-col ">
+        <div className="w-full">
+          <div className="w-full h-10 ">
+            <h3 className="inline-block mr-2">{intl.formatMessage(messages.speedTitle)}</h3>
+            <div className="inline-block">({confusionValues.numOfFeedbacks} Feedbacks)</div>
+            <div className="block float-right sm:hidden lg:block">{tooltipConfusion}</div>
+          </div>
+          <ConfusionSection labels={speedLabels} runningValue={confusionValues.speed} />
+        </div>
+        <div className="w-full">
+          <div className="w-full h-10 ">
+            <h3 className="inline-block mr-2">{intl.formatMessage(messages.difficultyTitle)}</h3>
+            <div className="inline-block">({confusionValues.numOfFeedbacks} Feedbacks)</div>
+            <div className="hidden float-right sm:block lg:hidden">{tooltipConfusion}</div>
+          </div>
+          <ConfusionSection labels={difficultyLabels} runningValue={confusionValues.difficulty} />
+        </div>
       </div>
     </div>
   )
