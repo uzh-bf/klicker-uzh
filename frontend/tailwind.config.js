@@ -41,6 +41,12 @@ module.exports = {
         'timeline-mobile':
           'linear-gradient(to right, transparent 0%, transparent calc(50% - 1.01px), lightgrey calc(50% - 1px), lightgrey calc(50% + 1px), transparent calc(50% + 1.01px), transparent 100%)',
       },
+      screens: {
+        xl: '1280px',
+        // => @media (min-width: 1280px) { ... }
+        '2xl': '1536px',
+        // => @media (min-width: 1536px) { ... }
+      },
     },
   },
   variants: {
