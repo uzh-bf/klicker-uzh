@@ -313,7 +313,7 @@ function FeedbackArea({
           <Form className="flex flex-col">
             <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && 'h-24')}
+                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}

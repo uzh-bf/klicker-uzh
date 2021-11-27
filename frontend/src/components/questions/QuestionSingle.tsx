@@ -38,7 +38,11 @@ function QuestionSingle({
   const intl = useIntl()
 
   return (
-    <div data-tip className="questionSingle border-primary bg-primary-bg" data-for={`questionTooltip${id}`}>
+    <div
+      data-tip
+      className="border border-solid rounded shadow questionSingle border-primary bg-primary-bg"
+      data-for={`questionTooltip${id}`}
+    >
       {id && description && onDelete && (
         <CustomTooltip
           content={<span>{description}</span>}

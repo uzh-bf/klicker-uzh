@@ -16,6 +16,7 @@ module.exports = {
       },
       expiresAt: { type: Date },
       timeLimit: { type: Number, default: -1, min: -1 },
+      randomSelection: { type: Number, default: -1, min: -1 },
       showSolutions: { type: Boolean, default: false },
 
       instances: [{ type: ObjectId, ref: 'QuestionInstance', required: true }],

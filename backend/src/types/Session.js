@@ -130,16 +130,19 @@ module.exports = `
   }
   input Session_QuestionBlockInput {
     timeLimit: Int
+    randomSelection: Int
     questions: [Session_QuestionBlockQuestionInput!]!
   }
   input Session_QuestionBlockModifyInput {
     timeLimit: Int
+    randomSelection: Int
   }
   type Session_QuestionBlock {
     id: ID!
 
     status: Session_QuestionBlockStatus!
     timeLimit: Int
+    randomSelection: Int
     expiresAt: DateTime
 
     instances: [QuestionInstance!]!
@@ -163,6 +166,7 @@ module.exports = `
     id: ID!
     speed: Float!
     difficulty: Float!
+    numOfFeedbacks: Int
   }
 
   type Session_Feedback {
@@ -240,6 +244,7 @@ module.exports = `
     id: ID!
     status: Session_QuestionBlockStatus!
     timeLimit: Int
+    randomSelection: Int
     expiresAt: DateTime
   }
 `
