@@ -1,5 +1,8 @@
 import React from 'react'
-import ReactSpeedometer from 'react-d3-speedometer'
+import dynamic from 'next/dynamic'
+
+// HACK: ensure that the react-d3-speedometer is not loaded on SSR
+const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), { ssr: false })
 
 interface Props {
   runningValue: number

@@ -221,6 +221,7 @@
   "runningSession.button.closeBlock": "Aktiven Frageblock schliessen",
   "runningSession.button.evaluation": "Auswertung (Resultate)",
   "runningSession.button.finish": "Session beenden",
+  "runningSession.button.lecturerCockpit": "Dozierendenansicht",
   "runningSession.button.openBlock": "Nächsten Frageblock aktivieren",
   "runningSession.button.participantAuthenticationToggle": "Erzwinge Authentifizierung",
   "runningSession.button.pinnedfeedbacks": "Angepinnte Feedbacks",
