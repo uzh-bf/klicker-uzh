@@ -1,17 +1,40 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
+import { repeat } from 'ramda'
 import { Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import {
+  ResponsiveContainer,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Line,
+  ReferenceArea,
+} from 'recharts'
 import CustomTooltip from '../common/CustomTooltip'
-
-import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts'
 
 interface EvaluationConfusionProps {
   confusionTS: any
 }
-const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
-  let confusionValues = []
+
+function MatchingEmoji({ value }) {
+  if (value <= -1.4 || value >= 1.4) {
+    return <div>🙁</div>
+  }
+
+  if (value <= -0.7 || value >= 0.7) {
+    return <div>😐</div>
+  }
+
+  return <div>😀</div>
+}
+
+function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
   const xIntervalDefault = 120
+  const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
   const runningWindowDefault = 3
   const [xInterval, setXInterval] = useState(xIntervalDefault)
   const [runningWindow, setRunningWindow] = useState(runningWindowDefault)
@@ -19,161 +42,133 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
   const [runningWindowError, setRunningWindowError] = useState(false)
 
   // default settings: timesteps in plot 120 seconds, running average window 120 * 3 seconds
-  const xDataInterval = xInterval ? xInterval : 120
-  const runningAvgFactor = runningWindow ? runningWindow : 3
-  const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
+  const xDataInterval = xInterval || 120
+  const runningAvgFactor = runningWindow || 3
 
-  /* const xDomain =
-    confusionTS.length > 1
-      ? [
-          dayjs(confusionTS[0].createdAt).format('HH:mm'),
-          dayjs(confusionTS[confusionTS.length - 1].createdAt).format('HH:mm'),
-        ]
-      : [0, 0] */
+  const confusionValues = useMemo(() => {
+    if (confusionTS.length > 1) {
+      const confusionInterval =
+        dayjs(confusionTS[confusionTS.length - 1].createdAt).diff(dayjs(confusionTS[0].createdAt)) / 1000
 
-  if (confusionTS.length > 1) {
-    const confusionInterval =
-      dayjs(confusionTS[confusionTS.length - 1].createdAt).diff(dayjs(confusionTS[0].createdAt)) / 1000
-    const NumOfIntervals = Math.ceil(confusionInterval / xDataInterval)
+      const numOfIntervals = Math.ceil(confusionInterval / xDataInterval)
 
-    confusionValues = Array(NumOfIntervals).fill({ speed: 0, difficulty: 0, NumOfElements: 0 })
-    for (let k = 0; k < NumOfIntervals; k++) {
-      const startRunningInterval = dayjs(confusionTS[0].createdAt).subtract(
-        (runningAvgFactor - 1) * xDataInterval - k * xDataInterval,
-        'seconds'
-      )
-
-      const runningSum = confusionTS
-        .filter(
-          (confusion) =>
-            dayjs(confusion.createdAt).diff(startRunningInterval) > -1 * xDataInterval * 1000 &&
-            dayjs(confusion.createdAt).diff(startRunningInterval) < runningAvgFactor * xDataInterval * 1000
-        )
-        .reduce(
-          (prev: any, curr: any) => {
-            return {
-              speed: prev.speed + curr.speed,
-              difficulty: prev.difficulty + curr.difficulty,
-              numOfElements: prev.numOfElements + 1,
-            }
-          },
-          { speed: 0, difficulty: 0, numOfElements: 0 }
+      return repeat({}, numOfIntervals).map((_, k) => {
+        const startRunningInterval = dayjs(confusionTS[0].createdAt).subtract(
+          (runningAvgFactor - 1) * xDataInterval - k * xDataInterval,
+          'seconds'
         )
 
-      // save confusion values normalized by number of feedbacks times possible peak Value
-      // => result is always in the interval [-1,1]
-      confusionValues[k] =
-        runningSum.numOfElements !== 0
+        const runningSum = confusionTS
+          .filter(
+            (confusion) =>
+              dayjs(confusion.createdAt).diff(startRunningInterval) > -1 * xDataInterval * 1000 &&
+              dayjs(confusion.createdAt).diff(startRunningInterval) < runningAvgFactor * xDataInterval * 1000
+          )
+          .reduce(
+            (prev: any, curr: any) => {
+              return {
+                speed: prev.speed + curr.speed,
+                difficulty: prev.difficulty + curr.difficulty,
+                numOfElements: prev.numOfElements + 1,
+              }
+            },
+            { speed: 0, difficulty: 0, numOfElements: 0 }
+          )
+
+        // save confusion values normalized by number of feedbacks times possible peak Value
+        // => result is always in the interval [-1,1]
+        return runningSum.numOfElements !== 0
           ? {
               speed: runningSum.speed / runningSum.numOfElements,
               difficulty: runningSum.difficulty / runningSum.numOfElements,
               numOfElements: runningSum.numOfElements,
+              windowStart: startRunningInterval.format('HH:mm'),
             }
-          : { speed: 0, difficulty: 0, numOfElements: 0 }
+          : { speed: 0, difficulty: 0, numOfElements: 0, windowStart: startRunningInterval.format('HH:mm') }
+      })
     }
-  }
 
-  /* TIME INDEPENDENT AGGREGATION APPROACH
-
-  const aggregationNumber = 5
-
-  // create padded array of confusion logic that is dividable by aggregationNumber
-  const tempConfusion = confusionTS
-    .map((values) => {
-      return {  speed: values.speed, difficulty: values.difficulty }
-    })
-    .concat(
-      Array(aggregationNumber - (confusionTS.length % aggregationNumber)).fill({
-        speed: 0,
-        difficulty: 0,
-      })
-    )
-  
-  // aggregate confusion values (aggregationNumber values into one)
-  let confusionValues = Array(tempConfusion.length / aggregationNumber).fill({ speed: 0, difficulty: 0 })
-  for (let k = 0; k < tempConfusion.length / aggregationNumber; k++) {
-    confusionValues[k] = tempConfusion
-      .slice(k * aggregationNumber, (k + 1) * aggregationNumber)
-      .reduce((prev: any, curr: any) => {
-        return { speed: prev.speed + curr.speed, difficulty: prev.difficulty + curr.difficulty }
-      })
-  }
-  confusionValues = confusionValues.map((aggrValue) => {
-    return { speed: aggrValue.speed / aggregationNumber, difficulty: aggrValue.difficulty / aggregationNumber }
-  })
-  */
+    return []
+  }, [confusionTS, xInterval, runningWindow])
 
   return (
-    <>
-      <div className="flex flex-col h-full lg:flex-row">
-        <div className="w-full h-full lg:w-1/2">
-          <div className="my-auto ml-2">
-            <CustomTooltip
-              content={
-                <FormattedMessage
-                  defaultMessage="The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
-                  id="evaluationSession.confusion.graphExplanation"
-                />
-              }
-              iconName={'question circle'}
-            />
-          </div>
-          <ResponsiveContainer width="100%" height="40%" className="mb-4" key="speedConfusion">
-            <LineChart height={250} data={confusionValues} margin={{ top: 15, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <>
-                        <div className="p-2 bg-white border border-gray-300 border-solid text-[#8884d8]">
-                          {`speed : ${Math.round(Number(payload[0].value) * 100) / 100}`}
-                          <br />
-                          {`feedbacks : ${payload[0].payload.numOfElements}`}
-                        </div>
-                      </>
-                    )
-                  }
-
-                  return null
-                }}
+    <div className="flex flex-col justify-start h-full">
+      <div className="flex-auto">
+        <div className="ml-2">
+          <CustomTooltip
+            content={
+              <FormattedMessage
+                defaultMessage="The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
+                id="evaluationSession.confusion.graphExplanation"
               />
-              <Legend />
-              <Line type="monotone" dataKey="speed" stroke="#8884d8" />
-            </LineChart>
-          </ResponsiveContainer>
-          <ResponsiveContainer width="100%" height="40%" key="difficultyConfusion">
-            <LineChart height={250} data={confusionValues} margin={{ top: 15, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis type="number" domain={[-1 * peakValue, peakValue]} />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="p-2 bg-white border border-gray-300 border-solid text-[#82ca9d]">
-                        {`difficulty : ${Math.round(Number(payload[0].value) * 100) / 100}`}
-                        <br />
-                        {`feedbacks : ${payload[0].payload.numOfElements}`}
-                      </div>
-                    )
-                  }
-
-                  return null
-                }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="difficulty" stroke="#82ca9d" />
-            </LineChart>
-          </ResponsiveContainer>
+            }
+            iconName={'question circle'}
+          />
         </div>
-        <div className="w-full p-3 border border-solid rounded-md lg:w-1/2 border-primary">
-          <div className="mb-2 font-bold ">Graph Settings:</div>
-          <div className="flex flex-row mb-2">
-            <div className="my-auto">Timesteps X-Axis:</div>
+
+        <ResponsiveContainer className="mb-4" height="50%" key="speedConfusion" width="100%">
+          <LineChart data={confusionValues} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="6 6" />
+
+            <XAxis dataKey="windowStart" />
+            <YAxis domain={[-1 * peakValue, peakValue]} type="number" />
+
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const difficulty = payload.find((item) => item.name === 'difficulty')
+                  const speed = payload.find((item) => item.name === 'speed')
+                  return (
+                    <div className="p-2 text-gray-600 bg-white border border-gray-400 border-solid rounded">
+                      <div className="font-bold">{payload[0].payload.windowStart}</div>
+                      <div className="flex flex-row justify-between gap-4 mt-2">
+                        <div className="font-bold">Avg. Difficulty</div>
+                        <div>
+                          <MatchingEmoji value={Number(difficulty?.value)} />
+                        </div>
+                      </div>
+                      <div className="flex flex-row justify-between gap-4 mt-2">
+                        <div className="font-bold">Avg. Speed</div>
+                        <div>
+                          <MatchingEmoji value={Number(speed?.value)} />
+                        </div>
+                      </div>
+                      <div className="flex flex-row justify-between gap-4 mt-2">
+                        <div className="font-bold">Feedbacks</div>
+                        <div>{payload[0].payload.numOfElements}</div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return null
+              }}
+            />
+            <Legend align="right" verticalAlign="top" />
+
+            <Line dataKey="speed" stroke="#8884d8" strokeOpacity={0.7} strokeWidth={2} type="monotone" />
+            <Line dataKey="difficulty" stroke="#82ca9d" strokeOpacity={0.7} strokeWidth={2} type="monotone" />
+
+            <ReferenceArea fill="green" fillOpacity={0.05} y1={-0.7} y2={0.7} />
+            <ReferenceArea fill="orange" fillOpacity={0.05} y1={-0.7} y2={-1.4} />
+            <ReferenceArea fill="orange" fillOpacity={0.05} y1={0.7} y2={1.4} />
+            <ReferenceArea fill="red" fillOpacity={0.05} y1={1.4} y2={2.0} />
+            <ReferenceArea fill="red" fillOpacity={0.05} y1={-1.4} y2={-2.0} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex-initial p-3 lg:w-1/2">
+        <div className="mb-2 font-bold ">Graph Settings</div>
+
+        <div className="flex flex-row justify-between mb-2">
+          <div className="w-48">Timesteps X-Axis</div>
+          <div className="flex flex-row items-center flex-1 gap-2">
             <Input
+              error={xIntervalError}
+              key="intervalInput"
+              // label="sec"
+              // labelPosition="right"
               placeholder="min. 60s"
               onChange={(e, data) => {
                 if (Number(data.value) >= 60) {
@@ -186,11 +181,8 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
                   setXIntervalError(true)
                 }
               }}
-              error={xIntervalError}
-              key="intervalInput"
-              className="ml-3"
             />
-            <div className="my-auto ml-2">
+            <div className="flex-initial">
               <CustomTooltip
                 content={
                   <FormattedMessage
@@ -202,9 +194,15 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               />
             </div>
           </div>
-          <div className="flex flex-row mb-2">
-            <div className="my-auto">Window Length:</div>
+        </div>
+        <div className="flex flex-row justify-between dmb-2">
+          <div className="w-48">Window Length</div>
+          <div className="flex flex-row items-center flex-1 gap-2">
             <Input
+              error={runningWindowError}
+              key="windowLengthInput"
+              // label="x"
+              // labelPosition="right"
               placeholder="min. 1"
               onChange={(e, data) => {
                 if (Number(data.value) >= 1) {
@@ -217,11 +215,8 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
                   setRunningWindowError(true)
                 }
               }}
-              error={runningWindowError}
-              key="windowLengthInput"
-              className="ml-[1.35rem]"
             />
-            <div className="my-auto ml-2">
+            <div className="flex-initial">
               <CustomTooltip
                 content={
                   <FormattedMessage
@@ -233,11 +228,11 @@ const EvaluationConfusion = ({ confusionTS }: EvaluationConfusionProps) => {
               />
             </div>
           </div>
-          <div className="mt-4">{'Displayed interval: ' + xDataInterval + ' seconds'}</div>
-          <div>{'Displayed running window: ' + runningWindow + ' times interval'}</div>
         </div>
+        <div className="mt-4">Displayed interval: {xDataInterval} seconds</div>
+        <div>Displayed running window: {runningWindow} times interval</div>
       </div>
-    </>
+    </div>
   )
 }
 
