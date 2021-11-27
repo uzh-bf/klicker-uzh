@@ -2,7 +2,7 @@
 import React from 'react'
 import Editor from 'draft-js-plugins-editor'
 import createToolbarPlugin /* Separator */ from 'draft-js-static-toolbar-plugin'
-import { Form, Icon, Popup } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import {
   ItalicButton,
@@ -14,6 +14,7 @@ import {
   // BlockquoteButton,
   // CodeBlockButton,
 } from 'draft-js-buttons'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   disabled?: boolean
@@ -31,7 +32,6 @@ const defaultProps = {
 const toolbarPlugin = createToolbarPlugin()
 const plugins = [toolbarPlugin]
 const { Toolbar } = toolbarPlugin
-const PopupStyle = { opacity: 0.9 }
 
 function ContentInput({ value, onChange, error, touched, disabled }: Props): React.ReactElement {
   return (
@@ -40,25 +40,18 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
         <label htmlFor="content">
           <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
-          <Popup
+          <CustomTooltip
             content={
               <FormattedMessage
                 defaultMessage="Enter the question you want to ask the audience."
                 id="createQuestion.contentInput.tooltip"
               />
             }
-            trigger={
+            iconObject={
               <a data-tip>
                 <Icon name="question circle" />
               </a>
             }
-            position="right center"
-            size="small"
-            style={PopupStyle}
-            mouseEnterDelay={250}
-            mouseLeaveDelay={250}
-            wide
-            inverted
           />
         </label>
 
