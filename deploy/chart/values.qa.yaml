@@ -38,6 +38,14 @@ frontend:
         hosts:
           - app.klicker-qa.bf-app.ch
 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 400m
+      memory: 400Mi
+
 backend:
   hostname: api.klicker-qa.bf-app.ch
 
@@ -54,3 +62,11 @@ backend:
       - secretName: klicker-qa-backend-tls
         hosts:
           - api.klicker-qa.bf-app.ch
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 300Mi

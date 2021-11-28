@@ -102,7 +102,7 @@ frontend:
 
   resources:
     requests:
-      cpu: 200m
+      cpu: 150m
       memory: 200Mi
     limits:
       cpu: 400m
@@ -142,7 +142,7 @@ backend:
 
   resources:
     requests:
-      cpu: 200m
+      cpu: 150m
       memory: 150Mi
     limits:
       cpu: 400m
