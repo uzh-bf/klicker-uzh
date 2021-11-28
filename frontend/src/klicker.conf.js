@@ -280,6 +280,11 @@ module.exports = convict({
   },
   services: {
     chatwoot: {
+      baseUrl: {
+        default: 'https://app.chatwoot.com',
+        env: 'SERVICES_CHATWOOT_BASE_URL',
+        format: 'url',
+      },
       websiteToken: {
         default: undefined,
         env: 'SERVICES_CHATWOOT_TOKEN',
