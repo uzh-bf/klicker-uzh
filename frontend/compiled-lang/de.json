@@ -536,7 +536,19 @@
   "form.blockSettings.header": [
     {
       "type": 0,
-      "value": "Zeitlimit setzen"
+      "value": "Blockausführung steuern"
+    }
+  ],
+  "form.blockSettings.randomSelection.description": [
+    {
+      "type": 0,
+      "value": "Wenn zufällige Auswahl aktiviert ist, erhalten die Teilnehmenden eine jeweils zufällig ausgewählte Frage aus den Fragen im Block."
+    }
+  ],
+  "form.blockSettings.randomSelection.label": [
+    {
+      "type": 0,
+      "value": "Zufällige Auswahl"
     }
   ],
   "form.blockSettings.timeLimit": [
@@ -1441,6 +1453,12 @@
     {
       "type": 0,
       "value": "Session beenden"
+    }
+  ],
+  "runningSession.button.lecturerCockpit": [
+    {
+      "type": 0,
+      "value": "Dozierendenansicht"
     }
   ],
   "runningSession.button.openBlock": [
