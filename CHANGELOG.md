@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.7...v1.7.0-beta.0) (2021-11-28)
+
+
+### Bug Fixes
+
+* **frontend:** replace invalid tailwind color for top-border on lecturer cockpit ([cf51d5f](https://github.com/uzh-bf/klicker-uzh/commit/cf51d5f36c523c8d9797ee7db17ea1b111ba6472))
+
+
+### Enhancements
+
+* **deploy:** add deployment strategies and priority classes ([1f72e47](https://github.com/uzh-bf/klicker-uzh/commit/1f72e4788453396399665aaf0c33d9dfc4dcd026))
+
 ## [1.7.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.6...v1.7.0-alpha.7) (2021-11-28)
 
 
