@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.6...v1.7.0-alpha.7) (2021-11-28)
+
+
+### Other
+
+* **ci:** add chart releaser action ([fccc09c](https://github.com/uzh-bf/klicker-uzh/commit/fccc09c2c9b61b387c1c4dd99e4640b10e7c7649))
+* **deploy:** move chart into subdirectory of charts dir ([f52cb55](https://github.com/uzh-bf/klicker-uzh/commit/f52cb55e8396a4b714d71102cdee5df75cf7155e))
+* remove cruft nvmrc ([0a11bf1](https://github.com/uzh-bf/klicker-uzh/commit/0a11bf193aaa6352f92bb00485a6bda2f4163b41))
+
+
+### Enhancements
+
+* chatwoot only on selected pages and with custom base url ([4b57e26](https://github.com/uzh-bf/klicker-uzh/commit/4b57e266e381b6583c4907b1e5b8c912bc81e056))
+
 ## [1.7.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.5...v1.7.0-alpha.6) (2021-11-28)
 
 
