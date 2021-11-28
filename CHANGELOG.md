@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.5...v1.7.0-alpha.6) (2021-11-28)
+
+
+### Bug Fixes
+
+* **backend:** corrected range of output values for real-time confusion barometer ([b9e4fbf](https://github.com/uzh-bf/klicker-uzh/commit/b9e4fbf13cc9e2d37a1ee4bb092208d94ee01a95))
+* **frontend:** feedback field on student view only shrinks if empty ([7bc5b99](https://github.com/uzh-bf/klicker-uzh/commit/7bc5b99870b1e12b2c24bb1196f7c1a52a3bb5f2))
+* **frontend:** layout shift on login page on AAI login ([278ff97](https://github.com/uzh-bf/klicker-uzh/commit/278ff97ede349a6d20e0bbf4371805be74364d87))
+
+
+### Enhancements
+
+* add confusion data with color bar on lecturer cockpit screen ([#2640](https://github.com/uzh-bf/klicker-uzh/issues/2640)) ([d560c80](https://github.com/uzh-bf/klicker-uzh/commit/d560c80a1b17049665cca0ee2064eab21b6d8b2a))
+* display aggregated confusionBarometer data on evaluation page ([#2631](https://github.com/uzh-bf/klicker-uzh/issues/2631)) ([4132260](https://github.com/uzh-bf/klicker-uzh/commit/4132260fc693ca2b92711013e8892fbf8bc6789c))
+* indicate number of feedbacks on lecturer confusion barometer ([a21e5af](https://github.com/uzh-bf/klicker-uzh/commit/a21e5af42a4bee205820a10d1a0fb60419794f9c))
+
+
+### Other
+
+* **deploy:** add saskia to persisted users ([bbbb19c](https://github.com/uzh-bf/klicker-uzh/commit/bbbb19cba0294ee300728b6638073ec44d84b5b2))
+* **deploy:** move persistedUsers to secret ([e8a3838](https://github.com/uzh-bf/klicker-uzh/commit/e8a38382130a4dc07b5951eaf1fd462f82ee4223))
+* **deploy:** update deployment settings with specific kube context ([c115f09](https://github.com/uzh-bf/klicker-uzh/commit/c115f0946b1ed25aef14d218d2f38e36644b7919))
+* **deps:** small upgrade of next deps ([9b209ae](https://github.com/uzh-bf/klicker-uzh/commit/9b209ae438e521ece827fed277122e0580a3da35))
+* **frontend:** add chatwoot token ([0b12e6e](https://github.com/uzh-bf/klicker-uzh/commit/0b12e6e00daab1fa161b4c82ab3f89dc10b3057c))
+
 ## [1.7.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.4...v1.7.0-alpha.5) (2021-11-16)
 
 
