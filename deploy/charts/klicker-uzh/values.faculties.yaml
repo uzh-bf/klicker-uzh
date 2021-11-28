@@ -19,6 +19,12 @@ security:
   frameguard:
     enabled: true
 
+redis:
+  master:
+    priorityClassName: klicker-faculties-klicker-uzh-production-workload
+  replica:
+    priorityClassName: klicker-faculties-klicker-uzh-production-workload
+
 frontend:
   replicaCount: 1
 
