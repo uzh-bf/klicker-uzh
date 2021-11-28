@@ -7,6 +7,10 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: shibboleth
 spec:
+  {{- with .Values.shibboleth.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   replicas: {{ .Values.shibboleth.replicaCount }}
   selector:
     matchLabels:
@@ -22,6 +26,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: shibboleth
     spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.shibboleth.priorityClassName }}
       {{- with .Values.shibboleth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
