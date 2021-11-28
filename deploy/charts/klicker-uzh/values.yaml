@@ -39,7 +39,6 @@ redis:
         cpu: 200m
         memory: 200Mi
 
-
 security:
   https:
     enabled: true

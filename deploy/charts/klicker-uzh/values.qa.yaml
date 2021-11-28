@@ -11,6 +11,12 @@ email:
 security:
   domain: klicker-qa.bf-app.ch
 
+redis:
+  master:
+    priorityClassName: klicker-qa-klicker-uzh-staging-workload
+  replica:
+    priorityClassName: klicker-qa-klicker-uzh-staging-workload
+
 analytics:
   sentry:
     frontend:
