@@ -44,6 +44,12 @@ frontend:
         hosts:
           - app.klicker-faculties.bf-app.ch
 
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
+
 backend:
   replicaCount: 1
 
@@ -69,6 +75,12 @@ backend:
       - secretName: klicker-faculties-backend-tls
         hosts:
           - api.klicker-faculties.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 shibboleth:
   enabled: false

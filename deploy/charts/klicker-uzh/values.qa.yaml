@@ -51,6 +51,11 @@ frontend:
       cpu: 400m
       memory: 400Mi
 
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload
+
 backend:
   hostname: api.klicker-qa.bf-app.ch
 
@@ -75,3 +80,8 @@ backend:
     limits:
       cpu: 200m
       memory: 300Mi
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload

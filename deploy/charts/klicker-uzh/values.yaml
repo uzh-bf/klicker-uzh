@@ -102,7 +102,7 @@ frontend:
 
   resources:
     requests:
-      cpu: 150m
+      cpu: 100m
       memory: 200Mi
     limits:
       cpu: 400m
@@ -120,6 +120,8 @@ frontend:
   tolerations: []
 
   affinity: {}
+
+  priorityClassName: production-workload
 
 backend:
   replicaCount: 1
@@ -142,7 +144,7 @@ backend:
 
   resources:
     requests:
-      cpu: 150m
+      cpu: 100m
       memory: 150Mi
     limits:
       cpu: 400m
@@ -160,6 +162,8 @@ backend:
   tolerations: []
 
   affinity: {}
+
+  priorityClassName: production-workload
 
 shibboleth:
   enabled: false
@@ -189,3 +193,8 @@ shibboleth:
     limits:
       cpu: 100m
       memory: 100Mi
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: production-workload

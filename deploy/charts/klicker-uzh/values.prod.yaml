@@ -59,6 +59,11 @@ frontend:
       - secretName: klicker-prod-frontend-tls
         hosts:
           - app.klicker.uzh.ch
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 backend:
   replicaCount: 1
@@ -81,6 +86,12 @@ backend:
       - secretName: klicker-prod-backend-tls
         hosts:
           - api.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 shibboleth:
   enabled: true
