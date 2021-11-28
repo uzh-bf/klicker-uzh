@@ -9,7 +9,7 @@ email:
   user: klicker.support@uzh.ch
 
 security:
-  domain: klicker-faculties.bf-app.ch
+  domain: klicker.uzh.ch
   hsts:
     enabled: true
   csp:
@@ -30,7 +30,7 @@ frontend:
     enabled: true
     minReplicas: 1
     maxReplicas: 3
-    targetCPUUtilizationPercentage: 60
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 90
 
   ingress:
@@ -53,7 +53,7 @@ backend:
     enabled: true
     minReplicas: 1
     maxReplicas: 3
-    targetCPUUtilizationPercentage: 60
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 90
 
   redis:
