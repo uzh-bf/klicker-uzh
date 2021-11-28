@@ -860,10 +860,10 @@ const fetchRunningSessionData = async (userId) => {
     filteredConfusion.length
 
   if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
+    speedRunning = 0
   }
   if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
+    difficultyRunning = 0
   }
   // save computed aggregated values
   runningSession.confusionValues = {

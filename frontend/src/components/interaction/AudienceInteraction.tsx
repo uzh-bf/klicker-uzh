@@ -84,7 +84,7 @@ function AudienceInteraction({
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
                 <Button text labelPosition="left" size="small">
                   <Icon name="external" />
-                  <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
+                  <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
                 </Button>
               </a>
             </div>
@@ -211,6 +211,7 @@ function AudienceInteraction({
                           confusionValues: {
                             speed: subscriptionData.data.confusionAdded.speed,
                             difficulty: subscriptionData.data.confusionAdded.difficulty,
+                            numOfFeedbacks: subscriptionData.data.confusionAdded.numOfFeedbacks,
                           },
                         },
                       }

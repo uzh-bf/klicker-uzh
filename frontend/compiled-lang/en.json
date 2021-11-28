@@ -1449,6 +1449,12 @@
       "value": "Finish session"
     }
   ],
+  "runningSession.button.lecturerCockpit": [
+    {
+      "type": 0,
+      "value": "Lecturer Cockpit"
+    }
+  ],
   "runningSession.button.openBlock": [
     {
       "type": 0,
@@ -1459,12 +1465,6 @@
     {
       "type": 0,
       "value": "Enforce authentication"
-    }
-  ],
-  "runningSession.button.pinnedfeedbacks": [
-    {
-      "type": 0,
-      "value": "Pinned Feedbacks"
     }
   ],
   "runningSession.button.publicEvaluation": [
