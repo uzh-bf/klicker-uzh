@@ -34,7 +34,7 @@ function Feedbacks({ featureFlags }: PageWithFeatureFlags) {
     }
 
     if (aggregateConfusion >= 0.7) {
-      return 'border-orange-300'
+      return 'border-yellow-300'
     }
 
     return 'border-green-300'
