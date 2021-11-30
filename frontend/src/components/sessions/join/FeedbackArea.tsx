@@ -343,36 +343,6 @@ function FeedbackArea({
       {/* max-h-[35vh] overflow-scroll md:max-h-full */}
       {isFeedbackChannelActive && data?.joinQA && data.joinQA.length > 0 && (
         <>
-          {processedFeedbacks.resolved.length > 0 && (
-            <div className="mt-6">
-              <h2 className="!mb-1 !text-base text-gray-600">
-                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
-              </h2>
-              <div className="flex flex-col gap-2">
-                {processedFeedbacks.resolved.map(
-                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
-                    <div key={id}>
-                      <PublicFeedback
-                        content={content}
-                        createdAt={createdAt}
-                        resolved={resolved}
-                        resolvedAt={resolvedAt}
-                        responses={responses}
-                        upvoted={upvoted}
-                        onNegativeResponseReaction={(responseId: string) =>
-                          handleNegativeResponseReaction(responseId, id)
-                        }
-                        onPositiveResponseReaction={(responseId: string) =>
-                          handlePositiveResponseReaction(responseId, id)
-                        }
-                      />
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-
           {processedFeedbacks.open.length > 0 && (
             <div className="mt-6">
               <h2 className="!mb-1 !text-base text-gray-600">
@@ -395,6 +365,36 @@ function FeedbackArea({
                           handlePositiveResponseReaction(responseId, id)
                         }
                         onUpvoteFeedback={() => onUpvoteFeedback(id)}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
+          {processedFeedbacks.resolved.length > 0 && (
+            <div className="mt-6">
+              <h2 className="!mb-1 !text-base text-gray-600">
+                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
+              </h2>
+              <div className="flex flex-col gap-2">
+                {processedFeedbacks.resolved.map(
+                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
+                    <div key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        resolved={resolved}
+                        resolvedAt={resolvedAt}
+                        responses={responses}
+                        upvoted={upvoted}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
                       />
                     </div>
                   )
