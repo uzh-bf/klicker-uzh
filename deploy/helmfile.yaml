@@ -15,7 +15,7 @@ releases:
     createNamespace: true
     chart: ./charts/klicker-uzh
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
+    installed: false
     kubeContext: klicker-k8s26bebe63-admin
     values:
       - charts/klicker-uzh/values.yaml
@@ -47,7 +47,7 @@ releases:
       - charts/klicker-uzh/secrets.faculties.yaml
       - frontend:
           image:
-            tag: v1.7.0-beta.0
+            tag: v1.7.0-beta.1
         backend:
           image:
-            tag: v1.7.0-beta.0
+            tag: v1.7.0-beta.1
