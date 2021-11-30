@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.0...v1.7.0-beta.1) (2021-11-30)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that the survey dismiss icon is always visible and that the banner is not shown in creation mode ([e0cac4f](https://github.com/uzh-bf/klicker-uzh/commit/e0cac4fabd4491f60b45badd85e3218ab259d322))
+
+
+### Enhancements
+
+* **deploy:** add priority classes to redis ([fc6d151](https://github.com/uzh-bf/klicker-uzh/commit/fc6d1512c3151fdb59ac5b3cf800db50e35a363c))
+* **frontend:** put open feedbacks on top of resolved ([b62f02f](https://github.com/uzh-bf/klicker-uzh/commit/b62f02f092f40b82503387155ae9edfac203cd9f))
+
 ## [1.7.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.7...v1.7.0-beta.0) (2021-11-28)
 
 
