@@ -46,13 +46,16 @@ services:
     websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
 
 frontend:
-  replicaCount: 1
+  replicaCount: 3
 
   displayAAI: true
 
   hostname: app.klicker.uzh.ch
 
   autoscaling:
+    enabled: false
+
+  vpa:
     enabled: true
 
   ingress:
@@ -72,11 +75,14 @@ frontend:
       maxUnavailable: 50%
 
 backend:
-  replicaCount: 1
+  replicaCount: 3
 
   hostname: api.klicker.uzh.ch
 
   autoscaling:
+    enabled: false
+
+  vpa:
     enabled: true
 
   redis:
