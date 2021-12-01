@@ -114,6 +114,9 @@ frontend:
     targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
 
+  vpa:
+    enabled: false
+
   nodeSelector: {}
 
   tolerations: []
@@ -147,7 +150,7 @@ backend:
       memory: 75Mi
     limits:
       cpu: 500m
-      memory: 150Mi
+      memory: 200Mi
 
   autoscaling:
     enabled: false
@@ -155,6 +158,9 @@ backend:
     maxReplicas: 6
     targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
+
+  vpa:
+    enabled: false
 
   nodeSelector: {}
 
