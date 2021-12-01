@@ -46,6 +46,12 @@ function Footer() {
               <List.Item>
                 <Link href="/privacy">Privacy Policy</Link>
               </List.Item>
+
+              <List.Item>
+                <Link href="https://klicker-uzh.betteruptime.com/" passHref>
+                  <a target="_blank">System Status / Announcements</a>
+                </Link>
+              </List.Item>
             </List>
           </Grid.Column>
         </Grid.Row>
