@@ -9,6 +9,7 @@ import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
 import { PlayIcon, StopIcon } from '@heroicons/react/solid'
 import { PauseIcon } from '@heroicons/react/outline'
+import Link from 'next/link'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -192,35 +193,33 @@ function SessionTimeline({
           </div>
         </div>
 
-        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0">
-          <div className="flex flex-row flex-wrap w-full sm:w-max">
+        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
             <QRPopup shortname={shortname} />
-            <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank" className="flex flex-1 sm:block">
-              <Button icon labelPosition="left" size="small" className="flex flex-1 sm:block">
+            <a className="flex flex-1 sm:block" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
+              <Button icon primary className="flex flex-1 sm:block !mr-0" labelPosition="left" size="small">
                 <Icon name="external" />
                 <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
               </Button>
             </a>
           </div>
-          <div className="flex flex-row flex-wrap w-full mt-1 sm:w-max sm:mt-0">
-            <a
-              href={`/sessions/evaluation/${sessionId}`}
-              rel="noopener noreferrer"
-              target="_blank"
-              className="flex flex-1 sm:block"
-            >
-              <Button
-                icon
-                disabled={isFeedbackSession}
-                labelPosition="left"
-                size="small"
-                className="flex flex-1 sm:block"
-              >
-                <Icon name="external" />
-                <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
-              </Button>
-            </a>
-            <Dropdown button simple className="icon small" icon="wrench">
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+            <Link passHref prefetch href={`/sessions/evaluation/${sessionId}`}>
+              <a className="flex flex-1 sm:block" rel="noopener noreferrer" target="_blank">
+                <Button
+                  icon
+                  primary
+                  className="flex flex-1 sm:block !mr-0"
+                  disabled={isFeedbackSession}
+                  labelPosition="left"
+                  size="small"
+                >
+                  <Icon name="external" />
+                  <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
+                </Button>
+              </a>
+            </Link>
+            <Dropdown button simple className="icon small !mr-0" icon="wrench">
               <Dropdown.Menu direction="left">
                 <Dropdown.Header>
                   <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
@@ -353,7 +352,7 @@ function SessionTimeline({
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-4 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-00full">
+      <div className="flex flex-col flex-1 p-4 mt-2 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:mt-0 md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-00full">
         {blocks.map(
           (block, index): React.ReactElement => (
             <div
@@ -425,14 +424,14 @@ function SessionTimeline({
           </Message>
         )}
       </div>
-      <div className="flex flex-col flex-wrap items-start justify-between flex-1 mt-2 sm:flex-row">
-        <div className="flex w-full sm:block sm:w-max">
+      <div className="flex flex-col flex-wrap items-start justify-between flex-1 gap-2 mt-2 sm:flex-row">
+        <div className="flex flex-row items-start w-full gap-2 sm:w-max">
           {!isParticipantAuthenticationEnabled && (
             <Button
               icon
+              className="flex-1 sm:flex-initial !mr-0"
               labelPosition="left"
               size="small"
-              className="flex flex-1 sm:block"
               onClick={handlePauseSession}
             >
               <Icon name="pause" />
@@ -455,7 +454,7 @@ function SessionTimeline({
         ) : (
           <Button
             // show dynamic buttons for all other sessions
-            className="!mr-0 !mt-1.5 !w-full sm:!w-max sm:!mt-0"
+            className="!mr-0 !w-full sm:!w-max"
             color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}

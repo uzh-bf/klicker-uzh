@@ -113,8 +113,8 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
         } = data.runningSession
 
         return (
-          <div className="p-4 md:p-8 lg:py-8 lg:px-[10%]">
-            <div className="mb-8 md:p-2 print:hidden">
+          <div className="p-4 mx-auto md:p-8 lg:py-8 max-w-screen-2xl">
+            <div className="mb-8 print:hidden">
               {settings.isParticipantAuthenticationEnabled && (
                 <Message icon warning>
                   <Icon name="lock" />
