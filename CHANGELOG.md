@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.1...v1.7.0-beta.2) (2021-12-02)
+
+
+### Other
+
+* **backend:** remove duplicated code for confusion aggregation ([f3b417f](https://github.com/uzh-bf/klicker-uzh/commit/f3b417f3679de36b81e98046729cb562a0a6aba6))
+* **deploy:** don't install qa deployment by default ([9f47bc3](https://github.com/uzh-bf/klicker-uzh/commit/9f47bc3bc9f35295dbdc2fe1c01b01283d0ae734))
+* **deploy:** fix faculties to 1 replica ([8a92c4b](https://github.com/uzh-bf/klicker-uzh/commit/8a92c4bfe158fc209883343b7078f13877dee3d8))
+* **deploy:** tune resources based on monitoring ([9184260](https://github.com/uzh-bf/klicker-uzh/commit/918426001837a3304bf8747f8186c01d0630e8b3))
+
+
+### Enhancements
+
+* **deploy:** add vertical pod autoscaler and enable instead of HPA ([cf702e8](https://github.com/uzh-bf/klicker-uzh/commit/cf702e8b0b5bc48f91b26f87fa3ea53eba3c8424))
+* **frontend:** improve layout of running session page ([#2637](https://github.com/uzh-bf/klicker-uzh/issues/2637)) ([4e003a5](https://github.com/uzh-bf/klicker-uzh/commit/4e003a5267a04794220bd3fbe9d97446f48fe4db))
+* **landing:** update page for betteruptime integration ([df82aa1](https://github.com/uzh-bf/klicker-uzh/commit/df82aa186795cb2666efce79b7f5058c48f9e0b7))
+
 ## [1.7.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.0...v1.7.0-beta.1) (2021-11-30)
 
 
