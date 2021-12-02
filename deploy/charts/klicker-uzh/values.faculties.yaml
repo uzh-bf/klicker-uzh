@@ -33,7 +33,7 @@ frontend:
   hostname: app.klicker-faculties.bf-app.ch
 
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
@@ -62,7 +62,7 @@ backend:
   hostname: api.klicker-faculties.bf-app.ch
 
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
