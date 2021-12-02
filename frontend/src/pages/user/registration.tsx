@@ -4,16 +4,10 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
-
 import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
-import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
-import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
-import CreateSessionMutation from '../../graphql/mutations/CreateSessionMutation.graphql'
-import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
-import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 
 const messages = defineMessages({
   pageTitle: {
@@ -26,8 +20,6 @@ function Registration(): React.ReactElement {
   const intl = useIntl()
 
   const [register, { data, error, loading }] = useMutation(RegistrationMutation)
-  const [createQuestion] = useMutation(CreateQuestionMutation)
-  const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
@@ -97,49 +89,6 @@ function Registration(): React.ReactElement {
                       },
                     })
                     push(['trackEvent', 'User', 'Signed Up'])
-
-                    // create demo question free text
-                    await createQuestion({
-                      // reload the list of questions and tags after creation
-                      variables: {
-                        refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
-                        title: 'Demo question Free Text',
-                        content: 'Explain the differences between market economy and planned economy.',
-                        options: {},
-                        type: 'FREE', // can be: 'FREE', 'FREE_RANGE', 'MC', 'SC'
-                        tags: [{ key: 'DemoTag', text: 'DemoTag', value: 'DemoTag' }],
-                      },
-                    })
-                    // create demo question single choice
-                    await createQuestion({
-                      // reload the list of questions and tags after creation
-                      variables: {
-                        refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
-                        title: 'Demo question Single Choice',
-                        content: 'Which of the following rivers is the longest one in Europe?',
-                        options: {
-                          randomized: true,
-                          choices: [
-                            { name: 'Rhine', correct: false },
-                            { name: 'Volga', correct: true },
-                            { name: 'Rhône', correct: false },
-                            { name: 'Elbe', correct: false },
-                          ],
-                        },
-                        type: 'SC', // can be: 'FREE', 'FREE_RANGE', 'MC', 'SC'
-                        tags: [{ key: 'DemoTag', text: 'DemoTag', value: 'DemoTag' }],
-                      },
-                    })
-
-                    await createSession({
-                      refetchQueries: [{ query: SessionListQuery }],
-                      variables: {
-                        name: 'Demo Session',
-                        blocks: [{ question: 'IDTODO', version: 1 }], // TODO: get question ID
-                      },
-                    })
-
-                    push(['trackEvent', 'User', 'Sign up - populated Account with demo data'])
                   } catch ({ message }) {
                     if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
                       setFieldError('shortname', 'NOT_AVAILABLE')
