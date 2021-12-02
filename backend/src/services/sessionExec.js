@@ -341,24 +341,13 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 }
 
 /**
- * Add a new confusion timestep to the session
- * @param {*} param0
+ * Aggregates confusion data into what is really required by the client
  */
-const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
-  // TODO: participant auth
-  const session = await getRunningSession(sessionId)
-
-  // if the confusion barometer is not activated, do not allow new additions
-  if (!session.settings.isConfusionBarometerActive) {
-    throw new ForbiddenError('SESSION_CONFUSION_DEACTIVATED')
-  }
-
-  // push a new timestep into the array
-  session.confusionTS.push({ difficulty, speed })
-
-  const filteredConfusion = session.confusionTS.filter(
+const aggregateConfusionFeedbacks = (runningSession) => {
+  const filteredConfusion = runningSession.confusionTS.filter(
     (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
   )
+
   let speedRunning = 0
   let difficultyRunning = 0
 
@@ -376,6 +365,26 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
     difficultyRunning = 0
   }
 
+  return [speedRunning, difficultyRunning, filteredConfusion.length ? filteredConfusion.length : 0]
+}
+
+/**
+ * Add a new confusion timestep to the session
+ * @param {*} param0
+ */
+const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
+  // TODO: participant auth
+  const session = await getRunningSession(sessionId)
+
+  // if the confusion barometer is not activated, do not allow new additions
+  if (!session.settings.isConfusionBarometerActive) {
+    throw new ForbiddenError('SESSION_CONFUSION_DEACTIVATED')
+  }
+
+  // push a new timestep into the array
+  session.confusionTS.push({ difficulty, speed })
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(session)
+
   // readd mongoDB id-field
   session.id = session._id
   session.blocks.forEach((block) => {
@@ -392,7 +401,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
     [CONFUSION_ADDED]: {
       speed: speedRunning,
       difficulty: difficultyRunning,
-      numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+      numOfFeedbacks,
       id: savedConfusion._id,
     },
     sessionId,
@@ -838,38 +847,18 @@ async function resetQuestionBlock({ sessionId, blockId }) {
 }
 
 /**
- * Aggregates confusion data into what is really required by the client
+ * Returns running session data with aggregated confusion data
  */
 const fetchRunningSessionData = async (userId) => {
   const user = await UserModel.findById(userId).populate('runningSession')
-
   const { runningSession } = user
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(runningSession)
 
-  const filteredConfusion = runningSession.confusionTS.filter(
-    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
-  )
-
-  let speedRunning = 0
-  let difficultyRunning = 0
-
-  speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
-    filteredConfusion.length
-  difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
-    filteredConfusion.length
-
-  if (Number.isNaN(speedRunning)) {
-    speedRunning = 0
-  }
-  if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0
-  }
   // save computed aggregated values
   runningSession.confusionValues = {
     speed: speedRunning,
     difficulty: difficultyRunning,
-    numOfFeedbacks: filteredConfusion.length ? filteredConfusion.length : 0,
+    numOfFeedbacks,
   }
 
   // readd mongoDB id-field and empty confusionTS
