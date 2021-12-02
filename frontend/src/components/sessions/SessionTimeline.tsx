@@ -196,8 +196,8 @@ function SessionTimeline({
         <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
             <QRPopup shortname={shortname} />
-            <a className="flex flex-1 sm:block" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-              <Button icon primary className="flex flex-1 sm:block !mr-0" labelPosition="left" size="small">
+            <a className="flex-1" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
+              <Button fluid icon className="!mr-0" labelPosition="left" size="small">
                 <Icon name="external" />
                 <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
               </Button>
@@ -205,15 +205,8 @@ function SessionTimeline({
           </div>
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
             <Link passHref prefetch href={`/sessions/evaluation/${sessionId}`}>
-              <a className="flex flex-1 sm:block" rel="noopener noreferrer" target="_blank">
-                <Button
-                  icon
-                  primary
-                  className="flex flex-1 sm:block !mr-0"
-                  disabled={isFeedbackSession}
-                  labelPosition="left"
-                  size="small"
-                >
+              <a className="flex-1" rel="noopener noreferrer" target="_blank">
+                <Button fluid icon className="!mr-0" disabled={isFeedbackSession} labelPosition="left" size="small">
                   <Icon name="external" />
                   <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
                 </Button>
