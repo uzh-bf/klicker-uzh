@@ -50,17 +50,52 @@ function FeedbackSearchAndFilters({
   const intl = useIntl()
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
-      <div className="flex flex-col items-center md:items-end md:flex-row">
+      <div className="flex flex-row items-center">
         {withSearch && (
           <Input
-            className="w-full md:w-64 md:mr-8"
+            className="order-1 w-full md:mr-2 md:w-64 md:order-0"
             placeholder={intl.formatMessage(messages.searchPlaceholder)}
             value={searchString}
             onChange={(e) => setSearchString(e.target.value)}
           />
         )}
+        <div className="block mr-1 md:mr-0 2xl:hidden order-0 md:order-1">
+          <Dropdown basic className="!h-11 !w-11 !pl-4 !pt-3.5" icon="filter" button>
+            <Dropdown.Menu direction="right">
+              <Dropdown.Header>Feedback Filter</Dropdown.Header>
+              <Dropdown.Item>
+                <span className="flex items-center">
+                  <Checkbox checked={showResolved} label="" onChange={() => setShowResolved((current) => !current)} />
+                  <FormattedMessage defaultMessage="Resolved" id="runningSession.checkboxes.resolved" />
+                </span>
+              </Dropdown.Item>
+              <Dropdown.Item>
+                <span className="flex items-center">
+                  <Checkbox checked={showOpen} label="" onChange={() => setShowOpen((current) => !current)} />
+                  <FormattedMessage defaultMessage="Open" id="runningSession.checkboxes.open" />
+                </span>
+              </Dropdown.Item>
+              <Dropdown.Item>
+                <span className="flex items-center">
+                  <Checkbox checked={showUnpinned} label="" onChange={() => setShowUnpinned((current) => !current)} />
+                  <FormattedMessage defaultMessage="Unpinned" id="runningSession.checkboxes.unpinned" />
+                </span>
+              </Dropdown.Item>
+              <Dropdown.Item>
+                <span className="flex items-center">
+                  <Checkbox
+                    checked={showUnpublished}
+                    label=""
+                    onChange={() => setShowUnpublished((current) => !current)}
+                  />
+                  <FormattedMessage defaultMessage="Unpublished" id="runningSession.checkboxes.unpublished" />
+                </span>
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
 
-        <div className="flex flex-row justify-between flex-initial mt-4 mb-1 md:mt-0">
+        <div className="flex-row flex-wrap justify-between flex-initial order-1 hidden mt-4 mb-1 ml-4 2xl:flex md:mt-0">
           <div className="inline-block">
             <span className="flex items-center">
               <Checkbox checked={showResolved} label="" onChange={() => setShowResolved((current) => !current)} />
@@ -107,10 +142,10 @@ function FeedbackSearchAndFilters({
       </div>
 
       <div className="flex flex-row">
-        <Button basic className="!mr-2" icon="print" onClick={() => window.print()} />
+        <Button basic className="!mt-4 md:!mt-0 !mr-2" icon="print" onClick={() => window.print()} />
         <Dropdown
           selection
-          className="mt-4 md:mt-0"
+          className="flex flex-1 mt-4 md:mt-0"
           disabled={disabled}
           options={[
             {
