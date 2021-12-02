@@ -19,6 +19,12 @@ security:
   frameguard:
     enabled: true
 
+redis:
+  master:
+    priorityClassName: klicker-prod-klicker-uzh-production-workload
+  replica:
+    priorityClassName: klicker-prod-klicker-uzh-production-workload
+
 analytics:
   sentry:
     frontend:
@@ -40,13 +46,16 @@ services:
     websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
 
 frontend:
-  replicaCount: 1
+  replicaCount: 3
 
   displayAAI: true
 
   hostname: app.klicker.uzh.ch
 
   autoscaling:
+    enabled: false
+
+  vpa:
     enabled: true
 
   ingress:
@@ -59,13 +68,21 @@ frontend:
       - secretName: klicker-prod-frontend-tls
         hosts:
           - app.klicker.uzh.ch
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 backend:
-  replicaCount: 1
+  replicaCount: 3
 
   hostname: api.klicker.uzh.ch
 
   autoscaling:
+    enabled: false
+
+  vpa:
     enabled: true
 
   redis:
@@ -81,6 +98,12 @@ backend:
       - secretName: klicker-prod-backend-tls
         hosts:
           - api.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 shibboleth:
   enabled: true

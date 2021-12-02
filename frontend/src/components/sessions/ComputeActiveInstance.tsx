@@ -20,7 +20,20 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus }): Re
   const [showSolution, setShowSolution] = useState(sessionStatus !== SESSION_STATUS.RUNNING)
 
   if (!activeInstances || activeInstances.length === 0) {
-    return <div>No evaluation currently active.</div>
+    return children({
+      activeInstances: [],
+      activeInstance: {},
+      activeInstanceIndex: 0,
+      bins,
+      setBins,
+      showGraph,
+      setShowGraph,
+      showSolution,
+      setShowSolution,
+      activeVisualizations,
+      setActiveVisualizations,
+      setActiveInstanceIndex,
+    })
   }
 
   const activeInstance = activeInstances[activeInstanceIndex]

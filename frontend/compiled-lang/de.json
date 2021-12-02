@@ -497,6 +497,24 @@
       "value": "Diagramm"
     }
   ],
+  "evaluationSession.confusion.graphExplanation": [
+    {
+      "type": 0,
+      "value": "Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende der Klicker-Session. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden."
+    }
+  ],
+  "evaluationSession.confusion.timestep": [
+    {
+      "type": 0,
+      "value": "In diesem Feld kann die Schrittgrösse auf der x-Achse in Sekunden für die Diagramme eingegeben werden. Der Minimalwert ist 60 Sekunden, der Default-Wert 120 Sekunden."
+    }
+  ],
+  "evaluationSession.confusion.windowLength": [
+    {
+      "type": 0,
+      "value": "In diesem Feld kann ein eigener Faktor (multipliziert mit der Schrittweite auf der x-Achse) für die Grösse des Running Window zur Durchschnittsberechnung festgelegt werden. Der kleinstmögliche Faktor ist 1, der Default-Wert 3."
+    }
+  ],
   "feedbackchannel.notifications.title": [
     {
       "type": 0,
@@ -518,7 +536,19 @@
   "form.blockSettings.header": [
     {
       "type": 0,
-      "value": "Zeitlimit setzen"
+      "value": "Blockausführung steuern"
+    }
+  ],
+  "form.blockSettings.randomSelection.description": [
+    {
+      "type": 0,
+      "value": "Wenn zufällige Auswahl aktiviert ist, erhalten die Teilnehmenden eine jeweils zufällig ausgewählte Frage aus den Fragen im Block."
+    }
+  ],
+  "form.blockSettings.randomSelection.label": [
+    {
+      "type": 0,
+      "value": "Zufällige Auswahl"
     }
   ],
   "form.blockSettings.timeLimit": [
@@ -1423,6 +1453,12 @@
     {
       "type": 0,
       "value": "Session beenden"
+    }
+  ],
+  "runningSession.button.lecturerCockpit": [
+    {
+      "type": 0,
+      "value": "Dozierendenansicht"
     }
   ],
   "runningSession.button.openBlock": [

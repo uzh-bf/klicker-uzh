@@ -9,7 +9,7 @@ email:
   user: klicker.support@uzh.ch
 
 security:
-  domain: klicker-faculties.bf-app.ch
+  domain: klicker.uzh.ch
   hsts:
     enabled: true
   csp:
@@ -19,6 +19,12 @@ security:
   frameguard:
     enabled: true
 
+redis:
+  master:
+    priorityClassName: klicker-faculties-klicker-uzh-production-workload
+  replica:
+    priorityClassName: klicker-faculties-klicker-uzh-production-workload
+
 frontend:
   replicaCount: 1
 
@@ -27,10 +33,10 @@ frontend:
   hostname: app.klicker-faculties.bf-app.ch
 
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 3
-    targetCPUUtilizationPercentage: 60
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 90
 
   ingress:
@@ -44,16 +50,22 @@ frontend:
         hosts:
           - app.klicker-faculties.bf-app.ch
 
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
+
 backend:
   replicaCount: 1
 
   hostname: api.klicker-faculties.bf-app.ch
 
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 3
-    targetCPUUtilizationPercentage: 60
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 90
 
   redis:
@@ -69,6 +81,12 @@ backend:
       - secretName: klicker-faculties-backend-tls
         hosts:
           - api.klicker-faculties.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
 
 shibboleth:
   enabled: false

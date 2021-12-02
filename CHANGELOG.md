@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.0...v1.7.0-beta.1) (2021-11-30)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that the survey dismiss icon is always visible and that the banner is not shown in creation mode ([e0cac4f](https://github.com/uzh-bf/klicker-uzh/commit/e0cac4fabd4491f60b45badd85e3218ab259d322))
+
+
+### Enhancements
+
+* **deploy:** add priority classes to redis ([fc6d151](https://github.com/uzh-bf/klicker-uzh/commit/fc6d1512c3151fdb59ac5b3cf800db50e35a363c))
+* **frontend:** put open feedbacks on top of resolved ([b62f02f](https://github.com/uzh-bf/klicker-uzh/commit/b62f02f092f40b82503387155ae9edfac203cd9f))
+
+## [1.7.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.7...v1.7.0-beta.0) (2021-11-28)
+
+
+### Bug Fixes
+
+* **frontend:** replace invalid tailwind color for top-border on lecturer cockpit ([cf51d5f](https://github.com/uzh-bf/klicker-uzh/commit/cf51d5f36c523c8d9797ee7db17ea1b111ba6472))
+
+
+### Enhancements
+
+* **deploy:** add deployment strategies and priority classes ([1f72e47](https://github.com/uzh-bf/klicker-uzh/commit/1f72e4788453396399665aaf0c33d9dfc4dcd026))
+
+## [1.7.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.6...v1.7.0-alpha.7) (2021-11-28)
+
+
+### Other
+
+* **ci:** add chart releaser action ([fccc09c](https://github.com/uzh-bf/klicker-uzh/commit/fccc09c2c9b61b387c1c4dd99e4640b10e7c7649))
+* **deploy:** move chart into subdirectory of charts dir ([f52cb55](https://github.com/uzh-bf/klicker-uzh/commit/f52cb55e8396a4b714d71102cdee5df75cf7155e))
+* remove cruft nvmrc ([0a11bf1](https://github.com/uzh-bf/klicker-uzh/commit/0a11bf193aaa6352f92bb00485a6bda2f4163b41))
+
+
+### Enhancements
+
+* chatwoot only on selected pages and with custom base url ([4b57e26](https://github.com/uzh-bf/klicker-uzh/commit/4b57e266e381b6583c4907b1e5b8c912bc81e056))
+
+## [1.7.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.5...v1.7.0-alpha.6) (2021-11-28)
+
+
+### Bug Fixes
+
+* **backend:** corrected range of output values for real-time confusion barometer ([b9e4fbf](https://github.com/uzh-bf/klicker-uzh/commit/b9e4fbf13cc9e2d37a1ee4bb092208d94ee01a95))
+* **frontend:** feedback field on student view only shrinks if empty ([7bc5b99](https://github.com/uzh-bf/klicker-uzh/commit/7bc5b99870b1e12b2c24bb1196f7c1a52a3bb5f2))
+* **frontend:** layout shift on login page on AAI login ([278ff97](https://github.com/uzh-bf/klicker-uzh/commit/278ff97ede349a6d20e0bbf4371805be74364d87))
+
+
+### Enhancements
+
+* add confusion data with color bar on lecturer cockpit screen ([#2640](https://github.com/uzh-bf/klicker-uzh/issues/2640)) ([d560c80](https://github.com/uzh-bf/klicker-uzh/commit/d560c80a1b17049665cca0ee2064eab21b6d8b2a))
+* display aggregated confusionBarometer data on evaluation page ([#2631](https://github.com/uzh-bf/klicker-uzh/issues/2631)) ([4132260](https://github.com/uzh-bf/klicker-uzh/commit/4132260fc693ca2b92711013e8892fbf8bc6789c))
+* indicate number of feedbacks on lecturer confusion barometer ([a21e5af](https://github.com/uzh-bf/klicker-uzh/commit/a21e5af42a4bee205820a10d1a0fb60419794f9c))
+
+
+### Other
+
+* **deploy:** add saskia to persisted users ([bbbb19c](https://github.com/uzh-bf/klicker-uzh/commit/bbbb19cba0294ee300728b6638073ec44d84b5b2))
+* **deploy:** move persistedUsers to secret ([e8a3838](https://github.com/uzh-bf/klicker-uzh/commit/e8a38382130a4dc07b5951eaf1fd462f82ee4223))
+* **deploy:** update deployment settings with specific kube context ([c115f09](https://github.com/uzh-bf/klicker-uzh/commit/c115f0946b1ed25aef14d218d2f38e36644b7919))
+* **deps:** small upgrade of next deps ([9b209ae](https://github.com/uzh-bf/klicker-uzh/commit/9b209ae438e521ece827fed277122e0580a3da35))
+* **frontend:** add chatwoot token ([0b12e6e](https://github.com/uzh-bf/klicker-uzh/commit/0b12e6e00daab1fa161b4c82ab3f89dc10b3057c))
+
 ## [1.7.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-alpha.4...v1.7.0-alpha.5) (2021-11-16)
 
 

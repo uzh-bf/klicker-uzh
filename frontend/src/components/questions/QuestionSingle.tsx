@@ -1,9 +1,10 @@
 import React from 'react'
-import { Icon, Popup } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
 import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
+import CustomTooltip from '../common/CustomTooltip'
 
 interface Props {
   hasParticipantCount?: boolean
@@ -35,7 +36,6 @@ function QuestionSingle({
   onDelete,
 }: Props): React.ReactElement {
   const intl = useIntl()
-  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div
@@ -44,16 +44,9 @@ function QuestionSingle({
       data-for={`questionTooltip${id}`}
     >
       {id && description && onDelete && (
-        <Popup
-          inverted
-          wide
+        <CustomTooltip
           content={<span>{description}</span>}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          position="right center"
-          size="small"
-          style={PopupStyle}
-          trigger={
+          iconObject={
             <div>
               <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
                 <div className="font-bold">{generateTypesShort(intl)[type]}</div>
