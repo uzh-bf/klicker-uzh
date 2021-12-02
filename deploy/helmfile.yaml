@@ -15,39 +15,39 @@ releases:
     createNamespace: true
     chart: ./charts/klicker-uzh
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: false
+    installed: true
     kubeContext: klicker-k8s26bebe63-admin
     values:
       - charts/klicker-uzh/values.yaml
       - charts/klicker-uzh/values.qa.yaml
       - charts/klicker-uzh/secrets.qa.yaml
 
-  - name: klicker-prod
-    namespace: klicker-prod
-    createNamespace: true
-    chart: ./charts/klicker-uzh
-    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
-    kubeContext: klicker-k8s26bebe63-admin
-    values:
-      - charts/klicker-uzh/values.yaml
-      - charts/klicker-uzh/values.prod.yaml
-      - charts/klicker-uzh/secrets.prod.yaml
+  # - name: klicker-prod
+  #   namespace: klicker-prod
+  #   createNamespace: true
+  #   chart: ./charts/klicker-uzh
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   kubeContext: klicker-k8s26bebe63-admin
+  #   values:
+  #     - charts/klicker-uzh/values.yaml
+  #     - charts/klicker-uzh/values.prod.yaml
+  #     - charts/klicker-uzh/secrets.prod.yaml
 
-  - name: klicker-faculties
-    namespace: klicker-faculties
-    createNamespace: true
-    chart: ./charts/klicker-uzh
-    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
-    kubeContext: klicker-k8s26bebe63-admin
-    values:
-      - charts/klicker-uzh/values.yaml
-      - charts/klicker-uzh/values.faculties.yaml
-      - charts/klicker-uzh/secrets.faculties.yaml
-      - frontend:
-          image:
-            tag: v1.7.0-beta.1
-        backend:
-          image:
-            tag: v1.7.0-beta.1
+  # - name: klicker-faculties
+  #   namespace: klicker-faculties
+  #   createNamespace: true
+  #   chart: ./charts/klicker-uzh
+  #   version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+  #   installed: true
+  #   kubeContext: klicker-k8s26bebe63-admin
+  #   values:
+  #     - charts/klicker-uzh/values.yaml
+  #     - charts/klicker-uzh/values.faculties.yaml
+  #     - charts/klicker-uzh/secrets.faculties.yaml
+  #     - frontend:
+  #         image:
+  #           tag: v1.7.0-beta.1
+  #       backend:
+  #         image:
+  #           tag: v1.7.0-beta.1
