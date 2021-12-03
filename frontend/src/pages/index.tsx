@@ -119,7 +119,7 @@ function Index(): React.ReactElement {
           </div>
         </div>
 
-        <List className="userLinks">
+        <List>
           {links.map(
             (link): React.ReactElement => (
               <List.Item key={link.label} className="mb-4 !inline-block mr-2">
