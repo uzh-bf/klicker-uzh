@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
+import Image from 'next/image'
 
 import StaticLayout from '../components/layouts/StaticLayout'
 
@@ -29,49 +31,54 @@ function Index(): React.ReactElement {
   return (
     // TODO: internationalization
     <StaticLayout pageTitle="Klicker">
-      <div className="klicker">
-        <h1>
-          Klicker
-          <span>UZH</span>
-        </h1>
+      <div className="p-2">
+        <div className="text-center">
+          <Image alt="KlickerUZH Logo" src={KlickerLogoSrc} />
+        </div>
 
-        <p className="description">Welcome to the open source instant audience response system.</p>
+        <p className="italic text-center">Welcome to the open source instant audience response system.</p>
 
-        <div className="participation">
-          <p>Want to participate in a poll?</p>
+        <div className="flex flex-col w-full p-4 mb-4 border border-solid lg:items-center lg:justify-between lg:flex-row lg:flex-wrap border-primary bg-primary-10">
+          <p className="mb-2 lg:flex-00full">Want to participate in a poll?</p>
           <Input
             fluid
             label="app.klicker.uzh.ch/join/"
             placeholder="account id"
             value={shortname}
             onChange={(e): void => setShortname(e.target.value)}
+            className="flex-grow lg:mr-2"
           />
-          <Button primary disabled={!shortname || shortname === ''} onClick={redirectToJoin}>
+          <Button
+            className="!mr-0 !mt-2 lg:!mt-0"
+            primary
+            disabled={!shortname || shortname === ''}
+            onClick={redirectToJoin}
+          >
             Participate
           </Button>
         </div>
 
-        <div className="boxes">
+        <div className="flex flex-col lg:flex-row">
           <a
-            className="box hoverable"
+            className="block p-4 mb-2 text-black border border-solid border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2"
             href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <h2>Project</h2>
+            <h2 className="text-2xl leading-6">Project</h2>
             <p>Learn more about Klicker.</p>
           </a>
           <a
-            className="box hoverable"
+            className="block p-4 mb-2 text-black border border-solid border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2"
             href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
             rel="noopener noreferrer"
             target="_blank"
           >
-            <h2>Lecturer</h2>
+            <h2 className="block text-2xl leading-6">Lecturer</h2>
             <p>How to use Klicker as a lecturer!</p>
           </a>
-          <div className="box">
-            <h2>Development</h2>
+          <div className="p-4 mb-0 text-black border border-solid last:mr-0 border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
+            <h2 className="text-2xl leading-6">Development</h2>
             <List divided relaxed>
               {/* <List.Item>
               <List.Icon name="slack" size="large" verticalAlign="middle" />
@@ -115,7 +122,7 @@ function Index(): React.ReactElement {
         <List className="userLinks">
           {links.map(
             (link): React.ReactElement => (
-              <List.Item key={link.label}>
+              <List.Item key={link.label} className="mb-4 !inline-block mr-2">
                 <a href={link.href} target="_self">
                   <Button primary>{link.label}</Button>
                 </a>
@@ -124,126 +131,6 @@ function Index(): React.ReactElement {
           )}
         </List>
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-        .klicker {
-          padding: 0.5rem;
-          h1 {
-            text-align: center;
-            font-size: 2rem;
-            line-height: 2rem;
-            margin-top: 1rem;
-            span {
-              vertical-align: top;
-              font-size: 1rem;
-              line-height: 1rem;
-            }
-          }
-          h2 {
-            font-size: 1.15rem;
-          }
-          .description {
-            font-style: italic;
-            text-align: center;
-          }
-
-          .participation {
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid $color-primary;
-            background-color: $color-primary-10p;
-            padding: 1rem;
-            width: 100%;
-            margin-bottom: 1rem;
-
-            p {
-              margin-bottom: 0.5rem;
-            }
-
-            :global(.input) {
-              flex: 1;
-            }
-
-            :global(button) {
-              flex: 0 0 auto;
-              margin-top: 0.5rem;
-              margin-right: 0;
-            }
-          }
-
-          .boxes {
-            display: flex;
-            flex-direction: column;
-            .box {
-              color: black;
-              display: block;
-              padding: 1rem;
-              margin-bottom: 0.3rem;
-              border: 1px solid $color-primary;
-              background-color: $color-primary-10p;
-              &:last-child {
-                margin-bottom: 0;
-              }
-            }
-            .hoverable:hover {
-              background-color: $color-primary-20p;
-              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
-            }
-          }
-          > :global(.list.userLinks) {
-            margin-bottom: 1rem;
-            :global(.item) {
-              display: inline-block;
-              margin-right: 0.5rem;
-              :global(a:hover) {
-                color: $color-primary;
-              }
-              &:last-child {
-                margin-right: 0;
-              }
-            }
-          }
-          @media all and (min-width: 71.5rem) {
-            h1 {
-              margin-top: 0;
-            }
-            .participation {
-              flex-flow: row wrap;
-              align-items: center;
-              justify-content: space-between;
-
-              p {
-                flex: 0 0 100%;
-              }
-
-              :global(input) {
-                margin-right: 1rem;
-              }
-
-              :global(button) {
-                margin-top: 0;
-              }
-            }
-            .boxes {
-              flex-direction: row;
-              .box {
-                padding: 1rem;
-                height: 17rem;
-                width: 17rem;
-                margin-right: 0.5rem;
-                &:last-child {
-                  margin-right: 0;
-                }
-                &.hoverable {
-                  cursor: pointer;
-                }
-              }
-            }
-          }
-        }
-      `}</style>
     </StaticLayout>
   )
 }
