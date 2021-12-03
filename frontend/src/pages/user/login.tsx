@@ -35,35 +35,12 @@ function Login(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="p-4 md:w-[500px]">
+      <div className="p-4 md:w-[600px]">
         <h1 className="mt-0">
           <FormattedMessage defaultMessage="Login" id="user.login.title" />
         </h1>
 
         <>
-          <Message info>
-            <FormattedMessage
-              defaultMessage="To login with a legacy account, please {requestLink} first. If you need a new account, you can {signupLink} here."
-              id="user.login.infoMessage"
-              values={{
-                requestLink: (
-                  <Link href="/user/requestPassword">
-                    <a>
-                      <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
-                    </a>
-                  </Link>
-                ),
-                signupLink: (
-                  <Link href="/user/registration">
-                    <a>
-                      <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
-                    </a>
-                  </Link>
-                ),
-              }}
-            />
-          </Message>
-
           <LoginForm
             loading={loading}
             onSubmit={async ({ email, password }): Promise<void> => {

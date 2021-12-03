@@ -891,6 +891,12 @@
       "value": "Ein eindeutiger Bezeichner für Ihren Account. Muss zwischen 3 und 8 Zeichen lang sein (nur alphanumerisch und -)."
     }
   ],
+  "form.signUp.label": [
+    {
+      "type": 0,
+      "value": "Neuen Account erstellen"
+    }
+  ],
   "form.useCase.label": [
     {
       "type": 0,
@@ -2049,40 +2055,6 @@
     {
       "type": 0,
       "value": "Sind Sie sicher, dass Sie Ihren Klicker Account löschen möchten?"
-    }
-  ],
-  "user.login.infoMessage": [
-    {
-      "type": 0,
-      "value": "Um sich mit einem alten Account einzuloggen, setzen Sie bitte Ihr "
-    },
-    {
-      "type": 1,
-      "value": "requestLink"
-    },
-    {
-      "type": 0,
-      "value": ". Wenn Sie noch keinen Account besitzen, können Sie sich hier "
-    },
-    {
-      "type": 1,
-      "value": "signupLink"
-    },
-    {
-      "type": 0,
-      "value": "."
-    }
-  ],
-  "user.login.infoMessageResetPW": [
-    {
-      "type": 0,
-      "value": "Passwort zurück"
-    }
-  ],
-  "user.login.infoMessageSignup": [
-    {
-      "type": 0,
-      "value": "registrieren"
     }
   ],
   "user.login.pageTitle": [

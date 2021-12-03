@@ -29,7 +29,7 @@ function FormWithLinks({ button, children, links }: Props): React.ReactElement {
   )
 
   return (
-    <div className="flex flex-col p-4 border border-solid rounded-md formWithLinks border-primary bg-primary-10">
+    <div className="flex flex-col p-4 border border-solid rounded-md formWithLinks border-primary">
       <Form error className="!bg-transparent">
         {typeof children === 'function' ? children() : children}
 
