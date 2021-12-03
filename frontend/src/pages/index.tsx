@@ -41,7 +41,7 @@ function Index(): React.ReactElement {
 
         <p className="italic text-center">Welcome to the open source instant audience response system.</p>
 
-        <div className="flex flex-col w-full p-4 mb-4 border border-solid rounded-md lg:items-center lg:justify-between lg:flex-row lg:flex-wrap border-primary bg-primary-10">
+        <div className="flex flex-col w-full p-4 mb-4 lg:items-center lg:justify-between lg:flex-row lg:flex-wrap border-primary ">
           <p className="mb-2 lg:flex-00full">Want to participate in a poll?</p>
           <Input
             fluid
@@ -62,7 +62,7 @@ function Index(): React.ReactElement {
         </div>
 
         <div className="flex flex-col lg:flex-row">
-          <div className="block p-4 mb-2 text-black border border-solid rounded-md border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
+          <div className="block p-4 mb-2 text-black border border-solid rounded-md border-primary lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
             <h2 className="text-2xl leading-6">User Guide</h2>
             <List divided relaxed>
               <List.Item>
@@ -84,7 +84,7 @@ function Index(): React.ReactElement {
                   <List.Header as="a" target="_blank" href="https://www.klicker.uzh.ch/docs/faq/faq">
                     FAQ
                   </List.Header>
-                  <List.Description>Frequently Asked Questions</List.Description>
+                  <List.Description>Common Questions</List.Description>
                 </List.Content>
               </List.Item>
               <List.Item>
@@ -103,7 +103,7 @@ function Index(): React.ReactElement {
               </List.Item>
             </List>
           </div>
-          <div className="block p-4 mb-2 text-black border border-solid rounded-md border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
+          <div className="block p-4 mb-2 text-black border border-solid rounded-md border-primary lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
             <h2 className="block text-2xl leading-6">Development</h2>
             <List divided relaxed>
               <List.Item>
@@ -121,7 +121,7 @@ function Index(): React.ReactElement {
                   <List.Header as="a" target="_blank" href="https://www.klicker.uzh.ch/roadmap">
                     Public Roadmap
                   </List.Header>
-                  <List.Description>Public Roadmap</List.Description>
+                  <List.Description>Project Outline</List.Description>
                 </List.Content>
               </List.Item>
               <List.Item>
@@ -135,7 +135,7 @@ function Index(): React.ReactElement {
               </List.Item>
             </List>
           </div>
-          <div className="p-4 mb-0 text-black border border-solid rounded-md last:mr-0 border-primary bg-primary-10 lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
+          <div className="p-4 mb-0 text-black border border-solid rounded-md last:mr-0 border-primary lg:p-4 lg:h-72 lg:w-72 lg:mr-2">
             <h2 className="text-2xl leading-6">Support</h2>
             <List divided relaxed>
               <List.Item>
