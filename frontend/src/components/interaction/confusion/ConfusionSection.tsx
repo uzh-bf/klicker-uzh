@@ -19,7 +19,6 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
       <div className="w-[97%] min-h-[180px]">
         <ReactSpeedometer
           fluidWidth
-          paddingHorizontal={3}
           currentValueText=" "
           customSegmentLabels={[
             {
@@ -55,6 +54,7 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
           minValue={-2}
           needleColor="#dc6027"
           needleHeightRatio={0.4}
+          paddingHorizontal={3}
           segmentColors={[RED_COLOR, ORANGE_COLOR, GREEN_COLOR, ORANGE_COLOR, RED_COLOR]}
           startColor="#FF0000"
           value={runningValue}

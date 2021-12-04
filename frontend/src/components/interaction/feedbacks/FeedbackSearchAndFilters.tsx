@@ -60,7 +60,7 @@ function FeedbackSearchAndFilters({
           />
         )}
         <div className="block mr-1 md:mr-0 2xl:hidden order-0 md:order-1">
-          <Dropdown basic className="!h-11 !w-11 !pl-4 !pt-3.5" icon="filter" button>
+          <Dropdown basic button className="!h-11 !w-11 !pl-4 !pt-3.5" icon="filter">
             <Dropdown.Menu direction="right">
               <Dropdown.Header>Feedback Filter</Dropdown.Header>
               <Dropdown.Item>

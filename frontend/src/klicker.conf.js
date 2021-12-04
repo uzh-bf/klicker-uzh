@@ -29,6 +29,11 @@ module.exports = convict({
       env: 'APP_BASE_URL',
       format: 'url',
     },
+    supportEmail: {
+      default: 'klicker.support@uzh.ch',
+      env: 'APP_SUPPORT_EMAIL',
+      format: String,
+    },
     gzip: {
       default: true,
       env: 'APP_GZIP',

@@ -24,6 +24,10 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
       href: '/user/requestPassword',
       label: intl.formatMessage(messages.forgotPassword),
     },
+    {
+      href: '/user/registration',
+      label: intl.formatMessage(messages.signUp),
+    },
   ]
 
   return (

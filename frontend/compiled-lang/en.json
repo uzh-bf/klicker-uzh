@@ -827,18 +827,6 @@
       "value": "Institution"
     }
   ],
-  "form.login.infoMessageResetPW": [
-    {
-      "type": 0,
-      "value": "reset your password"
-    }
-  ],
-  "form.login.infoMessageSignup": [
-    {
-      "type": 0,
-      "value": "sign up"
-    }
-  ],
   "form.password.invalid": [
     {
       "type": 0,
@@ -891,6 +879,12 @@
     {
       "type": 0,
       "value": "A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen)."
+    }
+  ],
+  "form.signUp.label": [
+    {
+      "type": 0,
+      "value": "Create new account"
     }
   ],
   "form.useCase.label": [
@@ -1995,28 +1989,6 @@
     {
       "type": 0,
       "value": "Are you sure you want to delete your Klicker account?"
-    }
-  ],
-  "user.login.infoMessage": [
-    {
-      "type": 0,
-      "value": "To login with a legacy account, please "
-    },
-    {
-      "type": 1,
-      "value": "requestLink"
-    },
-    {
-      "type": 0,
-      "value": " first. If you need a new account, you can "
-    },
-    {
-      "type": 1,
-      "value": "signupLink"
-    },
-    {
-      "type": 0,
-      "value": " here."
     }
   ],
   "user.login.pageTitle": [

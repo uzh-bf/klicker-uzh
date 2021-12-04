@@ -35,35 +35,12 @@ function Login(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="login">
-        <h1>
+      <div className="p-4 md:w-[600px]">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Login" id="user.login.title" />
         </h1>
 
         <>
-          <Message info>
-            <FormattedMessage
-              defaultMessage="To login with a legacy account, please {requestLink} first. If you need a new account, you can {signupLink} here."
-              id="user.login.infoMessage"
-              values={{
-                requestLink: (
-                  <Link href="/user/requestPassword">
-                    <a>
-                      <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
-                    </a>
-                  </Link>
-                ),
-                signupLink: (
-                  <Link href="/user/registration">
-                    <a>
-                      <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
-                    </a>
-                  </Link>
-                ),
-              }}
-            />
-          </Message>
-
           <LoginForm
             loading={loading}
             onSubmit={async ({ email, password }): Promise<void> => {
@@ -83,7 +60,7 @@ function Login(): React.ReactElement {
           />
 
           {publicRuntimeConfig.withAai && (
-            <div className="aai">
+            <div className="mt-4 text-right">
               <a href="https://aai.klicker.uzh.ch/public" role="button">
                 <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
               </a>
@@ -91,46 +68,11 @@ function Login(): React.ReactElement {
           )}
 
           {!error && _get(router, 'query.expired') && (
-            <div className="errorMessage message">Login expired. Please login again.</div>
+            <div className="font-bold text-red-800">Login expired. Please login again.</div>
           )}
 
-          {error && <div className="errorMessage message">Login failed ({error.message})</div>}
+          {error && <div className="font-bold text-red-800">Login failed ({error.message})</div>}
         </>
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .login {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            .aai {
-              margin-top: 1rem;
-              text-align: right;
-            }
-
-            .message {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: $color-error-font;
-            }
-            .successMessage {
-              color: $color-success;
-            }
-
-            .marginTop {
-              margin-top: 0.5rem;
-            }
-
-            @include desktop-tablet-only {
-              width: 500px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )
