@@ -11,6 +11,7 @@ const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel,
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
 const { Errors, ROLES } = require('../constants')
 const { createQuestion } = require('./questions')
+const { createSession } = require('./sessionMgr')
 
 const APP_CFG = CFG.get('app')
 
@@ -260,20 +261,48 @@ const signup = async (
       const files = []
       const tags = ['DEMO']
       const userId = newUser._id
+      const demoQuestions = []
 
       for (let i = 0; i < titles.length; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        await createQuestion({
-          title: titles[i],
-          type: types[i],
-          content: content[i],
-          options: options[i],
-          solution,
-          files,
-          tags,
-          userId,
-        })
+        demoQuestions.push(
+          // eslint-disable-next-line no-await-in-loop
+          await createQuestion({
+            title: titles[i],
+            type: types[i],
+            content: content[i],
+            options: options[i],
+            solution,
+            files,
+            tags,
+            userId,
+          })
+        )
       }
+
+      await createSession({
+        name: 'Demosession',
+        questionBlocks: [
+          { questions: [{ question: demoQuestions[0]._id, version: 0 }] },
+          { questions: [{ question: demoQuestions[2]._id, version: 0 }] },
+          {
+            questions: [
+              { question: demoQuestions[1]._id, version: 0 },
+              { question: demoQuestions[3]._id, version: 0 },
+            ],
+          },
+          {
+            questions: [
+              { question: demoQuestions[0]._id, version: 0 },
+              { question: demoQuestions[1]._id, version: 0 },
+              { question: demoQuestions[2]._id, version: 0 },
+              { question: demoQuestions[3]._id, version: 0 },
+            ],
+          },
+        ],
+        participants: [],
+        authenticationMode: 'NONE',
+        userId,
+      })
 
       // return the data of the newly created user
       return newUser
