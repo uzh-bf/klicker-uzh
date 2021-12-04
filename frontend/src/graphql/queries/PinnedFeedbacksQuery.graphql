@@ -10,15 +10,4 @@ query RunningSession {
     }
     createdAt
   }
-  runningSession {
-    id
-    confusionValues {
-      speed
-      difficulty
-      numOfFeedbacks
-    }
-    settings {
-      isConfusionBarometerActive
-    }
-  }
 }

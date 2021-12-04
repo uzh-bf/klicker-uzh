@@ -29,11 +29,6 @@ module.exports = convict({
       env: 'APP_BASE_URL',
       format: 'url',
     },
-    supportEmail: {
-      default: 'klicker.support@uzh.ch',
-      env: 'APP_SUPPORT_EMAIL',
-      format: String,
-    },
     gzip: {
       default: true,
       env: 'APP_GZIP',
@@ -284,18 +279,6 @@ module.exports = convict({
     },
   },
   services: {
-    chatwoot: {
-      baseUrl: {
-        default: 'https://app.chatwoot.com',
-        env: 'SERVICES_CHATWOOT_BASE_URL',
-        format: 'url',
-      },
-      websiteToken: {
-        default: undefined,
-        env: 'SERVICES_CHATWOOT_TOKEN',
-        format: String,
-      },
-    },
     happyKit: {
       envKey: {
         default: undefined,

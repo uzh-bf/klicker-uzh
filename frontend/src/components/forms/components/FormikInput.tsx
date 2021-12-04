@@ -1,9 +1,8 @@
 /* eslint-disable jsx-a11y/label-has-for */
 
 import React from 'react'
-import { Form, Icon, Input } from 'semantic-ui-react'
+import { Form, Icon, Input, Popup } from 'semantic-ui-react'
 import { FormikErrors, FormikTouched } from 'formik'
-import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   action?: any
@@ -81,6 +80,7 @@ function FormikInput({
     ...rest,
   }
   const showError = touched && !!error
+  const PopupStyle = { opacity: 0.9 }
 
   return (
     <Form.Field {...fieldProps}>
@@ -88,13 +88,20 @@ function FormikInput({
         <label htmlFor={name}>
           {label}
           {tooltip && (
-            <CustomTooltip
+            <Popup
               content={tooltip}
-              iconObject={
+              trigger={
                 <a data-tip>
                   <Icon className="icon" name="question circle" />
                 </a>
               }
+              position="right center"
+              size="small"
+              style={PopupStyle}
+              mouseEnterDelay={250}
+              mouseLeaveDelay={250}
+              wide
+              inverted
             />
           )}
         </label>

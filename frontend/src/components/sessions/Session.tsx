@@ -297,7 +297,7 @@ function Session({
           }
           .labels {
             display: flex;
-            justify-content: flex-end;
+            justify-content: end;
 
             :global(.label) {
               margin-right: 0 !important;

@@ -1,11 +1,10 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Form, Icon } from 'semantic-ui-react'
+import { Form, Icon, Popup } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 import { updateArrayElement, deleteArrayElement, reorder } from '../../../lib/utils/move'
-import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -52,14 +51,21 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         <label htmlFor="options">
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
-          <CustomTooltip
+          <Popup
+            inverted
+            wide
             content={
               <FormattedMessage
                 defaultMessage="Add answering options the respondents can choose from."
                 id="createQuestion.optionsSC.tooltip"
               />
             }
-            iconObject={
+            mouseEnterDelay={250}
+            mouseLeaveDelay={250}
+            position="right center"
+            size="small"
+            style={{ opacity: 0.9 }}
+            trigger={
               <a data-tip>
                 <Icon name="question circle" />
               </a>

@@ -24,10 +24,6 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
       href: '/user/requestPassword',
       label: intl.formatMessage(messages.forgotPassword),
     },
-    {
-      href: '/user/registration',
-      label: intl.formatMessage(messages.signUp),
-    },
   ]
 
   return (
@@ -58,6 +54,7 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
             autoFocus
             required
             error={errors.email}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"
@@ -70,6 +67,7 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
           <FormikInput
             required
             error={errors.password}
+            errorMessage={intl.formatMessage(messages.passwordInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"

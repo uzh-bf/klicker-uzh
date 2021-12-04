@@ -24,8 +24,8 @@ function Registration(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="p-4 md:w-[750px]">
-        <h1 className="mt-0">
+      <div className="registration">
+        <h1>
           <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
         </h1>
 
@@ -34,7 +34,7 @@ function Registration(): React.ReactElement {
 
           if (newEmail) {
             return (
-              <div className="font-bold text-green-700">
+              <div className="successMessage">
                 <FormattedMessage
                   defaultMessage="Successfully registered as {newEmail}.{br} Please activate your new account using the link in the email we just sent you. You can then login at {link}."
                   id="user.registration.successNotification"
@@ -106,10 +106,37 @@ function Registration(): React.ReactElement {
                 }}
               />
 
-              {error && <div className="font-bold text-red-800">Registration failed ({error.message})</div>}
+              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
             </>
           )
         })()}
+
+        <style jsx>{`
+          @import 'src/theme';
+
+          .registration {
+            padding: 1rem;
+
+            h1 {
+              margin-top: 0;
+            }
+
+            .errorMessage,
+            .successMessage {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: $color-error-font;
+            }
+            .successMessage {
+              color: $color-success;
+            }
+
+            @include desktop-tablet-only {
+              width: 750px;
+            }
+          }
+        `}</style>
       </div>
     </StaticLayout>
   )

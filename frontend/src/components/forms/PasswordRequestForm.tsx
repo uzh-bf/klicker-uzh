@@ -53,6 +53,7 @@ function PasswordRequestForm({ loading, onSubmit }: Props): React.ReactElement {
             autoFocus
             required
             error={errors.email}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"

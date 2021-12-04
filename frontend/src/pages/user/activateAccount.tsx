@@ -33,13 +33,13 @@ function ActivateAccount(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="p-4 w-[500px] text-center mx-auto">
-        <h1 className="mt-0">
+      <div className="activateAccount">
+        <h1>
           <FormattedMessage defaultMessage="Activate your new account" id="user.activateAccount.title" />
         </h1>
 
         {success && (
-          <Message success className="!text-left">
+          <Message success>
             <FormattedMessage
               defaultMessage="Your account has been successfully activated. You can now {login}."
               id="user.activateAccount.success"
@@ -49,6 +49,25 @@ function ActivateAccount(): React.ReactElement {
             />
           </Message>
         )}
+
+        <style jsx>
+          {`
+            @import 'src/theme';
+
+            .activateAccount {
+              padding: 1rem;
+
+              h1 {
+                margin-top: 0;
+              }
+
+              @include desktop-tablet-only {
+                margin: 0 15%;
+                width: 500px;
+              }
+            }
+          `}
+        </style>
       </div>
     </StaticLayout>
   )

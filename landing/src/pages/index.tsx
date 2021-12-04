@@ -58,8 +58,62 @@ function GetInvolvedButton() {
 }
 
 export default function Index() {
+  const [isAppAvailable, setIsAppAvailable] = useState(null)
+  // const [isApiAvailable, setIsApiAvailable] = useState(null)
+  // const [isAaiAvailable, setIsAaiAvailable] = useState(null)
+
+  useEffect(() => {
+    async function pingKlickerEndpoints() {
+      pingKlickerEndpoint({
+        serviceName: 'app',
+        callback: setIsAppAvailable,
+      })
+      // pingKlickerEndpoint({
+      //   serviceName: 'api',
+      //   callback: setIsApiAvailable,
+      //   path: '/graphql',
+      //   method: 'post',
+      // })
+      // pingKlickerEndpoint({
+      //   serviceName: 'aai',
+      //   callback: setIsAaiAvailable,
+      // })
+    }
+
+    pingKlickerEndpoints()
+  }, [])
+
   return (
     <div>
+      {isAppAvailable === false && (
+        <div className="max-w-3xl m-auto mb-4">
+          <Message error>
+            The Klicker is unavailable at the moment. We are trying to fix the
+            problem as quickly as possible. <br />
+            You can get updates on our{' '}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
+            >
+              status page
+            </a>
+            . Please excuse the inconvenience and try again later.
+            <Message.List>
+              <Message.Item>
+                Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
+              </Message.Item>
+              {/* <Message.Item>
+              Backend - {isApiAvailable ? 'UP' : 'DOWN'}
+            </Message.Item> */}
+              {/* <Message.Item>
+                AAI - {isAaiAvailable ? 'UP' : 'DOWN'}
+              </Message.Item> */}
+            </Message.List>
+          </Message>
+        </div>
+      )}
+
       <Slider>
         <Slider.Item
           title={<KlickerLogo width={150} />}

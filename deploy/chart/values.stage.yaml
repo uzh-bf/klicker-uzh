@@ -32,11 +32,6 @@ frontend:
         hosts:
           - app.klicker-stage.bf-app.ch
 
-  strategy:
-    type: Recreate
-
-  priorityClassName: staging-workload
-
 backend:
   hostname: api.klicker-stage.bf-app.ch
 
@@ -50,8 +45,3 @@ backend:
       - secretName: klicker-stage-backend-tls
         hosts:
           - api.klicker-stage.bf-app.ch
-
-  strategy:
-    type: Recreate
-
-  priorityClassName: staging-workload

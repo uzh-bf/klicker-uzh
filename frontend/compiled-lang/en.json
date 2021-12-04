@@ -493,24 +493,6 @@
       "value": "Visualization"
     }
   ],
-  "evaluationSession.confusion.graphExplanation": [
-    {
-      "type": 0,
-      "value": "The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
-    }
-  ],
-  "evaluationSession.confusion.timestep": [
-    {
-      "type": 0,
-      "value": "With this field, the timestep size used on the x-axis of the plot can be chosen in seconds. The minimum timestep is 60 seconds, the default one 120 seconds."
-    }
-  ],
-  "evaluationSession.confusion.windowLength": [
-    {
-      "type": 0,
-      "value": "This field allows to set a custom factor (multiplied by the x-timestep) for the running window over which the average is computed. The minimum factor is 1, the default one is 3."
-    }
-  ],
   "feedbackchannel.notifications.title": [
     {
       "type": 0,
@@ -827,6 +809,18 @@
       "value": "Institution"
     }
   ],
+  "form.login.infoMessageResetPW": [
+    {
+      "type": 0,
+      "value": "reset your password"
+    }
+  ],
+  "form.login.infoMessageSignup": [
+    {
+      "type": 0,
+      "value": "sign up"
+    }
+  ],
   "form.password.invalid": [
     {
       "type": 0,
@@ -879,12 +873,6 @@
     {
       "type": 0,
       "value": "A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen)."
-    }
-  ],
-  "form.signUp.label": [
-    {
-      "type": 0,
-      "value": "Create new account"
     }
   ],
   "form.useCase.label": [
@@ -1443,12 +1431,6 @@
       "value": "Finish session"
     }
   ],
-  "runningSession.button.lecturerCockpit": [
-    {
-      "type": 0,
-      "value": "Lecturer Cockpit"
-    }
-  ],
   "runningSession.button.openBlock": [
     {
       "type": 0,
@@ -1459,6 +1441,12 @@
     {
       "type": 0,
       "value": "Enforce authentication"
+    }
+  ],
+  "runningSession.button.pinnedfeedbacks": [
+    {
+      "type": 0,
+      "value": "Pinned Feedbacks"
     }
   ],
   "runningSession.button.publicEvaluation": [
@@ -1989,6 +1977,28 @@
     {
       "type": 0,
       "value": "Are you sure you want to delete your Klicker account?"
+    }
+  ],
+  "user.login.infoMessage": [
+    {
+      "type": 0,
+      "value": "To login with a legacy account, please "
+    },
+    {
+      "type": 1,
+      "value": "requestLink"
+    },
+    {
+      "type": 0,
+      "value": " first. If you need a new account, you can "
+    },
+    {
+      "type": 1,
+      "value": "signupLink"
+    },
+    {
+      "type": 0,
+      "value": " here."
     }
   ],
   "user.login.pageTitle": [

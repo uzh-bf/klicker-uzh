@@ -6,8 +6,6 @@ module.exports = {
     extend: {
       screens: {
         print: { raw: 'print' },
-        xl: '1280px',
-        '2xl': '1536px',
       },
       colors: {
         'blue-100': '#0028a5',
@@ -33,16 +31,6 @@ module.exports = {
         'primary-bg': '#eff6fc',
         'primary-strong': '#375164',
         'primary-input': '#fafdff',
-      },
-      flex: {
-        '00full': '0 0 100%',
-        '00auto': '0 0 auto',
-      },
-      backgroundImage: {
-        'timeline-desktop':
-          'linear-gradient(to bottom, transparent 0%, transparent calc(50% - 0.81px), lightgrey calc(50% - 0.8px), lightgrey calc(50% + 0.8px), transparent calc(50% + 0.81px), transparent 100%)',
-        'timeline-mobile':
-          'linear-gradient(to right, transparent 0%, transparent calc(50% - 1.01px), lightgrey calc(50% - 1px), lightgrey calc(50% + 1px), transparent calc(50% + 1.01px), transparent 100%)',
       },
     },
   },

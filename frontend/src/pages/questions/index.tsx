@@ -516,8 +516,8 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
           })()}
         </div>
 
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
-          <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <div className="fixed bottom-0 left-0 right-0">
             <Message
               warning
               className="!rounded-none"

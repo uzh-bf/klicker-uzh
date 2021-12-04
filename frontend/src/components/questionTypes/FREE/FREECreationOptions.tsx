@@ -1,10 +1,9 @@
 import React from 'react'
 import _get from 'lodash/get'
-import { Form, Icon, Input } from 'semantic-ui-react'
+import { Form, Icon, Input, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QUESTION_TYPES } from '../../../constants'
-import CustomTooltips from '../../common/CustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -40,6 +39,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
       restrictions: { ...value.restrictions, min: newMin },
     })
   }
+  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div className="FREECreationOptions">
@@ -48,18 +48,25 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
           <label htmlFor="options">
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
 
-            <CustomTooltips
+            <Popup
               content={
                 <FormattedMessage
                   defaultMessage="Choose the allowed format of incoming responses."
                   id="createQuestion.optionsFREE.tooltip"
                 />
               }
-              iconObject={
+              trigger={
                 <a data-tip>
                   <Icon name="question circle" />
                 </a>
               }
+              position="right center"
+              size="small"
+              style={PopupStyle}
+              mouseEnterDelay={250}
+              mouseLeaveDelay={250}
+              wide
+              inverted
             />
           </label>
 

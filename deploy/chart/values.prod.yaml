@@ -19,12 +19,6 @@ security:
   frameguard:
     enabled: true
 
-redis:
-  master:
-    priorityClassName: klicker-prod-klicker-uzh-production-workload
-  replica:
-    priorityClassName: klicker-prod-klicker-uzh-production-workload
-
 analytics:
   sentry:
     frontend:
@@ -39,23 +33,16 @@ analytics:
 
 featureFlags:
   envKey: flags_pub_313968481835942464
-
-services:
-  chatwoot:
-    enabled: true
-    websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
+  persistedUsers: 'roland.schlaefli@bf.uzh.ch,julius.schlapbach@bf.uzh.ch,benjamin.wilding@bf.uzh.ch'
 
 frontend:
-  replicaCount: 3
+  replicaCount: 1
 
   displayAAI: true
 
   hostname: app.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
-
-  vpa:
     enabled: true
 
   ingress:
@@ -68,21 +55,13 @@ frontend:
       - secretName: klicker-prod-frontend-tls
         hosts:
           - app.klicker.uzh.ch
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 50%
 
 backend:
-  replicaCount: 3
+  replicaCount: 1
 
   hostname: api.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
-
-  vpa:
     enabled: true
 
   redis:
@@ -98,12 +77,6 @@ backend:
       - secretName: klicker-prod-backend-tls
         hosts:
           - api.klicker.uzh.ch
-
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 50%
 
 shibboleth:
   enabled: true

@@ -20,7 +20,7 @@ module.exports = {
     },
     [
       {
-        filename: `deploy/charts/klicker-uzh/Chart.yaml`,
+        filename: `deploy/chart/Chart.yaml`,
         updater: 'util/yaml-updater.js',
       },
     ]

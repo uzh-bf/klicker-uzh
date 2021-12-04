@@ -5,13 +5,12 @@ interface Props {
   confusionValues?: {
     speed: number
     difficulty: number
-    numOfFeedbacks: number
   }
   subscribeToMore?: any
 }
 
 const defaultProps = {
-  confusionValues: { speed: 0, difficulty: 0, numOfFeedbacks: 0 },
+  confusionValues: { speed: 0.5, difficulty: 0.5 },
 }
 
 function ConfusionBarometer({ confusionValues, subscribeToMore }: Props): React.ReactElement {

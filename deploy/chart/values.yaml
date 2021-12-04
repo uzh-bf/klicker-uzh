@@ -19,11 +19,11 @@ redis:
 
     resources:
       requests:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       limits:
-        cpu: 400m
-        memory: 150Mi
+        cpu: 500m
+        memory: 200Mi
 
   replica:
     replicaCount: 1
@@ -33,11 +33,12 @@ redis:
 
     resources:
       requests:
-        cpu: 50m
+        cpu: 100m
         memory: 50Mi
       limits:
-        cpu: 400m
-        memory: 150Mi
+        cpu: 200m
+        memory: 200Mi
+
 
 security:
   https:
@@ -74,12 +75,6 @@ analytics:
 featureFlags:
   envKey:
 
-services:
-  chatwoot:
-    enabled: false
-    baseUrl: https://app.chatwoot.com
-    websiteToken:
-
 frontend:
   replicaCount: 1
 
@@ -101,29 +96,24 @@ frontend:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 170Mi
+      cpu: 200m
+      memory: 200Mi
     limits:
       cpu: 400m
-      memory: 300Mi
+      memory: 400Mi
 
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
-
-  vpa:
-    enabled: false
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
 
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
-
-  priorityClassName: production-workload
 
 backend:
   replicaCount: 1
@@ -146,29 +136,24 @@ backend:
 
   resources:
     requests:
-      cpu: 150m
-      memory: 75Mi
+      cpu: 200m
+      memory: 150Mi
     limits:
-      cpu: 500m
-      memory: 200Mi
+      cpu: 400m
+      memory: 300Mi
 
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
-    targetMemoryUtilizationPercentage: 80
-
-  vpa:
-    enabled: false
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 90
 
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
-
-  priorityClassName: production-workload
 
 shibboleth:
   enabled: false
@@ -193,13 +178,8 @@ shibboleth:
 
   resources:
     requests:
-      cpu: 5m
-      memory: 50Mi
+      cpu: 10m
+      memory: 75Mi
     limits:
       cpu: 100m
       memory: 100Mi
-
-  strategy:
-    type: Recreate
-
-  priorityClassName: production-workload

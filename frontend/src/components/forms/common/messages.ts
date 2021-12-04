@@ -21,10 +21,6 @@ export default defineMessages({
     defaultMessage: 'Forgot password?',
     id: 'form.forgotPassword.label',
   },
-  signUp: {
-    defaultMessage: 'Create new account',
-    id: 'form.signUp.label',
-  },
   institutionInvalid: {
     defaultMessage: 'Please provide a valid institution.',
     id: 'form.institution.invalid',
