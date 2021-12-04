@@ -29,6 +29,8 @@ module.exports = (phase) => {
       apiUrl: API_CFG.endpoint,
       apiUrlWS: API_CFG.endpointWS,
       baseUrl: APP_CFG.baseUrl,
+      chatwootBaseUrl: SERVICES_CFG.chatwoot.baseUrl,
+      chatwootToken: SERVICES_CFG.chatwoot.websiteToken,
       googleAnalyticsTrackingId: SERVICES_CFG.googleAnalytics.trackingId,
       matomoSiteUrl: SERVICES_CFG.matomo.siteUrl,
       matomoSiteId: SERVICES_CFG.matomo.siteId,
@@ -40,6 +42,7 @@ module.exports = (phase) => {
       sentryDSN: SERVICES_CFG.sentry.dsn,
       withFingerprinting: SECURITY_CFG.fingerprinting,
       withAai: APP_CFG.withAai,
+      supportEmail: APP_CFG.supportEmail,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,

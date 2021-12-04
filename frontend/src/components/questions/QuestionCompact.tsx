@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import clsx from 'clsx'
-//import dayjs from 'dayjs'
+// import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { useDrag } from 'react-dnd'
 import { Button } from 'semantic-ui-react'
-import { generateTypesShort } from '../../lib/utils/lang'
 import { useIntl } from 'react-intl'
+import { generateTypesShort } from '../../lib/utils/lang'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 
@@ -82,32 +82,33 @@ function QuestionCompact({
           checked && '!bg-green-100',
           creationMode && '!cursor-[grab]',
           collectedProps.isDragging && '!cursor-[grabbing]',
-          'p-4 border border-gray-400 border-2 border-solid p-6 bg-gray-100 rounded-lg h-full cursor-pointer'
+          'border-gray-400 border-2 border-solid p-6 bg-gray-100 rounded-lg h-full cursor-pointer'
         )}
         onClick={(): void => onCheck({ version: activeVersion })}
       >
         <div className="mb-14">
           <div className="text-right">
             {tags.map((tag: any) => (
-              <div className="p-2 bg-blue-100 rounded-md w-min float-right ml-2">{tag.name}</div>
+              <div className="float-right p-2 ml-2 bg-blue-200 rounded-md w-min">{tag.name}</div>
             ))}
           </div>
           <div className="absolute text-left">
-            <div className="bg-blue-200 p-2 rounded-md w-min float-left font-bold">
+            <div className="float-left p-2 font-bold rounded-md bg-primary-50 w-min">
               {generateTypesShort(intl)[type]}
             </div>
+            {isArchived && (
+              <div className="float-left p-2.5 ml-2 text-sm font-bold text-white bg-red-600 rounded-md w-min">
+                <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+              </div>
+            )}
           </div>
         </div>
 
         <h2 className="title align-center">{title}</h2>
-        <p className="leading-relaxed text-base clampedDescription mb-16">{description}</p>
+        <p className="mb-16 text-base leading-relaxed clampedDescription">{description}</p>
         <div className="absolute bottom-0 w-full pl-6 pr-8 -ml-6 ">
-          <div className="border-0 border-b-2 border-solid border-gray-300 mb-4" />
-          {isArchived && (
-            <div className="bg-red-600 text-white text-sm p-2.5 rounded-md w-min float-left font-bold mr-2">
-              ARCHIVED
-            </div>
-          )}
+          <div className="mb-4 border-0 border-b-2 border-gray-300 border-solid" />
+
           <div className="float-right mb-4">
             <Button onClick={(): void => setIsModificationModalOpen(true)}>
               <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />

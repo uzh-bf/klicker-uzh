@@ -92,7 +92,7 @@ function StudentLayout({
           <h1 className="m-0 !text-lg">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
           </h1>
-          <Button className="!m-0" basic icon="refresh" onClick={(): void => window.location.reload()} />
+          <Button basic className="!m-0" icon="refresh" onClick={(): void => window.location.reload()} />
         </div>
 
         <div className="flex flex-1">

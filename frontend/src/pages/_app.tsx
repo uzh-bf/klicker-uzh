@@ -13,6 +13,7 @@ import { init, push } from '@socialgouv/matomo-next'
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
+import Chatwoot from '../lib/Chatwoot'
 import GoogleAnalytics from '../lib/GoogleAnalytics'
 import { UserContext } from '../lib/userContext'
 import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
@@ -79,6 +80,8 @@ function Klicker({ Component, pageProps, locale, messages }) {
       <Head>
         <meta content="width=device-width, initial-scale=1" name="viewport" />
       </Head>
+
+      {publicRuntimeConfig.chatwootToken && <Chatwoot />}
 
       {publicRuntimeConfig.googleAnalyticsTrackingId && <GoogleAnalytics />}
       {publicRuntimeConfig.happyKitAnalyticsKey && <HappyKitAnalytics />}

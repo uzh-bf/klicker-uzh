@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Head from 'next/head'
+import Script from 'next/script'
 
 import { init } from '@socialgouv/matomo-next'
 
@@ -28,6 +29,12 @@ function App({ Component, pageProps }) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
       </Head>
+
+      <Script
+        src="https://betteruptime.com/widgets/announcement.js"
+        data-id="133428"
+        strategy="afterInteractive"
+      />
 
       <div className="top-0 z-10 flex-initial lg:sticky">
         <Header />

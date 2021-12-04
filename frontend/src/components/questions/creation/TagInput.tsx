@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Dropdown, Form, Icon, Popup } from 'semantic-ui-react'
+import { Dropdown, Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   disabled?: boolean
@@ -31,7 +32,6 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
 
     setTagState([...tagState, { key: newTagValue, text: newTagValue, value: newTagValue }])
   }
-  const PopupStyle = { opacity: 0.9 }
 
   return (
     <div className="tagInput">
@@ -39,25 +39,18 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
         <label htmlFor="tags">
           <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
 
-          <Popup
+          <CustomTooltip
             content={
               <FormattedMessage
                 defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
                 id="createQuestion.tagInput.tooltip"
               />
             }
-            trigger={
+            iconObject={
               <a data-tip>
                 <Icon name="question circle" />
               </a>
             }
-            position="right center"
-            size="small"
-            style={PopupStyle}
-            mouseEnterDelay={250}
-            mouseLeaveDelay={250}
-            wide
-            inverted
           />
         </label>
 

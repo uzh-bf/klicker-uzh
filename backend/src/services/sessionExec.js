@@ -341,6 +341,34 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 }
 
 /**
+ * Aggregates confusion data into what is really required by the client
+ */
+const aggregateConfusionFeedbacks = (runningSession) => {
+  const filteredConfusion = runningSession.confusionTS.filter(
+    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
+  )
+
+  let speedRunning = 0
+  let difficultyRunning = 0
+
+  speedRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
+    filteredConfusion.length
+  difficultyRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
+    filteredConfusion.length
+
+  if (Number.isNaN(speedRunning)) {
+    speedRunning = 0
+  }
+  if (Number.isNaN(difficultyRunning)) {
+    difficultyRunning = 0
+  }
+
+  return [speedRunning, difficultyRunning, filteredConfusion.length ? filteredConfusion.length : 0]
+}
+
+/**
  * Add a new confusion timestep to the session
  * @param {*} param0
  */
@@ -355,28 +383,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 
   // push a new timestep into the array
   session.confusionTS.push({ difficulty, speed })
-
-  const filteredConfusion = session.confusionTS.filter(
-    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
-  )
-  let speedRunning = 0
-  let difficultyRunning = 0
-
-  speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
-    filteredConfusion.length
-  difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
-    filteredConfusion.length
-
-  if (Number.isNaN(speedRunning)) {
-    speedRunning = 0.5
-  }
-  if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0.5
-  }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  session.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(session)
 
   // readd mongoDB id-field
   session.id = session._id
@@ -391,7 +398,12 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
 
   pubsub.publish(CONFUSION_ADDED, {
-    [CONFUSION_ADDED]: { speed: speedRunning, difficulty: difficultyRunning, id: savedConfusion._id },
+    [CONFUSION_ADDED]: {
+      speed: speedRunning,
+      difficulty: difficultyRunning,
+      numOfFeedbacks,
+      id: savedConfusion._id,
+    },
     sessionId,
   })
 
@@ -835,35 +847,19 @@ async function resetQuestionBlock({ sessionId, blockId }) {
 }
 
 /**
- * Aggregates confusion data into what is really required by the client
+ * Returns running session data with aggregated confusion data
  */
 const fetchRunningSessionData = async (userId) => {
   const user = await UserModel.findById(userId).populate('runningSession')
-
   const { runningSession } = user
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(runningSession)
 
-  const filteredConfusion = runningSession.confusionTS.filter(
-    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
-  )
-
-  let speedRunning = 0
-  let difficultyRunning = 0
-
-  speedRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.speed + 1) * 0.5, 0) /
-    filteredConfusion.length
-  difficultyRunning =
-    filteredConfusion.reduce((previousValue, currentValue) => previousValue + (currentValue.difficulty + 1) * 0.5, 0) /
-    filteredConfusion.length
-
-  if (Number.isNaN(speedRunning)) {
-    speedRunning = 0
+  // save computed aggregated values
+  runningSession.confusionValues = {
+    speed: speedRunning,
+    difficulty: difficultyRunning,
+    numOfFeedbacks,
   }
-  if (Number.isNaN(difficultyRunning)) {
-    difficultyRunning = 0
-  }
-  // overwrite confusionTS data sent to user by filtered and aggregated values
-  runningSession.confusionValues = { speed: speedRunning, difficulty: difficultyRunning }
 
   // readd mongoDB id-field and empty confusionTS
   runningSession.id = runningSession._id

@@ -23,7 +23,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
   const intl = useIntl()
 
   return (
-    <div className="registrationForm">
+    <div className="flex flex-col md:border md:border-solid md:rounded-md md:border-primary md:p-4 ">
       <Formik
         initialValues={{
           acceptTOS: false,
@@ -44,7 +44,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
           isSubmitting,
           setFieldValue,
         }): React.ReactElement => (
-          <Form error onSubmit={handleSubmit}>
+          <Form error className="!bg-transparent" onSubmit={handleSubmit}>
             <FormikInput
               autoFocus
               required
@@ -79,33 +79,37 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
               type="text"
               value={values.shortname}
             />
-            <div className="password">
-              <FormikInput
-                required
-                error={errors.password}
-                errorMessage={intl.formatMessage(messages.passwordInvalid)}
-                handleBlur={handleBlur}
-                handleChange={handleChange}
-                icon="privacy"
-                label={intl.formatMessage(messages.passwordLabel)}
-                name="password"
-                touched={touched.password}
-                type="password"
-                value={values.password}
-              />
-              <FormikInput
-                required
-                error={errors.passwordRepeat}
-                errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
-                handleBlur={handleBlur}
-                handleChange={handleChange}
-                icon="privacy"
-                label={intl.formatMessage(messages.passwordRepeatLabel)}
-                name="passwordRepeat"
-                touched={touched.passwordRepeat}
-                type="password"
-                value={values.passwordRepeat}
-              />
+            <div className="mb-4 md:flex md:flex-row md:mb-0">
+              <Form.Field className="md:!flex-grow md:!mr-4">
+                <FormikInput
+                  required
+                  error={errors.password}
+                  errorMessage={intl.formatMessage(messages.passwordInvalid)}
+                  handleBlur={handleBlur}
+                  handleChange={handleChange}
+                  icon="privacy"
+                  label={intl.formatMessage(messages.passwordLabel)}
+                  name="password"
+                  touched={touched.password}
+                  type="password"
+                  value={values.password}
+                />
+              </Form.Field>
+              <Form.Field className="md:!flex-grow">
+                <FormikInput
+                  required
+                  error={errors.passwordRepeat}
+                  errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
+                  handleBlur={handleBlur}
+                  handleChange={handleChange}
+                  icon="privacy"
+                  label={intl.formatMessage(messages.passwordRepeatLabel)}
+                  name="passwordRepeat"
+                  touched={touched.passwordRepeat}
+                  type="password"
+                  value={values.passwordRepeat}
+                />
+              </Form.Field>
             </div>
             <FormikInput
               required
@@ -186,39 +190,6 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
           .required()}
         onSubmit={onSubmit}
       />
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .registrationForm > :global(form) {
-          display: flex;
-          flex-direction: column;
-
-          .password {
-            margin-bottom: 1rem;
-          }
-
-          @include desktop-tablet-only {
-            border: 1px solid $color-primary;
-            padding: 1rem;
-            background-color: rgba(124, 184, 228, 0.12);
-
-            .password {
-              display: flex;
-              flex-direction: row;
-              margin-bottom: 0;
-
-              :global(.field) {
-                flex: 1;
-
-                &:first-child {
-                  margin-right: 1rem;
-                }
-              }
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

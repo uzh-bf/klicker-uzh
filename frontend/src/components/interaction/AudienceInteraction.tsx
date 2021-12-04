@@ -6,7 +6,6 @@ import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
-// import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
@@ -85,7 +84,7 @@ function AudienceInteraction({
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
                 <Button text labelPosition="left" size="small">
                   <Icon name="external" />
-                  <FormattedMessage defaultMessage="Pinned Feedbacks" id="runningSession.button.pinnedfeedbacks" />
+                  <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
                 </Button>
               </a>
             </div>
@@ -197,7 +196,7 @@ function AudienceInteraction({
           </div>
 
           {hasConfusionFlag && isConfusionBarometerActive && (
-            <div className="flex-initial md:mt-4 p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
+            <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
               <ConfusionBarometer
                 confusionValues={confusionValues}
                 subscribeToMore={(): void => {
@@ -212,6 +211,7 @@ function AudienceInteraction({
                           confusionValues: {
                             speed: subscriptionData.data.confusionAdded.speed,
                             difficulty: subscriptionData.data.confusionAdded.difficulty,
+                            numOfFeedbacks: subscriptionData.data.confusionAdded.numOfFeedbacks,
                           },
                         },
                       }

@@ -22,8 +22,8 @@ function RequestPassword(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="resetPassword">
-        <h1>
+      <div className="p-4 md:w-[500px] items-center">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
         </h1>
 
@@ -55,23 +55,6 @@ function RequestPassword(): React.ReactElement {
             </>
           )
         })()}
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .resetPassword {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            @include desktop-tablet-only {
-              margin: 0 15%;
-              width: 500px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )

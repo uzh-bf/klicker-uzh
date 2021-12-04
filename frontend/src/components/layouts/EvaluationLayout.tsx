@@ -173,7 +173,7 @@ function EvaluationLayout({
         })}
       >
         {((): React.ReactElement => {
-          if (instanceSummary.length <= 0) {
+          if (instanceSummary.length <= 0 && !existsFeedback && !existsConfusion) {
             return null
           }
 
@@ -267,7 +267,7 @@ function EvaluationLayout({
               (showFeedback && 'Feedback-Channel') ||
               (showConfusionTS && 'Confusion-Barometer')}
           </p>
-          {showQuestionLayout && publicRuntimeConfig.s3root && files.length > 0 && (
+          {showQuestionLayout && publicRuntimeConfig.s3root && files?.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
             </div>
