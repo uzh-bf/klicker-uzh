@@ -9,9 +9,8 @@ const CFG = require('../klicker.conf.js')
 const validators = require('../lib/validators')
 const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel, UserModel } = require('../models')
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
-const { Errors, ROLES, QUESTION_GROUPS } = require('../constants')
-const { convertToPlainText } = require('../lib/draft')
-const { processTags, processFiles } = require('./questions')
+const { Errors, ROLES } = require('../constants')
+const { createQuestion } = require('./questions')
 
 const APP_CFG = CFG.get('app')
 
@@ -132,47 +131,6 @@ const checkAvailability = async ({ email, shortname }) => {
   return result
 }
 
-const createFirstQuestions = async (title, type, content, options, solution, files, tags, userId, newUser) => {
-  // process tags
-  const { allTagIds, allTags, createdTagIds } = processTags(newUser.tags, tags, userId)
-
-  // process files
-  const { createdFiles, createdFileIds, existingFileIds } = processFiles(files, userId)
-
-  // create a new question
-  // pass the list of tag ids for reference
-  // create an initial version "0" containing the description, options and solution
-  const newQuestion = new QuestionModel({
-    tags: allTagIds,
-    title,
-    type,
-    user: userId,
-    versions: [
-      {
-        content,
-        description: convertToPlainText(content),
-        options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
-          [type]: options,
-        },
-        files: existingFileIds.concat(createdFileIds),
-        solution,
-      },
-    ],
-  })
-
-  const allTagsUpdate = allTags.map((tag) => {
-    tag.questions.push(newQuestion.id)
-    return tag.save()
-  })
-
-  const allFilesSave = createdFiles.map((file) => file.save())
-
-  // wait until the question and user both have been saved
-  await Promise.all([newQuestion.save(), Promise.all(allTagsUpdate), Promise.all(allFilesSave)])
-
-  return [newQuestion, createdTagIds, createdFileIds]
-}
-
 /**
  * Register an account for a new user
  * @param {String} email The email of the new user
@@ -257,7 +215,7 @@ const signup = async (
         sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
       }
 
-      // TODO Demo data is added to populate new user accounts
+      // demo data is added to populate new user accounts
       const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
       const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
       const content = [
@@ -305,26 +263,16 @@ const signup = async (
 
       for (let i = 0; i < titles.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
-        const user = await UserModel.findById(userId).populate(['tags'])
-        // eslint-disable-next-line no-await-in-loop
-        const [newQuestion, createdTagIds, createdFileIds] = await createFirstQuestions(
-          titles[i],
-          types[i],
-          content[i],
-          options[i],
+        await createQuestion({
+          title: titles[i],
+          type: types[i],
+          content: content[i],
+          options: options[i],
           solution,
           files,
           tags,
           userId,
-          user
-        )
-        // push the new question and possibly tags into the user model
-        newUser.questions.push(newQuestion.id)
-        newUser.tags = newUser.tags.concat(createdTagIds)
-        newUser.files = newUser.files.concat(createdFileIds)
-
-        // eslint-disable-next-line no-await-in-loop
-        await Promise.all([newUser.save()])
+        })
       }
 
       // return the data of the newly created user
