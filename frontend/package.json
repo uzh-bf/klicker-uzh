@@ -151,6 +151,7 @@
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" src/server.ts",
     "lint": "next lint",
     "lint:staged": "lint-staged",
+    "lint:fix": "next lint -- --fix",
     "start": "cross-env NODE_ENV=production NODE_ICU_DATA=node_modules/full-icu node -r dotenv/config dist/server",
     "start-no-custom-server": "next start",
     "start:inspect": "cross-env NODE_ENV=production node --inspect -r dotenv/config dist/server",
