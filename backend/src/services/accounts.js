@@ -305,6 +305,8 @@ const signup = async (
 
       for (let i = 0; i < titles.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
+        const user = await UserModel.findById(userId).populate(['tags'])
+        // eslint-disable-next-line no-await-in-loop
         const [newQuestion, createdTagIds, createdFileIds] = await createFirstQuestions(
           titles[i],
           types[i],
@@ -314,15 +316,16 @@ const signup = async (
           files,
           tags,
           userId,
-          newUser
+          user
         )
         // push the new question and possibly tags into the user model
         newUser.questions.push(newQuestion.id)
         newUser.tags = newUser.tags.concat(createdTagIds)
         newUser.files = newUser.files.concat(createdFileIds)
-      }
 
-      await Promise.all([newUser.save()])
+        // eslint-disable-next-line no-await-in-loop
+        await Promise.all([newUser.save()])
+      }
 
       // return the data of the newly created user
       return newUser
