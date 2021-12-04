@@ -39,6 +39,14 @@ const responseCache = getRedis('exec')
  * @param {*} param0
  */
 const addFeedback = async ({ sessionId, content }) => {
+  /* console.log('new Feedback added with parameters:')
+  console.log('sessionId:')
+  console.log(typeof sessionId)
+  console.log(sessionId)
+  console.log('content:')
+  console.log(typeof content)
+  console.log(content) */
+
   // TODO: participant auth
 
   const session = await getRunningSession(sessionId)
@@ -145,6 +153,20 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
 }
 
 async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState }) {
+  /* console.log('Feedback resolved with parameters')
+  console.log('sessionId:')
+  console.log(typeof sessionId)
+  console.log(sessionId)
+  console.log('feedbackId:')
+  console.log(typeof feedbackId)
+  console.log(feedbackId)
+  console.log('userId:')
+  console.log(typeof userId)
+  console.log(userId)
+  console.log('resolvedState:')
+  console.log(typeof resolvedState)
+  console.log(resolvedState) */
+
   const session = await getRunningSession(sessionId)
 
   assertUserMatch(session, userId)
@@ -184,6 +206,20 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
 }
 
 async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
+  /* console.log('response to feedback given with parameters')
+  console.log('sessionId:')
+  console.log(typeof sessionId)
+  console.log(sessionId)
+  console.log('feedbackId:')
+  console.log(typeof feedbackId)
+  console.log(feedbackId)
+  console.log('userId:')
+  console.log(typeof userId)
+  console.log(userId)
+  console.log('response:')
+  console.log(typeof response)
+  console.log(response) */
+
   const session = await getRunningSession(sessionId)
 
   assertUserMatch(session, userId)
@@ -345,6 +381,17 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
  * @param {*} param0
  */
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
+  /* console.log('confusionTS added with parameters')
+  console.log('sessionId:')
+  console.log(typeof sessionId)
+  console.log(sessionId)
+  console.log('difficulty:')
+  console.log(typeof difficulty)
+  console.log(difficulty)
+  console.log('speed:')
+  console.log(typeof speed)
+  console.log(speed) */
+
   // TODO: participant auth
   const session = await getRunningSession(sessionId)
 
@@ -422,6 +469,17 @@ const computeParticipantIdentifier = (authToken, namespace) => {
  * @param {*} param0
  */
 const addResponse = async ({ instanceId, response, auth: authToken }) => {
+  /* console.log('Response added toggled with parameters: ')
+  console.log('instanceId:')
+  console.log(typeof instanceId)
+  console.log(instanceId)
+  console.log('response:')
+  console.log(typeof response)
+  console.log(response)
+  console.log('authToken')
+  console.log(typeof authToken)
+  console.log(authToken) */
+
   // ensure that a response cache is available
   if (!responseCache) {
     throw new Error('REDIS_NOT_AVAILABLE')

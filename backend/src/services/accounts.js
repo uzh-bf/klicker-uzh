@@ -11,7 +11,8 @@ const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel,
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
 const { Errors, ROLES } = require('../constants')
 const { createQuestion } = require('./questions')
-const { createSession } = require('./sessionMgr')
+const { createSession, startSession, endSession, activateBlockById, deactivateBlockById } = require('./sessionMgr')
+const { addResponse } = require('./sessionExec')
 
 const APP_CFG = CFG.get('app')
 
@@ -302,6 +303,140 @@ const signup = async (
         participants: [],
         authenticationMode: 'NONE',
         userId,
+      })
+
+      const evaluationSession = await createSession({
+        name: 'Completed Demosession with Data',
+        questionBlocks: [
+          { questions: [{ question: demoQuestions[0]._id, version: 0 }] },
+          { questions: [{ question: demoQuestions[2]._id, version: 0 }] },
+          {
+            questions: [
+              { question: demoQuestions[1]._id, version: 0 },
+              { question: demoQuestions[3]._id, version: 0 },
+            ],
+          },
+        ],
+        participants: [],
+        authenticationMode: 'NONE',
+        userId,
+      })
+
+      console.log(evaluationSession)
+      console.log(evaluationSession.blocks[0].instances)
+      console.log(evaluationSession.blocks[1].instances)
+      console.log(evaluationSession.blocks[2].instances)
+
+      // start session and populate it with responses, feedbacks, etc. to populate the evaluation screen
+      await startSession({
+        id: evaluationSession._id,
+        userId,
+        shortname: undefined,
+      })
+
+      await activateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[0]._id,
+      })
+
+      await addResponse({
+        instanceId: evaluationSession.blocks[0].instances[0],
+        response: { choices: [0] },
+        authToken: {
+          role: 'USER',
+          sub: '61abc1c8c32b8557aae05b43',
+          scope: ['user'],
+          shortname: 'demo1',
+          iat: 1638646228,
+          exp: 1639251028,
+        },
+      })
+
+      await deactivateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[0]._id,
+        incrementActiveStep: true,
+        isScheduled: undefined,
+      })
+
+      await activateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[1]._id,
+      })
+
+      await addResponse({
+        instanceId: evaluationSession.blocks[1].instances[0],
+        response: { value: 'This is a test Free test response' },
+        authToken: {
+          role: 'USER',
+          sub: '61abc1c8c32b8557aae05b43',
+          scope: ['user'],
+          shortname: 'demo1',
+          iat: 1638646228,
+          exp: 1639251028,
+        },
+      })
+
+      await deactivateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[1]._id,
+        incrementActiveStep: true,
+        isScheduled: undefined,
+      })
+
+      await endSession({
+        id: evaluationSession._id,
+        userId,
+        shortname: undefined,
+      })
+
+      await activateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[2]._id,
+      })
+
+      await addResponse({
+        instanceId: evaluationSession.blocks[2].instances[0],
+        response: { choices: [1, 2] },
+        authToken: {
+          role: 'USER',
+          sub: '61abc1c8c32b8557aae05b43',
+          scope: ['user'],
+          shortname: 'demo1',
+          iat: 1638646228,
+          exp: 1639251028,
+        },
+      })
+      await addResponse({
+        instanceId: evaluationSession.blocks[2].instances[1],
+        response: { value: '4500' },
+        authToken: {
+          role: 'USER',
+          sub: '61abc1c8c32b8557aae05b43',
+          scope: ['user'],
+          shortname: 'demo1',
+          iat: 1638646228,
+          exp: 1639251028,
+        },
+      })
+
+      await deactivateBlockById({
+        userId,
+        sessionId: evaluationSession._id,
+        blockId: evaluationSession.blocks[2]._id,
+        incrementActiveStep: true,
+        isScheduled: undefined,
+      })
+
+      await endSession({
+        id: evaluationSession._id,
+        userId,
+        shortname: undefined,
       })
 
       // return the data of the newly created user
