@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.2...v1.7.0-beta.3) (2021-12-04)
+
+
+### Other
+
+* **deploy:** ensure that prod and faculties are not deployed by default ([8f0cf24](https://github.com/uzh-bf/klicker-uzh/commit/8f0cf241c5a2bb9ef01d5a39d79f37404246ecb4))
+* **docs:** pin node to 16 ([ae6119f](https://github.com/uzh-bf/klicker-uzh/commit/ae6119fda46799b44ab90eb7c8813217741a1b0a))
+
+
+### Enhancements
+
+* **frontend:** rework welcome page with tailwind and updated contents ([#2647](https://github.com/uzh-bf/klicker-uzh/issues/2647)) ([2701914](https://github.com/uzh-bf/klicker-uzh/commit/2701914999b4426b8f0856e2f2c41a556fa485c4))
+
 ## [1.7.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.1...v1.7.0-beta.2) (2021-12-02)
 
 
