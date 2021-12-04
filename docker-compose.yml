@@ -14,6 +14,7 @@ services:
       API_ENDPOINT_SSR: http://backend:4000/graphql
       APP_BASE_URL: http://localhost:3000
       APP_JOIN_URL: localhost:3000/join
+      APP_SUPPORT_EMAIL: klicker.support@uzh.ch
       CACHE_REDIS_ENABLED: "true"
       CACHE_REDIS_HOST: redis_cache
       S3_ROOT_DOMAIN: localhost:9000

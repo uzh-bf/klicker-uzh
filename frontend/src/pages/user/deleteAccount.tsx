@@ -24,8 +24,8 @@ function DeleteAccount(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="deleteAccount">
-        <h1>
+      <div className="md:w-[550px] md:items-center p-4">
+        <h1 className="mt-0">
           <FormattedMessage
             defaultMessage="Are you sure you want to delete your Klicker account?"
             id="user.deleteAccount.title"
@@ -47,14 +47,15 @@ function DeleteAccount(): React.ReactElement {
           }
 
           return (
-            <>
+            <div className="flex flex-col flex-grow md:flex-row">
               <Link href="/questions">
-                <Button primary>
+                <Button primary className="!w-full md:!w-1/2 !mb-1 md:!mb-0">
                   <FormattedMessage defaultMessage="No, take me back." id="user.deleteAccount.button.cancel" />
                 </Button>
               </Link>
 
               <Button
+                className="!w-full md:!w-1/2 !mr-0"
                 color="red"
                 loading={loading}
                 onClick={(): void => {
@@ -66,26 +67,9 @@ function DeleteAccount(): React.ReactElement {
               </Button>
 
               {error && <Message error>{error.message}</Message>}
-            </>
+            </div>
           )
         })()}
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .deleteAccount {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            @include desktop-tablet-only {
-              margin: 0 15%;
-              width: 500px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )

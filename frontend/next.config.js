@@ -42,6 +42,7 @@ module.exports = (phase) => {
       sentryDSN: SERVICES_CFG.sentry.dsn,
       withFingerprinting: SECURITY_CFG.fingerprinting,
       withAai: APP_CFG.withAai,
+      supportEmail: APP_CFG.supportEmail,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,

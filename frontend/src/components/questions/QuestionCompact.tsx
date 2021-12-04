@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import clsx from 'clsx'
-//import dayjs from 'dayjs'
+// import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { useDrag } from 'react-dnd'
 import { Button } from 'semantic-ui-react'
-import { generateTypesShort } from '../../lib/utils/lang'
 import { useIntl } from 'react-intl'
+import { generateTypesShort } from '../../lib/utils/lang'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 
