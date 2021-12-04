@@ -257,34 +257,34 @@ const signup = async (
         sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
       }
 
-      // TODO populateNewUserAccounts: add create question queries here
+      // TODO Demo data is added to populate new user accounts
       const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
       const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
       const content = [
-        '{"blocks":[{"text":"Demoquestion SC Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Demoquestion MC Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Demoquestion FT Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Demoquestion NR Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Which of the following statements is applicable to KlickerUZH?","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Which of the following persons have been American presidents? (multiple correct answers possible)","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Describe a main principle of a social market economy.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Estimate the length of the longest river in the world (answer in kilometers).","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
       ]
       const options = [
         {
           randomized: false,
           restrictions: { min: null, max: null },
           choices: [
-            { correct: true, name: 'Answer 1 correct' },
-            { correct: false, name: 'Answer 2 wrong' },
-            { correct: false, name: 'Answer 3 wrong' },
-            { correct: false, name: 'Answer 4 wrong' },
+            { correct: true, name: 'KlickerUZH is an open-source audience response system' },
+            { correct: false, name: 'KlickerUZH is owned by Google' },
+            { correct: false, name: 'KlickerUZH cannot be used by everyone' },
+            { correct: false, name: 'KlickerUZH is a project of the University of Zurich' },
           ],
         },
         {
           randomized: false,
           restrictions: { min: null, max: null },
           choices: [
-            { correct: false, name: 'Answer 1 wrong' },
-            { correct: true, name: 'Answer 2 correct' },
-            { correct: true, name: 'Answer 3 correct' },
-            { correct: false, name: 'Answer 4 wrong' },
+            { correct: false, name: 'Barack Obama' },
+            { correct: true, name: 'Ted Cruz' },
+            { correct: true, name: 'Alexander Hamilton' },
+            { correct: false, name: 'John F. Kennedy' },
           ],
         },
         {
@@ -294,7 +294,7 @@ const signup = async (
         },
         {
           randomized: false,
-          restrictions: { min: -100, max: 100 },
+          restrictions: { min: 0, max: 8000 },
           choices: [],
         },
       ]
