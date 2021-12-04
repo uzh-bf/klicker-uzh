@@ -79,7 +79,7 @@ function Feedback({
               {resolved ? (
                 <>
                   <div>
-                    <Icon name="check" className="md:!ml-8 print:!ml-8" /> Resolved during session
+                    <Icon className="md:!ml-8 print:!ml-8" name="check" /> Resolved during session
                   </div>
                   {responses?.length > 0 && (
                     <div className="text-gray-500 ml-7 md:hidden print:hidden">{responses.length} responses given</div>
@@ -87,7 +87,7 @@ function Feedback({
                 </>
               ) : (
                 <div>
-                  <Icon name="discussions" className="!ml-8" />
+                  <Icon className="!ml-8" name="discussions" />
                 </div>
               )}
             </div>

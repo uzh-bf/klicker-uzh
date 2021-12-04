@@ -2,9 +2,9 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
-import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 import Image from 'next/image'
 import getConfig from 'next/config'
+import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 
 import StaticLayout from '../components/layouts/StaticLayout'
 
@@ -45,15 +45,15 @@ function Index(): React.ReactElement {
           <p className="mb-2 lg:flex-00full">Want to participate in a poll?</p>
           <Input
             fluid
+            className="flex-grow lg:mr-2"
             label="app.klicker.uzh.ch/join/"
             placeholder="account id"
             value={shortname}
             onChange={(e): void => setShortname(e.target.value)}
-            className="flex-grow lg:mr-2"
           />
           <Button
-            className="!mr-0 !mt-2 lg:!mt-0"
             primary
+            className="!mr-0 !mt-2 lg:!mt-0"
             disabled={!shortname || shortname === ''}
             onClick={redirectToJoin}
           >
@@ -70,8 +70,8 @@ function Index(): React.ReactElement {
                 <List.Content>
                   <List.Header
                     as="a"
-                    target="_blank"
                     href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
+                    target="_blank"
                   >
                     Documentation
                   </List.Header>
@@ -81,7 +81,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="question circle" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://www.klicker.uzh.ch/docs/faq/faq">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/docs/faq/faq" target="_blank">
                     FAQ
                   </List.Header>
                   <List.Description>Common Questions</List.Description>
@@ -93,8 +93,8 @@ function Index(): React.ReactElement {
                   {/* //TODO: update usecase link to Docusaurus once separate page exists */}
                   <List.Header
                     as="a"
-                    target="_blank"
                     href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
+                    target="_blank"
                   >
                     Use Cases
                   </List.Header>
@@ -109,7 +109,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://github.com/uzh-bf/klicker-uzh">
+                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh" target="_blank">
                     uzh-bf/klicker-uzh
                   </List.Header>
                   <List.Description>GitHub Repository</List.Description>
@@ -118,7 +118,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="sitemap" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://www.klicker.uzh.ch/roadmap">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap" target="_blank">
                     Public Roadmap
                   </List.Header>
                   <List.Description>Project Outline</List.Description>
@@ -127,7 +127,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="bullhorn" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://www.klicker.uzh.ch/docs/blog">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/docs/blog" target="_blank">
                     Project Updates
                   </List.Header>
                   <List.Description>Updates on developments</List.Description>
@@ -150,7 +150,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="lightbulb" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://klicker-uzh.feedbear.com/boards/feature-requests">
+                  <List.Header as="a" href="https://klicker-uzh.feedbear.com/boards/feature-requests" target="_blank">
                     Feature Requests
                   </List.Header>
                   <List.Description>Request a new feature</List.Description>
@@ -159,7 +159,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" target="_blank" href="https://github.com/uzh-bf/klicker-uzh/discussions">
+                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/discussions" target="_blank">
                     Discussions
                   </List.Header>
                   <List.Description>GitHub discussions</List.Description>
@@ -172,7 +172,7 @@ function Index(): React.ReactElement {
         <List>
           {links.map(
             (link): React.ReactElement => (
-              <List.Item key={link.label} className="mb-4 !inline-block mr-2">
+              <List.Item className="mb-4 !inline-block mr-2" key={link.label}>
                 <a href={link.href} target="_self">
                   <Button primary>{link.label}</Button>
                 </a>

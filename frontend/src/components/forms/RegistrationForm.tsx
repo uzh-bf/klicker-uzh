@@ -44,7 +44,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
           isSubmitting,
           setFieldValue,
         }): React.ReactElement => (
-          <Form error onSubmit={handleSubmit} className="!bg-transparent">
+          <Form error className="!bg-transparent" onSubmit={handleSubmit}>
             <FormikInput
               autoFocus
               required
