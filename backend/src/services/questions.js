@@ -389,4 +389,6 @@ module.exports = {
   archiveQuestions,
   deleteQuestions,
   exportQuestions,
+  processTags,
+  processFiles,
 }

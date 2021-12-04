@@ -9,7 +9,9 @@ const CFG = require('../klicker.conf.js')
 const validators = require('../lib/validators')
 const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel, UserModel } = require('../models')
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
-const { Errors, ROLES } = require('../constants')
+const { Errors, ROLES, QUESTION_GROUPS } = require('../constants')
+const { convertToPlainText } = require('../lib/draft')
+const { processTags, processFiles } = require('./questions')
 
 const APP_CFG = CFG.get('app')
 
@@ -130,6 +132,47 @@ const checkAvailability = async ({ email, shortname }) => {
   return result
 }
 
+const createFirstQuestions = async (title, type, content, options, solution, files, tags, userId, newUser) => {
+  // process tags
+  const { allTagIds, allTags, createdTagIds } = processTags(newUser.tags, tags, userId)
+
+  // process files
+  const { createdFiles, createdFileIds, existingFileIds } = processFiles(files, userId)
+
+  // create a new question
+  // pass the list of tag ids for reference
+  // create an initial version "0" containing the description, options and solution
+  const newQuestion = new QuestionModel({
+    tags: allTagIds,
+    title,
+    type,
+    user: userId,
+    versions: [
+      {
+        content,
+        description: convertToPlainText(content),
+        options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
+          [type]: options,
+        },
+        files: existingFileIds.concat(createdFileIds),
+        solution,
+      },
+    ],
+  })
+
+  const allTagsUpdate = allTags.map((tag) => {
+    tag.questions.push(newQuestion.id)
+    return tag.save()
+  })
+
+  const allFilesSave = createdFiles.map((file) => file.save())
+
+  // wait until the question and user both have been saved
+  await Promise.all([newQuestion.save(), Promise.all(allTagsUpdate), Promise.all(allFilesSave)])
+
+  return [newQuestion, createdTagIds, createdFileIds]
+}
+
 /**
  * Register an account for a new user
  * @param {String} email The email of the new user
@@ -213,10 +256,43 @@ const signup = async (
       } catch (e) {
         sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
       }
-    }
 
-    // return the data of the newly created user
-    return newUser
+      // TODO populateNewUserAccounts: add create question queries here
+      const title = 'Testquestion FT'
+      const type = 'FREE'
+      const content =
+        '{"blocks":[{"text":"Testquestion Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}'
+      const options = {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [],
+      }
+      const solution = undefined
+      const files = []
+      const tags = ['DEMO']
+      const userId = newUser._id
+
+      const [newQuestion, createdTagIds, createdFileIds] = await createFirstQuestions(
+        title,
+        type,
+        content,
+        options,
+        solution,
+        files,
+        tags,
+        userId,
+        newUser
+      )
+
+      // push the new question and possibly tags into the user model
+      newUser.questions.push(newQuestion.id)
+      newUser.tags = newUser.tags.concat(createdTagIds)
+      newUser.files = newUser.files.concat(createdFileIds)
+      await Promise.all([newUser.save()])
+
+      // return the data of the newly created user
+      return newUser
+    }
   }
 
   throw new UserInputError('SIGNUP_FAILED')
