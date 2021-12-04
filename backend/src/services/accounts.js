@@ -258,36 +258,70 @@ const signup = async (
       }
 
       // TODO populateNewUserAccounts: add create question queries here
-      const title = 'Testquestion FT'
-      const type = 'FREE'
-      const content =
-        '{"blocks":[{"text":"Testquestion Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}'
-      const options = {
-        randomized: false,
-        restrictions: { min: null, max: null },
-        choices: [],
-      }
+      const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
+      const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
+      const content = [
+        '{"blocks":[{"text":"Demoquestion SC Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Demoquestion MC Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Demoquestion FT Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+        '{"blocks":[{"text":"Demoquestion NR Content","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+      ]
+      const options = [
+        {
+          randomized: false,
+          restrictions: { min: null, max: null },
+          choices: [
+            { correct: true, name: 'Answer 1 correct' },
+            { correct: false, name: 'Answer 2 wrong' },
+            { correct: false, name: 'Answer 3 wrong' },
+            { correct: false, name: 'Answer 4 wrong' },
+          ],
+        },
+        {
+          randomized: false,
+          restrictions: { min: null, max: null },
+          choices: [
+            { correct: false, name: 'Answer 1 wrong' },
+            { correct: true, name: 'Answer 2 correct' },
+            { correct: true, name: 'Answer 3 correct' },
+            { correct: false, name: 'Answer 4 wrong' },
+          ],
+        },
+        {
+          randomized: false,
+          restrictions: { min: null, max: null },
+          choices: [],
+        },
+        {
+          randomized: false,
+          restrictions: { min: -100, max: 100 },
+          choices: [],
+        },
+      ]
       const solution = undefined
       const files = []
       const tags = ['DEMO']
       const userId = newUser._id
 
-      const [newQuestion, createdTagIds, createdFileIds] = await createFirstQuestions(
-        title,
-        type,
-        content,
-        options,
-        solution,
-        files,
-        tags,
-        userId,
-        newUser
-      )
+      for (let i = 0; i < titles.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        const [newQuestion, createdTagIds, createdFileIds] = await createFirstQuestions(
+          titles[i],
+          types[i],
+          content[i],
+          options[i],
+          solution,
+          files,
+          tags,
+          userId,
+          newUser
+        )
+        // push the new question and possibly tags into the user model
+        newUser.questions.push(newQuestion.id)
+        newUser.tags = newUser.tags.concat(createdTagIds)
+        newUser.files = newUser.files.concat(createdFileIds)
+      }
 
-      // push the new question and possibly tags into the user model
-      newUser.questions.push(newQuestion.id)
-      newUser.tags = newUser.tags.concat(createdTagIds)
-      newUser.files = newUser.files.concat(createdFileIds)
       await Promise.all([newUser.save()])
 
       // return the data of the newly created user

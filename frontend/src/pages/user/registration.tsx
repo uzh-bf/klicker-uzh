@@ -4,6 +4,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+
 import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
