@@ -20,7 +20,7 @@ interface EvaluationConfusionProps {
   confusionTS: any
 }
 
-function MatchingEmoji({ value }) {
+function MatchingEmoji({ value }: any) {
   if (value <= -1.4 || value >= 1.4) {
     return <div>🙁</div>
   }
@@ -87,9 +87,18 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           : { speed: 0, difficulty: 0, numOfElements: 0, windowStart: startRunningInterval.format('HH:mm') }
       })
     }
-
+    if (confusionTS.length === 1) {
+      return [
+        {
+          speed: confusionTS[0].speed,
+          difficulty: confusionTS[0].difficulty,
+          numOfElements: 1,
+          windowStart: dayjs(confusionTS[0].createdAt).format('HH:mm'),
+        },
+      ]
+    }
     return []
-  }, [confusionTS, xInterval, runningWindow])
+  }, [confusionTS, xDataInterval, runningAvgFactor])
 
   return (
     <div className="flex flex-col justify-start h-full">
