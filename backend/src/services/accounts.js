@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const _get = require('lodash/get')
+const dayjs = require('dayjs')
 const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
@@ -19,7 +20,7 @@ const {
   deactivateBlockById,
   updateSettings,
 } = require('./sessionMgr')
-const { addResponse, addConfusionTS, addFeedback, respondToFeedback } = require('./sessionExec')
+const { addResponse, addFeedback, respondToFeedback } = require('./sessionExec')
 
 const APP_CFG = CFG.get('app')
 
@@ -465,16 +466,19 @@ const signup = async (
       })
 
       // add confusion data to session
-      for (let i = 0; i < 60; i += 1) {
+      const demoConfusionValues = []
+      for (let i = 0; i < 120; i += 1) {
         const value1 = Math.floor(Math.random() * 5) - 2
         const value2 = Math.floor(Math.random() * 5) - 2
-        // eslint-disable-next-line no-await-in-loop
-        await addConfusionTS({
-          sessionId: evaluationSession._id,
-          difficulty: value1,
-          spoeed: value2,
-        })
+        const time = dayjs()
+          .add(i * 40, 'seconds')
+          .toDate()
+        const confusionTimestep = { speed: value1, difficulty: value2, createdAt: time }
+        demoConfusionValues.push(confusionTimestep)
       }
+      const sessionToBeUdpated = await SessionModel.findById(evaluationSession._id)
+      sessionToBeUdpated.confusionTS = demoConfusionValues
+      await sessionToBeUdpated.save()
 
       // populate feedback channel with feedbacks and responses
       const givenFeedbacks = []
