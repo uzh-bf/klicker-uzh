@@ -329,11 +329,6 @@ const signup = async (
         userId,
       })
 
-      console.log(evaluationSession)
-      console.log(evaluationSession.blocks[0].instances)
-      console.log(evaluationSession.blocks[1].instances)
-      console.log(evaluationSession.blocks[2].instances)
-
       // start session and populate it with responses, feedbacks, etc. to populate the evaluation screen
       await startSession({
         id: evaluationSession._id,

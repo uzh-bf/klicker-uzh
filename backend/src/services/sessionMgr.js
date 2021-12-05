@@ -790,17 +790,6 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
  * @param {*} param0
  */
 const startSession = ({ id, userId, shortname }) => {
-  /* console.log('start session with parameters')
-  console.log('id:')
-  console.log(typeof id)
-  console.log(id)
-  console.log('userId:')
-  console.log(typeof userId)
-  console.log(userId)
-  console.log('shortname:')
-  console.log(typeof shortname)
-  console.log(shortname) */
-
   return sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
 }
 
@@ -823,17 +812,6 @@ const cancelSession = ({ id, userId, shortname }) =>
  * @param {*} param0
  */
 const endSession = ({ id, userId, shortname }) => {
-  /* console.log('end session with parameters')
-  console.log('id:')
-  console.log(typeof id)
-  console.log(id)
-  console.log('userId:')
-  console.log(typeof userId)
-  console.log(userId)
-  console.log('shortname:')
-  console.log(typeof shortname)
-  console.log(shortname) */
-
   return sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
 }
 
@@ -844,20 +822,6 @@ const endSession = ({ id, userId, shortname }) => {
 const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   // TODO: security
   // TODO: ...
-  /* console.log('Session settings changed with parameters')
-  console.log('sessionId')
-  console.log(typeof sessionId)
-  console.log(sessionId)
-  console.log('userId:')
-  console.log(typeof userId)
-  console.log(userId)
-  console.log('settings:')
-  console.log(typeof settings)
-  console.log(settings)
-  console.log('shortname:')
-  console.log(typeof shortname)
-  console.log(shortname) */
-
   const session = await getRunningSession(sessionId)
 
   // ensure the user is authorized to modify this session
@@ -895,23 +859,6 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
 const jobs = {}
 
 async function deactivateBlockById({ userId, sessionId, blockId, incrementActiveStep, isScheduled }) {
-  /* console.log('deactivate block by id with parameters')
-  console.log('userId:')
-  console.log(typeof userId)
-  console.log(userId)
-  console.log('sessionId:')
-  console.log(typeof sessionId)
-  console.log(sessionId)
-  console.log('blockId:')
-  console.log(typeof blockId)
-  console.log(blockId)
-  console.log('incrementActiveStep:')
-  console.log(typeof incrementActiveStep)
-  console.log(incrementActiveStep)
-  console.log('isScheduled:')
-  console.log(typeof isScheduled)
-  console.log(isScheduled) */
-
   const user = await UserModel.findById(userId)
   const session = await SessionModel.findOne({ _id: sessionId, user: userId })
 
@@ -976,17 +923,6 @@ async function deactivateBlockById({ userId, sessionId, blockId, incrementActive
 }
 
 async function activateBlockById({ userId, sessionId, blockId }) {
-  /* console.log('activate block by id with parameters')
-  console.log('userId:')
-  console.log(typeof userId)
-  console.log(userId)
-  console.log('sessionId:')
-  console.log(typeof sessionId)
-  console.log(sessionId)
-  console.log('blockId:')
-  console.log(typeof blockId)
-  console.log(blockId) */
-
   const user = await UserModel.findById(userId)
   let session = await SessionModel.findOne({ _id: sessionId, user: userId })
 
