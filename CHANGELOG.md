@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.3...v1.7.0-rc.0) (2021-12-05)
+
+
+### Bug Fixes
+
+* **frontend:** also show confusionbarometer on evaluation page for a single feedback ([183d91e](https://github.com/uzh-bf/klicker-uzh/commit/183d91e00c483e9bd885243019f68116e6bf98b4))
+
+
+### Enhancements
+
+* add teams notifications on important events ([5f9675c](https://github.com/uzh-bf/klicker-uzh/commit/5f9675c0a2df72f85565245174d395458b9f1505))
+
 ## [1.7.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.2...v1.7.0-beta.3) (2021-12-04)
 
 
