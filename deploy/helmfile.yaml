@@ -47,7 +47,7 @@ releases:
   #     - charts/klicker-uzh/secrets.faculties.yaml
   #     - frontend:
   #         image:
-  #           tag: v1.7.0-beta.1
+  #           tag: v1.7.0-rc.0
   #       backend:
   #         image:
-  #           tag: v1.7.0-beta.1
+  #           tag: v1.7.0-rc.0
