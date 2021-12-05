@@ -340,18 +340,23 @@ const signup = async (
         blockId: evaluationSession.blocks[0]._id,
       })
 
-      await addResponse({
-        instanceId: evaluationSession.blocks[0].instances[0],
-        response: { choices: [0] },
-        authToken: {
-          role: 'USER',
-          sub: '61abc1c8c32b8557aae05b43',
-          scope: ['user'],
-          shortname: 'demo1',
-          iat: 1638646228,
-          exp: 1639251028,
-        },
-      })
+      for (let i = 0; i < 80; i += 1) {
+        const value = Math.floor(Math.random() * 4)
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[0].instances[0],
+          response: { choices: [value] },
+          authToken: {},
+        })
+      }
+      for (let i = 0; i < 82; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[0].instances[0],
+          response: { choices: [0] },
+          authToken: {},
+        })
+      }
 
       await deactivateBlockById({
         userId,
@@ -369,15 +374,23 @@ const signup = async (
 
       await addResponse({
         instanceId: evaluationSession.blocks[1].instances[0],
-        response: { value: 'This is a test Free test response' },
-        authToken: {
-          role: 'USER',
-          sub: '61abc1c8c32b8557aae05b43',
-          scope: ['user'],
-          shortname: 'demo1',
-          iat: 1638646228,
-          exp: 1639251028,
+        response: {
+          value: 'This system produces the highest level of economic benefit and social justice for all participants.',
         },
+        authToken: {},
+      })
+      await addResponse({
+        instanceId: evaluationSession.blocks[1].instances[0],
+        response: {
+          value:
+            'The system is based on free-market capitalism, but also includes special provisions for social programs, etc.',
+        },
+        authToken: {},
+      })
+      await addResponse({
+        instanceId: evaluationSession.blocks[1].instances[0],
+        response: { value: 'The free social market economy is the most common system in the modern world.' },
+        authToken: {},
       })
 
       await deactivateBlockById({
@@ -388,42 +401,48 @@ const signup = async (
         isScheduled: undefined,
       })
 
-      await endSession({
-        id: evaluationSession._id,
-        userId,
-        shortname: undefined,
-      })
-
       await activateBlockById({
         userId,
         sessionId: evaluationSession._id,
         blockId: evaluationSession.blocks[2]._id,
       })
 
-      await addResponse({
-        instanceId: evaluationSession.blocks[2].instances[0],
-        response: { choices: [1, 2] },
-        authToken: {
-          role: 'USER',
-          sub: '61abc1c8c32b8557aae05b43',
-          scope: ['user'],
-          shortname: 'demo1',
-          iat: 1638646228,
-          exp: 1639251028,
-        },
-      })
-      await addResponse({
-        instanceId: evaluationSession.blocks[2].instances[1],
-        response: { value: '4500' },
-        authToken: {
-          role: 'USER',
-          sub: '61abc1c8c32b8557aae05b43',
-          scope: ['user'],
-          shortname: 'demo1',
-          iat: 1638646228,
-          exp: 1639251028,
-        },
-      })
+      for (let i = 0; i < 70; i += 1) {
+        const value = Math.floor(Math.random() * 4)
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[2].instances[0],
+          response: { choices: [value] },
+          authToken: {},
+        })
+      }
+      for (let i = 0; i < 82; i += 1) {
+        const value = Math.floor(Math.random() * 2) + 1
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[2].instances[0],
+          response: { choices: [value] },
+          authToken: {},
+        })
+      }
+      for (let i = 0; i < 40; i += 1) {
+        const value = Math.floor(Math.random() * 1500) + 6500
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[2].instances[1],
+          response: { value: value.toString() },
+          authToken: {},
+        })
+      }
+      for (let i = 0; i < 185; i += 1) {
+        const value = Math.floor(Math.random() * 250) + 6693
+        // eslint-disable-next-line no-await-in-loop
+        await addResponse({
+          instanceId: evaluationSession.blocks[2].instances[1],
+          response: { value: value.toString() },
+          authToken: {},
+        })
+      }
 
       await deactivateBlockById({
         userId,
