@@ -9,6 +9,7 @@ const CFG = require('../klicker.conf.js')
 const APP_CFG = CFG.get('app')
 const EMAIL_CFG = CFG.get('email')
 const SLACK_CFG = CFG.get('services.slack')
+const TEAMS_CFG = CFG.get('services.teams')
 
 /**
  * Send a slack notification (if enabled)
@@ -22,6 +23,18 @@ async function sendSlackNotification(scope, text) {
     return rp({
       method: 'POST',
       uri: SLACK_CFG.webhook,
+      body: {
+        text: `[${scope}] ${text}`,
+      },
+      json: true,
+    })
+  }
+
+  // check if teams integration is appropriately configured
+  if (process.env.NODE_ENV === 'production' && TEAMS_CFG.enabled) {
+    return rp({
+      method: 'POST',
+      uri: TEAMS_CFG.webhook,
       body: {
         text: `[${scope}] ${text}`,
       },

@@ -396,5 +396,18 @@ module.exports = convict({
         sensitive: true,
       },
     },
+    teams: {
+      enabled: {
+        default: false,
+        env: 'SERVICES_TEAMS_ENABLED',
+        format: 'Boolean',
+      },
+      webhook: {
+        default: undefined,
+        env: 'SERVICES_TEAMS_WEBHOOK',
+        format: 'url',
+        sensitive: true,
+      },
+    },
   },
 })

@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const _get = require('lodash/get')
 const dayjs = require('dayjs')
+// const _range = require('lodash/range')
 const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
@@ -141,6 +142,322 @@ const checkAvailability = async ({ email, shortname }) => {
   return result
 }
 
+async function hydrateDemoData({ userId, shortname }) {
+  await TagModel.create({
+    name: 'DEMO',
+    questions: [],
+    user: userId,
+  })
+
+  const solution = undefined
+  const files = []
+  const tags = ['DEMO']
+
+  const demoQuestions = [
+    {
+      title: 'Demoquestion SC',
+      type: 'SC',
+      content:
+        '{"blocks":[{"text":"Which of the following statements is applicable to KlickerUZH?","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+      options: {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [
+          { correct: true, name: 'KlickerUZH is an open-source audience response system' },
+          { correct: false, name: 'KlickerUZH is owned by Google' },
+          { correct: false, name: 'KlickerUZH cannot be used by everyone' },
+          { correct: false, name: 'KlickerUZH is a project of the University of Zurich' },
+        ],
+      },
+      solution,
+      files,
+      tags,
+      userId,
+    },
+    {
+      title: 'Demoquestion MC',
+      type: 'MC',
+      content:
+        '{"blocks":[{"text":"Which of the following persons have been American presidents? (multiple correct answers possible)","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+      options: {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [
+          { correct: false, name: 'Barack Obama' },
+          { correct: true, name: 'Ted Cruz' },
+          { correct: true, name: 'Alexander Hamilton' },
+          { correct: false, name: 'John F. Kennedy' },
+        ],
+      },
+      solution,
+      files,
+      tags,
+      userId,
+    },
+    {
+      title: 'Demoquestion FT',
+      type: 'FREE',
+      content:
+        '{"blocks":[{"text":"Describe a main principle of a social market economy.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+      options: {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [],
+      },
+      solution,
+      files,
+      tags,
+      userId,
+    },
+    {
+      title: 'Demoquestion NR',
+      type: 'FREE_RANGE',
+      content:
+        '{"blocks":[{"text":"Estimate the length of the longest river in the world (answer in kilometers).","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+      options: {
+        randomized: false,
+        restrictions: { min: 0, max: 8000 },
+        choices: [],
+      },
+      solution,
+      files,
+      tags,
+      userId,
+    },
+  ]
+
+  const createdQuestions = []
+  demoQuestions.forEach(async (question) => {
+    createdQuestions.push(await createQuestion(question))
+  })
+
+  await createSession({
+    name: 'Demosession',
+    questionBlocks: [
+      { questions: [{ question: createdQuestions[0]._id, version: 0 }] },
+      { questions: [{ question: createdQuestions[2]._id, version: 0 }] },
+      {
+        questions: [
+          { question: createdQuestions[1]._id, version: 0 },
+          { question: createdQuestions[3]._id, version: 0 },
+        ],
+      },
+      {
+        questions: [
+          { question: createdQuestions[0]._id, version: 0 },
+          { question: createdQuestions[1]._id, version: 0 },
+          { question: createdQuestions[2]._id, version: 0 },
+          { question: createdQuestions[3]._id, version: 0 },
+        ],
+      },
+    ],
+    participants: [],
+    authenticationMode: 'NONE',
+    userId,
+  })
+
+  const evaluationSession = await createSession({
+    name: 'Completed Demosession with Data',
+    questionBlocks: [
+      { questions: [{ question: createdQuestions[0]._id, version: 0 }] },
+      { questions: [{ question: createdQuestions[2]._id, version: 0 }] },
+      {
+        questions: [
+          { question: createdQuestions[1]._id, version: 0 },
+          { question: createdQuestions[3]._id, version: 0 },
+        ],
+      },
+    ],
+    participants: [],
+    authenticationMode: 'NONE',
+    userId,
+  })
+
+  // start session and populate it with responses, feedbacks, etc. to populate the evaluation screen
+  await startSession({
+    id: evaluationSession._id,
+    userId,
+    shortname: undefined,
+  })
+
+  await activateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[0]._id,
+  })
+
+  // populate first SC question with answers (biased towards correct one)
+  for (let i = 0; i < 10; i += 1) {
+    const value = Math.floor(Math.random() * 4)
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[0].instances[0],
+      response: { choices: [value] },
+      authToken: {},
+    })
+  }
+  for (let i = 0; i < 15; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[0].instances[0],
+      response: { choices: [0] },
+      authToken: {},
+    })
+  }
+
+  await deactivateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[0]._id,
+    incrementActiveStep: true,
+    isScheduled: undefined,
+  })
+
+  await activateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[1]._id,
+  })
+
+  // populate FT question with answers
+  await addResponse({
+    instanceId: evaluationSession.blocks[1].instances[0],
+    response: {
+      value: 'This system produces the highest level of economic benefit and social justice for all participants.',
+    },
+    authToken: {},
+  })
+  await addResponse({
+    instanceId: evaluationSession.blocks[1].instances[0],
+    response: {
+      value:
+        'The system is based on free-market capitalism, but also includes special provisions for social programs, etc.',
+    },
+    authToken: {},
+  })
+  await addResponse({
+    instanceId: evaluationSession.blocks[1].instances[0],
+    response: { value: 'The free social market economy is the most common system in the modern world.' },
+    authToken: {},
+  })
+
+  await deactivateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[1]._id,
+    incrementActiveStep: true,
+    isScheduled: undefined,
+  })
+
+  await activateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[2]._id,
+  })
+
+  // populate MC and NR question with answers
+  for (let i = 0; i < 10; i += 1) {
+    const value = Math.floor(Math.random() * 4)
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[2].instances[0],
+      response: { choices: [value] },
+      authToken: {},
+    })
+  }
+  for (let i = 0; i < 15; i += 1) {
+    const value = Math.floor(Math.random() * 2) + 1
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[2].instances[0],
+      response: { choices: [value] },
+      authToken: {},
+    })
+  }
+  for (let i = 0; i < 5; i += 1) {
+    const value = Math.floor(Math.random() * 1500) + 6500
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[2].instances[1],
+      response: { value: value.toString() },
+      authToken: {},
+    })
+  }
+  for (let i = 0; i < 20; i += 1) {
+    const value = Math.floor(Math.random() * 250) + 6693
+    // eslint-disable-next-line no-await-in-loop
+    await addResponse({
+      instanceId: evaluationSession.blocks[2].instances[1],
+      response: { value: value.toString() },
+      authToken: {},
+    })
+  }
+
+  await deactivateBlockById({
+    userId,
+    sessionId: evaluationSession._id,
+    blockId: evaluationSession.blocks[2]._id,
+    incrementActiveStep: true,
+    isScheduled: undefined,
+  })
+
+  await updateSettings({
+    sessionId: evaluationSession._id,
+    userId,
+    settings: { isConfusionBarometerActive: true, isFeedbackChannelActive: true },
+    shortname,
+  })
+
+  // add confusion data to session
+  const demoConfusionValues = []
+  for (let i = 0; i < 30; i += 1) {
+    const value1 = Math.floor(Math.random() * 5) - 2
+    const value2 = Math.floor(Math.random() * 5) - 2
+    const time = dayjs()
+      .add(i * 40, 'seconds')
+      .toDate()
+    const confusionTimestep = { speed: value1, difficulty: value2, createdAt: time }
+    demoConfusionValues.push(confusionTimestep)
+  }
+  const sessionToBeUdpated = await SessionModel.findById(evaluationSession._id)
+  sessionToBeUdpated.confusionTS = demoConfusionValues
+  await sessionToBeUdpated.save()
+
+  // populate feedback channel with feedbacks and responses
+  const givenFeedbacks = []
+  givenFeedbacks.push(
+    await addFeedback({
+      sessionId: evaluationSession._id,
+      content: 'Which answer was correct for the question about the longest river in the world?',
+    })
+  )
+  givenFeedbacks.push(
+    await addFeedback({
+      sessionId: evaluationSession._id,
+      content: 'Could you please explain again what the main principles of a social market economy are?',
+    })
+  )
+  givenFeedbacks.push(
+    await addFeedback({
+      sessionId: evaluationSession._id,
+      content: 'This example about the fundamental principle of algebra was very helpful, thank you.',
+    })
+  )
+
+  await respondToFeedback({
+    sessionId: evaluationSession._id,
+    feedbackId: givenFeedbacks[0]._id,
+    userId,
+    response: "The Nile river is the longest in the world with a length of 6'693 kilometers.",
+  })
+
+  await endSession({
+    id: evaluationSession._id,
+    userId,
+    shortname: undefined,
+  })
+}
+
 /**
  * Register an account for a new user
  * @param {String} email The email of the new user
@@ -225,294 +542,11 @@ const signup = async (
         sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
       }
 
-      // demo data is added to populate new user accounts
-      const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
-      const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
-      const content = [
-        '{"blocks":[{"text":"Which of the following statements is applicable to KlickerUZH?","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Which of the following persons have been American presidents? (multiple correct answers possible)","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Describe a main principle of a social market economy.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-        '{"blocks":[{"text":"Estimate the length of the longest river in the world (answer in kilometers).","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-      ]
-      const options = [
-        {
-          randomized: false,
-          restrictions: { min: null, max: null },
-          choices: [
-            { correct: true, name: 'KlickerUZH is an open-source audience response system' },
-            { correct: false, name: 'KlickerUZH is owned by Google' },
-            { correct: false, name: 'KlickerUZH cannot be used by everyone' },
-            { correct: false, name: 'KlickerUZH is a project of the University of Zurich' },
-          ],
-        },
-        {
-          randomized: false,
-          restrictions: { min: null, max: null },
-          choices: [
-            { correct: false, name: 'Barack Obama' },
-            { correct: true, name: 'Ted Cruz' },
-            { correct: true, name: 'Alexander Hamilton' },
-            { correct: false, name: 'John F. Kennedy' },
-          ],
-        },
-        {
-          randomized: false,
-          restrictions: { min: null, max: null },
-          choices: [],
-        },
-        {
-          randomized: false,
-          restrictions: { min: 0, max: 8000 },
-          choices: [],
-        },
-      ]
-      const solution = undefined
-      const files = []
-      const tags = ['DEMO']
-      const userId = newUser._id
-      const demoQuestions = []
-
-      for (let i = 0; i < titles.length; i += 1) {
-        demoQuestions.push(
-          // eslint-disable-next-line no-await-in-loop
-          await createQuestion({
-            title: titles[i],
-            type: types[i],
-            content: content[i],
-            options: options[i],
-            solution,
-            files,
-            tags,
-            userId,
-          })
-        )
+      try {
+        await hydrateDemoData({ userId: newUser._id, shortname: newUser.shortname })
+      } catch (e) {
+        sendSlackNotification('accounts', `Demo data hydration failed for ${normalizedEmail} ${e.message}`)
       }
-
-      await createSession({
-        name: 'Demosession',
-        questionBlocks: [
-          { questions: [{ question: demoQuestions[0]._id, version: 0 }] },
-          { questions: [{ question: demoQuestions[2]._id, version: 0 }] },
-          {
-            questions: [
-              { question: demoQuestions[1]._id, version: 0 },
-              { question: demoQuestions[3]._id, version: 0 },
-            ],
-          },
-          {
-            questions: [
-              { question: demoQuestions[0]._id, version: 0 },
-              { question: demoQuestions[1]._id, version: 0 },
-              { question: demoQuestions[2]._id, version: 0 },
-              { question: demoQuestions[3]._id, version: 0 },
-            ],
-          },
-        ],
-        participants: [],
-        authenticationMode: 'NONE',
-        userId,
-      })
-
-      const evaluationSession = await createSession({
-        name: 'Completed Demosession with Data',
-        questionBlocks: [
-          { questions: [{ question: demoQuestions[0]._id, version: 0 }] },
-          { questions: [{ question: demoQuestions[2]._id, version: 0 }] },
-          {
-            questions: [
-              { question: demoQuestions[1]._id, version: 0 },
-              { question: demoQuestions[3]._id, version: 0 },
-            ],
-          },
-        ],
-        participants: [],
-        authenticationMode: 'NONE',
-        userId,
-      })
-
-      // start session and populate it with responses, feedbacks, etc. to populate the evaluation screen
-      await startSession({
-        id: evaluationSession._id,
-        userId,
-        shortname: undefined,
-      })
-
-      await activateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[0]._id,
-      })
-
-      // populate first SC question with answers (biased towards correct one)
-      for (let i = 0; i < 80; i += 1) {
-        const value = Math.floor(Math.random() * 4)
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[0].instances[0],
-          response: { choices: [value] },
-          authToken: {},
-        })
-      }
-      for (let i = 0; i < 82; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[0].instances[0],
-          response: { choices: [0] },
-          authToken: {},
-        })
-      }
-
-      await deactivateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[0]._id,
-        incrementActiveStep: true,
-        isScheduled: undefined,
-      })
-
-      await activateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[1]._id,
-      })
-
-      // populate FT question with answers
-      await addResponse({
-        instanceId: evaluationSession.blocks[1].instances[0],
-        response: {
-          value: 'This system produces the highest level of economic benefit and social justice for all participants.',
-        },
-        authToken: {},
-      })
-      await addResponse({
-        instanceId: evaluationSession.blocks[1].instances[0],
-        response: {
-          value:
-            'The system is based on free-market capitalism, but also includes special provisions for social programs, etc.',
-        },
-        authToken: {},
-      })
-      await addResponse({
-        instanceId: evaluationSession.blocks[1].instances[0],
-        response: { value: 'The free social market economy is the most common system in the modern world.' },
-        authToken: {},
-      })
-
-      await deactivateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[1]._id,
-        incrementActiveStep: true,
-        isScheduled: undefined,
-      })
-
-      await activateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[2]._id,
-      })
-
-      // populate MC and NR question with answers
-      for (let i = 0; i < 70; i += 1) {
-        const value = Math.floor(Math.random() * 4)
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[2].instances[0],
-          response: { choices: [value] },
-          authToken: {},
-        })
-      }
-      for (let i = 0; i < 82; i += 1) {
-        const value = Math.floor(Math.random() * 2) + 1
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[2].instances[0],
-          response: { choices: [value] },
-          authToken: {},
-        })
-      }
-      for (let i = 0; i < 40; i += 1) {
-        const value = Math.floor(Math.random() * 1500) + 6500
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[2].instances[1],
-          response: { value: value.toString() },
-          authToken: {},
-        })
-      }
-      for (let i = 0; i < 185; i += 1) {
-        const value = Math.floor(Math.random() * 250) + 6693
-        // eslint-disable-next-line no-await-in-loop
-        await addResponse({
-          instanceId: evaluationSession.blocks[2].instances[1],
-          response: { value: value.toString() },
-          authToken: {},
-        })
-      }
-
-      await deactivateBlockById({
-        userId,
-        sessionId: evaluationSession._id,
-        blockId: evaluationSession.blocks[2]._id,
-        incrementActiveStep: true,
-        isScheduled: undefined,
-      })
-
-      await updateSettings({
-        sessionId: evaluationSession._id,
-        userId,
-        settings: { isConfusionBarometerActive: true, isFeedbackChannelActive: true },
-        shortname: newUser.shortname,
-      })
-
-      // add confusion data to session
-      const demoConfusionValues = []
-      for (let i = 0; i < 120; i += 1) {
-        const value1 = Math.floor(Math.random() * 5) - 2
-        const value2 = Math.floor(Math.random() * 5) - 2
-        const time = dayjs()
-          .add(i * 40, 'seconds')
-          .toDate()
-        const confusionTimestep = { speed: value1, difficulty: value2, createdAt: time }
-        demoConfusionValues.push(confusionTimestep)
-      }
-      const sessionToBeUdpated = await SessionModel.findById(evaluationSession._id)
-      sessionToBeUdpated.confusionTS = demoConfusionValues
-      await sessionToBeUdpated.save()
-
-      // populate feedback channel with feedbacks and responses
-      const givenFeedbacks = []
-      givenFeedbacks.push(
-        await addFeedback({
-          sessionId: evaluationSession._id,
-          content: 'Which answer was correct for the question about the longest river in the world?',
-        })
-      )
-      givenFeedbacks.push(
-        await addFeedback({
-          sessionId: evaluationSession._id,
-          content: 'Could you please explain again what the main principles of a social market economy are?',
-        })
-      )
-      givenFeedbacks.push(
-        await addFeedback({
-          sessionId: evaluationSession._id,
-          content: 'This example about the fundamental principle of algebra was very helpful, thank you.',
-        })
-      )
-
-      await respondToFeedback({
-        sessionId: evaluationSession._id,
-        feedbackId: givenFeedbacks[0]._id,
-        userId,
-        response: "The Nile river is the longest in the world with a length of 6'693 kilometers.",
-      })
-
-      await endSession({
-        id: evaluationSession._id,
-        userId,
-        shortname: undefined,
-      })
 
       // return the data of the newly created user
       return newUser
