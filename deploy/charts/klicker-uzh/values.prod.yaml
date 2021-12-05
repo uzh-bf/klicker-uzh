@@ -44,6 +44,9 @@ services:
   chatwoot:
     enabled: true
     websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
+  teams:
+    enabled: true
+    env: prod
 
 frontend:
   replicaCount: 3

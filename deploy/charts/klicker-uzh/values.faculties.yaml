@@ -19,6 +19,11 @@ security:
   frameguard:
     enabled: true
 
+services:
+  teams:
+    enabled: true
+    env: faculties
+
 redis:
   master:
     priorityClassName: klicker-faculties-klicker-uzh-production-workload

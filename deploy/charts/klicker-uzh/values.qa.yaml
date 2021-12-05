@@ -34,6 +34,9 @@ services:
   chatwoot:
     enabled: true
     websiteToken: 9KkoSxhVNrQjyBU5YRw2Zzok
+  teams:
+    enabled: true
+    env: qa
 
 frontend:
   hostname: app.klicker-qa.bf-app.ch
