@@ -79,6 +79,10 @@ services:
     enabled: false
     baseUrl: https://app.chatwoot.com
     websiteToken:
+  teams:
+    enabled: false
+    env: qa
+    webhook:
 
 frontend:
   replicaCount: 1

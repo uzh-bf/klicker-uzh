@@ -38,3 +38,8 @@ data:
   {{ end }}
 
   # SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  {{- if .Values.services.teams.enabled }}
+  SERVICES_TEAMS_ENABLED: 'true'
+  SERVICES_TEAMS_ENV: {{ .Values.services.teams.env | quote }}
+  SERVICES_TEAMS_WEBHOOK: {{ .Values.services.teams.webhook | quote }}
+  {{ end }}
