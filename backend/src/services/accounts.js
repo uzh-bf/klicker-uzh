@@ -11,8 +11,15 @@ const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel,
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
 const { Errors, ROLES } = require('../constants')
 const { createQuestion } = require('./questions')
-const { createSession, startSession, endSession, activateBlockById, deactivateBlockById } = require('./sessionMgr')
-const { addResponse } = require('./sessionExec')
+const {
+  createSession,
+  startSession,
+  endSession,
+  activateBlockById,
+  deactivateBlockById,
+  updateSettings,
+} = require('./sessionMgr')
+const { addResponse, addConfusionTS, addFeedback, respondToFeedback } = require('./sessionExec')
 
 const APP_CFG = CFG.get('app')
 
@@ -340,6 +347,7 @@ const signup = async (
         blockId: evaluationSession.blocks[0]._id,
       })
 
+      // populate first SC question with answers (biased towards correct one)
       for (let i = 0; i < 80; i += 1) {
         const value = Math.floor(Math.random() * 4)
         // eslint-disable-next-line no-await-in-loop
@@ -372,6 +380,7 @@ const signup = async (
         blockId: evaluationSession.blocks[1]._id,
       })
 
+      // populate FT question with answers
       await addResponse({
         instanceId: evaluationSession.blocks[1].instances[0],
         response: {
@@ -407,6 +416,7 @@ const signup = async (
         blockId: evaluationSession.blocks[2]._id,
       })
 
+      // populate MC and NR question with answers
       for (let i = 0; i < 70; i += 1) {
         const value = Math.floor(Math.random() * 4)
         // eslint-disable-next-line no-await-in-loop
@@ -450,6 +460,53 @@ const signup = async (
         blockId: evaluationSession.blocks[2]._id,
         incrementActiveStep: true,
         isScheduled: undefined,
+      })
+
+      await updateSettings({
+        sessionId: evaluationSession._id,
+        userId,
+        settings: { isConfusionBarometerActive: true, isFeedbackChannelActive: true },
+        shortname: newUser.shortname,
+      })
+
+      // add confusion data to session
+      for (let i = 0; i < 60; i += 1) {
+        const value1 = Math.floor(Math.random() * 5) - 2
+        const value2 = Math.floor(Math.random() * 5) - 2
+        // eslint-disable-next-line no-await-in-loop
+        await addConfusionTS({
+          sessionId: evaluationSession._id,
+          difficulty: value1,
+          spoeed: value2,
+        })
+      }
+
+      // populate feedback channel with feedbacks and responses
+      const givenFeedbacks = []
+      givenFeedbacks.push(
+        await addFeedback({
+          sessionId: evaluationSession._id,
+          content: 'Which answer was correct for the question about the longest river in the world?',
+        })
+      )
+      givenFeedbacks.push(
+        await addFeedback({
+          sessionId: evaluationSession._id,
+          content: 'Could you please explain again what the main principles of a social market economy are?',
+        })
+      )
+      givenFeedbacks.push(
+        await addFeedback({
+          sessionId: evaluationSession._id,
+          content: 'This example about the fundamental principle of algebra was very helpful, thank you.',
+        })
+      )
+
+      await respondToFeedback({
+        sessionId: evaluationSession._id,
+        feedbackId: givenFeedbacks[0]._id,
+        userId,
+        response: "The Nile river is the longest in the world with a length of 6'693 kilometers.",
       })
 
       await endSession({

@@ -844,6 +844,19 @@ const endSession = ({ id, userId, shortname }) => {
 const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   // TODO: security
   // TODO: ...
+  /* console.log('Session settings changed with parameters')
+  console.log('sessionId')
+  console.log(typeof sessionId)
+  console.log(sessionId)
+  console.log('userId:')
+  console.log(typeof userId)
+  console.log(userId)
+  console.log('settings:')
+  console.log(typeof settings)
+  console.log(settings)
+  console.log('shortname:')
+  console.log(typeof shortname)
+  console.log(shortname) */
 
   const session = await getRunningSession(sessionId)
 
