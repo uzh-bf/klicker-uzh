@@ -17,7 +17,7 @@ Our official Helm chart is not yet documented and only customizable to the exten
 
 The recommended way of deploying the KlickerUZH to production is by using our official Helm chart and a production-grade Kubernetes cluster (e.g., with multiple nodes and an appropriate security setup).
 
-Our Helm chart is located in the KlickerUZH repo at <https://github.com/uzh-bf/klicker-uzh/tree/dev/deploy/chart>.
+Our Helm chart is located in the KlickerUZH repo at <https://github.com/uzh-bf/klicker-uzh/tree/dev/deploy/charts/klicker-uzh>.
 
 ## Deployment with Docker Compose
 

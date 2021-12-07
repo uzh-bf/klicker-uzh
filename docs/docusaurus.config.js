@@ -27,7 +27,7 @@ module.exports = {
         docs: {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
-          sidebarPath: require.resolve('./sidebars.json'),
+          sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/docs',
           routeBasePath: '/',
         },
@@ -40,7 +40,7 @@ module.exports = {
       },
     ],
   ],
-  plugins: [],
+  plugins: ['@docusaurus/plugin-ideal-image'],
   themeConfig: {
     navbar: {
       logo: {
@@ -51,6 +51,11 @@ module.exports = {
         {
           to: 'introduction/getting_started',
           label: 'Getting Started',
+          position: 'left',
+        },
+        {
+          to: 'use_cases/qa',
+          label: 'Use Cases',
           position: 'left',
         },
         {
