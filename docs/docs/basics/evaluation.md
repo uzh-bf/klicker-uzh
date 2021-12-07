@@ -10,7 +10,7 @@ The evaluation screen provides different charts for all questions asked within a
 Depending on the question type the evaluation screen might look different. Additionally, some
 charts are not available for all question types. The two screens show all features.
 
-1. **Navigation:** All questions within the active block are listed here. Click the question or use the arrows on the very left or right to navigate through the questions. Additionally, if the audience interaction feature was enabled during the session, input from the students will also be available under a separate _Feedback-Channel_-Tab. There you will again find to possibility to export / print all questions with their corresponding votes and responses.
+1. **Navigation:** All questions within the active block are listed here. Click the question or use the arrows on the very left or right to navigate through the questions.
 2. **Question:** The question posed to the audience.
 3. **Number of participants:** Indicates how many participants answered the question.
 4. **Show Solution:** For single and multiple choice questions this slider can be used to show the correct answer within the graph.
@@ -22,5 +22,15 @@ charts are not available for all question types. The two screens show all featur
 10. **Export PDF:** Clicking this button opens the print preview, which can be used to print the current session evaluations to a PDF.
 
 ![Evaluation](/img/evaluation_2.png)
+
+In addition to the evaluation of questions, the outcome of audience interaction functionalities will be shown in separate tabs if the session has been completed and the functionalities were enabled.
+
+The evaluation screen for the Q&A channel allows the lecturer to review and/or export the results of the Q&A for a later upload to the LMS:
+
+![Q&A Evaluation](/img/evaluation_feedbacks.png)
+
+Additionally, the evaluation screen for the confusion barometer visualized the history of incoming feedbacks during the sessions along the time axis. Using the graph settings below the chart, the windowing algorithm for display can be tuned regarding granularity.
+
+![Confusion Evaluation](/img/evaluation_confusion.png)
 
 This step concludes the basic tutorial which led you through all of the basic features that the KlickerUZH offers. If you would like to see how you can edit, archive, or delete questions, or how you can update certain user settings, please continue with the _Advanced Tutorial_ section.
