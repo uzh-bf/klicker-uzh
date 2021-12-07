@@ -10,7 +10,9 @@ import {
   Icon,
   Button,
   Form,
+  List,
 } from 'semantic-ui-react'
+import clsx from 'clsx'
 
 enum Status {
   RELEASED,
@@ -35,6 +37,10 @@ interface RoadmapItemProps {
   title: string
   description: string
   status: Status
+  items?: Array<{
+    label: string
+    href?: string
+  }>
   children: any
 }
 
@@ -43,6 +49,7 @@ function RoadmapItem({
   title,
   description,
   status,
+  items,
   children,
 }: RoadmapItemProps) {
   return (
@@ -51,9 +58,33 @@ function RoadmapItem({
       className="md:!max-w-sm"
       color={StatusColor[status] as any}
     >
-      <Card.Content header={title} />
+      <Card.Content className="!flex-grow-0" header={title} />
       {/* <Image src="https://place-hold.it/300x100" /> */}
-      <Card.Content>{description}</Card.Content>
+      <Card.Content className="flex-1">{description}</Card.Content>
+      {items && (
+        <Card.Content>
+          <div className="font-bold text-gray-600">Use Cases</div>
+          <ul className="flex flex-col gap-2 mt-2">
+            {items.map((item) => {
+              const content = (
+                <li
+                  className={clsx(
+                    'px-2 py-1 prose-sm bg-gray-100 rounded',
+                    item.href && 'cursor-pointer hover:shadow'
+                  )}
+                  key={item.label}
+                >
+                  {item.label}
+                </li>
+              )
+              if (item.href) {
+                return <Link href={item.href}>{content}</Link>
+              }
+              return content
+            })}
+          </ul>
+        </Card.Content>
+      )}
       <Card.Content extra className="flex items-center">
         <Label color={StatusColor[status] as any}>{StatusText[status]}</Label>
         {children}
@@ -140,6 +171,11 @@ export default function Roadmap() {
                   New interaction modalities for virtual and physical classrooms
                   improve interaction between lecturers and participants.
                 `}
+                items={[
+                  { label: 'Live Q&A in large classrooms (released)' },
+                  { label: 'Real-time feedback on comprehension (released)' },
+                  { label: 'Poll-based experiments (in progress)' },
+                ]}
                 status={Status.WORKING_ON}
               >
                 <Label>Fall 21 - Spring 22</Label>
