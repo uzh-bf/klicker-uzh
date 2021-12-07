@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-rc.0...v1.7.0) (2021-12-07)
+
+
+### Other
+
+* **deploy:** update appVersion on faculties instance ([6d20824](https://github.com/uzh-bf/klicker-uzh/commit/6d2082462158f5c060994706047bbdf5c009e99c))
+
 ## [1.7.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-beta.3...v1.7.0-rc.0) (2021-12-05)
 
 
