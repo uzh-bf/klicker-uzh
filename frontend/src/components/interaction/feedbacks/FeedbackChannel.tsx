@@ -1,14 +1,23 @@
 import { Message, Button } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { useEffect, useState } from 'react'
+import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+
+import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+import useStickyState from '../../../lib/hooks/useStickyState'
+
+const messages = defineMessages({
+  notificationTitle: {
+    defaultMessage: 'New Question / Feedback',
+    id: 'feedbackchannel.notifications.title',
+  },
+})
 
 interface Props {
   feedbacks?: any[]
-  handleActiveToggle: any
   handleDeleteFeedback: any
-  handlePublicToggle: any
   handlePinFeedback: (id: string, pinState: boolean) => void
   handlePublishFeedback: (id: string, publishState: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void
@@ -34,18 +43,44 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'qa-survey-lecturer-visible'
+  )
+
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, { withSearch: true })
+  const [feedbackLength, setFeedbackLength] = useState(0)
+  const intl = useIntl()
+
+  useEffect(() => {
+    requestNotificationPermissions((permission) => {
+      if (permission === 'granted') {
+        setFeedbackLength(feedbacks.length)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!sessionStorage?.getItem(`feedback ${feedbacks[feedbacks.length - 1]?.id}`)) {
+      if (feedbacks.length > feedbackLength) {
+        createNotification(intl.formatMessage(messages.notificationTitle), feedbacks[feedbacks.length - 1].content)
+      }
+      sessionStorage?.setItem(`feedback ${feedbacks[feedbacks.length - 1]?.id}`, 'notified')
+    }
+    setFeedbackLength(feedbacks.length)
+  }, [feedbacks.length])
 
   return (
     <div>
       <FeedbackSearchAndFilters disabled={sortedFeedbacks?.length === 0} {...filterProps} />
 
-      <div className="mt-4 overflow-y-auto">
+      <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
         {feedbacks.length === 0 && (
           <Message info>
             <FormattedMessage defaultMessage="No feedbacks received yet..." id="runningSession.info.nofeedbacks" />
           </Message>
         )}
+
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
           <Message info>
             <FormattedMessage
@@ -54,9 +89,10 @@ function FeedbackChannel({
             />
           </Message>
         )}
+
         {sortedFeedbacks.map(
           ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
-            <div className="flex flex-row mt-4 print:mt-2 first:mt-0" key={id}>
+            <div className="flex flex-row print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
@@ -87,6 +123,30 @@ function FeedbackChannel({
               </div>
             </div>
           )
+        )}
+
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
+          <div className="mt-2 print:hidden">
+            <Message
+              warning
+              content={
+                <FormattedMessage
+                  defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
+                  id="runningSession.audienceInteraction.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
+              }
+              icon="bullhorn"
+              size="tiny"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
+          </div>
         )}
       </div>
     </div>

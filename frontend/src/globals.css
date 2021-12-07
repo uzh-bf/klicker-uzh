@@ -15,6 +15,34 @@
     background-color: rgb(124, 184, 228, 0.1);
   }
 
+  .border-b-only {
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 1px;
+  }
+
+  .border-t-only {
+    border-top: 1px;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .border-l-only {
+    border-top: 0;
+    border-left: 1px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .border-r-only {
+    border-top: 0;
+    border-left: 0;
+    border-right: 1px;
+    border-bottom: 0;
+  }
+
   .no-page-break-inside {
     page-break-inside: avoid;
   }
@@ -25,5 +53,9 @@
 
   .no-page-break-after {
     page-break-after: avoid;
+  }
+
+  .hyphens-auto {
+    hyphens: auto;
   }
 }

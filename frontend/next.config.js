@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
 const { withSentryConfig } = require('@sentry/nextjs')
-const { PHASE_PRODUCTION_BUILD } = require('next/constants')
+const { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 const CFG = require('./src/klicker.conf.js')
 
 const API_CFG = CFG.get('api')
@@ -12,6 +12,11 @@ const SERVICES_CFG = CFG.get('services')
 
 module.exports = (phase) => {
   let config = {
+    images: [PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER].includes(phase)
+      ? {
+          domains: [S3_CFG.rootDomain],
+        }
+      : undefined,
     productionBrowserSourceMaps: true,
     // env: {
     //   __DEV__: PHASE_DEVELOPMENT_SERVER,
@@ -21,21 +26,29 @@ module.exports = (phase) => {
     },
     // custom runtime configuration
     publicRuntimeConfig: {
-      analyticsTrackingID: SERVICES_CFG.googleAnalytics.trackingId,
       apiUrl: API_CFG.endpoint,
       apiUrlWS: API_CFG.endpointWS,
       baseUrl: APP_CFG.baseUrl,
-      joinUrl: APP_CFG.joinUrl,
-      logrocketAppID: SERVICES_CFG.logrocket.appId,
+      chatwootBaseUrl: SERVICES_CFG.chatwoot.baseUrl,
+      chatwootToken: SERVICES_CFG.chatwoot.websiteToken,
+      googleAnalyticsTrackingId: SERVICES_CFG.googleAnalytics.trackingId,
+      matomoSiteUrl: SERVICES_CFG.matomo.siteUrl,
+      matomoSiteId: SERVICES_CFG.matomo.siteId,
+      happyKitAnalyticsKey: SERVICES_CFG.happyKit.publicKey,
+      happyKitFlagEnvKey: SERVICES_CFG.happyKit.envKey,
+      happyKitPersistedUsers: SERVICES_CFG.happyKit.persistedUsers,
       persistQueries: APP_CFG.persistQueries,
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
       withFingerprinting: SECURITY_CFG.fingerprinting,
       withAai: APP_CFG.withAai,
+      supportEmail: APP_CFG.supportEmail,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
       rootDir: __dirname,
+      joinUrl: APP_CFG.joinUrl,
+      baseUrl: APP_CFG.baseUrl,
     },
     // setup custom webpack configuration
     webpack: (webpackConfig, { dev }) => {
@@ -66,9 +79,9 @@ module.exports = (phase) => {
     },
   }
 
-  if (phase === PHASE_PRODUCTION_BUILD) {
+  if (process.env.ANALYZE && phase === PHASE_PRODUCTION_BUILD) {
     const withBundleAnalyzer = require('@next/bundle-analyzer')({
-      enabled: process.env.ANALYZE === 'true',
+      enabled: process.env.ANALYZE,
     })
     config = withBundleAnalyzer(config)
   }

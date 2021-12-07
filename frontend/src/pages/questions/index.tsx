@@ -5,14 +5,15 @@ import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-// import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/client'
-import { Loader } from 'semantic-ui-react'
+import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
+import { push } from '@socialgouv/matomo-next'
 
-import useLogging from '../../lib/hooks/useLogging'
+import { PageWithFeatureFlags } from '../../@types/AppFlags'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import CreateSessionMutation from '../../graphql/mutations/CreateSessionMutation.graphql'
@@ -29,14 +30,14 @@ import SessionCreationForm from '../../components/forms/sessionCreation/SessionC
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import ActionBar from '../../components/questions/ActionBar'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
 import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import { withApollo } from '../../lib/apollo'
+import withFeatureFlags from '../../lib/withFeatureFlags'
+import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   pageTitle: {
@@ -49,9 +50,7 @@ const messages = defineMessages({
   },
 })
 
-function Index(): React.ReactElement {
-  useLogging()
-
+function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -61,6 +60,11 @@ function Index(): React.ReactElement {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
   }, [])
+
+  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
+    true,
+    'interaction-survey-visible'
+  )
 
   const [creationMode, setCreationMode] = useState(
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId
@@ -92,6 +96,8 @@ function Index(): React.ReactElement {
     handleReset,
     handleToggleArchive,
   } = useSortingAndFiltering()
+
+  const [questionView, setQuestionView] = useState('list')
 
   const index = useMemo(() => {
     if (data?.questions) {
@@ -133,6 +139,7 @@ function Index(): React.ReactElement {
   const onToggleArchive = (): void => {
     handleResetSelection()
     handleToggleArchive()
+    push(['trackEvent', 'Question Pool', 'Archive Toggled'])
   }
 
   // handle archiving a question
@@ -145,6 +152,8 @@ function Index(): React.ReactElement {
       await archiveQuestions({
         variables: { ids: selectedItems.ids },
       })
+
+      push(['trackEvent', 'Question Pool', 'Questions Archived', selectedItems.ids.length])
 
       addToast(
         <FormattedMessage
@@ -189,6 +198,8 @@ function Index(): React.ReactElement {
         })),
       },
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
   }
 
   // build a separate block for each checked question
@@ -211,6 +222,8 @@ function Index(): React.ReactElement {
         ],
       })),
     ])
+
+    push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
   }
 
   // handle creating a new session
@@ -246,6 +259,8 @@ function Index(): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Modified'])
         } else {
           // create a new session
           result = await createSession({
@@ -258,6 +273,8 @@ function Index(): React.ReactElement {
               storageMode: sessionDataStorageMode,
             },
           })
+
+          push(['trackEvent', 'Question Pool', 'Session Created'])
         }
 
         // start the session immediately if the respective button was clicked
@@ -270,6 +287,7 @@ function Index(): React.ReactElement {
             ],
             variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
           })
+          push(['trackEvent', 'Question Pool', 'Session Started'])
           router.push('/sessions/running')
         } else {
           const ToastContent = (
@@ -342,6 +360,8 @@ function Index(): React.ReactElement {
           variables: { ids: questionIds },
         })
 
+        push(['trackEvent', 'Question Pool', 'Questions Deleted', questionIds.length])
+
         handleResetSelection()
 
         addToast(
@@ -370,6 +390,13 @@ function Index(): React.ReactElement {
     }
 
     setDeletionConfirmation(false)
+  }
+
+  const onChangeQuestionView = (newView: string): void => {
+    if (featureFlags?.flags?.questionPoolGridLayout) {
+      setQuestionView(newView)
+      push(['trackEvent', 'Question Pool', 'View Mode Toggled', newView])
+    }
   }
 
   const renderActionArea = (runningSessionId): React.ReactElement => {
@@ -423,7 +450,7 @@ function Index(): React.ReactElement {
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={renderActionArea(_get(data, 'runningSession.id'))}
+      actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),
@@ -439,8 +466,8 @@ function Index(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="questionPool">
-        <div className="tagList">
+      <div className="flex flex-col h-full overflow-y-auto md:flex-row md:flex-wrap">
+        <div className="flex-1 h-full p-4 md:overflow-y-auto bg-primary-10 md:flex-initial md:width-[17rem]">
           <TagList
             activeTags={filters.tags}
             activeType={filters.type}
@@ -450,7 +477,7 @@ function Index(): React.ReactElement {
             isArchiveActive={filters.archive}
           />
         </div>
-        <div className="wrapper">
+        <div className="h-full p-4 md:flex-1">
           {((): React.ReactElement | React.ReactElement[] => {
             if (!data || loading) {
               return <Loader active />
@@ -463,18 +490,23 @@ function Index(): React.ReactElement {
                 handleArchiveQuestions={onArchiveQuestions}
                 handleCreationModeToggle={onCreationModeToggle}
                 handleDeleteQuestions={onDeleteQuestions}
+                handleQuesionViewChange={onChangeQuestionView}
                 handleQuickBlock={onQuickBlock}
                 handleQuickBlocks={onQuickBlocks}
                 handleResetItemsChecked={handleResetSelection}
                 handleSetItemsChecked={handleSelectItems}
                 isArchiveActive={filters.archive}
+                isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
                 itemsChecked={selectedItems.ids}
+                key="action-bar"
+                questionView={questionView}
                 questions={processedQuestions}
               />,
-              <div className="questionList">
+              <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
                 <QuestionList
                   creationMode={creationMode}
                   isArchiveActive={filters.archive}
+                  questionView={questionView}
                   questions={processedQuestions}
                   selectedItems={selectedItems}
                   onQuestionChecked={handleSelectItem}
@@ -483,66 +515,33 @@ function Index(): React.ReactElement {
             ]
           })()}
         </div>
-      </div>
 
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionPool {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-
-          overflow-y: auto;
-
-          .tagList {
-            height: 100%;
-            flex: 1;
-            background: $color-primary-05p;
-            padding: 0.5rem;
-          }
-
-          .wrapper {
-            height: 100%;
-
-            .questionList {
-              height: 95%;
-
-              margin: 0 auto;
-              max-width: $max-width;
-
-              padding: 0.5rem;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-            overflow-y: auto;
-
-            .tagList {
-              overflow-y: auto;
-              flex: 0 0 17rem;
-
-              border-right: 1px solid $color-primary-50p;
-            }
-
-            .wrapper {
-              flex: 1;
-              padding: 0.5rem;
-
-              .questionList {
-                overflow-y: auto;
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
+          <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
+            <Message
+              warning
+              className="!rounded-none"
+              content={
+                <FormattedMessage
+                  defaultMessage="We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see {link}, duration ca. 10min)."
+                  id="questionPool.survey"
+                  values={{
+                    link: (
+                      <a href="https://hi.switchy.io/6IiJ" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
               }
-            }
-          }
-
-          @include desktop-only {
-            padding: 0;
-          }
-        }
-      `}</style>
+              icon="bullhorn"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
+            />
+          </div>
+        )}
+      </div>
     </TeacherLayout>
   )
 }
 
-export default withApollo()(Index)
+export default withFeatureFlags(Index)

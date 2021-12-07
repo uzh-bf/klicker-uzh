@@ -7,6 +7,9 @@ import getConfig from 'next/config'
 import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
+import { PlayIcon, StopIcon } from '@heroicons/react/solid'
+import { PauseIcon } from '@heroicons/react/outline'
+import Link from 'next/link'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -112,6 +115,7 @@ interface Props {
   authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
   storageMode?: 'SECRET' | 'COMPLETE'
   subscribeToMore: any
+  withQuestionBlockExperiments?: boolean
 }
 
 const defaultProps = {
@@ -120,6 +124,7 @@ const defaultProps = {
   isParticipantAuthenticationEnabled: false,
   isParticipantListVisible: false,
   participants: [],
+  withQuestionBlockExperiments: false,
 }
 
 function SessionTimeline({
@@ -146,6 +151,7 @@ function SessionTimeline({
   handleActiveBlock,
   handleNoActiveBlock,
   subscribeToMore,
+  withQuestionBlockExperiments,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
@@ -176,168 +182,199 @@ function SessionTimeline({
   }, [runtime])
 
   return (
-    <div className="sessionTimeline">
-      <div className="topRow">
-        <div className="infos">
-          <div className="startingTime">
+    <div className="flex flex-col md:flex-row md:flex-wrap">
+      <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
+        <div className="flex flex-row flex-wrap items-end">
+          <div>
             <Icon name="time" /> {startingTime}
           </div>
-          <div className="runningTime">
+          <div className="ml-8">
             <Icon name="play circle" /> {runtime}
           </div>
         </div>
 
-        <div className="actions">
-          <QRPopup shortname={shortname} />
-          <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-            <Button icon labelPosition="left" size="small">
-              <Icon name="external" />
-              <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
-            </Button>
-          </a>
-          <a href={`/sessions/evaluation/${sessionId}`} rel="noopener noreferrer" target="_blank">
-            <Button icon disabled={isFeedbackSession} labelPosition="left" size="small">
-              <Icon name="external" />
-              <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
-            </Button>
-          </a>
-          <Dropdown button simple className="icon small" icon="wrench">
-            <Dropdown.Menu direction="left">
-              <Dropdown.Header>
-                <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
-              </Dropdown.Header>
-              <Dropdown.Item>
-                <a href={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} rel="noopener noreferrer" target="_blank">
+        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
+            <QRPopup shortname={shortname} />
+            <a className="flex-1" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
+              <Button fluid icon className="!mr-0" labelPosition="left" size="small">
+                <Icon name="external" />
+                <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
+              </Button>
+            </a>
+          </div>
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+            <Link passHref prefetch href={`/sessions/evaluation/${sessionId}`}>
+              <a className="flex-1" rel="noopener noreferrer" target="_blank">
+                <Button fluid icon className="!mr-0" disabled={isFeedbackSession} labelPosition="left" size="small">
                   <Icon name="external" />
-                  {publicRuntimeConfig.joinUrl
-                    ? `${publicRuntimeConfig.joinUrl}/${shortname}`
-                    : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
-                </a>
-              </Dropdown.Item>
-
-              <Dropdown.Header>
-                <FormattedMessage defaultMessage="Public Evaluation" id="runningSession.string.publicEvaluation" />
-              </Dropdown.Header>
-              <Dropdown.Item>
-                <Checkbox
-                  checked={isEvaluationPublic}
-                  defaultChecked={isEvaluationPublic}
-                  label={intl.formatMessage(messages.togglePublicEvaluation)}
-                  onChange={handleTogglePublicEvaluation}
-                />
-              </Dropdown.Item>
-              {isEvaluationPublic && (
+                  <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
+                </Button>
+              </a>
+            </Link>
+            <Dropdown button simple className="icon small !mr-0" icon="wrench">
+              <Dropdown.Menu direction="left">
+                <Dropdown.Header>
+                  <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
+                </Dropdown.Header>
                 <Dropdown.Item>
-                  <a href={`/sessions/public/${sessionId}`} rel="noopener noreferrer" target="_blank">
+                  <a
+                    href={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
                     <Icon name="external" />
-                    <FormattedMessage
-                      defaultMessage="To Public Evaluation"
-                      id="runningSession.button.publicEvaluation"
-                    />
+                    {publicRuntimeConfig.joinUrl
+                      ? `${publicRuntimeConfig.joinUrl}/${shortname}`
+                      : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
                   </a>
                 </Dropdown.Item>
-              )}
 
-              {isParticipantAuthenticationEnabled && [
-                <Dropdown.Header key="header">
-                  <FormattedMessage
-                    defaultMessage="Participant Authentication"
-                    id="runningSession.string.participantAuthentication"
+                <Dropdown.Header>
+                  <FormattedMessage defaultMessage="Public Evaluation" id="runningSession.string.publicEvaluation" />
+                </Dropdown.Header>
+                <Dropdown.Item>
+                  <Checkbox
+                    checked={isEvaluationPublic}
+                    defaultChecked={isEvaluationPublic}
+                    label={intl.formatMessage(messages.togglePublicEvaluation)}
+                    onChange={handleTogglePublicEvaluation}
                   />
-                </Dropdown.Header>,
-                // <Dropdown.Item>
-                //   <Checkbox
-                //     disabled
-                //     checked={isParticipantAuthenticationEnabled}
-                //     defaultChecked={isParticipantAuthenticationEnabled}
-                //     label={intl.formatMessage(messages.toggleParticipantAuthentication)}
-                //   />
-                // </Dropdown.Item>,
-                <Modal
-                  key="modal"
-                  open={isParticipantListVisible}
-                  trigger={
-                    <Menu.Item icon onClick={handleToggleParticipantList}>
-                      <Icon name="table" />
-                      <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
-                    </Menu.Item>
-                  }
-                  onClose={handleToggleParticipantList}
-                >
-                  <Modal.Header>
-                    <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
-                  </Modal.Header>
-                  <Modal.Content>
-                    {authenticationMode === 'AAI' && <Message info>AAI</Message>}
+                </Dropdown.Item>
+                {isEvaluationPublic && (
+                  <Dropdown.Item>
+                    <a href={`/sessions/public/${sessionId}`} rel="noopener noreferrer" target="_blank">
+                      <Icon name="external" />
+                      <FormattedMessage
+                        defaultMessage="To Public Evaluation"
+                        id="runningSession.button.publicEvaluation"
+                      />
+                    </a>
+                  </Dropdown.Item>
+                )}
 
-                    <Table celled>
-                      <Table.Header>
-                        <Table.Row>
-                          <Table.HeaderCell>
-                            <FormattedMessage defaultMessage="Username" id="common.string.username" />
-                          </Table.HeaderCell>
-                          {authenticationMode === 'PASSWORD' && (
+                {isParticipantAuthenticationEnabled && [
+                  <Dropdown.Header key="header">
+                    <FormattedMessage
+                      defaultMessage="Participant Authentication"
+                      id="runningSession.string.participantAuthentication"
+                    />
+                  </Dropdown.Header>,
+                  // <Dropdown.Item>
+                  //   <Checkbox
+                  //     disabled
+                  //     checked={isParticipantAuthenticationEnabled}
+                  //     defaultChecked={isParticipantAuthenticationEnabled}
+                  //     label={intl.formatMessage(messages.toggleParticipantAuthentication)}
+                  //   />
+                  // </Dropdown.Item>,
+                  <Modal
+                    key="modal"
+                    open={isParticipantListVisible}
+                    trigger={
+                      <Menu.Item icon onClick={handleToggleParticipantList}>
+                        <Icon name="table" />
+                        <FormattedMessage
+                          defaultMessage="Participant List"
+                          id="runningSession.string.participantList"
+                        />
+                      </Menu.Item>
+                    }
+                    onClose={handleToggleParticipantList}
+                  >
+                    <Modal.Header>
+                      <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
+                    </Modal.Header>
+                    <Modal.Content>
+                      {authenticationMode === 'AAI' && <Message info>AAI</Message>}
+
+                      <Table celled>
+                        <Table.Header>
+                          <Table.Row>
                             <Table.HeaderCell>
-                              <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                              <FormattedMessage defaultMessage="Username" id="common.string.username" />
                             </Table.HeaderCell>
-                          )}
-                        </Table.Row>
-                      </Table.Header>
-                      <Table.Body>
-                        {participants.map(({ username, password }) => (
-                          <Table.Row key={username}>
-                            <Table.Cell>{username}</Table.Cell>
                             {authenticationMode === 'PASSWORD' && (
-                              <Table.Cell>
-                                <span className="password">{password}</span>
-                              </Table.Cell>
+                              <Table.HeaderCell>
+                                <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                              </Table.HeaderCell>
                             )}
                           </Table.Row>
-                        ))}
-                      </Table.Body>
-                    </Table>
-                  </Modal.Content>
+                        </Table.Header>
+                        <Table.Body>
+                          {participants.map(({ username, password }) => (
+                            <Table.Row key={username}>
+                              <Table.Cell>{username}</Table.Cell>
+                              {authenticationMode === 'PASSWORD' && (
+                                <Table.Cell>
+                                  <span className="font-serif">{password}</span>
+                                </Table.Cell>
+                              )}
+                            </Table.Row>
+                          ))}
+                        </Table.Body>
+                      </Table>
+                    </Modal.Content>
 
-                  <Modal.Actions>
-                    <CSVLink
-                      data={participants.map(pick(['username', authenticationMode === 'PASSWORD' && 'password']))}
-                      filename="participants.csv"
-                      headers={[
-                        { label: 'username', key: 'username' },
-                        { label: 'password', key: 'password' },
-                      ]}
-                    >
-                      <Button icon>
-                        <Icon name="file" />
-                        Download (CSV)
-                      </Button>
-                    </CSVLink>
-                  </Modal.Actions>
-                </Modal>,
-              ]}
-              {storageMode === 'COMPLETE' && (
-                <Dropdown.Item disabled>
-                  <Icon name="download" />
-                  <FormattedMessage defaultMessage="Export Responses" id="runningSession.string.downloadResponses" />
-                </Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
+                    <Modal.Actions>
+                      <CSVLink
+                        data={participants.map(pick(['username', authenticationMode === 'PASSWORD' && 'password']))}
+                        filename="participants.csv"
+                        headers={[
+                          { label: 'username', key: 'username' },
+                          { label: 'password', key: 'password' },
+                        ]}
+                      >
+                        <Button icon>
+                          <Icon name="file" />
+                          Download (CSV)
+                        </Button>
+                      </CSVLink>
+                    </Modal.Actions>
+                  </Modal>,
+                ]}
+                {storageMode === 'COMPLETE' && (
+                  <Dropdown.Item disabled>
+                    <Icon name="download" />
+                    <FormattedMessage defaultMessage="Export Responses" id="runningSession.string.downloadResponses" />
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
         </div>
       </div>
 
-      <div className="blocks">
+      <div className="flex flex-col flex-1 p-4 mt-2 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:mt-0 md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-00full">
         {blocks.map(
           (block, index): React.ReactElement => (
-            <div className="blockWrap" key={block.id}>
-              <div className={clsx('waiting', { first: index === 0 })}>
-                <Icon
-                  color={index === activeStep / 2 ? 'green' : undefined}
-                  name={index === 0 ? 'video play' : 'pause circle outline'}
-                  size="big"
-                />
+            <div
+              className="flex flex-col items-center blockWrap bg-timeline-mobile md:min-h-[200px] md:flex-row md:!bg-timeline-desktop"
+              key={block.id}
+            >
+              <div
+                className={clsx(
+                  'my-[0.2rem] mx-0 py-2 px-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]',
+                  index === 0 && '!mt-0 !pt-0 md:!ml-0 md:!pl-0'
+                )}
+              >
+                {index === 0 ? (
+                  <PlayIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      index === activeStep / 2 && '!text-green-700'
+                    )}
+                  />
+                ) : (
+                  <PauseIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      index === activeStep / 2 && '!text-green-700'
+                    )}
+                  />
+                )}
               </div>
-              <div className="block">
+              <div className="block w-full flex-grow-1 md:m-1 md:w-[17rem]">
                 <QuestionBlock
                   expiresAt={block.expiresAt}
                   handleActivateQuestionBlock={(): void => handleActivateBlockById(block.id)}
@@ -351,17 +388,20 @@ function SessionTimeline({
                     type: question.type,
                     version,
                   }))}
+                  randomSelection={block.randomSelection}
                   sessionId={sessionId}
                   status={block.status}
                   timeLimit={block.timeLimit}
+                  withQuestionBlockExperiments={withQuestionBlockExperiments}
                 />
               </div>
               {index === blocks.length - 1 && (
-                <div className="waiting last">
-                  <Icon
-                    color={activeStep === blocks.length * 2 ? 'red' : undefined}
-                    name="stop circle outline"
-                    size="big"
+                <div className="my-[0.2rem] mx-0 py-2 px-0 !pb-0 !mb-0 md:!pr-0 md:!mr-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]">
+                  <StopIcon
+                    className={clsx(
+                      'h-10 -mb-1.5 bg-white text-grey-40',
+                      activeStep === blocks.length * 2 && '!text-red-600'
+                    )}
                   />
                 </div>
               )}
@@ -377,10 +417,16 @@ function SessionTimeline({
           </Message>
         )}
       </div>
-      <div className="buttons">
-        <div className="left">
+      <div className="flex flex-col flex-wrap items-start justify-between flex-1 gap-2 mt-2 sm:flex-row">
+        <div className="flex flex-row items-start w-full gap-2 sm:w-max">
           {!isParticipantAuthenticationEnabled && (
-            <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
+            <Button
+              icon
+              className="flex-1 sm:flex-initial !mr-0"
+              labelPosition="left"
+              size="small"
+              onClick={handlePauseSession}
+            >
               <Icon name="pause" />
               <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
             </Button>
@@ -391,6 +437,7 @@ function SessionTimeline({
         {isFeedbackSession ? (
           <Button
             // show the session finish button for feedback sessions
+            className="!mr-0"
             color="red"
             content={getMessage(intl, 2, 2).label}
             icon={getMessage(intl, 2, 2).icon}
@@ -400,6 +447,7 @@ function SessionTimeline({
         ) : (
           <Button
             // show dynamic buttons for all other sessions
+            className="!mr-0 !w-full sm:!w-max"
             color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}
@@ -408,193 +456,6 @@ function SessionTimeline({
           />
         )}
       </div>
-      <style jsx>
-        {`
-          @import 'src/theme';
-
-          span.password {
-            font-family: Courier new, serif;
-          }
-
-          .sessionTimeline {
-            display: flex;
-            flex-direction: column;
-
-            .topRow {
-              flex: 1;
-
-              justify-content: space-between;
-            }
-
-            .topRow,
-            .infos,
-            .actions {
-              display: flex;
-              flex-flow: row wrap;
-              align-items: flex-end;
-            }
-
-            .actions > a:last-child > :global(button) {
-              margin: 0;
-            }
-
-            .runningTime {
-              margin-left: 2rem;
-            }
-
-            .popupContent {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-
-              .qr {
-                margin-bottom: 1rem;
-                text-align: center;
-              }
-            }
-
-            .blocks {
-              flex: 1;
-
-              display: flex;
-              flex-direction: column;
-
-              border: 1px solid lightgray;
-              padding: 1rem;
-            }
-
-            .blockWrap {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              min-height: 200px;
-
-              background: linear-gradient(
-                to right,
-                transparent 0%,
-                transparent calc(50% - 1.01px),
-                lightgrey calc(50% - 1px),
-                lightgrey calc(50% + 1px),
-                transparent calc(50% + 1.01px),
-                transparent 100%
-              );
-
-              .block {
-                flex: 1;
-                width: 100%;
-              }
-
-              .waiting {
-                margin: 0.2rem 0;
-                padding: 0.5rem 0;
-
-                &.first {
-                  padding-top: 0;
-                  margin-top: 0;
-                }
-
-                &.last {
-                  padding-bottom: 0;
-                  margin-bottom: 0;
-                }
-
-                :global(i) {
-                  background-color: white;
-                  color: lightgrey;
-                  margin-right: 0;
-                }
-
-                :global(i.green) {
-                  color: green;
-                }
-
-                :global(i.red) {
-                  color: red;
-                }
-              }
-            }
-
-            .buttons {
-              flex: 1;
-
-              display: flex;
-              flex-flow: row wrap;
-              justify-content: space-between;
-              align-items: flex-start;
-
-              margin-top: 0.5rem;
-
-              > :global(button) {
-                margin-right: 0;
-              }
-
-              .publicEvaluation {
-                display: flex;
-                flex-flow: row wrap;
-
-                a {
-                  margin-left: 1rem;
-                }
-              }
-            }
-
-            @include desktop-tablet-only {
-              flex-flow: row wrap;
-
-              .topRow {
-                flex: 0 0 100%;
-
-                padding-bottom: 0.5rem;
-              }
-
-              .blocks {
-                flex: 0 0 100%;
-
-                flex-direction: row;
-
-                padding: 0.5rem;
-
-                overflow-x: auto;
-                overflow-y: visible;
-              }
-
-              .blockWrap {
-                flex-direction: row;
-                background: linear-gradient(
-                  to bottom,
-                  transparent 0%,
-                  transparent calc(50% - 0.81px),
-                  lightgrey calc(50% - 0.8px),
-                  lightgrey calc(50% + 0.8px),
-                  transparent calc(50% + 0.81px),
-                  transparent 100%
-                );
-
-                .block,
-                .block:not(:first-child) {
-                  margin: 0.3rem;
-                  width: 17rem;
-                }
-
-                .waiting {
-                  margin: 0 0.2rem;
-                  padding: 0 0.7rem;
-
-                  &.first {
-                    padding-left: 0;
-                    margin-left: 0;
-                  }
-
-                  &.last {
-                    padding-right: 0;
-                    margin-right: 0;
-                  }
-                }
-              }
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }

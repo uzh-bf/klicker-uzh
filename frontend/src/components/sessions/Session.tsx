@@ -85,12 +85,12 @@ function Session({
 
   return (
     <div className="session">
-      <h2 className="title">{name}</h2>
+      <h2 className="title text-primary-strong">{name}</h2>
 
       <div className="labels">
         <Label className="date" content={dayjs(createdAt).format('DD.MM.YY HH:mm')} icon="calendar" />
         {isParticipantAuthenticationEnabled && [
-          <Label className="authMode" color="green" content="AUTH" icon="shield alternate" />,
+          <Label className="authMode" color="green" content="AUTH" icon="shield alternate" key="authMode" />,
           authenticationMode === 'PASSWORD' && (
             <Label className="storageMode" content={intl.formatMessage(messages.authModePassword)} icon="key" />
           ),
@@ -121,6 +121,7 @@ function Session({
             </Message>
           </div>
         )}
+
         {blocks.map(
           ({ id: blockId, instances, timeLimit }): React.ReactElement => (
             <div className="block" key={blockId}>
@@ -138,6 +139,7 @@ function Session({
             </div>
           )
         )}
+
         <div className="actionArea">
           <Dropdown button labeled className="icon left" icon="wrench" text="Options">
             <Dropdown.Menu>
@@ -233,6 +235,7 @@ function Session({
           )}
         </div>
       </div>
+
       <style jsx>{`
         @import 'src/theme';
 
@@ -244,7 +247,6 @@ function Session({
         }
 
         .title {
-          color: $color-primary-strong;
           margin-bottom: 0.3rem;
         }
 
@@ -295,10 +297,9 @@ function Session({
           }
           .labels {
             display: flex;
-            justify-content: end;
+            justify-content: flex-end;
 
             :global(.label) {
-              // min-width: 6rem;
               margin-right: 0 !important;
               margin-left: 0.4rem !important;
               text-align: center;

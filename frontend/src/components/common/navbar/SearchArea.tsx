@@ -1,6 +1,3 @@
-/* eslint-disable react/prop-types */
-
-import * as React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
 import _find from 'lodash/find'
@@ -38,7 +35,7 @@ function SearchArea({
   sortingTypes,
   sortOrder,
   withSorting,
-}: Props): React.ReactElement {
+}: Props) {
   const intl = useIntl()
   return (
     <div className="searchArea">

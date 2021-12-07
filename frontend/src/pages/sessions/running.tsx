@@ -7,9 +7,10 @@ import { useQuery, useMutation } from '@apollo/client'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
-
+import { push } from '@socialgouv/matomo-next'
+import { PageWithFeatureFlags } from '../../@types/AppFlags'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
-import useLogging from '../../lib/hooks/useLogging'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
@@ -25,7 +26,6 @@ import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/Runni
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import ActivateBlockByIdMutation from '../../graphql/mutations/ActivateBlockByIdMutation.graphql'
 import Messager from '../../components/common/Messager'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   errorLoading: {
@@ -46,9 +46,7 @@ const messages = defineMessages({
   },
 })
 
-function Running(): React.ReactElement {
-  useLogging()
-
+function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -109,14 +107,14 @@ function Running(): React.ReactElement {
           blocks,
           settings,
           startedAt,
-          confusionTS,
+          confusionValues,
           feedbacks,
           participants,
         } = data.runningSession
 
         return (
-          <div className="p-4 md:p-8 lg:py-8 lg:px-[10%]">
-            <div className="mb-8 md:p-2 print:hidden">
+          <div className="p-4 mx-auto md:p-8 lg:py-8 max-w-screen-2xl">
+            <div className="mb-8 print:hidden">
               {settings.isParticipantAuthenticationEnabled && (
                 <Message icon warning>
                   <Icon name="lock" />
@@ -146,6 +144,7 @@ function Running(): React.ReactElement {
                     activateBlockById({
                       variables: { blockId, sessionId: id },
                     })
+                    push(['trackEvent', 'Running Session', 'Block Activated By Id'])
                   }
                 }}
                 handleActiveBlock={(): void => {
@@ -161,6 +160,8 @@ function Running(): React.ReactElement {
                       ],
                       variables: { id },
                     })
+                    push(['trackEvent', 'Running Session', 'Session Canceled'])
+
                     // redirect to the question pool
                     router.push('/sessions')
                   }
@@ -176,6 +177,7 @@ function Running(): React.ReactElement {
                       ],
                       variables: { id },
                     })
+                    push(['trackEvent', 'Running Session', 'Session Finished'])
 
                     // redirect to the question pool
                     router.push('/questions')
@@ -186,6 +188,7 @@ function Running(): React.ReactElement {
                     activateNextBlock({
                       refetchQueries: [{ query: RunningSessionQuery }],
                     })
+                    push(['trackEvent', 'Running Session', 'Next Block Activated'])
                   }
                 }}
                 handleNoActiveBlock={(): void => {
@@ -201,12 +204,15 @@ function Running(): React.ReactElement {
                       ],
                       variables: { id },
                     })
+                    push(['trackEvent', 'Running Session', 'Session Paused'])
 
                     router.push('/sessions')
                   }
                 }}
                 handleResetQuestionBlock={async (blockId): Promise<void> => {
                   await resetQuestionBlock({ variables: { sessionId: id, blockId } })
+                  push(['trackEvent', 'Running Session', 'Question Block Reset'])
+
                   addToast(
                     <FormattedMessage
                       defaultMessage="Question block successfully reset."
@@ -227,6 +233,7 @@ function Running(): React.ReactElement {
                       },
                     },
                   })
+                  push(['trackEvent', 'Running Session', 'Evaluation Published'])
                 }}
                 intl={intl}
                 isEvaluationPublic={settings.isEvaluationPublic}
@@ -251,12 +258,14 @@ function Running(): React.ReactElement {
                   },
                   variables: { sessionId: id },
                 })}
+                withQuestionBlockExperiments={featureFlags?.flags?.questionBlockExperiments}
               />
             </div>
 
             <AudienceInteraction
-              confusionTS={confusionTS}
+              confusionValues={confusionValues}
               feedbacks={feedbacks}
+              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
               isConfusionBarometerActive={settings.isConfusionBarometerActive}
               isFeedbackChannelActive={settings.isFeedbackChannelActive}
               isFeedbackChannelPublic={settings.isFeedbackChannelPublic}
@@ -271,4 +280,4 @@ function Running(): React.ReactElement {
   )
 }
 
-export default withApollo()(Running)
+export default withFeatureFlags(Running)

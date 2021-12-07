@@ -125,16 +125,16 @@
       "value": "Search..."
     }
   ],
-  "common.string.activated": [
-    {
-      "type": 0,
-      "value": "Activated"
-    }
-  ],
   "common.string.admin": [
     {
       "type": 0,
       "value": "Admin"
+    }
+  ],
+  "common.string.difficulty": [
+    {
+      "type": 0,
+      "value": "Difficulty"
     }
   ],
   "common.string.logout": [
@@ -159,6 +159,12 @@
     {
       "type": 0,
       "value": "Settings"
+    }
+  ],
+  "common.string.speed": [
+    {
+      "type": 0,
+      "value": "Speed"
     }
   ],
   "common.string.username": [
@@ -487,6 +493,30 @@
       "value": "Visualization"
     }
   ],
+  "evaluationSession.confusion.graphExplanation": [
+    {
+      "type": 0,
+      "value": "The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
+    }
+  ],
+  "evaluationSession.confusion.timestep": [
+    {
+      "type": 0,
+      "value": "With this field, the timestep size used on the x-axis of the plot can be chosen in seconds. The minimum timestep is 60 seconds, the default one 120 seconds."
+    }
+  ],
+  "evaluationSession.confusion.windowLength": [
+    {
+      "type": 0,
+      "value": "This field allows to set a custom factor (multiplied by the x-timestep) for the running window over which the average is computed. The minimum factor is 1, the default one is 3."
+    }
+  ],
+  "feedbackchannel.notifications.title": [
+    {
+      "type": 0,
+      "value": "New Question / Feedback"
+    }
+  ],
   "fileDropzone.button.delete": [
     {
       "type": 0,
@@ -502,7 +532,19 @@
   "form.blockSettings.header": [
     {
       "type": 0,
-      "value": "Set time limit"
+      "value": "Control block execution"
+    }
+  ],
+  "form.blockSettings.randomSelection.description": [
+    {
+      "type": 0,
+      "value": "If random selection is activated, each student will receive only one of the questions within the block selected at random."
+    }
+  ],
+  "form.blockSettings.randomSelection.label": [
+    {
+      "type": 0,
+      "value": "Random selection"
     }
   ],
   "form.blockSettings.timeLimit": [
@@ -785,18 +827,6 @@
       "value": "Institution"
     }
   ],
-  "form.login.infoMessageResetPW": [
-    {
-      "type": 0,
-      "value": "reset your password"
-    }
-  ],
-  "form.login.infoMessageSignup": [
-    {
-      "type": 0,
-      "value": "sign up"
-    }
-  ],
   "form.password.invalid": [
     {
       "type": 0,
@@ -849,6 +879,12 @@
     {
       "type": 0,
       "value": "A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen)."
+    }
+  ],
+  "form.signUp.label": [
+    {
+      "type": 0,
+      "value": "Create new account"
     }
   ],
   "form.useCase.label": [
@@ -949,6 +985,50 @@
       "value": "Active Question"
     }
   ],
+  "joinSession.feedbackArea.feedbackPlaceholder": [
+    {
+      "type": 0,
+      "value": "Post a question or feedback..."
+    }
+  ],
+  "joinSession.feedbackArea.open": [
+    {
+      "type": 0,
+      "value": "Open Questions"
+    }
+  ],
+  "joinSession.feedbackArea.postedAt": [
+    {
+      "type": 0,
+      "value": "Posted on"
+    }
+  ],
+  "joinSession.feedbackArea.resolved": [
+    {
+      "type": 0,
+      "value": "Resolved Questions"
+    }
+  ],
+  "joinSession.feedbackArea.resolvedAt": [
+    {
+      "type": 0,
+      "value": "Resolved on"
+    }
+  ],
+  "joinSession.feedbackArea.survey": [
+    {
+      "type": 0,
+      "value": "If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
   "joinSession.feedbackChannel.title": [
     {
       "type": 0,
@@ -1025,6 +1105,12 @@
     {
       "type": 0,
       "value": "You are not permitted to join this session"
+    }
+  ],
+  "joinSession.string.questionNotification": [
+    {
+      "type": 0,
+      "value": "A new Klicker question is available"
     }
   ],
   "joinSession.string.responseIgnored": [
@@ -1231,6 +1317,20 @@
       "value": " items checked"
     }
   ],
+  "questionPool.survey": [
+    {
+      "type": 0,
+      "value": "We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": ", duration ca. 10min)."
+    }
+  ],
   "questionPool.title": [
     {
       "type": 0,
@@ -1299,6 +1399,20 @@
       "value": "Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
     }
   ],
+  "runningSession.audienceInteraction.survey": [
+    {
+      "type": 0,
+      "value": "If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this "
+    },
+    {
+      "type": 1,
+      "value": "link"
+    },
+    {
+      "type": 0,
+      "value": "."
+    }
+  ],
   "runningSession.blockActions.activateBlock": [
     {
       "type": 0,
@@ -1329,6 +1443,12 @@
       "value": "Finish session"
     }
   ],
+  "runningSession.button.lecturerCockpit": [
+    {
+      "type": 0,
+      "value": "Lecturer Cockpit"
+    }
+  ],
   "runningSession.button.openBlock": [
     {
       "type": 0,
@@ -1339,12 +1459,6 @@
     {
       "type": 0,
       "value": "Enforce authentication"
-    }
-  ],
-  "runningSession.button.pinnedfeedbacks": [
-    {
-      "type": 0,
-      "value": "Pinned Feedbacks"
     }
   ],
   "runningSession.button.publicEvaluation": [
@@ -1389,10 +1503,22 @@
       "value": "Unpublished"
     }
   ],
-  "runningSession.confusion.difficulty.Range": [
+  "runningSession.confusion.difficulty.RangeMax": [
     {
       "type": 0,
-      "value": "easy - hard"
+      "value": "difficult"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.difficulty.RangeMin": [
+    {
+      "type": 0,
+      "value": "easy"
     }
   ],
   "runningSession.confusion.difficulty.Title": [
@@ -1407,10 +1533,22 @@
       "value": "The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
     }
   ],
-  "runningSession.confusion.speed.Range": [
+  "runningSession.confusion.speed.RangeMax": [
     {
       "type": 0,
-      "value": "slow - fast"
+      "value": "fast"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMid": [
+    {
+      "type": 0,
+      "value": "optimal"
+    }
+  ],
+  "runningSession.confusion.speed.RangeMin": [
+    {
+      "type": 0,
+      "value": "slow"
     }
   ],
   "runningSession.confusion.speed.Title": [
@@ -1851,28 +1989,6 @@
     {
       "type": 0,
       "value": "Are you sure you want to delete your Klicker account?"
-    }
-  ],
-  "user.login.infoMessage": [
-    {
-      "type": 0,
-      "value": "To login with a legacy account, please "
-    },
-    {
-      "type": 1,
-      "value": "requestLink"
-    },
-    {
-      "type": 0,
-      "value": " first. If you need a new account, you can "
-    },
-    {
-      "type": 1,
-      "value": "signupLink"
-    },
-    {
-      "type": 0,
-      "value": " here."
     }
   ],
   "user.login.pageTitle": [

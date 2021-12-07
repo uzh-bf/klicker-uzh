@@ -1,111 +1,136 @@
-/* eslint-disable no-underscore-dangle */
-import React, { StrictMode } from 'react'
-import Router from 'next/router'
-import getConfig from 'next/config'
-import App, { AppContext } from 'next/app'
+import React, { StrictMode, useEffect, useState } from 'react'
+import App, { AppContext, NextWebVitalsMetric } from 'next/app'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { IntlProvider } from 'react-intl'
 import Head from 'next/head'
-import { polyfill } from '../../polyfills'
+import { ApolloProvider } from '@apollo/client'
+import getConfig from 'next/config'
+import Router, { useRouter } from 'next/router'
+import { init, push } from '@socialgouv/matomo-next'
+
+import { useApollo } from '../lib/apollo'
+import { polyfill } from '../polyfills'
+import HappyKitAnalytics from '../lib/HappyKitAnalytics'
+import Chatwoot from '../lib/Chatwoot'
+import GoogleAnalytics from '../lib/GoogleAnalytics'
+import { UserContext } from '../lib/userContext'
+import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
 
 const { publicRuntimeConfig } = getConfig()
 
-const isProd = process.env.NODE_ENV === 'production'
-
-interface Props {
-  locale: string
-  messages: any
+if (publicRuntimeConfig.happyKitFlagEnvKey) {
+  const { configure } = require('@happykit/flags/config')
+  configure({ envKey: publicRuntimeConfig.happyKitFlagEnvKey })
 }
 
-class Klicker extends App<Props> {
-  state = { error: null }
+const UNAUTHENTICATED_PAGES = [
+  '/',
+  '/login',
+  '/404',
+  '/entrypoint',
+  '/user/login',
+  '/user/activateAccount',
+  '/user/deleteAccount',
+  '/user/registration',
+  '/user/requestPassword',
+  '/user/resetPassword',
+  '/join/[shortname]',
+  '/qr/[shortname]',
+  '/sessions/evaluation',
+]
 
-  static async getInitialProps(appContext: AppContext): Promise<any> {
-    const {
-      ctx: { req },
-    } = appContext
+function Klicker({ Component, pageProps, locale, messages }) {
+  const router = useRouter()
 
-    const requestedLocales: string | string[] =
-      // use the locale as returned in SSR
-      (req as any)?.locale ||
-      // use the locale as stored in the window when switching pages on the client
-      (typeof window !== 'undefined' && (window as any).LOCALE) ||
-      // use the language of the browser as a sane default
-      (typeof navigator !== 'undefined' && navigator.languages) ||
-      // IE11
-      (typeof navigator !== 'undefined' && (navigator as any).userLanguage) ||
-      'en'
+  const [user, setUser] = useState(null)
 
-    const [supportedLocale, messagePromise] = getMessages(requestedLocales)
+  const apolloClient = useApollo(pageProps)
 
-    const [, messages, appProps] = await Promise.all([
-      polyfill(supportedLocale),
-      messagePromise,
-      App.getInitialProps(appContext),
-    ])
+  useEffect(() => {
+    init({
+      url: publicRuntimeConfig.matomoSiteUrl,
+      siteId: publicRuntimeConfig.matomoSiteId,
+    })
+  }, [])
 
-    return {
-      ...(appProps as any),
-      locale: supportedLocale,
-      messages: messages.default,
-    }
-  }
+  useEffect(() => {
+    const fetch = async () => {
+      const result = await apolloClient.query({
+        query: AccountSummaryQuery,
+        networkPolicy: 'cache-first',
+      })
 
-  componentDidMount(): any {
-    if (isProd) {
-      if (publicRuntimeConfig.analyticsTrackingID) {
-        const { initGA, logPageView } = require('../lib/utils/analytics')
-
-        if (!window.INIT_GA) {
-          initGA(publicRuntimeConfig.analyticsTrackingID)
-
-          // log subsequent route changes as page views
-          Router.router.events.on('routeChangeComplete', logPageView)
-
-          window.INIT_GA = true
-        }
-
-        // log the initial page load as a page view
-        logPageView()
+      if (result?.data?.user?.id) {
+        setUser(result.data.user)
       }
     }
-  }
 
-  componentDidCatch(error): any {
-    this.setState({ error })
-
-    if (isProd) {
-      if (publicRuntimeConfig.analyticsTrackingID) {
-        const { logException } = require('../lib/utils/analytics')
-        logException(error)
-      }
+    if (!UNAUTHENTICATED_PAGES.includes(router.pathname)) {
+      fetch()
     }
-  }
+  }, [apolloClient, router.pathname])
 
-  render() {
-    const { Component, pageProps, locale, messages } = this.props
+  return (
+    <>
+      <Head>
+        <meta content="width=device-width, initial-scale=1" name="viewport" />
+      </Head>
 
-    return (
-      <>
-        <Head>
-          <meta content="width=device-width, initial-scale=1" name="viewport" />
-        </Head>
-        <DndProvider backend={HTML5Backend}>
-          <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
+      {publicRuntimeConfig.chatwootToken && <Chatwoot />}
+
+      {publicRuntimeConfig.googleAnalyticsTrackingId && <GoogleAnalytics />}
+      {publicRuntimeConfig.happyKitAnalyticsKey && <HappyKitAnalytics />}
+
+      <DndProvider backend={HTML5Backend}>
+        <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
+          <ApolloProvider client={apolloClient}>
             <ToastProvider autoDismiss>
-              <StrictMode>
-                <Component {...pageProps} err={this.state.error} />
-              </StrictMode>
+              <UserContext.Provider value={user}>
+                <StrictMode>
+                  <Component {...pageProps} />
+                </StrictMode>
+              </UserContext.Provider>
             </ToastProvider>
-          </IntlProvider>
-        </DndProvider>
-      </>
-    )
+          </ApolloProvider>
+        </IntlProvider>
+      </DndProvider>
+    </>
+  )
+}
+
+Klicker.getInitialProps = async (appContext: AppContext): Promise<any> => {
+  const {
+    ctx: { req },
+  } = appContext
+
+  const requestedLocales: string | string[] =
+    // use the locale as returned in SSR
+    (req as any)?.locale ||
+    // use the locale as stored in the window when switching pages on the client
+    (typeof window !== 'undefined' && (window as any).LOCALE) ||
+    // use the language of the browser as a sane default
+    (typeof navigator !== 'undefined' && navigator.languages) ||
+    // IE11
+    (typeof navigator !== 'undefined' && (navigator as any).userLanguage) ||
+    'en'
+
+  const [supportedLocale, messagePromise] = getMessages(requestedLocales)
+
+  const [, messages, appProps] = await Promise.all([
+    polyfill(supportedLocale),
+    messagePromise,
+    App.getInitialProps(appContext),
+  ])
+
+  return {
+    ...(appProps as any),
+    locale: supportedLocale,
+    messages: messages.default,
   }
 }
 
@@ -119,10 +144,12 @@ class Klicker extends App<Props> {
  */
 function getMessages(locales: string | string[] = ['en']) {
   if (!Array.isArray(locales)) {
+    // eslint-disable-next-line no-param-reassign
     locales = [locales]
   }
   let langBundle
   let locale
+  // eslint-disable-next-line no-plusplus
   for (let i = 0; i < locales.length && !locale; i++) {
     locale = locales[i]
     switch (locale) {
@@ -138,6 +165,16 @@ function getMessages(locales: string | string[] = ['en']) {
     return ['en', import('../../compiled-lang/en.json')]
   }
   return [locale, langBundle]
+}
+
+export function reportWebVitals(metric: NextWebVitalsMetric) {
+  push([
+    'trackEvent',
+    'Web Vitals',
+    Router.pathname,
+    metric.name,
+    Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+  ])
 }
 
 export default Klicker

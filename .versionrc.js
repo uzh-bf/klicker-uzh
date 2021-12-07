@@ -5,7 +5,7 @@ module.exports = {
       type: 'json',
     },
   ],
-  bumpFiles: ['', 'backend/', 'frontend/', 'landing/', 'docs/website/'].reduce(
+  bumpFiles: ['', 'backend/', 'frontend/', 'landing/', 'docs/'].reduce(
     (acc, path) => {
       return acc.concat(
         {
@@ -18,7 +18,12 @@ module.exports = {
         }
       )
     },
-    []
+    [
+      {
+        filename: `deploy/charts/klicker-uzh/Chart.yaml`,
+        updater: 'util/yaml-updater.js',
+      },
+    ]
   ),
   types: [
     {

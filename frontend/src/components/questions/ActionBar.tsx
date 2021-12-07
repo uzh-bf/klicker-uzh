@@ -36,6 +36,7 @@ const messages = defineMessages({
 
 interface Props {
   creationMode?: boolean
+  questionView?: string
   deletionConfirmation: boolean
   handleArchiveQuestions: any
   handleCreationModeToggle: any
@@ -44,21 +45,27 @@ interface Props {
   handleQuickBlocks: any
   handleSetItemsChecked: any
   handleResetItemsChecked: any
+  handleQuesionViewChange: any
   isArchiveActive?: boolean
+  isViewToggleVisible?: boolean
   itemsChecked?: string[]
   questions?: any[]
 }
 
 const defaultProps = {
   creationMode: false,
+  questionView: 'list',
   isArchiveActive: false,
+  isViewToggleVisible: false,
   itemsChecked: [],
   questions: [],
 }
 
 function ActionBar({
   isArchiveActive,
+  isViewToggleVisible,
   creationMode,
+  questionView,
   deletionConfirmation,
   itemsChecked,
   handleArchiveQuestions,
@@ -68,6 +75,7 @@ function ActionBar({
   handleQuickBlocks,
   handleSetItemsChecked,
   handleResetItemsChecked,
+  handleQuesionViewChange,
   questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -187,12 +195,12 @@ function ActionBar({
   const itemCount = itemsChecked.length
 
   return (
-    <div className="actionBar">
+    <div className="actionBar md:max-w-7xl md:m-auto">
       <div className="actionButtons">
         <Dropdown
           button
           labeled
-          className="primary icon"
+          className="primary icon !mr-0"
           direction="left"
           disabled={isAnyModalOpen}
           icon="plus square"
@@ -301,6 +309,20 @@ function ActionBar({
           </span>
         </Label>
 
+        {/* buttons to change between question view formats */}
+        {isViewToggleVisible && (
+          <div className="ml-1">
+            <Button.Group className="order-1">
+              <Button icon active={questionView === 'list'} onClick={(): void => handleQuesionViewChange('list')}>
+                <Icon name="list" />
+              </Button>
+              <Button icon active={questionView === 'grid'} onClick={(): void => handleQuesionViewChange('grid')}>
+                <Icon name="grid layout" />
+              </Button>
+            </Button.Group>
+          </div>
+        )}
+
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
           confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
@@ -325,8 +347,6 @@ function ActionBar({
           }
 
           .actionBar {
-            padding: 1rem;
-
             .actionButtons,
             .creationButtons {
               flex: 1;
@@ -351,12 +371,6 @@ function ActionBar({
               flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
-              padding: 0;
-
-              margin: 0 auto;
-              max-width: $max-width;
-
-              padding: 0 0.5rem;
 
               .creationButtons,
               .actionButtons {

@@ -2,12 +2,11 @@ import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
-import useLogging from '../../lib/hooks/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -17,16 +16,14 @@ const messages = defineMessages({
 })
 
 function RequestPassword(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
 
   const [requestPassword, { data, loading, error }] = useMutation(RequestPasswordMutation)
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="resetPassword">
-        <h1>
+      <div className="p-4 md:w-[500px] items-center">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
         </h1>
 
@@ -50,6 +47,7 @@ function RequestPassword(): React.ReactElement {
                 loading={loading}
                 onSubmit={({ email }): void => {
                   requestPassword({ variables: { email } })
+                  push(['trackEvent', 'User', 'Password Requested'])
                 }}
               />
 
@@ -57,26 +55,9 @@ function RequestPassword(): React.ReactElement {
             </>
           )
         })()}
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .resetPassword {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            @include desktop-tablet-only {
-              margin: 0 15%;
-              width: 500px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )
 }
 
-export default withApollo()(RequestPassword)
+export default RequestPassword

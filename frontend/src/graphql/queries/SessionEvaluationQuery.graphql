@@ -18,15 +18,10 @@ query EvaluateSession($sessionId: ID!) {
         createdAt
       }
     }
-    confusionTS {
-      id
-      difficulty
-      speed
-      createdAt
-    }
     blocks {
       id
       status
+      randomSelection
       instances {
         id
         isOpen
@@ -82,6 +77,11 @@ query EvaluateSession($sessionId: ID!) {
           }
         }
       }
+    }
+    confusionTS {
+      speed
+      difficulty
+      createdAt
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/landing",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -29,5 +29,8 @@
     "postcss": "8.3.6",
     "tailwindcss": "2.2.9",
     "typescript": "4.4.2"
+  },
+  "volta": {
+    "node": "14.18.1"
   }
 }

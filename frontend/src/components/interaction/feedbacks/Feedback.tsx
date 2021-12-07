@@ -72,17 +72,22 @@ function Feedback({
         onClick={() => setIsEditingActive((prev) => !prev)}
       >
         <div className="flex-1 no-page-break-inside">
-          <p className="mb-0">{content}</p>
-          <div className="flex flex-row items-end mt-2 text-gray-500">
+          <p className="mt-0">{content}</p>
+          <div className="flex flex-row flex-wrap items-end mt-2 text-gray-500">
             <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-            <div className="ml-8">
+            <div className="min-w-max">
               {resolved ? (
-                <div>
-                  <Icon name="check" /> Resolved during session
-                </div>
+                <>
+                  <div>
+                    <Icon className="md:!ml-8 print:!ml-8" name="check" /> Resolved during session
+                  </div>
+                  {responses?.length > 0 && (
+                    <div className="text-gray-500 ml-7 md:hidden print:hidden">{responses.length} responses given</div>
+                  )}
+                </>
               ) : (
                 <div>
-                  <Icon name="discussions" />
+                  <Icon className="!ml-8" name="discussions" />
                 </div>
               )}
             </div>
@@ -94,7 +99,9 @@ function Feedback({
             {votes} <Icon name="thumbs up outline" />
           </div>
           <div className="flex flex-row items-end mt-2">
-            {responses?.length > 0 && <div className="mr-4 text-gray-500">{responses.length} responses given</div>}
+            {responses?.length > 0 && (
+              <div className="hidden mr-4 text-gray-500 md:block">{responses.length} responses given</div>
+            )}
             <Button
               compact
               basic={!isBeingDeleted}

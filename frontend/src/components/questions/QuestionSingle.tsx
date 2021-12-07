@@ -1,9 +1,10 @@
 import React from 'react'
-import { Icon, Popup } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
 import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
+import CustomTooltip from '../common/CustomTooltip'
 
 interface Props {
   hasParticipantCount?: boolean
@@ -35,44 +36,40 @@ function QuestionSingle({
   onDelete,
 }: Props): React.ReactElement {
   const intl = useIntl()
-  const PopupStyle = { opacity: 0.9 }
 
   return (
-    <div data-tip className="questionSingle" data-for={`questionTooltip${id}`}>
+    <div
+      data-tip
+      className="border border-solid rounded shadow border-primary bg-primary-bg"
+      data-for={`questionTooltip${id}`}
+    >
       {id && description && onDelete && (
-        <Popup
+        <CustomTooltip
           content={<span>{description}</span>}
-          trigger={
+          iconObject={
             <div>
-              <div className="top">
-                <div className="type">{generateTypesShort(intl)[type]}</div>
-                <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+              <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
+                <div className="font-bold">{generateTypesShort(intl)[type]}</div>
+                <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
                   <Icon name="trash" />
                 </button>
               </div>
-              <div className="title">
+              <div className="text-center p-[0.3rem] text-primary-strong">
                 <Ellipsis>{title}</Ellipsis>
                 {version >= 0 && <span> {`(v${version + 1})`}</span>}
               </div>
             </div>
           }
-          position="right center"
-          size="small"
-          style={PopupStyle}
-          mouseEnterDelay={250}
-          mouseLeaveDelay={250}
-          wide
-          inverted
         />
       )}
 
       {!(id && description && onDelete) && (
         <>
-          <div className="top">
-            <div className="type">{generateTypesShort(intl)[type]}</div>
+          <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
+            <div className="font-bold">{generateTypesShort(intl)[type]}</div>
 
             {onDelete && (
-              <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
+              <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
                 <Icon name="trash" />
               </button>
             )}
@@ -85,50 +82,12 @@ function QuestionSingle({
             )}
           </div>
 
-          <div className="title">
+          <div className="text-center p-[0.3rem] text-primary-strong">
             <Ellipsis>{title}</Ellipsis>
             {version >= 0 && <span> {`(v${version + 1})`}</span>}
           </div>
         </>
       )}
-
-      <style jsx>
-        {`
-          @import 'src/theme';
-
-          .questionSingle {
-            border: 1px solid $color-primary !important;
-            background-color: $color-primary-background;
-
-            .top,
-            .title {
-              padding: 0.3rem;
-            }
-
-            .top {
-              background-color: $color-primary-20p;
-              display: flex;
-              justify-content: space-between;
-              text-align: center;
-
-              .type {
-                font-weight: bold;
-              }
-
-              .deleteButton {
-                padding: 3px;
-                margin: 0;
-              }
-            }
-
-            .title {
-              line-break: loose;
-              text-align: center;
-              color: $color-primary-strong;
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }

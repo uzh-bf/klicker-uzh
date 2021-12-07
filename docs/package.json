@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/docs",
-  "version": "1.6.2-rc.2",
+  "version": "1.7.0",
   "devDependencies": {
     "cross-env": "6.0.3",
     "nodemon": "2.0.12"
@@ -8,8 +8,9 @@
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus start",
-    "start:watch": "nodemon -w siteConfig.js -w sidebars.json -w ../docs -w ../website --ignore ../website/i18n",
+    "dev": "nodemon -w siteConfig.js -w sidebars.json -w ../docs -w ../website --ignore ../website/i18n",
     "build": "docusaurus build",
+    "serve": "docusaurus serve",
     "write-translations": "docusaurus-write-translations",
     "version": "docusaurus-version",
     "rename-version": "docusaurus-rename-version",
@@ -18,10 +19,13 @@
     "docusaurus": "docusaurus"
   },
   "dependencies": {
-    "@docusaurus/core": "2.0.0-beta.6",
-    "@docusaurus/preset-classic": "2.0.0-beta.6",
-    "clsx": "^1.1.1",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "@docusaurus/core": "2.0.0-beta.8",
+    "@docusaurus/preset-classic": "2.0.0-beta.8",
+    "clsx": "1.1.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  },
+  "volta": {
+    "node": "16.13.1"
   }
 }

@@ -5,6 +5,8 @@ const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 const { v5: uuidv5 } = require('uuid')
 const mongoose = require('mongoose')
+const dayjs = require('dayjs')
+const { sortBy } = require('ramda')
 
 const { ObjectId } = mongoose.Types
 
@@ -22,6 +24,7 @@ const {
   FEEDBACK_RESOLVED,
   FEEDBACK_RESPONSE_ADDED,
   FEEDBACK_RESPONSE_DELETED,
+  CONFUSION_ADDED,
 } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
@@ -216,6 +219,7 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
       id: newResponseId,
       content: response,
       createdAt: new Date(),
+      resolvedAt: new Date(),
     },
     sessionId,
   })
@@ -337,12 +341,39 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 }
 
 /**
+ * Aggregates confusion data into what is really required by the client
+ */
+const aggregateConfusionFeedbacks = (runningSession) => {
+  const filteredConfusion = runningSession.confusionTS.filter(
+    (element) => dayjs().diff(dayjs(element.createdAt), 'minute') <= 10
+  )
+
+  let speedRunning = 0
+  let difficultyRunning = 0
+
+  speedRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.speed, 0) /
+    filteredConfusion.length
+  difficultyRunning =
+    filteredConfusion.reduce((previousValue, currentValue) => previousValue + currentValue.difficulty, 0) /
+    filteredConfusion.length
+
+  if (Number.isNaN(speedRunning)) {
+    speedRunning = 0
+  }
+  if (Number.isNaN(difficultyRunning)) {
+    difficultyRunning = 0
+  }
+
+  return [speedRunning, difficultyRunning, filteredConfusion.length ? filteredConfusion.length : 0]
+}
+
+/**
  * Add a new confusion timestep to the session
  * @param {*} param0
  */
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // TODO: participant auth
-
   const session = await getRunningSession(sessionId)
 
   // if the confusion barometer is not activated, do not allow new additions
@@ -352,19 +383,32 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 
   // push a new timestep into the array
   session.confusionTS.push({ difficulty, speed })
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(session)
+
+  // readd mongoDB id-field
+  session.id = session._id
+  session.blocks.forEach((block) => {
+    // eslint-disable-next-line no-param-reassign
+    block.id = block._id
+  })
+
+  // add the computed confusion values to the subscribtion content and
+  // then readd the mongo _id field under the id key and publish the result
+  // this is needed as redis swallows the _id field and the client could break!
+  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+
+  pubsub.publish(CONFUSION_ADDED, {
+    [CONFUSION_ADDED]: {
+      speed: speedRunning,
+      difficulty: difficultyRunning,
+      numOfFeedbacks,
+      id: savedConfusion._id,
+    },
+    sessionId,
+  })
 
   // save the updated session
   await session.save()
-
-  // extract the saved confusion timestep and convert it to a plain object
-  // then readd the mongo _id field under the id key and publish the result
-  // this is needed as redis swallows the _id field and the client could break!
-  // const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
-  // pubsub.publish(CONFUSION_ADDED, {
-  //   [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
-  //   sessionId,
-  // })
-
   // return the updated session
   return session
 }
@@ -668,6 +712,14 @@ const joinSession = async ({ shortname, auth }) => {
     verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
+  let openInstances = currentBlock.instances.filter((instance) => instance.isOpen)
+
+  if (currentBlock.randomSelection > 0) {
+    const index = Math.floor(Math.random() * openInstances.length)
+    openInstances = [openInstances[index]]
+    // cleanCache(shortname)
+  }
+
   return {
     id,
     settings,
@@ -676,26 +728,24 @@ const joinSession = async ({ shortname, auth }) => {
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
-    activeInstances: currentBlock.instances
-      .filter((instance) => instance.isOpen)
-      .map(({ id: instanceId, question, version: instanceVersion }) => {
-        const version = question.versions[instanceVersion]
+    activeInstances: openInstances.map(({ id: instanceId, question, version: instanceVersion }) => {
+      const version = question.versions[instanceVersion]
 
-        // get the files that correspond to the current question version
-        const files = FileModel.find({ _id: { $in: version.files } })
+      // get the files that correspond to the current question version
+      const files = FileModel.find({ _id: { $in: version.files } })
 
-        return {
-          execution: currentBlock.execution,
-          questionId: question.id,
-          id: instanceId,
-          title: question.title,
-          type: question.type,
-          content: version.content,
-          description: version.description,
-          options: version.options,
-          files,
-        }
-      }),
+      return {
+        execution: currentBlock.execution,
+        questionId: question.id,
+        id: instanceId,
+        title: question.title,
+        type: question.type,
+        content: version.content,
+        description: version.description,
+        options: version.options,
+        files,
+      }
+    }),
   }
 }
 
@@ -712,7 +762,12 @@ async function joinQA({ shortname, auth }) {
     verifyParticipantAuthentication({ auth, authenticationMode: settings.authenticationMode, id, participants })
   }
 
-  return settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : []
+  return settings.isFeedbackChannelActive
+    ? sortBy(
+        (o) => (o.resolvedAt ? -dayjs(o.resolvedAt).unix() : -dayjs(o.createdAt).unix()),
+        feedbacks.filter((feedback) => feedback.published)
+      )
+    : []
 }
 
 /**
@@ -791,6 +846,30 @@ async function resetQuestionBlock({ sessionId, blockId }) {
   return getRunningSession(sessionId)
 }
 
+/**
+ * Returns running session data with aggregated confusion data
+ */
+const fetchRunningSessionData = async (userId) => {
+  const user = await UserModel.findById(userId).populate('runningSession')
+  const { runningSession } = user
+  const [speedRunning, difficultyRunning, numOfFeedbacks] = aggregateConfusionFeedbacks(runningSession)
+
+  // save computed aggregated values
+  runningSession.confusionValues = {
+    speed: speedRunning,
+    difficulty: difficultyRunning,
+    numOfFeedbacks,
+  }
+
+  // readd mongoDB id-field and empty confusionTS
+  runningSession.id = runningSession._id
+  runningSession.blocks = runningSession.blocks.map((block) => ({
+    ...block,
+    id: block._id,
+  }))
+  return runningSession
+}
+
 module.exports = {
   getRunningSession,
   addResponse,
@@ -809,4 +888,5 @@ module.exports = {
   publishFeedback,
   upvoteFeedback,
   reactToFeedbackResponse,
+  fetchRunningSessionData,
 }

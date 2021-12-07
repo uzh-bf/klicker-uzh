@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
 import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
+import SidebarItem from '../common/sidebar/SidebarItem'
+import NotificationBadge from '../common/NotificationBadge'
 
 interface Props {
   children: React.ReactNode
@@ -13,6 +15,9 @@ interface Props {
   sidebar: any
   subscribeToMore: () => void
   title: string
+  questionIds: any
+  feedbackIds?: any
+  responseIds?: any
 }
 
 const defaultProps = {
@@ -28,99 +33,99 @@ function StudentLayout({
   pageTitle,
   sidebar,
   title,
+  questionIds,
+  feedbackIds,
+  responseIds,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
 
-  const activeQuestionItem = {
-    href: 'activeQuestion',
-    label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
-    name: 'activeQuestion',
-  }
-  const feedbackChannelItem = {
-    href: 'feedbackChannel',
-    label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
-    name: 'feedbackChannel',
-  }
+  const [totalUnseenCount, setTotalUnseenCount] = useState(0)
+  const [unseenQuestions, setUnseenQuestions] = useState(0)
+  const [unseenFeedbacks, setUnseenFeedbacks] = useState(0)
 
-  const sidebarItems = isInteractionEnabled ? [activeQuestionItem, feedbackChannelItem] : [activeQuestionItem]
+  useEffect(() => {
+    if (sidebar.activeItem === 'activeQuestion' && questionIds) {
+      questionIds.forEach((questionId: string) => {
+        sessionStorage?.setItem(questionId, 'true')
+      })
+    } else if (feedbackIds) {
+      feedbackIds.forEach((feedbackId: string) => {
+        sessionStorage?.setItem(feedbackId, 'true')
+      })
+
+      if (responseIds) {
+        responseIds.forEach((responseId: string) => {
+          sessionStorage?.setItem(responseId, 'true')
+        })
+      }
+    }
+  }, [questionIds, feedbackIds, responseIds])
+
+  useEffect(() => {
+    const unseenQuestionCount = questionIds.filter((questionId: string) => !sessionStorage?.getItem(questionId)).length
+    const unseenFeedbackCount = feedbackIds.filter((feedbackId: string) => !sessionStorage?.getItem(feedbackId)).length
+    const unseenResponseCount = responseIds.filter((responseId: string) => !sessionStorage?.getItem(responseId)).length
+    setUnseenQuestions(unseenQuestionCount)
+    setUnseenFeedbacks(unseenFeedbackCount + unseenResponseCount)
+    setTotalUnseenCount(unseenQuestionCount + unseenFeedbackCount + unseenResponseCount)
+  }, [questionIds, feedbackIds, responseIds])
 
   return (
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className="studentLayout">
-        <div className="header">
-          <Button
-            basic
-            active={sidebar.sidebarVisible}
-            disabled={sidebarItems.length === 1}
-            icon="content"
-            onClick={sidebar.handleToggleSidebarVisible}
-          />
+      <div className="flex flex-col min-h-full">
+        <div className="border-0 !border-b border-solid border-gray-300  flex justify-between flex-initial p-[0.3rem] items-center md:!hidden">
+          <div className="relative h-10 mt-0 w-11">
+            <Button
+              basic
+              active={sidebar.sidebarVisible}
+              className="absolute z-0 !m-0"
+              disabled={!isInteractionEnabled}
+              icon="content"
+              onClick={sidebar.handleToggleSidebarVisible}
+            />
+            {isInteractionEnabled && <NotificationBadge count={totalUnseenCount} />}
+          </div>
 
-          <h1 className="pageTitle">
+          <h1 className="m-0 !text-lg">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
           </h1>
-          <Button basic icon="refresh" onClick={(): void => window.location.reload()} />
+          <Button basic className="!m-0" icon="refresh" onClick={(): void => window.location.reload()} />
         </div>
 
-        <div className="content">
+        <div className="flex flex-1">
           <Sidebar
-            activeItem={sidebar.activeItem}
-            handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
-            items={sidebarItems}
+            items={[
+              <SidebarItem
+                active={sidebar.activeItem === 'activeQuestion'}
+                handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('activeQuestion')}
+                icon="question"
+                key="activeQuestion"
+                name="activeQuestion"
+                unseenItems={unseenQuestions}
+              >
+                <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />
+              </SidebarItem>,
+              isInteractionEnabled && (
+                <SidebarItem
+                  active={sidebar.activeItem === 'feedbackChannel'}
+                  handleSidebarItemClick={sidebar.handleSidebarActiveItemChange('feedbackChannel')}
+                  icon="talk"
+                  key="feedbackChannel"
+                  name="feedbackChannel"
+                  unseenItems={unseenFeedbacks}
+                >
+                  <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />
+                </SidebarItem>
+              ),
+            ].filter(Boolean)}
             visible={sidebar.sidebarVisible}
           >
             {children}
           </Sidebar>
         </div>
-
-        <style jsx>
-          {`
-            @import 'src/theme';
-
-            .studentLayout {
-              display: flex;
-              flex-direction: column;
-
-              min-height: 100%;
-
-              .header {
-                flex: 0 0 auto;
-
-                display: flex;
-                justify-content: space-between;
-
-                align-items: center;
-
-                border-bottom: 1px solid lightgrey;
-                padding: 0.3rem;
-
-                :global(button) {
-                  margin: 0;
-                }
-              }
-
-              .pageTitle {
-                font-size: 1.1rem !important;
-                margin: 0;
-              }
-
-              .content {
-                flex: 1;
-
-                display: flex;
-              }
-
-              @include desktop-tablet-only {
-                .header {
-                  display: none;
-                }
-              }
-            }
-          `}
-        </style>
       </div>
     </CommonLayout>
   )

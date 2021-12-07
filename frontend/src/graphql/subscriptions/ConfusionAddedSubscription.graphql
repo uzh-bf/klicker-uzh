@@ -2,6 +2,6 @@ subscription ConfusionAdded($sessionId: ID!) {
   confusionAdded(sessionId: $sessionId) {
     difficulty
     speed
-    createdAt
+    numOfFeedbacks
   }
 }

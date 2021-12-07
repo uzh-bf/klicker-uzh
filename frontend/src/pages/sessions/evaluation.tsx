@@ -7,11 +7,10 @@ import { useRouter } from 'next/router'
 import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
 import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
-import { withApollo } from '../../lib/apollo'
+import EvaluationConfusion from '../../components/evaluation/EvaluationConfusion'
 
 const messages = defineMessages({
   pageTitle: {
@@ -107,8 +106,6 @@ export function extractInstancesFromSession(session): any {
 }
 
 function Evaluation(): React.ReactElement {
-  useLogging()
-
   const intl = useIntl()
   const router = useRouter()
 
@@ -143,14 +140,15 @@ function Evaluation(): React.ReactElement {
               bins,
             }): React.ReactElement => {
               const { results, question, version } = activeInstance
-              const { description, options, files } = question.versions[version]
+
+              const options = question?.versions[version].options
 
               const layoutProps = {
                 activeInstances,
                 activeInstance: activeInstanceIndex,
-                activeVisualization: activeVisualizations[question.type],
-                data: results.data,
-                description,
+                activeVisualization: question ? activeVisualizations[question.type] : null,
+                data: results?.data,
+                description: question?.versions[version].description,
                 instanceSummary,
                 onChangeActiveInstance: setActiveInstanceIndex,
                 onChangeVisualizationType: (questionType, visualizationType): void =>
@@ -163,12 +161,12 @@ function Evaluation(): React.ReactElement {
                 pageTitle: intl.formatMessage(messages.pageTitle),
                 sessionId,
                 showGraph,
-                files,
+                files: question?.versions[version].files,
                 showSolution,
                 statistics: activeInstance.statistics,
-                title: question.title,
-                totalResponses: results.totalResponses,
-                type: question.type,
+                title: question?.title,
+                totalResponses: results?.totalResponses,
+                type: question?.type,
                 feedbacks,
                 onChangeShowFeedback: setShowFeedback,
                 showFeedback,
@@ -181,7 +179,7 @@ function Evaluation(): React.ReactElement {
 
               return (
                 <EvaluationLayout {...layoutProps}>
-                  {!(showFeedback || showConfusionTS) && (
+                  {!(showFeedback || showConfusionTS) && question && (
                     <Chart
                       activeVisualization={activeVisualizations[question.type]}
                       data={results.data}
@@ -190,7 +188,7 @@ function Evaluation(): React.ReactElement {
                       isPublic={isPublic}
                       numBins={bins}
                       questionType={question.type}
-                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                      restrictions={options?.FREE_RANGE && options?.FREE_RANGE.restrictions}
                       sessionId={sessionId}
                       sessionStatus={sessionStatus}
                       showGraph={showGraph}
@@ -204,9 +202,9 @@ function Evaluation(): React.ReactElement {
                       <FeedbackTableChart feedbacks={feedbacks} />
                     </div>
                   )}
-                  {/* sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
-                    <ConfusionCharts confusionTS={confusionTS} />
-                  ) */}
+                  {sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
+                    <EvaluationConfusion confusionTS={confusionTS} />
+                  )}
                 </EvaluationLayout>
               )
             }}
@@ -217,4 +215,4 @@ function Evaluation(): React.ReactElement {
   )
 }
 
-export default withApollo()(Evaluation)
+export default Evaluation

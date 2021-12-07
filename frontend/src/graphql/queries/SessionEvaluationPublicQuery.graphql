@@ -5,6 +5,7 @@ query EvaluateSessionPublic($sessionId: ID!) {
     blocks {
       id
       status
+      randomSelection
       instances {
         id
         isOpen

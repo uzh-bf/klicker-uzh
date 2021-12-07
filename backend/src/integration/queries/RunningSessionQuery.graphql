@@ -3,11 +3,6 @@ query RunningSession {
     id
     startedAt
     activeStep
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
     feedbacks {
       id
       content

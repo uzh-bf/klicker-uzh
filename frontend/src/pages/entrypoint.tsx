@@ -3,14 +3,11 @@ import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
 import { useLazyQuery } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
-import { withApollo } from '../lib/apollo'
-import useLogging from '../lib/hooks/useLogging'
 import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 
 function Entrypoint(): React.ReactElement {
-  useLogging()
-
   const router = useRouter()
 
   const [checkAccountStatus, { data, error }] = useLazyQuery(CheckAccountStatusQuery)
@@ -18,6 +15,8 @@ function Entrypoint(): React.ReactElement {
   useEffect((): void => {
     checkAccountStatus()
     if (data && data.checkAccountStatus) {
+      push(['trackEvent', 'User', 'AAI Login'])
+
       Cookies.set('userId', data.checkAccountStatus, { secure: true })
       router.push('/questions')
     }
@@ -30,4 +29,4 @@ function Entrypoint(): React.ReactElement {
   return null
 }
 
-export default withApollo()(Entrypoint)
+export default Entrypoint

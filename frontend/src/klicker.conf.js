@@ -29,6 +29,11 @@ module.exports = convict({
       env: 'APP_BASE_URL',
       format: 'url',
     },
+    supportEmail: {
+      default: 'klicker.support@uzh.ch',
+      env: 'APP_SUPPORT_EMAIL',
+      format: String,
+    },
     gzip: {
       default: true,
       env: 'APP_GZIP',
@@ -119,6 +124,11 @@ module.exports = convict({
     format: ['production', 'development', 'test'],
   },
   s3: {
+    rootDomain: {
+      default: undefined,
+      env: 'S3_ROOT_DOMAIN',
+      format: String,
+    },
     rootUrl: {
       default: undefined,
       env: 'S3_ROOT_URL',
@@ -274,30 +284,55 @@ module.exports = convict({
     },
   },
   services: {
-    googleAnalytics: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_GOOGLE_ANALYTICS_ENABLED',
-        format: Boolean,
+    chatwoot: {
+      baseUrl: {
+        default: 'https://app.chatwoot.com',
+        env: 'SERVICES_CHATWOOT_BASE_URL',
+        format: 'url',
       },
+      websiteToken: {
+        default: undefined,
+        env: 'SERVICES_CHATWOOT_TOKEN',
+        format: String,
+      },
+    },
+    happyKit: {
+      envKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_FLAGS_ENV_KEY',
+        format: String,
+        sensitive: true,
+      },
+      publicKey: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_HAPPYKIT_ANALYTICS_KEY',
+        format: String,
+        sensitive: true,
+      },
+      persistedUsers: {
+        default: 'roland.schlaefli@bf.uzh.ch',
+        env: 'NEXT_PUBLIC_HAPPYKIT_PERSISTED_USERS',
+        format: String,
+      },
+    },
+    googleAnalytics: {
       trackingId: {
         default: undefined,
-        env: 'SERVICES_GOOGLE_ANALYTICS_TRACKING_ID',
+        env: 'NEXT_PUBLIC_GOOGLE_ANALYTICS_TRACKING_ID',
         format: String,
         sensitive: true,
       },
     },
-    logrocket: {
-      appId: {
+    matomo: {
+      siteUrl: {
         default: undefined,
-        env: 'SERVICES_LOGROCKET_APP_ID',
-        format: String,
-        sensitive: true,
+        env: 'NEXT_PUBLIC_MATOMO_URL',
+        format: 'url',
       },
-      enabled: {
-        default: false,
-        env: 'SERVICES_LOGROCKET_ENABLED',
-        format: Boolean,
+      siteId: {
+        default: undefined,
+        env: 'NEXT_PUBLIC_MATOMO_SITE_ID',
+        format: Number,
       },
     },
     sentry: {

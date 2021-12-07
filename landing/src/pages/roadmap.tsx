@@ -10,7 +10,9 @@ import {
   Icon,
   Button,
   Form,
+  List,
 } from 'semantic-ui-react'
+import clsx from 'clsx'
 
 enum Status {
   RELEASED,
@@ -35,6 +37,10 @@ interface RoadmapItemProps {
   title: string
   description: string
   status: Status
+  items?: Array<{
+    label: string
+    href?: string
+  }>
   children: any
 }
 
@@ -43,6 +49,7 @@ function RoadmapItem({
   title,
   description,
   status,
+  items,
   children,
 }: RoadmapItemProps) {
   return (
@@ -51,9 +58,33 @@ function RoadmapItem({
       className="md:!max-w-sm"
       color={StatusColor[status] as any}
     >
-      <Card.Content header={title} />
+      <Card.Content className="!flex-grow-0" header={title} />
       {/* <Image src="https://place-hold.it/300x100" /> */}
-      <Card.Content>{description}</Card.Content>
+      <Card.Content className="flex-1">{description}</Card.Content>
+      {items && (
+        <Card.Content>
+          <div className="font-bold text-gray-600">Use Cases</div>
+          <ul className="flex flex-col gap-2 mt-2">
+            {items.map((item) => {
+              const content = (
+                <li
+                  className={clsx(
+                    'px-2 py-1 prose-sm bg-gray-100 rounded',
+                    item.href && 'cursor-pointer hover:shadow'
+                  )}
+                  key={item.label}
+                >
+                  {item.label}
+                </li>
+              )
+              if (item.href) {
+                return <Link href={item.href}>{content}</Link>
+              }
+              return content
+            })}
+          </ul>
+        </Card.Content>
+      )}
       <Card.Content extra className="flex items-center">
         <Label color={StatusColor[status] as any}>{StatusText[status]}</Label>
         {children}
@@ -140,6 +171,11 @@ export default function Roadmap() {
                   New interaction modalities for virtual and physical classrooms
                   improve interaction between lecturers and participants.
                 `}
+                items={[
+                  { label: 'Live Q&A in large classrooms (released)' },
+                  { label: 'Real-time feedback on comprehension (released)' },
+                  { label: 'Poll-based experiments (in progress)' },
+                ]}
                 status={Status.WORKING_ON}
               >
                 <Label>Fall 21 - Spring 22</Label>
@@ -196,19 +232,16 @@ export default function Roadmap() {
       <div className="p-4 mt-8 md:mt-16">
         <h1>Public Roadmap</h1>
         <p className="prose prose-lg max-w-none">
-          Our public roadmap is directly integrated with our project management
-          software, allowing you to see what milestones we are currently working
-          on.
+          Our public roadmap allows you to see what we are currently working on,
+          as well as to contribute your own feature requests and bug reports.
         </p>
-
-        <iframe
-          className="clickup-embed"
-          src="https://sharing.clickup.com/b/h/5-74501758-2/8696b18d0f64dc6"
-          onWheel={() => null}
-          width="100%"
-          height="700px"
-          style={{ background: 'transparent', border: '1px solid #ccc' }}
-        ></iframe>
+        <a
+          href="https://klicker-uzh.feedbear.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Button primary>Go to public roadmap</Button>
+        </a>
       </div>
     </div>
   )

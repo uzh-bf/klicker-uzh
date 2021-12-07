@@ -5,6 +5,7 @@ query SessionList {
     status
     blocks {
       id
+      randomSelection
       instances {
         id
         version

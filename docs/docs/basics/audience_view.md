@@ -3,11 +3,11 @@ id: audience_view
 title: Audience View
 ---
 
-This page is presented to the audience to answer questions (left side) and give instant feedback (right side) to the speaker. If you have followed the tutorial, you should see your question ready to be answered on the left side of the screen.
+This page is presented to the audience to answer questions (left side) and give instant feedback (right side) to the lecturer. If you have followed the tutorial, you should see your question ready to be answered on the left side of the screen.
 
 **The view of participants will automatically update upon closing the current and/or opening the next question block.**
 
-Providing feedback or asking questions instantly sends yout comment to the speaker. Answered questions, etc. will also be visible on the right side of the screen. More details regarding the functionalities can be found in the following [Audience Interaction](audience_interaction.md) section.
+Providing feedback or asking questions instantly sends an update to the speaker. Answered questions, etc. will also be visible on the right side of the screen. More details regarding the functionalities can be found in the following [Audience Interaction](audience_interaction.md) section.
 
 ![Audience View Desktop](/img/audience_view_desktop.png)
 

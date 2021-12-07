@@ -3,13 +3,12 @@ import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
+import { push } from '@socialgouv/matomo-next'
 
 import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -19,18 +18,14 @@ const messages = defineMessages({
 })
 
 function Registration(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const intl = useIntl()
 
   const [register, { data, error, loading }] = useMutation(RegistrationMutation)
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="registration">
-        <h1>
+      <div className="p-4 md:w-[750px]">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
         </h1>
 
@@ -39,7 +34,7 @@ function Registration(): React.ReactElement {
 
           if (newEmail) {
             return (
-              <div className="successMessage">
+              <div className="font-bold text-green-700">
                 <FormattedMessage
                   defaultMessage="Successfully registered as {newEmail}.{br} Please activate your new account using the link in the email we just sent you. You can then login at {link}."
                   id="user.registration.successNotification"
@@ -94,13 +89,16 @@ function Registration(): React.ReactElement {
                         useCase,
                       },
                     })
+                    push(['trackEvent', 'User', 'Signed Up'])
                   } catch ({ message }) {
                     if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
                       setFieldError('shortname', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'Error', 'Shortname Not Available'])
                     }
 
                     if (message === Errors.EMAIL_NOT_AVAILABLE) {
                       setFieldError('email', 'NOT_AVAILABLE')
+                      push(['trackEvent', 'Error', 'Email Not Available'])
                     }
 
                     setSubmitting(false)
@@ -108,40 +106,13 @@ function Registration(): React.ReactElement {
                 }}
               />
 
-              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
+              {error && <div className="font-bold text-red-800">Registration failed ({error.message})</div>}
             </>
           )
         })()}
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .registration {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            .errorMessage,
-            .successMessage {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: $color-error-font;
-            }
-            .successMessage {
-              color: $color-success;
-            }
-
-            @include desktop-tablet-only {
-              width: 750px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )
 }
 
-export default withApollo()(Registration)
+export default Registration

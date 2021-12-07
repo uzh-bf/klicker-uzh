@@ -1,0 +1,9 @@
+ErrorDocument 404 /docs/404.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine  on
+  RewriteBase    /docs/
+
+  # remove trailing slash
+  RewriteRule ^blog/$ /docs/blog.html [L]
+</IfModule>

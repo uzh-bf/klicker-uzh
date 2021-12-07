@@ -14,7 +14,7 @@ function QuestionDescription({ content, description }: Props): React.ReactElemen
   const createMarkup: any = (): any => ({ __html: toSanitizedHTML(content) || description || null })
 
   // return the content div with "unsafe" HTML
-  return <div className="description" dangerouslySetInnerHTML={createMarkup()} />
+  return <div className="prose-sm prose break-words hyphens-auto max-w-none" dangerouslySetInnerHTML={createMarkup()} />
 }
 
 export default QuestionDescription

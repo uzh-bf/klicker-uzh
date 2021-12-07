@@ -18,7 +18,10 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
   })
 
   return (
-    <div className={clsx('dropzone', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })} ref={drop}>
+    <div
+      className={clsx('dropzone rounded', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })}
+      ref={drop}
+    >
       <Icon name="plus" />
 
       <style jsx>{`

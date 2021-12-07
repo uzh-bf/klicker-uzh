@@ -1,7 +1,8 @@
 module.exports = {
+  trailingSlash: false,
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
-  url: 'https://klicker-uzh-docs.vercel.app',
+  url: 'https://www.klicker.uzh.ch',
   baseUrl: '/docs/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
@@ -43,27 +44,27 @@ module.exports = {
   themeConfig: {
     navbar: {
       logo: {
-        src: 'img/KlickerUZH_Gray_BG.png',
-        href: '/',
+        src: 'img/KlickerUZH_Gray_Transparent.png',
+        href: 'introduction/getting_started',
       },
       items: [
         {
-          to: '/',
-          label: 'Docs',
+          to: 'introduction/getting_started',
+          label: 'Getting Started',
           position: 'left',
         },
-        // {
-        //   to: 'blog/',
-        //   label: 'Updates',
-        //   position: 'left',
-        // },
         {
           to: 'faq/faq',
           label: 'FAQ',
           position: 'left',
         },
         {
-          to: 'faq/changelog',
+          to: 'blog',
+          label: 'Project Updates',
+          position: 'left',
+        },
+        {
+          href: 'https://klicker-uzh.feedbear.com/updates',
           label: 'Release Notes',
           position: 'left',
         },
@@ -78,7 +79,7 @@ module.exports = {
       links: [],
       copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
       logo: {
-        src: 'img/KlickerUZH_Orange_Square.png',
+        src: 'img/KlickerUZH_Gray_Transparent.png',
         href: 'https://www.klicker.uzh.ch',
       },
     },

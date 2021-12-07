@@ -4,11 +4,10 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useApolloClient } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -18,10 +17,6 @@ const messages = defineMessages({
 })
 
 function ActivateAccount(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const client = useApolloClient()
   const router = useRouter()
   const intl = useIntl()
@@ -32,17 +27,19 @@ function ActivateAccount(): React.ReactElement {
     client
       .mutate({ mutation: ActivateAccountMutation, variables: { activationToken: router.query.activationToken } })
       .then((): void => setSuccess(true))
+
+    push(['trackEvent', 'User', 'Account Activated'])
   }, [])
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="activateAccount">
-        <h1>
+      <div className="p-4 w-[500px] text-center mx-auto">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Activate your new account" id="user.activateAccount.title" />
         </h1>
 
         {success && (
-          <Message success>
+          <Message success className="!text-left">
             <FormattedMessage
               defaultMessage="Your account has been successfully activated. You can now {login}."
               id="user.activateAccount.success"
@@ -52,28 +49,9 @@ function ActivateAccount(): React.ReactElement {
             />
           </Message>
         )}
-
-        <style jsx>
-          {`
-            @import 'src/theme';
-
-            .activateAccount {
-              padding: 1rem;
-
-              h1 {
-                margin-top: 0;
-              }
-
-              @include desktop-tablet-only {
-                margin: 0 15%;
-                width: 500px;
-              }
-            }
-          `}
-        </style>
       </div>
     </StaticLayout>
   )
 }
 
-export default withApollo()(ActivateAccount)
+export default ActivateAccount

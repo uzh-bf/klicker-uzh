@@ -11,6 +11,7 @@ query RunningSession {
       id
       status
       timeLimit
+      randomSelection
       expiresAt
       instances {
         id
@@ -31,10 +32,10 @@ query RunningSession {
         }
       }
     }
-    confusionTS {
-      difficulty
+    confusionValues {
       speed
-      createdAt
+      difficulty
+      numOfFeedbacks
     }
     feedbacks {
       ...FeedbackFields

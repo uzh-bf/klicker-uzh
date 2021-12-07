@@ -1,76 +1,65 @@
 import React from 'react'
-import {
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Label,
-} from 'recharts'
-import { FormattedMessage } from 'react-intl'
+import dynamic from 'next/dynamic'
+
+// HACK: ensure that the react-d3-speedometer is not loaded on SSR
+const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), { ssr: false })
 
 interface Props {
-  data: any[]
-  title: string
-  ylabel: string
+  runningValue: number
+  labels: any
 }
 
-function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
+const RED_COLOR = 'rgba(240, 43, 30, 0.7)'
+const ORANGE_COLOR = 'rgba(245, 114, 0, 0.7)'
+const GREEN_COLOR = 'rgba(22, 171, 57, 0.7)'
+
+function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
   return (
-    <div className="confusionSection">
-      <h3>{title}</h3>
-
-      <div className="chart">
-        {((): React.ReactElement => {
-          // if there is no data for the section, display a message
-          if (data.length === 0) {
-            return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />
-          }
-
-          // otherwise render a chart
-          return (
-            <ResponsiveContainer>
-              <LineChart
-                data={data}
-                margin={{
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                }}
-              >
-                <CartesianGrid strokeDasharray="5 5" />
-                <XAxis dataKey="timestamp" padding={{ right: 10 }} />
-                <YAxis domain={[-5, 5]} minTickGap={1} padding={{ bottom: 10, top: 10 }} ticks={[-5, -2.5, 0, 2.5, 5]}>
-                  <Label angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} value={ylabel} />
-                </YAxis>
-                <ReferenceLine stroke="black" y={0} />
-                <Line dataKey="value" stroke="lightgrey" type="monotone" />
-                <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
-                <Legend />
-              </LineChart>
-            </ResponsiveContainer>
-          )
-        })()}
+    <div className="w-full">
+      <div className="w-[97%] min-h-[180px]">
+        <ReactSpeedometer
+          fluidWidth
+          currentValueText=" "
+          customSegmentLabels={[
+            {
+              text: labels.min,
+              // @ts-ignore
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+            {
+              text: '',
+              color: '#000000',
+            },
+            {
+              text: labels.mid,
+              // @ts-ignore
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+            {
+              text: '',
+              color: '#000000',
+            },
+            {
+              text: labels.max,
+              // @ts-ignore
+              position: 'OUTSIDE',
+              color: '#000000',
+            },
+          ]}
+          customSegmentStops={[-2, -1.4, -0.7, 0.7, 1.4, 2]}
+          height={200}
+          maxValue={2}
+          minValue={-2}
+          needleColor="#dc6027"
+          needleHeightRatio={0.4}
+          paddingHorizontal={3}
+          segmentColors={[RED_COLOR, ORANGE_COLOR, GREEN_COLOR, ORANGE_COLOR, RED_COLOR]}
+          startColor="#FF0000"
+          value={runningValue}
+        />
       </div>
-
-      <style jsx>{`
-        .confusionSection {
-          display: flex;
-          flex-direction: column;
-
-          height: 15rem;
-
-          .chart {
-            flex: 1;
-
-            height: 10rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }

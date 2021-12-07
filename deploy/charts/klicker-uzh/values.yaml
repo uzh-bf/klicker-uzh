@@ -1,0 +1,209 @@
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+redis:
+  # architecture: standalone
+  auth:
+    enabled: false
+
+  master:
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 400m
+        memory: 150Mi
+
+  replica:
+    replicaCount: 1
+
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 400m
+        memory: 150Mi
+
+security:
+  https:
+    enabled: true
+  csp:
+    enabled: false
+    reportUri: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
+  expectCt:
+    enabled: false
+    frontend: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
+    backend: https://sentry.ibf-devops.ch/api/3/security/?sentry_key=670985cada43448bae071dc933747c27
+  frameguard:
+    enabled: false
+  hsts:
+    enabled: false
+  cors:
+    frontend: https://www.klicker.uzh.ch,http://www.klicker.uzh.ch,http://localhost:3000
+    backend: https://www.klicker.uzh.ch,http://localhost:3000
+
+analytics:
+  sentry:
+    frontend:
+      enabled: false
+    backend:
+      enabled: false
+  google:
+    trackingId:
+  happyKit:
+    publicKey:
+  matomo:
+    siteUrl:
+    siteId:
+
+featureFlags:
+  envKey:
+
+services:
+  chatwoot:
+    enabled: false
+    baseUrl: https://app.chatwoot.com
+    websiteToken:
+  teams:
+    enabled: false
+    env: qa
+    webhook:
+
+frontend:
+  replicaCount: 1
+
+  displayAAI: false
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 170Mi
+    limits:
+      cpu: 400m
+      memory: 300Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
+
+  vpa:
+    enabled: false
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  priorityClassName: production-workload
+
+backend:
+  replicaCount: 1
+
+  redis: {}
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 75Mi
+    limits:
+      cpu: 500m
+      memory: 200Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 80
+
+  vpa:
+    enabled: false
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  priorityClassName: production-workload
+
+shibboleth:
+  enabled: false
+
+  replicaCount: 1
+
+  hostname: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/shibboleth
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: false
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 5m
+      memory: 50Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: production-workload

@@ -4,12 +4,11 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
+import { push } from '@socialgouv/matomo-next'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
-import useLogging from '../../lib/hooks/useLogging'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
-import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -19,10 +18,6 @@ const messages = defineMessages({
 })
 
 function ResetPassword(): React.ReactElement {
-  useLogging({
-    logRocket: false,
-  })
-
   const intl = useIntl()
   const router = useRouter()
 
@@ -30,8 +25,8 @@ function ResetPassword(): React.ReactElement {
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="resetPassword">
-        <h1>
+      <div className="p-4 items-center md:w-[500px] resetPassword">
+        <h1 className="mt-0">
           <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
         </h1>
 
@@ -63,6 +58,7 @@ function ResetPassword(): React.ReactElement {
                       newPassword: password,
                     },
                   })
+                  push(['trackEvent', 'User', 'Password Reset'])
                 }}
               />
 
@@ -70,26 +66,9 @@ function ResetPassword(): React.ReactElement {
             </>
           )
         })()}
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .resetPassword {
-            padding: 1rem;
-
-            h1 {
-              margin-top: 0;
-            }
-
-            @include desktop-tablet-only {
-              margin: 0 15%;
-              width: 500px;
-            }
-          }
-        `}</style>
       </div>
     </StaticLayout>
   )
 }
 
-export default withApollo()(ResetPassword)
+export default ResetPassword

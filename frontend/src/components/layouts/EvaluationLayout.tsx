@@ -173,7 +173,7 @@ function EvaluationLayout({
         })}
       >
         {((): React.ReactElement => {
-          if (instanceSummary.length <= 0) {
+          if (instanceSummary.length <= 0 && !existsFeedback && !existsConfusion) {
             return null
           }
 
@@ -211,13 +211,14 @@ function EvaluationLayout({
 
                 {instanceSummary.length < 7 &&
                   instanceSummary.map(
-                    ({ blockStatus, title, totalResponses: count }, index): React.ReactElement => (
+                    ({ id, blockStatus, title, totalResponses: count }, index): React.ReactElement => (
                       <Menu.Item
                         fitted
                         active={index === currentIndex}
                         className={clsx('hoverable', {
                           executed: blockStatus === 'EXECUTED',
                         })}
+                        key={id}
                         onClick={(): void => {
                           activateInstance(index)
                         }}
@@ -260,13 +261,13 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
+        <div className="questionDetails border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
             {(showQuestionLayout && description) ||
               (showFeedback && 'Feedback-Channel') ||
               (showConfusionTS && 'Confusion-Barometer')}
           </p>
-          {showQuestionLayout && publicRuntimeConfig.s3root && files.length > 0 && (
+          {showQuestionLayout && publicRuntimeConfig.s3root && files?.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
             </div>
@@ -413,8 +414,6 @@ function EvaluationLayout({
                 flex: 0 0 auto;
                 order: 1;
 
-                background-color: $color-primary-background;
-                border-bottom: 1px solid $color-primary;
                 padding: 1rem;
                 text-align: left;
               }

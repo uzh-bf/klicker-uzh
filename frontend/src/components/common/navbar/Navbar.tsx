@@ -1,17 +1,15 @@
-/* eslint-disable react/prop-types, no-undef, no-underscore-dangle */
-
-import * as React from 'react'
+import { useContext } from 'react'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
-import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 
+import { UserContext } from '../../../lib/userContext'
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
-import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -45,10 +43,11 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
   const router = useRouter()
 
   const [logout] = useMutation(LogoutMutation)
-  const { data } = useQuery(AccountSummaryQuery)
+
+  const user = useContext(UserContext)
 
   return (
-    <div className="navbar">
+    <div className="text-gray-50 navbar bg-primary-strong">
       <div className="sideArea">
         <Menu borderless className="noBorder">
           <Menu.Item icon active={sidebarVisible} className="sidebar" name="sidebar" onClick={handleSidebarToggle}>
@@ -75,28 +74,13 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
       )}
 
       <div className="accountArea">
-        {((): React.ReactElement => {
-          const accountId = _get(data, 'user.id')
-          const userEmail = _get(data, 'user.email')
-          const accountShort = _get(data, 'user.shortname')
-          // const userHash = _get(data, 'user.hmac')
-          const role = _get(data, 'user.role')
-          const runningSessionId = _get(data, 'user.runningSession.id')
+        {(() => {
+          const accountId = user?.id
+          const accountShort = user?.shortname
+          const role = user?.role
+          const runningSessionId = user?.runningSession?.id
 
           if (typeof window !== 'undefined') {
-            if (window.INIT_LR) {
-              try {
-                const LogRocket = require('logrocket')
-
-                LogRocket.identify(accountId, {
-                  email: userEmail,
-                  name: accountShort,
-                })
-              } catch (e) {
-                //
-              }
-            }
-
             if (publicRuntimeConfig.sentryDSN) {
               try {
                 const Sentry = require('@sentry/nextjs')
@@ -119,6 +103,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
                     // logout
                     await logout()
 
+                    push(['trackEvent', 'User', 'Logged Out'])
+
                     // redirect to the landing page
                     router.push('/')
                   }}
@@ -132,19 +118,13 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
       <style jsx>{`
         @import 'src/theme';
 
-        $background-color: $color-primary-strong;
-
         .navbar {
-          color: $color-white;
-
           display: flex;
           align-items: center;
           flex-flow: row wrap;
           justify-content: space-between;
 
           padding: 0;
-
-          background-color: $background-color;
 
           z-index: 100;
 
@@ -162,10 +142,10 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
             :global(.sidebar),
             :global(.menu) {
-              color: $color-white;
+              color: white;
               border-radius: 0;
               font-size: $font-size-h1;
-              background-color: $background-color;
+              background-color: $color-primary-strong;
             }
 
             :global(.sidebar.active) {
@@ -190,7 +170,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
             :global(.menu),
             :global(.ui.dropdown .menu > .item) {
-              background-color: $background-color;
+              background-color: $color-primary-strong;
               color: $color-white;
 
               :global(.item) {

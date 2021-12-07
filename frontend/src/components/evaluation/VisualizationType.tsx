@@ -1,6 +1,7 @@
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
+import { push } from '@socialgouv/matomo-next'
 
 import { CHART_TYPES } from '../../constants'
 
@@ -48,7 +49,10 @@ function VisualizationType({ activeVisualization, onChangeType, questionType }: 
         options={options.filter((o): boolean => o.withinType.includes(questionType))}
         placeholder={intl.formatMessage(messages.title)}
         value={activeVisualization}
-        onChange={(_, { value }: { value: string }): void => onChangeType(questionType, value)}
+        onChange={(_, { value }: { value: string }): void => {
+          onChangeType(questionType, value)
+          push(['trackEvent', 'Session Evaluation', `Visualization Activated (${questionType})`, value])
+        }}
       />
     </div>
   )

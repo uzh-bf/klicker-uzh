@@ -1,0 +1,128 @@
+s3:
+  endpoint: tc-klicker-prod.s3.amazonaws.com
+  bucket: images
+  region: eu-central-1
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker.uzh.ch
+  hsts:
+    enabled: true
+  csp:
+    enabled: true
+  expectCt:
+    enabled: true
+  frameguard:
+    enabled: true
+
+redis:
+  master:
+    priorityClassName: klicker-prod-klicker-uzh-production-workload
+  replica:
+    priorityClassName: klicker-prod-klicker-uzh-production-workload
+
+analytics:
+  sentry:
+    frontend:
+      environment: prod
+  google:
+    trackingId:
+  happyKit:
+    publicKey: analytics_pub_1312f90ec4
+  matomo:
+    siteUrl: https://webstats.uzh.ch/
+    siteId: 411
+
+featureFlags:
+  envKey: flags_pub_313968481835942464
+
+services:
+  chatwoot:
+    enabled: true
+    websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
+  teams:
+    enabled: true
+    env: prod
+
+frontend:
+  replicaCount: 3
+
+  displayAAI: true
+
+  hostname: app.klicker.uzh.ch
+
+  autoscaling:
+    enabled: false
+
+  vpa:
+    enabled: true
+
+  ingress:
+    hosts:
+      - host: app.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-tls
+        hosts:
+          - app.klicker.uzh.ch
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
+
+backend:
+  replicaCount: 3
+
+  hostname: api.klicker.uzh.ch
+
+  autoscaling:
+    enabled: false
+
+  vpa:
+    enabled: true
+
+  redis:
+    tls: true
+
+  ingress:
+    hosts:
+      - host: api.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-backend-tls
+        hosts:
+          - api.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 50%
+
+shibboleth:
+  enabled: true
+
+  replicaCount: 1
+
+  hostname: aai.klicker.uzh.ch
+
+  ingress:
+    enabled: true
+    hosts:
+      - host: aai.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-shibboleth-tls
+        hosts:
+          - aai.klicker.uzh.ch

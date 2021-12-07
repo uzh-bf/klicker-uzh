@@ -111,13 +111,6 @@ const sessionSerializer = {
     }`
     )}]
 
-    ConfusionTS: [${val.confusionTS.map(
-      (TS) => `{
-      Difficulty: ${TS.difficulty}
-      Speed: ${TS.speed}
-    }`
-    )}]
-
     Feedbacks: [${val.feedbacks.map(
       (feedback) => `{
       Content: ${feedback.content}
