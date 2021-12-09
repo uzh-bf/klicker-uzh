@@ -12,7 +12,7 @@ interface Props {
   checked?: boolean
   creationMode?: boolean
   id: string
-  isArchived: boolean
+  isArchived?: boolean
   lastUsed?: any[]
   tags?: any[]
   title: string
@@ -67,12 +67,16 @@ function Question({
 
   return (
     <div
-      className={clsx('question', {
-        creationMode,
-        draggable: creationMode,
-        isArchived,
-        isDragging: collectedProps.isDragging,
-      })}
+      className={clsx(
+        'question',
+        {
+          creationMode,
+          draggable: creationMode,
+          isArchived,
+          isDragging: collectedProps.isDragging,
+        },
+        'mb-4'
+      )}
       ref={drag}
     >
       <div className={clsx('checker', { active: !draggable })}>
