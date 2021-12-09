@@ -1,10 +1,5 @@
 ---
 title: Live Q&A in large classrooms
-tags:
-  - large-class
-  - frontal-teaching
-  - in-person-teaching
-  - hybrid-teaching
 ---
 
 import ChartGrid from '../../src/components/ChartGrid.tsx'
@@ -12,6 +7,7 @@ import BarChart from '../../src/components/BarChart.tsx'
 import TableChart from '../../src/components/TableChart.tsx'
 import CaseSummary from '../../src/components/CaseSummary.tsx'
 import Modal from '../../src/components/Modal.tsx'
+import ImageModal from '../../src/components/ImageModal.tsx'
 
 <CaseSummary goals={[
   'Encourage students to ask questions by providing anonymous access to Q&A',
@@ -28,35 +24,23 @@ import Modal from '../../src/components/Modal.tsx'
   <p>Furthermore, any questions that are especially important or hard to respond to in writing are pinned to the lecturer cockpit, where you can review them during the lecture and respond orally. After the conclusion of the lecture, you export the questions and answers from the Q&A channel and post them to the LMS, allowing students to review your responses even after the lecture concluded.</p>
 </CaseSummary>
 
-<!-- ## Implementation
+## Implementation
 
 import AudienceViewSrc from '../../static/img/implementation_qa_audience.png'
 import RunningSessionSrc from '../../static/img/implementation_qa_running.png'
 import LecturerCockpitSrc from '../../static/img/implementation_lecturer_cockpit.png'
 import EvaluationSrc from '../../static/img/implementation_evaluation.png'
 
-<div className="flex flex-col md:flex-row md:flex-wrap gap-2">
-  <div className="border rounded border-solid p-2 text-center md:w-96 flex flex-col justify-end">
-    <img src={AudienceViewSrc} />
-    <div className="mt-2 text-sm"><span className="font-bold">Audience View:</span> students can read, upvote, and post new questions</div>
-  </div>
-  <div className="border rounded border-solid p-2 text-center md:w-96 flex flex-col justify-end">
-    <img src={RunningSessionSrc} />
-    <div className="mt-2 text-sm"><span className="font-bold">Lecturer View:</span> for the lecturer or lecturing team to coordinate and respond to incoming questions</div>
-  </div>
-  <div className="border rounded border-solid p-2 text-center md:w-96 flex flex-col justify-end">
-    <img src={LecturerCockpitSrc} />
-    <div className="mt-2 text-sm"><span className="font-bold">Lecturer Cockpit:</span> where the lecturer can view or present questions that were "pinned" by their assistant</div>
-  </div>
-  <div className="border rounded border-solid p-2 text-center md:w-96 flex flex-col justify-end">
-    <img src={EvaluationSrc} />
-    <div className="mt-2 text-sm"><span className="font-bold">Evaluation:</span> allows lecturers to view and export/print Q&A data after the conclusion of a lecture</div>
-  </div>
-</div> -->
+<div className="flex flex-col gap-2">
+  <ImageModal src={AudienceViewSrc} description="Students can read, upvote, and post new questions" title="Audience View" />
+  <ImageModal src={RunningSessionSrc} description="For the lecturer or lecturing team to coordinate and respond to incoming questions" title="Lecturer View" />
+  <ImageModal src={LecturerCockpitSrc} description="Where the lecturer can view or present questions that were pinned by their assistant" title="Lecturer Cockpit" />
+  <ImageModal src={EvaluationSrc} description="Allows lecturers to view and export/print Q&A data after the conclusion of a lecture" title="Evaluation" />
+</div>
 
 ## Evaluation
 
-After its release in the fall 2021, live Q&A has already been used in several very large first-year lectures at the University of Zurich. To evaluate the viability of the Q&A approach in university teaching, we have created surveys for both lecturers and students, and are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
+After its release in the fall 2021, KlickerUZH Live Q&A has already been used in several very large first-year lectures at the University of Zurich. To evaluate the viability of the Q&A approach in university teaching, we have created surveys for both lecturers and students, and are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
 
 ### Lecturers
 
@@ -253,11 +237,11 @@ After its release in the fall 2021, live Q&A has already been used in several ve
 
 ### Usage
 
-In November 2021, lecturers using the live Q&A functionality have received over 400 questions, about 150 of which were resolved with a response through the tool. 62 were resolved without a response (e.g., orally or implicitly), and 68 were deleted (e.g., because of their irrelevance). The length of feedback responses ranged from extensive 530 character explanations to single words like "No".
+In November 2021, lecturers using the KlickerUZH Live Q&A functionality have received over 400 questions, about 150 of which were resolved with a response through the tool. 62 were resolved without a response (e.g., orally or implicitly), and 68 were deleted (e.g., because of their irrelevance). The length of feedback responses ranged from extensive 530 character explanations to single words like "No".
 
 ## Conclusion
 
-Based on preliminary results and direct exchange with lecturers, our conclusion as of now is that live Q&A is certainly a viable investment in large lectures, at least if a teaching assistant is available to respond in time. Students feel that their comprehension improves when being able and encouraged to pose their questions. In the case of smaller lectures or when teaching without an assistant, handling the live Q&A, much like a live chat, is often an additional burden (though still feasible).
+Based on preliminary results and direct exchange with lecturers, our conclusion as of now is that KlickerUZH Live Q&A is certainly a viable investment in large lectures, at least if a teaching assistant is available to respond in time. Students feel that their comprehension improves when being able and encouraged to pose their questions. In the case of smaller lectures or when teaching without an assistant, handling the live Q&A, much like a live chat, is often an additional burden (though still feasible).
 
 ## Further Resources
 
