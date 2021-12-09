@@ -45,9 +45,14 @@ module.exports = {
     navbar: {
       logo: {
         src: 'img/KlickerUZH_Gray_Transparent.png',
-        href: 'introduction/getting_started',
+        href: '/',
       },
       items: [
+        {
+          to: '/',
+          label: 'Home',
+          position: 'left',
+        },
         {
           to: 'introduction/getting_started',
           label: 'Getting Started',
