@@ -10,7 +10,6 @@ import QuestionTags from './QuestionTags'
 
 interface Props {
   checked?: boolean
-  creationMode?: boolean
   id: string
   isArchived?: boolean
   lastUsed?: any[]
@@ -40,7 +39,6 @@ function Question({
   versions,
   onCheck,
   draggable,
-  creationMode,
   isArchived,
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
@@ -68,18 +66,17 @@ function Question({
   return (
     <div
       className={clsx(
-        'question',
-        {
-          creationMode,
-          draggable: creationMode,
-          isArchived,
-          isDragging: collectedProps.isDragging,
-        },
-        'mb-4'
+        'question border border-solid border-gray-300 bg-gray-50 flex flex-col flex-nowrap p-2 mb-4 md:flex-row md:flex-wrap',
+        draggable && 'cursor-[grab] hover:shadow-md',
+        collectedProps.isDragging && 'opacity-50'
       )}
       ref={drag}
     >
-      <div className={clsx('checker', { active: !draggable })}>
+      <div
+        className={clsx('md:p-4 md:pl-2 md:flex md:items-center p-2 pl-0 self-center flex flex-00auto', {
+          active: !draggable,
+        })}
+      >
         <Checkbox
           checked={checked}
           id={`check-${id}`}
@@ -88,8 +85,8 @@ function Question({
         />
       </div>
 
-      <div className="wrapper">
-        <h2 className="title text-primary-strong">
+      <div className="flex flex-col md:flex-1 md:flex-row md:flex-wrap flex-nowrap">
+        <h2 className="m-0 !mt-1 flex-00auto text-2xl text-primary-strong">
           {isArchived && (
             <Label color="red" size="tiny">
               <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
@@ -107,7 +104,7 @@ function Question({
           </a>
         </h2>
 
-        <div className="versionChooser">
+        <div className="md:flex-auto md:pr-4 md:text-right md:self-center">
           <Dropdown
             disabled={versions.length === 1}
             options={versions.map((version, index): any => ({
@@ -120,11 +117,11 @@ function Question({
           />
         </div>
 
-        <div className="tags">
+        <div className="md:flex-00auto md:self-end">
           <QuestionTags tags={tags} type={type} />
         </div>
 
-        <div className="details">
+        <div className="md:flex-00full">
           <QuestionDetails
             description={description}
             isModificationModalOpen={isModificationModalOpen}
@@ -134,90 +131,6 @@ function Question({
           />
         </div>
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .question {
-          display: flex;
-          flex-flow: column nowrap;
-
-          padding: 0.5rem;
-          border: 1px solid gainsboro;
-          background-color: #f9f9f9;
-
-          &.draggable {
-            cursor: grab;
-
-            &:hover {
-              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
-            }
-          }
-
-          &.isDragging {
-            opacity: 0.5;
-          }
-
-          .checker {
-            flex: 0 0 auto;
-            display: flex;
-
-            align-self: center;
-
-            padding: 0.5rem;
-            padding-left: 0;
-          }
-
-          .wrapper {
-            display: flex;
-            flex-flow: column nowrap;
-
-            .title {
-              font-size: $font-size-h1;
-              margin: 0;
-              margin-top: 0.2rem;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-
-            .checker {
-              flex: 0 0 1rem;
-              display: flex;
-              align-items: center;
-
-              padding: 1rem;
-              padding-left: 0.5rem;
-            }
-
-            .wrapper {
-              flex: 1;
-              flex-flow: row wrap;
-
-              .title {
-                flex: 0 0 auto;
-              }
-
-              .versionChooser {
-                flex: 1 1 auto;
-                padding-right: 1rem;
-                text-align: right;
-                align-self: center;
-              }
-
-              .tags {
-                flex: 0 0 auto;
-                align-self: flex-end;
-              }
-
-              .details {
-                flex: 0 0 100%;
-              }
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

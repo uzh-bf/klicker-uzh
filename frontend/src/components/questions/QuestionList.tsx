@@ -51,7 +51,6 @@ function QuestionList({
         questions.map((question): any => (
           <Question
             checked={selectedItems.ids.includes(question.id)}
-            creationMode={creationMode}
             draggable={creationMode}
             id={question.id}
             isArchived={isArchiveActive}
