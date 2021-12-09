@@ -13,7 +13,7 @@ const CustomButton = ({ text, link, className }: CustomButtonProps) => {
       <div
         className={clsx(
           className,
-          'rounded-md m-2 text-center border-2 border-solid hover:shaded-sm hover:shadow border-gray-300 bg-gray-50  cursor-pointer'
+          'rounded-md m-2 text-center border-2 border-solid hover:shaded-sm hover:shadow border-gray-300 cursor-pointer'
         )}
       >
         <div className="my-2">{text}</div>
