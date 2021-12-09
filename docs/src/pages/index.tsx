@@ -2,6 +2,7 @@ import React from 'react'
 import Layout from '@theme/Layout'
 
 import ImageTile from '../components/landing/ImageTile'
+import CustomButton from '../components/common/CustomButton'
 
 function Index() {
   return (
@@ -19,7 +20,23 @@ function Index() {
           />
         </div>
 
-        <div className="flex flex-row justify-center mt-2">BUTTONBAR</div>
+        <div className="flex flex-row justify-center mt-3">
+          <CustomButton
+            text="Getting Started"
+            className="w-44"
+            link="introduction/getting_started"
+          />
+          <CustomButton
+            text="Sign Up"
+            className="w-44"
+            link="https://app.klicker.uzh.ch/user/registration"
+          />
+          <CustomButton
+            text="Get Involved"
+            className="w-44"
+            link="contributing/contributing_guidelines"
+          />
+        </div>
       </div>
       <div className="max-w-6xl p-8 m-auto">
         <div className="flex flex-row justify-between gap-4 mb-8">
