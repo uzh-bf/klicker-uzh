@@ -23,7 +23,7 @@ const TitleTextBlock = ({
         'p-3 border-2 border-solid border-gray-300 rounded-lg'
       )}
     >
-      <div className="mb-2 text-xl font-bold">{title}</div>
+      <div className="mb-2 text-lg font-bold sm:text-xl">{title}</div>
       <div className="mb-2">{text}</div>
       {link && linkText && (
         <a href={link}>

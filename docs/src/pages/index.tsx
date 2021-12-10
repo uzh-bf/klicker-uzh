@@ -117,11 +117,11 @@ function Index() {
         </div>
 
         <div className="flex flex-row items-center justify-center mt-4 mb-4">
-          <div className="mr-1 text-2xl font-bold sm:text-4xl md:text-6xl">
+          <div className="mr-1 text-3xl font-bold sm:text-4xl md:text-6xl">
             Welcome to
           </div>
           <img
-            className="w-28 sm:w-40 md:w-64"
+            className="w-36 sm:w-40 md:w-64"
             src="/img/KlickerUZH_Gray_Transparent_borderless.png"
           />
         </div>
@@ -160,15 +160,15 @@ function Index() {
         <div className="w-full h-1 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
 
         <div className="mt-20 mb-20">
-          <div className="flex flex-row items-center mb-4 text-3xl font-bold">
+          <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-3xl">
             Why choose
             <img
-              className="w-32 ml-1"
+              className="ml-1 w-28 sm:w-32"
               src="/img/KlickerUZH_Gray_Transparent_borderless.png"
             />
             ?
           </div>
-          <div className="grid w-full grid-cols-2 gap-6">
+          <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
             {features.map((feature: any) => (
               <TitleTextBlock
                 title={feature.title}
@@ -182,9 +182,11 @@ function Index() {
 
         <div className="w-full h-1 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
 
-        <div className="grid grid-cols-2 mt-20 mb-8">
-          <div>
-            <div className="mb-4 text-3xl font-bold">User Group</div>
+        <div className="grid grid-cols-1 mt-20 mb-8 lg:grid-cols-2">
+          <div className="mb-20 lg:mb-0">
+            <div className="mb-2 text-2xl font-bold sm:text-3xl">
+              User Group
+            </div>
             <div>TODO TEXT REGARDING USER GROUP</div>
             <div className="max-w-lg mt-8 border border-solid rounded-md">
               <div id="c7">
@@ -197,7 +199,9 @@ function Index() {
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            <div className="mb-4 text-3xl font-bold">Open Source</div>
+            <div className="mb-2 text-2xl font-bold sm:text-3xl">
+              Open Source
+            </div>
             {openSourceText.map((snippet: any) => (
               <TitleTextBlock
                 title={snippet.title}
