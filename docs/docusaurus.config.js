@@ -3,7 +3,7 @@ module.exports = {
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
   url: 'https://www.klicker.uzh.ch',
-  baseUrl: '/docs/',
+  baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
   scripts: ['https://buttons.github.io/buttons.js'],
