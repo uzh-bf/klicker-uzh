@@ -3,7 +3,6 @@ import Layout from '@theme/Layout'
 
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
-import ImageContentBlock from '../components/common/ImageContentBlock'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 
 function Index() {
@@ -31,6 +30,72 @@ function Index() {
       par = scr.parentNode
     par.insertBefore(s, scr)
   })
+
+  const features = [
+    {
+      title: 'Easy to get started - 100% free to use',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Simple Question & Session Management',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Dedicated Presentation Mode',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Live Q&A- and Feedback-Channel',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Confusion Feedback',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Multiple Question Types',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Evaluation Possiblities',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Multi-Language Support',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+  ]
+
+  const openSourceText = [
+    {
+      title: 'Development and Self-Hosting',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+    {
+      title: 'Roadmap',
+      content: 'TODO',
+      link: 'TODO',
+      linkText: 'TODO',
+    },
+  ]
 
   return (
     <Layout title="KlickerUZH">
@@ -78,7 +143,7 @@ function Index() {
         </div>
       </div>
       <div className="max-w-6xl p-8 m-auto">
-        <div className="flex flex-row justify-between gap-4 mb-8">
+        <div className="flex flex-row justify-between gap-4 mb-20">
           <ImageTile content={'Easy to Use'} imgSrc={'/img/placeholder.jpg'} />
           <ImageTile
             content={'Optimized for mobile devices'}
@@ -89,8 +154,10 @@ function Index() {
             imgSrc={'/img/development_mac.png'}
           />
         </div>
-        <div className="w-full h-1 mt-10 mb-14 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-        <div>
+
+        <div className="w-full h-1 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
+
+        <div className="mt-20 mb-20">
           <div className="flex flex-row items-center mb-4 text-3xl font-bold">
             Why choose
             <img
@@ -99,7 +166,54 @@ function Index() {
             />
             ?
           </div>
-          <ImageContentBlock
+          <div className="grid w-full grid-cols-2 gap-6">
+            {features.map((feature: any) => (
+              <TitleTextBlock
+                title={feature.title}
+                text={feature.content}
+                link={feature.link}
+                linkText={feature.linkText}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="w-full h-1 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
+
+        <div className="grid grid-cols-2 mt-20 mb-8">
+          <div>
+            <div className="mb-4 text-3xl font-bold">User Group</div>
+            <div>TODO TEXT REGARDING USER GROUP</div>
+            <div className="max-w-lg mt-8 border border-solid rounded-md">
+              <div id="c7">
+                Ausfüllen{' '}
+                <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
+                  Online Formular
+                </a>
+                .
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="mb-4 text-3xl font-bold">Open Source</div>
+            {openSourceText.map((snippet: any) => (
+              <TitleTextBlock
+                title={snippet.title}
+                text={snippet.content}
+                link={snippet.link}
+                linkText={snippet.linkText}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+export default Index
+
+/*  <ImageContentBlock
             content={
               <TitleTextBlock
                 title="Easy to get started - 100% free to use"
@@ -158,26 +272,9 @@ function Index() {
             }
             imgSrc={'/img/placeholder.jpg'}
             className="mb-4"
-          />
-        </div>
+          /> */
 
-        <div className="mt-20 mb-8">
-          <div className="mb-4 text-3xl font-bold">User Group</div>
-          <div>TODO TEXT REGARDING USER GROUP</div>
-          <div className="max-w-lg mt-8 border border-solid rounded-md">
-            <div id="c7">
-              Ausfüllen{' '}
-              <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
-                Online Formular
-              </a>
-              .
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-20 mb-8">
-          <div className="mb-4 text-3xl font-bold">Open Source</div>
-          <ImageContentBlock
+/* <ImageContentBlock
             content={
               <TitleTextBlock
                 title="Development and Self-Hosting"
@@ -200,11 +297,4 @@ function Index() {
             }
             imgSrc={'/img/placeholder.jpg'}
             className="mb-4"
-          />
-        </div>
-      </div>
-    </Layout>
-  )
-}
-
-export default Index
+          /> */

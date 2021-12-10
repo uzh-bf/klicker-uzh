@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
-
-import CustomButton from './CustomButton'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 
 interface TitleTextBlockProps {
   title: string
@@ -18,11 +17,18 @@ const TitleTextBlock = ({
   className,
 }: TitleTextBlockProps) => {
   return (
-    <div className={clsx(className, 'm-3')}>
+    <div
+      className={clsx(
+        className,
+        'p-3 border-2 border-solid border-gray-300 rounded-lg'
+      )}
+    >
       <div className="mb-2 text-xl font-bold">{title}</div>
-      <div>{text}</div>
+      <div className="mb-2">{text}</div>
       {link && linkText && (
-        <CustomButton text={linkText} className="w-40 mt-3 ml-0" link={link} />
+        <a href={link}>
+          <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
+        </a>
       )}
     </div>
   )
