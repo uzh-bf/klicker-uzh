@@ -9,8 +9,8 @@ interface ImageTileProps {
 
 const ImageTile = ({ imgSrc, content, className }: ImageTileProps) => {
   return (
-    <div className={clsx(className, 'text-center w-1/3')}>
-      <img src={imgSrc} className="h-80" />
+    <div className={clsx(className, 'text-center lg:w-1/3')}>
+      <img src={imgSrc} className="h-80 md:h-60 lg:h-80" />
       <div className="mt-2 text-xl font-bold">{content}</div>
     </div>
   )

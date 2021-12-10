@@ -113,37 +113,39 @@ function Index() {
           />
         </div>
         <div className="text-center">
-          <img width="600px" src="/img/question_pool_mac.png" />
+          <img width="60%" src="/img/question_pool_mac.png" />
         </div>
 
-        <div className="flex flex-row items-center justify-center">
-          <div className="mr-1 text-4xl font-bold">Welcome to</div>
+        <div className="flex flex-row items-center justify-center mt-4 mb-4">
+          <div className="mr-1 text-2xl font-bold sm:text-4xl md:text-6xl">
+            Welcome to
+          </div>
           <img
-            className="w-40"
+            className="w-28 sm:w-40 md:w-64"
             src="/img/KlickerUZH_Gray_Transparent_borderless.png"
           />
         </div>
 
-        <div className="flex flex-row justify-center mt-3">
+        <div className="flex flex-col items-center justify-center mt-3 sm:flex-row">
           <CustomButton
             text="Getting Started"
-            className="w-44 bg-gray-50"
+            className="w-44 bg-gray-50 md:text-lg md:w-52"
             link="introduction/getting_started"
           />
           <CustomButton
             text="Sign Up"
-            className="w-44 bg-gray-50"
+            className="w-44 bg-gray-50 md:text-lg md:w-52"
             link="https://app.klicker.uzh.ch/user/registration"
           />
           <CustomButton
             text="Get Involved"
-            className="w-44 bg-gray-50"
+            className="w-44 bg-gray-50 md:text-lg md:w-52"
             link="contributing/contributing_guidelines"
           />
         </div>
       </div>
       <div className="max-w-6xl p-8 m-auto">
-        <div className="flex flex-row justify-between gap-4 mb-20">
+        <div className="flex flex-col justify-between gap-4 mb-20 md:flex-row">
           <ImageTile content={'Easy to Use'} imgSrc={'/img/placeholder.jpg'} />
           <ImageTile
             content={'Optimized for mobile devices'}
