@@ -92,16 +92,25 @@ function Index() {
 
   const openSourceText = [
     {
+      title: 'Features and Bug Reports',
+      content:
+        'In order to further improve KlickerUZH, we are very happy about any feedbacks or bug reports. In urgent cases, you may also want contact us directly through our support channels.',
+      link: 'https://klicker-uzh.feedbear.com/boards/feature-requests',
+      linkText: 'Feature Requests',
+    },
+    {
       title: 'Development and Self-Hosting',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'Similar to many other open-source tools, KlickerUZH is available for self-hosting and contributions of any kind are very welcome. Have a look at our contributing guidlines, check out our GitHub repository linked below or contact us directly.',
+      link: 'https://github.com/uzh-bf/klicker-uzh',
+      linkText: 'KlickerUZH on GitHub',
     },
     {
       title: 'Roadmap',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        "Are you interested in what's next? Check out our current Roadmap!",
+      link: 'roadmap',
+      linkText: 'Roadmap',
     },
   ]
 
