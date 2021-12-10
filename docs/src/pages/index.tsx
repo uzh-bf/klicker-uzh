@@ -117,7 +117,7 @@ function Index() {
   return (
     <Layout title="KlickerUZH">
       <div className="mb-10 text-center sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent">
-        <div className="fixed flex flex-row-reverse w-full">
+        <div className="fixed flex flex-row-reverse justify-center w-full sm:justify-start">
           <CustomButton
             text="Login"
             className="bg-white w-36"
@@ -130,7 +130,7 @@ function Index() {
           />
         </div>
 
-        <div className="text-center pt-14">
+        <div className="pt-20 text-center">
           <img width="60%" src="/img/question_pool_mac.png" />
         </div>
 
