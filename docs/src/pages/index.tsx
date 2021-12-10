@@ -99,7 +99,7 @@ function Index() {
 
   return (
     <Layout title="KlickerUZH">
-      <div className="mb-10 text-center bg-gradient-to-b from-gray-400 via-gray-200 to-transparent">
+      <div className="mb-10 text-center bg-gradient-to-b from-gray-400 to-transparent">
         <div className="flex flex-row-reverse">
           <CustomButton
             text="Login"
