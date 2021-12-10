@@ -34,51 +34,59 @@ function Index() {
   const features = [
     {
       title: 'Easy to get started - 100% free to use',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'KlickerUZH is an open-source project and completely free to use. Just follow the instructions given on the site linked below, fill in your questions and get started in a matter of minutes.',
+      link: 'introduction/getting_started',
+      linkText: 'Getting Started',
     },
     {
       title: 'Simple Question & Session Management',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'KlickerUZH enables you to easily manage your questions and combine them to sessions. Read all about the process in our documentation or just try it yourself.',
+      link: 'basics/question_pool',
+      linkText: 'Question Pool and Sessions',
     },
     {
       title: 'Dedicated Presentation Mode',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'With the dedicated presentation mode, lecturers always have the most important information available at a glance. Just start one of your newly created session to check out the audience view.',
+      link: 'basics/session_running',
+      linkText: 'Running Session',
     },
     {
       title: 'Live Q&A- and Feedback-Channel',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'As a very helpful tool during large lectures, KlickerUZH also provides you with a real-time Q&A and feedback channel to interact with your audience. In this way, teaching assistants might e.g. already answer some questions in written form.',
+      link: 'basics/audience_interaction',
+      linkText: 'Audience Interaction',
     },
     {
       title: 'Confusion Feedback',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'Did you ever wonder, if your audience was understanding your talk or if your teaching speed was too fast? The confusion feedback collects this information from students and provides it to the lecturer in an aggregated manner.',
+      link: 'basics/audience_interaction',
+      linkText: 'Audience Interaction',
     },
     {
       title: 'Multiple Question Types',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'KlickerUZH supports multiple different question types including free text answers, numerical answers and multiple choice as well as single choice questions. As an additional feature, solutions can be defined and displayed for SC and MC questions. Further question types are still on the roadmap.',
+      link: 'basics/question_create',
+      linkText: 'Quetsion Creation',
     },
     {
       title: 'Evaluation Possiblities',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'Even after a session has finished you might want to access the questions asked through the Q&A channel or have a look at the confusion feedbacks over the duration of the lecture. The evaluation page provides this possiblity alongside the responses to all posed questions.',
+      link: 'Evaluation',
+      linkText: 'basics/evaluation',
     },
     {
       title: 'Multi-Language Support',
-      content: 'TODO',
-      link: 'TODO',
-      linkText: 'TODO',
+      content:
+        'KlickerUZH alreay supports German and English out of the box. Additionally, it was made to be easily extendable to further languages for your own deployment.',
+      link: 'deployment/deployment_architecture',
+      linkText: 'Deployment',
     },
   ]
 
@@ -100,7 +108,7 @@ function Index() {
   return (
     <Layout title="KlickerUZH">
       <div className="mb-10 text-center bg-gradient-to-b from-gray-400 to-transparent">
-        <div className="flex flex-row-reverse">
+        <div className="fixed flex flex-row-reverse w-full">
           <CustomButton
             text="Login"
             className="bg-white w-36"
@@ -112,7 +120,8 @@ function Index() {
             link="https://app.klicker.uzh.ch/user/registration"
           />
         </div>
-        <div className="text-center">
+
+        <div className="text-center pt-14">
           <img width="60%" src="/img/question_pool_mac.png" />
         </div>
 
@@ -187,7 +196,14 @@ function Index() {
             <div className="mb-2 text-2xl font-bold sm:text-3xl">
               User Group
             </div>
-            <div>TODO TEXT REGARDING USER GROUP</div>
+            <div className="pr-8">
+              We strive to develop our roadmap and goals based on the needs of
+              our users. The goal of our project on "Digital Skills" is to
+              improve your capabilities in the area of digital interactions. If
+              you are interested in classroom interaction and would like to be
+              involved in future developments, we welcome you to join our
+              KlickerUZH user group with the following form.
+            </div>
             <div className="max-w-lg mt-8 border border-solid rounded-md">
               <div id="c7">
                 Ausfüllen{' '}
