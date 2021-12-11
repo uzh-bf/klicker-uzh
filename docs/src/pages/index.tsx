@@ -165,7 +165,7 @@ function Index() {
           <CustomButton
             text="Get Involved"
             className="w-44 bg-gray-50 md:text-lg md:w-52"
-            link="contributing/contributing_guidelines"
+            link="roadmap"
           />
         </div>
       </div>

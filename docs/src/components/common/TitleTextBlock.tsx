@@ -20,13 +20,13 @@ const TitleTextBlock = ({
     <div
       className={clsx(
         className,
-        'p-3 border-2 border-solid border-gray-300 rounded-lg'
+        'relative p-3 border-2 border-solid border-gray-300 rounded-lg'
       )}
     >
       <div className="mb-2 text-lg font-bold sm:text-xl">{title}</div>
-      <div className="mb-2">{text}</div>
+      <div className="mb-10">{text}</div>
       {link && linkText && (
-        <a href={link}>
+        <a href={link} className="absolute bottom-4">
           <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
         </a>
       )}
