@@ -72,14 +72,14 @@ function Index() {
       content:
         'KlickerUZH supports multiple different question types including free text answers, numerical answers and multiple choice as well as single choice questions. As an additional feature, solutions can be defined and displayed for SC and MC questions. Further question types are still on the roadmap.',
       link: 'basics/question_create',
-      linkText: 'Quetsion Creation',
+      linkText: 'Question Creation',
     },
     {
       title: 'Evaluation Possiblities',
       content:
         'Even after a session has finished you might want to access the questions asked through the Q&A channel or have a look at the confusion feedbacks over the duration of the lecture. The evaluation page provides this possiblity alongside the responses to all posed questions.',
-      link: 'Evaluation',
-      linkText: 'basics/evaluation',
+      link: 'basics/evaluation',
+      linkText: 'Evaluation',
     },
     {
       title: 'Multi-Language Support',

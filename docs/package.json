@@ -11,7 +11,8 @@
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus start",
-    "dev": "nodemon -w docusaurus.config.js -w sidebars.js",
+    "dev": "npm-run-all --parallel dev_docusaurus dev_tailwind",
+    "dev_docusaurus": "nodemon -w docusaurus.config.js -w sidebars.js",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus-write-translations",
@@ -19,7 +20,8 @@
     "rename-version": "docusaurus-rename-version",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
-    "docusaurus": "docusaurus"
+    "docusaurus": "docusaurus",
+    "dev_tailwind": "npx tailwindcss -i ./src/css/globals.css -o ./src/css/custom.css --watch"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-beta.9",
@@ -28,6 +30,7 @@
     "@headlessui/react": "1.4.2",
     "@heroicons/react": "1.0.5",
     "clsx": "1.1.1",
+    "npm-run-all": "^4.1.5",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "recharts": "2.1.6",
