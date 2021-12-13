@@ -1,7 +1,10 @@
 ---
-title: Real-time feedback
+title: Real-time Feedback
+slug: real_time_feedback
+id: real_time_feedback
 ---
 
+import ImageModal from '../../src/components/ImageModal.tsx'
 import CaseSummary from '../../src/components/CaseSummary.tsx'
 
 <CaseSummary goals={[
@@ -23,8 +26,22 @@ import CaseSummary from '../../src/components/CaseSummary.tsx'
 
 ## Implementation
 
-WIP
+import ConfusionInput from '../../static/img/confusion_input.png'
+import ConfusionGauge from '../../static/img/confusion_gauge.png'
+import ConfusionCockpit from '../../static/img/confusion_cockpit.png'
+import ConfusionHistory from '../../static/img/evaluation_confusion.png'
+
+<ImageModal.Group>
+  <ImageModal src={ConfusionInput} description="Where the audience can give you feedback on the speed and difficulty of the lecture by dragging the corresponding sliders. Each participant can provide feedback up to once a minute, after which the sliders become locked until the timeout has elapsed." title="Audience View" />
+  <ImageModal className="max-h-96" src={ConfusionGauge} description="Which display an aggregate score based on the incoming feedbacks of the last ten minutes (to reflect the current situation). The number of feedbacks in the aggregate is displayed as well so that the reliability of the measure can be judged." title="Confusion Gauges" />
+  <ImageModal src={ConfusionCockpit} description="Which displays the real-time feedback gauges next to the pinned questions from live Q&A. The bar on top of the window provides feedback on a quick glance, as it turns red when one of the gauges is in a red zone, and yellow when one of the gauges is in the orange zone." title="Lecturer Cockpit" />
+  <ImageModal src={ConfusionHistory} description="Where the development of both metrics is plotted over time (after the completion of a session). This allows lecturers to associate the development of the gauges with their lecture timeline (e.g., to identify difficult parts)." title="Confusion Evaluation" />
+</ImageModal.Group>
 
 ## Evaluation
 
-The evaluation of the KlickerUZH Real-time Feedback (Confusion Barometer) is currently ongoing.
+The evaluation of the KlickerUZH Real-time Feedback (Confusion Barometer) is still ongoing. The evaluation will be updated as soon as preliminary data is available.
+
+## Feedback
+
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey on X. Thank you!

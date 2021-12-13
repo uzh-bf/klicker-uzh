@@ -1,5 +1,5 @@
 module.exports = {
-  usecases: ['use_cases/qa', 'use_cases/confusion'],
+  usecases: ['use_cases/live_qa', 'use_cases/real_time_feedback'],
   docs: {
     Introduction: ['introduction/getting_started', 'introduction/concepts'],
     Tutorial: [

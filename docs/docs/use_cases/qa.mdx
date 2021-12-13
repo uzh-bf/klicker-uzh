@@ -1,12 +1,13 @@
 ---
-title: Live Q&A in large classrooms
+title: Live Q&A in Large Classrooms
+slug: live_qa
+id: live_qa
 ---
 
 import ChartGrid from '../../src/components/ChartGrid.tsx'
 import BarChart from '../../src/components/BarChart.tsx'
 import TableChart from '../../src/components/TableChart.tsx'
 import CaseSummary from '../../src/components/CaseSummary.tsx'
-import Modal from '../../src/components/Modal.tsx'
 import ImageModal from '../../src/components/ImageModal.tsx'
 
 <CaseSummary goals={[
@@ -31,12 +32,12 @@ import RunningSessionSrc from '../../static/img/implementation_qa_running.png'
 import LecturerCockpitSrc from '../../static/img/implementation_lecturer_cockpit.png'
 import EvaluationSrc from '../../static/img/implementation_evaluation.png'
 
-<div className="flex flex-col gap-2">
-  <ImageModal src={AudienceViewSrc} description="Students can read, upvote, and post new questions" title="Audience View" />
-  <ImageModal src={RunningSessionSrc} description="For the lecturer or lecturing team to coordinate and respond to incoming questions" title="Lecturer View" />
-  <ImageModal src={LecturerCockpitSrc} description="Where the lecturer can view or present questions that were pinned by their assistant" title="Lecturer Cockpit" />
-  <ImageModal src={EvaluationSrc} description="Allows lecturers to view and export/print Q&A data after the conclusion of a lecture" title="Evaluation" />
-</div>
+<ImageModal.Group>
+  <ImageModal src={AudienceViewSrc} description="Where students can read, upvote, and post new questions. Additionally, they can see and react to all of the responses given by the lecturer, which might help the lecturing team clarify their responses (if unclear)." title="Audience View" />
+  <ImageModal src={RunningSessionSrc} description="Where the lecturer or lecturing team moderate and respond to incoming questions or remove irrelevant ones." title="Lecturer View" />
+  <ImageModal src={LecturerCockpitSrc} description="Which the lecturer can open on a second screen/device or present to the class. The cockpit contains only the questions that were pinned in the lecturer view (e.g., by the assistant)." title="Lecturer Cockpit" />
+  <ImageModal src={EvaluationSrc} description="Which allows lecturers to view and export/print Q&A data after the conclusion of a lecture" title="Evaluation" />
+</ImageModal.Group>
 
 ## Evaluation
 
@@ -247,3 +248,7 @@ Based on preliminary results and direct exchange with lecturers, our conclusion 
 
 - Vergleich von Classroom Response Systemen (CRS): https://teachingtools.uzh.ch/index.php?id=tool&toolId=9
 - Hybride Lehre: https://teachingtools.uzh.ch/index.php?id=tool&toolId=37
+
+## Feedback
+
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey on X. Thank you!
