@@ -40,7 +40,7 @@ module.exports = {
       },
     ],
   ],
-  plugins: ['@docusaurus/plugin-ideal-image'],
+  // plugins: ['@docusaurus/plugin-ideal-image'],
   themeConfig: {
     navbar: {
       logo: {
