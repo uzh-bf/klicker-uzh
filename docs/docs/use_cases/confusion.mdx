@@ -10,7 +10,7 @@ import CaseSummary from '../../src/components/CaseSummary.tsx'
 <CaseSummary goals={[
   'Enable students to provide instant feedback on key metrics regarding the lecture',
   'Engage students by incorporating their feedback on the lecture',
-  'Allow lecturers to adapt their teaching based on key metrics regarding comprehension'
+  'Allow lecturers to adapt their teaching based on key metrics impacting comprehension (speed and difficulty)'
 ]} tags={[
   'large class',
   'small class',
@@ -21,7 +21,12 @@ import CaseSummary from '../../src/components/CaseSummary.tsx'
   'remote teaching',
   'hybrid teaching'
 ]}>
-  <p>You are a lecturer teaching complicated topics and would like to get feedback on key metrics like the speed and difficulty of your teaching. You start a session in the KlickerUZH and have the students vote using the confusion barometer. During the lecture, you have the lecturer cockpit in your view, which displays the aggregated votes of the last 10 minutes. You can then continuously adapt your teaching to the circumstances. After the conclusion of your lecture, you view the timeline of the key metrics in its entirety, allowing you to pinpoint sections of your lecture that students found especially difficult or quick.</p>
+  <p>
+    You are a lecturer and would like to get instant feedback on key metrics like the speed and difficulty of your teaching.
+    You start a session in the KlickerUZH after which students can provide feedback using the provided input sliders for speed and difficulty.
+    During the lecture, you have the lecturer cockpit in your view, which displays the aggregated votes of the last 10 minutes, allowing you to continuously adapt your teaching to the circumstances.
+    After the conclusion of your lecture, you view the timeline of the key metrics in its entirety, allowing you to visualize the development of the metrics and to pinpoint sections of your lecture that students found especially difficult or quick.
+  </p>
 </CaseSummary>
 
 ## Implementation
@@ -32,16 +37,16 @@ import ConfusionCockpit from '../../static/img/confusion_cockpit.png'
 import ConfusionHistory from '../../static/img/evaluation_confusion.png'
 
 <ImageModal.Group>
-  <ImageModal src={ConfusionInput} description="Where the audience can give you feedback on the speed and difficulty of the lecture by dragging the corresponding sliders. Each participant can provide feedback up to once a minute, after which the sliders become locked until the timeout has elapsed." title="Audience View" />
-  <ImageModal className="max-h-96" src={ConfusionGauge} description="Which display an aggregate score based on the incoming feedbacks of the last ten minutes (to reflect the current situation). The number of feedbacks in the aggregate is displayed as well so that the reliability of the measure can be judged." title="Confusion Gauges" />
-  <ImageModal src={ConfusionCockpit} description="Which displays the real-time feedback gauges next to the pinned questions from live Q&A. The bar on top of the window provides feedback on a quick glance, as it turns red when one of the gauges is in a red zone, and yellow when one of the gauges is in the orange zone." title="Lecturer Cockpit" />
-  <ImageModal src={ConfusionHistory} description="Where the development of both metrics is plotted over time (after the completion of a session). This allows lecturers to associate the development of the gauges with their lecture timeline (e.g., to identify difficult parts)." title="Confusion Evaluation" />
+  <ImageModal src={ConfusionInput} description="The audience can give you feedback on the speed and difficulty of the lecture by dragging the corresponding sliders to one of five possible positions (ranging from very slow to very fast and very easy to very hard). Each participant can provide feedback up to once a minute." title="Audience View" />
+  <ImageModal className="max-h-96" src={ConfusionGauge} description="To reflect the current situation, the metrics gauges on the lecturer view display an aggregate of each metric based on the incoming feedbacks of the last ten minutes. The number of feedbacks in the aggregate is displayed so that the reliability of the measure can be judged." title="Metrics Gauges" />
+  <ImageModal src={ConfusionCockpit} description="The lecturer cockpit displays the real-time feedback gauges next to the pinned questions from Live Q&A. The bar on top of the window provides feedback at a quick glance, as it turns red when one of the gauges is in a red zone, and yellow when one of the gauges is in the orange zone." title="Lecturer Cockpit" />
+  <ImageModal src={ConfusionHistory} description="After the completion of a session, the development of real-time feedback metrics is plotted over time on the evaluation of the session. This allows lecturers to associate the development of the gauges with their lecture timing (e.g., to identify difficult parts)." title="Metrics Timeline" />
 </ImageModal.Group>
 
 ## Evaluation
 
-The evaluation of the KlickerUZH Real-time Feedback (Confusion Barometer) is still ongoing. The evaluation will be updated as soon as preliminary data is available.
+The evaluation of the KlickerUZH Real-time Feedback is still ongoing. The evaluation will be updated as soon as preliminary data is available.
 
 ## Feedback
 
-If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey on X. Thank you!
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey [here](https://hi.switchy.io/6csy). Thank you!
