@@ -11,9 +11,9 @@ import CaseSummary from '../../src/components/CaseSummary.tsx'
 import ImageModal from '../../src/components/ImageModal.tsx'
 
 <CaseSummary goals={[
-  'Encourage students to ask questions by providing anonymous access to Q&A',
-  'Enable students to get answers to questions as soon as they come up instead of postponing them',
-  'Make remote participants feel included by allowing them to ask questions',
+  'Encourage students to ask questions by providing them with an anonymous channel',
+  'Enable students to get answers to questions as soon as they come up instead of postponing them (e.g., to forum posts)',
+  'Make remote participants feel included by allowing them to ask questions during lectures',
   'Enable lecturers and their team to provide rapid feedback on incoming questions',
   'Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.)'
 ]} tags={[
@@ -23,8 +23,17 @@ import ImageModal from '../../src/components/ImageModal.tsx'
   'remote teaching',
   'hybrid teaching'
 ]}>
-  <p>You are a lecturer teaching a large class and rarely interact with your students. To enable students to interact with you in a more approachable way (even if they participate online), you start a session in the KlickerUZH and enable the anonymous Q&A channel. Throughout the lecture, students open the Q&A channel on their device and post new questions or add their vote to existing ones. A teaching assistant supports you during the lecture and responds to any incoming questions that are straightforward to respond to, after which students can review the response on their device.</p>
-  <p>Furthermore, any questions that are especially important or hard to respond to in writing are pinned to the lecturer cockpit, where you can review them during the lecture and respond orally. After the conclusion of the lecture, you export the questions and answers from the Q&A channel and post them to the LMS, allowing students to review your responses even after the lecture concluded.</p>
+  <p>
+    You are a lecturer teaching a large class and mostly do frontal teaching without personal interaction possibilities (e.g., group discussions).
+    To enable students to interact with you in a more approachable way even if they participate online, you start a session in the KlickerUZH and enable the anonymous Q&A channel.
+    Throughout the lecture, students open the Q&A channel on their own device and post new questions or add their vote to existing ones.
+    Depending on your preference, you might either choose the unmoderated Q&A channel, where all questions are immediately available for interaction to all participants, or enable moderation to pre-approve any incoming questions before other participants can see them.
+  </p>
+  <p>
+    You might respond to the questions in immediately during the lecture or after skimming them during a break, or you might have a teaching assistant that supports you during the lecture and immediately responds to any incoming questions that are straightforward to respond to.
+    Furthermore, any questions that are especially important or hard to respond to in writing are pinned to the lecturer cockpit, where you can review them during the lecture and respond orally.
+    After the conclusion of the lecture, you export the questions and answers from the Q&A channel and post them to the LMS, allowing students to review your responses even after the lecture concluded.
+  </p>
 </CaseSummary>
 
 ## Implementation
@@ -35,15 +44,15 @@ import LecturerCockpitSrc from '../../static/img/implementation_lecturer_cockpit
 import EvaluationSrc from '../../static/img/implementation_evaluation.png'
 
 <ImageModal.Group>
-  <ImageModal src={AudienceViewSrc} description="Where students can read, upvote, and post new questions. Additionally, they can see and react to all of the responses given by the lecturer, which might help the lecturing team clarify their responses (if unclear)." title="Audience View" />
-  <ImageModal src={RunningSessionSrc} description="Where the lecturer or lecturing team moderate and respond to incoming questions or remove irrelevant ones." title="Lecturer View" />
-  <ImageModal src={LecturerCockpitSrc} description="Which the lecturer can open on a second screen/device or present to the class. The cockpit contains only the questions that were pinned in the lecturer view (e.g., by the assistant)." title="Lecturer Cockpit" />
-  <ImageModal src={EvaluationSrc} description="Which allows lecturers to view and export/print Q&A data after the conclusion of a lecture" title="Evaluation" />
+  <ImageModal src={AudienceViewSrc} description="Students read and upvote questions posted by other students, as well as post new questions of their own. Additionally, they can see and react to all of the responses given by the lecturer, which might help the lecturing team clarify their responses (if unclear)." title="Audience View" />
+  <ImageModal src={RunningSessionSrc} description="The lecturer or lecturing team moderate, respond to, and resolve incoming questions or remove irrelevant ones so they are not shown to students. Crucial questions can be pinned so that they appear on the separate lecturer cockpit." title="Lecturer View" />
+  <ImageModal src={LecturerCockpitSrc} description="The lecturer opens the lecturer cockpit on a second screen/device and can view only the questions that were pinned in the lecturer view (e.g., by the assistant) with a quick glance." title="Lecturer Cockpit" />
+  <ImageModal src={EvaluationSrc} description="After the conclusion of a class, the lecturer views and exports or prints questions and answers to make them available to students (e.g., in the LMS)." title="Export (Evaluation)" />
 </ImageModal.Group>
 
 ## Evaluation
 
-After its release in the fall 2021, KlickerUZH Live Q&A has already been used in several very large first-year lectures at the University of Zurich. To evaluate the viability of the Q&A approach in university teaching, we have created surveys for both lecturers and students, and are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
+After its release in fall 2021, KlickerUZH Live Q&A has already been used in several very large first-year lectures at the University of Zurich. To evaluate the viability of the Q&A approach in university teaching, we have created surveys for both lecturers and students for which we are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
 
 ### Lecturers
 
@@ -244,13 +253,13 @@ In November 2021, lecturers using the KlickerUZH Live Q&A functionality have rec
 
 ## Conclusion
 
-Based on preliminary results and direct exchange with lecturers, our conclusion as of now is that KlickerUZH Live Q&A is certainly a viable investment in large lectures, at least if a teaching assistant is available to respond in time. Students feel that their comprehension improves when being able and encouraged to pose their questions. In the case of smaller lectures or when teaching without an assistant, handling the live Q&A, much like a live chat, is often an additional burden (though still feasible).
+Based on preliminary results and direct exchange with lecturers, our conclusion as of now is that KlickerUZH Live Q&A is certainly a viable investment in large lectures, especially if a teaching assistant is available to respond in time. Students feel that their comprehension improves when being able and encouraged to pose their questions. In the case of smaller lectures or when teaching without an assistant, handling the live Q&A, much like a live chat, is an additional burden, though still feasible.
 
 ## Further Resources
 
-- Vergleich von Classroom Response Systemen (CRS): https://teachingtools.uzh.ch/index.php?id=tool&toolId=9
-- Hybride Lehre: https://teachingtools.uzh.ch/index.php?id=tool&toolId=37
+- Comparison of Classroom Response Systems (CRS, in German): https://teachingtools.uzh.ch/index.php?id=tool&toolId=9
+- Hybrid Teaching (in German): https://teachingtools.uzh.ch/index.php?id=tool&toolId=37
 
 ## Feedback
 
-If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey on X. Thank you!
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey [here](https://hi.switchy.io/6csb). Thank you!

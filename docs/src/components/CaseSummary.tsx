@@ -3,7 +3,7 @@ import React from 'react'
 export default function CaseSummary({ goals, tags, children }) {
   return (
     <div className="flex flex-col gap-4 md:gap-8 md:items-start md:flex-row">
-      <div className="flex-1 px-4 py-2 border border-solid rounded shadow md:flex-initial md:w-64">
+      <div className="flex-1 md:px-4 md:py-2 md:border md:border-solid md:rounded md:shadow md:flex-initial md:w-64">
         <div className="font-bold">Goals</div>
         <ul className="pl-4 mt-2 text-sm">
           {goals.map((goal) => (
