@@ -89,13 +89,6 @@ function Home() {
       link: 'deployment/deployment_architecture',
       linkText: 'Deployment',
     },
-    {
-      title: 'Use Cases',
-      content:
-        'If you are not yet convinced that KlickerUZH is also the right audience response system for you, have a look at example use cases. In case you have got any questions, feel free to reach out.',
-      link: 'use_cases/qa',
-      linkText: 'Use Cases',
-    },
   ]
 
   const openSourceText = [
