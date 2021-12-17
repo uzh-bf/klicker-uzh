@@ -155,7 +155,7 @@ function Home() {
         <div className="pt-20 text-center lg:pt-14">
           <img
             className="max-w-[60%] max-h-[550px]"
-            src="/img/question_pool_mac.png"
+            src="/img/timeline_mac.png"
           />
         </div>
 
@@ -189,7 +189,10 @@ function Home() {
       </div>
       <div className="max-w-6xl p-8 m-auto">
         <div className="flex flex-col justify-between gap-4 mb-20 md:flex-row">
-          <ImageTile content={'Easy to Use'} imgSrc={'/img/placeholder.jpg'} />
+          <ImageTile
+            content={'Easy to Use'}
+            imgSrc={'/img/question_pool_demo.png'}
+          />
           <ImageTile
             content={'Optimized for mobile devices'}
             imgSrc={'/img/iphone_question.png'}
