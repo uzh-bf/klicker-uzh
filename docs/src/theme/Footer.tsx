@@ -22,12 +22,12 @@ const Footer = () => {
           registered trademarks of their respective owners.
         </div>
         <div className="self-center max-w-6xl px-10">
-          <a href="privacy_policy" className="whitespace-nowrap">
+          <a href="/privacy_policy" className="whitespace-nowrap">
             Privacy Policy
           </a>
           {' | '}
-          <a href="terms_of_use" className="whitespace-nowrap">
-            Terms of Use
+          <a href="/terms_of_service" className="whitespace-nowrap">
+            Terms of Service
           </a>
           {' | '}
           <a

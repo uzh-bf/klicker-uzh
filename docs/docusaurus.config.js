@@ -85,14 +85,6 @@ module.exports = {
         },
       ],
     },
-    footer: {
-      links: [],
-      copyright: `Copyright ${new Date().getFullYear()} @ Teaching Center, Department of Banking and Finance, University of Zurich. All rights reserved.\nProducts and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
-      logo: {
-        src: 'img/KlickerUZH_Gray_Transparent.png',
-        href: 'https://www.klicker.uzh.ch',
-      },
-    },
     algolia: {
       apiKey: 'b945507eeedf6bb6f02688350c0ecc4b',
       indexName: 'klicker-uzh',

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
-import Footer from '@theme/Footer'
 
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
@@ -125,7 +124,7 @@ function Home() {
   const navbarComponent = <div className="navbar"></div>
 
   return (
-    <Layout title="KlickerUZH">
+    <Layout title="Welcome">
       <div className="mb-10 text-center sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent">
         <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
           <CustomButton
