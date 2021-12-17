@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
+import Footer from '@theme/Footer'
 
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
