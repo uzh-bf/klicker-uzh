@@ -4,6 +4,7 @@ import Layout from '@theme/Layout'
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
+import ImageTextBlock from '../components/common/ImageTextBlock'
 
 function Home() {
   useEffect(() => {
@@ -121,6 +122,25 @@ function Home() {
     },
   ]
 
+  const useCases = [
+    {
+      title: 'Live Q&A in Large Classrooms',
+      content:
+        'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.',
+      link: '/use_cases/live_qa',
+      linkText: 'More about the Q&A Channel',
+      imgSrc: '/img/implementation_qa_audience.png',
+    },
+    {
+      title: 'Real-time Feedback',
+      content:
+        'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.',
+      link: '/use_cases/real_time_feedback',
+      linkText: 'More about Student Feedback',
+      imgSrc: '/img/confusion_gauge.png',
+    },
+  ]
+
   const navbarComponent = <div className="navbar"></div>
 
   return (
@@ -202,6 +222,21 @@ function Home() {
                 text={feature.content}
                 link={feature.link}
                 linkText={feature.linkText}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-row items-center mt-10 mb-4 text-2xl font-bold md:mt-16 sm:text-3xl">
+            Use Cases
+          </div>
+          <div className="flex flex-col w-full grid-cols-1 gap-6">
+            {useCases.map((block: any) => (
+              <ImageTextBlock
+                title={block.title}
+                text={block.content}
+                link={block.link}
+                linkText={block.linkText}
+                imgSrc={block.imgSrc}
               />
             ))}
           </div>
