@@ -230,6 +230,10 @@
   display: block !important;
 }
 
+.inline-block {
+  display: inline-block;
+}
+
 .flex {
   display: flex;
 }
@@ -258,12 +262,28 @@
   height: 1.25rem;
 }
 
+.h-10 {
+  height: 2.5rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.h-full {
+  height: 100%;
+}
+
 .max-h-\[550px\] {
   max-height: 550px;
 }
 
 .max-h-80 {
   max-height: 20rem;
+}
+
+.max-h-12 {
+  max-height: 3rem;
 }
 
 .w-full {
@@ -475,6 +495,10 @@
   padding: 0.75rem;
 }
 
+.p-4 {
+  padding: 1rem;
+}
+
 .px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
@@ -515,6 +539,14 @@
 
 .pr-8 {
   padding-right: 2rem;
+}
+
+.pr-4 {
+  padding-right: 1rem;
+}
+
+.pr-2 {
+  padding-right: 0.5rem;
 }
 
 .text-center {

@@ -12,7 +12,16 @@ const Development = () => {
         <div className="mb-4 text-5xl font-bold">
           Development - Get Involved
         </div>
-        <div className="mb-4 text-3xl font-bold">P-8 "Digital Skills"</div>
+        <div className="flex flex-row justify-between h-12 mb-4">
+          <div className="text-3xl font-bold">P-8 "Digital Skills"</div>
+          <div className="hidden h-full md:block">
+            <img
+              src="/img/logo_swissuniversities.png"
+              className="h-full mr-2"
+            />
+            <img src="/img/logo_uzh.jpeg" className="h-full" />
+          </div>
+        </div>
         <div className="mb-10">
           As part of a project backed by swissuniversities and the Teaching
           Center at the Dept. of Banking and Finance (UZH), the KlickerUZH team
@@ -21,6 +30,10 @@ const Development = () => {
           extending the KlickerUZH with capabilities that support each of these
           areas. This page and our official documentation will be continuously
           extended with helpful resources.
+          <div className="block mt-4 md:hidden">
+            <img src="/img/logo_swissuniversities.png" className="h-12 mr-2" />
+            <img src="/img/logo_uzh.jpeg" className="h-12" />
+          </div>
         </div>
         <div className="flex flex-col mb-8 md:mb-12 md:flex-row">
           <div className="w-full md:w-1/2">
