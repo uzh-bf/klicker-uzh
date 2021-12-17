@@ -1,8 +1,8 @@
-import React from 'react'
-import { Button, Container, Menu } from 'semantic-ui-react'
-import Link from 'next/link'
+import React from "react";
+import { Button, Container, Menu } from "semantic-ui-react";
+import Link from "next/link";
 
-import KlickerLogo from './KlickerLogo'
+import KlickerLogo from "./KlickerLogo";
 
 function Header() {
   return (
@@ -27,7 +27,7 @@ function Header() {
             </Menu.Item>
 
             <Menu.Item>
-              <Link href="https://www.klicker.uzh.ch/docs/faq/faq">
+              <Link href="https://www.klicker.uzh.ch/docs/faq">
                 <a target="_blank" rel="noopener noreferrer">
                   FAQ
                 </a>
@@ -49,7 +49,7 @@ function Header() {
         </div>
       </Container>
     </header>
-  )
+  );
 }
 
-export default Header
+export default Header;

@@ -35,6 +35,6 @@ module.exports = {
       'contributing/contributing_guidelines',
       'contributing/contributing_setup',
     ],
-    FAQ: ['faq/faq'],
+    FAQ: ['faq'],
   },
 }

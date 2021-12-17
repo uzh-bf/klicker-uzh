@@ -100,7 +100,7 @@ function SessionArea({ sessionId }: Props) {
                   title="Documentation"
                 />
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/docs/faq/faq"
+                  href="https://www.klicker.uzh.ch/docs/faq"
                   icon="question"
                   subtitle="Frequently asked questions"
                   title="FAQ"
