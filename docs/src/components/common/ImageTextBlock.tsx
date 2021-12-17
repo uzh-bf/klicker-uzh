@@ -29,7 +29,7 @@ const ImageTextBlock = ({
     >
       <div className="order-1 w-full px-2 mx-auto mt-2 mb-4 text-center md:px-6 md:my-auto md:order-0">
         <Zoom overlayBgColorEnd="gray">
-          <img src={imgSrc} className={'max-h-80'} />
+          <img src={imgSrc} className={'max-h-80 shadow-md'} />
         </Zoom>
       </div>
       <div className="relative w-full order-0 md:order-1">
