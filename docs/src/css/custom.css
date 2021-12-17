@@ -212,6 +212,22 @@
   max-height: 20rem;
 }
 
+.max-h-40 {
+  max-height: 10rem;
+}
+
+.\!max-h-40 {
+  max-height: 10rem !important;
+}
+
+.max-h-\[600px\] {
+  max-height: 600px;
+}
+
+.max-h-\[550px\] {
+  max-height: 550px;
+}
+
 .w-full {
   width: 100%;
 }
@@ -232,12 +248,20 @@
   width: 13rem;
 }
 
+.w-\[60\%\] {
+  width: 60%;
+}
+
 .max-w-lg {
   max-width: 32rem;
 }
 
 .max-w-6xl {
   max-width: 72rem;
+}
+
+.max-w-\[60\%\] {
+  max-width: 60%;
 }
 
 .flex-1 {
@@ -425,6 +449,18 @@
   padding-right: 2rem;
 }
 
+.pt-10 {
+  padding-top: 2.5rem;
+}
+
+.pt-12 {
+  padding-top: 3rem;
+}
+
+.pt-14 {
+  padding-top: 3.5rem;
+}
+
 .text-center {
   text-align: center;
 }
@@ -575,6 +611,11 @@
     font-size: 1.25rem;
     line-height: 1.75rem;
   }
+
+  .sm\:text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -593,6 +634,10 @@
 
   .md\:mt-16 {
     margin-top: 4rem;
+  }
+
+  .md\:mt-4 {
+    margin-top: 1rem;
   }
 
   .md\:block {
@@ -679,6 +724,10 @@
     padding-right: 1.5rem;
   }
 
+  .md\:pt-14 {
+    padding-top: 3.5rem;
+  }
+
   .md\:text-6xl {
     font-size: 3.75rem;
     line-height: 1;
@@ -687,6 +736,16 @@
   .md\:text-lg {
     font-size: 1.125rem;
     line-height: 1.75rem;
+  }
+
+  .md\:text-4xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  .md\:text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
   }
 
   .md\:shadow {
@@ -717,5 +776,9 @@
 
   .lg\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:pt-14 {
+    padding-top: 3.5rem;
   }
 }

@@ -152,18 +152,21 @@ function Home() {
           />
         </div>
 
-        <div className="pt-20 text-center">
-          <img width="60%" src="/img/question_pool_mac.png" />
+        <div className="pt-20 text-center lg:pt-14">
+          <img
+            className="max-w-[60%] max-h-[550px]"
+            src="/img/question_pool_mac.png"
+          />
         </div>
 
-        <div className="flex flex-row items-center justify-center mt-4 mb-4">
-          <div className="mr-1 text-3xl font-bold sm:text-4xl md:text-6xl">
-            Welcome to
-          </div>
+        <div className="items-center justify-center mt-4 mb-4">
           <img
             className="w-36 sm:w-40 md:w-64"
             src="/img/KlickerUZH_Gray_Transparent_borderless.png"
           />
+          <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
+            Open-source classroom response system
+          </div>
         </div>
 
         <div className="flex flex-col items-center justify-center mt-3 sm:flex-row">
