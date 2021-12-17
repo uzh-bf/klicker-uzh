@@ -1,8 +1,12 @@
 import React from 'react'
+import useThemeContext from '@theme/hooks/useThemeContext'
+import clsx from 'clsx'
 
 const Footer = () => {
+  const { isDarkTheme } = useThemeContext()
+
   return (
-    <div className="w-full bg-gray-100">
+    <div className={clsx('w-full bg-gray-100', isDarkTheme && 'bg-gray-700')}>
       <div className="mt-6 text-center ">
         <a href="/">
           <img

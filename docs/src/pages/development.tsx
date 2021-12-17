@@ -92,7 +92,7 @@ const Development = () => {
               involved in future developments, we welcome you to join our
               KlickerUZH user group with the following form.
             </div>
-            <div className="mb-8 mr-0 -ml-4 md:mb-0 md:mr-4">
+            <div className="mt-2 mb-8 mr-4 md:mb-0 md:mr-4">
               <UserForm />
             </div>
           </div>

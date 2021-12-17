@@ -1,5 +1,6 @@
-import clsx from 'clsx'
 import React from 'react'
+import useThemeContext from '@theme/hooks/useThemeContext'
+import clsx from 'clsx'
 
 interface RoadmapTileProps {
   title: string
@@ -16,7 +17,8 @@ const RoadmapTile = ({
   tags,
   className,
 }: RoadmapTileProps) => {
-  console.log(tags)
+  const { isDarkTheme } = useThemeContext()
+
   return (
     <div
       className={clsx(
@@ -31,7 +33,12 @@ const RoadmapTile = ({
       <div className="mb-4">
         {useCases &&
           useCases.map((useCase: any) => (
-            <div className="flex-1 p-1 mb-2 text-sm bg-gray-200 border border-solid rounded-md">
+            <div
+              className={clsx(
+                'flex-1 p-1 mb-2 text-sm bg-gray-200 border border-solid rounded-md',
+                isDarkTheme && 'bg-gray-500 border-gray-500'
+              )}
+            >
               {useCase}
             </div>
           ))}
