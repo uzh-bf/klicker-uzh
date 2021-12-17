@@ -40,7 +40,7 @@ module.exports = {
       },
     ],
   ],
-  plugins: ['@docusaurus/plugin-ideal-image'],
+  // plugins: ['@docusaurus/plugin-ideal-image'],
   themeConfig: {
     navbar: {
       logo: {
@@ -59,7 +59,7 @@ module.exports = {
           position: 'left',
         },
         {
-          to: 'use_cases/qa',
+          to: 'use_cases/live_qa',
           label: 'Use Cases',
           position: 'left',
         },
