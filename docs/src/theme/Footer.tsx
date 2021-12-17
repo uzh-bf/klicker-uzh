@@ -33,6 +33,7 @@ const Footer = () => {
           <a
             href="https://klicker-uzh.betteruptime.com/"
             className="whitespace-nowrap"
+            target="_blank"
           >
             System Status
           </a>

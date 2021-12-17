@@ -49,7 +49,7 @@ module.exports = {
       },
       items: [
         {
-          to: '/',
+          to: '/home',
           label: 'Home',
           position: 'left',
         },
