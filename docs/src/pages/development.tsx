@@ -4,8 +4,44 @@ import { ArrowRightIcon } from '@heroicons/react/solid'
 
 import UserForm from '../components/UserForm'
 import CustomButton from '../components/common/CustomButton'
+import RoadmapTile from '../components/development/RoadmapTile'
 
 const Development = () => {
+  const tileContent = [
+    {
+      title: 'Interaction',
+      content:
+        'New interaction modalities for virtual and physical classrooms improve interaction between lecturers and participants.',
+      useCases: [
+        'Live Q&A in large classrooms (released)',
+        'Real-time feedback on comprehension (released)',
+        'Poll-based experiments (in progress)',
+      ],
+      tags: [
+        { text: 'Working On', color: 'green' },
+        { text: 'Fall 21 - Spring 22', color: 'lightgray' },
+      ],
+    },
+    {
+      title: 'Gamification and Engagement',
+      content:
+        'The incorporation of gamified interactions allows lecturers to increase engagement in their (virtual) classrooms.',
+      tags: [
+        { text: 'Planned', color: 'gray' },
+        { text: 'Spring 22 - Fall 22', color: 'lightgray' },
+      ],
+    },
+    {
+      title: 'In-Depth Analysis',
+      content:
+        'Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions.',
+      tags: [
+        { text: 'Planned', color: 'gray' },
+        { text: 'Fall 22 - Spring 23', color: 'lightgray' },
+      ],
+    },
+  ]
+
   return (
     <Layout title="Development">
       <div className="max-w-6xl p-8 m-auto">
@@ -22,7 +58,7 @@ const Development = () => {
             <img src="/img/logo_uzh.jpeg" className="h-full" />
           </div>
         </div>
-        <div className="mb-10">
+        <div className="mb-8">
           As part of a project backed by swissuniversities and the Teaching
           Center at the Dept. of Banking and Finance (UZH), the KlickerUZH team
           will be working on several interesting focus areas over the coming
@@ -34,6 +70,16 @@ const Development = () => {
             <img src="/img/logo_swissuniversities.png" className="h-12 mr-2" />
             <img src="/img/logo_uzh.jpeg" className="h-12" />
           </div>
+        </div>
+        <div className="grid justify-between w-full grid-cols-1 gap-2 mb-20 lg:gap-4 md:grid-cols-3">
+          {tileContent.map((tile: any) => (
+            <RoadmapTile
+              title={tile.title}
+              content={tile.content}
+              useCases={tile.useCases}
+              tags={tile.tags}
+            />
+          ))}
         </div>
         <div className="flex flex-col mb-8 md:mb-12 md:flex-row">
           <div className="w-full md:w-1/2">
