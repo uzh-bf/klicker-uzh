@@ -5,8 +5,11 @@ import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTextBlock from '../components/common/ImageTextBlock'
+import UserForm from '../components/UserForm'
 
 function Home() {
+  const navbarComponent = <div className="navbar"></div>
+
   useEffect(() => {
     var s: any = document.createElement('script'),
       options = {
@@ -134,8 +137,6 @@ function Home() {
     },
   ]
 
-  const navbarComponent = <div className="navbar"></div>
-
   return (
     <Layout title="Welcome">
       <div className="mb-10 text-center sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent">
@@ -257,13 +258,7 @@ function Home() {
               KlickerUZH user group with the following form.
             </div>
             <div className="max-w-lg mt-8 border border-solid rounded-md">
-              <div id="c7">
-                Ausfüllen{' '}
-                <a href="https://www.bf-tools.uzh.ch/applications/easyforms/index.php?r=app%2Fform&id=7">
-                  Online Formular
-                </a>
-                .
-              </div>
+              <UserForm />
             </div>
           </div>
           <div className="flex flex-col gap-4">

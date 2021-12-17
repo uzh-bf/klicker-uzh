@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import React from 'react'
 
 interface CustomButtonProps {
-  text: string
+  text: any
   link: string
   className?: string
 }

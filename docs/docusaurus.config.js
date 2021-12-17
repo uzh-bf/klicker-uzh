@@ -74,13 +74,13 @@ module.exports = {
           position: 'left',
         },
         {
-          href: 'https://klicker-uzh.feedbear.com/updates',
-          label: 'Release Notes',
+          to: 'development',
+          label: 'Development',
           position: 'left',
         },
         {
-          href: 'https://www.klicker.uzh.ch/roadmap',
-          label: 'Roadmap',
+          href: 'https://klicker-uzh.feedbear.com/updates',
+          label: 'Release Notes',
           position: 'left',
         },
       ],
