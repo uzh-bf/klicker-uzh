@@ -154,14 +154,14 @@ function Home() {
 
         <div className="pt-20 text-center lg:pt-14">
           <img
-            className="max-w-[60%] max-h-[550px]"
+            className="max-w-[80%] md:max-w-[60%] max-h-[550px]"
             src="/img/timeline_mac.png"
           />
         </div>
 
         <div className="items-center justify-center mt-4 mb-4">
           <img
-            className="w-36 sm:w-40 md:w-64"
+            className="w-44 sm:w-48 md:w-64"
             src="/img/KlickerUZH_Gray_Transparent_borderless.png"
           />
           <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
@@ -188,7 +188,7 @@ function Home() {
         </div>
       </div>
       <div className="max-w-6xl p-8 m-auto">
-        <div className="flex flex-col justify-between gap-4 mb-20 md:flex-row">
+        <div className="flex flex-col justify-between gap-4 mb-10 md:mb-20 md:flex-row">
           <ImageTile
             content={'Easy to Use'}
             imgSrc={'/img/question_pool_demo.png'}
