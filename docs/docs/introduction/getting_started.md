@@ -22,7 +22,7 @@ To deploy a private Klicker instance, we strongly recommend that you first famil
 
 In the spirit of open source, we welcome any good-spirited contributions to the KlickerUZH (be it from institutions or individuals). To help in getting an overview of the entire application structure, we have put together some information about the [Application Architecture](deployment/architecture.md).
 
-It is generally a good idea to first get an orientation about the general direction of the project from the [Roadmap](https://www.klicker.uzh.ch/roadmap), as contributions should not be completely orthogonal or lead to duplicate work. Please feel free to create an issue or discussion on the [klicker-uzh](https://github.com/uzh-bf/klicker-uzh) project if you are unsure about your idea or regarding how to continue.
+It is generally a good idea to first get an orientation about the general direction of the project from the [Roadmap](https://www.klicker.uzh.ch/development), as contributions should not be completely orthogonal or lead to duplicate work. Please feel free to create an issue or discussion on the [klicker-uzh](https://github.com/uzh-bf/klicker-uzh) project if you are unsure about your idea or regarding how to continue.
 
 Additionally, in order to reduce the time spent on reviewing and refactoring code (on our side as well as yours), we put some [Contributing Guidelines](contributing/guidelines.md) in place that must be followed for a contribution to be accepted (describing things like code style and testing).
 

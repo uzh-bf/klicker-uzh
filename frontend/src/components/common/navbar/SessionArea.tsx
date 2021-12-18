@@ -126,7 +126,7 @@ function SessionArea({ sessionId }: Props) {
                   title="Project Updates"
                 />
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/roadmap"
+                  href="https://www.klicker.uzh.ch/development"
                   icon="target"
                   subtitle="Our current priorities and plans for the future"
                   title="Roadmap"

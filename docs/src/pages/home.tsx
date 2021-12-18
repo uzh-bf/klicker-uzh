@@ -115,7 +115,7 @@ function Home() {
       title: 'Roadmap',
       content:
         "Are you interested in what's next? Check out our current Roadmap!",
-      link: 'roadmap',
+      link: 'development',
       linkText: 'Roadmap',
     },
   ]
@@ -301,7 +301,7 @@ const TitleImage = () => {
             'w-44 md:text-lg md:w-52',
             !isDarkTheme && 'bg-gray-50'
           )}
-          link="roadmap"
+          link="development"
         />
       </div>
     </div>

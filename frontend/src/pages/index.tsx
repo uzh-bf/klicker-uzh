@@ -118,7 +118,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="sitemap" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/roadmap" target="_blank">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/development" target="_blank">
                     Public Roadmap
                   </List.Header>
                   <List.Description>Project Outline</List.Description>

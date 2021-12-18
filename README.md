@@ -26,7 +26,7 @@ The following additional resources might be of interest to you:
 
 ## Roadmap / Issues
 
-The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/roadmap). Please feel free to add any issues or feature requests you might have to the [Github Issues](https://github.com/orgs/uzh-bf/projects/4), or start a new discussion on [Github Discussions](https://github.com/uzh-bf/klicker-uzh/discussions).
+The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/development). Please feel free to add any issues or feature requests you might have to the [Github Issues](https://github.com/orgs/uzh-bf/projects/4), or start a new discussion on [Github Discussions](https://github.com/uzh-bf/klicker-uzh/discussions).
 
 ## Deployment
 
