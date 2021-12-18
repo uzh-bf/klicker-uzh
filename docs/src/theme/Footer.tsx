@@ -11,7 +11,17 @@ const Footer = () => {
         <a href="/">
           <img
             src="/img/KlickerUZH_Gray_Transparent.png"
-            className="transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100"
+            className={clsx(
+              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
+              isDarkTheme && 'hidden'
+            )}
+          />
+          <img
+            src="/img/KlickerUZH_Gray_Transparent_inverted.png"
+            className={clsx(
+              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
+              !isDarkTheme && 'hidden'
+            )}
           />
         </a>
       </div>

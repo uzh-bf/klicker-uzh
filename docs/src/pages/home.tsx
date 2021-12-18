@@ -266,8 +266,12 @@ const TitleImage = () => {
 
       <div className="items-center justify-center mt-4 mb-4">
         <img
-          className="w-44 sm:w-48 md:w-64"
+          className={clsx('w-44 sm:w-48 md:w-64', isDarkTheme && 'hidden')}
           src="/img/KlickerUZH_Gray_Transparent_borderless.png"
+        />
+        <img
+          className={clsx('w-44 sm:w-48 md:w-64', !isDarkTheme && 'hidden')}
+          src="/img/KlickerUZH_Gray_Transparent_borderless_inverted.png"
         />
         <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
           Open-source classroom response system
