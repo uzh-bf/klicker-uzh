@@ -682,6 +682,10 @@
     --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgb(156 163 175 / 0));
   }
 
+  .sm\:to-transparent {
+    --tw-gradient-to: transparent;
+  }
+
   .sm\:text-3xl {
     font-size: 1.875rem;
     line-height: 2.25rem;

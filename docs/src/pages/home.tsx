@@ -163,11 +163,7 @@ function Home() {
         <div className="mt-20 mb-20">
           <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-3xl">
             Why choose
-            <img
-              className="ml-1 w-28 sm:w-32"
-              src="/img/KlickerUZH_Gray_Transparent_borderless.png"
-            />
-            ?
+            <KlickerLogo className={'ml-1 w-28 sm:w-32'} />?
           </div>
           <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
             {features.map((feature: any) => (
@@ -241,7 +237,7 @@ const TitleImage = () => {
     <div
       className={clsx(
         'mb-10 text-center ',
-        !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparen'
+        !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent'
       )}
     >
       <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
@@ -265,14 +261,7 @@ const TitleImage = () => {
       </div>
 
       <div className="items-center justify-center mt-4 mb-4">
-        <img
-          className={clsx('w-44 sm:w-48 md:w-64', isDarkTheme && 'hidden')}
-          src="/img/KlickerUZH_Gray_Transparent_borderless.png"
-        />
-        <img
-          className={clsx('w-44 sm:w-48 md:w-64', !isDarkTheme && 'hidden')}
-          src="/img/KlickerUZH_Gray_Transparent_borderless_inverted.png"
-        />
+        <KlickerLogo className={'w-44 sm:w-48 md:w-64'} />
         <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
           Open-source classroom response system
         </div>
@@ -305,6 +294,23 @@ const TitleImage = () => {
         />
       </div>
     </div>
+  )
+}
+
+const KlickerLogo = ({ className }) => {
+  const { isDarkTheme } = useThemeContext()
+
+  return (
+    <>
+      <img
+        className={clsx(className, isDarkTheme && 'hidden')}
+        src="/img/KlickerUZH_Gray_Transparent_borderless.png"
+      />
+      <img
+        className={clsx(className, !isDarkTheme && 'hidden')}
+        src="/img/KlickerUZH_Gray_Transparent_borderless_inverted.png"
+      />
+    </>
   )
 }
 
