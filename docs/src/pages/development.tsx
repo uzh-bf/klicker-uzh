@@ -114,7 +114,7 @@ const Development = () => {
                 </div>
               }
               link="https://klicker-uzh.feedbear.com/boards/feature-requests"
-              className="px-4 ml-0 w-max"
+              className="px-4 !ml-0 w-max"
             />
           </div>
         </div>
