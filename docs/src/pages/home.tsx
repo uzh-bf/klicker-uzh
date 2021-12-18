@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
+import useThemeContext from '@theme/hooks/useThemeContext'
 
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTextBlock from '../components/common/ImageTextBlock'
 import UserForm from '../components/UserForm'
+import clsx from 'clsx'
 
 function Home() {
   const navbarComponent = <div className="navbar"></div>
@@ -139,55 +141,7 @@ function Home() {
 
   return (
     <Layout title="Welcome">
-      <div className="mb-10 text-center sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent">
-        <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
-          <CustomButton
-            text="Login"
-            className="bg-white w-36"
-            link="https://app.klicker.uzh.ch/user/login"
-          />
-          <CustomButton
-            text="Sign Up"
-            className="bg-white w-36"
-            link="https://app.klicker.uzh.ch/user/registration"
-          />
-        </div>
-
-        <div className="pt-20 text-center lg:pt-14">
-          <img
-            className="max-w-[80%] md:max-w-[60%] max-h-[550px]"
-            src="/img/timeline_mac.png"
-          />
-        </div>
-
-        <div className="items-center justify-center mt-4 mb-4">
-          <img
-            className="w-44 sm:w-48 md:w-64"
-            src="/img/KlickerUZH_Gray_Transparent_borderless.png"
-          />
-          <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
-            Open-source classroom response system
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center mt-3 sm:flex-row">
-          <CustomButton
-            text="Getting Started"
-            className="w-44 bg-gray-50 md:text-lg md:w-52"
-            link="introduction/getting_started"
-          />
-          <CustomButton
-            text="Sign Up"
-            className="w-44 bg-gray-50 md:text-lg md:w-52"
-            link="https://app.klicker.uzh.ch/user/registration"
-          />
-          <CustomButton
-            text="Get Involved"
-            className="w-44 bg-gray-50 md:text-lg md:w-52"
-            link="roadmap"
-          />
-        </div>
-      </div>
+      <TitleImage />
       <div className="max-w-6xl p-8 m-auto">
         <div className="flex flex-col justify-between gap-4 mb-10 md:mb-20 md:flex-row">
           <ImageTile
@@ -277,6 +231,76 @@ function Home() {
         </div>
       </div>
     </Layout>
+  )
+}
+
+const TitleImage = () => {
+  const { isDarkTheme } = useThemeContext()
+
+  return (
+    <div
+      className={clsx(
+        'mb-10 text-center ',
+        !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparen'
+      )}
+    >
+      <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
+        <CustomButton
+          text="Login"
+          className="bg-white w-36"
+          link="https://app.klicker.uzh.ch/user/login"
+        />
+        <CustomButton
+          text="Sign Up"
+          className="bg-white w-36"
+          link="https://app.klicker.uzh.ch/user/registration"
+        />
+      </div>
+
+      <div className="pt-20 text-center lg:pt-14">
+        <img
+          className="max-w-[80%] md:max-w-[60%] max-h-[550px]"
+          src="/img/timeline_mac.png"
+        />
+      </div>
+
+      <div className="items-center justify-center mt-4 mb-4">
+        <img
+          className="w-44 sm:w-48 md:w-64"
+          src="/img/KlickerUZH_Gray_Transparent_borderless.png"
+        />
+        <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
+          Open-source classroom response system
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center justify-center mt-3 sm:flex-row">
+        <CustomButton
+          text="Getting Started"
+          className={clsx(
+            'w-44 md:text-lg md:w-52',
+            !isDarkTheme && 'bg-gray-50'
+          )}
+          link="introduction/getting_started"
+        />
+        <CustomButton
+          text="Sign Up"
+          className={clsx(
+            'w-44 md:text-lg md:w-52',
+            !isDarkTheme && 'bg-gray-50'
+          )}
+          link="https://app.klicker.uzh.ch/user/registration"
+        />
+        <CustomButton
+          text="Get Involved"
+          className={clsx(
+            'w-44 md:text-lg md:w-52',
+            !isDarkTheme && 'bg-gray-50'
+          )}
+          link="roadmap"
+        />
+      </div>
+    </div>
   )
 }
 
