@@ -20,7 +20,7 @@ const TitleTextBlock = ({
     <div
       className={clsx(
         className,
-        'relative p-3 border-2 border-solid border-gray-300 rounded-lg'
+        'relative py-4 px-6 border border-solid border-gray-300 rounded-lg shadow'
       )}
     >
       <div className="mb-2 text-lg font-bold sm:text-xl">{title}</div>
