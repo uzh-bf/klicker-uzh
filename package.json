@@ -3,7 +3,8 @@
   "description": "KlickerUZH instant-class-response system.",
   "version": "1.7.0",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "engines": {
     "node": ">=14"

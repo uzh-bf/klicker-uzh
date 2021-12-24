@@ -1,0 +1,12 @@
+{
+  "name": "@klicker-uzh/ui",
+  "version": "1.7.0",
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "AGPL-3.0",
+  "scripts": {},
+  "volta": {
+    "node": "16.13.1"
+  }
+}
