@@ -2,6 +2,9 @@
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
   "version": "1.7.0",
+  "workspaces": [
+    "apps/*"
+  ],
   "engines": {
     "node": ">=14"
   },
@@ -47,7 +50,7 @@
     "yaml": "1.10.2"
   },
   "volta": {
-    "node": "14.18.1"
+    "node": "16.13.1"
   },
   "turbo": {
     "baseBranch": "origin/dev",
