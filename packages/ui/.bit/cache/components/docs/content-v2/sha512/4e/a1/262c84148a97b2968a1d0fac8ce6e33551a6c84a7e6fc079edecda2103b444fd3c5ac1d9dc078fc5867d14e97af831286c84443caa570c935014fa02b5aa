@@ -1,1 +1,0 @@
-[{"filePath":"button.tsx","name":"Button","description":"","properties":[{"name":"children","description":"a node to be rendered in the special component.","required":false,"type":"ReactNode"}],"access":"public","methods":[],"args":[],"examples":[]}]

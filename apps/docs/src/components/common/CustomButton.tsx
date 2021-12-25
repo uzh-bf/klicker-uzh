@@ -1,5 +1,5 @@
-import clsx from 'clsx'
 import React from 'react'
+import { Button } from '@klicker-uzh/ui'
 
 interface CustomButtonProps {
   text: any
@@ -8,18 +8,7 @@ interface CustomButtonProps {
 }
 
 const CustomButton = ({ text, link, className }: CustomButtonProps) => {
-  return (
-    <a href={link} className="cursor-default">
-      <div
-        className={clsx(
-          className,
-          'rounded-md text-center border-2 border-solid hover:shadow md:hover:shadow-lg border-gray-300 cursor-pointer'
-        )}
-      >
-        <div className="my-2">{text}</div>
-      </div>
-    </a>
-  )
+  return <Button text={text} link={link} className={className} />
 }
 
 export default CustomButton
