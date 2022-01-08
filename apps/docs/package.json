@@ -24,6 +24,7 @@
     "dev_tailwind": "npx tailwindcss -i ./src/css/globals.css -o ./src/css/custom.css --watch"
   },
   "dependencies": {
+    "@klicker-uzh/ui": "*",
     "@docusaurus/core": "2.0.0-beta.13",
     "@docusaurus/plugin-ideal-image": "2.0.0-beta.13",
     "@docusaurus/preset-classic": "2.0.0-beta.13",
