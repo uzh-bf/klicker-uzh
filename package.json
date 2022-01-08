@@ -34,6 +34,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "lint:staged": "turbo run lint:staged",
+    "test:changed": "turbo run test:changed",
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
@@ -58,6 +60,16 @@
   "turbo": {
     "baseBranch": "origin/dev",
     "pipeline": {
+      "lint:staged": {
+        "dependsOn": [
+          "lint:staged"
+        ]
+      },
+      "test:changed": {
+        "dependsOn": [
+          "test:changed"
+        ]
+      },
       "build": {
         "dependsOn": [
           "^build"
