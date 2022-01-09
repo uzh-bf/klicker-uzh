@@ -28,7 +28,7 @@ module.exports = {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/docs',
+          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/apps/docs',
           routeBasePath: '/',
         },
         blog: {},
