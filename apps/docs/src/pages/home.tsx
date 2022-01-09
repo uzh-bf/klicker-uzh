@@ -95,13 +95,14 @@ const openSourceText = [
 const useCases = [
   {
     title: 'Instant Classroom Response',
-    content: 'The Klicker',
+    content:
+      'Poll your students to instantly check their learning progress and comprehension. Choose from one of several question types to optimally support your lecture contents. Evaluate incoming responses in real-time and export them after the conclusion of a session.',
     imgSrc: '/img/iphone_question.png',
   },
   {
     title: 'Live Q&A in Large Classrooms',
     content:
-      'The Feedback-Channel extends KlickerUZHs functionalities far beyond a simple audience response system. Students are now able to ask questions and provide feedback directly and anonymously during the lecture. If available, a teaching assistant can directly answer questions, pin them to the separate lecturer view, resolve or even delete them. After the Klicker session ended, all feedbacks and responses will still be available through the evaluation view.',
+      'The Feedback-Channel extends KlickerUZHs functionalities far beyond a simple audience response system. Students are now able to ask questions and provide feedback directly and anonymously during the lecture. If available, a teaching assistant can directly answer questions or pin them to the separate lecturer view. After a KlickerUZH session, all feedbacks and responses will still be available through the evaluation view.',
     link: '/use_cases/live_qa',
     linkText: 'Use Cases of the Q&A Channel',
     imgSrc: '/img/implementation_qa_audience.png',
@@ -148,18 +149,20 @@ function Home() {
     <Layout title="Welcome">
       <TitleImage />
 
-      <div className="flex flex-col gap-10 p-8 m-auto max-w-7xl md:p-4">
+      <div className="flex flex-col gap-16 p-8 m-auto max-w-7xl md:p-4">
         <div className="flex flex-col justify-between gap-12 md:gap-4 md:flex-row">
           <ImageTile
-            content="Easy to Use"
+            content="Feature Complete and Easy to Use"
             imgSrc="/img/question_pool_demo.png"
           />
+
           <ImageTile
-            content="Optimized for Mobile"
+            content="Optimized for Mobile Devices"
             imgSrc="/img/iphone_question.png"
           />
+
           <ImageTile
-            content="100% Open Source and Free to Use"
+            content="Open Source and Free to Use"
             imgSrc="/img/development_mac.png"
           />
         </div>
@@ -167,10 +170,10 @@ function Home() {
         <Divider />
 
         <div>
-          <div className="flex flex-row items-center mb-6 text-2xl font-bold sm:text-4xl">
+          <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
             Use Cases
           </div>
-          <div className="flex flex-col w-full grid-cols-1 gap-4">
+          <div className="flex flex-col w-full gap-4">
             {useCases.map((block: any) => (
               <ImageTextBlock
                 title={block.title}
@@ -186,7 +189,7 @@ function Home() {
         <Divider />
 
         <div>
-          <div className="flex flex-row items-center mb-6 text-2xl font-bold sm:text-4xl">
+          <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
             Why choose
             <KlickerLogo className="ml-1 w-28 sm:w-32" />?
           </div>
@@ -204,11 +207,20 @@ function Home() {
 
         <Divider />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2">
-          <div className="mb-20 lg:mb-0">
-            <div className="mb-2 text-2xl font-bold sm:text-3xl">
-              User Group
-            </div>
+        <div className="grid grid-cols-1 gap-8 md:gap-16 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <div className="text-2xl font-bold sm:text-3xl">Open Source</div>
+            {openSourceText.map((snippet: any) => (
+              <TitleTextBlock
+                title={snippet.title}
+                text={snippet.content}
+                link={snippet.link}
+                linkText={snippet.linkText}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="text-2xl font-bold sm:text-3xl">User Group</div>
             <div className="pr-8">
               We strive to develop our roadmap and goals based on the needs of
               our users. The goal of our project on "Digital Skills" is to
@@ -221,19 +233,6 @@ function Home() {
               <UserForm />
             </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="mb-2 text-2xl font-bold sm:text-3xl">
-              Open Source
-            </div>
-            {openSourceText.map((snippet: any) => (
-              <TitleTextBlock
-                title={snippet.title}
-                text={snippet.content}
-                link={snippet.link}
-                linkText={snippet.linkText}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </Layout>
@@ -242,7 +241,7 @@ function Home() {
 
 function Divider() {
   return (
-    <div className="w-full h-1 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
+    <div className="w-full h-1 mt-4 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
   )
 }
 

@@ -46,7 +46,7 @@ module.exports = {
       logo: {
         src: 'img/KlickerUZH_Gray_Transparent.png',
         srcDark: 'img/KlickerUZH_Gray_Transparent_inverted.png',
-        href: '/',
+        href: '/home',
       },
       items: [
         {
@@ -55,13 +55,18 @@ module.exports = {
           position: 'left',
         },
         {
+          to: 'use_cases/live_qa',
+          label: 'Use Cases',
+          position: 'left',
+        },
+        {
           to: 'introduction/getting_started',
           label: 'Getting Started',
           position: 'left',
         },
         {
-          to: 'use_cases/live_qa',
-          label: 'Use Cases',
+          to: 'development',
+          label: 'Get Involved',
           position: 'left',
         },
         {
@@ -69,20 +74,16 @@ module.exports = {
           label: 'FAQ',
           position: 'left',
         },
+
         {
           to: 'blog',
-          label: 'Project Updates',
-          position: 'left',
-        },
-        {
-          to: 'development',
-          label: 'Development',
-          position: 'left',
+          label: 'Blog',
+          position: 'right',
         },
         {
           href: 'https://klicker-uzh.feedbear.com/updates',
-          label: 'Release Notes',
-          position: 'left',
+          label: 'Releases',
+          position: 'right',
         },
       ],
     },
@@ -90,8 +91,11 @@ module.exports = {
       apiKey: 'b945507eeedf6bb6f02688350c0ecc4b',
       indexName: 'klicker-uzh',
     },
-    gtag: {
-      trackingID: 'UA-33258666-20',
+    matomo: {
+      matomoUrl: 'https://webstats.uzh.ch/',
+      siteId: '356',
+      phpLoader: 'matomo.php',
+      jsLoader: 'matomo.js',
     },
   },
 }

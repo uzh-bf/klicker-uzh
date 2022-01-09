@@ -13,9 +13,15 @@ const Development = () => {
       content:
         'New interaction modalities for virtual and physical classrooms improve interaction between lecturers and participants.',
       useCases: [
-        'Live Q&A in large classrooms (released)',
-        'Real-time feedback on comprehension (released)',
-        'Poll-based experiments (in progress)',
+        {
+          content: 'Live Q&A in large classrooms (released)',
+          href: '/use_cases/live_qa',
+        },
+        {
+          content: 'Real-time feedback on comprehension (released)',
+          href: '/use_cases/real_time_feedback',
+        },
+        { content: 'Poll-based experiments (in progress)' },
       ],
       tags: [
         { text: 'Working On', color: 'green' },
@@ -45,19 +51,19 @@ const Development = () => {
   return (
     <Layout title="Development">
       <div className="max-w-6xl p-8 m-auto">
-        <div className="mb-4 text-5xl font-bold">
-          Development - Get Involved
-        </div>
-        <div className="flex flex-row justify-between h-12 mb-4">
-          <div className="text-3xl font-bold">P-8 "Digital Skills"</div>
+        <div className="flex flex-row items-start justify-between h-12 mb-4">
+          <div className="mb-8 text-3xl font-bold md:mb-0">
+            Get Involved - P-8 "Digital Skills"
+          </div>
           <div className="hidden h-full md:block">
             <img
               src="/img/logo_swissuniversities.png"
-              className="h-full mr-2"
+              className="h-full mr-8"
             />
             <img src="/img/logo_uzh.jpeg" className="h-full" />
           </div>
         </div>
+
         <div className="mb-8">
           As part of a project backed by swissuniversities and the Teaching
           Center at the Dept. of Banking and Finance (UZH), the KlickerUZH team
@@ -71,7 +77,7 @@ const Development = () => {
             <img src="/img/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
-        <div className="grid justify-between w-full grid-cols-1 gap-2 mb-20 lg:gap-4 md:grid-cols-3">
+        <div className="grid justify-between w-full grid-cols-1 gap-4 mb-16 lg:gap-4 md:grid-cols-3">
           {tileContent.map((tile: any) => (
             <RoadmapTile
               title={tile.title}
@@ -81,21 +87,8 @@ const Development = () => {
             />
           ))}
         </div>
-        <div className="flex flex-col mb-8 md:mb-12 md:flex-row">
-          <div className="w-full md:w-1/2">
-            <div className="mb-4 text-3xl font-bold">User Group</div>
-            <div className="mr-0 md:mr-8">
-              We strive to develop our roadmap and goals based on the needs of
-              our users. The goal of our project on "Digital Skills" is to
-              improve your capabilities in the area of digital interactions. If
-              you are interested in classroom interaction and would like to be
-              involved in future developments, we welcome you to join our
-              KlickerUZH user group with the following form.
-            </div>
-            <div className="mt-2 mb-8 mr-4 md:mb-0 md:mr-4">
-              <UserForm />
-            </div>
-          </div>
+
+        <div className="flex flex-col gap-8 md:flex-row">
           <div className="w-full md:w-1/2">
             <div className="mb-4 text-3xl font-bold">Public Roadmap</div>
             <div className="mb-4">
@@ -116,6 +109,20 @@ const Development = () => {
               link="https://klicker-uzh.feedbear.com/boards/feature-requests"
               className="px-4 !ml-0 w-max"
             />
+          </div>
+          <div className="w-full md:w-1/2">
+            <div className="mb-4 text-3xl font-bold">User Group</div>
+            <div>
+              We strive to develop our roadmap and goals based on the needs of
+              our users. The goal of our project on "Digital Skills" is to
+              improve your capabilities in the area of digital interactions. If
+              you are interested in classroom interaction and would like to be
+              involved in future developments, we welcome you to join our
+              KlickerUZH user group with the following form.
+            </div>
+            <div className="mt-2 mb-8 mr-4 md:mb-0 md:mr-4">
+              <UserForm />
+            </div>
           </div>
         </div>
       </div>

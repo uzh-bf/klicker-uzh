@@ -22,33 +22,40 @@ const RoadmapTile = ({
   return (
     <div
       className={clsx(
-        'h-full border-2 border-solid rounded-md px-4 shadow-md flex flex-col',
+        'h-full border-2 border-solid rounded-md shadow-md flex flex-col p-4',
         className
       )}
     >
-      <div className="mt-3 text-lg font-bold">{title}</div>
+      <div className="text-lg font-bold">{title}</div>
+
       <div className="h-0.5 my-2 bg-gray-200" />
-      <div className="flex-1">{content}</div>
+
+      <div className="flex-1 text-md">{content}</div>
+
       {useCases && <div className="h-0.5 my-2 bg-gray-200" />}
-      <div className="mb-4">
+
+      <div className="flex flex-col gap-2">
         {useCases &&
           useCases.map((useCase: any) => (
-            <div
+            <a
               className={clsx(
-                'flex-1 p-1 mb-2 text-sm bg-gray-200 border border-solid rounded-md',
+                'flex-1 px-3 py-2 text-sm bg-gray-100 border border-solid rounded-md hover:shadow',
                 isDarkTheme && 'bg-gray-500 border-gray-500'
               )}
+              href={useCase.href || '#'}
             >
-              {useCase}
-            </div>
+              {useCase.content}
+            </a>
           ))}
       </div>
+
       <div className="h-0.5 my-2 bg-gray-200" />
-      <div className="flex flex-row flex-wrap mb-2">
+
+      <div className="flex flex-row flex-wrap gap-2">
         {tags.map((tag: any) => (
           <div
             className={clsx(
-              'mx-0.5 p-1.5 mr-2 mb-2 text-sm font-bold rounded-md',
+              'py-2 px-3 text-sm font-bold rounded-md',
               tag.color == 'gray' && 'bg-gray-500 text-white',
               tag.color == 'lightgray' && 'bg-gray-200 text-gray-600',
               tag.color == 'green' && 'bg-[#bbd023] text-white'

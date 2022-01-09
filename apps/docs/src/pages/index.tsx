@@ -5,7 +5,7 @@ function Index() {
     location.replace('/home')
   })
 
-  return <div></div>
+  return null
 }
 
 export default Index
