@@ -24,7 +24,7 @@ const ImageTextBlock = ({
     <div
       className={clsx(
         className,
-        'grid grid-cols-1 md:grid-cols-2 p-4 md:p-8 border border-solid border-gray-300 rounded-lg shadow w-full'
+        'grid grid-cols-1 md:grid-cols-2 p-4 md:p-8 border border-solid border-gray-200 rounded-lg shadow w-full'
       )}
     >
       <div className="order-1 w-full mx-auto text-center md:px-6 md:my-auto md:order-0">

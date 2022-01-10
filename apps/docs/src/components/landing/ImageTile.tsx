@@ -13,10 +13,10 @@ const ImageTile = ({ imgSrc, content, className }: ImageTileProps) => {
       <div className="relative md:h-60 lg:h-80">
         <img
           src={imgSrc}
-          className="top-0 bottom-0 left-0 right-0 max-w-full m-auto md:absolute md:max-w-full md:max-h-full max-h-80"
+          className="top-0 bottom-0 left-0 right-0 max-w-full m-auto md:absolute md:max-w-full md:max-h-full max-h-64"
         />
       </div>
-      <div className="mt-2 text-xl font-bold">{content}</div>
+      <div className="mt-4 text-xl font-bold md:mt-8">{content}</div>
     </div>
   )
 }

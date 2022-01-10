@@ -32,21 +32,21 @@ const features = [
     linkText: 'Running Session',
   },
   {
-    title: 'Live Q&A- and Feedback-Channel',
+    title: 'Live Question & Answer (Q&A)',
     content:
-      'As a very helpful tool during large lectures, KlickerUZH also provides you with a real-time Q&A and feedback channel to interact with your audience. In this way, teaching assistants might e.g. already answer some questions in written form.',
+      'As a very helpful tool during large lectures, KlickerUZH also provides you with a live Q&A and feedback channel to interact with your audience. In this way, teaching assistants might e.g. already answer some questions in written form.',
     link: 'basics/audience_interaction',
     linkText: 'Audience Interaction',
   },
   {
-    title: 'Confusion Feedback',
+    title: 'Real-Time Feedback',
     content:
-      'Did you ever wonder, if your audience was understanding your talk or if your teaching speed was too fast? The confusion feedback collects this information from students and provides it to the lecturer in an aggregated manner.',
+      'Did you ever wonder, if your audience was understanding your talk or if your teaching speed was too fast? The real-time feedback collects this information from students and provides it to the lecturer in an aggregated manner.',
     link: 'basics/audience_interaction',
     linkText: 'Audience Interaction',
   },
   {
-    title: 'Multiple Question Types',
+    title: 'Various Question Types',
     content:
       'KlickerUZH supports multiple different question types including free text answers, numerical answers and multiple choice as well as single choice questions. As an additional feature, solutions can be defined and displayed for SC and MC questions. Further question types are still on the roadmap.',
     link: 'basics/question_create',
@@ -63,8 +63,8 @@ const features = [
     title: 'Multi-Language Support',
     content:
       'KlickerUZH alreay supports German and English out of the box. Additionally, it was made to be easily extendable to further languages for your own deployment.',
-    link: 'deployment/deployment_architecture',
-    linkText: 'Deployment',
+    link: 'basics/navigation',
+    linkText: 'Language Settings',
   },
 ]
 
@@ -149,7 +149,7 @@ function Home() {
     <Layout title="Welcome">
       <TitleImage />
 
-      <div className="flex flex-col gap-16 p-8 m-auto max-w-7xl md:p-4">
+      <div className="flex flex-col gap-8 p-4 m-auto md:p-8 md:gap-16 max-w-7xl">
         <div className="flex flex-col justify-between gap-12 md:gap-4 md:flex-row">
           <ImageTile
             content="Feature Complete and Easy to Use"
@@ -170,9 +170,9 @@ function Home() {
         <Divider />
 
         <div>
-          <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
+          <h2 className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
             Use Cases
-          </div>
+          </h2>
           <div className="flex flex-col w-full gap-4">
             {useCases.map((block: any) => (
               <ImageTextBlock
@@ -189,10 +189,10 @@ function Home() {
         <Divider />
 
         <div>
-          <div className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
+          <h2 className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
             Why choose
             <KlickerLogo className="ml-1 w-28 sm:w-32" />?
-          </div>
+          </h2>
           <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
             {features.map((feature: any) => (
               <TitleTextBlock
@@ -208,27 +208,29 @@ function Home() {
         <Divider />
 
         <div className="grid grid-cols-1 gap-8 md:gap-16 lg:grid-cols-2">
-          <div className="flex flex-col gap-4">
-            <div className="text-2xl font-bold sm:text-3xl">Open Source</div>
-            {openSourceText.map((snippet: any) => (
-              <TitleTextBlock
-                title={snippet.title}
-                text={snippet.content}
-                link={snippet.link}
-                linkText={snippet.linkText}
-              />
-            ))}
+          <div>
+            <h2 className="text-2xl font-bold sm:text-3xl">Get Involved</h2>{' '}
+            <div className="flex flex-col gap-4">
+              {openSourceText.map((snippet: any) => (
+                <TitleTextBlock
+                  title={snippet.title}
+                  text={snippet.content}
+                  link={snippet.link}
+                  linkText={snippet.linkText}
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="text-2xl font-bold sm:text-3xl">User Group</div>
-            <div className="pr-8">
+          <div className="">
+            <h2 className="text-2xl font-bold sm:text-3xl">User Group</h2>
+            <p>
               We strive to develop our roadmap and goals based on the needs of
               our users. The goal of our project on "Digital Skills" is to
               improve your capabilities in the area of digital interactions. If
               you are interested in classroom interaction and would like to be
               involved in future developments, we welcome you to join our
               KlickerUZH user group with the following form.
-            </div>
+            </p>
             <div className="max-w-lg mt-8 border border-solid rounded-md">
               <UserForm />
             </div>
@@ -275,12 +277,12 @@ const TitleImage = () => {
         />
       </div>
 
-      <div className="items-center justify-center mt-4 mb-4">
+      <h1 className="items-center justify-center mt-4 mb-4">
         <KlickerLogo className={'w-44 sm:w-48 md:w-64'} />
         <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
           Open-source Classroom Interaction
         </div>
-      </div>
+      </h1>
 
       <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
         <CustomButton

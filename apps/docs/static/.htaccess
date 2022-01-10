@@ -6,6 +6,8 @@ ErrorDocument 404 /404.html
 
   RewriteRule ^blog/$ /blog.html [L]
 
+  RewriteRule ^docs/(.*) /$1 [R=301]
+
   # redirect SPA routes to the index.html file
   # RewriteRule    ^/tos$ index.html      [L]
   # RewriteRule    ^/privacy$ index.html  [L]
