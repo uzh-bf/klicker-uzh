@@ -2,10 +2,12 @@ import clsx from 'clsx'
 import React from 'react'
 
 export default function TableChart({ className, title, data }) {
+  const total = data.reduce((acc, item) => item.count + acc, 0)
+
   return (
     <div className={clsx('max-w-lg border border-solid p-2', className)}>
       {title && (
-        <div className="bg-gray-100 rounded py-1 px-2 font-bold shadow mb-2">
+        <div className="px-2 py-1 mb-2 font-bold bg-gray-100 rounded shadow">
           {title}
         </div>
       )}
@@ -23,6 +25,9 @@ export default function TableChart({ className, title, data }) {
           ))}
         </tbody>
       </table>
+      <div className="mt-2 text-sm italic text-gray-500">
+        Own depicition based on preliminary data from {total} respondents.
+      </div>
     </div>
   )
 }
