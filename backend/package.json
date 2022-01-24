@@ -10,7 +10,7 @@
     "@graphql-tools/schema": "8.2.0",
     "apollo-server-express": "3.3.0",
     "apollo-server-plugin-response-cache": "3.2.0",
-    "aws-sdk": "2.984.0",
+    "aws-sdk": "2.1062.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
     "caller": "1.0.1",
