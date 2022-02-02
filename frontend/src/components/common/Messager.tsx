@@ -7,14 +7,8 @@ interface Props {
 
 function Messager({ message }: Props): React.ReactElement {
   return (
-    <div className="messager">
+    <div className="p-4">
       <Message>{message}</Message>
-
-      <style jsx>{`
-        .messager {
-          padding: 1rem;
-        }
-      `}</style>
     </div>
   )
 }

@@ -77,12 +77,12 @@ function Chart({
   totalResponses,
 }: Props): React.ReactElement {
   return (
-    <div className="chart">
+    <div className="w-full h-full chart">
       {((): React.ReactElement => {
         // if the chart display has not already been toggled
         if (!showGraph) {
           return (
-            <div className="noChart">
+            <div className="flex items-center justify-center h-full">
               <Button className="showGraphButton" onClick={handleShowGraph}>
                 <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
               </Button>
@@ -92,7 +92,7 @@ function Chart({
 
         if (totalResponses === 0) {
           return (
-            <div className="noChart">
+            <div className="flex items-center justify-center h-full">
               <FormattedMessage defaultMessage="No Results Available" id="evaluation.graph.noResults" />
             </div>
           )
@@ -125,21 +125,6 @@ function Chart({
 
         return <div>This chart type is not implemented yet.</div>
       })()}
-
-      <style jsx>{`
-        .chart {
-          height: 100%;
-          width: 100%;
-
-          .noChart {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
-            height: 100%;
-          }
-        }
-      `}</style>
     </div>
   )
 }

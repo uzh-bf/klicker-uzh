@@ -19,35 +19,14 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
 
   return (
     <div
-      className={clsx('dropzone rounded', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })}
+      className={clsx(
+        'dropzone flex items-center border border-dashed border-grey-100 bg-grey-20 justify-center text-2xl h-full w-full rounded',
+        collectedProps.canDrop && '!border-2 !border-solid border-blue-300',
+        collectedProps.isOver && '!bg-blue-300'
+      )}
       ref={drop}
     >
-      <Icon name="plus" />
-
-      <style jsx>{`
-        .dropzone {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          background-color: #efefef;
-          border: 1px solid grey;
-          border-style: dashed;
-          color: grey;
-          font-size: 1.5rem;
-          height: 100%;
-          width: 100%;
-        }
-
-        .dropzone.canDrop {
-          border: 2px solid #6cbad8;
-        }
-
-        .dropzone.isOver {
-          background-color: #6cbad8;
-          color: #012f42;
-        }
-      `}</style>
+      <Icon color="grey" name="plus" />
     </div>
   )
 }

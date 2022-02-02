@@ -102,15 +102,15 @@ function UploadModal({ children }: Props): React.ReactElement {
         <FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />
       </Modal.Header>
       <Modal.Content>
-        <div className="wrapper">
-          <div className="dropzone" {...getRootProps()}>
+        <div className="flex flex-row flex-nowrap">
+          <div className="flex-0020" {...getRootProps()}>
             <input {...getInputProps()} />
             <Button fluid icon primary disabled={false} type="button">
               <Icon name="plus" />
               <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
             </Button>
           </div>
-          <div className="questions">
+          <div className="flex-1 pl-4">
             <Table unstackable>
               <Table.Header>
                 <Table.Row>
@@ -128,7 +128,7 @@ function UploadModal({ children }: Props): React.ReactElement {
               <Table.Body>
                 {questions.map(
                   (question): React.ReactElement => (
-                    <Table.Row>
+                    <Table.Row key={question.title}>
                       <Table.Cell>{question.type}</Table.Cell>
                       <Table.Cell>{question.title}</Table.Cell>
                       <Table.Cell>
@@ -153,23 +153,6 @@ function UploadModal({ children }: Props): React.ReactElement {
           <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
         </Button>
       </Modal.Actions>
-
-      <style jsx>{`
-        .wrapper {
-          display: flex;
-          flex-flow: row nowrap;
-        }
-
-        .dropzone {
-          flex: 0 0 20%;
-        }
-
-        .questions {
-          flex: 1;
-
-          padding-left: 1rem;
-        }
-      `}</style>
     </Modal>
   )
 }

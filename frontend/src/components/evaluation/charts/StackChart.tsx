@@ -27,22 +27,6 @@ const defaultProps = {
   totalResponses: 0,
 }
 
-/*
-const renderTooltip = (props) => {
-  console.log(props)
-  return (
-    <div className="tooltip">
-      Test
-      <style jsx>{`
-        .tooltip {
-          background-color: white;
-          color: red;
-        }
-      `}</style>
-    </div>
-  )
-} */
-
 function StackChart({ isSolutionShown, data, totalResponses }: Props): React.ReactElement {
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels

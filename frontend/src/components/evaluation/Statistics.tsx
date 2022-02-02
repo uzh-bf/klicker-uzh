@@ -33,9 +33,9 @@ const defaultProps = {
 function Statistics({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, withBins }: Props): React.ReactElement {
   return (
     <div className="statistics">
-      <h2>
+      <div className="mb-1.5 text-xl font-bold">
         <FormattedMessage defaultMessage="Statistics" id="evaluation.statistics.title" />
-      </h2>
+      </div>
 
       <div>
         <EvaluationListItem reverse marker="MIN">
@@ -62,7 +62,7 @@ function Statistics({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, wi
       </div>
 
       {withBins && (
-        <div className="bins">
+        <div className="mt-4">
           <Input
             fluid
             label="Bins"
@@ -83,25 +83,6 @@ function Statistics({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, wi
           </Popup>
         </div>
       )}
-
-      <style jsx>{`
-        .statistics {
-          h2 {
-            font-size: 1.2rem;
-            line-height: 1.2rem;
-            margin-bottom: 0.5rem;
-          }
-
-          .bins {
-            margin-top: 1rem;
-
-            :global(.message) {
-              margin-top: 0.5rem;
-              padding: 1rem;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }
