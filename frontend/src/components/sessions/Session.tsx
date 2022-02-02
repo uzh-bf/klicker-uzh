@@ -94,35 +94,58 @@ function Session({
   const isFeedbackSession = blocks.length === 0
 
   return (
-    <div className="session">
-      <h2 className="title text-primary-strong">{name}</h2>
+    <div className="flex flex-col flex-1 md:flex-row md:flex-wrap">
+      <h2 className="text-xl md:flex-00half md:m-0 md:mb-[0.4rem] mb-[0.3rem] text-primary-strong">{name}</h2>
 
-      <div className="labels">
-        <Label className="date" content={dayjs(createdAt).format('DD.MM.YY HH:mm')} icon="calendar" />
+      <div className="flex flex-row mb-1 labels md:flex-00half md:m-0 md:mb-[0.4rem] justify-end">
+        <Label
+          className="md:!order-3 md:!w-[11rem] text-center"
+          content={dayjs(createdAt).format('DD.MM.YY HH:mm')}
+          icon="calendar"
+          style={{ marginRight: '20px !important' }}
+        />
         {isParticipantAuthenticationEnabled && [
-          <Label className="authMode" color="green" content="AUTH" icon="shield alternate" key="authMode" />,
+          <Label
+            className="md:order-2 min-w-[5.8rem] text-center"
+            color="green"
+            content="AUTH"
+            icon="shield alternate"
+            key="authMode"
+          />,
           authenticationMode === 'PASSWORD' && (
-            <Label className="storageMode" content={intl.formatMessage(messages.authModePassword)} icon="key" />
+            <Label
+              className="md:order-1 min-w-[5.8rem] text-center"
+              content={intl.formatMessage(messages.authModePassword)}
+              icon="key"
+            />
           ),
           authenticationMode === 'AAI' && (
-            <Label className="storageMode" content={intl.formatMessage(messages.authModeAAI)} icon="key" />
+            <Label
+              className="md:order-1 min-w-[5.8rem] text-center"
+              content={intl.formatMessage(messages.authModeAAI)}
+              icon="key"
+            />
           ),
           storageMode === 'SECRET' && (
             <Label
-              className="storageMode"
+              className="md:order-1 min-w-[5.8rem] text-center"
               content={intl.formatMessage(messages.storageModeSecret)}
               icon="user secret"
             />
           ),
           storageMode === 'COMPLETE' && (
-            <Label className="storageMode" content={intl.formatMessage(messages.storageModeComplete)} icon="archive" />
+            <Label
+              className="md:order-1 min-w-[5.8rem] text-center"
+              content={intl.formatMessage(messages.storageModeComplete)}
+              icon="archive"
+            />
           ),
         ]}
       </div>
 
-      <div className="details">
+      <div className="flex flex-col flex-1 md:flex-row md:flex-wrap">
         {isFeedbackSession && (
-          <div className="block">
+          <div className="md:flex-1 md:m-0 md:mr-[0.4rem] mt-[0.3rem]">
             <Message info>
               <FormattedMessage
                 defaultMessage="This feedback session does not contain any questions."
@@ -134,7 +157,7 @@ function Session({
 
         {blocks.map(
           ({ id: blockId, instances, timeLimit }): React.ReactElement => (
-            <div className="block" key={blockId}>
+            <div className="md:flex-1 md:m-0 md:mr-[0.4rem] mt-[0.3rem]" key={blockId}>
               <QuestionBlock
                 noDetails
                 questions={instances.map(({ id: instanceId, question, version, results }): any => ({
@@ -150,11 +173,11 @@ function Session({
           )
         )}
 
-        <div className="actionArea">
+        <div className="flex flex-col actionArea md:self-start md:w-[11rem]">
           <Dropdown button labeled className="icon left" icon="wrench" text="Options">
             <Dropdown.Menu>
               {status === SESSION_STATUS.CREATED && (
-                <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
+                <Link passHref href={{ pathname: '/questions', query: { editSessionId: id } }}>
                   <Dropdown.Item>
                     <Icon name="edit" />
                     <FormattedMessage defaultMessage="Modify Session" id="session.button.modify" />
@@ -163,6 +186,7 @@ function Session({
               )}
 
               <Link
+                passHref
                 href={{
                   pathname: '/questions',
                   query: { copy: true, editSessionId: id },
@@ -264,38 +288,13 @@ function Session({
       <style jsx>{`
         @import 'src/theme';
 
-        .session,
-        .details {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-        }
-
-        .title {
-          margin-bottom: 0.3rem;
-        }
-
         .labels {
-          display: flex;
-          flex-direction: row;
-
-          margin-bottom: 0.2rem;
-
           :global(.label) {
-            min-width: 5.8rem;
             margin-right: 0.2rem !important;
-            text-align: center;
           }
         }
 
-        .block {
-          margin-top: 0.3rem;
-        }
-
         .actionArea {
-          display: flex;
-          flex-direction: column;
-
           :global(.button),
           a :global(.button) {
             text-align: center;
@@ -306,52 +305,14 @@ function Session({
         }
 
         @include desktop-tablet-only {
-          .session,
-          .details {
-            flex-flow: row wrap;
-          }
-          .title,
           .labels {
-            flex: 0 0 50%;
-            margin: 0;
-            margin-bottom: 0.4rem;
-          }
-          .title {
-            align-self: end;
-            font-size: 1.2rem;
-          }
-          .labels {
-            display: flex;
-            justify-content: flex-end;
-
             :global(.label) {
               margin-right: 0 !important;
               margin-left: 0.4rem !important;
-              text-align: center;
-            }
-
-            :global(.label.storageMode) {
-              order: 1;
-            }
-
-            :global(.label.authMode) {
-              order: 2;
-            }
-
-            :global(.label.date) {
-              order: 3;
-              width: 11rem;
             }
           }
-          .block {
-            flex: 1;
-            margin: 0;
-            margin-right: 0.4rem;
-          }
+
           .actionArea {
-            align-self: flex-start;
-            width: 11rem;
-
             :global(.button),
             a :global(.button) {
               margin-top: 0 !important;
