@@ -56,7 +56,7 @@ function TableChart({
     }
 
   return (
-    <div className="tableChart">
+    <div className="w-full h-full overflow-y-scroll">
       <Table sortable striped className="!border-none">
         <Table.Header>
           <Table.HeaderCell
@@ -189,17 +189,6 @@ function TableChart({
           )}
         </Table.Body>
       </Table>
-
-      <style jsx>{`
-        .tableChart {
-          width: 100%;
-          height: 100%;
-
-          @media screen {
-            overflow-y: auto;
-          }
-        }
-      `}</style>
     </div>
   )
 }

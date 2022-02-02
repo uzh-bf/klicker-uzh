@@ -149,36 +149,6 @@ function SessionArea({ sessionId }: Props) {
           </div>
         </Modal.Content>
       </Modal>
-
-      <style jsx>{`
-        h3 {
-          font-size: 1.2rem;
-        }
-
-        h4 {
-          font-size: 1rem;
-          margin: 0;
-        }
-
-        .popupContent {
-          padding: 0;
-
-          :global(.button) {
-            width: 100%;
-            margin-bottom: 0.5rem;
-          }
-        }
-
-        .popupHelp {
-          width: 20rem;
-        }
-
-        .popupChanges {
-          overflow: auto;
-          max-height: 40rem;
-          width: 35rem;
-        }
-      `}</style>
     </>
   )
 }

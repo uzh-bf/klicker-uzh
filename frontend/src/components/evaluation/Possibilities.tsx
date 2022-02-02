@@ -21,16 +21,17 @@ const defaultProps = {
 
 function Possibilities({ data, questionOptions, questionType, showGraph, showSolution }: Props): React.ReactElement {
   return (
-    <div className="possibilities">
+    <div>
       {((): React.ReactElement => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
           return (
-            <div className="choiceItems">
+            <div>
               {data.map(
                 ({ correct, percentage, value }, index): React.ReactElement => (
                   <EvaluationListItem
                     color={CHART_COLORS[index % 12]}
                     correct={showGraph && showSolution && correct}
+                    key={value}
                     marker={indexToLetter(index)}
                     percentage={percentage}
                     questionType={questionType}
@@ -50,7 +51,7 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
           } = questionOptions
 
           return (
-            <div className="choiceItems">
+            <div>
               {((): React.ReactElement | React.ReactElement[] => {
                 const comp = []
                 if (restrictions && _isNumber(restrictions.min)) {
@@ -85,16 +86,6 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
 
         return null
       })()}
-
-      <style jsx>{`
-        .possibilities {
-          h2 {
-            font-size: 1.2rem;
-            line-height: 1.2rem;
-            margin-bottom: 0.5rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }

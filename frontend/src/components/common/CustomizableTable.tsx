@@ -128,7 +128,7 @@ function CustomizableTable({
                   )}
                   {(hasModification || hasDeletion || hasAbort) && (
                     <Table.Cell textAlign="right">
-                      <div className="buttonArea">
+                      <div className="flex flex-row-reverse">
                         {hasModification && (
                           <Button
                             icon="edit"
@@ -192,14 +192,6 @@ function CustomizableTable({
         onCancel={(): Promise<void> => handleAbort(activeId, false)}
         onConfirm={(): Promise<void> => handleAbort(activeId, true)}
       />
-      <style jsx>
-        {`
-          .buttonArea {
-            display: flex;
-            flex-direction: row-reverse;
-          }
-        `}
-      </style>
     </div>
   )
 }
