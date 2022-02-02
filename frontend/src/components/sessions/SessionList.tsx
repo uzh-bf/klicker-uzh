@@ -133,7 +133,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                   <FormattedMessage defaultMessage="Running / paused sessions" id="sessionList.title.runningSession" />{' '}
                   ({runningSessions.length + pausedSessions.length})
                 </h2>
-                <div className="sessions">
+                <div className="pb-6 sessions">
                   {[...runningSessions, ...pausedSessions].map(
                     (running): React.ReactElement => (
                       <div className="runningSession" key="runningSessions">
@@ -144,7 +144,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                 </div>
               </div>
             ) : (
-              <div className="sessions">
+              <div className="pb-6 md:py-4 md:px-0">
                 <FormattedMessage
                   defaultMessage="No session is currently running."
                   id="sessionList.string.noSessionRunning"
@@ -160,7 +160,10 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                 </h2>
                 {remainingSessions.map(
                   (session): React.ReactElement => (
-                    <div className="session" key={session.id}>
+                    <div
+                      className="pb-6 border-0 border-t border-solid md:py-4 md:px-0 border-grey-60"
+                      key={session.id}
+                    >
                       <Session intl={intl} {...session} />
                     </div>
                   )
@@ -176,7 +179,10 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                 </h2>
                 {completedSessions.map(
                   (session): React.ReactElement => (
-                    <div className="session" key={session.id}>
+                    <div
+                      className="pb-6 border-0 border-t border-solid md:py-4 md:px-0 border-grey-60"
+                      key={session.id}
+                    >
                       <Session intl={intl} {...session} />
                     </div>
                   )
@@ -186,21 +192,6 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           </>
         )
       })()}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .session {
-          padding-bottom: 1.5rem;
-        }
-
-        @include desktop-tablet-only {
-          .session {
-            padding: 1rem 0;
-            border-top: 1px solid lightgrey;
-          }
-        }
-      `}</style>
     </div>
   )
 }
