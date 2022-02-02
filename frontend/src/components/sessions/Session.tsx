@@ -5,6 +5,7 @@ import _get from 'lodash/get'
 import { useMutation } from '@apollo/client'
 import { Confirm, Button, Label, Icon, Message, Dropdown } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import clsx from 'clsx'
 
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
@@ -58,10 +59,17 @@ interface Props {
   isParticipantAuthenticationEnabled?: boolean
   authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
   storageMode?: string
+  confusionTS?: any[]
+  feedbacks?: any[]
 }
 
 const defaultProps = {
   blocks: [],
+  isParticipantAuthenticationEnabled: false,
+  authenticationMode: 'NONE',
+  storageMode: '',
+  confusionTS: [],
+  feedbacks: [],
 }
 
 function Session({
@@ -74,6 +82,8 @@ function Session({
   isParticipantAuthenticationEnabled,
   authenticationMode,
   storageMode,
+  confusionTS,
+  feedbacks,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -219,8 +229,23 @@ function Session({
           </Dropdown>
 
           {status !== SESSION_STATUS.CREATED && (
-            <a href={`/sessions/evaluation/${id}`} rel="noopener noreferrer" target="_blank">
-              <Button icon primary disabled={isFeedbackSession} labelPosition="left">
+            <a
+              className={clsx(
+                isFeedbackSession &&
+                  confusionTS.length === 0 &&
+                  feedbacks.length === 0 &&
+                  'pointer-events-none cursor-default'
+              )}
+              href={`/sessions/evaluation/${id}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button
+                icon
+                primary
+                disabled={isFeedbackSession && confusionTS.length === 0 && feedbacks.length === 0}
+                labelPosition="left"
+              >
                 <Icon name="external" />
                 <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
               </Button>
