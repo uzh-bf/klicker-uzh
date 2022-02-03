@@ -1,0 +1,73 @@
+{
+  "name": "@klicker-uzh/ui",
+  "version": "1.7.0",
+  "main": "dist/index.js",
+  "module": "dist/packagesui.esm.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "analyze": "size-limit --why",
+    "build": "dts build",
+    "build-storybook": "build-storybook",
+    "lint": "dts lint",
+    "prepare": "dts build",
+    "size": "size-limit",
+    "dev": "dts watch",
+    "storybook": "start-storybook -p 6006",
+    "test": "dts test --passWithNoTests"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "dts lint"
+    }
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
+  },
+  "peerDependencies": {
+    "react": ">=17"
+  },
+  "engines": {
+    "node": ">=12"
+  },
+  "size-limit": [
+    {
+      "path": "dist/packagesui.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/packagesui.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "devDependencies": {
+    "@babel/core": "7.16.5",
+    "@size-limit/preset-small-lib": "7.0.4",
+    "@storybook/addon-essentials": "6.4.9",
+    "@storybook/addon-info": "5.3.21",
+    "@storybook/addon-links": "6.4.9",
+    "@storybook/addons": "6.4.9",
+    "@storybook/react": "6.4.9",
+    "@tsconfig/create-react-app": "1.0.2",
+    "@tsconfig/recommended": "1.0.1",
+    "@types/react": "17.0.38",
+    "@types/react-dom": "17.0.11",
+    "babel-loader": "8.2.3",
+    "dts-cli": "1.1.3",
+    "husky": "7.0.4",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-is": "17.0.2",
+    "size-limit": "7.0.4",
+    "tslib": "2.3.1",
+    "typescript": "4.5.4"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^0.1.3",
+    "tailwind-merge": "^1.1.1",
+    "tailwindcss": "^3.0.7"
+  }
+}
