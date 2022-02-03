@@ -45,6 +45,7 @@ function Participants({
             <Grid.Column>
               <Form>
                 <TextArea
+                  className="!mb-4 w-full"
                   placeholder={intl.formatMessage(messages.participantsPlaceholder)}
                   rows={10}
                   value={participantsRaw}
@@ -99,19 +100,6 @@ function Participants({
           <FormattedMessage defaultMessage="Save" id="common.button.save" />
         </Button>
       </Modal.Actions>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        p {
-          padding: 0 1rem;
-        }
-
-        :global(textarea) {
-          margin-bottom: 1rem !important;
-          width: 100%;
-        }
-      `}</style>
     </>
   )
 }

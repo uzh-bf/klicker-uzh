@@ -94,26 +94,13 @@ function UserSettingsForm(): React.ReactElement {
   ]
 
   return (
-    <div className="userSettingsForm">
+    <div className="userSettingsForm p-4 md:my-0 md:mx-[20%] md:py-4 md:px-0">
       <Tab
         grid={{ paneWidth: 12, reversed: 'mobile', stackable: true, tabWidth: 4 }}
         menu={{ fluid: true, tabular: true, vertical: true }}
         menuPosition="right"
         panes={panes}
       />
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .userSettingsForm {
-          padding: 1rem;
-
-          @include desktop-only {
-            margin: 0 20%;
-            padding: 1rem 0;
-          }
-        }
-      `}</style>
     </div>
   )
 }

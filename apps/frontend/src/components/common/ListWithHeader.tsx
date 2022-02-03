@@ -3,7 +3,7 @@ import { List, Popup } from 'semantic-ui-react'
 
 interface Props {
   children: React.ReactNode
-  items: string[]
+  items?: string[]
   limit?: number
 }
 
@@ -12,60 +12,37 @@ const defaultProps = {
   limit: undefined,
 }
 
-const mapItems = (items): React.ReactElement[] => items.map((item): React.ReactElement => <List.Item>{item}</List.Item>)
+const mapItems = (items): React.ReactElement[] =>
+  items.map((item: any): React.ReactElement => <List.Item key={item}>{item}</List.Item>)
 
 function ListWithHeader({ children, items, limit }: Props): React.ReactElement {
   return (
-    <div className="listWithHeader">
-      {children && <span className="border-b listHeader border-primary">{children}</span>}
+    <div className="flex flex-col listWithHeader">
+      {children && (
+        <span className="border-b fontSize-[2rem] lineHeight-[2rem] py-[0.4rem] px-0 text-base leading-4 border-primary">
+          {children}
+        </span>
+      )}
 
       {items.length > limit ? (
         <>
-          <List>{mapItems(items.slice(0, limit))}</List>
+          <List className="!px-0 !py-2 !m-0">{mapItems(items.slice(0, limit))}</List>
           <Popup
             hideOnScroll
             on="click"
             position="bottom center"
-            trigger={<div className="border-t more border-primary">...</div>}
+            trigger={
+              <div className="border-t fontSize-[2rem] lineHeight-[2rem] cursor-pointer text-base leading-4 py-[0.2rem] px-0 align-middle border-primary">
+                ...
+              </div>
+            }
           >
-            <div className="remainingPopup">
-              <List>{mapItems(items.slice(limit))}</List>
-            </div>
+            <List className="!px-0 !py-2 !m-0">{mapItems(items.slice(limit))}</List>
           </Popup>
         </>
       ) : (
-        <List>{mapItems(items)}</List>
+        <List className="!px-0 !py-2 !m-0">{mapItems(items)}</List>
       )}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .listWithHeader {
-          display: flex;
-          flex-direction: column;
-
-          .listHeader,
-          .more {
-            font-size: 1rem;
-            line-height: 1rem;
-          }
-
-          .listHeader {
-            padding: 0.4rem 0;
-          }
-
-          .more {
-            cursor: pointer;
-            padding: 0.2rem 0;
-            vertical-align: middle;
-          }
-
-          :global(.list) {
-            margin: 0;
-            padding: 0.5rem 0;
-          }
-        }
-      `}</style>
     </div>
   )
 }

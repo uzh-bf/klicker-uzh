@@ -1,5 +1,5 @@
 import React from 'react'
-import { Table, Icon, Button } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 

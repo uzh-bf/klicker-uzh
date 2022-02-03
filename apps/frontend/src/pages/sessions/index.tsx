@@ -4,7 +4,6 @@ import { useMutation } from '@apollo/client'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import { useToasts } from 'react-toast-notifications'
-import { push } from '@socialgouv/matomo-next'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
@@ -75,28 +74,9 @@ function Index(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'sessionList' }}
     >
-      <div className="sessionList">
-        <SessionList filters={filters} handleCopySession={(f): any => f} handleStartSession={onStartSession} />
+      <div className="h-full py-4 px-[0.7rem] md:m-auto md:p-8 md:max-w-screen-xl">
+        <SessionList filters={filters} handleCopySession={(f: any): any => f} handleStartSession={onStartSession} />
       </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .sessionList {
-          padding: 1rem 0.7rem;
-
-          height: 100%;
-        }
-
-        @include desktop-tablet-only {
-          .sessionList {
-            margin: auto;
-            padding: 2rem;
-
-            max-width: $max-width;
-          }
-        }
-      `}</style>
     </TeacherLayout>
   )
 }

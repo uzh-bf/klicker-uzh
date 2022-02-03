@@ -35,6 +35,8 @@ module.exports = {
       flex: {
         '00full': '0 0 100%',
         '00auto': '0 0 auto',
+        '00half': '0 0 50%',
+        '0020': '0 0 20%',
       },
       backgroundImage: {
         'timeline-desktop':

@@ -82,6 +82,7 @@ function SessionParticipantsModal({
         <Button
           fluid
           icon
+          className="!mt-2"
           color={!participants || participants.length === 0 ? 'red' : 'grey'}
           labelPosition="left"
           size="small"
@@ -173,13 +174,6 @@ function SessionParticipantsModal({
           */}
         </Step.Group>
       </Modal>
-      <style jsx>{`
-        @import 'src/theme';
-
-        .button {
-          margin-top: 0 !important;
-        }
-      `}</style>
     </div>
   )
 }
