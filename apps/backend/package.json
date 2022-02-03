@@ -3,7 +3,7 @@
   "version": "1.7.0",
   "main": "src/server.js",
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   },
   "license": "AGPL-3.0",
   "dependencies": {
@@ -112,7 +112,6 @@
     ]
   },
   "volta": {
-    "node": "14.18.1",
-    "npm": "6.14.15"
+    "node": "16.13.1"
   }
 }
