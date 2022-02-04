@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
-import useThemeContext from '@theme/hooks/useThemeContext'
+import { useColorMode } from '@docusaurus/theme-common'
 
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
@@ -248,7 +248,7 @@ function Divider() {
 }
 
 const TitleImage = () => {
-  const { isDarkTheme } = useThemeContext()
+  const { isDarkTheme } = useColorMode()
 
   return (
     <div
@@ -315,7 +315,7 @@ const TitleImage = () => {
 }
 
 const KlickerLogo = ({ className }) => {
-  const { isDarkTheme } = useThemeContext()
+  const { isDarkTheme } = useColorMode()
 
   return (
     <img

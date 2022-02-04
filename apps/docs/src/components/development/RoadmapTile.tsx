@@ -1,5 +1,5 @@
 import React from 'react'
-import useThemeContext from '@theme/hooks/useThemeContext'
+import { useColorMode } from '@docusaurus/theme-common'
 import clsx from 'clsx'
 
 interface RoadmapTileProps {
@@ -17,7 +17,7 @@ const RoadmapTile = ({
   tags,
   className,
 }: RoadmapTileProps) => {
-  const { isDarkTheme } = useThemeContext()
+  const { isDarkTheme } = useColorMode()
 
   return (
     <div

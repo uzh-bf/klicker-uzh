@@ -1,9 +1,9 @@
 import React from 'react'
-import useThemeContext from '@theme/hooks/useThemeContext'
+import { useColorMode } from '@docusaurus/theme-common'
 import clsx from 'clsx'
 
 const Footer = () => {
-  const { isDarkTheme } = useThemeContext()
+  const { isDarkTheme } = useColorMode()
 
   return (
     <div className={clsx('w-full bg-gray-100', isDarkTheme && 'bg-gray-700')}>
