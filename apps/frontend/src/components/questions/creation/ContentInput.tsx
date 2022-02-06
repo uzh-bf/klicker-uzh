@@ -7,6 +7,9 @@ import { Editable, withReact, useSlate, Slate } from 'slate-react'
 import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
 import clsx from 'clsx'
+import slate, { serialize } from 'remark-slate'
+/* import unified from 'unified'
+import markdown from 'remark-parse' */
 
 import CustomTooltip from '../../common/CustomTooltip'
 
@@ -36,6 +39,13 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
   const renderElement = useCallback((props) => <Element {...props} />, [])
   const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
+  console.log(valueNew)
+
+  const markdownText = valueNew.map((v) => serialize(v)).join('')
+  console.log(markdownText)
+
+  // https://github.com/hanford/remark-slate
+  // const processor = unified().use(markdown).use(slate)
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
