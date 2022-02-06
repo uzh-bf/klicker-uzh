@@ -60,15 +60,14 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
 
         <div className="mt-2 border border-solid rounded">
           <Slate editor={editor} value={valueNew} onChange={(newvalue) => setValue(newvalue)}>
-            <div className="flex flex-row w-full h-10 p-2 mb-2 mr-10 bg-grey-20">
-              {/* toolbar div */}
-              <MarkButton format="bold" icon="bold" />
-              <MarkButton format="italic" icon="italic" />
-              <MarkButton format="underline" icon="underline" />
-              <MarkButton format="code" icon="code" />
-              <BlockButton format="block-quote" icon="quote right" />
-              <BlockButton format="numbered-list" icon="list ol" />
-              <BlockButton format="bulleted-list" icon="list ul" />
+            <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
+              <MarkButton className="" format="bold" icon="bold" />
+              <MarkButton className="" format="italic" icon="italic" />
+              <MarkButton className="!mt-[0.2rem]" format="underline" icon="underline" />
+              <MarkButton className="" format="code" icon="code" />
+              <BlockButton className="" format="block-quote" icon="quote right" />
+              <BlockButton className="" format="numbered-list" icon="list ol" />
+              <BlockButton className="" format="bulleted-list" icon="list ul" />
             </div>
             <div className="p-3">
               <Editable
@@ -145,7 +144,7 @@ const isMarkActive = (editor, format) => {
   return marks ? marks[format] === true : false
 }
 
-const Element = ({ attributes, children, element }) => {
+const Element = ({ attributes, children, element }: any) => {
   switch (element.type) {
     case 'block-quote':
       return <blockquote {...attributes}>{children}</blockquote>
@@ -164,7 +163,7 @@ const Element = ({ attributes, children, element }) => {
   }
 }
 
-const Leaf = ({ attributes, children, leaf }) => {
+const Leaf = ({ attributes, children, leaf }: any) => {
   let formattedChildren = children
   if (leaf.bold) {
     formattedChildren = <strong>{formattedChildren}</strong>
@@ -185,7 +184,7 @@ const Leaf = ({ attributes, children, leaf }) => {
   return <span {...attributes}>{formattedChildren}</span>
 }
 
-const BlockButton = ({ format, icon }) => {
+const BlockButton = ({ format, icon, className }: any) => {
   const editor = useSlate()
   return (
     <Button
@@ -197,12 +196,14 @@ const BlockButton = ({ format, icon }) => {
         toggleBlock(editor, format)
       }}
     >
-      <Icon name={icon} />
+      <div className={clsx('ml-1 mt-0.5', className)}>
+        <Icon color={isBlockActive(editor, format) ? 'black' : 'grey'} name={icon} />
+      </div>
     </Button>
   )
 }
 
-const MarkButton = ({ format, icon }) => {
+const MarkButton = ({ format, icon, className }: any) => {
   const editor = useSlate()
   return (
     <Button
@@ -212,7 +213,9 @@ const MarkButton = ({ format, icon }) => {
         toggleMark(editor, format)
       }}
     >
-      <Icon name={icon} />
+      <div className={clsx('ml-[0.3rem] mt-0.5', className)}>
+        <Icon color={isMarkActive(editor, format) ? 'black' : 'grey'} name={icon} />
+      </div>
     </Button>
   )
 }
@@ -271,9 +274,9 @@ export const Button = React.forwardRef(
       {...props}
       className={clsx(
         className,
-        'cursor-pointer',
-        active && !reversed && 'bg-red-400',
-        !active && reversed && 'bg-red-400'
+        'cursor-pointer h-7 w-7 mr-2 rounded',
+        active && !reversed && 'bg-grey-40',
+        !active && reversed && 'bg-grey-40'
       )}
       ref={ref}
     />
