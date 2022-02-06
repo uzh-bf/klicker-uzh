@@ -8,8 +8,8 @@ import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
 import clsx from 'clsx'
 import slate, { serialize } from 'remark-slate'
-/* import unified from 'unified'
-import markdown from 'remark-parse' */
+import unified from 'unified'
+import markdown from 'remark-parse'
 
 import CustomTooltip from '../../common/CustomTooltip'
 
@@ -41,11 +41,12 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
   console.log(valueNew)
 
-  const markdownText = valueNew.map((v) => serialize(v)).join('')
+  const markdownText = valueNew.map((v) => serialize(v)).join('\n')
   console.log(markdownText)
 
-  // https://github.com/hanford/remark-slate
-  // const processor = unified().use(markdown).use(slate)
+  //
+  const processed = unified().use(markdown).use(slate).processSync(markdownText)
+  console.log(processed.result)
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
