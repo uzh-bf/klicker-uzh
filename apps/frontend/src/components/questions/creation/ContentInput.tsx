@@ -1,4 +1,3 @@
-// import dynamic from 'next/dynamic'
 import React, { PropsWithChildren, Ref, useCallback, useMemo, useState } from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -120,8 +119,11 @@ const convertToMd = (slateObj) => {
       return serialize({
         type: 'bulleted-list',
         children: line.children.map((item: any) => {
-          item.children[0].text = `- ${item.children[0].text}`
-          item.children[item.children.length - 1].text = `${item.children[item.children.length - 1].text}\n`
+          item.children.splice(0, 1, { type: 'list-item', text: `- ${item.children[0].text}` })
+          item.children.splice(item.children.length - 1, 1, {
+            type: 'list-item',
+            text: `${item.children[item.children.length - 1].text}\n`,
+          })
           return item
         }),
       })
@@ -129,9 +131,12 @@ const convertToMd = (slateObj) => {
     if (line.type === 'numbered-list') {
       return serialize({
         type: 'numbered-list',
-        children: line.children.map((item: any) => {
-          item.children[0].text = `1. ${item.children[0].text}`
-          item.children[item.children.length - 1].text = `${item.children[item.children.length - 1].text}\n`
+        children: line.children.map((item: any, index: number) => {
+          item.children.splice(0, 1, { type: 'list-item', text: `${index + 1}. ${item.children[0].text}` })
+          item.children.splice(item.children.length - 1, 1, {
+            type: 'list-item',
+            text: `${item.children[item.children.length - 1].text}\n`,
+          })
           return item
         }),
       })
