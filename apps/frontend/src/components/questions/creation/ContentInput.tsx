@@ -41,12 +41,16 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
   console.log(valueNew)
 
-  const markdownText = valueNew.map((v) => serialize(v)).join('\n')
+  const markdownText = convertToMd(valueNew)
   console.log(markdownText)
 
-  //
-  const processed = unified().use(markdown).use(slate).processSync(markdownText)
+  const processed = convertToSlate(markdownText)
   console.log(processed.result)
+
+  /* const markdownTest =
+    '# Heading one\n## Heading two\n### Heading three\n#### Heading four\n##### Heading five\n###### Heading six\nNormal paragraph\n_italic text_\n**bold text**\n~~strike through text~~\n[hyperlink](https://jackhanford.com)\n> A block quote.\n- bullet list item 1\n- bullet list item 2\n1. ordered list item 1\n1. ordered list item 2'
+  const processed2 = unified().use(markdown).use(slate).processSync(markdownTest)
+  console.log(processed2.result) */
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
@@ -74,7 +78,7 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
               <MarkButton className="" format="bold" icon="bold" />
               <MarkButton className="" format="italic" icon="italic" />
-              <MarkButton className="!mt-[0.2rem]" format="underline" icon="underline" />
+              {/* <MarkButton className="!mt-[0.2rem]" format="underline" icon="underline" /> */}
               <MarkButton className="" format="code" icon="code" />
               <BlockButton className="" format="block-quote" icon="quote right" />
               <BlockButton className="" format="numbered-list" icon="list ol" />
@@ -104,6 +108,41 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
       </Form.Field>
     </div>
   )
+}
+
+const convertToMd = (slateObj) => {
+  const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
+  const result = slateObjCopy.map((line: any) => {
+    if (line.type === 'block-quote') {
+      return `>${serialize(line)}\n`
+    }
+    if (line.type === 'bulleted-list') {
+      return serialize({
+        type: 'bulleted-list',
+        children: line.children.map((item: any) => {
+          item.children[0].text = `- ${item.children[0].text}`
+          item.children[item.children.length - 1].text = `${item.children[item.children.length - 1].text}\n`
+          return item
+        }),
+      })
+    }
+    if (line.type === 'numbered-list') {
+      return serialize({
+        type: 'numbered-list',
+        children: line.children.map((item: any) => {
+          item.children[0].text = `1. ${item.children[0].text}`
+          item.children[item.children.length - 1].text = `${item.children[item.children.length - 1].text}\n`
+          return item
+        }),
+      })
+    }
+    return serialize(line)
+  })
+  return result.join('\n')
+}
+
+const convertToSlate = (mdObj) => {
+  return unified().use(markdown).use(slate).processSync(mdObj)
 }
 
 const toggleBlock = (editor, format) => {
