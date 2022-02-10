@@ -51,10 +51,14 @@ function ContentInput({
     if (versions) {
       if (activeVersion < versions.length) {
         // @ts-ignore
-        editor.children = convertToSlate(versions[activeVersion].content).result
+        editor.children = convertToSlate(versions[activeVersion].content)
+        console.log(versions[activeVersion].content)
+        console.log(convertToSlate(versions[activeVersion].content))
       } else {
         // @ts-ignore
-        editor.children = convertToSlate(versions[versions.length - 1].content).result
+        editor.children = convertToSlate(versions[versions.length - 1].content)
+        console.log(versions[versions.length - 1].content)
+        console.log(convertToSlate(versions[versions.length - 1].content))
       }
     }
   }, [activeVersion])
@@ -82,7 +86,8 @@ function ContentInput({
 
         <div className="mt-2 border border-solid rounded">
           {/* eslint-disable-next-line react/no-children-prop */}
-          <Slate children={value} editor={editor} value={value} onChange={onChange}>
+          <Slate editor={editor} value={value} onChange={onChange}>
+            {console.log(editor)}
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
               <div className="flex flex-row flex-1">
                 <MarkButton className="" format="bold" icon="bold" />
@@ -193,7 +198,14 @@ const isMarkActive = (editor, format) => {
 const Element = ({ attributes, children, element }: any) => {
   switch (element.type) {
     case 'block-quote':
-      return <blockquote {...attributes}>{children}</blockquote>
+      return (
+        <>
+          <blockquote className="text-gray-500" {...attributes}>
+            <strong className="mr-2">|</strong>
+            {children}
+          </blockquote>
+        </>
+      )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
     case 'heading-one':
@@ -201,6 +213,7 @@ const Element = ({ attributes, children, element }: any) => {
     case 'heading-two':
       return <h2 {...attributes}>{children}</h2>
     case 'list-item':
+      console.log('here in li component!!')
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
       return <ol {...attributes}>{children}</ol>
@@ -216,7 +229,7 @@ const Leaf = ({ attributes, children, leaf }: any) => {
   }
 
   if (leaf.code) {
-    formattedChildren = <code>{formattedChildren}</code>
+    formattedChildren = <code className="bg-grey-40 opacity-80">{formattedChildren}</code>
   }
 
   if (leaf.italic) {

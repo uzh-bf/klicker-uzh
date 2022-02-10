@@ -3,6 +3,8 @@ import unified from 'unified'
 import markdown from 'remark-parse'
 
 export const convertToMd = (slateObj) => {
+  // console.log('slateObj before conversion to MD')
+  // console.log(slateObj)
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
   const result = slateObjCopy.map((line: any) => {
     if (line.type === 'block-quote') {
@@ -36,9 +38,50 @@ export const convertToMd = (slateObj) => {
     }
     return serialize(line)
   })
+  // console.log('output md')
+  // console.log(result.join('\n'))
   return result.join('\n')
 }
 
 export const convertToSlate = (mdObj) => {
-  return unified().use(markdown).use(slate).processSync(mdObj)
+  /* console.log('md before conversion to slate')
+  console.log(mdObj)
+  console.log('slate output object')
+   */
+
+  return unified()
+    .use(markdown)
+    .use(slate)
+    .processSync(mdObj)
+    .result.map((line: any) => {
+      if (line.type === 'ol_list') {
+        // return { ...line, type: 'numbered-list' }
+        return {
+          ...line,
+          type: 'numbered-list',
+          children: line.children.map((listItem: any) => {
+            return {
+              ...listItem,
+              type: 'list-item',
+              children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
+            }
+          }),
+        }
+      }
+      if (line.type === 'ul_list') {
+        // return { ...line, type: 'bulleted-list' }
+        return {
+          ...line,
+          type: 'bulleted-list',
+          children: line.children.map((listItem: any) => {
+            return {
+              ...listItem,
+              type: 'list-item',
+              children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
+            }
+          }),
+        }
+      }
+      return line
+    })
 }

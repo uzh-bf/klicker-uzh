@@ -147,8 +147,8 @@ function QuestionEditForm({
 
   const initialValues = {
     content: versions[initializeVersion].content
-      ? convertToSlate(versions[initializeVersion].content).result
-      : convertToSlate(versions[initializeVersion].description).result,
+      ? convertToSlate(versions[initializeVersion].content)
+      : convertToSlate(versions[initializeVersion].description),
     files: versions[initializeVersion].files || [],
     options: versions[initializeVersion].options[type] || {},
     tags: questionTags.map((tag): string => tag.name),
