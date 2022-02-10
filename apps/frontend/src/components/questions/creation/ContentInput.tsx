@@ -52,13 +52,13 @@ function ContentInput({
       if (activeVersion < versions.length) {
         // @ts-ignore
         editor.children = convertToSlate(versions[activeVersion].content)
-        console.log(versions[activeVersion].content)
-        console.log(convertToSlate(versions[activeVersion].content))
+        // console.log(versions[activeVersion].content)
+        // console.log(convertToSlate(versions[activeVersion].content))
       } else {
         // @ts-ignore
         editor.children = convertToSlate(versions[versions.length - 1].content)
-        console.log(versions[versions.length - 1].content)
-        console.log(convertToSlate(versions[versions.length - 1].content))
+        // console.log(versions[versions.length - 1].content)
+        // console.log(convertToSlate(versions[versions.length - 1].content))
       }
     }
   }, [activeVersion])
@@ -87,7 +87,6 @@ function ContentInput({
         <div className="mt-2 border border-solid rounded">
           {/* eslint-disable-next-line react/no-children-prop */}
           <Slate editor={editor} value={value} onChange={onChange}>
-            {console.log(editor)}
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
               <div className="flex flex-row flex-1">
                 <MarkButton className="" format="bold" icon="bold" />
@@ -213,7 +212,6 @@ const Element = ({ attributes, children, element }: any) => {
     case 'heading-two':
       return <h2 {...attributes}>{children}</h2>
     case 'list-item':
-      console.log('here in li component!!')
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
       return <ol {...attributes}>{children}</ol>

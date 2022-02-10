@@ -1,5 +1,4 @@
 const _isNumber = require('lodash/isNumber')
-const { ContentState, convertToRaw } = require('draft-js')
 const { UserInputError } = require('apollo-server-express')
 
 const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
@@ -244,21 +243,12 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     promises.push(allTagsUpdate, oldTagsUpdate)
   }
 
+  // TODO: all those fields have to be automatically added during the migration to slate editor state, remove this code snippet thereafter
   // migrate old question versions without content field
   for (let i = 0; i < question.versions.length; i += 1) {
     // if the content field is not set on any old version
     if (!question.versions[i].content) {
-      // get the description of the old version
-      const { description } = question.versions[i]
-
-      // instantiate a content state
-      const contentState = ContentState.createFromText(description)
-
-      // convert the content state to raw json
-      const rawContent = JSON.stringify(convertToRaw(contentState))
-
-      // set the content of the version to the raw state
-      question.versions[i].content = rawContent
+      question.versions[i].content = question.versions[i].description
       question.markModified(`versions.${i}`)
     }
   }
