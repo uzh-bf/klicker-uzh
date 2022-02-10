@@ -82,13 +82,36 @@ function ContentInput({
           {/* eslint-disable-next-line react/no-children-prop */}
           <Slate children={value} editor={editor} value={value} onChange={onChange}>
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
-              <MarkButton className="" format="bold" icon="bold" />
-              <MarkButton className="" format="italic" icon="italic" />
-              {/* <MarkButton className="!mt-[0.2rem]" format="underline" icon="underline" /> */}
-              <MarkButton className="" format="code" icon="code" />
-              <BlockButton className="" format="block-quote" icon="quote right" />
-              <BlockButton className="" format="numbered-list" icon="list ol" />
-              <BlockButton className="" format="bulleted-list" icon="list ul" />
+              <div className="flex flex-row flex-1">
+                <MarkButton className="" format="bold" icon="bold" />
+                <MarkButton className="" format="italic" icon="italic" />
+                <MarkButton className="" format="code" icon="code" />
+                <BlockButton className="" format="block-quote" icon="quote right" />
+                <BlockButton className="" format="numbered-list" icon="list ol" />
+                <BlockButton className="" format="bulleted-list" icon="list ul" />
+                <Button
+                  active={false}
+                  editor={editor}
+                  format="paragraph"
+                  onMouseDown={() => {
+                    Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$FORMULA$$' }] })
+                  }}
+                >
+                  <div className="ml-1 mt-0.5">
+                    <Icon color={'grey'} name={'superscript'} />
+                  </div>
+                </Button>
+              </div>
+              <Button active={false} editor={editor} format="paragraph" onMouseDown={() => editor.undo()}>
+                <div className="ml-1 mt-0.5">
+                  <Icon color={'grey'} name={'undo'} />
+                </div>
+              </Button>
+              <Button active={false} editor={editor} format="paragraph" onMouseDown={() => editor.redo()}>
+                <div className="ml-1 mt-0.5">
+                  <Icon color={'grey'} name={'redo'} />
+                </div>
+              </Button>
             </div>
             <div className="p-3">
               <Editable
