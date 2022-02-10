@@ -3,8 +3,8 @@ import unified from 'unified'
 import markdown from 'remark-parse'
 
 export const convertToMd = (slateObj) => {
-  // console.log('slateObj before conversion to MD')
-  // console.log(slateObj)
+  console.log('slateObj before conversion to MD')
+  console.log(slateObj)
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
   const result = slateObjCopy.map((line: any) => {
     if (line.type === 'block-quote') {
@@ -14,10 +14,10 @@ export const convertToMd = (slateObj) => {
       return serialize({
         type: 'bulleted-list',
         children: line.children.map((item: any) => {
-          item.children.splice(0, 1, { type: 'list-item', text: `- ${item.children[0].text}` })
+          item.children.splice(0, 1, { type: 'list-item', text: `- ${formatText(item.children[0])}` })
           item.children.splice(item.children.length - 1, 1, {
             type: 'list-item',
-            text: `${item.children[item.children.length - 1].text}\n`,
+            text: `${formatText(item.children[item.children.length - 1])}\n`,
           })
           return item
         }),
@@ -27,19 +27,23 @@ export const convertToMd = (slateObj) => {
       return serialize({
         type: 'numbered-list',
         children: line.children.map((item: any, index: number) => {
-          item.children.splice(0, 1, { type: 'list-item', text: `${index + 1}. ${item.children[0].text}` })
+          item.children.splice(0, 1, {
+            type: 'list-item',
+            text: `${index + 1}. ${formatText(item.children[0])}`,
+          })
           item.children.splice(item.children.length - 1, 1, {
             type: 'list-item',
-            text: `${item.children[item.children.length - 1].text}\n`,
+            text: `${formatText(item.children[item.children.length - 1])}\n`,
           })
+
           return item
         }),
       })
     }
     return serialize(line)
   })
-  // console.log('output md')
-  // console.log(result.join('\n'))
+  console.log('output md')
+  console.log(result.join('\n'))
   return result.join('\n')
 }
 
@@ -84,4 +88,17 @@ export const convertToSlate = (mdObj) => {
       }
       return line
     })
+}
+
+const formatText = (input) => {
+  if (input.text === '') {
+    return ''
+  }
+  return serialize({
+    type: 'paragraph',
+    text: input.text,
+    bold: input.bold || false,
+    italic: input.italic || false,
+    code: input.code || false,
+  }).replace(/(\r\n|\n|\r)/gm, '')
 }
