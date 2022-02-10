@@ -1,24 +1,28 @@
-import React, { PropsWithChildren, Ref, useCallback, useMemo, useState } from 'react'
+import React, { PropsWithChildren, Ref, useCallback, useEffect, useMemo } from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { Editor, Transforms, createEditor, Descendant, Element as SlateElement } from 'slate'
+import { Editor, Transforms, createEditor, Element as SlateElement } from 'slate'
 import { Editable, withReact, useSlate, Slate } from 'slate-react'
 import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
 import clsx from 'clsx'
 
+import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
+  activeVersion: number
   disabled?: boolean
   error?: any
   onChange: any
   touched: any
   value: any
+  versions: any
 }
 
 const defaultProps = {
   disabled: false,
+  error: '',
 }
 
 const HOTKEYS = {
@@ -29,13 +33,29 @@ const HOTKEYS = {
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 type OrNull<T> = T | null
 
-function ContentInput({ value, onChange, error, touched, disabled }: Props): React.ReactElement {
-  console.log('incoming values at editor component: ')
-  console.log(value)
-
+function ContentInput({
+  value,
+  versions,
+  onChange,
+  error,
+  touched,
+  disabled,
+  activeVersion,
+}: Props): React.ReactElement {
+  // TODO: improve how the editor component is forced to rerender on value changes
   const renderElement = useCallback((props) => <Element {...props} />, [])
   const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
+
+  useEffect(() => {
+    if (activeVersion < versions.length) {
+      // @ts-ignore
+      editor.children = convertToSlate(versions[activeVersion].content).result
+    } else {
+      // @ts-ignore
+      editor.children = convertToSlate(versions[versions.length - 1].content).result
+    }
+  }, [activeVersion])
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
@@ -59,7 +79,8 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
         </label>
 
         <div className="mt-2 border border-solid rounded">
-          <Slate editor={editor} value={value} onChange={onChange}>
+          {/* eslint-disable-next-line react/no-children-prop */}
+          <Slate children={value} editor={editor} value={value} onChange={onChange}>
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
               <MarkButton className="" format="bold" icon="bold" />
               <MarkButton className="" format="italic" icon="italic" />
@@ -215,41 +236,6 @@ const MarkButton = ({ format, icon, className }: any) => {
     </Button>
   )
 }
-
-const initialValue: Descendant[] = [
-  {
-    type: 'paragraph',
-    children: [
-      { text: 'This is editable ' },
-      { text: 'rich', bold: true },
-      { text: ' text, ' },
-      { text: 'much', italic: true },
-      { text: ' better than a ' },
-      { text: '<textarea>', code: true },
-      { text: '!' },
-    ],
-  },
-  {
-    type: 'paragraph',
-    children: [
-      {
-        text: "Since it's rich text, you can do things like turn a selection of text ",
-      },
-      { text: 'bold', bold: true },
-      {
-        text: ', or add a semantically rendered block quote in the middle of the page, like this:',
-      },
-    ],
-  },
-  {
-    type: 'block-quote',
-    children: [{ text: 'A wise quote.' }],
-  },
-  {
-    type: 'paragraph',
-    children: [{ text: 'Try it out for yourself!' }],
-  },
-]
 
 export const Button = React.forwardRef(
   (

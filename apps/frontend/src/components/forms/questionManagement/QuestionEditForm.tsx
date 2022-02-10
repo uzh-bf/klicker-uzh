@@ -145,8 +145,6 @@ function QuestionEditForm({
   // calculate the version with which to initialize the version fields (the current or last one)
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
-  console.log(versions)
-
   const initialValues = {
     content: versions[initializeVersion].content
       ? convertToSlate(versions[initializeVersion].content).result
@@ -158,8 +156,6 @@ function QuestionEditForm({
     type,
     versions,
   }
-  console.log('initial values')
-  console.log(initialValues)
 
   const versionOptions = versions.map(({ id }, index): any => ({
     text: `v${index + 1}`,
@@ -187,9 +183,6 @@ function QuestionEditForm({
             setFieldTouched,
             isSubmitting,
           }: any): React.ReactElement => {
-            console.log('values inside question edit form')
-            console.log(values)
-            console.log(values.content)
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
 
@@ -323,10 +316,12 @@ function QuestionEditForm({
 
                 <div className="questionInput questionContent">
                   <ContentInput
+                    activeVersion={activeVersion}
                     disabled={!isNewVersion}
                     error={errors.content}
                     touched={touched.content}
                     value={values.content}
+                    versions={values.versions}
                     onChange={(newContent): void => {
                       setFieldTouched('content', true, false)
                       setFieldValue('content', newContent)

@@ -65,11 +65,6 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
         }))
       )
 
-      // console.log('Content just prior to submission')
-      // console.log(content)
-      // console.log('Content in Md as it is saved in the Db:')
-      // console.log(convertToMd(content))
-      // console.log(isNewVersion)
       // modify the question
       await editQuestion({
         // reload the question details and tags after update
