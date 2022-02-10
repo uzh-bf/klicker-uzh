@@ -3,8 +3,8 @@ import unified from 'unified'
 import markdown from 'remark-parse'
 
 export const convertToMd = (slateObj) => {
-  console.log('slateObj before conversion to MD')
-  console.log(slateObj)
+  /* console.log('slateObj before conversion to MD')
+  console.log(slateObj) */
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
   const result = slateObjCopy.map((line: any) => {
     if (line.type === 'block-quote') {
@@ -40,18 +40,25 @@ export const convertToMd = (slateObj) => {
         }),
       })
     }
+    if (line.type === 'block_quote') {
+      return line.children
+        .map((quoteline: any) => {
+          return `> ${quoteline.children.map((child: any) => serialize(child)).join('')}\n`
+        })
+        .join('\n')
+    }
     return serialize(line)
   })
-  console.log('output md')
-  console.log(result.join('\n'))
+  /* console.log('output md')
+  console.log(result.join('\n')) */
+
   return result.join('\n')
 }
 
 export const convertToSlate = (mdObj) => {
   /* console.log('md before conversion to slate')
   console.log(mdObj)
-  console.log('slate output object')
-   */
+  console.log('slate output object') */
 
   return unified()
     .use(markdown)
@@ -59,7 +66,6 @@ export const convertToSlate = (mdObj) => {
     .processSync(mdObj)
     .result.map((line: any) => {
       if (line.type === 'ol_list') {
-        // return { ...line, type: 'numbered-list' }
         return {
           ...line,
           type: 'numbered-list',
@@ -73,7 +79,6 @@ export const convertToSlate = (mdObj) => {
         }
       }
       if (line.type === 'ul_list') {
-        // return { ...line, type: 'bulleted-list' }
         return {
           ...line,
           type: 'bulleted-list',
@@ -83,6 +88,14 @@ export const convertToSlate = (mdObj) => {
               type: 'list-item',
               children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
             }
+          }),
+        }
+      }
+      if (line.type === 'block_quote') {
+        return {
+          ...line,
+          children: line.children.map((child: any) => {
+            return { ...child, type: 'block-quote' }
           }),
         }
       }
