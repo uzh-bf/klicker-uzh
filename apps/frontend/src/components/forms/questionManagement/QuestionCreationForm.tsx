@@ -6,7 +6,6 @@ import _some from 'lodash/some'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
-import { EditorState } from 'draft-js'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 
 import FileDropzone from './FileDropzone'
@@ -76,7 +75,7 @@ function validate({ content, options, tags, title, type }: any): ValidationError
     errors.title = messages.titleEmpty
   }
 
-  if (!content.getCurrentContent().hasText()) {
+  if (content.length === 1 && content[0].children[0].text === '') {
     errors.content = messages.contentEmpty
   }
 
@@ -169,12 +168,19 @@ function QuestionCreationForm({
     },
   }
 
+  const initialValue = [
+    {
+      type: 'paragraph',
+      children: [{ text: '' }],
+    },
+  ]
+
   return (
     <div className="questionCreationForm">
       <Formik
         initialValues={
           initialValues || {
-            content: EditorState.createEmpty(),
+            content: initialValue,
             files: [],
             options: {
               choices: [],
@@ -321,11 +327,7 @@ function QuestionCreationForm({
                   <h2>
                     <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
                   </h2>
-                  <Preview
-                    description={values.content.getCurrentContent()}
-                    options={values.options}
-                    questionType={values.type}
-                  />
+                  <Preview description={values.content} options={values.options} questionType={values.type} />
                 </div>
               </Form>
             </FocusLock>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { convertToRaw } from 'draft-js'
 import { Modal } from 'semantic-ui-react'
 
+import { convertToMd } from '../../lib/utils/slateMdConversion'
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
 import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
@@ -12,7 +12,7 @@ import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresigne
 
 interface Props {
   handleModalOpenChange: (newValue: boolean) => void
-  children: ({ setIsModalOpen: any }) => React.ReactChild
+  children: ({ setIsModalOpen }: any) => React.ReactChild
 }
 
 function QuestionCreationModal({ handleModalOpenChange, children }: Props): React.ReactElement {
@@ -49,7 +49,7 @@ function QuestionCreationModal({ handleModalOpenChange, children }: Props): Reac
               // TODO: replace with optimistic updates
               refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
               variables: {
-                content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+                content: convertToMd(content),
                 files: fileEntities.map(({ file, fileName }): any => ({
                   name: fileName,
                   originalName: file.name,

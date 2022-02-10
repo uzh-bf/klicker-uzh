@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
-import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -10,6 +9,7 @@ import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 
+import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
 import { generateTypesLabel } from '../../../lib/utils/lang'
@@ -60,7 +60,7 @@ const validate = ({ title, content, options, tags, type }): any => {
     errors.title = messages.titleEmpty
   }
 
-  if (!content.getCurrentContent().hasText()) {
+  if (content.length === 1 && content[0].children[0].text === '') {
     errors.content = messages.contentEmpty
   }
 
@@ -114,12 +114,12 @@ const typeComponents = {
   SC: SCCreationOptions,
 }
 
-function areValuesTheSame(initialValues, values) {
+function areValuesTheSame(initialValues: any, values: any) {
   const initialValuesWithoutContent = omit(['content'], initialValues)
   const valuesWithoutContent = omit(['content'], values)
 
-  const initialContent = initialValues.content.getCurrentContent()
-  const content = values.content.getCurrentContent()
+  const initialContent = initialValues.content
+  const content = values.content
 
   return equals(initialValuesWithoutContent, valuesWithoutContent) && is(initialContent, content)
 }
@@ -145,10 +145,12 @@ function QuestionEditForm({
   // calculate the version with which to initialize the version fields (the current or last one)
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
+  console.log(versions)
+
   const initialValues = {
     content: versions[initializeVersion].content
-      ? EditorState.createWithContent(convertFromRaw(JSON.parse(versions[initializeVersion].content)))
-      : EditorState.createWithContent(ContentState.createFromText(versions[initializeVersion].description)),
+      ? convertToSlate(versions[initializeVersion].content).result
+      : convertToSlate(versions[initializeVersion].description).result,
     files: versions[initializeVersion].files || [],
     options: versions[initializeVersion].options[type] || {},
     tags: questionTags.map((tag): string => tag.name),
@@ -156,6 +158,8 @@ function QuestionEditForm({
     type,
     versions,
   }
+  console.log('initial values')
+  console.log(initialValues)
 
   const versionOptions = versions.map(({ id }, index): any => ({
     text: `v${index + 1}`,
@@ -183,6 +187,9 @@ function QuestionEditForm({
             setFieldTouched,
             isSubmitting,
           }: any): React.ReactElement => {
+            console.log('values inside question edit form')
+            console.log(values)
+            console.log(values.content)
             const OptionsInput = typeComponents[type]
             const { message, success } = editSuccess
 

@@ -4,7 +4,6 @@ const { UserInputError } = require('apollo-server-express')
 
 const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
-const { convertToPlainText } = require('../lib/draft')
 
 /**
  * Process tags when editing or creating a question
@@ -139,7 +138,7 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
     versions: [
       {
         content,
-        description: convertToPlainText(content),
+        description: content,
         options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
           [type]: options,
         },
@@ -285,7 +284,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     // push a new version into the question model
     question.versions.push({
       content: content || lastVersion.content,
-      description: content ? convertToPlainText(content) : lastVersion.description,
+      description: content || lastVersion.description,
       options: options
         ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
             // HACK: manually ensure randomized is default set to false

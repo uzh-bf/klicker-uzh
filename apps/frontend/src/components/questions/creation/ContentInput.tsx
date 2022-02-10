@@ -6,9 +6,6 @@ import { Editable, withReact, useSlate, Slate } from 'slate-react'
 import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
 import clsx from 'clsx'
-import slate, { serialize } from 'remark-slate'
-import unified from 'unified'
-import markdown from 'remark-parse'
 
 import CustomTooltip from '../../common/CustomTooltip'
 
@@ -27,29 +24,18 @@ const defaultProps = {
 const HOTKEYS = {
   'mod+b': 'bold',
   'mod+i': 'italic',
-  'mod+u': 'underline',
   'mod+`': 'code',
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 type OrNull<T> = T | null
 
 function ContentInput({ value, onChange, error, touched, disabled }: Props): React.ReactElement {
-  const [valueNew, setValue] = useState<Descendant[]>(initialValue)
+  console.log('incoming values at editor component: ')
+  console.log(value)
+
   const renderElement = useCallback((props) => <Element {...props} />, [])
   const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
-  console.log(valueNew)
-
-  const markdownText = convertToMd(valueNew)
-  console.log(markdownText)
-
-  const processed = convertToSlate(markdownText)
-  console.log(processed.result)
-
-  /* const markdownTest =
-    '# Heading one\n## Heading two\n### Heading three\n#### Heading four\n##### Heading five\n###### Heading six\nNormal paragraph\n_italic text_\n**bold text**\n~~strike through text~~\n[hyperlink](https://jackhanford.com)\n> A block quote.\n- bullet list item 1\n- bullet list item 2\n1. ordered list item 1\n1. ordered list item 2'
-  const processed2 = unified().use(markdown).use(slate).processSync(markdownTest)
-  console.log(processed2.result) */
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
@@ -73,7 +59,7 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
         </label>
 
         <div className="mt-2 border border-solid rounded">
-          <Slate editor={editor} value={valueNew} onChange={(newvalue) => setValue(newvalue)}>
+          <Slate editor={editor} value={value} onChange={onChange}>
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
               <MarkButton className="" format="bold" icon="bold" />
               <MarkButton className="" format="italic" icon="italic" />
@@ -87,7 +73,7 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
               <Editable
                 autoFocus
                 spellCheck
-                placeholder="Enter some rich text…"
+                placeholder="Enter your question here…"
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 onKeyDown={(event) => {
@@ -107,47 +93,6 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
       </Form.Field>
     </div>
   )
-}
-
-const convertToMd = (slateObj) => {
-  const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
-  const result = slateObjCopy.map((line: any) => {
-    if (line.type === 'block-quote') {
-      return `>${serialize(line)}\n`
-    }
-    if (line.type === 'bulleted-list') {
-      return serialize({
-        type: 'bulleted-list',
-        children: line.children.map((item: any) => {
-          item.children.splice(0, 1, { type: 'list-item', text: `- ${item.children[0].text}` })
-          item.children.splice(item.children.length - 1, 1, {
-            type: 'list-item',
-            text: `${item.children[item.children.length - 1].text}\n`,
-          })
-          return item
-        }),
-      })
-    }
-    if (line.type === 'numbered-list') {
-      return serialize({
-        type: 'numbered-list',
-        children: line.children.map((item: any, index: number) => {
-          item.children.splice(0, 1, { type: 'list-item', text: `${index + 1}. ${item.children[0].text}` })
-          item.children.splice(item.children.length - 1, 1, {
-            type: 'list-item',
-            text: `${item.children[item.children.length - 1].text}\n`,
-          })
-          return item
-        }),
-      })
-    }
-    return serialize(line)
-  })
-  return result.join('\n')
-}
-
-const convertToSlate = (mdObj) => {
-  return unified().use(markdown).use(slate).processSync(mdObj)
 }
 
 const toggleBlock = (editor, format) => {
@@ -230,10 +175,6 @@ const Leaf = ({ attributes, children, leaf }: any) => {
 
   if (leaf.italic) {
     formattedChildren = <em>{formattedChildren}</em>
-  }
-
-  if (leaf.underline) {
-    formattedChildren = <u>{formattedChildren}</u>
   }
 
   return <span {...attributes}>{formattedChildren}</span>
