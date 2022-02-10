@@ -48,12 +48,14 @@ function ContentInput({
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   useEffect(() => {
-    if (activeVersion < versions.length) {
-      // @ts-ignore
-      editor.children = convertToSlate(versions[activeVersion].content).result
-    } else {
-      // @ts-ignore
-      editor.children = convertToSlate(versions[versions.length - 1].content).result
+    if (versions) {
+      if (activeVersion < versions.length) {
+        // @ts-ignore
+        editor.children = convertToSlate(versions[activeVersion].content).result
+      } else {
+        // @ts-ignore
+        editor.children = convertToSlate(versions[versions.length - 1].content).result
+      }
     }
   }, [activeVersion])
 
