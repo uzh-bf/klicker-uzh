@@ -6,7 +6,6 @@ import v8n from 'v8n'
 import dayjs from 'dayjs'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { convertFromRaw } from 'draft-js'
 import { push } from '@socialgouv/matomo-next'
 import localForage from 'localforage'
 
@@ -268,9 +267,6 @@ function QuestionArea({
 
         const { content, description, options, type, files = [] } = currentQuestion
 
-        // if the content is set, parse it and convert into a content state
-        const contentState = content ? convertFromRaw(JSON.parse(content)) : null
-
         return (
           <div className="flex flex-col gap-2">
             <div className="">
@@ -286,7 +282,7 @@ function QuestionArea({
             </div>
 
             <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-primary border border-solid rounded">
-              <QuestionDescription content={contentState} description={description} />
+              <QuestionDescription content={content} description={description} />
             </div>
 
             {publicRuntimeConfig.s3root && files.length > 0 && (
