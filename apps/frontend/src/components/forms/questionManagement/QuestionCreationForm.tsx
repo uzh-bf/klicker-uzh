@@ -296,6 +296,7 @@ function QuestionCreationForm({
 
                 <div className="questionInput questionContent">
                   <ContentInput
+                    activeVersion={0}
                     error={errors.content}
                     touched={touched.content}
                     value={values.content}

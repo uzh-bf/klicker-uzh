@@ -17,12 +17,13 @@ interface Props {
   onChange: any
   touched: any
   value: any
-  versions: any
+  versions?: any
 }
 
 const defaultProps = {
   disabled: false,
   error: '',
+  versions: undefined,
 }
 
 const HOTKEYS = {

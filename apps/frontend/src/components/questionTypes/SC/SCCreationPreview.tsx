@@ -3,6 +3,7 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionDescription from '../QuestionDescription'
 import SCAnswerOptions from './SCAnswerOptions'
+import { convertToMd } from '../../../lib/utils/slateMdConversion'
 
 interface Props {
   description?: string
@@ -22,7 +23,7 @@ function SCCreationPreview({ description, options }: Props): React.ReactElement 
   return (
     <div className="preview">
       <div className="description">
-        <QuestionDescription content={description} />
+        <QuestionDescription content={convertToMd(description)} />
       </div>
 
       <div className="options">
