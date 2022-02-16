@@ -62,7 +62,6 @@
     "express": "4.17.1",
     "file-loader": "6.2.0",
     "file-saver": "2.0.5",
-    "fomantic-ui": "2.8.8",
     "fomantic-ui-css": "2.8.8",
     "formik": "2.2.9",
     "full-icu": "1.4.0",
@@ -153,9 +152,7 @@
   },
   "scripts": {
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
-    "build": "npm-run-all build:semantic build:app",
-    "build:app": "npm run extract:i18n && npm run compile:i18n && next build && tsc -p tsconfig.server.json",
-    "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
+    "build": "cross-env NODE_ENV=production npm run extract:i18n && npm run compile:i18n && next build && tsc -p tsconfig.server.json",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev": "cross-env NODE_ICU_DATA=node_modules/full-icu NODE_ENV=development nodemon --ext 'js,ts,tsx,graphql,json' -w .env -w package.json -w src/server.ts -w src/klicker.conf.js -w 'src/graphql/**/*.graphql' --exec \"rimraf .next && ts-node --project tsconfig.server.json -r dotenv/config src/server.ts\"",

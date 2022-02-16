@@ -7,7 +7,12 @@ import rehype2react from 'rehype-react'
 // import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import katex from 'rehype-katex'
 
-function useMarkdown({ content, description }) {
+interface Params {
+  content: any
+  description?: string
+}
+
+function useMarkdown({ content, description }: Params) {
   const parsedContent = useMemo(
     () =>
       content

@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, Ref, useCallback, useEffect, useMemo } from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { Editor, Transforms, createEditor, Element as SlateElement } from 'slate'
+import { Editor, Transforms, createEditor, Element as SlateElement, Descendant } from 'slate'
 import { Editable, withReact, useSlate, Slate } from 'slate-react'
 import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
