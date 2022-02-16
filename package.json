@@ -79,5 +79,6 @@
         "cache": false
       }
     }
-  }
+  },
+  "packageManager": "npm@8.1.2"
 }
