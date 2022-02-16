@@ -647,7 +647,7 @@ function Description({ content, formatted }) {
           rel="stylesheet"
         />
       </Head>
-      <span className="description">{formatted ? parsedContent : content}</span>
+      <div className="description">{formatted ? parsedContent : content}</div>
     </>
   )
 }
