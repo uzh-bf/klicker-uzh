@@ -3,7 +3,9 @@ import clsx from 'clsx'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import Head from 'next/head'
 
+import useMarkdown from '../../lib/hooks/useMarkdown'
 import CommonLayout from './CommonLayout'
 import Info from '../evaluation/Info'
 import Possibilities from '../evaluation/Possibilities'
@@ -263,7 +265,7 @@ function EvaluationLayout({
 
         <div className="questionDetails border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
-            {(showQuestionLayout && description) ||
+            {(showQuestionLayout && <Description formatted content={description} />) ||
               (showFeedback && 'Feedback-Channel') ||
               (showConfusionTS && 'Confusion-Barometer')}
           </p>
@@ -553,16 +555,31 @@ function EvaluationLayout({
                     grid-area: questionDetails;
                     align-self: start;
 
+                    max-height: 10rem;
+                    overflow-y: auto;
+
                     h1 {
                       font-size: 1.5rem;
                       line-height: 1.5rem;
                       margin-bottom: 0.5rem;
                     }
 
-                    p {
-                      font-size: 1.2rem;
-                      font-weight: bold;
-                      line-height: 1.5rem;
+                    :global(.description p:not(:last-child)) {
+                      margin-bottom: 0.7rem;
+                      line-height: 1;
+                    }
+
+                    :global(.description code) {
+                      background: lightgrey;
+                      padding: 0.1rem 0.3rem;
+                    }
+
+                    :global(.description ul:not(:last-child), .description ol:not(:last-child)) {
+                      margin-bottom: 0.7rem;
+                    }
+
+                    :global(.description ul:not(:first-child), .description ol:not(:first-child)) {
+                      margin-top: 0.7rem;
                     }
                   }
 
@@ -616,5 +633,23 @@ function EvaluationLayout({
 }
 
 EvaluationLayout.defaultProps = defaultProps
+
+function Description({ content, formatted }) {
+  const parsedContent = useMarkdown({ content })
+  return (
+    <>
+      {/* include katex css sheet in order to ensure correct display and avoid duplicate rendering */}
+      <Head>
+        <link
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
+          integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
+          rel="stylesheet"
+        />
+      </Head>
+      <span className="description">{formatted ? parsedContent : content}</span>
+    </>
+  )
+}
 
 export default EvaluationLayout

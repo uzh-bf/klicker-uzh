@@ -15,6 +15,7 @@ query EvaluateSessionPublic($sessionId: ID!) {
           title
           type
           versions {
+            content
             description
             options {
               FREE_RANGE {
