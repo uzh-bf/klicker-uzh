@@ -268,7 +268,7 @@ function QuestionArea({
         const { content, description, options, type, files = [] } = currentQuestion
 
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col w-full gap-2">
             <div className="">
               <ActionMenu
                 activeIndex={questions.length - remainingQuestions.length}
