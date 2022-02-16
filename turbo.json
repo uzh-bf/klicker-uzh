@@ -1,0 +1,23 @@
+{
+  "baseBranch": "origin/dev",
+  "pipeline": {
+    "lint:staged": {
+      "dependsOn": [
+        "lint:staged"
+      ]
+    },
+    "test:changed": {
+      "dependsOn": [
+        "test:changed"
+      ]
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "dev": {
+      "cache": false
+    }
+  }
+}
