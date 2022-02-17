@@ -41,6 +41,7 @@
     "docusaurus-plugin-matomo": "0.0.6"
   },
   "volta": {
-    "node": "16.13.1"
+    "node": "16.14.0",
+    "npm": "8.5.0"
   }
 }
