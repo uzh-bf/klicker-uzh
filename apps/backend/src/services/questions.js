@@ -137,7 +137,10 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
     versions: [
       {
         content,
-        description: content,
+        description: content
+          .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+          .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+          .join(''),
         options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
           [type]: options,
         },
@@ -274,7 +277,11 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     // push a new version into the question model
     question.versions.push({
       content: content || lastVersion.content,
-      description: content || lastVersion.description,
+      description:
+        content
+          .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+          .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+          .join('') || lastVersion.description,
       options: options
         ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
             // HACK: manually ensure randomized is default set to false
