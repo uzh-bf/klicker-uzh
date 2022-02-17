@@ -2,19 +2,16 @@
   "baseBranch": "origin/dev",
   "pipeline": {
     "lint:staged": {
-      "dependsOn": [
-        "lint:staged"
-      ]
+      "dependsOn": ["lint:staged"],
+      "outputs": []
     },
     "test:changed": {
-      "dependsOn": [
-        "test:changed"
-      ]
+      "dependsOn": ["test:changed"],
+      "outputs": []
     },
     "build": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next"]
     },
     "dev": {
       "cache": false
