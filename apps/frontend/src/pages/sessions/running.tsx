@@ -265,7 +265,6 @@ function Running({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             <AudienceInteraction
               confusionValues={confusionValues}
               feedbacks={feedbacks}
-              hasConfusionFlag={featureFlags?.flags?.confusionBarometer}
               isConfusionBarometerActive={settings.isConfusionBarometerActive}
               isFeedbackChannelActive={settings.isFeedbackChannelActive}
               isFeedbackChannelPublic={settings.isFeedbackChannelPublic}
