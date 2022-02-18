@@ -27,7 +27,6 @@ interface Props {
   isFeedbackChannelPublic: boolean
   isConfusionBarometerActive: boolean
   subscribeToMore: any
-  hasConfusionFlag: boolean
 }
 
 function AudienceInteraction({
@@ -39,7 +38,6 @@ function AudienceInteraction({
   isFeedbackChannelPublic,
   isConfusionBarometerActive,
   subscribeToMore,
-  hasConfusionFlag,
 }: Props) {
   useEffect(() => {
     return subscribeToMore({
@@ -102,7 +100,7 @@ function AudienceInteraction({
                     sessionId,
                     settings: {
                       isFeedbackChannelActive: !isFeedbackChannelActive,
-                      isConfusionBarometerActive: !isConfusionBarometerActive && hasConfusionFlag,
+                      isConfusionBarometerActive: !isConfusionBarometerActive,
                     },
                   },
                 })
@@ -195,7 +193,7 @@ function AudienceInteraction({
             </div>
           </div>
 
-          {hasConfusionFlag && isConfusionBarometerActive && (
+          {isConfusionBarometerActive && (
             <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
               <ConfusionBarometer
                 confusionValues={confusionValues}

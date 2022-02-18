@@ -52,8 +52,7 @@ function Feedbacks({ featureFlags }: PageWithFeatureFlags) {
     return <div className="p-4">Error: {error.message}</div>
   }
 
-  const withConfusionBarometer =
-    featureFlags?.flags?.confusionBarometer && data.runningSession.settings.isConfusionBarometerActive
+  const withConfusionBarometer = data.runningSession.settings.isConfusionBarometerActive
 
   const { pinnedFeedbacks } = data
 
