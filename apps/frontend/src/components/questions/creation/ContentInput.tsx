@@ -189,12 +189,10 @@ function ContentInput({
                         editor={editor}
                         format="paragraph"
                         onMouseDown={() => {
-                          Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
                           Transforms.insertNodes(editor, {
                             type: 'paragraph',
-                            children: [{ text: 'Insert your Formula here' }],
+                            children: [{ text: '$ INSERT FORMULA $' }],
                           })
-                          Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
                         }}
                       >
                         <div className="ml-1 mt-0.5">
