@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0...v1.8.0-beta.0) (2022-02-18)
+
+
+### Features
+
+* **deploy:** add azure deployment automations with pulumi ([#2712](https://github.com/uzh-bf/klicker-uzh/issues/2712)) ([2795e1e](https://github.com/uzh-bf/klicker-uzh/commit/2795e1e7285f37182f90d84707f47716e4ee5a57))
+* **frontend:** new question content editor with formula capabilities ([#2707](https://github.com/uzh-bf/klicker-uzh/issues/2707)) ([bffb112](https://github.com/uzh-bf/klicker-uzh/commit/bffb1128cc2f030fa044c292bf96d40a9359c20d))
+
+
+### Bug Fixes
+
+* **docs:** disable ideal image plugin for now ([9b234c7](https://github.com/uzh-bf/klicker-uzh/commit/9b234c739bf8e2b81a4d63d1221843465e71752c))
+* **frontend:** fixed session evaluation button disabling logic ([7532c79](https://github.com/uzh-bf/klicker-uzh/commit/7532c792c7025c69279ab2cbfb94470553e35e4d))
+* **README:** update link to hero image ([90b8bed](https://github.com/uzh-bf/klicker-uzh/commit/90b8bedfae6d980f29bd20e6fdc1392b7d8418de))
+* **README:** update link to KlickerUZH logo ([42e188e](https://github.com/uzh-bf/klicker-uzh/commit/42e188eba35360f001731a035460b0f1cefac837))
+
+
+### Dependencies
+
+* add turborepo ([6fc9075](https://github.com/uzh-bf/klicker-uzh/commit/6fc907573f254f326f0289aaf0e20025d91c07aa))
+
+
+### Enhancements
+
+* **docs:** add a use case for the confusion barometer ([#2668](https://github.com/uzh-bf/klicker-uzh/issues/2668)) ([9bb47a3](https://github.com/uzh-bf/klicker-uzh/commit/9bb47a32e2f735fd9bd5f4949965ce21d6796282))
+* **docs:** add december 21 project update ([d1cdc17](https://github.com/uzh-bf/klicker-uzh/commit/d1cdc17f8e77ed62c71479b92210017cc54d1b4e))
+* **docs:** add new audience interaction features to docs ([fbdc51b](https://github.com/uzh-bf/klicker-uzh/commit/fbdc51b0c451b068bcfa9819f9ec35e78ee868e3))
+* **docs:** add remote teaching to QA use case ([13e05b4](https://github.com/uzh-bf/klicker-uzh/commit/13e05b4f019cbefa458d0439c35bdaab4324586a))
+* **docs:** add use case listing to roadmap items ([5ffe677](https://github.com/uzh-bf/klicker-uzh/commit/5ffe6778ba8bd869d82996e98a64098d91fecbfd))
+* **docs:** initial use case for q&a ([eaf27bb](https://github.com/uzh-bf/klicker-uzh/commit/eaf27bb541ed0acbf7a09e9521fa34161150fc3c))
+* **docs:** migrate landing page into docusaurus documentation and new monorepo solution ([#2659](https://github.com/uzh-bf/klicker-uzh/issues/2659)) ([9275120](https://github.com/uzh-bf/klicker-uzh/commit/927512043e8b978c5874bb524eac5c5ff321e28b))
+* **docs:** update use cases with feedbacks ([f7f431d](https://github.com/uzh-bf/klicker-uzh/commit/f7f431d7a9338e8f0ff860607df45177fd74faf0))
+* **landing:** redirect /community to MS teams ([a39f7fa](https://github.com/uzh-bf/klicker-uzh/commit/a39f7fa5ded2e6ba70c012f9cdc1d1e2f025d484))
+
+
+### Other
+
+* create new stub dockerfiles ([004c7b8](https://github.com/uzh-bf/klicker-uzh/commit/004c7b87ed16261005882e0124c4d3e9fd54643a))
+* **docs:** hide the implementation part ([4ef1bd4](https://github.com/uzh-bf/klicker-uzh/commit/4ef1bd43d98b319b6b81b94b123eac6c0bda4e75))
+* **docs:** upgrade docusaurus and change port to 5000 ([0692cba](https://github.com/uzh-bf/klicker-uzh/commit/0692cbadcc8fdd46ba0d572c80167d1dc46e054b))
+* **frontend:** migration of session list to tailwind css where possible ([eefe9fe](https://github.com/uzh-bf/klicker-uzh/commit/eefe9fedbc2adabf23970c490cb5c6cb4617ac3a))
+* **frontend:** migration of several small components to tailwind css ([549cd48](https://github.com/uzh-bf/klicker-uzh/commit/549cd48ec6efcaff63b181a8304ebd724a742532))
+* update docker configurations and monorepo setup ([#2710](https://github.com/uzh-bf/klicker-uzh/issues/2710)) ([1918191](https://github.com/uzh-bf/klicker-uzh/commit/1918191f491000bc5f1fc8bd20325ab78d47ab72))
+
 ## [1.7.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-rc.0...v1.7.0) (2021-12-07)
 
 
