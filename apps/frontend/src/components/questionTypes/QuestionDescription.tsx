@@ -1,8 +1,7 @@
-/* eslint-disable react/no-danger */
-
 import React from 'react'
+import Head from 'next/head'
 
-import { toSanitizedHTML } from '../../lib/utils/html'
+import useMarkdown from '../../lib/hooks/useMarkdown'
 
 interface Props {
   content: Record<string, any> | string
@@ -10,11 +9,29 @@ interface Props {
 }
 
 function QuestionDescription({ content, description }: Props): React.ReactElement {
-  // create the markup for "unsafe" display
-  const createMarkup: any = (): any => ({ __html: toSanitizedHTML(content) || description || null })
+  const parsedContent = useMarkdown({ content, description })
 
-  // return the content div with "unsafe" HTML
-  return <div className="prose-sm prose break-words hyphens-auto max-w-none" dangerouslySetInnerHTML={createMarkup()} />
+  return (
+    <>
+      {/* include katex css sheet in order to ensure correct display and avoid duplicate rendering */}
+      <Head>
+        <link
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
+          integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
+          rel="stylesheet"
+        />
+      </Head>
+
+      <div className="prose-sm prose break-words hyphens-auto max-w-none">{parsedContent}</div>
+
+      <style global jsx>{`
+        .katex {
+          font-size: 1.6em !important;
+        }
+      `}</style>
+    </>
+  )
 }
 
 export default QuestionDescription

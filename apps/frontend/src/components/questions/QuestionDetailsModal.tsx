@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { convertToRaw } from 'draft-js'
 import { Modal } from 'semantic-ui-react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
@@ -15,6 +14,7 @@ import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import ModifyQuestionMutation from '../../graphql/mutations/ModifyQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
+import { convertToMd } from '../../lib/utils/slateMdConversion'
 
 interface Props {
   isOpen: boolean
@@ -93,7 +93,7 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
         variables: _omitBy(
           isNewVersion
             ? {
-                content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+                content: convertToMd(content),
                 files: omitDeepArray(allFiles, '__typename'),
                 id,
                 // HACK: omitDeep for typename removal
