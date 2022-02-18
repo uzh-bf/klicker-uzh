@@ -1,10 +1,8 @@
 const _isNumber = require('lodash/isNumber')
-const { ContentState, convertToRaw } = require('draft-js')
 const { UserInputError } = require('apollo-server-express')
 
 const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
-const { convertToPlainText } = require('../lib/draft')
 
 /**
  * Process tags when editing or creating a question
@@ -131,23 +129,47 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
   // create a new question
   // pass the list of tag ids for reference
   // create an initial version "0" containing the description, options and solution
-  const newQuestion = new QuestionModel({
-    tags: allTagIds,
-    title,
-    type,
-    user: userId,
-    versions: [
-      {
-        content,
-        description: convertToPlainText(content),
-        options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
-          [type]: options,
+  let newQuestion
+  try {
+    newQuestion = new QuestionModel({
+      tags: allTagIds,
+      title,
+      type,
+      user: userId,
+      versions: [
+        {
+          content,
+          description: content
+            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            .join(''),
+          options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
+            [type]: options,
+          },
+          files: existingFileIds.concat(createdFileIds),
+          solution,
         },
-        files: existingFileIds.concat(createdFileIds),
-        solution,
-      },
-    ],
-  })
+      ],
+    })
+  } catch (error) {
+    newQuestion = new QuestionModel({
+      tags: allTagIds,
+      title,
+      type,
+      user: userId,
+      versions: [
+        {
+          content,
+          description: 'no description',
+          options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
+            [type]: options,
+          },
+          files: existingFileIds.concat(createdFileIds),
+          solution,
+        },
+      ],
+    })
+  }
 
   const allTagsUpdate = allTags.map((tag) => {
     tag.questions.push(newQuestion.id)
@@ -245,21 +267,12 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     promises.push(allTagsUpdate, oldTagsUpdate)
   }
 
+  // TODO: all those fields have to be automatically added during the migration to slate editor state, remove this code snippet thereafter
   // migrate old question versions without content field
   for (let i = 0; i < question.versions.length; i += 1) {
     // if the content field is not set on any old version
     if (!question.versions[i].content) {
-      // get the description of the old version
-      const { description } = question.versions[i]
-
-      // instantiate a content state
-      const contentState = ContentState.createFromText(description)
-
-      // convert the content state to raw json
-      const rawContent = JSON.stringify(convertToRaw(contentState))
-
-      // set the content of the version to the raw state
-      question.versions[i].content = rawContent
+      question.versions[i].content = question.versions[i].description
       question.markModified(`versions.${i}`)
     }
   }
@@ -283,21 +296,43 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     }
 
     // push a new version into the question model
-    question.versions.push({
-      content: content || lastVersion.content,
-      description: content ? convertToPlainText(content) : lastVersion.description,
-      options: options
-        ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
-            // HACK: manually ensure randomized is default set to false
-            // TODO: mongoose should do this..?
-            [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
-              ? { randomized: false, ...options }
-              : options,
-          }
-        : lastVersion.options,
-      files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
-      solution: solution || lastVersion.solution,
-    })
+    try {
+      question.versions.push({
+        content: content || lastVersion.content,
+        description:
+          content
+            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            .join('') || lastVersion.description,
+        options: options
+          ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
+              // HACK: manually ensure randomized is default set to false
+              // TODO: mongoose should do this..?
+              [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+                ? { randomized: false, ...options }
+                : options,
+            }
+          : lastVersion.options,
+        files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
+        solution: solution || lastVersion.solution,
+      })
+    } catch (error) {
+      question.versions.push({
+        content: content || lastVersion.content,
+        description: 'no description',
+        options: options
+          ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
+              // HACK: manually ensure randomized is default set to false
+              // TODO: mongoose should do this..?
+              [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+                ? { randomized: false, ...options }
+                : options,
+            }
+          : lastVersion.options,
+        files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
+        solution: solution || lastVersion.solution,
+      })
+    }
   }
 
   promises.push(question.save())

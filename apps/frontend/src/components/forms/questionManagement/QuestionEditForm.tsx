@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
-import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -10,6 +9,7 @@ import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 
+import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
 import { generateTypesLabel } from '../../../lib/utils/lang'
@@ -60,7 +60,7 @@ const validate = ({ title, content, options, tags, type }): any => {
     errors.title = messages.titleEmpty
   }
 
-  if (!content.getCurrentContent().hasText()) {
+  if (content.length === 1 && content[0].children[0].text === '') {
     errors.content = messages.contentEmpty
   }
 
@@ -114,12 +114,12 @@ const typeComponents = {
   SC: SCCreationOptions,
 }
 
-function areValuesTheSame(initialValues, values) {
+function areValuesTheSame(initialValues: any, values: any) {
   const initialValuesWithoutContent = omit(['content'], initialValues)
   const valuesWithoutContent = omit(['content'], values)
 
-  const initialContent = initialValues.content.getCurrentContent()
-  const content = values.content.getCurrentContent()
+  const initialContent = initialValues.content
+  const { content } = values
 
   return equals(initialValuesWithoutContent, valuesWithoutContent) && is(initialContent, content)
 }
@@ -145,10 +145,14 @@ function QuestionEditForm({
   // calculate the version with which to initialize the version fields (the current or last one)
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
+  const content = useMemo(() => {
+    return versions[initializeVersion].content
+      ? convertToSlate(versions[initializeVersion].content)
+      : convertToSlate(versions[initializeVersion].description)
+  }, [versions, initializeVersion])
+
   const initialValues = {
-    content: versions[initializeVersion].content
-      ? EditorState.createWithContent(convertFromRaw(JSON.parse(versions[initializeVersion].content)))
-      : EditorState.createWithContent(ContentState.createFromText(versions[initializeVersion].description)),
+    content,
     files: versions[initializeVersion].files || [],
     options: versions[initializeVersion].options[type] || {},
     tags: questionTags.map((tag): string => tag.name),
@@ -316,10 +320,12 @@ function QuestionEditForm({
 
                 <div className="questionInput questionContent">
                   <ContentInput
+                    activeVersion={activeVersion}
                     disabled={!isNewVersion}
                     error={errors.content}
                     touched={touched.content}
                     value={values.content}
+                    versions={values.versions}
                     onChange={(newContent): void => {
                       setFieldTouched('content', true, false)
                       setFieldValue('content', newContent)

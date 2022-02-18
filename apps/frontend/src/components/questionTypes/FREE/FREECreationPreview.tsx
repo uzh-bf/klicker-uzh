@@ -3,6 +3,7 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionDescription from '../QuestionDescription'
 import { QUESTION_TYPES } from '../../../constants'
+import { convertToMd } from '../../../lib/utils/slateMdConversion'
 
 interface Props {
   description?: string
@@ -30,7 +31,7 @@ function FREECreationPreview({ questionType, options: { restrictions }, descript
   return (
     <div className="preview">
       <div className="description">
-        <QuestionDescription content={description} />
+        <QuestionDescription content={convertToMd(description)} />
       </div>
       {((): React.ReactElement => {
         // // if the type is FREE_RANGE and both restrictions are specified

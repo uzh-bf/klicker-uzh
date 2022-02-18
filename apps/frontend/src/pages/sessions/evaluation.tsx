@@ -148,7 +148,7 @@ function Evaluation(): React.ReactElement {
                 activeInstance: activeInstanceIndex,
                 activeVisualization: question ? activeVisualizations[question.type] : null,
                 data: results?.data,
-                description: question?.versions[version].description,
+                description: question?.versions[version].content,
                 instanceSummary,
                 onChangeActiveInstance: setActiveInstanceIndex,
                 onChangeVisualizationType: (questionType, visualizationType): void =>
