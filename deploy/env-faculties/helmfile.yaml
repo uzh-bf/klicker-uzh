@@ -8,7 +8,14 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - backend:
+      - frontend:
+          image:
+            tag: v1.7.0
+
+        backend:
+          image:
+            tag: v1.7.0
+
           redis:
             host: '{{ requiredEnv "REDIS_HOST" }}'
             password: '{{ requiredEnv "REDIS_PASS" }}'
