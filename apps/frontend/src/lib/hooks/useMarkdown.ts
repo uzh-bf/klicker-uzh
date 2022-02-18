@@ -13,9 +13,9 @@ interface Params {
 }
 
 function useMarkdown({ content, description }: Params) {
-  const parsedContent = useMemo(
-    () =>
-      content
+  const parsedContent = useMemo(() => {
+    try {
+      return content
         ? unified()
             .use(markdown)
             .use(math)
@@ -34,9 +34,11 @@ function useMarkdown({ content, description }: Params) {
               createElement: React.createElement,
             })
             .processSync(content).result
-        : description,
-    [content, description]
-  )
+        : description
+    } catch (e) {
+      return content
+    }
+  }, [content, description])
 
   return parsedContent
 }
