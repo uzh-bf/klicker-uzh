@@ -66,45 +66,47 @@ export const convertToSlate = (mdObj) => {
   console.log(mdObj)
   console.log('slate output object') */
 
-  const intermediary: any = unified().use(markdown).use(slate).processSync(mdObj)
-
-  return intermediary.result.map((line: any) => {
-    if (line.type === 'ol_list') {
-      return {
-        ...line,
-        type: 'numbered-list',
-        children: line.children.map((listItem: any) => {
-          return {
-            ...listItem,
-            type: 'list-item',
-            children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
-          }
-        }),
+  return unified()
+    .use(markdown)
+    .use(slate)
+    .processSync(mdObj)
+    .result.map((line: any) => {
+      if (line.type === 'ol_list') {
+        return {
+          ...line,
+          type: 'numbered-list',
+          children: line.children.map((listItem: any) => {
+            return {
+              ...listItem,
+              type: 'list-item',
+              children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
+            }
+          }),
+        }
       }
-    }
-    if (line.type === 'ul_list') {
-      return {
-        ...line,
-        type: 'bulleted-list',
-        children: line.children.map((listItem: any) => {
-          return {
-            ...listItem,
-            type: 'list-item',
-            children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
-          }
-        }),
+      if (line.type === 'ul_list') {
+        return {
+          ...line,
+          type: 'bulleted-list',
+          children: line.children.map((listItem: any) => {
+            return {
+              ...listItem,
+              type: 'list-item',
+              children: listItem.children[0].text !== '' ? listItem.children[0].children : [{ text: '' }],
+            }
+          }),
+        }
       }
-    }
-    if (line.type === 'block_quote') {
-      return {
-        ...line,
-        children: line.children.map((child: any) => {
-          return { ...child, type: 'block-quote' }
-        }),
+      if (line.type === 'block_quote') {
+        return {
+          ...line,
+          children: line.children.map((child: any) => {
+            return { ...child, type: 'block-quote' }
+          }),
+        }
       }
-    }
-    return line
-  })
+      return line
+    })
 }
 
 const formatText = (input) => {

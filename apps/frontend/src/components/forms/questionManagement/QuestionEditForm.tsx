@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
@@ -119,7 +119,7 @@ function areValuesTheSame(initialValues: any, values: any) {
   const valuesWithoutContent = omit(['content'], values)
 
   const initialContent = initialValues.content
-  const content = values.content
+  const { content } = values
 
   return equals(initialValuesWithoutContent, valuesWithoutContent) && is(initialContent, content)
 }
@@ -145,10 +145,14 @@ function QuestionEditForm({
   // calculate the version with which to initialize the version fields (the current or last one)
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
-  const initialValues = {
-    content: versions[initializeVersion].content
+  const content = useMemo(() => {
+    return versions[initializeVersion].content
       ? convertToSlate(versions[initializeVersion].content)
-      : convertToSlate(versions[initializeVersion].description),
+      : convertToSlate(versions[initializeVersion].description)
+  }, [versions, initializeVersion])
+
+  const initialValues = {
+    content,
     files: versions[initializeVersion].files || [],
     options: versions[initializeVersion].options[type] || {},
     tags: questionTags.map((tag): string => tag.name),
