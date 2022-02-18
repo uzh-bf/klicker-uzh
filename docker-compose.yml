@@ -1,11 +1,11 @@
-version: "3.9"
+version: '3.9'
 
 services:
   frontend:
     profiles:
       - full
     build:
-      context: frontend
+      dockerfile: Dockerfile.frontend
     ports:
       - 3000:3000
     environment:
@@ -15,7 +15,7 @@ services:
       APP_BASE_URL: http://localhost:3000
       APP_JOIN_URL: localhost:3000/join
       APP_SUPPORT_EMAIL: klicker.support@uzh.ch
-      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_ENABLED: 'true'
       CACHE_REDIS_HOST: redis_cache
       S3_ROOT_DOMAIN: localhost:9000
       S3_ROOT_URL: http://localhost:9000/images
@@ -26,7 +26,7 @@ services:
     profiles:
       - full
     build:
-      context: backend
+      dockerfile: Dockerfile.backend
     ports:
       - 4000:4000
     environment:
@@ -45,7 +45,7 @@ services:
       MONGO_URL: mongodb:27017/klicker?authSource=admin
       MONGO_USER: klicker
       MONGO_PASSWORD: klicker
-      S3_ENABLED: "true"
+      S3_ENABLED: 'true'
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       S3_ENDPOINT: http://minio:9000
@@ -95,6 +95,8 @@ services:
       - 9001:9001
     volumes:
       - /data
+    networks:
+      - klicker-dev
     command: server /data --console-address ":9001"
 
   create_minio_buckets:
@@ -118,6 +120,8 @@ services:
     ports:
       - 1025:1025
       - 1080:1080
+    networks:
+      - klicker-dev
 
 networks:
   klicker-dev:

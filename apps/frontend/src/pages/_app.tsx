@@ -18,7 +18,7 @@ import GoogleAnalytics from '../lib/GoogleAnalytics'
 import { UserContext } from '../lib/userContext'
 import AccountSummaryQuery from '../graphql/queries/AccountSummaryQuery.graphql'
 
-import '../lib/semantic/dist/semantic.css'
+import 'fomantic-ui-css/semantic.min.css'
 import '../globals.css'
 
 const { publicRuntimeConfig } = getConfig()
