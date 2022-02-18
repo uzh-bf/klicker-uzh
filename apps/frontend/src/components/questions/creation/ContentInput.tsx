@@ -62,7 +62,7 @@ function ContentInput({
         // console.log(convertToSlate(versions[versions.length - 1].content))
       }
     }
-  }, [activeVersion])
+  }, [activeVersion, versions])
 
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>

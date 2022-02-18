@@ -17,6 +17,7 @@ query QuestionPool {
     }
     versions {
       id
+      content
       description
       createdAt
     }
