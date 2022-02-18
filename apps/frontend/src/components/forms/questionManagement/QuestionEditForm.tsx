@@ -15,8 +15,10 @@ import FormikInput from '../components/FormikInput'
 import { generateTypesLabel } from '../../../lib/utils/lang'
 import ContentInput from '../../questions/creation/ContentInput'
 import TagInput from '../../questions/creation/TagInput'
-import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
+import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
+import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
+import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 
 const { publicRuntimeConfig } = getConfig()
@@ -108,10 +110,22 @@ const defaultProps = {
 }
 
 const typeComponents = {
-  FREE: FREECreationOptions,
-  FREE_RANGE: FREECreationOptions,
-  MC: SCCreationOptions,
-  SC: SCCreationOptions,
+  [QUESTION_TYPES.SC]: {
+    input: SCCreationOptions,
+    preview: SCCreationPreview,
+  },
+  [QUESTION_TYPES.MC]: {
+    input: SCCreationOptions,
+    preview: SCCreationPreview,
+  },
+  [QUESTION_TYPES.FREE]: {
+    input: FREECreationOptions,
+    preview: FREECreationPreview,
+  },
+  [QUESTION_TYPES.FREE_RANGE]: {
+    input: FREECreationOptions,
+    preview: FREECreationPreview,
+  },
 }
 
 function areValuesTheSame(initialValues: any, values: any) {
@@ -187,7 +201,9 @@ function QuestionEditForm({
             setFieldTouched,
             isSubmitting,
           }: any): React.ReactElement => {
-            const OptionsInput = typeComponents[type]
+            const OptionsInput = typeComponents[type].input
+            const Preview = typeComponents[type].preview
+
             const { message, success } = editSuccess
 
             // use changed state to track changes in the editing process
@@ -236,40 +252,53 @@ function QuestionEditForm({
                   </Button>
                 </div>
 
-                <div className="questionInput questionType">
-                  <Form.Field>
-                    <label htmlFor="type">
-                      <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
-                    </label>
-                    <div className="type">{generateTypesLabel(intl)[type]}</div>
-                  </Form.Field>
-                </div>
+                <div className="questionMeta">
+                  <div className="questionInput questionType">
+                    <Form.Field>
+                      <label htmlFor="type">
+                        <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
+                      </label>
+                      <div className="type">{generateTypesLabel(intl)[type]}</div>
+                    </Form.Field>
+                  </div>
 
-                <div className="questionInput questionTitle">
-                  <AutoFocusInside>
-                    <FormikInput
-                      /* error={errors.title}
+                  <div className="questionInput questionTitle">
+                    <AutoFocusInside>
+                      <FormikInput
+                        /* error={errors.title}
                 errorMessage={
                   <FormattedMessage
                     defaultMessage="Please provide a valid question title (summary)."
                     id="form.questionTitle.invalid"
                   />
                 } */
-                      handleBlur={handleBlur}
-                      handleChange={handleChange}
-                      label={intl.formatMessage(messages.titleInput)}
-                      name="title"
-                      tooltip={
-                        <FormattedMessage
-                          defaultMessage="Enter a short summarizing title for the question."
-                          id="createQuestion.titleInput.tooltip"
-                        />
-                      }
-                      touched={touched.title}
-                      type="text"
-                      value={values.title}
+                        handleBlur={handleBlur}
+                        handleChange={handleChange}
+                        label={intl.formatMessage(messages.titleInput)}
+                        name="title"
+                        tooltip={
+                          <FormattedMessage
+                            defaultMessage="Enter a short summarizing title for the question."
+                            id="createQuestion.titleInput.tooltip"
+                          />
+                        }
+                        touched={touched.title}
+                        type="text"
+                        value={values.title}
+                      />
+                    </AutoFocusInside>
+                  </div>
+                  <div className="questionInput questionTags">
+                    <TagInput
+                      tags={allTags}
+                      touched={touched.tags}
+                      value={values.tags}
+                      onChange={(newTags): void => {
+                        setFieldTouched('tags', true, false)
+                        setFieldValue('tags', newTags)
+                      }}
                     />
-                  </AutoFocusInside>
+                  </div>
                 </div>
 
                 <div className="questionVersion">
@@ -304,18 +333,6 @@ function QuestionEditForm({
                         .reverse()}
                     </Dropdown.Menu>
                   </Dropdown>
-                </div>
-
-                <div className="questionInput questionTags">
-                  <TagInput
-                    tags={allTags}
-                    touched={touched.tags}
-                    value={values.tags}
-                    onChange={(newTags): void => {
-                      setFieldTouched('tags', true, false)
-                      setFieldValue('tags', newTags)
-                    }}
-                  />
                 </div>
 
                 <div className="questionInput questionContent">
@@ -360,6 +377,13 @@ function QuestionEditForm({
                     }}
                   />
                 </div>
+
+                <div className="questionPreview">
+                  <h2>
+                    <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
+                  </h2>
+                  <Preview description={values.content} options={values.options} questionType={values.type} />
+                </div>
               </Form>
             )
           }}
@@ -377,8 +401,12 @@ function QuestionEditForm({
               margin-bottom: 1rem;
             }
 
-            .questionInput :global(.field > label) {
-              font-size: 1.2rem;
+            .questionInput :global(.field > label),
+            .questionPreview > h2,
+            .questionFiles > h2 {
+              font-size: 1.2rem !important;
+              margin: 0 !important;
+              margin-bottom: 0.5rem !important;
             }
 
             .questionVersion {
@@ -407,23 +435,26 @@ function QuestionEditForm({
             @supports (grid-gap: 1rem) {
               @include desktop-tablet-only {
                 display: grid;
+                align-content: start;
 
                 grid-gap: 1rem;
-                grid-template-columns: 1fr 4fr;
+                grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: auto;
                 grid-template-areas:
-                  'message message'
-                  'type title'
-                  'tags tags'
-                  'version version'
-                  'content content'
-                  'files files'
-                  'options options'
-                  'actions actions';
+                  'message message message'
+                  'meta meta preview'
+                  'meta meta preview'
+                  'meta meta preview'
+                  'version version version'
+                  'content content content'
+                  'files files files'
+                  'options options options'
+                  'actions actions actions';
 
                 margin-top: -1rem;
 
-                .questionInput {
+                .questionInput,
+                .questionPreview {
                   margin-bottom: 0;
                 }
 
@@ -435,20 +466,16 @@ function QuestionEditForm({
                   }
                 }
 
-                .questionTitle {
-                  grid-area: title;
-                }
-
-                .questionType {
-                  grid-area: type;
+                .questionMeta {
+                  grid-area: meta;
+                  align-self: start;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 1rem;
                 }
 
                 .questionVersion {
                   grid-area: version;
-                }
-
-                .questionTags {
-                  grid-area: tags;
                 }
 
                 .questionPreview {

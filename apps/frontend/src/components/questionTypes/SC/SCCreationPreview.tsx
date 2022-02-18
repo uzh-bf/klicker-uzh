@@ -56,6 +56,11 @@ function SCCreationPreview({ description, options }: Props): React.ReactElement 
           margin-bottom: 1rem;
         }
 
+        .options {
+          max-height: 12rem;
+          overflow-y: auto;
+        }
+
         .title {
           font-weight: bold;
         }
