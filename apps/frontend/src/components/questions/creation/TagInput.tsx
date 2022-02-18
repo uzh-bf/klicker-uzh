@@ -40,6 +40,7 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
           <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
 
           <CustomTooltip
+            className={'!ml-2'}
             content={
               <FormattedMessage
                 defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."

@@ -1,6 +1,5 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { Icon } from 'semantic-ui-react'
 import CustomTooltip from '../../common/CustomTooltip'
 
 import ConfusionSection from './ConfusionSection'
