@@ -139,6 +139,25 @@ const defaultProps = {
   tags: [],
 }
 
+const typeComponents = {
+  [QUESTION_TYPES.SC]: {
+    input: SCCreationOptions,
+    preview: SCCreationPreview,
+  },
+  [QUESTION_TYPES.MC]: {
+    input: SCCreationOptions,
+    preview: SCCreationPreview,
+  },
+  [QUESTION_TYPES.FREE]: {
+    input: FREECreationOptions,
+    preview: FREECreationPreview,
+  },
+  [QUESTION_TYPES.FREE_RANGE]: {
+    input: FREECreationOptions,
+    preview: FREECreationPreview,
+  },
+}
+
 function QuestionCreationForm({
   isInitialValid,
   initialValues,
@@ -148,25 +167,6 @@ function QuestionCreationForm({
   onDiscard,
 }: Props): React.ReactElement {
   const intl = useIntl()
-
-  const typeComponents = {
-    [QUESTION_TYPES.SC]: {
-      input: SCCreationOptions,
-      preview: SCCreationPreview,
-    },
-    [QUESTION_TYPES.MC]: {
-      input: SCCreationOptions,
-      preview: SCCreationPreview,
-    },
-    [QUESTION_TYPES.FREE]: {
-      input: FREECreationOptions,
-      preview: FREECreationPreview,
-    },
-    [QUESTION_TYPES.FREE_RANGE]: {
-      input: FREECreationOptions,
-      preview: FREECreationPreview,
-    },
-  }
 
   const initialValue = [
     {
@@ -363,7 +363,7 @@ function QuestionCreationForm({
 
               grid-gap: 1rem;
               grid-template-columns: repeat(3, 1fr);
-              grid-template-rows: auto auto auto auto;
+              grid-template-rows: auto;
               grid-template-areas:
                 'title title preview'
                 'type tags preview'
