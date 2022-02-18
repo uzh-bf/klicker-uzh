@@ -2,10 +2,10 @@ import React from 'react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
-import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { useQuery, useMutation } from '@apollo/client'
 import { Modal } from 'semantic-ui-react'
 
+import { convertToSlate, convertToMd } from '../../lib/utils/slateMdConversion'
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
 import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
@@ -60,7 +60,7 @@ function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props
       refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
       variables: _omitBy(
         {
-          content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+          content: convertToMd(content),
           files: omitDeepArray(allFiles, '__typename'),
           // HACK: omitDeep for typename removal
           // TODO: check https://github.com/apollographql/apollo-client/issues/1564
@@ -170,8 +170,8 @@ function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props
 
           const initialValues = {
             content: duplicateData.content
-              ? EditorState.createWithContent(convertFromRaw(JSON.parse(duplicateData.content)))
-              : EditorState.createWithContent(ContentState.createFromText(duplicateData.description)),
+              ? convertToSlate(duplicateData.content)
+              : convertToSlate(duplicateData.description),
             files: duplicateData.files || [],
             options: duplicateData.options[type] || {},
             tags: tags.map((tag): string => tag.name),

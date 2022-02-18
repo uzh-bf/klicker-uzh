@@ -11,7 +11,9 @@ import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutati
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
 interface Props {
+  // eslint-disable-next-line no-unused-vars
   handleModalOpenChange: (newValue: boolean) => void
+  // eslint-disable-next-line no-unused-vars
   children: ({ setIsModalOpen }: any) => React.ReactChild
 }
 

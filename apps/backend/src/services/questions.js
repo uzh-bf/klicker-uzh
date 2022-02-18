@@ -129,23 +129,47 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
   // create a new question
   // pass the list of tag ids for reference
   // create an initial version "0" containing the description, options and solution
-  const newQuestion = new QuestionModel({
-    tags: allTagIds,
-    title,
-    type,
-    user: userId,
-    versions: [
-      {
-        content,
-        description: content,
-        options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
-          [type]: options,
+  let newQuestion
+  try {
+    newQuestion = new QuestionModel({
+      tags: allTagIds,
+      title,
+      type,
+      user: userId,
+      versions: [
+        {
+          content,
+          description: content
+            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            .join(''),
+          options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
+            [type]: options,
+          },
+          files: existingFileIds.concat(createdFileIds),
+          solution,
         },
-        files: existingFileIds.concat(createdFileIds),
-        solution,
-      },
-    ],
-  })
+      ],
+    })
+  } catch (error) {
+    newQuestion = new QuestionModel({
+      tags: allTagIds,
+      title,
+      type,
+      user: userId,
+      versions: [
+        {
+          content,
+          description: 'no description',
+          options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
+            [type]: options,
+          },
+          files: existingFileIds.concat(createdFileIds),
+          solution,
+        },
+      ],
+    })
+  }
 
   const allTagsUpdate = allTags.map((tag) => {
     tag.questions.push(newQuestion.id)
@@ -272,21 +296,43 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     }
 
     // push a new version into the question model
-    question.versions.push({
-      content: content || lastVersion.content,
-      description: content || lastVersion.description,
-      options: options
-        ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
-            // HACK: manually ensure randomized is default set to false
-            // TODO: mongoose should do this..?
-            [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
-              ? { randomized: false, ...options }
-              : options,
-          }
-        : lastVersion.options,
-      files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
-      solution: solution || lastVersion.solution,
-    })
+    try {
+      question.versions.push({
+        content: content || lastVersion.content,
+        description:
+          content
+            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            .join('') || lastVersion.description,
+        options: options
+          ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
+              // HACK: manually ensure randomized is default set to false
+              // TODO: mongoose should do this..?
+              [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+                ? { randomized: false, ...options }
+                : options,
+            }
+          : lastVersion.options,
+        files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
+        solution: solution || lastVersion.solution,
+      })
+    } catch (error) {
+      question.versions.push({
+        content: content || lastVersion.content,
+        description: 'no description',
+        options: options
+          ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
+              // HACK: manually ensure randomized is default set to false
+              // TODO: mongoose should do this..?
+              [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+                ? { randomized: false, ...options }
+                : options,
+            }
+          : lastVersion.options,
+        files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
+        solution: solution || lastVersion.solution,
+      })
+    }
   }
 
   promises.push(question.save())
