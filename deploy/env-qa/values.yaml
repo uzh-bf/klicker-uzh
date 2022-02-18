@@ -28,7 +28,6 @@ analytics:
 
 featureFlags:
   envKey: flags_pub_preview_313968481835942464
-  persistedUsers: 'roland.schlaefli@bf.uzh.ch,julius.schlapbach@bf.uzh.ch'
 
 services:
   chatwoot:

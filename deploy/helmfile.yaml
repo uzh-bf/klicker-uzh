@@ -10,18 +10,6 @@ releases:
   #     - charts/klicker-uzh/values.stage.yaml
   #     - charts/klicker-uzh/secrets.stage.yaml
 
-  - name: klicker-qa
-    namespace: klicker-qa
-    createNamespace: true
-    chart: ./charts/klicker-uzh
-    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
-    kubeContext: klicker-k8s26bebe63-admin
-    values:
-      - charts/klicker-uzh/values.yaml
-      - charts/klicker-uzh/values.qa.yaml
-      - charts/klicker-uzh/secrets.qa.yaml
-
   # - name: klicker-prod
   #   namespace: klicker-prod
   #   createNamespace: true
