@@ -16,6 +16,7 @@ redis:
     priorityClassName: klicker-qa-klicker-uzh-staging-workload
   replica:
     priorityClassName: klicker-qa-klicker-uzh-staging-workload
+    replicaCount: 0
 
 analytics:
   sentry:
