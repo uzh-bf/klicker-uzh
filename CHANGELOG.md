@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.0...v1.8.0-beta.1) (2022-02-18)
+
+
+### Bug Fixes
+
+* **frontend:** add params for useMarkdown ([a079372](https://github.com/uzh-bf/klicker-uzh/commit/a079372c489b9d29365585ab779a6be27f64ae1b))
+
+
+### Other
+
+* **deploy:** pin versions of faculties and prod deployments ([0b8a5ca](https://github.com/uzh-bf/klicker-uzh/commit/0b8a5ca29758eb756506d71a01daea4d02eceaec))
+
 ## [1.8.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0...v1.8.0-beta.0) (2022-02-18)
 
 
