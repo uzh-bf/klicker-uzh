@@ -1983,10 +1983,16 @@
       "value": "Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
     }
   ],
+  "slateEditor.formatContent.latexCentered": [
+    {
+      "type": 0,
+      "value": "Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
+    }
+  ],
   "slateEditor.formatContent.latexInline": [
     {
       "type": 0,
-      "value": "Diese Einstellung fügt eine inline LaTeX-Formel ein. Um eine zentrierte Formel hinzuzufügen, schreiben Sie zwei $-Zeichen, gefolgt von der Formel auf einer neuen Zeile und zwei weiteren $-Zeichen auf einer dritten Zeile in den Editor."
+      "value": "Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
     }
   ],
   "slateEditor.formatContent.numberedList": [

@@ -178,8 +178,32 @@ function ContentInput({
                 <CustomTooltip
                   content={
                     <FormattedMessage
-                      defaultMessage="This button can be used to insert an inline LaTeX formula. To add centered formulas, type two $-signs, followed by your formula on a new line and another two $-signs at the end on a third line."
+                      defaultMessage="Use this option to insert an inline LaTeX formula. Use the same format to enter formulas inside answer options."
                       id="slateEditor.formatContent.latexInline"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <Button
+                        active={false}
+                        editor={editor}
+                        format="paragraph"
+                        onMouseDown={() => {
+                          Transforms.insertText(editor, '$$1 + 2$$')
+                        }}
+                      >
+                        <div className="ml-1 mt-0.5">
+                          <Icon color="grey" name="superscript" />
+                        </div>
+                      </Button>
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Use this option to insert a centered LaTeX formula (i.e., on a separate line)."
+                      id="slateEditor.formatContent.latexCentered"
                     />
                   }
                   iconObject={
@@ -191,12 +215,20 @@ function ContentInput({
                         onMouseDown={() => {
                           Transforms.insertNodes(editor, {
                             type: 'paragraph',
-                            children: [{ text: '$ INSERT FORMULA $' }],
+                            children: [{ text: '$$' }],
+                          })
+                          Transforms.insertNodes(editor, {
+                            type: 'paragraph',
+                            children: [{ text: '1 + 2' }],
+                          })
+                          Transforms.insertNodes(editor, {
+                            type: 'paragraph',
+                            children: [{ text: '$$' }],
                           })
                         }}
                       >
                         <div className="ml-1 mt-0.5">
-                          <Icon color={'grey'} name={'superscript'} />
+                          <Icon color="grey" name="superscript" />
                         </div>
                       </Button>
                     </a>

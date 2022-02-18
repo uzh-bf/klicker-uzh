@@ -1923,10 +1923,16 @@
       "value": "Select this for italic text. The same can be achieved by using the standard keyboard combination cmd/ctrl+i."
     }
   ],
+  "slateEditor.formatContent.latexCentered": [
+    {
+      "type": 0,
+      "value": "Use this option to insert a centered LaTeX formula (i.e., on a separate line)."
+    }
+  ],
   "slateEditor.formatContent.latexInline": [
     {
       "type": 0,
-      "value": "This button can be used to insert an inline LaTeX formula. To add centered formulas, type two $-signs, followed by your formula on a new line and another two $-signs at the end on a third line."
+      "value": "Use this option to insert an inline LaTeX formula. Use the same format to enter formulas inside answer options."
     }
   ],
   "slateEditor.formatContent.numberedList": [
