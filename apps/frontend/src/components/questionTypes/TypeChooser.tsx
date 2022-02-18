@@ -58,6 +58,7 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
         <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
 
         <CustomTooltip
+          className={'!ml-2'}
           content={
             <FormattedMessage
               defaultMessage="Choose the type of question you would like to create."

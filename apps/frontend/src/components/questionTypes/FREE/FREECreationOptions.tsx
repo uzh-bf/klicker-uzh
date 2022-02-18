@@ -49,6 +49,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
 
             <CustomTooltips
+              className={'!ml-2'}
               content={
                 <FormattedMessage
                   defaultMessage="Choose the allowed format of incoming responses."

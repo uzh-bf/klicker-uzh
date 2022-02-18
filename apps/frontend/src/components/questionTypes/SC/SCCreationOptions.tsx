@@ -53,6 +53,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
           <CustomTooltip
+            className={'!ml-2'}
             content={
               <FormattedMessage
                 defaultMessage="Add answering options the respondents can choose from."
@@ -79,6 +80,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                 handleMoveUp={onMoveUp(index)}
                 handleSaveNewName={onSaveNewName(index)}
                 index={index}
+                key={name}
                 name={name}
               />
             )

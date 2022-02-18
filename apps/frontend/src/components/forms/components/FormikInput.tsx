@@ -89,6 +89,7 @@ function FormikInput({
           {label}
           {tooltip && (
             <CustomTooltip
+              className={'!ml-2'}
               content={tooltip}
               iconObject={
                 <a data-tip>
