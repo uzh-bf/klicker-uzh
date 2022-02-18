@@ -71,9 +71,10 @@ function ContentInput({
           <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
           <CustomTooltip
+            className={'!ml-2'}
             content={
               <FormattedMessage
-                defaultMessage="Enter the question you want to ask the audience."
+                defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
                 id="createQuestion.contentInput.tooltip"
               />
             }
@@ -89,30 +90,120 @@ function ContentInput({
           {/* eslint-disable-next-line react/no-children-prop */}
           <Slate editor={editor} value={value} onChange={onChange}>
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
-              <div className="flex flex-row flex-1">
-                <MarkButton className="" format="bold" icon="bold" />
-                <MarkButton className="" format="italic" icon="italic" />
-                <MarkButton className="" format="code" icon="code" />
-                <BlockButton className="" format="block-quote" icon="quote right" />
-                <BlockButton className="" format="numbered-list" icon="list ol" />
-                <BlockButton className="" format="bulleted-list" icon="list ul" />
-                <Button
-                  active={false}
-                  editor={editor}
-                  format="paragraph"
-                  onMouseDown={() => {
-                    Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
-                    Transforms.insertNodes(editor, {
-                      type: 'paragraph',
-                      children: [{ text: 'Insert your Formula here' }],
-                    })
-                    Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
-                  }}
-                >
-                  <div className="ml-1 mt-0.5">
-                    <Icon color={'grey'} name={'superscript'} />
-                  </div>
-                </Button>
+              <div className="flex flex-row flex-1 gap-2">
+                <CustomTooltip
+                  className={clsx(isMarkActive(editor, 'bold') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Select this for bold text. The same can be achieved by using the standard keyboard combination cmd/ctrl+b."
+                      id="slateEditor.formatContent.bold"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <MarkButton className="" format="bold" icon="bold" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  className={clsx(isMarkActive(editor, 'italic') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Select this for italic text. The same can be achieved by using the standard keyboard combination cmd/ctrl+i."
+                      id="slateEditor.formatContent.italic"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <MarkButton className="" format="italic" icon="italic" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  className={clsx(isMarkActive(editor, 'code') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Select this for code style."
+                      id="slateEditor.formatContent.code"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <MarkButton className="" format="code" icon="code" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  className={clsx(isBlockActive(editor, 'block-quote') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Select this to display a block quote. Be advised that a new paragraph (by pressing enter) will be represented as a new quote"
+                      id="slateEditor.formatContent.quote"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <BlockButton className="" format="block-quote" icon="quote right" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  className={clsx(isBlockActive(editor, 'numbered-list') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Use this option to create numbered lists. To add elements, simply insert new lines after one of the current elements. To stop adding elements to the list, press this button again."
+                      id="slateEditor.formatContent.numberedList"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <BlockButton className="" format="numbered-list" icon="list ol" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  className={clsx(isBlockActive(editor, 'bulleted-list') && '!bg-grey-40')}
+                  content={
+                    <FormattedMessage
+                      defaultMessage="Use this option to create bulleted lists. To add elements, simply insert new lines after one of the current elements. To stop adding elements to the list, press this button again."
+                      id="slateEditor.formatContent.bulletedList"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <BlockButton className="" format="bulleted-list" icon="list ul" />
+                    </a>
+                  }
+                />
+                <CustomTooltip
+                  content={
+                    <FormattedMessage
+                      defaultMessage="This button can be used to insert an inline LaTeX formula. To add centered formulas, type two $-signs, followed by your formula on a new line and another two $-signs at the end on a third line."
+                      id="slateEditor.formatContent.latexInline"
+                    />
+                  }
+                  iconObject={
+                    <a data-tip>
+                      <Button
+                        active={false}
+                        editor={editor}
+                        format="paragraph"
+                        onMouseDown={() => {
+                          Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
+                          Transforms.insertNodes(editor, {
+                            type: 'paragraph',
+                            children: [{ text: 'Insert your Formula here' }],
+                          })
+                          Transforms.insertNodes(editor, { type: 'paragraph', children: [{ text: '$$' }] })
+                        }}
+                      >
+                        <div className="ml-1 mt-0.5">
+                          <Icon color={'grey'} name={'superscript'} />
+                        </div>
+                      </Button>
+                    </a>
+                  }
+                />
               </div>
               <Button active={false} editor={editor} format="paragraph" onMouseDown={() => editor.undo()}>
                 <div className="ml-1 mt-0.5">

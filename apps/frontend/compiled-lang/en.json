@@ -266,7 +266,7 @@
   "createQuestion.contentInput.tooltip": [
     {
       "type": 0,
-      "value": "Enter the question you want to ask the audience."
+      "value": "Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
     }
   ],
   "createQuestion.filesLabel": [
@@ -1897,6 +1897,48 @@
     {
       "type": 0,
       "value": "Question block successfully reset."
+    }
+  ],
+  "slateEditor.formatContent.bold": [
+    {
+      "type": 0,
+      "value": "Select this for bold text. The same can be achieved by using the standard keyboard combination cmd/ctrl+b."
+    }
+  ],
+  "slateEditor.formatContent.bulletedList": [
+    {
+      "type": 0,
+      "value": "Use this option to create bulleted lists. To add elements, simply insert new lines after one of the current elements. To stop adding elements to the list, press this button again."
+    }
+  ],
+  "slateEditor.formatContent.code": [
+    {
+      "type": 0,
+      "value": "Select this for code style."
+    }
+  ],
+  "slateEditor.formatContent.italic": [
+    {
+      "type": 0,
+      "value": "Select this for italic text. The same can be achieved by using the standard keyboard combination cmd/ctrl+i."
+    }
+  ],
+  "slateEditor.formatContent.latexInline": [
+    {
+      "type": 0,
+      "value": "This button can be used to insert an inline LaTeX formula. To add centered formulas, type two $-signs, followed by your formula on a new line and another two $-signs at the end on a third line."
+    }
+  ],
+  "slateEditor.formatContent.numberedList": [
+    {
+      "type": 0,
+      "value": "Use this option to create numbered lists. To add elements, simply insert new lines after one of the current elements. To stop adding elements to the list, press this button again."
+    }
+  ],
+  "slateEditor.formatContent.quote": [
+    {
+      "type": 0,
+      "value": "Select this to display a block quote. Be advised that a new paragraph (by pressing enter) will be represented as a new quote"
     }
   ],
   "tagList.button.reset": [
