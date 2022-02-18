@@ -12,7 +12,6 @@ const RG_MAIN = process.env['RESOURCE_GROUP_MAIN'] as string
 const RG_AUX = process.env['RESOURCE_GROUP_AUX'] as string
 const SUBNET_IBF = process.env['SUBNET_IBF'] as string
 const SUBNET_UZH = process.env['SUBNET_UZH'] as string
-const KLICKER_PSP = process.env['KLICKER_PSP'] as string
 const CERT_EMAIL = process.env['CERT_EMAIL'] as string
 
 if (!CERT_EMAIL) process.exit(0)
