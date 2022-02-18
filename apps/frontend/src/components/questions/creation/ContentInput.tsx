@@ -89,7 +89,7 @@ function ContentInput({
         <div className="mt-2 border border-solid rounded">
           {/* eslint-disable-next-line react/no-children-prop */}
           <Slate editor={editor} value={value} onChange={onChange}>
-            <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-light-grey">
+            <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-grey-20">
               <div className="flex flex-row flex-1 gap-2">
                 <CustomTooltip
                   className={clsx(isMarkActive(editor, 'bold') && '!bg-grey-40')}

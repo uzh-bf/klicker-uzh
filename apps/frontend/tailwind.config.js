@@ -23,7 +23,6 @@ module.exports = {
         'orange-60': '#eaa07d',
         'orange-40': '#f1bfa9',
         'orange-20': '#f8dfd4',
-        'light-grey': '#efefef',
         primary: '#7cb8e4',
         'primary-50': '#7cb8e480',
         'primary-20': '#7cb8e433',
