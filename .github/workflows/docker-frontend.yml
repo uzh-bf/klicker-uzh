@@ -4,11 +4,11 @@ on:
   push:
     tags: [ 'v*.*.*' ]
     paths:
-      - "frontend/**"
+      - "apps/frontend/**"
   pull_request:
     branches: [ dev ]
     paths:
-      - "frontend/**"
+      - "apps/frontend/**"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/frontend
@@ -37,7 +37,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: frontend/
+          file: Dockerfile.frontend
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:16.13-alpine
+FROM node:16.14-alpine
 
 # root application directory
 ENV APP_DIR /app
@@ -21,7 +21,7 @@ COPY --chown=node:0 package.json package-lock.json $APP_DIR/
 COPY --chown=node:0 apps/backend/package.json $APP_DIR/apps/backend/
 
 # install packages for the specified environment
-RUN set -x && npm ci
+RUN set -x && npm ci --workspace apps/backend
 
 # inject application sources
 WORKDIR $APP_DIR/apps/backend
@@ -32,10 +32,8 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "src/server.js"]
 
 # add labels
-ARG VERSION="canary"
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="@klicker-uzh/backend"
-LABEL version=$VERSION
 
 # expose the main application port
 EXPOSE 4000

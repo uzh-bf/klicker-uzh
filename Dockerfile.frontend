@@ -1,48 +1,63 @@
-# extend the node alpine base
-FROM node:16.13-alpine
+# install production dependencies for apps/frontend
+FROM node:16.14-alpine AS deps
 
-# root application directory
-ENV APP_DIR /app
+WORKDIR /app
+
 ENV NODE_ENV="production"
 
-# install tini
-RUN set -x \
-  && apk add --no-cache tini \
-  && mkdir -p $APP_DIR/apps/frontend \
-  && chown -R node:0 $APP_DIR
+RUN mkdir -p apps/frontend
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+RUN npm ci
 
-# switch to the node user (uid 1000)
-# non-root as provided by the base image
+
+# build a production version of apps/frontend (including dependencies)
+FROM node:16.13-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git
+
+RUN mkdir -p apps/frontend packages/ui
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/ui/package.json ./packages/ui/
+RUN npm ci
+
+ENV NODE_ENV="production"
+
+COPY turbo.json ./
+COPY apps/frontend/ ./apps/frontend/
+COPY packages/ui/ ./packages/ui/
+
+RUN npx turbo run build \
+    --scope="@klicker-uzh/frontend" \
+    --include-dependencies \
+    --no-deps
+
+
+# build a runtime image of apps/frontend
+FROM node:16.13-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache tini \
+  && chown -R node:0 /app
+
 USER node
 
-# inject the application dependencies
-WORKDIR $APP_DIR
-COPY --chown=node:0 package.json package-lock.json $APP_DIR/
-COPY --chown=node:0 apps/frontend/package.json apps/frontend/semantic.json $APP_DIR/apps/frontend/
+COPY --chown=node:0 --from=builder /app/apps/frontend/dist/ .
+COPY --chown=node:0 --from=builder /app/apps/frontend/.next ./.next
+COPY --chown=node:0 --from=deps /app/node_modules ./node_modules
+COPY --chown=node:0 --from=deps /app/apps/frontend/node_modules/ ./node_modules/
 
-# install packages for the specified environment
-RUN set -x && npm ci
-
-# inject application sources
-WORKDIR $APP_DIR/apps/frontend
-COPY --chown=node:0 apps/frontend/ $APP_DIR/apps/frontend/
-
-# pre-build the nextjs sources
-RUN set -x && npm run build
-
-# run next in production mode
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/src/server.js"]
+CMD ["node", "src/server.js"]
 
-# add labels
-ARG VERSION="canary"
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="@klicker-uzh/frontend"
-LABEL version=$VERSION
 
-# expose the main application port
 EXPOSE 3000
 
-# setup a HEALTHCHECK
 HEALTHCHECK --interval=5m --timeout=3s \
   CMD curl -f http://localhost:3000/ || exit 1

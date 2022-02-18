@@ -18,8 +18,14 @@
 !apps/frontend/tsconfig.server.json
 !apps/frontend/package.json
 
+!packages/ui/src/
+!packages/ui/package.json
+!packages/ui/tailwind.config.js
+!packages/ui/tsconfig.json
+
 !README.md
 !LICENSE.md
 
 !package.json
 !package-lock.json
+!turbo.json

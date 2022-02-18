@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer components {
+  .outline {
+    outline-style: none !important;
+  }
+
   .text-primary {
     color: rgb(124, 184, 228);
   }
