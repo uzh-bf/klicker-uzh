@@ -18,6 +18,10 @@ analytics:
     frontend:
       environment: stage
 
+redis:
+  replica:
+    replicaCount: 0
+
 frontend:
   hostname: app.klicker-stage.bf-app.ch
 
