@@ -27,7 +27,7 @@ function QuestionDescription({ content, description }: Props): React.ReactElemen
 
       <style global jsx>{`
         .katex {
-          font-size: 1.2em !important;
+          font-size: 1.1rem;
         }
       `}</style>
     </>
