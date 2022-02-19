@@ -3,8 +3,6 @@ import unified from 'unified'
 import markdown from 'remark-parse'
 
 export const convertToMd = (slateObj) => {
-  /* console.log('slateObj before conversion to MD')
-  console.log(slateObj) */
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))
   const result = slateObjCopy.map((line: any) => {
     if (line.type === 'block-quote') {
@@ -55,17 +53,10 @@ export const convertToMd = (slateObj) => {
     }
     return serialize(line)
   })
-  /* console.log('output md')
-  console.log(result.join('\n')) */
-
   return result.join('\n')
 }
 
 export const convertToSlate = (mdObj) => {
-  /* console.log('md before conversion to slate')
-  console.log(mdObj)
-  console.log('slate output object') */
-
   const result = unified().use(markdown).use(slate).processSync(mdObj).result as any
 
   return result.map((line: any) => {

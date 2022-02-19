@@ -53,13 +53,9 @@ function ContentInput({
       if (activeVersion < versions.length) {
         // @ts-ignore
         editor.children = convertToSlate(versions[activeVersion].content)
-        // console.log(versions[activeVersion].content)
-        // console.log(convertToSlate(versions[activeVersion].content))
       } else {
         // @ts-ignore
         editor.children = convertToSlate(versions[versions.length - 1].content)
-        // console.log(versions[versions.length - 1].content)
-        // console.log(convertToSlate(versions[versions.length - 1].content))
       }
     }
   }, [activeVersion, versions])
