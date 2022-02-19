@@ -31,6 +31,10 @@ function Option({ active, children, disabled, id, onClick }) {
       <style jsx>{`
         @import 'src/theme';
 
+        :global(button .math) {
+          font-size: 0.8em;
+        }
+
         .option.active {
           :global(button),
           :global(button.disabled) {
