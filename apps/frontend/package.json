@@ -152,7 +152,7 @@
   },
   "scripts": {
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
-    "build": "cross-env NODE_ENV=production npm run extract:i18n && npm run compile:i18n && next build && tsc -p tsconfig.server.json",
+    "build": "cross-env NODE_ENV=production npm run extract:i18n && npm run compile:i18n && next build",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev": "cross-env NODE_ICU_DATA=node_modules/full-icu NODE_ENV=development nodemon --ext 'js,ts,tsx,graphql,json' -w .env -w package.json -w src/server.mjs -w src/klicker.conf.mjs -w 'src/graphql/**/*.graphql' --exec \"rimraf .next && node -r dotenv/config src/server.mjs\"",
