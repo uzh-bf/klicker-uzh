@@ -71,7 +71,8 @@
     "lint-staged": "11.1.2",
     "nodemon": "2.0.12",
     "prettier": "2.3.2",
-    "supertest": "5.0.0"
+    "supertest": "5.0.0",
+    "draftjs-md-converter": "1.5.2"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json src/server.js",
