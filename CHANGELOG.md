@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.4...v1.8.0-beta.5) (2022-02-19)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that next config is available in dockerfile ([efcbb02](https://github.com/uzh-bf/klicker-uzh/commit/efcbb02151cc8219fc6f47edaf9339edce7305fb))
+* **frontend:** ensure that the SC option input does not lose focus after one char ([af3aa7a](https://github.com/uzh-bf/klicker-uzh/commit/af3aa7aa74d9c0f4f52ec95d4d5b2ff649cd9a31))
+
 ## [1.8.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.3...v1.8.0-beta.4) (2022-02-19)
 
 
