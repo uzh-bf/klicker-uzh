@@ -80,7 +80,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                 handleMoveUp={onMoveUp(index)}
                 handleSaveNewName={onSaveNewName(index)}
                 index={index}
-                key={name}
+                key={index}
                 name={name}
               />
             )
