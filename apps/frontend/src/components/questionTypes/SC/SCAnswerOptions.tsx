@@ -32,7 +32,7 @@ function Option({ active, children, disabled, id, onClick }) {
         @import 'src/theme';
 
         :global(button .math) {
-          font-size: 0.8em;
+          font-size: 0.9rem;
         }
 
         .option.active {
