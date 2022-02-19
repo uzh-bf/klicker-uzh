@@ -8,14 +8,11 @@
 !apps/frontend/compiled-lang/
 !apps/frontend/.babelrc
 !apps/frontend/tsconfig.json
-!apps/frontend/next.config.js
-!apps/frontend/server.ts
+!apps/frontend/next.config.mjs
 !apps/frontend/next-env.d.ts
 !apps/frontend/postcss.config.js
 !apps/frontend/tailwind.config.js
-!apps/frontend/sentry.*.js
-!apps/frontend/semantic.json
-!apps/frontend/tsconfig.server.json
+!apps/frontend/sentry.*.mjs
 !apps/frontend/package.json
 
 !packages/ui/src/

@@ -140,7 +140,7 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
         {
           content,
           description: content
-            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
             .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
             .join(''),
           options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
@@ -301,7 +301,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
         content: content || lastVersion.content,
         description:
           content
-            .replace(/(\${1,2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
             .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
             .join('') || lastVersion.description,
         options: options

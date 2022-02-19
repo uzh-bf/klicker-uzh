@@ -11,7 +11,7 @@ import Router, { useRouter } from 'next/router'
 import { init, push } from '@socialgouv/matomo-next'
 
 import { useApollo } from '../lib/apollo'
-import { polyfill } from '../polyfills'
+import { polyfill } from '../polyfills.mjs'
 import HappyKitAnalytics from '../lib/HappyKitAnalytics'
 import Chatwoot from '../lib/Chatwoot'
 import GoogleAnalytics from '../lib/GoogleAnalytics'

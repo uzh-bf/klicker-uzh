@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { sync as globSync } from 'glob'
+import glob from 'glob'
 import cookieParser from 'cookie-parser'
 import express from 'express'
 import next from 'next'
@@ -9,11 +9,13 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import { basename } from 'path'
-import { polyfill } from './polyfills'
 import crypto from 'crypto'
+import Redis from 'ioredis'
+import LRUCache from 'lru-cache'
 
 // import the configuration
-import CFG from './klicker.conf.js'
+import CFG from './klicker.conf.mjs'
+import { polyfill } from './polyfills.mjs'
 
 // log the configuration
 console.log('[klicker-react] Successfully loaded configuration')
@@ -88,7 +90,7 @@ const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
 const SUPPORTED_LOCALES = ['en', 'de']
-const supportedLanguages = globSync('./compiled-lang/*.json').map((f) => basename(f, '.json'))
+const supportedLanguages = glob.sync('./compiled-lang/*.json').map((f) => basename(f, '.json'))
 
 // prepare cache to be connected to
 let cache
@@ -98,13 +100,11 @@ async function connectCache() {
   }
 
   if (hasRedis) {
-    const Redis = require('ioredis')
     const { host, password, port, tls } = CACHE_CFG.redis
     cache = new Redis({ db: 0, family: 4, host, password, port, tls })
 
     console.log('[redis] Connected to redis (db 0) for SSR caching')
   } else {
-    const LRUCache = require('lru-cache')
     cache = new LRUCache({
       max: 100,
       // TODO: this would be nice to set much higher
@@ -333,4 +333,4 @@ const shutdown = (signal) => async () => {
 }
 
 const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM', 'exit']
-shutdownSignals.forEach((signal) => process.once(signal as any, shutdown(signal)))
+shutdownSignals.forEach((signal) => process.once(signal, shutdown(signal)))
