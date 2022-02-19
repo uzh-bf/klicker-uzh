@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.1...v1.8.0-beta.2) (2022-02-19)
+
+
+### Enhancements
+
+* **frontend:** add question preview to question edit modal ([0a9678f](https://github.com/uzh-bf/klicker-uzh/commit/0a9678f131f73010680bd018c92aeb67454d0204))
+* **frontend:** render formulas in answer options ([ab5d41a](https://github.com/uzh-bf/klicker-uzh/commit/ab5d41aa4718b2cbd8d8d760fac8f5d9d06225ed))
+* **frontend:** split buttons for inline and centered formulas ([e0d40e4](https://github.com/uzh-bf/klicker-uzh/commit/e0d40e4441dfb02176bf784f50c5c6fcaf0e8aa2))
+
+
+### Other
+
+* **db:** add migration script for 1.8 upgrade ([#2714](https://github.com/uzh-bf/klicker-uzh/issues/2714)) ([18ff160](https://github.com/uzh-bf/klicker-uzh/commit/18ff160018ec8e614f2234d007f4aaba9db4a2de))
+* **frontend:** remove references to confusion flag ([ac9bc14](https://github.com/uzh-bf/klicker-uzh/commit/ac9bc14ad3f93208f6d702c36e9622f4e7984992))
+* minor style fix after modifications of custom tooltips ([b8a1961](https://github.com/uzh-bf/klicker-uzh/commit/b8a196122d492f832cb14460e460f87a9685a5e5))
+* remove cruft helmfile ([a827ff6](https://github.com/uzh-bf/klicker-uzh/commit/a827ff6fa5260623e139cdc702e82270743474a3))
+
 ## [1.8.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.0...v1.8.0-beta.1) (2022-02-18)
 
 
