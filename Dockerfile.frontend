@@ -47,14 +47,15 @@ RUN apk add --no-cache tini \
 USER node
 
 COPY --chown=node:0 --from=builder /app/apps/frontend/.next ./.next
-COPY --chown=node:0 --from=builder /app/apps/frontend/src/server.mjs ./
-COPY --chown=node:0 --from=builder /app/apps/frontend/src/klicker.conf.mjs ./
-COPY --chown=node:0 --from=builder /app/apps/frontend/src/polyfills.mjs ./
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/server.mjs ./src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/klicker.conf.mjs ./src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/polyfills.mjs ./src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/compiled-lang ./compiled-lang
 COPY --chown=node:0 --from=deps /app/node_modules ./node_modules
 COPY --chown=node:0 --from=deps /app/apps/frontend/node_modules/ ./node_modules/
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "server.mjs"]
+CMD ["node", "/app/src/server.mjs"]
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="@klicker-uzh/frontend"
