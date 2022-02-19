@@ -57,7 +57,7 @@ function SCCreationPreview({ description, options }: Props): React.ReactElement 
         }
 
         .options {
-          max-height: 12rem;
+          max-height: 20rem;
           overflow-y: auto;
         }
 

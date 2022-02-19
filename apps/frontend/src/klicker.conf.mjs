@@ -1,11 +1,9 @@
-/* eslint-disable babel/quotes */
-
-const convict = require('convict')
-const convictValidators = require('convict-format-with-validator')
+import convict from 'convict'
+import convictValidators from 'convict-format-with-validator'
 
 convict.addFormats(convictValidators)
 
-module.exports = convict({
+export default convict({
   api: {
     endpoint: {
       default: 'http://localhost:4000/graphql',

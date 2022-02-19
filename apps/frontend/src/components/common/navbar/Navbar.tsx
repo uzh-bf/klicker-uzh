@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import React, { useContext } from 'react'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import { Icon, Menu } from 'semantic-ui-react'

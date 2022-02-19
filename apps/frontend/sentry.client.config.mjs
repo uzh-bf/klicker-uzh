@@ -4,7 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 
-const CFG = require('./src/klicker.conf.js')
+import CFG from './src/klicker.conf.mjs'
 
 const SERVICES_CFG = CFG.get('services')
 

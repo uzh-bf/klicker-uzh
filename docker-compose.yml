@@ -95,8 +95,6 @@ services:
       - 9001:9001
     volumes:
       - /data
-    networks:
-      - klicker-dev
     command: server /data --console-address ":9001"
 
   create_minio_buckets:
