@@ -14,7 +14,7 @@ function QR({ joinLink }): React.ReactElement {
       <div className="flex items-center justify-center">
         <QRCode
           logoHeight={100}
-          logoImage="https://www.klicker.uzh.ch/docs/img/KlickerUZH_Gray_BG.png"
+          logoImage="https://www.klicker.uzh.ch/img/KlickerUZH_Gray_BG.png"
           logoWidth={300}
           size={700}
           value={joinLink}

@@ -38,7 +38,7 @@ function QRPopup({ shortname }: Props): React.ReactElement {
           <div>
             <QRCode
               logoHeight={40}
-              logoImage="https://www.klicker.uzh.ch/docs/img/KlickerUZH_Gray_BG.png"
+              logoImage="https://www.klicker.uzh.ch/img/KlickerUZH_Gray_BG.png"
               logoWidth={120}
               size={300}
               value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`}

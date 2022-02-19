@@ -68,11 +68,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="book" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header
-                    as="a"
-                    href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
-                    target="_blank"
-                  >
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/introduction/getting_started" target="_blank">
                     Documentation
                   </List.Header>
                   <List.Description>Get started with KlickerUZH</List.Description>
@@ -81,7 +77,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="question circle" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/docs/faq" target="_blank">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/faq" target="_blank">
                     FAQ
                   </List.Header>
                   <List.Description>Common Questions</List.Description>
@@ -90,12 +86,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="users" size="large" verticalAlign="middle" />
                 <List.Content>
-                  {/* //TODO: update usecase link to Docusaurus once separate page exists */}
-                  <List.Header
-                    as="a"
-                    href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
-                    target="_blank"
-                  >
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/use_cases/live_qa" target="_blank">
                     Use Cases
                   </List.Header>
                   <List.Description>KlickerUZH in Action</List.Description>
@@ -127,7 +118,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="bullhorn" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/docs/blog" target="_blank">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/blog" target="_blank">
                     Project Updates
                   </List.Header>
                   <List.Description>Updates on developments</List.Description>
