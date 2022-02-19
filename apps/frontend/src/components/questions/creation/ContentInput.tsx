@@ -67,25 +67,6 @@ function ContentInput({
   return (
     <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
       <Form.Field required error={touched && error}>
-        <label htmlFor="content">
-          <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
-
-          <CustomTooltip
-            className={'!ml-2'}
-            content={
-              <FormattedMessage
-                defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
-                id="createQuestion.contentInput.tooltip"
-              />
-            }
-            iconObject={
-              <a data-tip>
-                <Icon name="question circle" />
-              </a>
-            }
-          />
-        </label>
-
         <div className="mt-2 border border-solid rounded">
           {/* eslint-disable-next-line react/no-children-prop */}
           <Slate editor={editor} value={value} onChange={onChange}>

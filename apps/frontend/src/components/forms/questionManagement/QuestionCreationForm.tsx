@@ -4,7 +4,7 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
+import { Button, Form, Message, List, Loader, Icon } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 
@@ -18,6 +18,7 @@ import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import FormikInput from '../components/FormikInput'
+import CustomTooltip from '../../common/CustomTooltip'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -295,6 +296,24 @@ function QuestionCreationForm({
                 </div>
 
                 <div className="questionInput questionContent">
+                  <label className="flex-1 header" htmlFor="content">
+                    <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
+
+                    <CustomTooltip
+                      className={'!ml-2'}
+                      content={
+                        <FormattedMessage
+                          defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
+                          id="createQuestion.contentInput.tooltip"
+                        />
+                      }
+                      iconObject={
+                        <a data-tip>
+                          <Icon name="question circle" />
+                        </a>
+                      }
+                    />
+                  </label>
                   <ContentInput
                     activeVersion={0}
                     error={errors.content}
@@ -348,12 +367,13 @@ function QuestionCreationForm({
             margin-bottom: 1rem;
           }
 
-          .questionInput :global(.field > label),
+          .questionInput :global(label),
           .questionPreview > h2,
           .questionFiles > h2 {
             font-size: 1.2rem !important;
             margin: 0 !important;
             margin-bottom: 0.5rem !important;
+            font-weight: bold;
           }
 
           @supports (grid-gap: 1rem) {

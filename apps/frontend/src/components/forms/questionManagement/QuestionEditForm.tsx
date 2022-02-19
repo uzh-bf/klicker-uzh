@@ -3,12 +3,13 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
+import { Button, Form, Dropdown, Message, Icon } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 
+import CustomTooltip from '../../common/CustomTooltip'
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -301,41 +302,56 @@ function QuestionEditForm({
                   </div>
                 </div>
 
-                <div className="questionVersion">
-                  <h2>
-                    <FormattedMessage defaultMessage="Question Contents" id="editQuestion.questionContents.title" />
-                  </h2>
-
-                  <Dropdown
-                    text={isNewVersion ? `v${versionOptions.length + 1} (draft)` : `v${activeVersion + 1}`}
-                    value={activeVersion}
-                  >
-                    <Dropdown.Menu>
-                      <Dropdown.Item
-                        active={isNewVersion}
-                        onClick={(): void => handleActiveVersionChange(versionOptions.length)}
-                      >
-                        {`v${versionOptions.length + 1} (draft)`}
-                      </Dropdown.Item>
-
-                      {versionOptions
-                        .map(
-                          ({ id, text }: any, index): React.ReactElement => (
-                            <Dropdown.Item
-                              active={activeVersion === index}
-                              key={id}
-                              onClick={(): void => handleActiveVersionChange(index)}
-                            >
-                              {text}
-                            </Dropdown.Item>
-                          )
-                        )
-                        .reverse()}
-                    </Dropdown.Menu>
-                  </Dropdown>
-                </div>
-
                 <div className="questionInput questionContent">
+                  <div className="flex flex-row items-end space-between">
+                    <label className="flex-1 header" htmlFor="content">
+                      <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
+
+                      <CustomTooltip
+                        className={'!ml-2'}
+                        content={
+                          <FormattedMessage
+                            defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
+                            id="createQuestion.contentInput.tooltip"
+                          />
+                        }
+                        iconObject={
+                          <a data-tip>
+                            <Icon name="question circle" />
+                          </a>
+                        }
+                      />
+                    </label>
+
+                    <Dropdown
+                      text={isNewVersion ? `v${versionOptions.length + 1} (draft)` : `v${activeVersion + 1}`}
+                      value={activeVersion}
+                    >
+                      <Dropdown.Menu>
+                        <Dropdown.Item
+                          active={isNewVersion}
+                          onClick={(): void => handleActiveVersionChange(versionOptions.length)}
+                        >
+                          {`v${versionOptions.length + 1} (draft)`}
+                        </Dropdown.Item>
+
+                        {versionOptions
+                          .map(
+                            ({ id, text }: any, index): React.ReactElement => (
+                              <Dropdown.Item
+                                active={activeVersion === index}
+                                key={id}
+                                onClick={(): void => handleActiveVersionChange(index)}
+                              >
+                                {text}
+                              </Dropdown.Item>
+                            )
+                          )
+                          .reverse()}
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </div>
+
                   <ContentInput
                     activeVersion={activeVersion}
                     disabled={!isNewVersion}
@@ -401,22 +417,19 @@ function QuestionEditForm({
               margin-bottom: 1rem;
             }
 
-            .questionInput :global(.field > label),
+            .questionInput :global(label),
             .questionPreview > h2,
             .questionFiles > h2 {
               font-size: 1.2rem !important;
+              font-weight: bold;
               margin: 0 !important;
               margin-bottom: 0.5rem !important;
             }
+            .questionInput .header {
+              margin-bottom: 0 !important;
+            }
 
             .questionVersion {
-              display: flex;
-              align-items: center;
-
-              h2 {
-                margin: 0;
-              }
-
               :global(.dropdown) {
                 margin-left: 0.5rem;
               }
@@ -445,8 +458,8 @@ function QuestionEditForm({
                   'meta meta preview'
                   'meta meta preview'
                   'meta meta preview'
-                  'version version version'
-                  'content content content'
+                  'version version preview'
+                  'content content preview'
                   'files files files'
                   'options options options'
                   'actions actions actions';
