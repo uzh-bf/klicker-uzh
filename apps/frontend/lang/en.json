@@ -47,7 +47,7 @@
   "createQuestion.optionsFREE.tooltip": "Choose the allowed format of incoming responses.",
   "createQuestion.optionsSC.label": "Available Choices",
   "createQuestion.optionsSC.solutionToggle.tooltip": "Toggle to define whether the option is correct (marked in green) or incorrect (marked in red).",
-  "createQuestion.optionsSC.tooltip": "Add answering options the respondents can choose from.",
+  "createQuestion.optionsSC.tooltip": "Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side.",
   "createQuestion.previewLabel": "Audience Preview",
   "createQuestion.questionType.label": "Question Type",
   "createQuestion.questionType.tooltip": "Choose the type of question you would like to create.",
