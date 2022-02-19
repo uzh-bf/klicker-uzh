@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.2...v1.8.0-beta.3) (2022-02-19)
+
+
+### Other
+
+* **frontend:** refactor code to allow for ESM imports ([#2715](https://github.com/uzh-bf/klicker-uzh/issues/2715)) ([8eada87](https://github.com/uzh-bf/klicker-uzh/commit/8eada870f80121363d26be5ce5f181e8282cbd5a))
+* **frontend:** remove unused logging ([9661aff](https://github.com/uzh-bf/klicker-uzh/commit/9661aff2c5f3265a95e20a11d9750668e42e51c5))
+* **frontend:** update docs links throughout frontend ([d03cb75](https://github.com/uzh-bf/klicker-uzh/commit/d03cb75cff0b793846f7bdeca2e5d0be2b0afdb0))
+
 ## [1.8.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.1...v1.8.0-beta.2) (2022-02-19)
 
 
