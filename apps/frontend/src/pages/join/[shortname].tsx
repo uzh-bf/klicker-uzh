@@ -265,7 +265,7 @@ function Join({ shortname }): React.ReactElement {
   )
 }
 
-export async function getServerSideProps({ query }) {
+export async function getServerSideProps({ params }) {
   const apolloClient = initializeApollo()
 
   try {
@@ -273,13 +273,13 @@ export async function getServerSideProps({ query }) {
       apolloClient.query({
         query: JoinSessionQuery,
         variables: {
-          shortname: query.shortname,
+          shortname: params.shortname,
         },
       }),
       apolloClient.query({
         query: JoinQAQuery,
         variables: {
-          shortname: query.shortname,
+          shortname: params.shortname,
         },
       }),
     ])
@@ -290,7 +290,7 @@ export async function getServerSideProps({ query }) {
   return {
     props: {
       [APOLLO_STATE_PROP_NAME]: apolloClient.cache.extract(),
-      shortname: query.shortname,
+      shortname: params.shortname,
     },
   }
 }
