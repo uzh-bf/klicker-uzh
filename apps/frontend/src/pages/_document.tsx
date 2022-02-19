@@ -16,6 +16,7 @@ class IntlDocument extends Document<Props> {
     const { req } = ctx
     const initialProps = await Document.getInitialProps(ctx)
     const { locale, nonce } = req as any
+    console.error(locale)
     return {
       ...initialProps,
       locale,

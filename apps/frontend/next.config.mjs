@@ -12,9 +12,9 @@ const SERVICES_CFG = CFG.get('services')
 
 const CONFIG = (phase) => {
   let config = {
-    // experimental: {
-    //   outputStandalone: true,
-    // },
+    experimental: {
+      // outputStandalone: true,
+    },
     images: [PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER].includes(phase)
       ? {
           domains: [S3_CFG.rootDomain],
