@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.3...v1.8.0-beta.4) (2022-02-19)
+
+
+### Bug Fixes
+
+* **frontend:** use params.shortname on the join page ([86f4665](https://github.com/uzh-bf/klicker-uzh/commit/86f466521cdbd4a611334266a62dd2bde12526a4))
+
 ## [1.8.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.2...v1.8.0-beta.3) (2022-02-19)
 
 
