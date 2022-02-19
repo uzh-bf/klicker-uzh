@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import React, { useContext } from 'react'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import { Icon, Menu } from 'semantic-ui-react'
@@ -83,7 +83,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
           if (typeof window !== 'undefined') {
             if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Sentry = import('@sentry/nextjs')
+                const Sentry = require('@sentry/nextjs')
                 Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //

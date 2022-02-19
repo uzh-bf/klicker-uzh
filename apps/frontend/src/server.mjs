@@ -12,8 +12,8 @@ import { basename } from 'path'
 import crypto from 'crypto'
 
 // import the configuration
-import CFG from './klicker.conf.js'
-import { polyfill } from './polyfills.js'
+import CFG from './klicker.conf.mjs'
+import { polyfill } from './polyfills.mjs'
 
 // log the configuration
 console.log('[klicker-react] Successfully loaded configuration')
@@ -98,14 +98,14 @@ async function connectCache() {
   }
 
   if (hasRedis) {
-    const Redis = import('ioredis').default
+    const Redis = await import('ioredis')
     const { host, password, port, tls } = CACHE_CFG.redis
-    cache = new Redis({ db: 0, family: 4, host, password, port, tls })
+    cache = new Redis.default({ db: 0, family: 4, host, password, port, tls })
 
     console.log('[redis] Connected to redis (db 0) for SSR caching')
   } else {
-    const LRUCache = import('lru-cache').default
-    cache = new LRUCache({
+    const LRUCache = await import('lru-cache')
+    cache = new LRUCache.default({
       max: 100,
       // TODO: this would be nice to set much higher
       // but how would we clean up i.e. /join/someuser when the running session updates?

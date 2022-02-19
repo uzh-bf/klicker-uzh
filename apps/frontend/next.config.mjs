@@ -1,8 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
 import { withSentryConfig } from '@sentry/nextjs'
-import { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } from 'next/constants.js'
-import CFG from './src/klicker.conf.js'
+import { PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } from 'next/constants.js'
+import CFG from './src/klicker.conf.mjs'
 
 const API_CFG = CFG.get('api')
 const APP_CFG = CFG.get('app')

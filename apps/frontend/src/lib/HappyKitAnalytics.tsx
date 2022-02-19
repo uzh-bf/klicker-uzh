@@ -5,7 +5,7 @@ const { publicRuntimeConfig } = getConfig()
 const UNTRACKED_PATHS = ['/user/login']
 
 function HappyKitAnalytics() {
-  const { useAnalytics } = import('@happykit/analytics')
+  const { useAnalytics } = require('@happykit/analytics')
   useAnalytics({
     publicKey: publicRuntimeConfig.happyKitAnalyticsKey,
     skip: (pageView) => UNTRACKED_PATHS.includes(pageView.pathname),
