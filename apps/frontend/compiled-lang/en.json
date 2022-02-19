@@ -314,7 +314,7 @@
   "createQuestion.optionsSC.tooltip": [
     {
       "type": 0,
-      "value": "Add answering options the respondents can choose from."
+      "value": "Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side."
     }
   ],
   "createQuestion.previewLabel": [

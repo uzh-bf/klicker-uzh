@@ -56,7 +56,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
             className={'!ml-2'}
             content={
               <FormattedMessage
-                defaultMessage="Add answering options the respondents can choose from."
+                defaultMessage="Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side."
                 id="createQuestion.optionsSC.tooltip"
               />
             }

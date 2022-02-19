@@ -326,7 +326,7 @@
   "createQuestion.optionsSC.tooltip": [
     {
       "type": 0,
-      "value": "Fügen Sie Auswahlmöglichkeiten hinzu, aus denen die Teilnehmenden wählen können."
+      "value": "Fügen Sie Auswahlmöglichkeiten hinzu, zwischen denen die Teilnehmenden wählen können. Alle Felder bieten vollständigen Support für gängige Markdown-Formattierungen wie auch inline LaTeX Formeln (eingeschlossen durch zwei $-Zeichen auf beiden Seiten)."
     }
   ],
   "createQuestion.previewLabel": [
