@@ -18,7 +18,9 @@ function useMarkdown({ content, description }: Params) {
       return content
         ? unified()
             .use(markdown)
-            .use(math)
+            .use(math, {
+              singleDollarTextMatch: false,
+            })
             .use(remark2rehype, { allowDangerousHtml: false })
             // https://github.com/rehypejs/rehype-sanitize
             // .use(rehypeSanitize, {

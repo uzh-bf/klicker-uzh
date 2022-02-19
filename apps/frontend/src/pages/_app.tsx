@@ -24,7 +24,7 @@ import '../globals.css'
 const { publicRuntimeConfig } = getConfig()
 
 if (publicRuntimeConfig.happyKitFlagEnvKey) {
-  const { configure } = require('@happykit/flags/config')
+  const { configure } = import('@happykit/flags/config')
   configure({ envKey: publicRuntimeConfig.happyKitFlagEnvKey })
 }
 

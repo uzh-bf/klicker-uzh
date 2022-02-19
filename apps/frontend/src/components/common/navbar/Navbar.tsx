@@ -83,7 +83,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
           if (typeof window !== 'undefined') {
             if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Sentry = require('@sentry/nextjs')
+                const Sentry = import('@sentry/nextjs')
                 Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //

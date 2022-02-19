@@ -1,8 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
-const { withSentryConfig } = require('@sentry/nextjs')
-const { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } = require('next/constants')
-const CFG = require('./src/klicker.conf.js')
+import { withSentryConfig } from '@sentry/nextjs'
+import { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER, PHASE_DEVELOPMENT_SERVER } from 'next/constants.js'
+import CFG from './src/klicker.conf.js'
 
 const API_CFG = CFG.get('api')
 const APP_CFG = CFG.get('app')
@@ -10,7 +10,7 @@ const S3_CFG = CFG.get('s3')
 const SECURITY_CFG = CFG.get('security')
 const SERVICES_CFG = CFG.get('services')
 
-module.exports = (phase) => {
+const CONFIG = (phase) => {
   let config = {
     // experimental: {
     //   outputStandalone: true,
@@ -49,7 +49,6 @@ module.exports = (phase) => {
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
-      rootDir: __dirname,
       joinUrl: APP_CFG.joinUrl,
       baseUrl: APP_CFG.baseUrl,
     },
@@ -82,12 +81,12 @@ module.exports = (phase) => {
     },
   }
 
-  if (process.env.ANALYZE && phase === PHASE_PRODUCTION_BUILD) {
-    const withBundleAnalyzer = require('@next/bundle-analyzer')({
-      enabled: process.env.ANALYZE,
-    })
-    config = withBundleAnalyzer(config)
-  }
+  // if (process.env.ANALYZE && phase === PHASE_PRODUCTION_BUILD) {
+  //   const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  //     enabled: process.env.ANALYZE,
+  //   })
+  //   config = withBundleAnalyzer(config)
+  // }
 
   if (SERVICES_CFG.sentry.enabled) {
     config = withSentryConfig(config, {
@@ -97,3 +96,5 @@ module.exports = (phase) => {
 
   return config
 }
+
+export default CONFIG
