@@ -10,6 +10,8 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import { basename } from 'path'
 import crypto from 'crypto'
+import Redis from 'ioredis'
+import LRUCache from 'lru-cache'
 
 // import the configuration
 import CFG from './klicker.conf.mjs'
@@ -98,14 +100,12 @@ async function connectCache() {
   }
 
   if (hasRedis) {
-    const Redis = await import('ioredis')
     const { host, password, port, tls } = CACHE_CFG.redis
-    cache = new Redis.default({ db: 0, family: 4, host, password, port, tls })
+    cache = new Redis({ db: 0, family: 4, host, password, port, tls })
 
     console.log('[redis] Connected to redis (db 0) for SSR caching')
   } else {
-    const LRUCache = await import('lru-cache')
-    cache = new LRUCache.default({
+    cache = new LRUCache({
       max: 100,
       // TODO: this would be nice to set much higher
       // but how would we clean up i.e. /join/someuser when the running session updates?
