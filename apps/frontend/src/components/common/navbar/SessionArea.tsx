@@ -94,13 +94,13 @@ function SessionArea({ sessionId }: Props) {
                 <h2>Further Resources</h2>
                 <div className="font-bold text-gray-600">Documentation</div>
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/docs/introduction/getting_started"
+                  href="https://www.klicker.uzh.ch/introduction/getting_started"
                   icon="book"
                   subtitle="Tutorials, feature documentation, and release notes"
                   title="Documentation"
                 />
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/docs/faq"
+                  href="https://www.klicker.uzh.ch/faq"
                   icon="question"
                   subtitle="Frequently asked questions"
                   title="FAQ"
@@ -120,7 +120,7 @@ function SessionArea({ sessionId }: Props) {
                 />
                 <div className="mt-4 font-bold text-gray-600">About the Project</div>
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/docs/blog"
+                  href="https://www.klicker.uzh.ch/blog"
                   icon="info"
                   subtitle="Regular updates regarding the progress of our project"
                   title="Project Updates"
