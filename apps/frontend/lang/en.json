@@ -61,7 +61,6 @@
   "customizableTable.deleteConfirmation": "Are you sure that you want to delete the entity {activeId}?",
   "customizableTable.deleteEntity": "Delete Entity",
   "editQuestion.error": "Could not modify question: {error}",
-  "editQuestion.questionContents.title": "Question Contents",
   "editQuestion.sucess": "Successfully modified question.",
   "editQuestion.titleInput.label": "Question Title",
   "editQuestion.type": "Question Type",
