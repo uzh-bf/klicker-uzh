@@ -219,7 +219,7 @@ const k8sCluster = new azure.containerservice.ManagedCluster(
     agentPoolProfiles: [
       {
         availabilityZones: ['1', '2', '3'],
-        count: 0,
+        count: 1,
         enableAutoScaling: false,
         enableFIPS: false,
         enableNodePublicIP: false,
@@ -469,5 +469,30 @@ const certManagerIssuer = new k8s.yaml.ConfigGroup(
   {
     provider: k8sProvider,
     dependsOn: [certManager],
+  }
+)
+
+// deploy the a storageclass for ZRS
+const storageClassZRS = new k8s.yaml.ConfigGroup(
+  `${PREFIX}-storage-zrs`,
+  {
+    yaml: `
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: default-zrs
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+    kubernetes.io/cluster-service: 'true'
+provisioner: disk.csi.azure.com
+parameters:
+  skuname: StandardSSD_ZRS
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+    `,
+  },
+  {
+    provider: k8sProvider,
   }
 )
