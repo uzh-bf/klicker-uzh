@@ -59,7 +59,7 @@ frontend:
     enabled: false
 
   vpa:
-    enabled: true
+    enabled: false
 
   ingress:
     hosts:
@@ -78,7 +78,7 @@ frontend:
       maxUnavailable: 50%
 
 backend:
-  replicaCount: 3
+  replicaCount: 2
 
   hostname: api.klicker.uzh.ch
 
@@ -86,7 +86,7 @@ backend:
     enabled: false
 
   vpa:
-    enabled: true
+    enabled: false
 
   redis:
     tls: true
