@@ -16,6 +16,7 @@ import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
+import Markdown from '../../components/common/Markdown'
 
 function Print(): React.ReactElement<any> {
   const router = useRouter()
@@ -80,12 +81,14 @@ function Print(): React.ReactElement<any> {
               }
 
               const { results, question, version, statistics } = activeInstance
-              const { description, options } = question.versions[version]
+              const { content, options } = question.versions[version]
               const activeVisualization = activeVisualizations[question.type]
 
               return (
                 <div className="container">
-                  <div className="description">{description}</div>
+                  <div className="description">
+                    <Markdown>{content}</Markdown>
+                  </div>
                   <div className="chart">
                     <Chart
                       activeVisualization={activeVisualization}
@@ -166,8 +169,7 @@ function Print(): React.ReactElement<any> {
                 background-color: $color-primary-background;
                 border-top: 2px solid $color-primary;
                 border-bottom: 2px solid $color-primary;
-                font-weight: bold;
-                font-size: 1em;
+                font-size: 0.5em;
                 padding: 0.7em;
                 text-align: left;
               }
