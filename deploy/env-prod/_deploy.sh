@@ -1,3 +1,3 @@
 #!/bin/sh
 
-doppler run -- helmfile $1
+doppler run --config prd -- helmfile $1
