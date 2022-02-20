@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.5...v1.8.0-rc.0) (2022-02-20)
+
+
+### Bug Fixes
+
+* **frontend:** miscellaneous issues with latex display ([929e3e5](https://github.com/uzh-bf/klicker-uzh/commit/929e3e5d805751eb7795e640ee93ba1526fcffcc))
+* **frontend:** use rem for formula font sizes ([a97137e](https://github.com/uzh-bf/klicker-uzh/commit/a97137ede6cdbe8d8868e0ac64f609dbf1e956fe))
+
+
+### Documentation
+
+* update docs with new slate editor component screenshots and short description ([11cbdde](https://github.com/uzh-bf/klicker-uzh/commit/11cbdde729a3fe8f8dd7775ce06affba24a66d82))
+
+
+### Other
+
+* adapt formula font size ([a02d2a4](https://github.com/uzh-bf/klicker-uzh/commit/a02d2a45bd9350cad23c3826fb9972393b2004af))
+* **frontend:** add tooltip to available choices SC MC to mention markdown and latex support ([6112fdf](https://github.com/uzh-bf/klicker-uzh/commit/6112fdfea645e5924dc98ccab7b2dadee184d1bc))
+* **frontend:** reduce font size of formulas in answer options ([20c4dd2](https://github.com/uzh-bf/klicker-uzh/commit/20c4dd29c0f59c575bccb3cd7ddf773098d08070))
+
+
+### Enhancements
+
+* **deploy:** add the aks storage class for ZRS and increase node count ([b30426a](https://github.com/uzh-bf/klicker-uzh/commit/b30426a4929e433175744c9d40927da5ed5ec1f6))
+* **docs:** add better uptime announcement script ([610929b](https://github.com/uzh-bf/klicker-uzh/commit/610929b32909376d0cd3e269ad8a642072050490))
+
 ## [1.8.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.4...v1.8.0-beta.5) (2022-02-19)
 
 
