@@ -6,7 +6,14 @@ module.exports = {
   baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
-  scripts: ['https://buttons.github.io/buttons.js'],
+  scripts: [
+    'https://buttons.github.io/buttons.js',
+    {
+      src: 'https://betteruptime.com/widgets/announcement.js',
+      'data-id': '133428',
+      async: true,
+    },
+  ],
   stylesheets: ['https://fonts.googleapis.com/css?family=Open+Sans'],
   favicon: 'img/KlickerUZH_Orange_Favicon.png',
   customFields: {
