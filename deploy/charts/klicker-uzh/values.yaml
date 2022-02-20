@@ -108,7 +108,7 @@ frontend:
       cpu: 100m
       memory: 170Mi
     limits:
-      cpu: 400m
+      cpu: 500m
       memory: 300Mi
 
   autoscaling:
@@ -153,8 +153,8 @@ backend:
       cpu: 150m
       memory: 75Mi
     limits:
-      cpu: 500m
-      memory: 200Mi
+      cpu: 700m
+      memory: 250Mi
 
   autoscaling:
     enabled: false
