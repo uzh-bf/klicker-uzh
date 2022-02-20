@@ -47,6 +47,12 @@ class IntlDocument extends Document<Props> {
           />
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
+          <link
+            crossOrigin="anonymous"
+            href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css"
+            integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ"
+            rel="stylesheet"
+          />
         </Head>
         <body>
           {scriptEl}
