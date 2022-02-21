@@ -49,7 +49,7 @@ services:
     env: prod
 
 frontend:
-  replicaCount: 3
+  replicaCount: 4
 
   displayAAI: true
 
@@ -78,7 +78,7 @@ frontend:
       maxUnavailable: 50%
 
 backend:
-  replicaCount: 2
+  replicaCount: 3
 
   hostname: api.klicker.uzh.ch
 
