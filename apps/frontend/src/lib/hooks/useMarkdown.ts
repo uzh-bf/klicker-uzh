@@ -14,6 +14,9 @@ interface Params {
 
 function useMarkdown({ content, description }: Params) {
   const parsedContent = useMemo(() => {
+    if (content?.length <= 2) {
+      return content
+    }
     try {
       return content
         ? unified()
