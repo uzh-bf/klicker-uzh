@@ -4,7 +4,7 @@ releases:
     createNamespace: true
     chart: ../charts/klicker-uzh
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: true
+    installed: false
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
