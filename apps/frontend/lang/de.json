@@ -207,7 +207,7 @@
   "questionPool.question.titleArchive": "ARCHIVIERT",
   "questionPool.string.deletionConfirmationContent": "Sind Sie sicher, dass Sie die {num} ausgewählten Fragen löschen wollen? Allenfalls könnten Sie diese auch archivieren, falls Sie sie wieder einmal brauchen sollten.",
   "questionPool.string.itemsChecked": "{count} Fragen ausgewählt",
-  "questionPool.survey": "Wir befragen aktuell Dozierende zum Thema Interaktion in der Lehre. Mit einer Teilnahme an unserer Umfrage können Sie die weitere Entwicklung des KlickerUZH massgeblich beeinflussen (siehe {link}, Dauer ca. 10min). Herzlichen Dank!",
+  "questionPool.survey": "Wir möchten Sie zur Teilnahme an unserer aktuellen Umfrage zu Gamification und Game-Based Learning einladen (siehe {link}, Dauer ca. 10min). Basierend auf den Erkenntnissen werden wir unter anderem auch Funktionalitäten im KlickerUZH implementieren.",
   "questionPool.title": "Fragepool",
   "questions.index.archivation.toast.error": "Fragen konnten nicht archiviert werden: {errorMessage}",
   "questions.index.archivation.toast.successful": "Fragen erfolgreich archiviert/wiederhergestellt.",

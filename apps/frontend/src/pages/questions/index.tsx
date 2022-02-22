@@ -63,7 +63,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
     true,
-    'interaction-survey-visible'
+    'gamification-survey-visible'
   )
 
   const [creationMode, setCreationMode] = useState(
@@ -523,11 +523,11 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               className="!rounded-none"
               content={
                 <FormattedMessage
-                  defaultMessage="We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see {link}, duration ca. 10min)."
+                  defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
                   id="questionPool.survey"
                   values={{
                     link: (
-                      <a href="https://hi.switchy.io/6IiJ" rel="noreferrer" target="_blank">
+                      <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
                         link
                       </a>
                     ),
