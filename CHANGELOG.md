@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.0...v1.8.0-rc.1) (2022-02-22)
+
+
+### Bug Fixes
+
+* **deploy:** update prd environment configuration ([08c33c5](https://github.com/uzh-bf/klicker-uzh/commit/08c33c5b15c772814f2e5e2255f6468025e420c9))
+* **frontend:** apply markdown pipeline only on contents longer than 2 characters ([08eece9](https://github.com/uzh-bf/klicker-uzh/commit/08eece9db60c7830658bb1fec236c0204c3dd5ba))
+
+
+### Other
+
+* **backend:** add version of the 22FS newsletter ([7dbc47a](https://github.com/uzh-bf/klicker-uzh/commit/7dbc47a5f00b3ae1807bee1dd5dac04e8f38d2f2))
+* **deploy:** increase replica counts for prod env ([4b4e5ef](https://github.com/uzh-bf/klicker-uzh/commit/4b4e5ef24b94c8aaea2b6cc3190d92a826b81721))
+* **deploy:** remove staging env ([e143a53](https://github.com/uzh-bf/klicker-uzh/commit/e143a53127f54519665d68477389d79b007c4e93))
+* **deploy:** update resource configuration of chart ([fc61bd4](https://github.com/uzh-bf/klicker-uzh/commit/fc61bd4090b696fb137ec006e8052d88ee821192))
+* **frontend:** update survey links ([8e89a5b](https://github.com/uzh-bf/klicker-uzh/commit/8e89a5b0064d75a57103133818239e074982e986))
+* lockfile maintenance ([3dc9adb](https://github.com/uzh-bf/klicker-uzh/commit/3dc9adb631de1e422cb92915072ade2712b8e8cf))
+
 ## [1.8.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.5...v1.8.0-rc.0) (2022-02-20)
 
 
