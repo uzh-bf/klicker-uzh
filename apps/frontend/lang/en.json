@@ -201,7 +201,7 @@
   "questionPool.question.titleArchive": "ARCHIVED",
   "questionPool.string.deletionConfirmationContent": "Are you sure you want to delete the {num} selected questions? Consider moving them to the archive if you could have use for them in the future.",
   "questionPool.string.itemsChecked": "{count} items checked",
-  "questionPool.survey": "We are conducting a survey on classroom interaction that will shape the future development of the KlickerUZH. Your participation would be greatly appreciated (see {link}, duration ca. 10min).",
+  "questionPool.survey": "We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH.",
   "questionPool.title": "Question Pool",
   "questions.index.archivation.toast.error": "Unable to archive question: {errorMessage}",
   "questions.index.archivation.toast.successful": "Questions successfully archived/unarchived.",

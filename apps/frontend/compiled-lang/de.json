@@ -1338,7 +1338,7 @@
   "questionPool.survey": [
     {
       "type": 0,
-      "value": "Wir befragen aktuell Dozierende zum Thema Interaktion in der Lehre. Mit einer Teilnahme an unserer Umfrage können Sie die weitere Entwicklung des KlickerUZH massgeblich beeinflussen (siehe "
+      "value": "Wir möchten Sie zur Teilnahme an unserer aktuellen Umfrage zu Gamification und Game-Based Learning einladen (siehe "
     },
     {
       "type": 1,
@@ -1346,7 +1346,7 @@
     },
     {
       "type": 0,
-      "value": ", Dauer ca. 10min). Herzlichen Dank!"
+      "value": ", Dauer ca. 10min). Basierend auf den Erkenntnissen werden wir unter anderem auch Funktionalitäten im KlickerUZH implementieren."
     }
   ],
   "questionPool.title": [
