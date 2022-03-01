@@ -150,6 +150,7 @@ module.exports = `
   type Session_QuestionBlock_Public {
     id: ID!
     status: Session_QuestionBlockStatus!
+    randomSelection: Int
 
     instances: [QuestionInstance_Public!]!
   }

@@ -115,6 +115,7 @@ module.exports = `
   type Question_Version_Public {
     id: ID!
     description: String!
+    content: String
     options: Question_Options_Public
     files: [File_Public!]!
   }
