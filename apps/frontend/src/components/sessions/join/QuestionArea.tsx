@@ -112,8 +112,12 @@ function QuestionArea({
   useEffect((): void => {
     const exec = async () => {
       try {
-        const storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
+        let storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
           responses: [],
+        }
+
+        if (typeof storedResponses === 'string') {
+          storedResponses = JSON.parse(storedResponses)
         }
 
         const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
@@ -213,14 +217,15 @@ function QuestionArea({
     if (typeof window !== 'undefined') {
       try {
         const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
-        await localForage.setItem(
-          `${shortname}-${sessionId}-responses`,
-          JSON.stringify(
-            prevResponses
-              ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
-              : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-          )
+        const stringified = JSON.stringify(
+          prevResponses
+            ? {
+                responses: [...JSON.parse(prevResponses).responses, `${instanceId}-${execution}`],
+                timestamp: dayjs().unix(),
+              }
+            : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
         )
+        await localForage.setItem(`${shortname}-${sessionId}-responses`, stringified)
       } catch (e) {
         console.error(e)
       }
