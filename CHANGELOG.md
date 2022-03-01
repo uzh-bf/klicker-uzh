@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2022-03-01)
+
+
+### Bug Fixes
+
+* ensure that public evaluation works ([7557012](https://github.com/uzh-bf/klicker-uzh/commit/7557012f09455ba0c51553eaf53b04a9de2eabf1))
+* ensure that questions are not shown again to students ([479e7fb](https://github.com/uzh-bf/klicker-uzh/commit/479e7fb22bdbf9598bf028430b943c1915c45896))
+
+
+### Other
+
+* lockfile maintenance ([3953804](https://github.com/uzh-bf/klicker-uzh/commit/39538042bf1bf1416b1a6d4f55fd1bb4faa088d4))
+
 ## [1.8.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.0...v1.8.0-rc.1) (2022-02-22)
 
 
