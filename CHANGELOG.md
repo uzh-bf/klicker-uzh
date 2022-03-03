@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.3...v1.8.0-rc.4) (2022-03-03)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that public is injected into the docker image ([a01ed39](https://github.com/uzh-bf/klicker-uzh/commit/a01ed396e6040bffee96a0c621be980388faa5b7))
+
+
+### Other
+
+* **deploy:** add sentry config for frontend ([c0eb641](https://github.com/uzh-bf/klicker-uzh/commit/c0eb641bde7ed5f2782bee18a2ba21642fc3955b))
+* **frontend:** upgrade @sentry/nextjs ([c31900c](https://github.com/uzh-bf/klicker-uzh/commit/c31900cf06a07596308d6c0af0f5b07320071007))
+
 ## [1.8.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2022-03-03)
 
 
