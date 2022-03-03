@@ -13,7 +13,7 @@ security:
   hsts:
     enabled: true
   csp:
-    enabled: true
+    enabled: false
   expectCt:
     enabled: true
   frameguard:
@@ -28,6 +28,7 @@ redis:
 analytics:
   sentry:
     frontend:
+      enabled: true
       environment: prod
   google:
     trackingId:

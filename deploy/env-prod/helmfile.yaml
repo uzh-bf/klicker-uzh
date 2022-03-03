@@ -36,6 +36,14 @@ releases:
         featureFlags:
           persistedUsers: '{{ env "PERSISTED_USERS" }}'
 
+        analytics:
+          sentry:
+            frontend:
+              dsn: '{{ requiredEnv "SENTRY_DSN" }}'
+              authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
+              org: '{{ requiredEnv "SENTRY_ORG" }}'
+              project: '{{ requiredEnv "SENTRY_PROJECT" }}'
+
         # frontend:
         #   image:
         #     tag: v1.8.0-rc.0
