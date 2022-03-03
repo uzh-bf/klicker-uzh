@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.6...v1.8.0-rc.7) (2022-03-03)
+
+
+### Bug Fixes
+
+* **frontend:** ensure sentry client is injected correctly ([0e482eb](https://github.com/uzh-bf/klicker-uzh/commit/0e482eb4c30b97914d63b627b015f8a9693d76e4))
+
+
+### Other
+
+* **frontend:** ensure dsn will be read from env ([86af2d9](https://github.com/uzh-bf/klicker-uzh/commit/86af2d998fd02da1e8628517d7f2da5947d96b87))
+
 ## [1.8.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.5...v1.8.0-rc.6) (2022-03-03)
 
 
