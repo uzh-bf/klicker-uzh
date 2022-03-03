@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.7...v1.8.0-rc.8) (2022-03-03)
+
+
+### Other
+
+* **build:** ensure that node 16.14 is used in all stages of the docker container ([c2f7e24](https://github.com/uzh-bf/klicker-uzh/commit/c2f7e24be22eb5fd87018499482b55967fe3364c))
+
 ## [1.8.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.6...v1.8.0-rc.7) (2022-03-03)
 
 
