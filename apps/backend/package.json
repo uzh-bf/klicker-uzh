@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend",
-  "version": "1.8.0-rc.6",
+  "version": "1.8.0-rc.7",
   "main": "src/server.js",
   "engines": {
     "node": ">=16"
