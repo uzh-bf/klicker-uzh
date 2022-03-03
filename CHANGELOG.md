@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.5...v1.8.0-rc.6) (2022-03-03)
+
+
+### Bug Fixes
+
+* **deploy:** ensure public env sentry dsn is set ([6ec8301](https://github.com/uzh-bf/klicker-uzh/commit/6ec830115a7e6687a76b72ebfe71a66f1e0f0f44))
+* **frontend:** get sentry dsn from public env ([db338e0](https://github.com/uzh-bf/klicker-uzh/commit/db338e0ee34cd33014ef5a16afaeff1853abc7a3))
+
 ## [1.8.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.4...v1.8.0-rc.5) (2022-03-03)
 
 
