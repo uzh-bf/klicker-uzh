@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2022-03-03)
+
+
+### Other
+
+* update resources and loaderio ([cdda203](https://github.com/uzh-bf/klicker-uzh/commit/cdda20358165436623ed76704a20e436bc99f65e))
+
 ## [1.8.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2022-03-01)
 
 
