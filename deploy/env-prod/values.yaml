@@ -56,7 +56,7 @@ frontend:
   hostname: app.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
+    enabled: true
 
   vpa:
     enabled: false
@@ -78,12 +78,12 @@ frontend:
       maxUnavailable: 50%
 
 backend:
-  replicaCount: 3
+  replicaCount: 4
 
   hostname: api.klicker.uzh.ch
 
   autoscaling:
-    enabled: false
+    enabled: true
 
   vpa:
     enabled: false
