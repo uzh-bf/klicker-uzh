@@ -48,9 +48,9 @@ USER node
 
 COPY --chown=node:0 --from=builder /app/apps/frontend/.next /app/.next
 COPY --chown=node:0 --from=builder /app/apps/frontend/next.config.mjs /app/
-COPY --chown=node:0 --from=builder /app/apps/frontend/public /app/
-COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.mjs /app/
-COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.mjs /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/public /app/public
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/server.mjs /app/src/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/klicker.conf.mjs /app/src/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/polyfills.mjs /app/src/

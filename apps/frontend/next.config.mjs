@@ -27,6 +27,10 @@ const CONFIG = (phase) => {
     eslint: {
       ignoreDuringBuilds: true,
     },
+    sentry: {
+      disableServerWebpackPlugin: true,
+      disableClientWebpackPlugin: true,
+    },
     // custom runtime configuration
     publicRuntimeConfig: {
       apiUrl: API_CFG.endpoint,
@@ -89,9 +93,7 @@ const CONFIG = (phase) => {
   // }
 
   if (SERVICES_CFG.sentry.enabled) {
-    config = withSentryConfig(config, {
-      // silent: true,
-    })
+    config = withSentryConfig(config)
   }
 
   return config
