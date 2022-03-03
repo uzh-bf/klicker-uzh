@@ -61,6 +61,7 @@ analytics:
   sentry:
     frontend:
       enabled: false
+      sampleRate: 0.2
     backend:
       enabled: false
   google:
