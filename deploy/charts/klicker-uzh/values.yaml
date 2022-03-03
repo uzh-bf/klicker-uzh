@@ -105,15 +105,15 @@ frontend:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 170Mi
+      cpu: 200m
+      memory: 200Mi
     limits:
-      cpu: 500m
-      memory: 300Mi
+      cpu: 750m
+      memory: 500Mi
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 6
     targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
@@ -150,15 +150,15 @@ backend:
 
   resources:
     requests:
-      cpu: 150m
-      memory: 75Mi
+      cpu: 250m
+      memory: 120Mi
     limits:
-      cpu: 700m
-      memory: 250Mi
+      cpu: 750m
+      memory: 500Mi
 
   autoscaling:
     enabled: false
-    minReplicas: 2
+    minReplicas: 3
     maxReplicas: 6
     targetCPUUtilizationPercentage: 50
     targetMemoryUtilizationPercentage: 80
