@@ -92,9 +92,7 @@ const CONFIG = (phase) => {
   //   config = withBundleAnalyzer(config)
   // }
 
-  if (SERVICES_CFG.sentry.enabled) {
-    config = withSentryConfig(config)
-  }
+  config = withSentryConfig(config)
 
   return config
 }
