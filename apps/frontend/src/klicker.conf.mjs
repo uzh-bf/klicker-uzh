@@ -334,45 +334,10 @@ export default convict({
       },
     },
     sentry: {
-      dsn: {
-        default: undefined,
-        env: 'SENTRY_DSN',
-        format: 'url',
-      },
-      org: {
-        default: undefined,
-        env: 'SENTRY_ORG',
-        format: String,
-      },
-      project: {
-        default: undefined,
-        env: 'SENTRY_PROJECT',
-        format: String,
-      },
-      authToken: {
-        default: undefined,
-        env: 'SENTRY_AUTH_TOKEN',
-        format: String,
-      },
       enabled: {
         default: false,
         env: 'SENTRY_ENABLED',
         format: Boolean,
-      },
-      environment: {
-        default: undefined,
-        env: 'SENTRY_ENV',
-        format: String,
-      },
-      url: {
-        default: 'https://sentry.io',
-        env: 'SENTRY_URL',
-        format: 'url',
-      },
-      tracesSampleRate: {
-        default: 1.0,
-        env: 'SENTRY_SAMPLE_RATE',
-        format: Number,
       },
     },
   },

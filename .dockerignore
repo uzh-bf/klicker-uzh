@@ -12,7 +12,7 @@
 !apps/frontend/next-env.d.ts
 !apps/frontend/postcss.config.js
 !apps/frontend/tailwind.config.js
-!apps/frontend/sentry.*.mjs
+!apps/frontend/sentry.*.js
 !apps/frontend/package.json
 
 !packages/ui/src/
