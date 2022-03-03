@@ -12,7 +12,7 @@ RUN npm ci
 
 
 # build a production version of apps/frontend (including dependencies)
-FROM node:16.13-alpine AS builder
+FROM node:16.14-alpine AS builder
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ RUN npx turbo run build \
 
 
 # build a runtime image of apps/frontend
-FROM node:16.13-alpine AS runner
+FROM node:16.14-alpine AS runner
 
 WORKDIR /app
 
@@ -51,6 +51,8 @@ COPY --chown=node:0 --from=builder /app/apps/frontend/next.config.mjs /app/
 COPY --chown=node:0 --from=builder /app/apps/frontend/public /app/public
 COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.client.config.js /app/
 COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.client.config.js /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/src/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/server.mjs /app/src/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/klicker.conf.mjs /app/src/
 COPY --chown=node:0 --from=builder /app/apps/frontend/src/polyfills.mjs /app/src/
