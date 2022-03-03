@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/docs",
-  "version": "1.8.0-rc.4",
+  "version": "1.8.0-rc.5",
   "devDependencies": {
     "@docusaurus/module-type-aliases": "2.0.0-beta.13",
     "@tsconfig/docusaurus": "1.0.4",
