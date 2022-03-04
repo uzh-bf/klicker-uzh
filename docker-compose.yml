@@ -19,6 +19,11 @@ services:
       CACHE_REDIS_HOST: redis_cache
       S3_ROOT_DOMAIN: localhost:9000
       S3_ROOT_URL: http://localhost:9000/images
+      SENTRY_DSN: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
+      SENTRY_ENV: dev
+      SENTRY_SAMPLE_RATE: 1.0
+      SENTRY_DEBUG: 'true'
+
     networks:
       - klicker-dev
 

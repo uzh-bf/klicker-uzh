@@ -339,6 +339,31 @@ export default convict({
         env: 'SENTRY_ENABLED',
         format: Boolean,
       },
+      dsn: {
+        default: undefined,
+        env: 'SENTRY_DSN',
+        format: String,
+      },
+      release: {
+        default: undefined,
+        env: 'SENTRY_RELEASE',
+        format: String,
+      },
+      debug: {
+        default: false,
+        env: 'SENTRY_DEBUG',
+        format: Boolean,
+      },
+      sampleRate: {
+        default: 0.1,
+        env: 'SENTRY_SAMPLE_RATE',
+        format: Number,
+      },
+      env: {
+        default: undefined,
+        env: 'SENTRY_ENV',
+        format: String,
+      },
     },
   },
 })
