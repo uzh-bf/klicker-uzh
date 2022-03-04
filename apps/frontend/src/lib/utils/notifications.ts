@@ -1,16 +1,22 @@
 export function createNotification(title: string, text: string, icon?: string): any {
   if (!('Notification' in window) || Notification.permission !== 'granted') return null
 
-  if (icon) {
+  try {
+    if (icon) {
+      return new Notification(title, {
+        body: text,
+        icon,
+      })
+    }
+
     return new Notification(title, {
       body: text,
-      icon,
     })
+  } catch (e) {
+    console.error(e)
   }
 
-  return new Notification(title, {
-    body: text,
-  })
+  return null
 }
 
 export function requestNotificationPermissions(cb?: any) {
