@@ -49,7 +49,6 @@ data:
   {{- if .Values.analytics.sentry.frontend.enabled }}
   SENTRY_ENABLED: {{ .Values.analytics.sentry.frontend.enabled | quote }}
   SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
-  NEXT_PUBLIC_SENTRY_DSN: {{ .Values.analytics.sentry.frontend.dsn | quote }}
   SENTRY_ORG: {{ .Values.analytics.sentry.frontend.org | quote }}
   SENTRY_PROJECT: {{ .Values.analytics.sentry.frontend.project | quote }}
   SENTRY_ENV: {{ .Values.analytics.sentry.frontend.environment | quote }}

@@ -21,6 +21,7 @@ redis:
 analytics:
   sentry:
     frontend:
+      enabled: true
       environment: qa
   google:
     trackingId: G-GWEK0XHXDR

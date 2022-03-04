@@ -4,11 +4,16 @@ releases:
     createNamespace: true
     chart: ../charts/klicker-uzh
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
-    installed: false
+    installed: true
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - backend:
+      - frontend:
+          replicaCount: 0
+
+        backend:
+          replicaCount: 0
+
           redis:
             host: '{{ requiredEnv "REDIS_HOST" }}'
             password: '{{ requiredEnv "REDIS_PASS" }}'
@@ -29,7 +34,10 @@ releases:
         analytics:
           sentry:
             frontend:
-              authToken: '{{ env "SENTRY_AUTH" }}'
+              dsn: '{{ requiredEnv "SENTRY_DSN" }}'
+              authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
+              org: '{{ requiredEnv "SENTRY_ORG" }}'
+              project: '{{ requiredEnv "SENTRY_PROJECT" }}'
 
         security:
           appSecret: '{{ requiredEnv "APP_SECRET" }}'
