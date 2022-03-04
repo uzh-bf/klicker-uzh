@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.8...v1.8.0-rc.9) (2022-03-04)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that sentry config is read correctly using next/config ([01e657a](https://github.com/uzh-bf/klicker-uzh/commit/01e657af99faaea5ab01a4beb6caf05af42e7751))
+
 ## [1.8.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.7...v1.8.0-rc.8) (2022-03-03)
 
 
