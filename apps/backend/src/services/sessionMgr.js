@@ -125,7 +125,7 @@ const cleanCache = (shortname) => {
 
   logDebug(() => console.log(`[redis] Cleaning up SSR cache for ${key}`))
 
-  return redisCache.del([`${key}:de`, `${key}:en`])
+  return redisCache.del([`${key}:*`])
 }
 
 /**

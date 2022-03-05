@@ -30,6 +30,8 @@ const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
 
+const isDev = process.env.NODE_ENV !== 'production'
+
 // initialize redis if available
 // const responseControl = getRedis(2)
 const responseCache = getRedis('exec')
@@ -690,7 +692,7 @@ function verifyParticipantAuthentication({ auth, authenticationMode, id, partici
  * Prepare data needed for participating in a session
  * @param {*} param0
  */
-const joinSession = async ({ shortname, auth }) => {
+const joinSession = async ({ req, res, shortname, auth }) => {
   // find the user with the given shortname
   const user = await UserModel.findOne({ shortname }).populate('runningSession')
   if (!user || !user.runningSession) {
@@ -715,9 +717,25 @@ const joinSession = async ({ shortname, auth }) => {
   let openInstances = currentBlock.instances.filter((instance) => instance.isOpen)
 
   if (currentBlock.randomSelection > 0) {
+    console.log(req.cookies, req.cookie)
+
+    // TODO: check if there is a cookie from a previous selection
+    // TODO: add a cookie to the request that will ensure the same question is fetched next time
     const index = Math.floor(Math.random() * openInstances.length)
+    const selectedId = openInstances[index] && openInstances[index].id
     openInstances = [openInstances[index]]
     // cleanCache(shortname)
+
+    // set a cookie with the generated JWT
+    if (res && res.cookie && selectedId) {
+      res.cookie(activeBlock.id, selectedId, {
+        domain: APP_CFG.cookieDomain || APP_CFG.domain,
+        httpOnly: true,
+        maxAge: 7 * 86400000,
+        path: APP_CFG.path ? `${APP_CFG.path}/graphql` : '/graphql',
+        secure: !isDev && APP_CFG.https,
+      })
+    }
   }
 
   return {
