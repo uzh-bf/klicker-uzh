@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.10...v1.8.0-rc.11) (2022-03-06)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that ingress is not recreated on deployments and update QA deployment for sentry ([c6e31ff](https://github.com/uzh-bf/klicker-uzh/commit/c6e31ffa0d3e57710e8876db67a45aa9d61a70c1))
+* **frontend:** update apollo cache config based on next example changes ([56f2528](https://github.com/uzh-bf/klicker-uzh/commit/56f25282d84d86ae4ad01ca7e5ae4a51301c018b))
+
 ## [1.8.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.9...v1.8.0-rc.10) (2022-03-04)
 
 
