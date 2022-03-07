@@ -1,6 +1,7 @@
 const _isNumber = require('lodash/isNumber')
 const { UserInputError } = require('apollo-server-express')
 
+const decode = require('unescape')
 const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 
@@ -139,9 +140,12 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
       versions: [
         {
           content,
-          description: content
+          // use decode function to unescape html character escape
+          description: decode(content)
             .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
-            .match(/[\p{L}\p{N}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            // match certain unicode categories like common letters, punctuation characters (P),
+            // M for accents etc. and possibility to add S for math symbols, currency signs, etc.
+            .match(/[\p{L}\p{N}\p{P}\p{M}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
             .join(''),
           options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
             [type]: options,
