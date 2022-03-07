@@ -1,8 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd frontend
-npm run lint:staged
-
-cd ../backend
-npm run lint:staged
+# npm run lint:staged

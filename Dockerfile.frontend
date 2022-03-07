@@ -1,0 +1,72 @@
+# install production dependencies for apps/frontend
+FROM node:16.14-alpine AS deps
+
+WORKDIR /app
+
+ENV NODE_ENV="production"
+
+RUN mkdir -p apps/frontend
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+RUN npm ci
+
+
+# build a production version of apps/frontend (including dependencies)
+FROM node:16.14-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git
+
+RUN mkdir -p apps/frontend packages/ui
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/ui/package.json ./packages/ui/
+RUN npm ci
+
+ENV NODE_ENV="production"
+
+COPY turbo.json ./
+COPY apps/frontend/ ./apps/frontend/
+COPY packages/ui/ ./packages/ui/
+
+RUN npx turbo run build \
+    --scope="@klicker-uzh/frontend" \
+    --include-dependencies \
+    --no-deps
+
+
+# build a runtime image of apps/frontend
+FROM node:16.14-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache tini \
+  && chown -R node:0 /app
+
+USER node
+
+COPY --chown=node:0 --from=builder /app/apps/frontend/.next /app/.next
+COPY --chown=node:0 --from=builder /app/apps/frontend/next.config.mjs /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/public /app/public
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.client.config.js /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.client.config.js /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/sentry.server.config.js /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/server.mjs /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/klicker.conf.mjs /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/src/polyfills.mjs /app/src/
+COPY --chown=node:0 --from=builder /app/apps/frontend/compiled-lang /app/compiled-lang
+COPY --chown=node:0 --from=deps /app/node_modules /app/node_modules
+COPY --chown=node:0 --from=deps /app/apps/frontend/node_modules/ /app/node_modules/
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "src/server.mjs"]
+
+LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+LABEL name="@klicker-uzh/frontend"
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=5m --timeout=3s \
+  CMD curl -f http://localhost:3000/ || exit 1

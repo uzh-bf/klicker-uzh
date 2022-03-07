@@ -1,6 +1,7 @@
 **/__pycache__/
 **/node_modules/
 .vscode/
+.turbo/
 
 *.archive
 secrets*.yaml
