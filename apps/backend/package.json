@@ -56,12 +56,14 @@
     "request": "2.88.2",
     "request-promise": "4.2.6",
     "saslprep": "1.0.3",
+    "unescape": "1.0.1",
     "uuid": "8.3.2",
     "v8n": "1.3.3",
     "validator": "13.6.0",
     "ws": "8.2.1"
   },
   "devDependencies": {
+    "draftjs-md-converter": "1.5.2",
     "eslint": "7.32.0",
     "eslint-config-airbnb-base": "14.2.1",
     "eslint-config-prettier": "8.3.0",
@@ -71,8 +73,7 @@
     "lint-staged": "11.1.2",
     "nodemon": "2.0.12",
     "prettier": "2.3.2",
-    "supertest": "5.0.0",
-    "draftjs-md-converter": "1.5.2"
+    "supertest": "5.0.0"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json src/server.js",
