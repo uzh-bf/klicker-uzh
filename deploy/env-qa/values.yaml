@@ -1,0 +1,97 @@
+s3:
+  endpoint: sos-ch-dk-2.exo.io
+  bucket: klicker-qa
+  region: ch-dk-2
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker-qa.bf-app.ch
+
+redis:
+  master:
+    priorityClassName: klicker-qa-klicker-uzh-staging-workload
+  replica:
+    priorityClassName: klicker-qa-klicker-uzh-staging-workload
+    replicaCount: 0
+
+analytics:
+  sentry:
+    frontend:
+      enabled: true
+      environment: qa
+  google:
+    trackingId: G-GWEK0XHXDR
+  happyKit:
+    publicKey: analytics_pub_1312f90ec4
+
+featureFlags:
+  envKey: flags_pub_preview_313968481835942464
+
+services:
+  chatwoot:
+    enabled: true
+    websiteToken: 9KkoSxhVNrQjyBU5YRw2Zzok
+  teams:
+    enabled: true
+    env: qa
+
+frontend:
+  hostname: app.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: app.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-tls
+        hosts:
+          - app.klicker-qa.bf-app.ch
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 400m
+      memory: 400Mi
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload
+
+backend:
+  hostname: api.klicker-qa.bf-app.ch
+
+  redis:
+    tls: true
+
+  ingress:
+    hosts:
+      - host: api.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-backend-tls
+        hosts:
+          - api.klicker-qa.bf-app.ch
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 300Mi
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload

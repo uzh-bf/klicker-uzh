@@ -1,0 +1,27 @@
+query QuestionPool {
+  runningSessionId
+  questions: allQuestions {
+    id
+    title
+    type
+    isArchived
+    instances {
+      id
+      version
+      createdAt
+      session
+    }
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      content
+      description
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+}

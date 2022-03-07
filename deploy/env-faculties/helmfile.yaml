@@ -1,0 +1,37 @@
+releases:
+  - name: klicker-faculties
+    namespace: klicker-faculties
+    createNamespace: true
+    chart: ../charts/klicker-uzh
+    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+    installed: true
+    kubeContext: klicker-k8scbfdbd7c
+    values:
+      - values.yaml
+      - frontend:
+          image:
+            tag: v1.7.0
+
+        backend:
+          image:
+            tag: v1.7.0
+
+          redis:
+            host: '{{ requiredEnv "REDIS_HOST" }}'
+            password: '{{ requiredEnv "REDIS_PASS" }}'
+            port: '{{ requiredEnv "REDIS_PORT" }}'
+
+        database:
+          url: '{{ requiredEnv "DATABASE_URL" }}'
+          user: '{{ requiredEnv "DATABASE_USER" }}'
+          password: '{{ requiredEnv "DATABASE_PASS" }}'
+
+        security:
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        email:
+          password: '{{ requiredEnv "EMAIL_PASS" }}'
+
+        s3:
+          accessKey: '{{ requiredEnv "S3_ACCESS_KEY" }}'
+          secretKey: '{{ requiredEnv "S3_SECRET_KEY" }}'

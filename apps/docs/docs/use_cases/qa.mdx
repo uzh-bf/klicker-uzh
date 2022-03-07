@@ -1,0 +1,265 @@
+---
+title: Live Q&A in Large Classrooms
+slug: live_qa
+id: live_qa
+---
+
+import ChartGrid from '../../src/components/ChartGrid.tsx'
+import BarChart from '../../src/components/BarChart.tsx'
+import TableChart from '../../src/components/TableChart.tsx'
+import CaseSummary from '../../src/components/CaseSummary.tsx'
+import ImageModal from '../../src/components/ImageModal.tsx'
+
+<CaseSummary goals={[
+  'Encourage students to ask questions by providing them with an anonymous channel',
+  'Enable students to get answers to questions as soon as they come up instead of postponing them (e.g., to forum posts)',
+  'Make remote participants feel included by allowing them to ask questions during lectures',
+  'Enable lecturers and their team to provide rapid feedback on incoming questions',
+  'Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.)'
+]} tags={[
+  'large class',
+  'frontal teaching',
+  'in-person teaching',
+  'remote teaching',
+  'hybrid teaching'
+]}>
+  <p>
+    You are a lecturer teaching a large class and mostly do frontal teaching without personal interaction possibilities (e.g., group discussions).
+    To enable students to interact with you in a more approachable way even if they participate online, you start a session in the KlickerUZH and enable the anonymous Q&A channel.
+    Throughout the lecture, students open the Q&A channel on their own device and post new questions or add their vote to existing ones.
+    Depending on your preference, you might either choose the unmoderated Q&A channel, where all questions are immediately available for interaction to all participants, or enable moderation to pre-approve any incoming questions before other participants can see them.
+  </p>
+  <p>
+    You might respond to the questions in immediately during the lecture or after skimming them during a break, or you might have a teaching assistant that supports you during the lecture and immediately responds to any incoming questions that are straightforward to respond to.
+    Furthermore, any questions that are especially important or hard to respond to in writing are pinned to the lecturer cockpit, where you can review them during the lecture and respond orally.
+    After the conclusion of the lecture, you export the questions and answers from the Q&A channel and post them to the LMS, allowing students to review your responses even after the lecture concluded.
+  </p>
+</CaseSummary>
+
+## Implementation
+
+import AudienceViewSrc from '../../static/img/implementation_qa_audience.png'
+import RunningSessionSrc from '../../static/img/implementation_qa_running.png'
+import LecturerCockpitSrc from '../../static/img/implementation_lecturer_cockpit.png'
+import EvaluationSrc from '../../static/img/implementation_evaluation.png'
+
+<ImageModal.Group>
+  <ImageModal src={AudienceViewSrc} description="Students read and upvote questions posted by other students, as well as post new questions of their own. Additionally, they can see and react to all of the responses given by the lecturer, which might help the lecturing team clarify their responses (if unclear)." title="Audience View" />
+  <ImageModal src={RunningSessionSrc} description="The lecturer or lecturing team moderate, respond to, and resolve incoming questions or remove irrelevant ones so they are not shown to students. Crucial questions can be pinned so that they appear on the separate lecturer cockpit." title="Lecturer View" />
+  <ImageModal src={LecturerCockpitSrc} description="The lecturer opens the lecturer cockpit on a second screen/device and can view only the questions that were pinned in the lecturer view (e.g., by the assistant) with a quick glance." title="Lecturer Cockpit" />
+  <ImageModal src={EvaluationSrc} description="After the conclusion of a class, the lecturer views and exports or prints questions and answers to make them available to students (e.g., in the LMS)." title="Export (Evaluation)" />
+</ImageModal.Group>
+
+## Evaluation
+
+After its release in fall 2021, KlickerUZH Live Q&A has already been used in several very large first-year lectures at the University of Zurich. To evaluate the viability of the Q&A approach in university teaching, we have created surveys for both lecturers and students for which we are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
+
+### Lecturers
+
+<ChartGrid>
+  <BarChart
+    likert
+    title="I feel that students' have a better comprehension of my lecture when I am using the Q&A channel."
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 1,
+      },
+      {
+        name: 'Undecided',
+        count: 1,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 2,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 1,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="I believe that the effort required to manage the Q&A channel is worthwile."
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 0,
+      },
+      {
+        name: 'Undecided',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 3,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 2,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="Overall, how satisfied or dissatisfied are you with the Q&A channel?"
+    data={[
+      {
+        name: 'Extremely Dissatisfied',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Dissatisfied',
+        count: 2,
+      },
+      {
+        name: 'Neither',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Satisfied',
+        count: 2,
+      },
+      {
+        name: 'Extremely Satisfied',
+        count: 1,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="How likely will you be continuing to use the Q&A functionality in your future teaching?"
+    data={[
+      {
+        name: 'Extremely Unlikely',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Unlikely',
+        count: 0,
+      },
+      {
+        name: 'Neither',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Likely',
+        count: 3,
+      },
+      {
+        name: 'Extremely Likely',
+        count: 2,
+      },
+    ]}
+  />
+</ChartGrid>
+
+### Students
+
+<TableChart
+  className="mb-4"
+  title="How have you interacted with the Q&A channel?"
+  data={[
+    {
+      name: 'Read or upvoted existing questions',
+      count: 18,
+    },
+    {
+      name: 'Posted own questions',
+      count: 9,
+    },
+    {
+      name: 'Reacted to responses given by the lecturer',
+      count: 8,
+    },
+    {
+      name: 'No interaction with the Q&A channel',
+      count: 4,
+    },
+    {
+      name: 'Q&A channel unknown',
+      count: 2,
+    },
+  ]}
+/>
+
+<ChartGrid>
+  <BarChart
+    likert
+    title="I feel the use of the Q&A channel has improved my understanding of the lecture contents."
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 1,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 2,
+      },
+      {
+        name: 'Undecided',
+        count: 2,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 8,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 4,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="I believe that there should be more interaction like the Q&A channel between teacher and students in the classroom."
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 3,
+      },
+      {
+        name: 'Undecided',
+        count: 7,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 16,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 3,
+      },
+    ]}
+  />
+</ChartGrid>
+
+### Usage
+
+In November 2021, lecturers using the KlickerUZH Live Q&A functionality have received over 400 questions, about 150 of which were resolved with a response through the tool. 62 were resolved without a response (e.g., orally or implicitly), and 68 were deleted (e.g., because of their irrelevance). The length of feedback responses ranged from extensive 530 character explanations to single words like "No".
+
+## Conclusion
+
+Based on preliminary results and direct exchange with lecturers, our conclusion as of now is that KlickerUZH Live Q&A is certainly a viable investment in large lectures, especially if a teaching assistant is available to respond in time. Students feel that their comprehension improves when being able and encouraged to pose their questions. In the case of smaller lectures or when teaching without an assistant, handling the live Q&A, much like a live chat, is an additional burden, though still feasible.
+
+## Further Resources
+
+- Comparison of Classroom Response Systems (CRS, in German): https://teachingtools.uzh.ch/index.php?id=tool&toolId=9
+- Hybrid Teaching (in German): https://teachingtools.uzh.ch/index.php?id=tool&toolId=37
+
+## Feedback
+
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey [here](https://hi.switchy.io/6csb). Thank you!

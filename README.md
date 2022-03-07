@@ -1,8 +1,8 @@
-![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray.png)
+![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray_Transparent.png)
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
-![Klicker Question Pool](https://www.klicker.uzh.ch/img/question_pool_scaled.png)
+![Klicker Timeline](https://www.klicker.uzh.ch/img/timeline_mac.png)
 
 The KlickerUZH consists of two main services (see [Architecture](https://www.klicker.uzh.ch/docs/deployment/deployment_architecture)), as well as an additional Shibboleth service for integration with [SwitchAAI](https://www.switch.ch/aai/):
 
@@ -26,7 +26,7 @@ The following additional resources might be of interest to you:
 
 ## Roadmap / Issues
 
-The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/roadmap). Please feel free to add any issues or feature requests you might have to the [Github Issues](https://github.com/orgs/uzh-bf/projects/4), or start a new discussion on [Github Discussions](https://github.com/uzh-bf/klicker-uzh/discussions).
+The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/development). Please feel free to add any issues or feature requests you might have to the [Github Issues](https://github.com/orgs/uzh-bf/projects/4), or start a new discussion on [Github Discussions](https://github.com/uzh-bf/klicker-uzh/discussions).
 
 ## Deployment
 

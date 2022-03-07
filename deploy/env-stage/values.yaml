@@ -1,0 +1,61 @@
+cache:
+  port: 32602
+
+s3:
+  endpoint: tc-klicker-stage.s3.amazonaws.com
+  bucket: images
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+security:
+  domain: klicker-stage.bf-app.ch
+
+analytics:
+  sentry:
+    frontend:
+      environment: stage
+
+redis:
+  replica:
+    replicaCount: 0
+
+frontend:
+  hostname: app.klicker-stage.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: app.klicker-stage.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-stage-frontend-tls
+        hosts:
+          - app.klicker-stage.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload
+
+backend:
+  hostname: api.klicker-stage.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: api.klicker-stage.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-stage-backend-tls
+        hosts:
+          - api.klicker-stage.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  priorityClassName: staging-workload
