@@ -1,0 +1,43 @@
+# extend the node alpine base
+FROM node:16.14-alpine
+
+# root application directory
+ENV APP_DIR /app
+ENV NODE_ENV="production"
+
+# install tini
+RUN set -x \
+  && apk add --no-cache tini \
+  && mkdir -p $APP_DIR/apps/backend \
+  && chown -R node:0 $APP_DIR
+
+# switch to the node user (uid 1000)
+# non-root as provided by the base image
+USER node
+
+# inject the application dependencies
+WORKDIR $APP_DIR
+COPY --chown=node:0 package.json package-lock.json $APP_DIR/
+COPY --chown=node:0 apps/backend/package.json $APP_DIR/apps/backend/
+
+# install packages for the specified environment
+RUN set -x && npm ci --workspace apps/backend
+
+# inject application sources
+WORKDIR $APP_DIR/apps/backend
+COPY --chown=node:0 apps/backend/ $APP_DIR/apps/backend/
+
+# run the application in production mode
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "src/server.js"]
+
+# add labels
+LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+LABEL name="@klicker-uzh/backend"
+
+# expose the main application port
+EXPOSE 4000
+
+# setup a HEALTHCHECK
+HEALTHCHECK --interval=5m --timeout=3s \
+  CMD curl -f http://localhost:4000/.well-known/apollo/server-health || exit 1

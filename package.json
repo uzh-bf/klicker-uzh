@@ -1,7 +1,11 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.7.0-beta.3",
+  "version": "1.8.0-rc.11",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": ">=14"
   },
@@ -28,6 +32,10 @@
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
   ],
   "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint:staged": "turbo run lint:staged",
+    "test:changed": "turbo run test:changed",
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
@@ -36,16 +44,19 @@
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "prepare": "husky install",
+    "husky": "husky install",
     "happo": "happo"
   },
   "devDependencies": {
     "happo.io": "6.8.0",
     "husky": "7.0.2",
     "standard-version": "9.3.1",
+    "turbo": "1.1.2",
     "yaml": "1.10.2"
   },
   "volta": {
-    "node": "14.18.1"
-  }
+    "node": "16.14.0",
+    "npm": "8.5.0"
+  },
+  "packageManager": "npm@8.5.0"
 }
