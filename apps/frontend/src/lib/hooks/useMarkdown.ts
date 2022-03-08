@@ -42,7 +42,7 @@ function useMarkdown({ content, description }: Params) {
     }
   }, [content, description])
 
-  return parsedContent
+  return parsedContent || null
 }
 
 export default useMarkdown
