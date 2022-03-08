@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.11...v1.8.0-rc.12) (2022-03-08)
+
+
+### Bug Fixes
+
+* **backend:** remove break tags from description and add parsing for question editing ([018ec3e](https://github.com/uzh-bf/klicker-uzh/commit/018ec3e2bb77d18240e06fc5ee5831548eff7d47))
+* **backend:** special characters now included in unescaped form in description ([c2932ed](https://github.com/uzh-bf/klicker-uzh/commit/c2932ede335a57878a687508feaeb3486f232aa5))
+* **frontend:** ensure that something is returned from ellipsis ([25e0695](https://github.com/uzh-bf/klicker-uzh/commit/25e06953db242be68c9a918f5acad89e51ae54af))
+
 ## [1.8.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.10...v1.8.0-rc.11) (2022-03-06)
 
 
