@@ -43,7 +43,6 @@ function ContentInput({
   disabled,
   activeVersion,
 }: Props): React.ReactElement {
-  // TODO: improve how the editor component is forced to rerender on value changes
   const renderElement = useCallback((props) => <Element {...props} />, [])
   const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
