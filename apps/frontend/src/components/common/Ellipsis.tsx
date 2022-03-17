@@ -44,7 +44,9 @@ function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElem
       : 'no content',
   })
 
-  if (children?.length <= maxLength || typeof children !== 'string') {
+  // return full content if it was shorter than the set maxLength or if endIndex = children.length
+  // (whole string is included in shortened version)
+  if (children?.length <= maxLength || typeof children !== 'string' || children?.length === endIndex) {
     return parsedContent
   }
 
