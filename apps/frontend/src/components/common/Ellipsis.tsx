@@ -9,7 +9,9 @@ interface Props {
 }
 
 function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElement {
-  const parsedContent = useMarkdown({ content: children.replace(/^(- |[0-9]+. |\* |\+ )/g, '') })
+  const parsedContent = useMarkdown({
+    content: children ? children.toString().replace(/^(- |[0-9]+. |\* |\+ )/g, '') : 'no content',
+  })
 
   const formulaRegex = RegExp(/(\${2})[^]*?[^\\]\1/gm)
   let endIndex = null
@@ -34,10 +36,15 @@ function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElem
 
   // compute shortened output based on either maxLength or endIndex
   const shortenedParsedContent = useMarkdown({
-    content: `${children.substr(0, endIndex || maxLength).replace(/^(- |[0-9]+. |\* |\+ )/g, '')} **...**`,
+    content: children
+      ? `${children
+          .toString()
+          .substr(0, endIndex || maxLength)
+          .replace(/^(- |[0-9]+. |\* |\+ )/g, '')} **...**`
+      : 'no content',
   })
 
-  if (children.length <= maxLength || typeof children !== 'string') {
+  if (children?.length <= maxLength || typeof children !== 'string') {
     return parsedContent
   }
 
