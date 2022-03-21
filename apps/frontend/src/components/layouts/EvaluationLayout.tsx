@@ -349,7 +349,7 @@ function EvaluationLayout({
           !showConfusionTS ? (
             <div
               className={clsx(
-                'w-full h-[20rem] md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-16.5rem)]',
+                'w-full h-[20rem] print:h-max-content md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-16.5rem)]',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
             >
@@ -370,7 +370,7 @@ function EvaluationLayout({
             showQuestionLayout &&
             !showFeedback &&
             !showConfusionTS && (
-              <div className="flex flex-col print:h-auto md:h-full md:w-[18rem] py-4 px-4 md:pl-6 md:px-0 md:-pr-2 overflow-y-hidden print:!overflow-y-visible">
+              <div className="flex flex-col print:h-auto print:!mt-[20rem] md:h-full md:w-[18rem] py-4 px-4 md:pl-6 md:px-0 md:-pr-2 overflow-y-hidden print:!overflow-y-visible">
                 <>
                   {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
                     <div>
@@ -395,7 +395,7 @@ function EvaluationLayout({
         </div>
 
         <div>
-          <div className="px-4 py-2 bg-gray-100 border-0 border-t border-gray-300 border-solid md:flex md:flex-row md:items-center md:justify-between flex-[0_0_auto]">
+          <div className="px-4 py-2 bg-gray-100 border-0 print:!border-0 border-t border-gray-300 border-solid md:flex md:flex-row md:items-center md:justify-between flex-[0_0_auto]">
             {showQuestionLayout && Info}
             <Info
               totalResponses={
@@ -411,13 +411,14 @@ function EvaluationLayout({
               showQuestionLayout && (
                 <Checkbox
                   toggle
+                  className="print:!hidden"
                   defaultChecked={showSolution}
                   label={intl.formatMessage(messages.showSolutionLabel)}
                   onChange={onToggleShowSolution}
                 />
               )}
             {showQuestionLayout && (
-              <div className="flex">
+              <div className="flex print:hidden">
                 <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
                 <a href={`/sessions/print/${sessionId}`}>
                   <Button content="Export PDF" icon="file" />

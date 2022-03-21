@@ -42,7 +42,7 @@ const options = [
 function VisualizationType({ activeVisualization, onChangeType, questionType }: Props): React.ReactElement {
   const intl = useIntl()
   return (
-    <div className="visualizationType">
+    <div className="visualizationType print:hidden">
       <Dropdown
         selection
         upward
