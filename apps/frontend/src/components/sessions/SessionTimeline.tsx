@@ -345,7 +345,7 @@ function SessionTimeline({
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-4 mt-2 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:mt-0 md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-00full">
+      <div className="flex flex-col flex-1 p-4 mt-2 overflow-x-auto overflow-y-visible border border-gray-300 border-solid md:mt-0 md:flex-grow-0 md:flex-shrink-0 md:flex-row md:p-2 md:flex-[0_0_100%]">
         {blocks.map(
           (block, index): React.ReactElement => (
             <div
