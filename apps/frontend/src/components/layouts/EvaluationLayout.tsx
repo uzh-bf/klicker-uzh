@@ -14,6 +14,7 @@ import CsvExport from '../evaluation/CsvExport'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import QuestionFiles from '../sessions/join/QuestionFiles'
 
+/* eslint-disable no-unused-vars */
 const { publicRuntimeConfig } = getConfig()
 
 const messages = defineMessages({
@@ -67,6 +68,10 @@ const defaultProps = {
   showSolution: false,
   statistics: undefined,
   totalResponses: undefined,
+  choices: undefined,
+  files: [],
+  feedbacks: [],
+  confusionTS: [],
 }
 
 function EvaluationLayout({
@@ -170,7 +175,7 @@ function EvaluationLayout({
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
         className={clsx(
-          'flex flex-col md:grid-rows-[auto_auto_auto_auto_minmax(auto,_100%)_auto] md:grid-cols-[auto_14rem] print:h-auto print:max-h-auto min-h-screen grid-gap-4 md:grid md:h-screen md:max-h-screen md:max-w-full evaluationLayout',
+          'flex flex-col print:h-auto print:max-h-auto min-h-screen md:h-screen md:max-h-screen md:max-w-full evaluationLayout',
           {
             fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
           }
@@ -287,7 +292,7 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails md:overflow-y-auto md:max-h-[10rem] md:self-start flex-[0_0_auto] order-1 p-4 text-left border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
+        <div className="questionDetails w-full md:overflow-y-auto md:max-h-[7rem] md:self-start flex-[0_0_auto] p-4 text-left border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
             {(showQuestionLayout && <Description formatted content={description} />) ||
               (showFeedback && 'Feedback-Channel') ||
@@ -300,157 +305,136 @@ function EvaluationLayout({
           )}
         </div>
 
-        <div className="order-4 px-4 py-2 bg-gray-100 border-0 border-t border-gray-300 border-solid info md:self-end md:flex md:flex-row md:items-center md:justify-between flex-[0_0_auto]">
-          {showQuestionLayout && Info}
-          <Info
-            totalResponses={
-              (showQuestionLayout && totalResponses) ||
-              (showFeedback && feedbacks.length) ||
-              (showConfusionTS && confusionTS.length) ||
-              0
-            }
-          />
-          {type !== QUESTION_TYPES.FREE &&
-            type !== QUESTION_TYPES.FREE_RANGE &&
-            activeVisualization !== CHART_TYPES.CLOUD_CHART &&
-            showQuestionLayout && (
-              <Checkbox
-                toggle
-                defaultChecked={showSolution}
-                label={intl.formatMessage(messages.showSolutionLabel)}
-                onChange={onToggleShowSolution}
+        <div className="flex flex-col flex-1 max-w-full max-h-full md:flex-row md:py-4 md:px-4">
+          {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+          activeVisualization !== CHART_TYPES.TABLE &&
+          !showFeedback &&
+          !showConfusionTS ? (
+            <div
+              className={clsx(
+                'w-full h-[20rem] md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-15.5rem)]',
+                showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
+              )}
+            >
+              {children}
+            </div>
+          ) : (
+            <div
+              className={clsx(
+                'h-full w-full',
+                showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
+              )}
+            >
+              {children}
+            </div>
+          )}
+          {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+            activeVisualization !== CHART_TYPES.TABLE &&
+            showQuestionLayout &&
+            !showFeedback &&
+            !showConfusionTS && (
+              <div className="flex flex-col print:h-auto md:h-full md:w-[18rem] py-4 px-4 md:pl-6 md:px-0 md:-pr-2 overflow-y-hidden print:!overflow-y-visible">
+                <>
+                  {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+                    <div>
+                      <Possibilities
+                        data={data}
+                        questionOptions={options}
+                        questionType={type}
+                        showGraph={showGraph}
+                        showSolution={showSolution}
+                      />
+                    </div>
+                  )}
+
+                  {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && !showFeedback && (
+                    <div className="mt-6">
+                      <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
+                    </div>
+                  )}
+                </>
+              </div>
+            )}
+        </div>
+
+        <div>
+          <div className="px-4 py-2 bg-gray-100 border-0 border-t border-gray-300 border-solid md:flex md:flex-row md:items-center md:justify-between flex-[0_0_auto]">
+            {showQuestionLayout && Info}
+            <Info
+              totalResponses={
+                (showQuestionLayout && totalResponses) ||
+                (showFeedback && feedbacks.length) ||
+                (showConfusionTS && confusionTS.length) ||
+                0
+              }
+            />
+            {type !== QUESTION_TYPES.FREE &&
+              type !== QUESTION_TYPES.FREE_RANGE &&
+              activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+              showQuestionLayout && (
+                <Checkbox
+                  toggle
+                  defaultChecked={showSolution}
+                  label={intl.formatMessage(messages.showSolutionLabel)}
+                  onChange={onToggleShowSolution}
+                />
+              )}
+            {showQuestionLayout && (
+              <div className="flex">
+                <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+                <a href={`/sessions/print/${sessionId}`}>
+                  <Button content="Export PDF" icon="file" />
+                </a>
+              </div>
+            )}
+            {showQuestionLayout && (
+              <VisualizationType
+                activeVisualization={activeVisualization}
+                questionType={type}
+                onChangeType={onChangeVisualizationType}
               />
             )}
-          {showQuestionLayout && (
-            <div className="flex">
-              <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
-              <a href={`/sessions/print/${sessionId}`}>
-                <Button content="Export PDF" icon="file" />
-              </a>
-            </div>
-          )}
-          {showQuestionLayout && (
-            <VisualizationType
-              activeVisualization={activeVisualization}
-              questionType={type}
-              onChangeType={onChangeVisualizationType}
-            />
-          )}
-          {showFeedback && (
-            <div className="print:hidden">
-              <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
-            </div>
-          )}
-        </div>
-
-        <div
-          className={clsx(
-            'chart print:h-auto md:h-full md:py-4 md:pr-2 md:pl-4 flex-[1_0_50vh] order-5 overflow-y-hidden print:!overflow-y-visible'
-          )}
-        >
-          <div
-            className={clsx('h-full w-full', showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0')}
-          >
-            {children}
+            {showFeedback && (
+              <div className="print:hidden">
+                <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
+              </div>
+            )}
           </div>
         </div>
-
-        {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
-          activeVisualization !== CHART_TYPES.TABLE &&
-          showQuestionLayout && (
-            <>
-              {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-                <div className="order-2 py-4 pl-2 pr-4 optionDisplay flex-[0_0_auto]">
-                  <Possibilities
-                    data={data}
-                    questionOptions={options}
-                    questionType={type}
-                    showGraph={showGraph}
-                    showSolution={showSolution}
-                  />
-                </div>
-              )}
-
-              {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && !showFeedback && (
-                <div className="order-3 py-4 pl-2 pr-4 statistics flex-[0_0_auto]">
-                  <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
-                </div>
-              )}
-            </>
-          )}
 
         <style jsx>
           {`
             @import 'src/theme';
 
             .evaluationLayout {
+              .questionDetails {
+                :global(.description p:not(:last-child)) {
+                  margin-bottom: 0.7rem;
+                  line-height: 1;
+                }
+
+                :global(.description code) {
+                  background: lightgrey;
+                  padding: 0.1rem 0.3rem;
+                }
+
+                :global(.description blockquote) {
+                  padding: 0.1rem 0.5rem;
+                  color: gray;
+                  font-style: italic;
+                  border-left: 4px solid grey;
+                }
+
+                :global(.description ul:not(:last-child), .description ol:not(:last-child)) {
+                  margin-bottom: 0.7rem;
+                }
+
+                :global(.description ul:not(:first-child), .description ol:not(:first-child)) {
+                  margin-top: 0.7rem;
+                }
+              }
               @include desktop-tablet-only {
-                .questionDetails {
-                  grid-area: questionDetails;
-
-                  :global(.description p:not(:last-child)) {
-                    margin-bottom: 0.7rem;
-                    line-height: 1;
-                  }
-
-                  :global(.description code) {
-                    background: lightgrey;
-                    padding: 0.1rem 0.3rem;
-                  }
-
-                  :global(.description blockquote) {
-                    padding: 0.1rem 0.5rem;
-                    color: gray;
-                    font-style: italic;
-                    border-left: 4px solid grey;
-                  }
-
-                  :global(.description ul:not(:last-child), .description ol:not(:last-child)) {
-                    margin-bottom: 0.7rem;
-                  }
-
-                  :global(.description ul:not(:first-child), .description ol:not(:first-child)) {
-                    margin-top: 0.7rem;
-                  }
-                }
-
-                .chart {
-                  grid-area: graph;
-                }
-
-                .info {
-                  grid-area: info;
-                }
-
-                .optionDisplay {
-                  grid-area: optionDisplay;
-                }
-
-                .statistics {
-                  grid-area: statistics;
-                }
-
-                grid-template-areas:
-                  'instanceChooser instanceChooser'
-                  'questionDetails questionDetails'
-                  'graph optionDisplay'
-                  'graph statistics'
-                  'graph statistics'
-                  'info info';
-
-                &.fullScreen {
-                  grid-template-areas:
-                    'instanceChooser instanceChooser'
-                    'questionDetails questionDetails'
-                    'graph graph'
-                    'graph graph'
-                    'graph graph'
-                    'info info';
-                }
-
                 .instanceChooser {
-                  grid-area: instanceChooser;
-
                   :global(> .menu) {
                     :global(> .item.active) {
                       border-color: $color-primary;
@@ -525,7 +509,7 @@ function EvaluationLayout({
 
 EvaluationLayout.defaultProps = defaultProps
 
-function Description({ content, formatted }) {
+function Description({ content, formatted }: any) {
   const parsedContent = useMarkdown({ content })
   return (
     <>
