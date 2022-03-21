@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
-import Head from 'next/head'
 
 import useMarkdown from '../../lib/hooks/useMarkdown'
 import CommonLayout from './CommonLayout'
@@ -170,9 +169,12 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
-        className={clsx('evaluationLayout', {
-          fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
-        })}
+        className={clsx(
+          'flex flex-col md:grid-rows-[auto_auto_auto_auto_minmax(auto,_100%)_auto] md:grid-cols-[auto_14rem] print:h-auto print:max-h-auto min-h-screen grid-gap-4 md:grid md:h-screen md:max-h-screen md:max-w-full evaluationLayout',
+          {
+            fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
+          }
+        )}
       >
         {((): React.ReactElement => {
           if (instanceSummary.length <= 0 && !existsFeedback && !existsConfusion) {
@@ -180,27 +182,37 @@ function EvaluationLayout({
           }
 
           return (
-            <div className="instanceChooser print:!hidden">
-              <Menu fitted tabular>
+            <div className="instanceChooser md:border-0 md:border-b md:border-primary md:border-solid md:pb-0 md:p-1.5 hidden md:flex flex-[0_0_auto] print:!hidden">
+              <Menu
+                fitted
+                tabular
+                className="md:!min-h-0 md:!mb-[-1px] md:!border-0 md:!border-b md:!border-solid md:!border-primary"
+              >
                 <Menu.Item
-                  className="hoverable"
+                  className="hoverable md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8"
                   disabled={currentIndex === 0}
                   icon="arrow left"
                   onClick={(): void => activateInstance(currentIndex - 1)}
                 />
 
                 <Menu.Item
-                  className="hoverable"
+                  className="hoverable md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8"
                   disabled={currentIndex + 1 === numberOfTabs}
                   icon="arrow right"
                   onClick={(): void => activateInstance(currentIndex + 1)}
                 />
 
-                <div className="instanceDropdown">
-                  <Menu.Item fitted active={showQuestionLayout}>
+                <div className={clsx('instanceDropdown', instanceSummary.length >= 7 ? 'block' : 'hidden')}>
+                  <Menu.Item
+                    fitted
+                    active={showQuestionLayout}
+                    className="md:!p-[3px] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8
+                  "
+                  >
                     <Dropdown
                       search
                       selection
+                      className="md:!text-[0.6rem] md:!leading-[0.6rem]"
                       options={dropdownOptions}
                       placeholder="Select Question"
                       value={currentIndex}
@@ -217,9 +229,13 @@ function EvaluationLayout({
                       <Menu.Item
                         fitted
                         active={index === currentIndex}
-                        className={clsx('hoverable', {
-                          executed: blockStatus === 'EXECUTED',
-                        })}
+                        className={clsx(
+                          'hoverable',
+                          'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8',
+                          {
+                            executed: blockStatus === 'EXECUTED',
+                          }
+                        )}
                         key={id}
                         onClick={(): void => {
                           activateInstance(index)
@@ -235,7 +251,11 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showFeedback}
-                    className={clsx('hoverable', 'feedback')}
+                    className={clsx(
+                      'hoverable',
+                      'feedback',
+                      'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
+                    )}
                     onClick={(): void => {
                       // TODO: dont go with instance index, use showFeedback
                       activateInstance(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1) // if there is a confusion-tab, the tab is the second to last, otherwise the last
@@ -249,7 +269,11 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showConfusionTS}
-                    className={clsx('hoverable', 'feedback')}
+                    className={clsx(
+                      'hoverable',
+                      'feedback',
+                      'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
+                    )}
                     onClick={(): void => {
                       // TODO: dont go with instance index, use showConfusionTS
                       activateInstance(numberOfTabs - 1)
@@ -263,7 +287,7 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
+        <div className="questionDetails md:overflow-y-auto md:max-h-[10rem] md:self-start flex-[0_0_auto] order-1 p-4 text-left border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
           <p>
             {(showQuestionLayout && <Description formatted content={description} />) ||
               (showFeedback && 'Feedback-Channel') ||
@@ -276,7 +300,7 @@ function EvaluationLayout({
           )}
         </div>
 
-        <div className="info">
+        <div className="order-4 px-4 py-2 bg-gray-100 border-0 border-t border-gray-300 border-solid info md:self-end md:flex md:flex-row md:items-center md:justify-between flex-[0_0_auto]">
           {showQuestionLayout && Info}
           <Info
             totalResponses={
@@ -298,7 +322,7 @@ function EvaluationLayout({
               />
             )}
           {showQuestionLayout && (
-            <div className="exportButtons">
+            <div className="flex">
               <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
               <a href={`/sessions/print/${sessionId}`}>
                 <Button content="Export PDF" icon="file" />
@@ -319,14 +343,24 @@ function EvaluationLayout({
           )}
         </div>
 
-        <div className="chart">{children}</div>
+        <div
+          className={clsx(
+            'chart print:h-auto md:h-full md:py-4 md:pr-2 md:pl-4 flex-[1_0_50vh] order-5 overflow-y-hidden print:!overflow-y-visible'
+          )}
+        >
+          <div
+            className={clsx('h-full w-full', showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0')}
+          >
+            {children}
+          </div>
+        </div>
 
         {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
           activeVisualization !== CHART_TYPES.TABLE &&
           showQuestionLayout && (
             <>
               {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-                <div className="optionDisplay">
+                <div className="order-2 py-4 pl-2 pr-4 optionDisplay flex-[0_0_auto]">
                   <Possibilities
                     data={data}
                     questionOptions={options}
@@ -338,13 +372,123 @@ function EvaluationLayout({
               )}
 
               {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && !showFeedback && (
-                <div className="statistics">
+                <div className="order-3 py-4 pl-2 pr-4 statistics flex-[0_0_auto]">
                   <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
                 </div>
               )}
             </>
           )}
 
+        <style jsx>
+          {`
+            @import 'src/theme';
+
+            .evaluationLayout {
+              @include desktop-tablet-only {
+                .questionDetails {
+                  grid-area: questionDetails;
+
+                  :global(.description p:not(:last-child)) {
+                    margin-bottom: 0.7rem;
+                    line-height: 1;
+                  }
+
+                  :global(.description code) {
+                    background: lightgrey;
+                    padding: 0.1rem 0.3rem;
+                  }
+
+                  :global(.description blockquote) {
+                    padding: 0.1rem 0.5rem;
+                    color: gray;
+                    font-style: italic;
+                    border-left: 4px solid grey;
+                  }
+
+                  :global(.description ul:not(:last-child), .description ol:not(:last-child)) {
+                    margin-bottom: 0.7rem;
+                  }
+
+                  :global(.description ul:not(:first-child), .description ol:not(:first-child)) {
+                    margin-top: 0.7rem;
+                  }
+                }
+
+                .chart {
+                  grid-area: graph;
+                }
+
+                .info {
+                  grid-area: info;
+                }
+
+                .optionDisplay {
+                  grid-area: optionDisplay;
+                }
+
+                .statistics {
+                  grid-area: statistics;
+                }
+
+                grid-template-areas:
+                  'instanceChooser instanceChooser'
+                  'questionDetails questionDetails'
+                  'graph optionDisplay'
+                  'graph statistics'
+                  'graph statistics'
+                  'info info';
+
+                &.fullScreen {
+                  grid-template-areas:
+                    'instanceChooser instanceChooser'
+                    'questionDetails questionDetails'
+                    'graph graph'
+                    'graph graph'
+                    'graph graph'
+                    'info info';
+                }
+
+                .instanceChooser {
+                  grid-area: instanceChooser;
+
+                  :global(> .menu) {
+                    :global(> .item.active) {
+                      border-color: $color-primary;
+                      background-color: $color-primary-background;
+                      border-bottom: 1px solid $color-primary-background;
+                    }
+
+                    :global(> .item.hoverable:hover) {
+                      background-color: $color-primary-10p;
+                    }
+
+                    :global(> .item.executed) {
+                      color: grey;
+                    }
+
+                    :global(> .item.feedback) {
+                      color: grey;
+                    }
+                  }
+                }
+
+                .instanceDropdown {
+                  :global(> .item.active) {
+                    border-color: $color-primary;
+                    background-color: $color-primary-background;
+                    border-bottom: 1px solid $color-primary-background;
+                  }
+
+                  :global(.dropdown) {
+                    :global(.item) {
+                      min-height: 0;
+                    }
+                  }
+                }
+              }
+            }
+          `}
+        </style>
         <style global jsx>{`
           html {
             font-size: 12px !important;
@@ -374,259 +518,6 @@ function EvaluationLayout({
             }
           }
         `}</style>
-
-        <style jsx>
-          {`
-            @import 'src/theme';
-
-            .evaluationLayout {
-              display: flex;
-              flex-direction: column;
-              min-height: 100vh;
-
-              .exportButtons {
-                display: flex;
-              }
-
-              .instanceChooser {
-                flex: 0 0 auto;
-                display: flex;
-
-                @media all and (max-width: 600px) {
-                  display: none;
-                }
-              }
-
-              .instanceDropdown {
-                display: ${instanceSummary.length >= 7 ? 'block' : 'none'};
-              }
-
-              .chart {
-                flex: 1 0 50vh;
-                order: 5;
-                overflow-y: hidden;
-
-                @media print {
-                  overflow-y: visible;
-                }
-              }
-
-              .questionDetails,
-              .feedbackDetails {
-                flex: 0 0 auto;
-                order: 1;
-
-                padding: 1rem;
-                text-align: left;
-              }
-
-              .info {
-                flex: 0 0 auto;
-                order: 4;
-
-                border-top: 1px solid lightgrey;
-                background-color: #f3f3f3;
-                padding: 0.5rem 1rem;
-              }
-
-              .chartType {
-                flex: 0 0 auto;
-                order: 4;
-
-                padding: 1rem;
-              }
-
-              .optionDisplay,
-              .statistics {
-                padding: 1rem 1rem 1rem 0.5rem;
-              }
-
-              .optionDisplay {
-                flex: 0 0 auto;
-                order: 2;
-              }
-
-              .statistics {
-                flex: 0 0 auto;
-                order: 3;
-              }
-
-              @supports (grid-gap: 1rem) {
-                @include desktop-tablet-only {
-                  display: grid;
-                  height: 100vh;
-                  max-height: 100vh;
-                  max-width: 100vw;
-
-                  @media print {
-                    height: unset;
-                    max-height: unset;
-                  }
-
-                  grid-template-columns: auto 14rem;
-                  grid-template-rows:
-                    auto
-                    auto
-                    auto
-                    auto
-                    minmax(auto, 100%)
-                    auto;
-                  grid-template-areas:
-                    'instanceChooser instanceChooser'
-                    'questionDetails questionDetails'
-                    'graph optionDisplay'
-                    'graph statistics'
-                    'graph statistics'
-                    'info info';
-
-                  &.fullScreen {
-                    grid-template-areas:
-                      'instanceChooser instanceChooser'
-                      'questionDetails questionDetails'
-                      'graph graph'
-                      'graph graph'
-                      'graph graph'
-                      'info info';
-                  }
-
-                  .instanceChooser {
-                    grid-area: instanceChooser;
-                    padding: 0.3rem;
-                    padding-bottom: 0;
-                    border-bottom: 1px solid $color-primary;
-
-                    :global(> .menu) {
-                      min-height: 0;
-                      margin-bottom: -1px;
-                      border-bottom: 1px solid $color-primary;
-
-                      :global(> .item) {
-                        font-size: 0.7rem;
-                        padding: 0 0.6rem;
-                        margin: 0 0 -1px 0;
-                        height: 2rem;
-                      }
-
-                      :global(> .item.active) {
-                        border-color: $color-primary;
-                        background-color: $color-primary-background;
-                        border-bottom: 1px solid $color-primary-background;
-                      }
-
-                      :global(> .item.hoverable:hover) {
-                        background-color: $color-primary-10p;
-                      }
-
-                      :global(> .item.executed) {
-                        color: grey;
-                      }
-
-                      :global(> .item.feedback) {
-                        color: grey;
-                      }
-                    }
-                  }
-
-                  .instanceDropdown {
-                    :global(> .item) {
-                      padding: 3px;
-                      margin: 0 0 -1px 0;
-                      height: 2rem;
-                    }
-
-                    :global(> .item.active) {
-                      border-color: $color-primary;
-                      background-color: $color-primary-background;
-                      border-bottom: 1px solid $color-primary-background;
-                    }
-
-                    :global(.dropdown) {
-                      font-size: 0.6rem;
-                      line-height: 0.6rem;
-
-                      :global(.item) {
-                        min-height: 0;
-                      }
-                    }
-                  }
-
-                  .questionDetails,
-                  .feedbackDetails {
-                    grid-area: questionDetails;
-                    align-self: start;
-
-                    max-height: 10rem;
-                    overflow-y: auto;
-
-                    h1 {
-                      font-size: 1.5rem;
-                      line-height: 1.5rem;
-                      margin-bottom: 0.5rem;
-                    }
-
-                    :global(.description p:not(:last-child)) {
-                      margin-bottom: 0.7rem;
-                      line-height: 1;
-                    }
-
-                    :global(.description code) {
-                      background: lightgrey;
-                      padding: 0.1rem 0.3rem;
-                    }
-
-                    :global(.description ul:not(:last-child), .description ol:not(:last-child)) {
-                      margin-bottom: 0.7rem;
-                    }
-
-                    :global(.description ul:not(:first-child), .description ol:not(:first-child)) {
-                      margin-top: 0.7rem;
-                    }
-                  }
-
-                  .chart {
-                    grid-area: graph;
-
-                    height: 100%;
-                    padding: 1rem 0.5rem 1rem 1rem;
-
-                    :global(> *) {
-                      border: ${showQuestionLayout ? '1px solid lightgrey' : '0'};
-                    }
-
-                    @media print {
-                      height: auto;
-                    }
-                  }
-
-                  .info {
-                    grid-area: info;
-
-                    align-self: end;
-
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    justify-content: space-between;
-                  }
-
-                  .optionDisplay {
-                    grid-area: optionDisplay;
-
-                    h2 {
-                      font-size: 1.5rem;
-                      line-height: 1.5rem;
-                      margin-bottom: 0.5rem;
-                    }
-                  }
-
-                  .statistics {
-                    grid-area: statistics;
-                  }
-                }
-              }
-            }
-          `}
-        </style>
       </div>
     </CommonLayout>
   )
