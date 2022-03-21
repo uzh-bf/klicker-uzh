@@ -103,7 +103,7 @@ function UploadModal({ children }: Props): React.ReactElement {
       </Modal.Header>
       <Modal.Content>
         <div className="flex flex-row flex-nowrap">
-          <div className="flex-0020" {...getRootProps()}>
+          <div className="flex-[0_0_20%]" {...getRootProps()}>
             <input {...getInputProps()} />
             <Button fluid icon primary disabled={false} type="button">
               <Icon name="plus" />

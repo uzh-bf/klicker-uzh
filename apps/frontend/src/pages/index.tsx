@@ -42,7 +42,7 @@ function Index(): React.ReactElement {
         <p className="italic text-center">Welcome to the open source instant audience response system.</p>
 
         <div className="flex flex-col w-full p-4 mb-4 lg:items-center lg:justify-between lg:flex-row lg:flex-wrap border-primary ">
-          <p className="mb-2 lg:flex-00full">Want to participate in a poll?</p>
+          <p className="mb-2 lg:flex-[0_0_100%]">Want to participate in a poll?</p>
           <Input
             fluid
             className="flex-grow lg:mr-2"
