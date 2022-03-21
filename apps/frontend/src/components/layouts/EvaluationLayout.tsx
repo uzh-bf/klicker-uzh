@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/outline'
 
 import useMarkdown from '../../lib/hooks/useMarkdown'
 import CommonLayout from './CommonLayout'
@@ -106,6 +107,8 @@ function EvaluationLayout({
   const intl = useIntl()
 
   const [currentIndex, setCurrentIndex] = useState(activeInstance)
+  const [questionCollapsed, setQuestionCollapsed] = useState(true)
+  const [showExtensibleButton, setExtensibleButton] = useState(false)
 
   const existsFeedback = feedbacks?.length > 0
   const existsConfusion = confusionTS?.length > 0
@@ -128,7 +131,17 @@ function EvaluationLayout({
 
   useEffect(() => {
     setCurrentIndex(activeInstance)
-  }, [activeInstance])
+    setQuestionCollapsed(true)
+  }, [activeInstance, showFeedback, showConfusionTS])
+
+  useEffect(() => {
+    const questionElem = document.getElementById('question')
+    if (questionElem.scrollHeight > questionElem.clientHeight || questionCollapsed === false) {
+      setExtensibleButton(true)
+    } else {
+      setExtensibleButton(false)
+    }
+  }, [questionCollapsed, activeInstance, showFeedback, showConfusionTS])
 
   const dropdownOptions = instanceSummary.map(
     (
@@ -211,8 +224,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showQuestionLayout}
-                    className="md:!p-[3px] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8
-                  "
+                    className="md:!p-[3px] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8"
                   >
                     <Dropdown
                       search
@@ -292,18 +304,43 @@ function EvaluationLayout({
           )
         })()}
 
-        <div className="questionDetails w-full md:overflow-y-auto md:max-h-[7rem] md:self-start flex-[0_0_auto] p-4 text-left border-solid border-b-only border-primary bg-primary-bg print:!text-xl print:!font-bold print:!ml-0 print:!pl-0">
-          <p>
-            {(showQuestionLayout && <Description formatted content={description} />) ||
-              (showFeedback && 'Feedback-Channel') ||
-              (showConfusionTS && 'Confusion-Barometer')}
-          </p>
-          {showQuestionLayout && publicRuntimeConfig.s3root && files?.length > 0 && (
-            <div className="files">
-              <QuestionFiles isCompact files={files} />
-            </div>
-          )}
+        <div className="bg-primary-bg">
+          <div
+            className={clsx(
+              questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+              !showExtensibleButton && 'border-solid border-b-only border-primary',
+              showExtensibleButton &&
+                questionCollapsed &&
+                'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
+              'questionDetails w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left print:!text-xl print:!font-bold print:!ml-0 print:!pl-0 print:text-inherit print:border-solid print:border-b-only print:border-primary'
+            )}
+            id="question"
+          >
+            <p>
+              {(showQuestionLayout && <Description formatted content={description} />) ||
+                (showFeedback && 'Feedback-Channel') ||
+                (showConfusionTS && 'Confusion-Barometer')}
+            </p>
+            {showQuestionLayout && publicRuntimeConfig.s3root && files?.length > 0 && (
+              <div className="files">
+                <QuestionFiles isCompact files={files} />
+              </div>
+            )}
+          </div>
         </div>
+        {showExtensibleButton && (
+          <button
+            className="hidden w-full h-4 text-xs text-center border-solid md:block bg-slate-200 border-b-only border-primary hover:bg-slate-300 print:hidden"
+            type="button"
+            onClick={() => setQuestionCollapsed(!questionCollapsed)}
+          >
+            {questionCollapsed ? (
+              <ChevronDownIcon className="!m-0 -mt-1 h-3" />
+            ) : (
+              <ChevronUpIcon className="!m-0 -mt-1 h-3" />
+            )}
+          </button>
+        )}
 
         <div className="flex flex-col flex-1 max-w-full max-h-full md:flex-row md:py-4 md:px-4">
           {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
@@ -312,7 +349,7 @@ function EvaluationLayout({
           !showConfusionTS ? (
             <div
               className={clsx(
-                'w-full h-[20rem] md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-15.5rem)]',
+                'w-full h-[20rem] md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-16.5rem)]',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
             >
