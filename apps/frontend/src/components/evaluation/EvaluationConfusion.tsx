@@ -102,7 +102,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
 
   return (
     <div className="flex flex-col justify-start h-full">
-      <div className="flex-auto">
+      <div className="flex-auto min-h-[10rem]">
         <div className="ml-2">
           <CustomTooltip
             content={
@@ -115,7 +115,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           />
         </div>
 
-        <ResponsiveContainer className="mb-4" height="50%" key="speedConfusion" width="100%">
+        <ResponsiveContainer className="mb-4" height="70%" key="speedConfusion" width="95%">
           <LineChart data={confusionValues} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="6 6" />
 
