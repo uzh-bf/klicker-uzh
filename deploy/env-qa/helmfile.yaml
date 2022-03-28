@@ -1,3 +1,7 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
 releases:
   - name: klicker-qa
     namespace: klicker-qa
@@ -9,10 +13,10 @@ releases:
     values:
       - values.yaml
       - frontend:
-          replicaCount: 0
+          replicaCount: 1
 
         backend:
-          replicaCount: 0
+          replicaCount: 1
 
           redis:
             host: '{{ requiredEnv "REDIS_HOST" }}'
