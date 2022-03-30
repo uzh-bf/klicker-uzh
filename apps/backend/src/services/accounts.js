@@ -136,7 +136,355 @@ const checkAvailability = async ({ email, shortname }) => {
   return result
 }
 
-// async function hydrateDemoData({ userId, shortname }) {}
+async function hydrateDemoData({ userId }) {
+  // demo data is added to populate new user accounts
+  const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
+  const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
+  const content = [
+    'Which of the following statements is applicable to _KlickerUZH_?',
+    'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
+    'Describe a main principle of a social market economy.',
+    'Estimate the length of the **longest** river in the world (answer in kilometres).',
+  ]
+  const options = [
+    {
+      SC: {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [
+          { correct: true, name: 'KlickerUZH is an open-source audience response system' },
+          { correct: false, name: 'KlickerUZH is owned by Google' },
+          { correct: false, name: 'KlickerUZH cannot be used by everyone' },
+          { correct: false, name: 'KlickerUZH is not a project of the University of Zurich' },
+        ],
+      },
+    },
+    {
+      MC: {
+        randomized: false,
+        restrictions: { min: null, max: null },
+        choices: [
+          { correct: false, name: '$$T_n f(x;a) = \\sum_{|\\alpha| = 0}^{n} (x - a)^\\alpha D^\\alpha f(a-x)$$' },
+          {
+            correct: true,
+            name: "$$T_n f(x;a) = f(a) + \\frac{f'(a)}{1!}(x - a) + \\frac{f''(a)}{2!}(x - a)^2 + ... + \\frac{f^{(n)}(a)}{n!}(x - a)^n$$",
+          },
+          { correct: true, name: '$$T_4 sin(x;0) = x - \\frac{x^3}{6}$$' },
+          { correct: false, name: '$$T_4 cos(x;0) = x + \\frac{x^3}{6}$$' },
+        ],
+      },
+    },
+    false,
+    {
+      FREE_RANGE: {
+        randomized: false,
+        restrictions: { min: 0, max: 8000 },
+        choices: [],
+      },
+    },
+  ]
+  const demoQuestions = []
+
+  // create demo tag
+  const demoTag = new TagModel({
+    name: 'DEMO',
+    questions: [],
+    user: userId,
+  })
+  await demoTag.save()
+
+  // create demo questions with demo tag from demo data above
+  for (let i = 0; i < titles.length; i += 1) {
+    const newQuestion = new QuestionModel({
+      tags: [demoTag.id],
+      title: titles[i],
+      type: types[i],
+      user: userId,
+      versions: [
+        {
+          content: content[i],
+          description: content[i]
+            .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
+            .replaceAll('<br>', '')
+            .match(/[\p{L}\p{N}\p{P}\p{M}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
+            .join(''),
+          options: options[i],
+          files: [],
+          solution: undefined,
+        },
+      ],
+    })
+    demoQuestions.push(newQuestion)
+    demoTag.questions.push(newQuestion.id)
+    await newQuestion.save()
+  }
+  await demoTag.save()
+
+  // create instances for session population
+  const sessionId1 = ObjectId()
+  const sessionId2 = ObjectId()
+  const instanceIds = [] // instance array containing 3 instances of each question
+
+  const questionInstanceCreator = async (question, sessionId) => {
+    const instance = new QuestionInstanceModel({
+      question,
+      session: sessionId,
+      user: userId,
+      version: 0,
+    })
+    await instance.save()
+    question.instances.push(instance.id)
+    return instance.id
+  }
+
+  // instance array containing instances for questions [1, 1, 2, 2, 3, 3, 4, 4, 1, 2, 3, 4]
+  for (let i = 0; i < titles.length; i += 1) {
+    instanceIds.push(await questionInstanceCreator(demoQuestions[i], sessionId1))
+    instanceIds.push(await questionInstanceCreator(demoQuestions[i], sessionId1))
+  }
+
+  // create the instances for the second session separately as they contain result data
+  const instance1 = new QuestionInstanceModel({
+    question: demoQuestions[0],
+    session: sessionId2,
+    user: userId,
+    version: 0,
+    results: {
+      CHOICES: [107, 16, 19, 20],
+      totalParticipants: 162,
+    },
+  })
+  await instance1.save()
+  instanceIds.push(instance1.id)
+  demoQuestions[0].instances.push(instance1.id)
+  await demoQuestions[0].save()
+
+  const instance2 = new QuestionInstanceModel({
+    question: demoQuestions[1],
+    session: sessionId2,
+    user: userId,
+    version: 0,
+    results: {
+      CHOICES: [17, 56, 61, 18],
+      totalParticipants: 152,
+    },
+  })
+  await instance2.save()
+  instanceIds.push(instance2.id)
+  demoQuestions[1].instances.push(instance2.id)
+  await demoQuestions[1].save()
+
+  const instance3 = new QuestionInstanceModel({
+    question: demoQuestions[2],
+    session: sessionId2,
+    user: userId,
+    version: 0,
+    results: {
+      CHOICES: [],
+      totalParticipants: 3,
+      FREE: {
+        hashValue1: {
+          count: 1,
+          value: 'This system produces the highest level of economic benefit and social justice for all participants.',
+        },
+        hashValue2: {
+          count: 1,
+          value:
+            'The system is based on free-market capitalism, but also includes special provisions for social programs, etc.',
+        },
+        hashValue3: {
+          count: 1,
+          value: 'The free social market economy is the most common system in the modern world.',
+        },
+      },
+    },
+  })
+  await instance3.save()
+  instanceIds.push(instance3.id)
+  demoQuestions[2].instances.push(instance3.id)
+  await demoQuestions[2].save()
+
+  const aggrValuesNR = Array.from({ length: 40 }, () => Math.floor(Math.random() * 1500) + 6500)
+    .concat(Array.from({ length: 185 }, () => Math.floor(Math.random() * 250) + 6693))
+    .reduce((obj, b) => {
+      // eslint-disable-next-line no-param-reassign
+      obj[b] = obj[b] + 1 || 1
+      return obj
+    }, {})
+  const NRObject = Object.keys(aggrValuesNR).reduce((a, v) => ({ ...a, [v]: { value: v, count: aggrValuesNR[v] } }), {})
+
+  const instance4 = new QuestionInstanceModel({
+    question: demoQuestions[3],
+    session: sessionId2,
+    user: userId,
+    version: 0,
+    results: {
+      CHOICES: [],
+      totalParticipants: 225,
+      FREE: NRObject,
+    },
+  })
+  await instance4.save()
+  instanceIds.push(instance4.id)
+  demoQuestions[3].instances.push(instance4.id)
+  await demoQuestions[3].save()
+
+  const confusionValues = Array(120)
+    .fill(0)
+    .map((t, index) => {
+      return {
+        speed: Math.floor(Math.random() * 5) - 2,
+        difficulty: Math.floor(Math.random() * 5) - 2,
+        createdAt: dayjs()
+          .add(index * 40, 'seconds')
+          .toDate(),
+      }
+    })
+
+  // create demo session without results
+  const demoSession = new SessionModel({
+    settings: {
+      isParticipantAuthenticationEnabled: false,
+      isConfusionBarometerActive: false,
+      isEvaluationPublic: false,
+      isFeedbackChannelActive: false,
+      isFeedbackChannelPublic: true,
+      authenticationMode: 'NONE',
+      storageMode: 'SECRET',
+    },
+    status: 'CREATED',
+    execution: 0,
+    activeBlock: -1,
+    activeStep: 0,
+    activeInstances: [],
+    namespace: uuidv4(),
+    name: 'Demosession with model mutation',
+    blocks: [
+      {
+        execution: 1,
+        status: 'PLANNED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[0]],
+      },
+      {
+        execution: 1,
+        status: 'PLANNED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[4]],
+      },
+      {
+        execution: 1,
+        status: 'PLANNED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[2], instanceIds[6]],
+      },
+      {
+        execution: 1,
+        status: 'PLANNED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[1], instanceIds[3], instanceIds[5], instanceIds[7]],
+      },
+    ],
+    user: userId,
+    participants: [],
+    confusionTS: [],
+    feedbacks: [],
+  })
+  await demoSession.save()
+
+  // create evaluation session with question responses, feedbacks and confusion feedback
+  const evaluationSession = new SessionModel({
+    settings: {
+      isParticipantAuthenticationEnabled: false,
+      isConfusionBarometerActive: false,
+      isEvaluationPublic: false,
+      isFeedbackChannelActive: false,
+      isFeedbackChannelPublic: true,
+      authenticationMode: 'NONE',
+      storageMode: 'SECRET',
+    },
+    status: 'COMPLETED',
+    execution: 0,
+    activeBlock: 2,
+    activeStep: 6,
+    activeInstances: [],
+    namespace: uuidv4(),
+    name: 'Demosession2 with model mutation',
+    blocks: [
+      {
+        execution: 1,
+        status: 'EXECUTED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[8]],
+      },
+      {
+        execution: 1,
+        status: 'EXECUTED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[10]],
+      },
+      {
+        execution: 1,
+        status: 'EXECUTED',
+        timeLimit: -1,
+        randomSelection: -1,
+        showSolutions: false,
+        instances: [instanceIds[9], instanceIds[11]],
+      },
+    ],
+    user: userId,
+    participants: [],
+    confusionTS: confusionValues,
+    feedbacks: [
+      {
+        published: true,
+        pinned: false,
+        resolved: true,
+        votes: 13,
+        content: 'Which answer was correct for the question about the longest river in the world?',
+        responses: [
+          {
+            positiveReactions: 10,
+            negativeReactions: 1,
+            content: "The Nile river is the longest in the world with a length of 6'693 kilometres.",
+          },
+        ],
+        resolvedAt: Date.now(),
+      },
+      {
+        published: true,
+        pinned: false,
+        resolved: false,
+        votes: 7,
+        content: 'Could you please explain again what the main principles of a social market economy are?',
+        responses: [],
+      },
+      {
+        published: true,
+        pinned: false,
+        resolved: false,
+        votes: 4,
+        content: 'This example about the fundamental principle of algebra was very helpful, thank you.',
+        responses: [],
+      },
+    ],
+    startedAt: Date.now(),
+    finishedAt: Date.now(),
+  })
+  await evaluationSession.save()
+}
 
 /**
  * Register an account for a new user
@@ -222,364 +570,11 @@ const signup = async (
         sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
       }
 
-      // demo data is added to populate new user accounts
-      const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
-      const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
-      const content = [
-        'Which of the following statements is applicable to _KlickerUZH_?',
-        'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
-        'Describe a main principle of a social market economy.',
-        'Estimate the length of the **longest** river in the world (answer in kilometres).',
-      ]
-      const options = [
-        {
-          SC: {
-            randomized: false,
-            restrictions: { min: null, max: null },
-            choices: [
-              { correct: true, name: 'KlickerUZH is an open-source audience response system' },
-              { correct: false, name: 'KlickerUZH is owned by Google' },
-              { correct: false, name: 'KlickerUZH cannot be used by everyone' },
-              { correct: false, name: 'KlickerUZH is not a project of the University of Zurich' },
-            ],
-          },
-        },
-        {
-          MC: {
-            randomized: false,
-            restrictions: { min: null, max: null },
-            choices: [
-              { correct: false, name: '$$T_n f(x;a) = \\sum_{|\\alpha| = 0}^{n} (x - a)^\\alpha D^\\alpha f(a-x)$$' },
-              {
-                correct: true,
-                name: "$$T_n f(x;a) = f(a) + \\frac{f'(a)}{1!}(x - a) + \\frac{f''(a)}{2!}(x - a)^2 + ... + \\frac{f^{(n)}(a)}{n!}(x - a)^n$$",
-              },
-              { correct: true, name: '$$T_4 sin(x;0) = x - \\frac{x^3}{6}$$' },
-              { correct: false, name: '$$T_4 cos(x;0) = x + \\frac{x^3}{6}$$' },
-            ],
-          },
-        },
-        false,
-        {
-          FREE_RANGE: {
-            randomized: false,
-            restrictions: { min: 0, max: 8000 },
-            choices: [],
-          },
-        },
-      ]
-      const userId = newUser._id
-      const demoQuestions = []
-
-      // create demo tag
-      const demoTag = new TagModel({
-        name: 'DEMO',
-        questions: [],
-        user: newUser.id,
-      })
-      await demoTag.save()
-
-      // create demo questions with demo tag from demo data above
-      for (let i = 0; i < titles.length; i += 1) {
-        const newQuestion = new QuestionModel({
-          tags: [demoTag.id],
-          title: titles[i],
-          type: types[i],
-          user: userId,
-          versions: [
-            {
-              content: content[i],
-              description: content[i]
-                .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
-                .replaceAll('<br>', '')
-                .match(/[\p{L}\p{N}\p{P}\p{M}\s]|[$Formula$]|[(0-9)+. ]|[- ]/gu)
-                .join(''),
-              options: options[i],
-              files: [],
-              solution: undefined,
-            },
-          ],
-        })
-        demoQuestions.push(newQuestion)
-        demoTag.questions.push(newQuestion.id)
-        await newQuestion.save()
+      try {
+        await hydrateDemoData({ userId: newUser._id })
+      } catch (e) {
+        sendSlackNotification('accounts', `Demo data hydration failed for ${normalizedEmail} ${e.message}`)
       }
-      await demoTag.save()
-
-      // create instances for session population
-      const sessionId1 = ObjectId()
-      const sessionId2 = ObjectId()
-      const instanceIds = [] // instance array containing 3 instances of each question
-
-      const questionInstanceCreator = async (question, sessionId) => {
-        const instance = new QuestionInstanceModel({
-          question,
-          session: sessionId,
-          user: userId,
-          version: 0,
-        })
-        await instance.save()
-        question.instances.push(instance.id)
-        return instance.id
-      }
-
-      // instance array containing instances for questions [1, 1, 2, 2, 3, 3, 4, 4, 1, 2, 3, 4]
-      for (let i = 0; i < titles.length; i += 1) {
-        instanceIds.push(await questionInstanceCreator(demoQuestions[i], sessionId1))
-        instanceIds.push(await questionInstanceCreator(demoQuestions[i], sessionId1))
-      }
-
-      // create the instances for the second session separately as they contain result data
-      const instance1 = new QuestionInstanceModel({
-        question: demoQuestions[0],
-        session: sessionId2,
-        user: userId,
-        version: 0,
-        results: {
-          CHOICES: [107, 16, 19, 20],
-          totalParticipants: 162,
-        },
-      })
-      await instance1.save()
-      instanceIds.push(instance1.id)
-      demoQuestions[0].instances.push(instance1.id)
-      await demoQuestions[0].save()
-
-      const instance2 = new QuestionInstanceModel({
-        question: demoQuestions[1],
-        session: sessionId2,
-        user: userId,
-        version: 0,
-        results: {
-          CHOICES: [17, 56, 61, 18],
-          totalParticipants: 152,
-        },
-      })
-      await instance2.save()
-      instanceIds.push(instance2.id)
-      demoQuestions[1].instances.push(instance2.id)
-      await demoQuestions[1].save()
-
-      const instance3 = new QuestionInstanceModel({
-        question: demoQuestions[2],
-        session: sessionId2,
-        user: userId,
-        version: 0,
-        results: {
-          CHOICES: [],
-          totalParticipants: 3,
-          FREE: {
-            hashValue1: {
-              count: 1,
-              value:
-                'This system produces the highest level of economic benefit and social justice for all participants.',
-            },
-            hashValue2: {
-              count: 1,
-              value:
-                'The system is based on free-market capitalism, but also includes special provisions for social programs, etc.',
-            },
-            hashValue3: {
-              count: 1,
-              value: 'The free social market economy is the most common system in the modern world.',
-            },
-          },
-        },
-      })
-      await instance3.save()
-      instanceIds.push(instance3.id)
-      demoQuestions[2].instances.push(instance3.id)
-      await demoQuestions[2].save()
-
-      const aggrValuesNR = Array.from({ length: 40 }, () => Math.floor(Math.random() * 1500) + 6500)
-        .concat(Array.from({ length: 185 }, () => Math.floor(Math.random() * 250) + 6693))
-        .reduce((obj, b) => {
-          // eslint-disable-next-line no-param-reassign
-          obj[b] = obj[b] + 1 || 1
-          return obj
-        }, {})
-      const NRObject = Object.keys(aggrValuesNR).reduce(
-        (a, v) => ({ ...a, [v]: { value: v, count: aggrValuesNR[v] } }),
-        {}
-      )
-
-      const instance4 = new QuestionInstanceModel({
-        question: demoQuestions[3],
-        session: sessionId2,
-        user: userId,
-        version: 0,
-        results: {
-          CHOICES: [],
-          totalParticipants: 225,
-          FREE: NRObject,
-        },
-      })
-      await instance4.save()
-      instanceIds.push(instance4.id)
-      demoQuestions[3].instances.push(instance4.id)
-      await demoQuestions[3].save()
-
-      const confusionValues = Array.from({ length: 120 }, () => Math.floor(Math.random() * 5) - 2).map(
-        (time, index) => {
-          return {
-            speed: Math.floor(Math.random() * 5) - 2,
-            difficulty: Math.floor(Math.random() * 5) - 2,
-            createdAt: dayjs()
-              .add(index * 40, 'seconds')
-              .toDate(),
-          }
-        }
-      )
-
-      // create demo session without results
-      const demoSession = new SessionModel({
-        settings: {
-          isParticipantAuthenticationEnabled: false,
-          isConfusionBarometerActive: false,
-          isEvaluationPublic: false,
-          isFeedbackChannelActive: false,
-          isFeedbackChannelPublic: true,
-          authenticationMode: 'NONE',
-          storageMode: 'SECRET',
-        },
-        status: 'CREATED',
-        execution: 0,
-        activeBlock: -1,
-        activeStep: 0,
-        activeInstances: [],
-        namespace: uuidv4(),
-        name: 'Demosession with model mutation',
-        blocks: [
-          {
-            execution: 1,
-            status: 'PLANNED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[0]],
-          },
-          {
-            execution: 1,
-            status: 'PLANNED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[4]],
-          },
-          {
-            execution: 1,
-            status: 'PLANNED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[2], instanceIds[6]],
-          },
-          {
-            execution: 1,
-            status: 'PLANNED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[1], instanceIds[3], instanceIds[5], instanceIds[7]],
-          },
-        ],
-        user: userId,
-        participants: [],
-        confusionTS: [],
-        feedbacks: [],
-      })
-      await demoSession.save()
-
-      // create evaluation session with question responses, feedbacks and confusion feedback
-      const evaluationSession = new SessionModel({
-        settings: {
-          isParticipantAuthenticationEnabled: false,
-          isConfusionBarometerActive: false,
-          isEvaluationPublic: false,
-          isFeedbackChannelActive: false,
-          isFeedbackChannelPublic: true,
-          authenticationMode: 'NONE',
-          storageMode: 'SECRET',
-        },
-        status: 'COMPLETED',
-        execution: 0,
-        activeBlock: 2,
-        activeStep: 6,
-        activeInstances: [],
-        namespace: uuidv4(),
-        name: 'Demosession2 with model mutation',
-        blocks: [
-          {
-            execution: 1,
-            status: 'EXECUTED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[8]],
-          },
-          {
-            execution: 1,
-            status: 'EXECUTED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[10]],
-          },
-          {
-            execution: 1,
-            status: 'EXECUTED',
-            timeLimit: -1,
-            randomSelection: -1,
-            showSolutions: false,
-            instances: [instanceIds[9], instanceIds[11]],
-          },
-        ],
-        user: userId,
-        participants: [],
-        confusionTS: confusionValues,
-        feedbacks: [
-          {
-            published: true,
-            pinned: false,
-            resolved: true,
-            votes: 13,
-            content: 'Which answer was correct for the question about the longest river in the world?',
-            responses: [
-              {
-                positiveReactions: 10,
-                negativeReactions: 1,
-                content: "The Nile river is the longest in the world with a length of 6'693 kilometres.",
-              },
-            ],
-            resolvedAt: Date.now(),
-          },
-          {
-            published: true,
-            pinned: false,
-            resolved: false,
-            votes: 7,
-            content: 'Could you please explain again what the main principles of a social market economy are?',
-            responses: [],
-          },
-          {
-            published: true,
-            pinned: false,
-            resolved: false,
-            votes: 4,
-            content: 'This example about the fundamental principle of algebra was very helpful, thank you.',
-            responses: [],
-          },
-        ],
-        startedAt: Date.now(),
-        finishedAt: Date.now(),
-      })
-      await evaluationSession.save()
-
-      // try {
-      //   await hydrateDemoData({ userId: newUser._id, shortname: newUser.shortname })
-      // } catch (e) {
-      //   sendSlackNotification('accounts', `Demo data hydration failed for ${normalizedEmail} ${e.message}`)
-      // }
 
       // return the data of the newly created user
       return newUser
