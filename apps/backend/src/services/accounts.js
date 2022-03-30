@@ -358,7 +358,7 @@ async function hydrateDemoData({ userId }) {
     activeStep: 0,
     activeInstances: [],
     namespace: uuidv4(),
-    name: 'Demosession with model mutation',
+    name: 'Demosession',
     blocks: [
       {
         execution: 1,
@@ -417,7 +417,7 @@ async function hydrateDemoData({ userId }) {
     activeStep: 6,
     activeInstances: [],
     namespace: uuidv4(),
-    name: 'Demosession2 with model mutation',
+    name: 'Demosession with results',
     blocks: [
       {
         execution: 1,
