@@ -137,6 +137,8 @@ const checkAvailability = async ({ email, shortname }) => {
 }
 
 async function hydrateDemoData({ userId }) {
+  const user = await UserModel.findById(userId)
+
   // demo data is added to populate new user accounts
   const titles = ['Demoquestion SC', 'Demoquestion MC', 'Demoquestion FT', 'Demoquestion NR']
   const types = ['SC', 'MC', 'FREE', 'FREE_RANGE']
@@ -216,8 +218,10 @@ async function hydrateDemoData({ userId }) {
     })
     demoQuestions.push(newQuestion)
     demoTag.questions.push(newQuestion.id)
+    user.questions.push(newQuestion.id)
     await newQuestion.save()
   }
+  await user.save()
   await demoTag.save()
 
   // create instances for session population
@@ -484,6 +488,12 @@ async function hydrateDemoData({ userId }) {
     finishedAt: Date.now(),
   })
   await evaluationSession.save()
+  await UserModel.update(
+    { _id: userId },
+    {
+      $push: { sessions: [evaluationSession.id, demoSession.id] },
+    }
+  )
 }
 
 /**
