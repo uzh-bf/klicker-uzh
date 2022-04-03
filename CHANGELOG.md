@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.12...v1.8.0-rc.13) (2022-03-28)
+
+
+### Bug Fixes
+
+* **frontend:** fixed pdf export/print of session evaluation ([e8c4cbf](https://github.com/uzh-bf/klicker-uzh/commit/e8c4cbf42b8d4da91ada714dfbb7a9f0a011503e))
+* **frontend:** ignore md list syntax at the beginning of SC and MC responses ([1c4afc9](https://github.com/uzh-bf/klicker-uzh/commit/1c4afc999b7a9e7e9d2a85dc13899eeadd6fbd25))
+* **frontend:** improve ellipsis shortened answers on evaluation layout and add compatibility with formulas ([937ed3d](https://github.com/uzh-bf/klicker-uzh/commit/937ed3dcdc20aac20d7f56e7fe767b19ec181fea))
+* **frontend:** match all markdown list styles in answering options and reduce font weight ([9e1b4c3](https://github.com/uzh-bf/klicker-uzh/commit/9e1b4c387853ec82aa01b01daafae8b2eceeb983))
+* **frontend:** only show ellipsis if something is cut after including all partially included formulas ([0487fa6](https://github.com/uzh-bf/klicker-uzh/commit/0487fa6f36aa725e36fbd1f4ac80aad181a248e3))
+* **frontend:** solve issue with NR questions on evaluation ([0a52ce8](https://github.com/uzh-bf/klicker-uzh/commit/0a52ce875bfb8277715ef61c2cc75c159910192d))
+
+
+### Other
+
+* **docs:** create stub file for movo migration ([a6c21ca](https://github.com/uzh-bf/klicker-uzh/commit/a6c21ca86f0d5aea962ee36d4653e4c0e1dbda93))
+* **frontend:** migrate most of the evaluation layout to tailwind to prepare restyling ([995d2cb](https://github.com/uzh-bf/klicker-uzh/commit/995d2cbc39de1a8960395cce2e8c8a766a1e0afa))
+* **frontend:** reworked evaluation layout without css grid ([e924b1e](https://github.com/uzh-bf/klicker-uzh/commit/e924b1e63203ce303e6bc926463d71a6c2143f0c))
+* **frontend:** simplify tailwind logic in multiple components ([3f55654](https://github.com/uzh-bf/klicker-uzh/commit/3f55654aba8dc614adffb09f2b35b19d3d087d98))
+
+
+### Enhancements
+
+* **frontend:** added functionality to collapse long questions on evaluation view ([663e3ee](https://github.com/uzh-bf/klicker-uzh/commit/663e3ee3fe8d92e8380d1bca574f96e563759011))
+
 ## [1.8.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.11...v1.8.0-rc.12) (2022-03-08)
 
 
