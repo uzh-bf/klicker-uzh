@@ -941,8 +941,6 @@ async function activateBlockById({ userId, sessionId, blockId }) {
   // find the next block for the running session
   const newBlock = session.blocks[blockIndex]
 
-  console.warn(session.blocks, blockId, blockIndex, newBlock)
-
   // if the newly activated block has been executed before, rehydrate the cache
   if (newBlock.status === QUESTION_BLOCK_STATUS.EXECUTED) {
     await Promise.all(
