@@ -32,12 +32,6 @@ module.exports = {
         'primary-strong': '#375164',
         'primary-input': '#fafdff',
       },
-      flex: {
-        '00full': '0 0 100%',
-        '00auto': '0 0 auto',
-        '00half': '0 0 50%',
-        '0020': '0 0 20%',
-      },
       backgroundImage: {
         'timeline-desktop':
           'linear-gradient(to bottom, transparent 0%, transparent calc(50% - 0.81px), lightgrey calc(50% - 0.8px), lightgrey calc(50% + 0.8px), transparent calc(50% + 0.81px), transparent 100%)',

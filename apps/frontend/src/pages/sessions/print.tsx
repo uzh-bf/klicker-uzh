@@ -5,7 +5,7 @@ import _get from 'lodash/get'
 import { FormattedMessage } from 'react-intl'
 import { useRouter } from 'next/router'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
-import { Button, Checkbox } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 
 import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
@@ -25,7 +25,6 @@ function Print(): React.ReactElement<any> {
   const sessionId: string = router.query.sessionId.toString()
 
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
-  const [showSolution, setShowSolution] = useState(false)
 
   return (
     <LoadSessionData sessionId={sessionId} isPublic={isPublic}>
@@ -38,13 +37,13 @@ function Print(): React.ReactElement<any> {
 
         return (
           <CommonLayout baseFontSize="16">
-            <div className="actions noPrint">
-              <Button primary content="Print" icon="print" onClick={() => window.print()} />
-              <Checkbox
-                toggle
-                checked={showSolution}
-                label="Show Solution"
-                onChange={() => setShowSolution((prev) => !prev)}
+            <div className="p-2 print:hidden">
+              <Button
+                primary
+                content="Print / PDF Download"
+                icon="print"
+                className="!m-0"
+                onClick={() => window.print()}
               />
             </div>
 
@@ -85,51 +84,56 @@ function Print(): React.ReactElement<any> {
               const activeVisualization = activeVisualizations[question.type]
 
               return (
-                <div className="container">
-                  <div className="description">
+                <div className="relative h-[1190px] w-[1740px] p-[25px] break-after-page">
+                  <div className="h-max-content max-h-[40%] bg-primary-bg border-0 border-y-2 border-solid border-primary text-md p-[0.7em] text-left">
                     <Markdown>{content}</Markdown>
                   </div>
-                  <div className="chart">
-                    <Chart
-                      activeVisualization={activeVisualization}
-                      data={results.data}
-                      instanceId={activeInstance.id}
-                      isPublic={false}
-                      numBins={null}
-                      handleShowGraph={null}
-                      questionType={question.type}
-                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-                      sessionId={sessionId}
-                      sessionStatus={sessionStatus}
-                      showGraph={true}
-                      showSolution={showSolution}
-                      statistics={statistics}
-                      totalResponses={results.totalResponses}
-                    />
-                  </div>
 
-                  <div className="info">
-                    <div className="possibilities">
-                      <Possibilities
-                        data={results.data}
-                        questionOptions={options}
-                        questionType={question.type}
-                        showGraph={true}
-                        showSolution={showSolution}
-                      />
-                    </div>
-                    <div className="totalResponses">
-                      <FormattedMessage id="evaluation.totalParticipants.label" defaultMessage="Total participants:" />{' '}
-                      {results.totalResponses}
-                    </div>
-                    <div className="visualizationType noPrint">
-                      <VisualizationType
+                  <div className="flex flex-row h-full">
+                    <div className="h-[60%] w-[1100px]">
+                      <Chart
                         activeVisualization={activeVisualization}
+                        data={results.data}
+                        instanceId={activeInstance.id}
+                        isPublic={false}
+                        numBins={null}
+                        handleShowGraph={null}
                         questionType={question.type}
-                        onChangeType={(type, newVisualization) =>
-                          setActiveVisualizations((currentState) => ({ ...currentState, [type]: newVisualization }))
-                        }
+                        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                        sessionId={sessionId}
+                        sessionStatus={sessionStatus}
+                        showGraph={true}
+                        showSolution={false}
+                        statistics={statistics}
+                        totalResponses={results.totalResponses}
                       />
+                    </div>
+                    <div className="p-[1em]">
+                      <div className="mb-[0.7em]">
+                        <Possibilities
+                          data={results.data}
+                          questionOptions={options}
+                          questionType={question.type}
+                          showGraph={true}
+                          showSolution={false}
+                        />
+                      </div>
+                      <div className="mb-[0.7em]">
+                        <FormattedMessage
+                          id="evaluation.totalParticipants.label"
+                          defaultMessage="Total participants:"
+                        />{' '}
+                        {results.totalResponses}
+                      </div>
+                      <div className="print:hidden">
+                        <VisualizationType
+                          activeVisualization={activeVisualization}
+                          questionType={question.type}
+                          onChangeType={(type, newVisualization) =>
+                            setActiveVisualizations((currentState) => ({ ...currentState, [type]: newVisualization }))
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -147,76 +151,6 @@ function Print(): React.ReactElement<any> {
               @page {
                 size: landscape;
                 margin: 0;
-              }
-
-              .actions {
-                padding: 0.5rem;
-              }
-
-              .container {
-                position: relative;
-                height: 1190px;
-                width: 1704px;
-
-                padding: 25px;
-
-                page-break-after: always;
-              }
-
-              .description {
-                height: 120px;
-
-                background-color: $color-primary-background;
-                border-top: 2px solid $color-primary;
-                border-bottom: 2px solid $color-primary;
-                font-size: 0.5em;
-                padding: 0.7em;
-                text-align: left;
-              }
-
-              .chart {
-                height: 1020px;
-                width: 1100px;
-
-                :global(.tableChart) {
-                  padding: 1em;
-                }
-              }
-
-              .info {
-                position: absolute;
-                top: 170px;
-                left: 1100px;
-                height: 1020px;
-                width: 464px;
-
-                padding: 1em;
-
-                :global(h2) {
-                  font-size: 1rem !important;
-                }
-
-                :global(*) {
-                  font-size: 0.7rem;
-                }
-              }
-
-              .possibilities {
-                margin-bottom: 0.7em;
-              }
-
-              .totalResponses {
-                margin-bottom: 0.7em;
-              }
-
-              .noPrint {
-                @media print {
-                  display: none;
-                }
-
-                :global(button) {
-                  margin: 0;
-                }
               }
             `}</style>
           </CommonLayout>

@@ -95,9 +95,9 @@ function Session({
 
   return (
     <div className="flex flex-col flex-1 md:flex-row md:flex-wrap">
-      <h2 className="text-xl md:flex-00half md:m-0 md:mb-[0.4rem] mb-[0.3rem] text-primary-strong">{name}</h2>
+      <h2 className="text-xl md:flex-[0_0_50%] md:m-0 md:mb-[0.4rem] mb-[0.3rem] text-primary-strong">{name}</h2>
 
-      <div className="flex flex-row mb-1 labels md:flex-00half md:m-0 md:mb-[0.4rem] justify-end">
+      <div className="flex flex-row mb-1 labels md:flex-[0_0_50%] md:m-0 md:mb-[0.4rem] justify-end">
         <Label
           className="md:!order-3 md:!w-[11rem] text-center"
           content={dayjs(createdAt).format('DD.MM.YY HH:mm')}
