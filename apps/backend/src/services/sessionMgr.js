@@ -789,8 +789,9 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
  * Start an existing session
  * @param {*} param0
  */
-const startSession = ({ id, userId, shortname }) =>
-  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
+const startSession = ({ id, userId, shortname }) => {
+  return sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
+}
 
 /**
  * Pause a running session
@@ -810,8 +811,9 @@ const cancelSession = ({ id, userId, shortname }) =>
  * End (complete) an existing session
  * @param {*} param0
  */
-const endSession = ({ id, userId, shortname }) =>
-  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
+const endSession = ({ id, userId, shortname }) => {
+  return sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
+}
 
 /**
  * Update session settings
@@ -820,7 +822,6 @@ const endSession = ({ id, userId, shortname }) =>
 const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   // TODO: security
   // TODO: ...
-
   const session = await getRunningSession(sessionId)
 
   // ensure the user is authorized to modify this session
@@ -870,7 +871,7 @@ async function deactivateBlockById({ userId, sessionId, blockId, incrementActive
   }
 
   // find the index of the block with the given id
-  const blockIndex = session.blocks.findIndex((block) => block.id === blockId)
+  const blockIndex = session.blocks.findIndex((block) => block.id.toString() === blockId.toString())
 
   // find the next block for the running session
   const oldBlock = session.blocks[blockIndex]
@@ -935,7 +936,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
   }
 
   // find the index of the block with the given id
-  const blockIndex = session.blocks.findIndex((block) => block.id === blockId)
+  const blockIndex = session.blocks.findIndex((block) => block.id.toString() === blockId.toString())
 
   // find the next block for the running session
   const newBlock = session.blocks[blockIndex]
@@ -1158,6 +1159,7 @@ module.exports = {
   publishSessionUpdate,
   modifyQuestionBlock,
   activateBlockById,
+  deactivateBlockById,
   abortSession,
   computeInstanceResults,
 }
