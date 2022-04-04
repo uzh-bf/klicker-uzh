@@ -59,7 +59,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     router.prefetch('/questions/details')
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
-  }, [])
+  })
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
     true,
@@ -114,7 +114,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
     // process questions according to filters and sort settings
     setProcessedQuestions(processItems(data.questions, filters, sort, index))
-  }, [data, filters, sort])
+  }, [data, filters, sort, index])
 
   const { editSessionId, copy: copyMode } = router.query
 
