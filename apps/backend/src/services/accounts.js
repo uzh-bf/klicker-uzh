@@ -193,6 +193,14 @@ const DEMO_QUESTIONS = [
 
 function prepareDemoSessionData({ id, name, user, blockInstances, blockStatus = 'PLANNED', ...rest }) {
   return new SessionModel({
+    status: 'CREATED',
+    execution: 0,
+    activeBlock: -1,
+    activeStep: 0,
+    participants: [],
+    confusionTS: [],
+    feedbacks: [],
+    ...rest,
     _id: id,
     settings: {
       isParticipantAuthenticationEnabled: false,
@@ -203,11 +211,6 @@ function prepareDemoSessionData({ id, name, user, blockInstances, blockStatus = 
       authenticationMode: 'NONE',
       storageMode: 'SECRET',
     },
-    status: 'CREATED',
-    execution: 0,
-    activeBlock: -1,
-    activeStep: 0,
-    activeInstances: [],
     namespace: uuidv4(),
     name,
     blocks: blockInstances.map((instances) => ({
@@ -218,11 +221,8 @@ function prepareDemoSessionData({ id, name, user, blockInstances, blockStatus = 
       showSolutions: false,
       instances,
     })),
+    activeInstances: [],
     user,
-    participants: [],
-    confusionTS: [],
-    feedbacks: [],
-    ...rest,
   })
 }
 
