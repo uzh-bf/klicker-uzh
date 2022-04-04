@@ -197,8 +197,8 @@ function ActionBar({
   const itemCount = itemsChecked.length
 
   return (
-    <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between actionBar md:max-w-7xl md:m-auto">
-      <div className="flex flex-col flex-1 md:flex-00auto md:flex-row md:order-3">
+    <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
+      <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
         <Dropdown
           button
           labeled
@@ -231,7 +231,7 @@ function ActionBar({
         </Dropdown>
       </div>
 
-      <div className="flex flex-col flex-1 md:order-2 md:flex-00auto md:flex-row">
+      <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
         {creationMode && (
           <>
             <Button
