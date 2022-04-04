@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.13...v1.8.0-rc.14) (2022-04-04)
+
+
+### Other
+
+* **deploy:** add repositories to helmfiles and update doppler app ([8014688](https://github.com/uzh-bf/klicker-uzh/commit/80146885bec18a93b3a9cbdc7e0c54308d02e6cd))
+* **frontend:** actionbar migration to tailwind, eslint fixes ([c1507ea](https://github.com/uzh-bf/klicker-uzh/commit/c1507ea7f3a294cd880a8aa7da50e184d8842eaa))
+* **frontend:** fix typos from migration ([60b9e53](https://github.com/uzh-bf/klicker-uzh/commit/60b9e5371e147d5026476415fe9c3903122bb8f8))
+* **frontend:** migrate question component to tailwind ([16da031](https://github.com/uzh-bf/klicker-uzh/commit/16da031ce3e238a2d5307263bc4b9ddd5053e873))
+* **frontend:** sessionlist migration to tailwind, eslint fixes ([59b0a82](https://github.com/uzh-bf/klicker-uzh/commit/59b0a8226cc4e83fdbcbc309240bd8a3a48bde59))
+* lockfile maintenance ([613d435](https://github.com/uzh-bf/klicker-uzh/commit/613d43597db2a056763fd4902593a359b84a1b4e))
+
+
+### Enhancements
+
+* **backend:** populate new user accounts with demo data ([#2650](https://github.com/uzh-bf/klicker-uzh/issues/2650)) ([6237069](https://github.com/uzh-bf/klicker-uzh/commit/6237069055e620f2d8cca2a6086fe68d06156c08))
+
 ## [1.8.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.12...v1.8.0-rc.13) (2022-03-28)
 
 
