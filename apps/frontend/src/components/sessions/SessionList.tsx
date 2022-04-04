@@ -136,7 +136,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                 <div className="pb-6 sessions">
                   {[...runningSessions, ...pausedSessions].map(
                     (running): React.ReactElement => (
-                      <div className="runningSession" key="runningSessions">
+                      <div className="runningSession" key={running.name}>
                         <Session intl={intl} {...running} />
                       </div>
                     )

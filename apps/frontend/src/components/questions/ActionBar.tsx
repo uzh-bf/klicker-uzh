@@ -140,6 +140,7 @@ function ActionBar({
         { appearance: 'error' }
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, error])
 
   useEffect((): void => {
@@ -157,6 +158,7 @@ function ActionBar({
         { appearance: 'error' }
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exportData, exportError])
 
   const onGetQuestionStatistics = async (): Promise<void> => {
@@ -195,8 +197,8 @@ function ActionBar({
   const itemCount = itemsChecked.length
 
   return (
-    <div className="actionBar md:max-w-7xl md:m-auto">
-      <div className="actionButtons">
+    <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
+      <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
         <Dropdown
           button
           labeled
@@ -229,7 +231,7 @@ function ActionBar({
         </Dropdown>
       </div>
 
-      <div className="creationButtons">
+      <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
         {creationMode && (
           <>
             <Button
@@ -265,7 +267,7 @@ function ActionBar({
         )}
       </div>
 
-      <div className="batchOperations">
+      <div className="flex items-center">
         <Dropdown button className="icon" direction="right" disabled={itemCount === 0} icon="wrench">
           <Dropdown.Menu>
             <Dropdown.Item icon labelPosition="left" size="small" onClick={onExportQuestions}>
@@ -294,13 +296,14 @@ function ActionBar({
           </Dropdown.Menu>
         </Dropdown>
 
-        <Label className="checkedCounter">
+        <Label className="!flex !items-center !h-[36px]">
           <Checkbox
             checked={allItemsChecked}
+            className="!mr-2"
             indeterminate={!allItemsChecked && itemsChecked.length > 0}
             onChange={(): void => onSetAllItemsChecked()}
           />
-          <span className="content">
+          <span>
             <FormattedMessage
               defaultMessage="{count} items checked"
               id="questionPool.string.itemsChecked"
@@ -334,69 +337,6 @@ function ActionBar({
       </div>
 
       {csvData?.length > 0 && <CSVDownload data={csvData} />}
-
-      <style jsx>
-        {`
-          @import 'src/theme';
-
-          .actionBar,
-          .actionButtons,
-          .creationButtons {
-            display: flex;
-            flex-direction: column;
-          }
-
-          .actionBar {
-            .actionButtons,
-            .creationButtons {
-              flex: 1;
-            }
-
-            .batchOperations,
-            :global(.checkedCounter) {
-              display: flex;
-              flex-align: center;
-              align-items: center;
-            }
-
-            :global(.checkedCounter) {
-              height: 36px;
-
-              :global(.checkbox) {
-                margin-right: 0.5rem;
-              }
-            }
-
-            @include desktop-tablet-only {
-              flex-flow: row wrap;
-              align-items: center;
-              justify-content: space-between;
-
-              .creationButtons,
-              .actionButtons {
-                flex: 0 0 auto;
-                flex-direction: row;
-
-                > :global(button:last-child) {
-                  margin-right: 0;
-                }
-              }
-
-              .checkedCounter {
-                order: 1;
-              }
-
-              .creationButtons {
-                order: 2;
-              }
-
-              .actionButtons {
-                order: 3;
-              }
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }
