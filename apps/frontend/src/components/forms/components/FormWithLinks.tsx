@@ -36,7 +36,7 @@ function FormWithLinks({ button, children, links }: Props): React.ReactElement {
         <div className="flex flex-col md:flex-row md:justify-between">
           <Button
             primary
-            className="!flex-00full !mr-0 md:!order-1 md:!flex-00auto"
+            className="!flex-[0_0_100%] !mr-0 md:!order-1 md:!flex-[0_0_auto]"
             disabled={button.invalid || button.disabled}
             loading={button.loading}
             type="submit"

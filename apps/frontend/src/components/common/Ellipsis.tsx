@@ -1,37 +1,70 @@
 import React from 'react'
-import { Popup, Icon } from 'semantic-ui-react'
 import useMarkdown from '../../lib/hooks/useMarkdown'
+import CustomTooltip from './CustomTooltip'
 
 interface Props {
   children: string
   maxLength?: number
-  withPopup?: boolean
+  withoutPopup?: boolean
 }
 
-function Ellipsis({ children, maxLength, withPopup }: Props): React.ReactElement {
-  const parsedContent = useMarkdown({ content: children })
+function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElement {
+  const parsedContent = useMarkdown({
+    content: children ? children.toString().replace(/^(- |[0-9]+. |\* |\+ )/g, '') : 'no content',
+  })
 
-  // TODO: ensure that we can parse content that is too long and show an ellipsis
-  return parsedContent
+  const formulaRegex = RegExp(/(\${2})[^]*?[^\\]\1/gm)
+  let endIndex = null
 
-  // if (children.length <= maxLength || typeof children !== 'string') {
-  //   return <span title={children}>{children}</span>
-  // }
-  // return (
-  //   <span title={children}>
-  //     {children.substr(0, maxLength)}{' '}
-  //     {withPopup ? (
-  //       <Popup content={children} trigger={<Icon name="ellipsis horizontal" size="small" />} wide="very" />
-  //     ) : (
-  //       <Icon name="ellipsis horizontal" size="small" />
-  //     )}
-  //   </span>
-  // )
+  // match first formula in an answer option
+  let temp = formulaRegex.exec(children)
+
+  // match all formulas in the answer options and break if they begin after maxLength (are cut anyways)
+  // if the formulas begin before maxLength, but ends after it, include the formula in the output
+  // (by setting endIndex correspondingly)
+  while (temp !== null) {
+    if (formulaRegex.lastIndex > maxLength) {
+      if (temp.index > maxLength) {
+        break
+      } else {
+        endIndex = formulaRegex.lastIndex
+        break
+      }
+    }
+    temp = formulaRegex.exec(children)
+  }
+
+  // compute shortened output based on either maxLength or endIndex
+  const shortenedParsedContent = useMarkdown({
+    content: children
+      ? `${children
+          .toString()
+          .substr(0, endIndex || maxLength)
+          .replace(/^(- |[0-9]+. |\* |\+ )/g, '')} **...**`
+      : 'no content',
+  })
+
+  // return full content if it was shorter than the set maxLength or if endIndex = children.length
+  // (whole string is included in shortened version)
+  if (children?.length <= maxLength || typeof children !== 'string' || children?.length === endIndex) {
+    return parsedContent
+  }
+
+  // return shortened content including tooltip with full content (if not explicitely disabled)
+  return (
+    <span title={children}>
+      {withoutPopup ? (
+        shortenedParsedContent
+      ) : (
+        <CustomTooltip className={''} content={parsedContent} iconObject={shortenedParsedContent} />
+      )}
+    </span>
+  )
 }
 
 Ellipsis.defaultProps = {
   maxLength: 60,
-  withPopup: false,
+  withoutPopup: false,
 }
 
 export default Ellipsis
