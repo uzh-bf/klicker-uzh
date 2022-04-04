@@ -73,7 +73,7 @@ function Question({
       ref={drag}
     >
       <div
-        className={clsx('md:p-4 md:pl-2 md:flex md:items-center p-2 pl-0 self-center flex flex-00auto', {
+        className={clsx('md:p-4 md:pl-2 md:flex md:items-center p-2 pl-0 self-center flex flex-[0_0_auto]', {
           active: !draggable,
         })}
       >
@@ -86,7 +86,7 @@ function Question({
       </div>
 
       <div className="flex flex-col md:flex-1 md:flex-row md:flex-wrap flex-nowrap">
-        <h2 className="m-0 !mt-1 flex-00auto text-2xl text-primary-strong">
+        <h2 className="m-0 !mt-1 flex-[0_0_auto] text-2xl text-primary-strong">
           {isArchived && (
             <Label color="red" size="tiny">
               <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
@@ -117,11 +117,11 @@ function Question({
           />
         </div>
 
-        <div className="md:flex-00auto md:self-end">
+        <div className="md:flex-[0_0_auto] md:self-end">
           <QuestionTags tags={tags} type={type} />
         </div>
 
-        <div className="md:flex-00full">
+        <div className="md:flex-[0_0_100%]">
           <QuestionDetails
             description={description}
             isModificationModalOpen={isModificationModalOpen}

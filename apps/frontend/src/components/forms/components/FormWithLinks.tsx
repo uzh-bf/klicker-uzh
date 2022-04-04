@@ -20,7 +20,7 @@ interface Props {
 function FormWithLinks({ button, children, links }: Props): React.ReactElement {
   const linkItems = links.map(
     (link): React.ReactElement => (
-      <List.Item>
+      <List.Item key={link.href}>
         <Link href={link.href}>
           <a>{link.label}</a>
         </Link>
