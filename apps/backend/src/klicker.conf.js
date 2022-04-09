@@ -115,7 +115,7 @@ module.exports = convict({
     from: {
       default: 'klicker@localhost.com',
       env: 'EMAIL_FROM',
-      format: 'email',
+      format: String,
     },
     host: {
       default: undefined,
