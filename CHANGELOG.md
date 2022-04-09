@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.16...v1.8.0-rc.17) (2022-04-09)
+
+
+### Bug Fixes
+
+* **backend:** allow email to be a string to include a display name ([ea16d51](https://github.com/uzh-bf/klicker-uzh/commit/ea16d516c27c904ea279fbcc42db208854fe6650))
+
 ## [1.8.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.15...v1.8.0-rc.16) (2022-04-09)
 
 
