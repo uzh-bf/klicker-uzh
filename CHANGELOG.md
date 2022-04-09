@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.14...v1.8.0-rc.15) (2022-04-09)
+
+
+### Bug Fixes
+
+* **ui:** embed necessary tailwind styles in the ui package ([bdc8d94](https://github.com/uzh-bf/klicker-uzh/commit/bdc8d94d5f6ef108e95159dec21188cf67d8aa23))
+
+
+### Enhancements
+
+* **docs:** improve page performance and SEO ([e4f946b](https://github.com/uzh-bf/klicker-uzh/commit/e4f946b338b1a2518ab5158c9174f0d58fd51e4e))
+* **frontend:** add klicker favicon ([ee2414c](https://github.com/uzh-bf/klicker-uzh/commit/ee2414c99ddac1ab795de0c1cb31bda1dbd3d70e))
+
+
+### Other
+
+* add app .env files to repo as they contain only dev values ([d164056](https://github.com/uzh-bf/klicker-uzh/commit/d1640566cebd1bb5dceb712045d7cdb891df00c6))
+* **deploy:** adapt autoscaling params ([4d5bd44](https://github.com/uzh-bf/klicker-uzh/commit/4d5bd44a208a7fa54387246d80672ed272342188))
+* **docs:** add robots.txt, favicon, and extended caching config ([3127c4b](https://github.com/uzh-bf/klicker-uzh/commit/3127c4b12038c3628e51becdcd953117145b990a))
+* **docs:** improve image quality and embed SVG logo ([9f9e427](https://github.com/uzh-bf/klicker-uzh/commit/9f9e427e2c983ea5398b550bd81c6e9b62242b77))
+* **docs:** update algolia search api key and matmomo url ([d771dc7](https://github.com/uzh-bf/klicker-uzh/commit/d771dc74d3b9612bcd42b68b36255609efd4e25a))
+* **docs:** update config for matomo, ideal image, and algolia ([832497e](https://github.com/uzh-bf/klicker-uzh/commit/832497e5be426541e224ec4a82cb224f8aac33bd))
+* **README:** update links ([05b6de3](https://github.com/uzh-bf/klicker-uzh/commit/05b6de3ec9f8aab4aa127b945fa74d5f65bb4fac))
+* remove cruft related to draft.js ([cfb2e58](https://github.com/uzh-bf/klicker-uzh/commit/cfb2e5808835c7bcc99a69cddfeb9dc66cb93787))
+
 ## [1.8.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.13...v1.8.0-rc.14) (2022-04-04)
 
 
