@@ -11,6 +11,7 @@ dist/
 .DS_Store
 
 .env.local
+!.env
 
 .vercel
 
