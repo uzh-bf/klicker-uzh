@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.15...v1.8.0-rc.16) (2022-04-09)
+
+
+### Other
+
+* lockfile maintenance ([2932686](https://github.com/uzh-bf/klicker-uzh/commit/29326864ecf529734c6f2f5fd3be84bfb867236a))
+
+
+### Enhancements
+
+* **backend:** add replyTo for emails ([7b7291e](https://github.com/uzh-bf/klicker-uzh/commit/7b7291e3fe38be862a0c4c26c33d873cccba2006))
+
 ## [1.8.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.14...v1.8.0-rc.15) (2022-04-09)
 
 
