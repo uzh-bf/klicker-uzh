@@ -6,7 +6,6 @@ const QuestionService = require('./questions')
 const { QuestionModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
 const { questionSerializer } = require('../lib/test/serializers')
-const { createContentState } = require('../lib/draft')
 
 mongoose.Promise = Promise
 
@@ -33,7 +32,7 @@ describe('QuestionService', () => {
 
   describe('createQuestion', () => {
     const question = {
-      content: createContentState('blabla'),
+      content: 'blabla',
       options: {
         choices: [
           { correct: false, name: 'option1' },
