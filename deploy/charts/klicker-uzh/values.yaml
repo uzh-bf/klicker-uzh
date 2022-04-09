@@ -8,6 +8,10 @@ podSecurityContext: {}
 
 securityContext: {}
 
+email:
+  secure: true
+  port: 465
+
 redis:
   # architecture: standalone
   auth:

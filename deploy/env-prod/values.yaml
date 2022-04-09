@@ -4,9 +4,10 @@ s3:
   region: eu-central-1
 
 email:
-  from: klicker.support@uzh.ch
-  host: smtp.uzh.ch
-  user: klicker.support@uzh.ch
+  from: "Team KlickerUZH <noreply@klicker.bf-app.ch>"
+  host: email-smtp.eu-west-1.amazonaws.com
+  user: AKIAYSOSGZVTYDOHW2QK
+  replyTo: "KlickerUZH Support <klicker.support@uzh.ch>"
 
 security:
   domain: klicker.uzh.ch
