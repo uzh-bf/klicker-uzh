@@ -144,6 +144,11 @@ module.exports = convict({
       env: 'EMAIL_SECURE',
       format: 'Boolean',
     },
+    replyTo: {
+      default: undefined,
+      env: 'EMAIL_REPLY_TO',
+      format: String,
+    },
   },
   env: {
     arg: 'nodeEnv',

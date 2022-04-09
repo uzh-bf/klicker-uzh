@@ -56,6 +56,7 @@ function prepareEmailTransporter() {
     secure,
     auth: user && pass ? { user, pass } : undefined,
     requiresAuth: user && pass,
+    debug: process.env.NODE_ENV === 'development',
   })
 }
 
@@ -83,7 +84,13 @@ async function sendEmailNotification({ to, subject, html }) {
 
     // send the email
     try {
-      await transporter.sendMail({ from: EMAIL_CFG.from, to, subject, html })
+      await transporter.sendMail({
+        from: EMAIL_CFG.from,
+        to,
+        subject,
+        html,
+        replyTo: EMAIL_CFG.replyTo || EMAIL_CFG.from,
+      })
     } catch (e) {
       console.log(e)
     }
