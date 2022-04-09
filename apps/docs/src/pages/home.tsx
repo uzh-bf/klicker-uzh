@@ -277,7 +277,7 @@ const TitleImage = ({ imgSrc }) => {
         />
       </div>
 
-      <div className="pt-20 m-auto text-center lg:pt-14 max-w-[80%] md:max-w-[1000px]">
+      <div className="pt-20 m-auto text-center lg:pt-14 max-w-[80%] md:max-w-[1200px]">
         <Image
           alt="KlickerUZH Running Session with Audience Interaction"
           img={imgSrc}
@@ -285,7 +285,7 @@ const TitleImage = ({ imgSrc }) => {
       </div>
 
       <h1 className="items-center justify-center mt-4 mb-4">
-        <KlickerLogo className={'w-44 sm:w-48 md:w-64'} />
+        <KlickerLogo className="w-44 sm:w-48 md:w-64" />
         <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
           Open Source Audience Interaction
         </div>

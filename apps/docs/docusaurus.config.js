@@ -61,10 +61,10 @@ module.exports = {
     [
       '@docusaurus/plugin-ideal-image',
       {
-        quality: 75,
-        max: 1000, // max resized image's size.
-        min: 200, // min resized image's size. if original is lower, use that size.
-        steps: 4, // the max number of images generated between min and max (inclusive)
+        quality: 85,
+        max: 1200, // max resized image's size.
+        min: 500, // min resized image's size. if original is lower, use that size.
+        steps: 3, // the max number of images generated between min and max (inclusive)
         disableInDev: false,
       },
     ],
@@ -90,8 +90,8 @@ module.exports = {
     ],
     navbar: {
       logo: {
-        src: 'img/KlickerUZH_Gray_Transparent.png',
-        srcDark: 'img/KlickerUZH_Gray_Transparent_inverted.png',
+        src: 'img/KlickerUZH_Gray_BG.svg',
+        srcDark: 'img/KlickerUZH_Gray_Transparent_borderless_inverted.png',
         href: '/home',
       },
       items: [
