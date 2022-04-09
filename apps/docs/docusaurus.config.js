@@ -51,7 +51,7 @@ module.exports = {
     [
       '@gabrielcsapo/docusaurus-plugin-matomo',
       {
-        matomoUrl: 'https://webstats.uzh.ch/',
+        matomoUrl: 'https://webstats.uzh.ch',
         siteUrl: 'https://www.klicker.uzh.ch',
         siteId: '356',
         matomoPhpScript: 'matomo.php',
@@ -135,7 +135,7 @@ module.exports = {
     },
     algolia: {
       appId: 'TZ15XJ66MJ',
-      apiKey: '765b79e360223a157b384c08463a47ac',
+      apiKey: '1c175419aef4dbdbff3c5becd8613a8a',
       indexName: 'klicker-uzh',
     },
   },
