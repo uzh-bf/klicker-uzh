@@ -114,9 +114,9 @@ frontend:
 
   autoscaling:
     enabled: false
-    minReplicas: 4
+    minReplicas: 3
     maxReplicas: 7
-    targetCPUUtilizationPercentage: 50
+    targetCPUUtilizationPercentage: 60
     targetMemoryUtilizationPercentage: 80
 
   vpa:
@@ -159,9 +159,9 @@ backend:
 
   autoscaling:
     enabled: false
-    minReplicas: 4
+    minReplicas: 3
     maxReplicas: 7
-    targetCPUUtilizationPercentage: 50
+    targetCPUUtilizationPercentage: 60
     targetMemoryUtilizationPercentage: 80
 
   vpa:
