@@ -1,3 +1,5 @@
+@import '@klicker-uzh/ui/dist/tailwind.css';
+
 :root {
   --ifm-color-primary: #dc6027;
   --ifm-color-primary-dark: rgb(33, 175, 144);

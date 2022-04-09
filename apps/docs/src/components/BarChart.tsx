@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import React from 'react'
 import {
   ResponsiveContainer,
@@ -14,7 +14,12 @@ export default function BarChart({ className, legend, likert, title, data }) {
   const total = data.reduce((acc, item) => item.count + acc, 0)
 
   return (
-    <div className={clsx('max-w-lg border border-solid p-2', className)}>
+    <div
+      className={twMerge(
+        'max-w-lg border border-gray-300 border-solid rounded p-2',
+        className
+      )}
+    >
       {title && (
         <div className="w-full px-2 py-1 mb-4 font-bold bg-gray-100 rounded shadow">
           {title}

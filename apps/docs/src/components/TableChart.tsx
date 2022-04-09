@@ -1,11 +1,16 @@
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import React from 'react'
 
 export default function TableChart({ className, title, data }) {
   const total = data.reduce((acc, item) => item.count + acc, 0)
 
   return (
-    <div className={clsx('max-w-lg border border-solid p-2', className)}>
+    <div
+      className={twMerge(
+        'max-w-lg border border-gray-300 border-solid rounded p-2',
+        className
+      )}
+    >
       {title && (
         <div className="px-2 py-1 mb-2 font-bold bg-gray-100 rounded shadow">
           {title}

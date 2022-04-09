@@ -7,7 +7,7 @@ module.exports = {
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
   scripts: [
-    'https://buttons.github.io/buttons.js',
+    // 'https://buttons.github.io/buttons.js',
     {
       src: 'https://betteruptime.com/widgets/announcement.js',
       'data-id': '133428',
@@ -15,7 +15,7 @@ module.exports = {
     },
   ],
   stylesheets: ['https://fonts.googleapis.com/css?family=Open+Sans'],
-  favicon: 'img/KlickerUZH_Orange_Favicon.png',
+  favicon: '/favicon.ico',
   customFields: {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
@@ -47,8 +47,47 @@ module.exports = {
       },
     ],
   ],
-  // plugins: ['@docusaurus/plugin-ideal-image'],
+  plugins: [
+    [
+      '@gabrielcsapo/docusaurus-plugin-matomo',
+      {
+        matomoUrl: 'https://webstats.uzh.ch/',
+        siteUrl: 'https://www.klicker.uzh.ch',
+        siteId: '356',
+        // phpLoader: 'matomo.php',
+        // jsLoader: 'matomo.js',
+      },
+    ],
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 75,
+        max: 1000, // max resized image's size.
+        min: 200, // min resized image's size. if original is lower, use that size.
+        steps: 4, // the max number of images generated between min and max (inclusive)
+        disableInDev: false,
+      },
+    ],
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            from: '/',
+            to: '/home',
+          },
+        ],
+      },
+    ],
+  ],
   themeConfig: {
+    metadata: [
+      {
+        name: 'keywords',
+        content:
+          'audience interaction, audience interactivity, digital classroom interaction, open source audience interaction, ask questions live, ask anonymous questions, anonymous live q&a',
+      },
+    ],
     navbar: {
       logo: {
         src: 'img/KlickerUZH_Gray_Transparent.png',
@@ -95,14 +134,9 @@ module.exports = {
       ],
     },
     algolia: {
-      apiKey: 'b945507eeedf6bb6f02688350c0ecc4b',
+      appId: 'TZ15XJ66MJ',
+      apiKey: 'de28b18d3790067e12c8586ba80d70a2',
       indexName: 'klicker-uzh',
-    },
-    matomo: {
-      matomoUrl: 'https://webstats.uzh.ch/',
-      siteId: '356',
-      phpLoader: 'matomo.php',
-      jsLoader: 'matomo.js',
     },
   },
 }

@@ -35,13 +35,13 @@ import CaseSummary from '../../src/components/CaseSummary.tsx'
 ## Implementation
 
 import ConfusionInput from '../../static/img/confusion_input.png'
-import ConfusionGauge from '../../static/img/confusion_gauge.png'
+import ConfusionGauge from '../../static/img/confusion_gauge_single.png'
 import ConfusionCockpit from '../../static/img/confusion_cockpit.png'
 import ConfusionHistory from '../../static/img/evaluation_confusion.png'
 
 <ImageModal.Group>
   <ImageModal src={ConfusionInput} description="The audience can give you feedback on the speed and difficulty of the lecture by dragging the corresponding sliders to one of five possible positions (ranging from very slow to very fast and very easy to very hard). Each participant can provide feedback up to once a minute." title="Audience View" />
-  <ImageModal className="max-h-96" src={ConfusionGauge} description="To reflect the current situation, the metrics gauges on the lecturer view display an aggregate of each metric based on the incoming feedbacks of the last ten minutes. The number of feedbacks in the aggregate is displayed so that the reliability of the measure can be judged." title="Metrics Gauges" />
+  <ImageModal className="p-1" src={ConfusionGauge} description="To reflect the current situation, the metrics gauges on the lecturer view display an aggregate of each metric based on the incoming feedbacks of the last ten minutes. The number of feedbacks in the aggregate is displayed so that the reliability of the measure can be judged." title="Metrics Gauges" />
   <ImageModal src={ConfusionCockpit} description="The lecturer cockpit displays the real-time feedback gauges next to the pinned questions from Live Q&A. The bar on top of the window provides feedback at a quick glance, as it turns red when one of the gauges is in a red zone, and yellow when one of the gauges is in the orange zone." title="Lecturer Cockpit" />
   <ImageModal src={ConfusionHistory} description="After the completion of a session, the development of real-time feedback metrics is plotted over time on the evaluation of the session. This allows lecturers to associate the development of the gauges with their lecture timing (e.g., to identify difficult parts)." title="Metrics Timeline" />
 </ImageModal.Group>

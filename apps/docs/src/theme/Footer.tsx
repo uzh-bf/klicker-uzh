@@ -1,24 +1,26 @@
 import React from 'react'
 import { useColorMode } from '@docusaurus/theme-common'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 const Footer = () => {
   const { isDarkTheme } = useColorMode()
 
   return (
-    <div className={clsx('w-full bg-gray-100', isDarkTheme && 'bg-gray-700')}>
+    <div
+      className={twMerge('w-full bg-gray-100', isDarkTheme && 'bg-gray-700')}
+    >
       <div className="mt-6 text-center ">
         <a href="/">
           <img
             src="/img/KlickerUZH_Gray_Transparent.png"
-            className={clsx(
+            className={twMerge(
               'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
               isDarkTheme && 'hidden'
             )}
           />
           <img
             src="/img/KlickerUZH_Gray_Transparent_inverted.png"
-            className={clsx(
+            className={twMerge(
               'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
               !isDarkTheme && 'hidden'
             )}
