@@ -18,6 +18,9 @@ data:
   EMAIL_FROM: {{ .Values.email.from | quote }}
   EMAIL_HOST: {{ .Values.email.host | quote }}
   EMAIL_USER: {{ .Values.email.user | quote }}
+  EMAIL_REPLY_TO: {{ .Values.email.replyTo | quote }}
+  EMAIL_PORT: {{ .Values.email.port | quote }}
+  EMAIL_SECURE: {{ .Values.email.secure | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
   S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
