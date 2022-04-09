@@ -2,12 +2,13 @@ import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
 import { useColorMode } from '@docusaurus/theme-common'
 
+import Image from '@theme/IdealImage'
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTextBlock from '../components/common/ImageTextBlock'
 import UserForm from '../components/UserForm'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 const features = [
   {
@@ -97,7 +98,8 @@ const useCases = [
     title: 'Instant Classroom Response',
     content:
       'Poll your students to instantly check their learning progress and comprehension. Choose from one of several question types to optimally support your lecture contents. Evaluate incoming responses in real-time and export them after the conclusion of a session.',
-    imgSrc: '/img/iphone_question.png',
+    imgSrc: require('../../static/img/iphone_question.png'),
+    imgClassName: 'max-w-[100px] md:max-w-[150px]',
   },
   {
     title: 'Live Q&A in Large Classrooms',
@@ -105,7 +107,8 @@ const useCases = [
       'The Feedback-Channel extends KlickerUZHs functionalities far beyond a simple audience response system. Students are now able to ask questions and provide feedback directly and anonymously during the lecture. If available, a teaching assistant can directly answer questions or pin them to the separate lecturer view. After a KlickerUZH session, all feedbacks and responses will still be available through the evaluation view.',
     link: '/use_cases/live_qa',
     linkText: 'Use Cases of the Q&A Channel',
-    imgSrc: '/img/implementation_qa_audience.png',
+    imgSrc: require('../../static/img/implementation_qa_audience.png'),
+    imgClassName: 'max-w-[400px]',
   },
   {
     title: 'Real-time Feedback',
@@ -113,7 +116,7 @@ const useCases = [
       'Beside the possibility to submit comments in written form, students can also give feedback on the lecture speed and difficulty through a dedicated visual interface in the feedback section. The so-called confusion barometer on the other side then aggregates the data into an easily readable format and allows the lecturer to adapt the lecture pace in real-time.',
     link: '/use_cases/real_time_feedback',
     linkText: 'Use Cases of Real-time Feedback',
-    imgSrc: '/img/confusion_gauge.png',
+    imgSrc: require('../../static/img/confusion_gauge_single.png'),
   },
 ]
 
@@ -147,23 +150,26 @@ function Home() {
 
   return (
     <Layout title="Welcome">
-      <TitleImage />
+      <TitleImage imgSrc={require('../../static/img/timeline_mac.png')} />
 
       <div className="flex flex-col gap-8 p-4 m-auto md:p-8 md:gap-16 max-w-7xl">
         <div className="flex flex-col justify-between gap-12 md:gap-4 md:flex-row">
           <ImageTile
             content="Feature Complete and Easy to Use"
-            imgSrc="/img/question_pool_demo.png"
+            imgSrc={require('../../static/img/question_pool_demo.png')}
+            imgClassName="max-w-[300px]"
           />
 
           <ImageTile
             content="Optimized for Mobile Devices"
-            imgSrc="/img/iphone_question.png"
+            imgSrc={require('../../static/img/iphone_question.png')}
+            imgClassName="max-w-[100px] md:max-w-[150px]"
           />
 
           <ImageTile
             content="Open Source and Free to Use"
-            imgSrc="/img/development_mac.png"
+            imgSrc={require('../../static/img/development_mac.png')}
+            imgClassName="max-w-[300px]"
           />
         </div>
 
@@ -181,6 +187,7 @@ function Home() {
                 link={block.link}
                 linkText={block.linkText}
                 imgSrc={block.imgSrc}
+                imgClassName={block.imgClassName}
               />
             ))}
           </div>
@@ -231,7 +238,7 @@ function Home() {
               involved in future developments, we welcome you to join our
               KlickerUZH user group with the following form.
             </p>
-            <div className="max-w-lg mt-8 border border-solid rounded-md">
+            <div className="max-w-lg mt-8 border border-gray-300 border-solid">
               <UserForm />
             </div>
           </div>
@@ -247,12 +254,12 @@ function Divider() {
   )
 }
 
-const TitleImage = () => {
+const TitleImage = ({ imgSrc }) => {
   const { isDarkTheme } = useColorMode()
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'mb-10 text-center ',
         !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent'
       )}
@@ -270,24 +277,24 @@ const TitleImage = () => {
         />
       </div>
 
-      <div className="pt-20 text-center lg:pt-14">
-        <img
-          className="max-w-[80%] md:max-w-[60%] max-h-[550px]"
-          src="/img/timeline_mac.png"
+      <div className="pt-20 m-auto text-center lg:pt-14 max-w-[80%] md:max-w-[1000px]">
+        <Image
+          alt="KlickerUZH Running Session with Audience Interaction"
+          img={imgSrc}
         />
       </div>
 
       <h1 className="items-center justify-center mt-4 mb-4">
         <KlickerLogo className={'w-44 sm:w-48 md:w-64'} />
         <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
-          Open-source Classroom Interaction
+          Open Source Audience Interaction
         </div>
       </h1>
 
       <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
         <CustomButton
           text="Sign Up"
-          className={clsx(
+          className={twMerge(
             'w-64 md:text-lg md:w-52',
             !isDarkTheme && 'bg-gray-50'
           )}
@@ -295,7 +302,7 @@ const TitleImage = () => {
         />
         <CustomButton
           text="Getting Started"
-          className={clsx(
+          className={twMerge(
             'w-64 md:text-lg md:w-52',
             !isDarkTheme && 'bg-gray-50'
           )}
@@ -303,7 +310,7 @@ const TitleImage = () => {
         />
         <CustomButton
           text="Get Involved"
-          className={clsx(
+          className={twMerge(
             'w-64 md:text-lg md:w-52',
             !isDarkTheme && 'bg-gray-50'
           )}
@@ -319,7 +326,7 @@ const KlickerLogo = ({ className }) => {
 
   return (
     <img
-      className={clsx(className)}
+      className={twMerge(className)}
       src={`/img/${
         isDarkTheme
           ? 'KlickerUZH_Gray_Transparent_borderless_inverted.png'

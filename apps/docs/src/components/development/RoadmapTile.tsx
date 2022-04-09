@@ -1,6 +1,6 @@
 import React from 'react'
 import { useColorMode } from '@docusaurus/theme-common'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 interface RoadmapTileProps {
   title: string
@@ -21,7 +21,7 @@ const RoadmapTile = ({
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'h-full border-2 border-solid rounded-md shadow-md flex flex-col p-4',
         className
       )}
@@ -38,7 +38,7 @@ const RoadmapTile = ({
         {useCases &&
           useCases.map((useCase: any) => (
             <a
-              className={clsx(
+              className={twMerge(
                 'flex-1 px-3 py-2 text-sm bg-gray-100 border border-solid rounded-md hover:shadow',
                 isDarkTheme && 'bg-gray-500 border-gray-500'
               )}
@@ -54,7 +54,7 @@ const RoadmapTile = ({
       <div className="flex flex-row flex-wrap gap-2">
         {tags.map((tag: any) => (
           <div
-            className={clsx(
+            className={twMerge(
               'py-2 px-3 text-sm font-bold rounded-md',
               tag.color == 'gray' && 'bg-gray-500 text-white',
               tag.color == 'lightgray' && 'bg-gray-200 text-gray-600',

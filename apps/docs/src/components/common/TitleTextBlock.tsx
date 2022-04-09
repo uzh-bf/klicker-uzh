@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import React from 'react'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 
@@ -18,7 +18,7 @@ const TitleTextBlock = ({
 }: TitleTextBlockProps) => {
   return (
     <div
-      className={clsx(
+      className={twMerge(
         className,
         'relative p-4 md:p-8 border border-solid border-gray-200 rounded-lg shadow'
       )}

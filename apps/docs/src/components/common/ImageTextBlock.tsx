@@ -1,7 +1,8 @@
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import React from 'react'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import Zoom from 'react-medium-image-zoom'
+import Image from '@theme/IdealImage'
 import 'react-medium-image-zoom/dist/styles.css'
 
 interface ImageTextBlockProps {
@@ -11,6 +12,7 @@ interface ImageTextBlockProps {
   link?: string
   linkText?: string
   className?: string
+  imgClassName?: string
 }
 const ImageTextBlock = ({
   title,
@@ -19,17 +21,21 @@ const ImageTextBlock = ({
   link,
   linkText,
   className,
+  imgClassName,
 }: ImageTextBlockProps) => {
   return (
     <div
-      className={clsx(
-        className,
-        'grid grid-cols-1 md:grid-cols-2 p-4 md:p-8 border border-solid border-gray-200 rounded-lg shadow w-full'
+      className={twMerge(
+        'grid grid-cols-1 md:grid-cols-2 p-4 md:p-8 border border-solid border-gray-200 rounded-lg shadow w-full',
+        className
       )}
     >
       <div className="order-1 w-full mx-auto text-center md:px-6 md:my-auto md:order-0">
         <Zoom overlayBgColorEnd="gray">
-          <img src={imgSrc} className="p-1 shadow max-h-60" />
+          <Image
+            img={imgSrc}
+            className={twMerge('p-1 shadow max-h-60', imgClassName)}
+          />
         </Zoom>
       </div>
       <div className="relative w-full order-0 md:order-1">
