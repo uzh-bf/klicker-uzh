@@ -54,17 +54,17 @@ module.exports = {
         matomoUrl: 'https://webstats.uzh.ch/',
         siteUrl: 'https://www.klicker.uzh.ch',
         siteId: '356',
-        // phpLoader: 'matomo.php',
-        // jsLoader: 'matomo.js',
+        matomoPhpScript: 'matomo.php',
+        matomoJsScript: 'matomo.js',
       },
     ],
     [
       '@docusaurus/plugin-ideal-image',
       {
         quality: 85,
-        max: 1200, // max resized image's size.
-        min: 500, // min resized image's size. if original is lower, use that size.
-        steps: 3, // the max number of images generated between min and max (inclusive)
+        max: 1400, // max resized image's size.
+        min: 400, // min resized image's size. if original is lower, use that size.
+        steps: 5, // the max number of images generated between min and max (inclusive)
         disableInDev: false,
       },
     ],
@@ -135,7 +135,7 @@ module.exports = {
     },
     algolia: {
       appId: 'TZ15XJ66MJ',
-      apiKey: 'de28b18d3790067e12c8586ba80d70a2',
+      apiKey: '765b79e360223a157b384c08463a47ac',
       indexName: 'klicker-uzh',
     },
   },
