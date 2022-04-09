@@ -5,4 +5,4 @@ node_modules/
 *rdb
 *.archive
 *.log
-.env
+.env.local

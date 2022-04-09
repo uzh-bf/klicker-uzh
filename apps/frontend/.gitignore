@@ -10,7 +10,7 @@ dist/
 .idea/
 .DS_Store
 
-.env
+.env.local
 
 .vercel
 
