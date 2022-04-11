@@ -947,13 +947,43 @@ const movoImport = async ({ userId, dataset }) => {
           })
         )
 
-        // console.log(questions)
-
         // ! if statement is correct
         // Test if every question in the block has results - otherwise treat it like missing results
         if (questionSet.questions.every((question) => question.results !== null && question.results !== undefined)) {
-          // TODO: Create instances with results
-          // TODO: Create Session with results
+          // Create instances with results
+          const sessionId = ObjectId()
+
+          questionInstanceIds = await questions.reduce(async (acc, question, currentIndex) => {
+            const newInstance = await new QuestionInstanceModel({
+              question: question.id,
+              session: sessionId,
+              user: userId,
+              version: 0,
+              results: questionSet.questions[currentIndex].results,
+            })
+
+            newInstance.save()
+            question.instances.push(newInstance.id)
+            await question.save()
+            return [...(await acc), newInstance.id]
+          }, Promise.resolve([]))
+
+          // Create Session with results
+          const movoSession = prepareDemoSessionData({
+            id: sessionId,
+            name: questionSet.setName,
+            status: 'COMPLETED',
+            user: userId,
+            blockInstances: questionInstanceIds.map((instanceId) => [instanceId]),
+            blockStatus: 'EXECUTED',
+            startedAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
+            finishedAt: new Date(`${questionSet.SetVotingDate}T11:00:00`),
+          })
+          await movoSession.save()
+
+          await UserModel.findByIdAndUpdate(userId, {
+            $push: { sessions: [movoSession.id] },
+          })
         } else {
           // Create instances without results
           const sessionId = ObjectId()
@@ -972,7 +1002,7 @@ const movoImport = async ({ userId, dataset }) => {
             return [...(await acc), newInstance.id]
           }, Promise.resolve([]))
 
-          // TODO: Create Session without results
+          // Create Session without results
           const movoSession = prepareDemoSessionData({
             id: sessionId,
             user: userId,
