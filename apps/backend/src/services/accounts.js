@@ -894,9 +894,11 @@ const resolveAccountDeletion = async (userId) => {
  * Data import from movo.ch
  * @param {String} dataset Movo Dataset as stringified JSON object
  */
-const movoImport = async (dataset) => {
+const movoImport = async ({ userId, dataset }) => {
   const movoObject = JSON.parse(dataset)
   console.log(movoObject)
+  console.log('USER ID')
+  console.log(userId)
   return true
 }
 

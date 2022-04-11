@@ -52,7 +52,8 @@ const resolveAccountDeletionMutation = (parentValue, { deletionToken }, { auth }
 
 const activateAccountMutation = (parentValue, { activationToken }) => AccountService.activateAccount(activationToken)
 
-const movoImportMutation = (parentValue, { dataset }) => AccountService.movoImport(dataset)
+const movoImportMutation = (parentValue, { dataset }, { auth }) =>
+  AccountService.movoImport({ userId: auth.sub, dataset })
 
 module.exports = {
   // queries
