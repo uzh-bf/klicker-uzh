@@ -890,6 +890,16 @@ const resolveAccountDeletion = async (userId) => {
   return 'ACCOUNT_DELETED'
 }
 
+/**
+ * Data import from movo.ch
+ * @param {String} dataset Movo Dataset as stringified JSON object
+ */
+const movoImport = async (dataset) => {
+  const movoObject = JSON.parse(dataset)
+  console.log(movoObject)
+  return true
+}
+
 module.exports = {
   checkAvailability,
   checkAccountStatus,
@@ -905,5 +915,6 @@ module.exports = {
   resolveAccountDeletion,
   activateAccount,
   generateScopedToken,
+  movoImport,
   AUTH_COOKIE_SETTINGS,
 }
