@@ -914,7 +914,7 @@ const movoImport = async ({ userId, dataset }) => {
   try {
     movoObject.forEach(async (questionSet) => {
       let questions = []
-      let questionInstances = []
+      let questionInstanceIds = []
 
       if (questionSet.questions && questionSet.questions.length !== 0) {
         // create questions for each questionSet
@@ -948,6 +948,34 @@ const movoImport = async ({ userId, dataset }) => {
         )
 
         // console.log(questions)
+
+        // ! if statement is correct
+        // Test if every question in the block has results - otherwise treat it like missing results
+        if (questionSet.questions.every((question) => question.results !== null && question.results !== undefined)) {
+          // TODO: Create instances with results
+          // TODO: Create Session with results
+        } else {
+          // Create instances without results
+          const sessionId = ObjectId()
+
+          questionInstanceIds = await questions.reduce(async (acc, question) => {
+            const newInstance = await new QuestionInstanceModel({
+              question: question.id,
+              session: sessionId,
+              user: userId,
+              version: 0,
+              results: null,
+            })
+            newInstance.save()
+            question.instances.push(newInstance.id)
+            await question.save()
+            return [...(await acc), newInstance.id]
+          }, Promise.resolve([]))
+
+          console.log(questionInstanceIds)
+
+          // TODO: Create Session without results
+        }
       }
     })
 
