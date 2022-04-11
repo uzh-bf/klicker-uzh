@@ -972,9 +972,18 @@ const movoImport = async ({ userId, dataset }) => {
             return [...(await acc), newInstance.id]
           }, Promise.resolve([]))
 
-          console.log(questionInstanceIds)
-
           // TODO: Create Session without results
+          const movoSession = prepareDemoSessionData({
+            id: sessionId,
+            user: userId,
+            name: questionSet.setName,
+            blockInstances: questionInstanceIds.map((instanceId) => [instanceId]),
+          })
+          await movoSession.save()
+
+          await UserModel.findByIdAndUpdate(userId, {
+            $push: { sessions: [movoSession.id] },
+          })
         }
       }
     })
