@@ -56,6 +56,7 @@ module.exports = {
         siteId: '356',
         matomoPhpScript: 'matomo.php',
         matomoJsScript: 'matomo.js',
+        dev: true,
       },
     ],
     [
@@ -90,7 +91,7 @@ module.exports = {
     ],
     navbar: {
       logo: {
-        src: 'img/KlickerUZH_Gray_BG.svg',
+        src: 'img/KlickerUZH_Gray_Transparent_borderless.png',
         srcDark: 'img/KlickerUZH_Gray_Transparent_borderless_inverted.png',
         href: '/home',
       },
