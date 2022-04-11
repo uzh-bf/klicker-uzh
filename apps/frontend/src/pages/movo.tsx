@@ -59,7 +59,9 @@ function MovoImport(): React.ReactElement {
           previously run question sets. Plase note that the migration usually takes a few hours to be completed and that
           you should not use your KlickerUZH account in the meantime to avoid conflicts in the data. Furthermore, please
           keep in mind that submitting the same file repeatbly will result in duplicated questions in your question pool
-          later on. If you have any questions or problems with the migration, please contact: TODO
+          later on. Your questions from all question sets will be imported into the KlickerUZH question pool, question
+          sets will be available (with results) as KlickerUZH sessions. If you have any questions or problems with the
+          migration, please contact: TODO.
         </div>
         <div className="flex flex-row flex-nowrap">
           <div {...getRootProps()}>

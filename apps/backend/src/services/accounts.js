@@ -898,11 +898,6 @@ const movoImport = async ({ userId, dataset }) => {
   const movoObject = JSON.parse(dataset)
   const user = await UserModel.findById(userId)
 
-  // TODO: remove
-  // console.log(movoObject)
-  // console.log('USER ID')
-  // console.log(userId)
-
   // create import from movo tag
   const movoTag = await new TagModel({
     name: 'Import from Movo',
@@ -947,7 +942,6 @@ const movoImport = async ({ userId, dataset }) => {
           })
         )
 
-        // ! if statement is correct
         // Test if every question in the block has results - otherwise treat it like missing results
         if (questionSet.questions.every((question) => question.results !== null && question.results !== undefined)) {
           // Create instances with results
