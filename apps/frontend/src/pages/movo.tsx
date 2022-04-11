@@ -85,6 +85,7 @@ function MovoImport(): React.ReactElement {
                   variables: { dataset: movoJSON },
                 })
                 setSubmissionSucc(true)
+                push(['trackEvent', 'User', 'Migrated Data from Movo.ch'])
               } catch (error) {
                 setSubmissionSucc(false)
                 console.log(error)
