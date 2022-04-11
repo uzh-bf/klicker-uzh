@@ -896,9 +896,100 @@ const resolveAccountDeletion = async (userId) => {
  */
 const movoImport = async ({ userId, dataset }) => {
   const movoObject = JSON.parse(dataset)
-  console.log(movoObject)
-  console.log('USER ID')
-  console.log(userId)
+  const user = await UserModel.findById(userId)
+
+  // TODO: remove
+  // console.log(movoObject)
+  // console.log('USER ID')
+  // console.log(userId)
+
+  // create import from movo tag
+  const movoTag = await new TagModel({
+    name: 'Import from Movo',
+    questions: [],
+    user: userId,
+  }).save()
+  user.tags.push(movoTag.id)
+
+  let questions = []
+  let questionInstances = []
+
+  try {
+    movoObject.forEach((questionSet) => {
+      if (questionSet.questions && questionSet.questions.length !== 0) {
+        questions = questions.concat(
+          questionSet.questions.map(async (question) => {
+            const newQuestion = await new QuestionModel({
+              tags: [movoTag.id],
+              title: question.title,
+              type: question.type,
+              user: userId,
+              versions: [
+                {
+                  content: question.title,
+                  description: question.title,
+                  options: {
+                    SC: question.options.SC,
+                    MC: question.options.MC,
+                    FREE_RANCE: null,
+                  },
+                  files: [],
+                  solution: undefined,
+                },
+              ],
+            }).save()
+
+            movoTag.questions.push(newQuestion.id)
+            user.questions.push(newQuestion.id)
+
+            return newQuestion
+          })
+        )
+      }
+    })
+
+    await Promise.all([user.save(), movoTag.save()])
+
+    // ! do not change from here on - this part works
+    movoObject.forEach(async (questionSet) => {
+      if (questionSet.questions && questionSet.questions.length !== 0) {
+        // // create instances for session population
+        // const sessionId1 = ObjectId()
+
+        // // prepare 8 question instances for the session without results (in pairs of two)
+        // questionInstances = Promise(
+        //   questions.reduce(async (acc, question) => {
+        //     const instances = Promise.all(
+        //       [question, question].map(async (questionData) => {
+        //         const newInstance = new QuestionInstanceModel({
+        //           question: questionData.id,
+        //           session: sessionId1,
+        //           user: userId,
+        //           version: 0,
+        //           results: null,
+        //         })
+        //         return newInstance.save()
+        //       })
+        //     )
+        //     const instanceIds = instances.map((instance) => instance.id)
+        //     question.instances.push(...instanceIds)
+        //     await question.save()
+        //     return [...(await acc), ...instanceIds]
+        //   }, Promise.resolve([]))
+        // )
+
+        // TODO: create instances
+
+        if (questionSet.results) {
+          // TODO: Create Session with results
+        } else {
+          // TODO: Create Session without results
+        }
+      }
+    })
+  } catch (error) {
+    console.log(error)
+  }
   return true
 }
 
