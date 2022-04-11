@@ -911,13 +911,14 @@ const movoImport = async ({ userId, dataset }) => {
   }).save()
   user.tags.push(movoTag.id)
 
-  let questions = []
-  let questionInstances = []
-
   try {
-    movoObject.forEach((questionSet) => {
+    movoObject.forEach(async (questionSet) => {
+      let questions = []
+      let questionInstances = []
+
       if (questionSet.questions && questionSet.questions.length !== 0) {
-        questions = questions.concat(
+        // create questions for each questionSet
+        questions = await Promise.all(
           questionSet.questions.map(async (question) => {
             const newQuestion = await new QuestionModel({
               tags: [movoTag.id],
@@ -945,48 +946,12 @@ const movoImport = async ({ userId, dataset }) => {
             return newQuestion
           })
         )
+
+        // console.log(questions)
       }
     })
 
     await Promise.all([user.save(), movoTag.save()])
-
-    // ! do not change from here on - this part works
-    movoObject.forEach(async (questionSet) => {
-      if (questionSet.questions && questionSet.questions.length !== 0) {
-        // // create instances for session population
-        // const sessionId1 = ObjectId()
-
-        // // prepare 8 question instances for the session without results (in pairs of two)
-        // questionInstances = Promise(
-        //   questions.reduce(async (acc, question) => {
-        //     const instances = Promise.all(
-        //       [question, question].map(async (questionData) => {
-        //         const newInstance = new QuestionInstanceModel({
-        //           question: questionData.id,
-        //           session: sessionId1,
-        //           user: userId,
-        //           version: 0,
-        //           results: null,
-        //         })
-        //         return newInstance.save()
-        //       })
-        //     )
-        //     const instanceIds = instances.map((instance) => instance.id)
-        //     question.instances.push(...instanceIds)
-        //     await question.save()
-        //     return [...(await acc), ...instanceIds]
-        //   }, Promise.resolve([]))
-        // )
-
-        // TODO: create instances
-
-        if (questionSet.results) {
-          // TODO: Create Session with results
-        } else {
-          // TODO: Create Session without results
-        }
-      }
-    })
   } catch (error) {
     console.log(error)
   }
