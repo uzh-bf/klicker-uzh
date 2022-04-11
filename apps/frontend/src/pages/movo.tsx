@@ -5,7 +5,11 @@ import { Button, Icon } from 'semantic-ui-react'
 import { useDropzone } from 'react-dropzone'
 import { useToasts } from 'react-toast-notifications'
 import clsx from 'clsx'
+import { push } from '@socialgouv/matomo-next'
+import { useRouter } from 'next/router'
+
 import MovoImportMutation from '../graphql/mutations/MovoImportMutation.graphql'
+import LogoutMutation from '../graphql/mutations/LogoutMutation.graphql'
 import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 
 function MovoImport(): React.ReactElement {
@@ -14,6 +18,8 @@ function MovoImport(): React.ReactElement {
   const [filename, setFilename] = useState('')
   const [submissionSucc, setSubmissionSucc] = useState(false)
   const { addToast } = useToasts()
+  const [logout] = useMutation(LogoutMutation)
+  const router = useRouter()
 
   const onDrop = useCallback((acceptedFiles): void => {
     const reader = new FileReader()
@@ -71,9 +77,9 @@ function MovoImport(): React.ReactElement {
             primary
             className="!bg-green-700 !max-h-11"
             disabled={movoJSON === '' || submissionSucc === true}
-            onClick={() => {
+            onClick={async () => {
               try {
-                movoImport({
+                await movoImport({
                   variables: { dataset: movoJSON },
                 })
                 setSubmissionSucc(true)
@@ -102,8 +108,20 @@ function MovoImport(): React.ReactElement {
         >
           <Icon name="checkmark" size="big" />
           <div className="my-auto ml-3">
-            Your upload has been successful. Please log out now to avoid any conflicts during the migration process and
-            do not change any questions and/or sessions.
+            Your upload has been successful. Please{' '}
+            {/* eslint-disable jsx-a11y/no-static-element-interactions */
+            /* eslint-disable jsx-a11y/click-events-have-key-events */}
+            <div
+              className="inline-block text-blue-800 cursor-pointer"
+              onClick={async (): Promise<void> => {
+                await logout()
+                push(['trackEvent', 'User', 'Logged Out'])
+                router.push('/')
+              }}
+            >
+              log out now to avoid any conflicts during the migration process
+            </div>{' '}
+            and do not change any questions and/or sessions.
           </div>
         </div>
       </div>
