@@ -75,6 +75,7 @@ const {
   requestAccountDeletion,
   resolveAccountDeletion,
   activateAccount,
+  movoImport,
   checkAccountStatus,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
@@ -141,6 +142,7 @@ const typeDefs = [
   type Mutation {
     abortSession(id: ID!): Session
     activateAccount(activationToken: String!): String!
+    movoImport(dataset: String!): Boolean!
     activateNextBlock: Session!
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
@@ -230,6 +232,7 @@ const resolvers = {
   Mutation: {
     abortSession,
     activateAccount,
+    movoImport,
     archiveQuestions,
     addFeedback,
     pinFeedback,

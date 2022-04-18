@@ -73,6 +73,7 @@ const permissions = shield(
     Mutation: {
       abortSession: and(isAuthenticated, isAdmin),
       activateAccount: isAccountActivationPermitted,
+      movoImport: isAuthenticated,
       archiveQuestions: isAuthenticated,
       addFeedback: allow,
       deleteFeedback: isAuthenticated,

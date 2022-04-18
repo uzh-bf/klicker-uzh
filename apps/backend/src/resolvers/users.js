@@ -52,6 +52,9 @@ const resolveAccountDeletionMutation = (parentValue, { deletionToken }, { auth }
 
 const activateAccountMutation = (parentValue, { activationToken }) => AccountService.activateAccount(activationToken)
 
+const movoImportMutation = (parentValue, { dataset }, { auth }) =>
+  AccountService.movoImport({ userId: auth.sub, dataset })
+
 module.exports = {
   // queries
   allUsers: allUsersQuery,
@@ -73,4 +76,5 @@ module.exports = {
   requestAccountDeletion: requestAccountDeletionMutation,
   resolveAccountDeletion: resolveAccountDeletionMutation,
   activateAccount: activateAccountMutation,
+  movoImport: movoImportMutation,
 }
