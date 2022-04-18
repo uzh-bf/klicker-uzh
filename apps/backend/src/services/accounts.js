@@ -936,7 +936,6 @@ const movoImport = async ({ userId, dataset }) => {
             questionSet.questions.map(async (question) => {
               // Check if the question already exists and skip it if so
               if (question.duplicate === true) {
-                console.log('Question already in DB')
                 return null
               }
 
