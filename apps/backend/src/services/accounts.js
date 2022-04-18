@@ -1010,6 +1010,7 @@ const movoImport = async ({ userId, dataset }) => {
             blockStatus: 'EXECUTED',
             startedAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
             finishedAt: new Date(`${questionSet.SetVotingDate}T11:00:00`),
+            createdAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
           })
           await movoSession.save()
 
@@ -1039,6 +1040,7 @@ const movoImport = async ({ userId, dataset }) => {
             user: userId,
             name: questionSet.setName,
             blockInstances: questionInstanceIds.map((instanceId) => [instanceId]),
+            createdAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
           })
           await movoSession.save()
 
