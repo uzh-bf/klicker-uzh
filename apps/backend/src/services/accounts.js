@@ -8,6 +8,7 @@ const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 const { v4: uuidv4 } = require('uuid')
+const objHash = require('object-hash')
 
 const { ObjectId } = mongoose.Types
 
@@ -898,6 +899,9 @@ const movoImport = async ({ userId, dataset }) => {
   const movoObject = JSON.parse(dataset)
   const user = await UserModel.findById(userId)
 
+  // this variable is an object with the hashes of all created questions as keys and their Ids as values
+  const questionHashes = {}
+
   // create import from movo tag
   const movoTag = await new TagModel({
     name: 'Import from Movo',
@@ -907,47 +911,82 @@ const movoImport = async ({ userId, dataset }) => {
   user.tags.push(movoTag.id)
 
   try {
-    movoObject.forEach(async (questionSet) => {
-      let questions = []
-      let questionInstanceIds = []
+    movoObject.forEach((questionSet, index1) =>
+      questionSet.questions.forEach((question, index2) => {
+        const questionHash = objHash(question)
+        if (questionHashes[questionHash] === 'TODO') {
+          movoObject[index1].questions[index2].duplicate = true
+        } else {
+          questionHashes[questionHash] = 'TODO'
+          movoObject[index1].questions[index2].duplicate = false
+        }
+        movoObject[index1].questions[index2].hash = questionHash
+      })
+    )
 
-      if (questionSet.questions && questionSet.questions.length !== 0) {
-        // create questions for each questionSet
-        questions = await Promise.all(
-          questionSet.questions.map(async (question) => {
-            const newQuestion = await new QuestionModel({
-              tags: [movoTag.id],
-              title: question.title,
-              type: question.type,
-              user: userId,
-              versions: [
-                {
-                  content: question.title,
-                  description: question.title,
-                  options: {
-                    SC: question.options.SC,
-                    MC: question.options.MC,
-                    FREE_RANCE: null,
+    let questions = []
+    let questionInstanceIds = []
+
+    questions = await Promise.all(
+      movoObject.map(async (questionSet) => {
+        let tempQuestions = []
+        if (questionSet.questions && questionSet.questions.length !== 0) {
+          // create questions for each questionSet (including deduplication)
+          tempQuestions = await Promise.all(
+            questionSet.questions.map(async (question) => {
+              // Check if the question already exists and skip it if so
+              if (question.duplicate === true) {
+                console.log('Question already in DB')
+                return null
+              }
+
+              // If question does not exist yet, create it
+              const newQuestion = await new QuestionModel({
+                tags: [movoTag.id],
+                title: question.title,
+                type: question.type,
+                user: userId,
+                versions: [
+                  {
+                    content: question.title,
+                    description: question.title,
+                    options: {
+                      SC: question.options.SC,
+                      MC: question.options.MC,
+                      FREE_RANCE: null,
+                    },
+                    files: [],
+                    solution: undefined,
                   },
-                  files: [],
-                  solution: undefined,
-                },
-              ],
-            }).save()
+                ],
+              }).save()
 
-            movoTag.questions.push(newQuestion.id)
-            user.questions.push(newQuestion.id)
+              movoTag.questions.push(newQuestion.id)
+              user.questions.push(newQuestion.id)
+              questionHashes[question.hash] = newQuestion.id
 
-            return newQuestion
-          })
-        )
+              return newQuestion
+            })
+          )
+        }
+        return tempQuestions
+      })
+    )
+
+    questions = questions.flat().filter((question) => question !== null)
+
+    movoObject.forEach(async (questionSet) => {
+      if (questionSet.questions && questionSet.questions.length !== 0) {
+        // Get questions from duplicate free question array that are part of the considered questionSet / session
+        const sessionQuestionIds = questionSet.questions.map((question) => questionHashes[question.hash])
+        const sessionQuestions = questions.filter((question) => sessionQuestionIds.includes(question.id))
 
         // Test if every question in the block has results - otherwise treat it like missing results
         if (questionSet.questions.every((question) => question.results !== null && question.results !== undefined)) {
           // Create instances with results
           const sessionId = ObjectId()
 
-          questionInstanceIds = await questions.reduce(async (acc, question, currentIndex) => {
+          questionInstanceIds = await sessionQuestions.reduce(async (acc, question, currentIndex) => {
             const newInstance = await new QuestionInstanceModel({
               question: question.id,
               session: sessionId,
@@ -958,7 +997,6 @@ const movoImport = async ({ userId, dataset }) => {
 
             newInstance.save()
             question.instances.push(newInstance.id)
-            await question.save()
             return [...(await acc), newInstance.id]
           }, Promise.resolve([]))
 
@@ -982,7 +1020,7 @@ const movoImport = async ({ userId, dataset }) => {
           // Create instances without results
           const sessionId = ObjectId()
 
-          questionInstanceIds = await questions.reduce(async (acc, question) => {
+          questionInstanceIds = await sessionQuestions.reduce(async (acc, question) => {
             const newInstance = await new QuestionInstanceModel({
               question: question.id,
               session: sessionId,
@@ -992,7 +1030,6 @@ const movoImport = async ({ userId, dataset }) => {
             })
             newInstance.save()
             question.instances.push(newInstance.id)
-            await question.save()
             return [...(await acc), newInstance.id]
           }, Promise.resolve([]))
 
