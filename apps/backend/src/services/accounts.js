@@ -1014,9 +1014,7 @@ const movoImport = async ({ userId, dataset }) => {
           })
           await movoSession.save()
 
-          await UserModel.findByIdAndUpdate(userId, {
-            $push: { sessions: [movoSession.id] },
-          })
+          user.sessions.push(movoSession.id)
         } else {
           // Create instances without results
           const sessionId = ObjectId()
@@ -1044,9 +1042,7 @@ const movoImport = async ({ userId, dataset }) => {
           })
           await movoSession.save()
 
-          await UserModel.findByIdAndUpdate(userId, {
-            $push: { sessions: [movoSession.id] },
-          })
+          user.sessions.push(movoSession.id)
         }
       }
     })
