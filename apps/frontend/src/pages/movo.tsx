@@ -61,7 +61,14 @@ function MovoImport(): React.ReactElement {
           keep in mind that submitting the same file repeatbly will result in duplicated questions in your question pool
           later on. Your questions from all question sets will be imported into the KlickerUZH question pool, question
           sets will be available (with results) as KlickerUZH sessions. If you have any questions or problems with the
-          migration, please contact: TODO.
+          migration, please contact:{' '}
+          <a
+            className="inline-block text-blue-800 cursor-pointer"
+            href="mailto:support-its@unibas.ch?subject=Question: Migration from movo.ch to KlickerUZH"
+          >
+            support-its@unibas.ch
+          </a>
+          .
         </div>
         <div className="flex flex-row flex-nowrap">
           <div {...getRootProps()}>
@@ -110,22 +117,24 @@ function MovoImport(): React.ReactElement {
           )}
         >
           <Icon name="checkmark" size="big" />
-          <div className="my-auto ml-3">
-            Your upload has been successful. Please{' '}
-            {/* eslint-disable jsx-a11y/no-static-element-interactions */
-            /* eslint-disable jsx-a11y/click-events-have-key-events */}
-            <div
-              className="inline-block text-blue-800 cursor-pointer"
-              onClick={async (): Promise<void> => {
-                await logout()
-                push(['trackEvent', 'User', 'Logged Out'])
-                router.push('/')
-              }}
-            >
-              log out now to avoid any conflicts during the migration process
-            </div>{' '}
-            and do not change any questions and/or sessions.
-          </div>
+          {movoJSON !== '' && (
+            <div className="my-auto ml-3">
+              Your upload of {JSON.parse(movoJSON).length} question sets has been successful. Please{' '}
+              {/* eslint-disable jsx-a11y/no-static-element-interactions */
+              /* eslint-disable jsx-a11y/click-events-have-key-events */}
+              <div
+                className="inline-block text-blue-800 cursor-pointer"
+                onClick={async (): Promise<void> => {
+                  await logout()
+                  push(['trackEvent', 'User', 'Logged Out'])
+                  router.push('/')
+                }}
+              >
+                log out now to avoid any conflicts during the migration process
+              </div>{' '}
+              and do not change any questions and/or sessions.
+            </div>
+          )}
         </div>
       </div>
     </>
