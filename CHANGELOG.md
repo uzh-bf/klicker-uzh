@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.17...v1.8.0-rc.18) (2022-04-18)
+
+
+### Other
+
+* **deploy:** migrate transactional emails to SES with new replyTo option ([9b4933e](https://github.com/uzh-bf/klicker-uzh/commit/9b4933e2dcdc11e5b7c18f08f767cc76dab42ae4))
+* **docs:** use png logo ([dc694fe](https://github.com/uzh-bf/klicker-uzh/commit/dc694fe685b0f4807d11913ef78fe114c0170838))
+
+
+### Enhancements
+
+* **backend:** enable question import from movo.ch ([#2720](https://github.com/uzh-bf/klicker-uzh/issues/2720)) ([88999b5](https://github.com/uzh-bf/klicker-uzh/commit/88999b5b6709108ad78bdffef4209520cce38875))
+
 ## [1.8.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.16...v1.8.0-rc.17) (2022-04-09)
 
 
