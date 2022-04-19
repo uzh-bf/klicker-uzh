@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.19...v1.8.0-rc.20) (2022-04-19)
+
+
+### Enhancements
+
+* **frontend:** hide usage history and version dropdown if only one version of a question is available ([e332e25](https://github.com/uzh-bf/klicker-uzh/commit/e332e250683205ccaa11995da6e5ba23632feae4))
+
 ## [1.8.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.18...v1.8.0-rc.19) (2022-04-19)
 
 
