@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.18...v1.8.0-rc.19) (2022-04-19)
+
+
+### Bug Fixes
+
+* ensure that ui package is built in dev mode ([2f9a477](https://github.com/uzh-bf/klicker-uzh/commit/2f9a4777da49c2b0cae14aa921b16fff5c562c28))
+* **ui:** ensure that dev mode of the ui package integrates well with apps ([36cb2ea](https://github.com/uzh-bf/klicker-uzh/commit/36cb2eac294b39a15a5701880a68ba1ebbf97f6f))
+
+
+### Other
+
+* **docs:** add draft for sponsoring ([7b6522d](https://github.com/uzh-bf/klicker-uzh/commit/7b6522d583c1939d81a9a35f77012ecc705f570b))
+* **frontend:** hide contact info on movo page ([933833a](https://github.com/uzh-bf/klicker-uzh/commit/933833a967c2831396c4170073dc26f0447852fb))
+* lockfile maintenance ([93101ab](https://github.com/uzh-bf/klicker-uzh/commit/93101ab15f240a590e3f8b397169e20d25f9371d))
+
 ## [1.8.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.17...v1.8.0-rc.18) (2022-04-18)
 
 
