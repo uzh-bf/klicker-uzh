@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.20...v1.8.0-rc.21) (2022-04-19)
+
+
+### Bug Fixes
+
+* **ui:** ensure that the package builds in docker ([04ff08b](https://github.com/uzh-bf/klicker-uzh/commit/04ff08b0398a29d40cf5a682a7ed90712f13a47f))
+
+
+### Other
+
+* **docs:** add keywords and description for blog posts and use cases ([f3140a8](https://github.com/uzh-bf/klicker-uzh/commit/f3140a85e874d25ab4eb6e9bdedda3bdd81c77a8))
+* **docs:** update sponsoring contents ([3192858](https://github.com/uzh-bf/klicker-uzh/commit/31928582b35fc47016152730def28b8fac3042d0))
+
 ## [1.8.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.19...v1.8.0-rc.20) (2022-04-19)
 
 
