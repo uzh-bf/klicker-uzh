@@ -32,6 +32,7 @@ module.exports = {
       'deployment/deployment_docker',
     ],
     Contributing: [
+      'contributing/sponsoring',
       'contributing/contributing_guidelines',
       'contributing/contributing_setup',
     ],
