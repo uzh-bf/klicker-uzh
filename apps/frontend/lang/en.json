@@ -176,7 +176,6 @@
   "joinSession.string.responseIgnored": "As you are only allowed to respond once, we did not count your latest response.",
   "questionDetails.button.duplicate": "Duplicate",
   "questionDetails.button.edit": "View / Edit",
-  "questionDetails.usageHistory": "Usage history",
   "questionImport.button.addQuestions": "Add questions",
   "questionImport.button.upload": "Start Upload",
   "questionImport.string.header": "Question Import",
