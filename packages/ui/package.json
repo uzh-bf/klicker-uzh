@@ -13,7 +13,6 @@
     "build": "dts build",
     "build:storybook": "build-storybook",
     "lint": "dts lint",
-    "prepare": "dts build",
     "size": "size-limit",
     "dev": "dts watch",
     "storybook": "start-storybook -p 6006",
