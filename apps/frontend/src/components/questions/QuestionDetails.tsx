@@ -39,13 +39,6 @@ function QuestionDetails({
 
       <div className="border-solid column options border-b-only border-primary md:border-b-0 md:border-r" />
 
-      <div className="border-solid column lastUsed border-b-only border-primary md:border-b-0 md:border-r">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed.reverse() : ['-']} limit={2}>
-          <Icon name="history" />
-          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
-        </ListWithHeader>
-      </div>
-
       <div className="column buttons">
         <Button basic fluid onClick={(): void => setIsModificationModalOpen(true)}>
           <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
