@@ -66,7 +66,7 @@ function Question({
   return (
     <div
       className={clsx(
-        'question border border-solid border-gray-300 bg-gray-50 flex flex-col flex-nowrap p-2 mb-4 md:flex-row md:flex-wrap',
+        'question rounded border border-solid border-gray-300 bg-gray-50 flex flex-col flex-nowrap p-2 mb-4 md:flex-row md:flex-wrap',
         draggable && 'cursor-[grab] hover:shadow-md',
         collectedProps.isDragging && 'opacity-50'
       )}
@@ -105,16 +105,18 @@ function Question({
         </h2>
 
         <div className="md:flex-auto md:pr-4 md:text-right md:self-center">
-          <Dropdown
-            disabled={versions.length === 1}
-            options={versions.map((version, index): any => ({
-              key: index,
-              text: `v${index + 1} - ${dayjs(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
-              value: index,
-            }))}
-            value={activeVersion}
-            onChange={(_, data): void => setActiveVersion(data.value)}
-          />
+          {versions.length > 1 && (
+            <Dropdown
+              disabled={versions.length === 1}
+              options={versions.map((version, index): any => ({
+                key: index,
+                text: `v${index + 1} - ${dayjs(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
+                value: index,
+              }))}
+              value={activeVersion}
+              onChange={(_, data): void => setActiveVersion(data.value)}
+            />
+          )}
         </div>
 
         <div className="md:flex-[0_0_auto] md:self-end">
