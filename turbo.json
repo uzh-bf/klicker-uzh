@@ -14,7 +14,8 @@
       "outputs": ["dist/**", ".next"]
     },
     "dev": {
-      "cache": false
+      "cache": false,
+      "dependsOn": ["^build"]
     }
   }
 }
