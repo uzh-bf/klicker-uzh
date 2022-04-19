@@ -19,6 +19,7 @@
 !packages/ui/package.json
 !packages/ui/tailwind.config.js
 !packages/ui/tsconfig.json
+!packages/ui/dts.config.js
 
 !README.md
 !LICENSE.md
