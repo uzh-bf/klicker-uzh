@@ -141,16 +141,37 @@ function Join({ shortname }): React.ReactElement {
   // handle creation of a new response
   const onNewResponse = async ({ instanceId, response }): Promise<void> => {
     try {
-      newResponse({
-        variables: { fp: fingerprint, instanceId, response },
+      await fetch('http://localhost:7071/api/AddResponse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fp: fingerprint,
+          instanceId,
+          response,
+        }),
       })
+      // newResponse({
+      //   variables: { fp: fingerprint, instanceId, response },
+      // })
     } catch ({ message }) {
       console.error(message)
 
       try {
-        newResponse({
-          variables: { instanceId, response },
+        await fetch('http://localhost:7071/api/AddResponse', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instanceId,
+            response,
+          }),
         })
+        // newResponse({
+        //   variables: { instanceId, response },
+        // })
       } catch (e) {
         console.error(e)
       }
