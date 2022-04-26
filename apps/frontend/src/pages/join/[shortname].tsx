@@ -141,6 +141,8 @@ function Join({ shortname }): React.ReactElement {
   // handle creation of a new response
   const onNewResponse = async ({ instanceId, response }): Promise<void> => {
     try {
+      // TODO: feature flag or only use serverless endpoint if it is given in config
+      // otherwise use the default backend endpoint
       await fetch('http://localhost:7071/api/AddResponse', {
         method: 'POST',
         headers: {
