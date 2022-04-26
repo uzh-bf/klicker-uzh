@@ -7,3 +7,5 @@ node_modules/
 *.log
 .env.local
 !.env
+
+db/scripts/.env
