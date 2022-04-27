@@ -248,7 +248,7 @@ async function hydrateDemoData({ userId }) {
         user: userId,
         versions: [
           {
-            content,
+            content: content.replace(/\\/g, '\\\\'),
             description: content
               .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
               .replaceAll('<br>', '')

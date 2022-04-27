@@ -139,7 +139,7 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
       user: userId,
       versions: [
         {
-          content,
+          content: content.replace(/\\/g, '\\\\'),
           // Caution: the same expression is used for question editing again!
           // use decode function to unescape html character escape
           // match certain unicode categories like common letters, punctuation characters (P),
@@ -304,7 +304,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     // push a new version into the question model
     try {
       question.versions.push({
-        content: content || lastVersion.content,
+        content: content.replace(/\\/g, '\\\\') || lastVersion.content.replace(/\\/g, '\\\\'),
         description:
           decode(content)
             .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
