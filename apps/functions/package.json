@@ -6,6 +6,7 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
+    "func": "func",
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {

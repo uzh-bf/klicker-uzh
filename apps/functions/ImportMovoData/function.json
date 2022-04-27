@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "myBlob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "inbox/*.json",
+      "connection": "movoimports_STORAGE"
+    }
+  ],
+  "scriptFile": "../dist/ImportMovoData/index.js"
+}
