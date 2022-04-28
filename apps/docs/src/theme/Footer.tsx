@@ -29,7 +29,7 @@ const Footer = () => {
       </div>
       <div className="flex flex-col justify-center w-full mb-6 text-center md:px-10 lg:px-18">
         <div className="self-center max-w-6xl px-10">
-          Copyright 2021 @{' '}
+          Copyright 2022 @{' '}
           <a href="https://www.bf.uzh.ch/de/studies/general/teaching-center.html">
             Teaching Center
           </a>
