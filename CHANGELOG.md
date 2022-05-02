@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.21...v1.8.0-rc.22) (2022-05-02)
+
+
+### Bug Fixes
+
+* **backend:** double escape backslashes to ensure correct latex rendering ([#2723](https://github.com/uzh-bf/klicker-uzh/issues/2723)) ([0405d7e](https://github.com/uzh-bf/klicker-uzh/commit/0405d7e355afa19e91f842b5fa773c7fbc669d23))
+
+
+### Enhancements
+
+* **docs:** add documentation for movo import to KlickerUZH ([2f0ddd5](https://github.com/uzh-bf/klicker-uzh/commit/2f0ddd5ddb78cccefb10464f404ccc691a935afb))
+
+
+### Other
+
+* **backend:** ignore db scripts .env ([5170951](https://github.com/uzh-bf/klicker-uzh/commit/51709516cdd8b20e58c46d936bf845fd7e61f177))
+* **backend:** update copyright year in docs footer ([e5e93a2](https://github.com/uzh-bf/klicker-uzh/commit/e5e93a27eb5b0ba129f472df33d801eecad1511f))
+* **docs:** adapt sponsoring docs ([90bb79a](https://github.com/uzh-bf/klicker-uzh/commit/90bb79a9792edcfaba1a61cf32640473885d7fea))
+* **docs:** ensure description is not added redundantly ([7994474](https://github.com/uzh-bf/klicker-uzh/commit/799447495981843d09802cd1dfedfaaa8939d53d))
+* **frontend:** add link to documentation from migration page instead of support email ([fb7322c](https://github.com/uzh-bf/klicker-uzh/commit/fb7322ceb9c30b0c13b65bf7a84ee0ca46e3292b))
+* **frontend:** remove usage history from language build ([4a99806](https://github.com/uzh-bf/klicker-uzh/commit/4a99806826e0ea1c7ef2d417b72dbd018d171bd7))
+* lockfile maintenance ([c836413](https://github.com/uzh-bf/klicker-uzh/commit/c83641379cde978b89705f39e665a15fad197301))
+* update wording in movo documentation file ([96eaee9](https://github.com/uzh-bf/klicker-uzh/commit/96eaee95a8e5196fe7ca907ee9c912e5b9a39255))
+
 ## [1.8.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.20...v1.8.0-rc.21) (2022-04-19)
 
 
