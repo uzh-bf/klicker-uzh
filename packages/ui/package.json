@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/ui",
-  "version": "1.8.0-rc.22",
+  "version": "1.8.0-rc.23",
   "main": "dist/index.js",
   "module": "dist/packagesui.esm.js",
   "typings": "dist/index.d.ts",

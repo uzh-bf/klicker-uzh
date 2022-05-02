@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.22...v1.8.0-rc.23) (2022-05-02)
+
+
+### Bug Fixes
+
+* escaping special chars for slate state ([e19fd00](https://github.com/uzh-bf/klicker-uzh/commit/e19fd000c71aebf684ff8634135eb9e2aa810fbb))
+
 ## [1.8.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.21...v1.8.0-rc.22) (2022-05-02)
 
 
