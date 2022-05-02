@@ -1,13 +1,14 @@
 import { AzureFunction, Context } from '@azure/functions'
-
-const mongoose = require('mongoose')
-import UserModel from './models/User'
-import TagModel from './models/Tag'
-import QuestionModel from './models/Question'
-import SessionModel from './models/Session'
-import QuestionInstanceModel from './models/QuestionInstance'
-import objHash from 'object-hash'
+const {
+  QuestionModel,
+  SessionModel,
+  UserModel,
+  TagModel,
+  QuestionInstanceModel,
+} = require('@klicker-uzh/db')
 const { v4: uuidv4 } = require('uuid')
+const mongoose = require('mongoose')
+import objHash from 'object-hash'
 
 const { ObjectId } = mongoose.Types
 
@@ -238,10 +239,39 @@ const blobTrigger: AzureFunction = async function (
   context: Context,
   myBlob: any
 ): Promise<void> {
-  await movoImport({
-    userId: '',
-    dataset: '',
+  const mongoConfig = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: false,
+  }
+
+  mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+    ...mongoConfig,
+    auth: {
+      user: process.env.MONGO_USER,
+      password: process.env.MONGO_PASS,
+    },
   })
+
+  // activate mongoose debug mode (log all queries)
+  mongoose.set('debug', true)
+
+  // Make Mongoose use `findOneAndUpdate()`. Note that this option is `true`
+  // by default, you need to set it to false.
+  mongoose.set('useFindAndModify', false)
+
+  mongoose.connection
+    .once('open', () => {
+      console.log('[mongo] Connection to MongoDB established.')
+    })
+    .on('error', (error) => {
+      throw new Error(`[mongo] Could not connect to MongoDB: ${error}`)
+    })
+
+  // await movoImport({
+  //   userId: '',
+  //   dataset: '',
+  // })
 
   context.log(
     'Blob trigger function processed blob \n Name:',

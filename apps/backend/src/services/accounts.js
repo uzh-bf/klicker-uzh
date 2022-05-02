@@ -8,7 +8,6 @@ const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 const { v4: uuidv4 } = require('uuid')
-const objHash = require('object-hash')
 
 const { ObjectId } = mongoose.Types
 

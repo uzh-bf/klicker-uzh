@@ -5,8 +5,8 @@
       "type": "blobTrigger",
       "direction": "in",
       "path": "inbox/*.json",
-      "connection": "movoimports_STORAGE"
+      "connection": "klickermovoimport_STORAGE"
     }
   ],
-  "scriptFile": "../dist/ImportMovoData/index.js"
+  "scriptFile": "../dist/ProcessMovoJSON/index.js"
 }
