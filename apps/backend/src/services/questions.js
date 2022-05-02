@@ -304,7 +304,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     // push a new version into the question model
     try {
       question.versions.push({
-        content: content.replace(/\\/g, '\\\\') || lastVersion.content.replace(/\\/g, '\\\\'),
+        content: content?.replace(/\\/g, '\\\\') || lastVersion.content?.replace(/\\/g, '\\\\'),
         description:
           decode(content)
             .replace(/(\${2})[^]*?[^\\]\1/gm, '$FORMULA$')
