@@ -1,5 +1,5 @@
 const DataLoader = require('dataloader')
-const { QuestionInstanceModel, SessionModel, QuestionModel, TagModel, FileModel } = require('../models')
+const { QuestionInstanceModel, SessionModel, QuestionModel, TagModel, FileModel } = require('@klicker-uzh/db')
 
 // create a mapping from a mongo result array to a dataloader array
 function createMapping(arr) {

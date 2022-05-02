@@ -1,9 +1,9 @@
 require('dotenv').config()
 const { ForbiddenError } = require('apollo-server-express')
 
+const { Errors } = require('@klicker-uzh/db')
 const AuthenticationService = require('./authentication')
 const { generateScopedToken } = require('./accounts')
-const { Errors } = require('../constants')
 
 describe('AuthenticationService', () => {
   const dummyUser = {

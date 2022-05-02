@@ -1,10 +1,9 @@
 const _map = require('lodash/map')
+const { SessionModel, QUESTION_GROUPS, SESSION_STATUS } = require('@klicker-uzh/db')
 const { ensureLoaders } = require('../lib/loaders')
 const SessionExecService = require('../services/sessionExec')
 const SessionMgrService = require('../services/sessionMgr')
 const { getRedis } = require('../redis')
-const { QUESTION_GROUPS, SESSION_STATUS } = require('../constants')
-const { SessionModel } = require('../models')
 
 const responseCache = getRedis('exec')
 

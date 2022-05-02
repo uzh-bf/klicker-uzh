@@ -1,7 +1,15 @@
-const { QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel, FileModel } = require('../../models')
+const {
+  QuestionModel,
+  QuestionInstanceModel,
+  SessionModel,
+  TagModel,
+  UserModel,
+  FileModel,
+  QUESTION_TYPES,
+  ROLES,
+} = require('@klicker-uzh/db')
 const AccountService = require('../../services/accounts')
 const QuestionService = require('../../services/questions')
-const { QUESTION_TYPES, ROLES } = require('../../constants')
 
 /**
  * Cleanup all data belonging to a user

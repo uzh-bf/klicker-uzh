@@ -1,8 +1,8 @@
 const crypto = require('crypto')
 
+const { UserModel } = require('@klicker-uzh/db')
 const cfg = require('../klicker.conf.js')
 const AccountService = require('../services/accounts')
-const { UserModel } = require('../models')
 
 const APP_CFG = cfg.get('app')
 
