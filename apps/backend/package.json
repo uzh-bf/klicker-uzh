@@ -7,6 +7,7 @@
   },
   "license": "AGPL-3.0",
   "dependencies": {
+    "@klicker-uzh/db": "*",
     "@graphql-tools/schema": "8.2.0",
     "apollo-server-express": "3.3.0",
     "apollo-server-plugin-response-cache": "3.2.0",

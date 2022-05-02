@@ -2,8 +2,8 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 
+const { QuestionModel } = require('@klicker-uzh/db')
 const QuestionService = require('./questions')
-const { QuestionModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
 const { questionSerializer } = require('../lib/test/serializers')
 

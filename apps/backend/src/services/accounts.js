@@ -12,11 +12,19 @@ const objHash = require('object-hash')
 
 const { ObjectId } = mongoose.Types
 
+const {
+  QuestionInstanceModel,
+  TagModel,
+  FileModel,
+  SessionModel,
+  QuestionModel,
+  UserModel,
+  Errors,
+  ROLES,
+} = require('@klicker-uzh/db')
 const CFG = require('../klicker.conf.js')
 const validators = require('../lib/validators')
-const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel, UserModel } = require('../models')
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
-const { Errors, ROLES } = require('../constants')
 
 const APP_CFG = CFG.get('app')
 

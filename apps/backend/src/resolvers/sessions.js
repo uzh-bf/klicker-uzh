@@ -1,8 +1,7 @@
+const { SESSION_STATUS, SessionModel, UserModel } = require('@klicker-uzh/db')
 const SessionMgrService = require('../services/sessionMgr')
 const SessionExecService = require('../services/sessionExec')
-const { SessionModel, UserModel } = require('../models')
 const { ensureLoaders } = require('../lib/loaders')
-const { SESSION_STATUS } = require('../constants')
 
 /* ----- queries ----- */
 const allRunningSessionsQuery = async (parentValue, args, { loaders }) => {

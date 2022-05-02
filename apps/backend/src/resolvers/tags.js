@@ -1,4 +1,4 @@
-const { TagModel } = require('../models')
+const { TagModel } = require('@klicker-uzh/db')
 const { ensureLoaders } = require('../lib/loaders')
 /* ----- queries ----- */
 const allTagsQuery = async (parentValue, args, { auth, loaders }) => {
