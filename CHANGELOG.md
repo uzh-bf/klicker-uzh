@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.24...v1.8.0-rc.25) (2022-05-02)
+
+
+### Enhancements
+
+* **backend:** add the shortname to the redirect url as a username for discourse ([ffb042e](https://github.com/uzh-bf/klicker-uzh/commit/ffb042e392278ccb47b1856469f015840b6b3512))
+
 ## [1.8.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.23...v1.8.0-rc.24) (2022-05-02)
 
 
