@@ -39,7 +39,9 @@ const validateDiscourseLoginQuery = async (_, { sig, sso }, { auth, res }) => {
 
     const { nonce, return_sso_url } = parseQuery(queryString)
 
-    let payload = `nonce=${nonce}&email=${encodeURIComponent(matchingUser.email)}&external_id=${auth.sub}`
+    let payload = `nonce=${nonce}&email=${encodeURIComponent(matchingUser.email)}&external_id=${
+      auth.sub
+    }&username=${encodeURIComponent(auth.shortname)}`
 
     if (auth.role === 'ADMIN') {
       payload += '&admin=true'
