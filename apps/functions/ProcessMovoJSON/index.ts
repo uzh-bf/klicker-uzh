@@ -280,6 +280,8 @@ const blobTrigger: AzureFunction = async function (
     myBlob.length,
     'Bytes'
   )
+
+  // TODO: if not done automatically, remove the blob from the azure container to ensure that only non-processed files are still listed
 }
 
 export default blobTrigger
