@@ -1,0 +1,3 @@
+query ValidateDiscourseLogin($sso: String!, $sig: String!) {
+  validateDiscourseLogin(sso: $sso, sig: $sig)
+}
