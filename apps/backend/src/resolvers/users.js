@@ -1,4 +1,5 @@
 const crypto = require('crypto')
+const { parse: parseQuery } = require('querystring')
 
 const cfg = require('../klicker.conf.js')
 const AccountService = require('../services/accounts')
@@ -17,6 +18,45 @@ const checkAccountStatusQuery = (parentValue, args, { auth, res }) => AccountSer
 // Generate an HMAC for user identity verification
 const hmacQuery = (parentValue, args, { auth }) =>
   crypto.createHmac('sha256', APP_CFG.secret).update(auth.sub).digest('hex')
+
+const validateDiscourseLoginQuery = async (_, { sig, sso }, { auth, res }) => {
+  const signature = crypto.createHmac('sha256', APP_CFG.secret).update(sso).digest('hex')
+
+  // if the signature is invalid, redirect the user to the login page
+  if (signature !== sig) {
+    throw new Error('INVALID_PAYLOAD')
+  }
+
+  const matchingUser = await UserModel.findById(auth.sub)
+  if (!matchingUser) {
+    throw new Error('INVALID_PAYLOAD')
+  }
+
+  try {
+    const bufferObj = Buffer.from(sso, 'base64')
+
+    const queryString = bufferObj.toString('utf8')
+
+    const { nonce, return_sso_url } = parseQuery(queryString)
+
+    let payload = `nonce=${nonce}&email=${encodeURIComponent(matchingUser.email)}&external_id=${auth.sub}`
+
+    if (auth.role === 'ADMIN') {
+      payload += '&admin=true'
+    }
+
+    const encodedPayload = Buffer.from(payload, 'utf8').toString('base64')
+
+    const hashedPayload = crypto.createHmac('sha256', APP_CFG.secret).update(encodedPayload).digest('hex')
+
+    const redirectTo = `${return_sso_url}?sso=${encodedPayload}&sig=${hashedPayload}`
+
+    return redirectTo
+  } catch (e) {
+    console.log(e)
+    throw new Error('INVALID_PAYLOAD')
+  }
+}
 
 /* ----- mutations ----- */
 const createUserMutation = (parentValue, { email, password, shortname, institution, useCase }) =>
@@ -63,6 +103,7 @@ module.exports = {
   hmac: hmacQuery,
   checkAvailability: checkAvailabilityQuery,
   checkAccountStatus: checkAccountStatusQuery,
+  validateDiscourseLogin: validateDiscourseLoginQuery,
 
   // mutations
   changePassword: changePasswordMutation,

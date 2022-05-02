@@ -68,6 +68,7 @@ const permissions = shield(
       runningSession: isAuthenticated,
       session: isAuthenticated,
       user: isAuthenticated,
+      validateDiscourseLogin: isAuthenticated,
     },
 
     Mutation: {
