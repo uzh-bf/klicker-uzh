@@ -8,7 +8,7 @@ const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 const { v4: uuidv4 } = require('uuid')
-const objHash = require('object-hash')
+const { BlobServiceClient } = require('@azure/storage-blob')
 
 const { ObjectId } = mongoose.Types
 
@@ -19,6 +19,7 @@ const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = r
 const { Errors, ROLES } = require('../constants')
 
 const APP_CFG = CFG.get('app')
+const MOVO_CFG = CFG.get('movo')
 
 const isDev = process.env.NODE_ENV !== 'production'
 
@@ -525,7 +526,7 @@ const signup = async (
       try {
         sendEmailNotification({
           html,
-          subject: 'Klicker UZH - Account Activation',
+          subject: 'KlickerUZH - Account Activation',
           to: normalizedEmail,
         })
       } catch (e) {
@@ -806,7 +807,7 @@ const requestPassword = async (res, email) => {
   try {
     sendEmailNotification({
       html,
-      subject: 'Klicker UZH - Password Reset',
+      subject: 'KlickerUZH - Password Reset',
       to: user.email,
     })
   } catch (e) {
@@ -840,7 +841,7 @@ const requestAccountDeletion = async (userId) => {
   try {
     sendEmailNotification({
       html,
-      subject: 'Klicker UZH - Account Deletion Request',
+      subject: 'KlickerUZH - Account Deletion Request',
       to: user.email,
     })
   } catch (e) {
@@ -896,6 +897,37 @@ const resolveAccountDeletion = async (userId) => {
  * @param {String} dataset Movo Dataset as stringified JSON object
  */
 const movoImport = async ({ userId, dataset }) => {
+  if (!MOVO_CFG.connectionString) {
+    return false
+  }
+  const user = await UserModel.findById(userId)
+  const blobServiceClient = BlobServiceClient.fromConnectionString(MOVO_CFG.connectionString)
+  // reference to the container
+  const containerClient = blobServiceClient.getContainerClient('inbox')
+  // get block blob client
+  const blockBlobClient = containerClient.getBlockBlobClient(`${user.id}.json`)
+
+  console.log('Uploading to Azure storage as blob:', `${user.id}.json`)
+  const uploadBlobResponse = await blockBlobClient.upload(dataset, dataset.length)
+  console.log('Blob was uploaded successfully. requestId: ', uploadBlobResponse.requestId)
+
+  //  send confirmation email
+  const html = compileEmailTemplate('movoImport', {
+    email: user.email,
+  })
+
+  // send an account activation email
+  try {
+    sendEmailNotification({
+      html,
+      subject: 'KlickerUZH - Migration from movo.ch',
+      to: user.email,
+    })
+    sendSlackNotification('accounts', `Movo migration email has been sent to ${user.email}`)
+  } catch (e) {
+    sendSlackNotification('accounts', `Movo migration email could not be sent to ${user.email}`)
+  }
+
   return true
 }
 

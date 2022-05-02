@@ -420,4 +420,12 @@ module.exports = convict({
       },
     },
   },
+  movo: {
+    connectionString: {
+      default: undefined,
+      env: 'MOVO_CONNECTION_STRING',
+      sensitive: true,
+      format: String,
+    },
+  },
 })
