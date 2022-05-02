@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.23...v1.8.0-rc.24) (2022-05-02)
+
+
+### Features
+
+* add endpoint to validate discourse login and redirect to the platform ([1a928be](https://github.com/uzh-bf/klicker-uzh/commit/1a928bed60c7cd671a39842b5d6842af45d0b86f))
+
+
+### Other
+
+* lockfile maintenance ([257dfe5](https://github.com/uzh-bf/klicker-uzh/commit/257dfe5263ae783cb8d508b4ef3b5ba16ab84814))
+
 ## [1.8.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.22...v1.8.0-rc.23) (2022-05-02)
 
 
