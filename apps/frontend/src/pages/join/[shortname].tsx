@@ -7,6 +7,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 import localForage from 'localforage'
+import getConfig from 'next/config'
 
 import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
@@ -40,6 +41,8 @@ const messages = defineMessages({
     id: 'joinSession.string.joinForbidden',
   },
 })
+
+const { publicRuntimeConfig } = getConfig()
 
 function Join({ shortname }): React.ReactElement {
   const intl = useIntl()
@@ -140,42 +143,49 @@ function Join({ shortname }): React.ReactElement {
 
   // handle creation of a new response
   const onNewResponse = async ({ instanceId, response }): Promise<void> => {
-    try {
-      // TODO: feature flag or only use serverless endpoint if it is given in config
-      // otherwise use the default backend endpoint
-      await fetch('http://localhost:7071/api/AddResponse', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fp: fingerprint,
-          instanceId,
-          response,
-        }),
-      })
-      // newResponse({
-      //   variables: { fp: fingerprint, instanceId, response },
-      // })
-    } catch ({ message }) {
-      console.error(message)
-
+    if (publicRuntimeConfig.addResponseEndpoint) {
       try {
-        await fetch('http://localhost:7071/api/AddResponse', {
+        await fetch(publicRuntimeConfig.addResponseEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            fp: fingerprint,
             instanceId,
             response,
           }),
         })
-        // newResponse({
-        //   variables: { instanceId, response },
-        // })
+      } catch ({ message }) {
+        console.error(message)
+
+        try {
+          await fetch(publicRuntimeConfig.addResponseEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              instanceId,
+              response,
+            }),
+          })
+        } catch (e) {
+          console.error(e)
+          newResponse({
+            variables: { instanceId, response },
+          })
+        }
+      }
+    } else {
+      try {
+        newResponse({
+          variables: { fp: fingerprint, instanceId, response },
+        })
       } catch (e) {
-        console.error(e)
+        newResponse({
+          variables: { fp: fingerprint, instanceId, response },
+        })
       }
     }
 
