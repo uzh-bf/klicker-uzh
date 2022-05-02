@@ -113,14 +113,14 @@ frontend:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 750m
+      cpu: 1000m
       memory: 500Mi
 
   autoscaling:
     enabled: false
     minReplicas: 3
-    maxReplicas: 7
-    targetCPUUtilizationPercentage: 60
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
   vpa:
@@ -158,14 +158,14 @@ backend:
       cpu: 250m
       memory: 120Mi
     limits:
-      cpu: 750m
+      cpu: 1000m
       memory: 500Mi
 
   autoscaling:
     enabled: false
     minReplicas: 3
-    maxReplicas: 7
-    targetCPUUtilizationPercentage: 60
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
   vpa:
