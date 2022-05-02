@@ -57,7 +57,8 @@ export const convertToMd = (slateObj) => {
 }
 
 export const convertToSlate = (mdObj) => {
-  const result = unified().use(markdown).use(slate).processSync(mdObj).result as any
+  const result = unified().use(markdown).use(slate).processSync(mdObj.replace(/\\/g, '\\\\')).result as any
+  console.log(result)
 
   return result.map((line: any) => {
     if (line.type === 'ol_list') {

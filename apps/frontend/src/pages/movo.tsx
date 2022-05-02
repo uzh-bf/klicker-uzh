@@ -94,15 +94,17 @@ function MovoImport(): React.ReactElement {
           migration is completed, you will be notified by e-mail. Furthermore, please keep in mind that submitting the
           same file repeatably will result in duplicated questions in your question pool later on. Your questions from
           all question sets will be imported into the KlickerUZH question pool, question sets will be available (with
-          results) as KlickerUZH sessions.
-          {/* If you have any questions or problems with the migration, please contact:{' '}
+          results) as KlickerUZH sessions. Should you encounter any problems with the migration, please check out the
+          corresponding{' '}
           <a
             className="inline-block text-blue-800 cursor-pointer"
-            href="mailto:support-its@unibas.ch?subject=Question: Migration from movo.ch to KlickerUZH"
+            href="https://www.klicker.uzh.ch/movo"
+            rel="noreferrer"
+            target="_blank"
           >
-            support-its@unibas.ch
+            documentation page
           </a>
-          . */}
+          .
         </div>
         <div className="flex flex-row flex-nowrap">
           <div {...getRootProps()}>
