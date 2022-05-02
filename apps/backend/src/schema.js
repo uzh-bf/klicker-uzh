@@ -77,6 +77,7 @@ const {
   activateAccount,
   movoImport,
   checkAccountStatus,
+  validateDiscourseLogin,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
 const {
@@ -127,6 +128,7 @@ const typeDefs = [
     allTags: [Tag]!
     allUsers: [User]!
     checkAccountStatus: ID
+    validateDiscourseLogin(sso: String!, sig: String!): String
     checkAvailability(email: String, shortname: String): User_Availability!
     joinQA(shortname: String!): [Session_Feedback_Public!]
     joinSession(shortname: String!): Session_Public
@@ -228,6 +230,7 @@ const resolvers = {
     session,
     sessionPublic: session,
     user: authUser,
+    validateDiscourseLogin,
   },
   Mutation: {
     abortSession,
