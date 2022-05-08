@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.25...v1.8.0-rc.26) (2022-05-08)
+
+
+### Bug Fixes
+
+* **frontend:** fixed markdown parsing issue in regex ([31ec878](https://github.com/uzh-bf/klicker-uzh/commit/31ec878d78b9650c2bced05a27f74aa616037546))
+
+
+### Other
+
+* **deploy:** update config for containers ([390bf25](https://github.com/uzh-bf/klicker-uzh/commit/390bf254bbd2a2e4c042a258ef193c45740a5188))
+* lockfile maintenance ([d119e0d](https://github.com/uzh-bf/klicker-uzh/commit/d119e0dd561f9371cbd9ea0559268082b29e49f0))
+
 ## [1.8.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.24...v1.8.0-rc.25) (2022-05-02)
 
 
