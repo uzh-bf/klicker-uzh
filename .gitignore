@@ -9,3 +9,5 @@ secrets*.yaml
 
 **/.DS_Store
 *.pem
+
+/apps/functions/local.settings.json
