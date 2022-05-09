@@ -1,10 +1,10 @@
 {
   "bindings": [
     {
-      "name": "myBlob",
+      "name": "blob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "inbox/*.json",
+      "path": "inbox/{userId}.json",
       "connection": "klickermovoimport_STORAGE"
     }
   ],

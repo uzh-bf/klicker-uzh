@@ -2,7 +2,10 @@
 **/node_modules/
 
 .turbo/
+__blobstorage__/
+__queuestorage__/
 
+__azurite**
 *.archive
 secrets*.yaml
 .env

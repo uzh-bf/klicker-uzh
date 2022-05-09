@@ -9,6 +9,7 @@ const {
 const { v4: uuidv4 } = require('uuid')
 const mongoose = require('mongoose')
 import objHash from 'object-hash'
+const axios = require('axios')
 
 const { ObjectId } = mongoose.Types
 
@@ -56,24 +57,24 @@ function prepareDemoSessionData({
 
 /**
  * Data import from movo.ch
- * @param {String} dataset Movo Dataset as stringified JSON object
  */
 const movoImport = async ({ userId, dataset }) => {
   const movoObject = JSON.parse(dataset)
+
   const user = await UserModel.findById(userId)
 
   // this variable is an object with the hashes of all created questions as keys and their Ids as values
   const questionHashes = {}
 
-  // create import from movo tag
-  const movoTag = await new TagModel({
-    name: 'Import from Movo',
-    questions: [],
-    user: userId,
-  }).save()
-  user.tags.push(movoTag.id)
-
   try {
+    // create import from movo tag
+    const movoTag = await new TagModel({
+      name: 'Import from Movo',
+      questions: [],
+      user: userId,
+    }).save()
+    user.tags.push(movoTag.id)
+
     movoObject.forEach((questionSet, index1) =>
       questionSet.questions.forEach((question, index2) => {
         const questionHash = objHash(question)
@@ -115,7 +116,7 @@ const movoImport = async ({ userId, dataset }) => {
                     options: {
                       SC: question.options.SC,
                       MC: question.options.MC,
-                      FREE_RANCE: null,
+                      FREE_RANGE: null,
                     },
                     files: [],
                     solution: undefined,
@@ -231,57 +232,85 @@ const movoImport = async ({ userId, dataset }) => {
     await Promise.all([user.save(), movoTag.save()])
   } catch (error) {
     console.log(error)
+    return false
   }
   return true
 }
 
 const blobTrigger: AzureFunction = async function (
   context: Context,
-  myBlob: any
+  blob: any
 ): Promise<void> {
-  const mongoConfig = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    retryWrites: false,
-  }
-
-  mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
-    ...mongoConfig,
-    auth: {
-      user: process.env.MONGO_USER,
-      password: process.env.MONGO_PASS,
-    },
-  })
-
-  // activate mongoose debug mode (log all queries)
-  mongoose.set('debug', true)
-
-  // Make Mongoose use `findOneAndUpdate()`. Note that this option is `true`
-  // by default, you need to set it to false.
-  mongoose.set('useFindAndModify', false)
-
-  mongoose.connection
-    .once('open', () => {
-      console.log('[mongo] Connection to MongoDB established.')
-    })
-    .on('error', (error) => {
-      throw new Error(`[mongo] Could not connect to MongoDB: ${error}`)
-    })
-
-  // await movoImport({
-  //   userId: '',
-  //   dataset: '',
-  // })
-
   context.log(
-    'Blob trigger function processed blob \n Name:',
-    context.bindingData.name,
+    'Blob trigger function processed blob \n UserID:',
+    context.bindingData.userId,
     '\n Blob Size:',
-    myBlob.length,
+    blob.length,
     'Bytes'
   )
 
-  // TODO: if not done automatically, remove the blob from the azure container to ensure that only non-processed files are still listed
+  const dataset = blob.toString('utf8')
+
+  mongoose.set('debug', true)
+
+  mongoose.set('bufferCommands', false)
+
+  await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: false,
+    auth: {
+      user: 'klicker',
+      password: 'klicker',
+    },
+  })
+
+  // try {
+  // activate mongoose debug mode (log all queries)
+
+  mongoose.connection
+    .once('open', () => {
+      console.log('[movo] Connection to MongoDB established.')
+    })
+    .on('error', (error) => {
+      throw new Error(`[movo] Could not perform migration: ${error}`)
+    })
+
+  const importSuccess = await movoImport({
+    userId: context.bindingData.userId,
+    dataset,
+  })
+
+  console.log(importSuccess)
+
+  if (!importSuccess) {
+    throw new Error('[movo] Import not successful')
+  }
+
+  console.log('[movo] Going to send migration email')
+
+  const result = await axios.post(
+    process.env.API_URL,
+    {
+      query: `mutation movoNotification($userId: ID!, $token: String!) { movoNotification(userId: $userId, token: $token) }`,
+      variables: {
+        userId: context.bindingData.userId,
+        token: process.env.MOVO_NOTIFICATION_TOKEN,
+      },
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+  console.log('[movo] Initiated migration email with result', result)
+  // } catch (e) {
+  //   console.error(e)
+  //   // TODO: notify in slack that an import with user id failed -> look at file on azure
+  // } finally {
+  //   mongoose.disconnect()
+  // }
 }
 
 export default blobTrigger

@@ -427,5 +427,11 @@ module.exports = convict({
       sensitive: true,
       format: String,
     },
+    notificationToken: {
+      default: undefined,
+      env: 'MOVO_NOTIFICATION_TOKEN',
+      sensitive: true,
+      format: String,
+    },
   },
 })

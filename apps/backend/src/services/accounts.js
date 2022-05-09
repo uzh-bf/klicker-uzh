@@ -919,12 +919,26 @@ const movoImport = async ({ userId, dataset }) => {
   const uploadBlobResponse = await blockBlobClient.upload(dataset, dataset.length)
   console.log('Blob was uploaded successfully. requestId: ', uploadBlobResponse.requestId)
 
+  return true
+}
+
+const sendMovoNotification = async ({ userId, token }) => {
+  console.log('received movo notification request')
+
+  if (!token || !MOVO_CFG.notificationToken || token !== MOVO_CFG.notificationToken) {
+    return false
+  }
+
+  const user = await UserModel.findById(userId)
+  if (!user) {
+    return false
+  }
+
   //  send confirmation email
   const html = compileEmailTemplate('movoImport', {
     email: user.email,
   })
 
-  // send an account activation email
   try {
     sendEmailNotification({
       html,
@@ -934,6 +948,7 @@ const movoImport = async ({ userId, dataset }) => {
     sendSlackNotification('accounts', `Movo migration email has been sent to ${user.email}`)
   } catch (e) {
     sendSlackNotification('accounts', `Movo migration email could not be sent to ${user.email}`)
+    console.error(e)
   }
 
   return true
@@ -955,5 +970,6 @@ module.exports = {
   activateAccount,
   generateScopedToken,
   movoImport,
+  sendMovoNotification,
   AUTH_COOKIE_SETTINGS,
 }

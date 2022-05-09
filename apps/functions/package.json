@@ -4,13 +4,14 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "predev": "npm run build",
-    "dev": "func start",
+    "prestart": "npm run build",
+    "start": "func start",
     "func": "func",
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
     "@klicker-uzh/db": "*",
+    "axios": "0.27.2",
     "ioredis": "4.27.9",
     "lodash": "4.17.21",
     "md5": "2.3.0",
