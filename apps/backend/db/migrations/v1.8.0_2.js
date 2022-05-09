@@ -11,24 +11,8 @@ const { QuestionInstanceModel, SessionModel } = require('../../src/models')
 
 mongoose.Promise = Promise
 
-let legacyInstances = []
-
-mongoose.connect(`mongodb://${process.env.MONGO_URL_LEGACY}`, {
-  keepAlive: true,
-  reconnectTries: Number.MAX_VALUE,
-  reconnectInterval: 1000,
-})
-
-mongoose.connection
-  .once('open', async () => {
-    legacyInstances = await QuestionInstanceModel.find({})
-  })
-  .on('error', (error) => {
-    console.warn('> Warning: ', error)
-  })
-
 async function resultMigration() {
-  const sessions = await SessionModel.find({})
+  const sessions = await legacyConnection.SessionModel.find({})
 
   sessions
     .filter((session) => session.status === 'COMPLETED')
@@ -50,13 +34,28 @@ async function resultMigration() {
     })
 }
 
-mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+const legacyConnection = mongoose.createConnection(`mongodb://${process.env.MONGO_URL_LEGACY}`, {
   keepAlive: true,
   reconnectTries: Number.MAX_VALUE,
   reconnectInterval: 1000,
 })
 
-mongoose.connection
+// let legacyInstances = []
+// legacyConnection
+//   .once('open', async () => {
+//     legacyInstances = await QuestionInstanceModel.find({})
+//   })
+//   .on('error', (error) => {
+//     console.warn('> Warning: ', error)
+//   })
+
+const newConnection = mongoose.createConnection(`mongodb://${process.env.MONGO_URL}`, {
+  keepAlive: true,
+  reconnectTries: Number.MAX_VALUE,
+  reconnectInterval: 1000,
+})
+
+newConnection
   .once('open', async () => {
     await resultMigration()
   })
