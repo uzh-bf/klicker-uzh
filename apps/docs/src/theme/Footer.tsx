@@ -54,8 +54,11 @@ const Footer = () => {
             System Status
           </a>
           {' | '}
-          <a href="mailto:klicker.support@uzh.ch" className="whitespace-nowrap">
-            Contact
+          <a
+            href="https://www.klicker.uzh.ch/community"
+            className="whitespace-nowrap"
+          >
+            User Community
           </a>
         </div>
       </div>

@@ -3,12 +3,9 @@ import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 import Image from 'next/image'
-import getConfig from 'next/config'
 import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 
 import StaticLayout from '../components/layouts/StaticLayout'
-
-const { publicRuntimeConfig } = getConfig()
 
 const links = [
   {
@@ -130,12 +127,12 @@ function Index(): React.ReactElement {
             <h2 className="text-2xl leading-6">Support</h2>
             <List divided relaxed>
               <List.Item>
-                <List.Icon name="mail" size="large" verticalAlign="middle" />
+                <List.Icon name="talk" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href={`mailto:${publicRuntimeConfig.supportEmail}`}>
-                    {publicRuntimeConfig.supportEmail}
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/community" target="_blank">
+                    Discussions
                   </List.Header>
-                  <List.Description>Contact us!</List.Description>
+                  <List.Description>User Community</List.Description>
                 </List.Content>
               </List.Item>
               <List.Item>
@@ -148,12 +145,12 @@ function Index(): React.ReactElement {
                 </List.Content>
               </List.Item>
               <List.Item>
-                <List.Icon name="talk" size="large" verticalAlign="middle" />
+                <List.Icon name="github" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/community" target="_blank">
-                    Discussions
+                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/discussions" target="_blank">
+                    Developer Support
                   </List.Header>
-                  <List.Description>User Community</List.Description>
+                  <List.Description>GitHub Discussions</List.Description>
                 </List.Content>
               </List.Item>
             </List>

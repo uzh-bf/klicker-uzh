@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { Button, Icon, Menu, Modal } from 'semantic-ui-react'
 import Image from 'next/image'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { push } from '@socialgouv/matomo-next'
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
 import SupportEntry from './SupportEntry'
+import { UserContext } from '../../../lib/userContext'
 
 const messages = defineMessages({
   support: {
@@ -28,6 +29,7 @@ const defaultProps = {
 function SessionArea({ sessionId }: Props) {
   const intl = useIntl()
   const [open, setOpen] = useState(false)
+  const user = useContext(UserContext)
 
   return (
     <>
@@ -112,12 +114,14 @@ function SessionArea({ sessionId }: Props) {
                   subtitle="A place for discussions and questions regarding the KlickerUZH"
                   title="Community"
                 />
-                <SupportEntry
-                  href="mailto:klicker.support@uzh.ch"
-                  icon="mail outline"
-                  subtitle="Contact us at klicker.support@uzh.ch"
-                  title="Email"
-                />
+                {user.email?.includes('uzh.ch') ? (
+                  <SupportEntry
+                    href="mailto:klicker.support@uzh.ch"
+                    icon="mail outline"
+                    subtitle="Contact us at klicker.support@uzh.ch"
+                    title="Email"
+                  />
+                ) : null}
                 <div className="mt-4 font-bold text-gray-600">About the Project</div>
                 <SupportEntry
                   href="https://www.klicker.uzh.ch/blog"
