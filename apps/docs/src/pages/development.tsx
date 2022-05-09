@@ -111,18 +111,26 @@ const Development = () => {
             />
           </div>
           <div className="w-full md:w-1/2">
-            <div className="mb-4 text-3xl font-bold">User Group</div>
-            <div>
+            <div className="mb-4 text-3xl font-bold">Community</div>
+            <div className="mb-4">
               We strive to develop our roadmap and goals based on the needs of
               our users. The goal of our project on "Digital Skills" is to
               improve your capabilities in the area of digital interactions. If
               you are interested in classroom interaction and would like to be
               involved in future developments, we welcome you to join our
-              KlickerUZH user group with the following form.
+              KlickerUZH user community through the following link. To log in on
+              the platform, just use your KlickerUZH credentials.
             </div>
-            <div className="mt-2 mb-8 mr-4 md:mb-0 md:mr-4">
-              <UserForm />
-            </div>
+            <CustomButton
+              text={
+                <div>
+                  <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
+                  User Community
+                </div>
+              }
+              link="https://www.klicker.uzh.ch/community"
+              className="px-4 !ml-0 w-max"
+            />
           </div>
         </div>
       </div>

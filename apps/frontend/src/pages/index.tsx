@@ -148,12 +148,12 @@ function Index(): React.ReactElement {
                 </List.Content>
               </List.Item>
               <List.Item>
-                <List.Icon name="github" size="large" verticalAlign="middle" />
+                <List.Icon name="talk" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/discussions" target="_blank">
+                  <List.Header as="a" href="https://www.klicker.uzh.ch/community" target="_blank">
                     Discussions
                   </List.Header>
-                  <List.Description>GitHub discussions</List.Description>
+                  <List.Description>User Community</List.Description>
                 </List.Content>
               </List.Item>
             </List>

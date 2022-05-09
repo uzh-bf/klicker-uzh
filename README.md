@@ -25,7 +25,7 @@ The following additional resources might be of interest to you:
 
 - [Documentation](https://www.klicker.uzh.ch/introduction/getting_started)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq/faq)
-- [Community and Discussions](https://github.com/uzh-bf/klicker-uzh/discussions)
+- [Community and Discussions](https://www.klicker.uzh.ch/community)
 - [Roadmap](https://klicker-uzh.feedbear.com)
 
 ## Deployment
