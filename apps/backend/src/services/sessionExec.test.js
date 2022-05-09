@@ -2,12 +2,11 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 
+const { QUESTION_TYPES } = require('@klicker-uzh/db')
 const SessionMgrService = require('./sessionMgr')
 const SessionExecService = require('./sessionExec')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
 const { sessionSerializer, questionInstanceSerializer, feedbackSerializer } = require('../lib/test/serializers')
-
-const { QUESTION_TYPES } = require('../constants')
 
 mongoose.Promise = Promise
 

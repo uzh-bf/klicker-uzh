@@ -1,8 +1,11 @@
 **/__pycache__/
 **/node_modules/
-.vscode/
-.turbo/
 
+.turbo/
+__blobstorage__/
+__queuestorage__/
+
+__azurite**
 *.archive
 secrets*.yaml
 .env

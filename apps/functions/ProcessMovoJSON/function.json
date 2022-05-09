@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "blob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "inbox/{userId}.json",
+      "connection": "klickermovoimport_STORAGE"
+    }
+  ],
+  "scriptFile": "../dist/ProcessMovoJSON/index.js"
+}

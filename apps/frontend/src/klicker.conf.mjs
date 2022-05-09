@@ -366,4 +366,11 @@ export default convict({
       },
     },
   },
+  azure: {
+    addResponseEndpoint: {
+      default: undefined,
+      env: 'AZURE_ADD_RESPONSE_ENDPOINT',
+      format: 'url',
+    },
+  },
 })

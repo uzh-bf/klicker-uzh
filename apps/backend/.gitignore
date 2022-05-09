@@ -6,6 +6,6 @@ node_modules/
 *.archive
 *.log
 .env.local
-!.env
+.env
 
 db/scripts/.env

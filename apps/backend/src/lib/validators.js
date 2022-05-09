@@ -1,7 +1,7 @@
 const v8n = require('v8n')
 const validator = require('validator')
 
-const { ROLES } = require('../constants')
+const { ROLES } = require('@klicker-uzh/db')
 
 v8n.extend({
   // add an email validator based on validator.js

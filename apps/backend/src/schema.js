@@ -78,6 +78,7 @@ const {
   movoImport,
   checkAccountStatus,
   validateDiscourseLogin,
+  movoNotification,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
 const {
@@ -145,6 +146,7 @@ const typeDefs = [
     abortSession(id: ID!): Session
     activateAccount(activationToken: String!): String!
     movoImport(dataset: String!): Boolean!
+    movoNotification(userId: ID!, token: String!): Boolean!
     activateNextBlock: Session!
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
@@ -278,6 +280,7 @@ const resolvers = {
     exportQuestions,
     upvoteFeedback,
     reactToFeedbackResponse,
+    movoNotification,
   },
   Subscription: {
     // TODO: some form of authentication

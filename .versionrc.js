@@ -11,6 +11,7 @@ module.exports = {
     'apps/frontend/',
     'apps/docs/',
     'packages/ui/',
+    'packages/db/',
   ].reduce(
     (acc, path) => {
       return acc.concat({

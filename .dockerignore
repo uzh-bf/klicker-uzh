@@ -21,6 +21,8 @@
 !packages/ui/tsconfig.json
 !packages/ui/dts.config.js
 
+!packages/db
+
 !README.md
 !LICENSE.md
 
