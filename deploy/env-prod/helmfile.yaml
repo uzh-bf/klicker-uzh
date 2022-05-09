@@ -47,11 +47,26 @@ releases:
               authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
               org: '{{ requiredEnv "SENTRY_ORG" }}'
               project: '{{ requiredEnv "SENTRY_PROJECT" }}'
-
-        # frontend:
-        #   image:
-        #     tag: v1.8.0-rc.0
-
-        # backend:
-        #   image:
-        #     tag: v1.8.0-rc.0
+  - name: discourse
+    namespace: klicker-prod
+    createNamespace: true
+    chart: bitnami/discourse
+    version: 7.0.16
+    installed: true
+    kubeContext: klicker-k8scbfdbd7c
+    values:
+      - auth:
+          email: '{{ requiredEnv "DISCOURSE_EMAIL" }}'
+          username: '{{ requiredEnv "DISCOURSE_USER" }}'
+          password: '{{ requiredEnv "DISCOURSE_PASS" }}'
+        host: community.klicker.uzh.ch
+        persistence:
+          enabled: true
+          storageClass: default-zrs
+        ingress:
+          enabled: true
+          annotations:
+            nginx.ingress.kubernetes.io/proxy-body-size: 256m
+            cert-manager.io/cluster-issuer: letsencrypt
+          hostname: community.klicker.uzh.ch
+          tls: true
