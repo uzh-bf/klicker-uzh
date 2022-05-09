@@ -184,7 +184,7 @@ function Join({ shortname }): React.ReactElement {
         })
       } catch (e) {
         newResponse({
-          variables: { fp: fingerprint, instanceId, response },
+          variables: { instanceId, response },
         })
       }
     }
