@@ -8,7 +8,7 @@ const {
 } = require('@klicker-uzh/db')
 const { v4: uuidv4 } = require('uuid')
 const mongoose = require('mongoose')
-import objHash from 'object-hash'
+const objHash = require('object-hash')
 const axios = require('axios')
 
 const { ObjectId } = mongoose.Types
@@ -251,66 +251,55 @@ const blobTrigger: AzureFunction = async function (
 
   const dataset = blob.toString('utf8')
 
-  mongoose.set('debug', true)
-
-  mongoose.set('bufferCommands', false)
-
   await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     retryWrites: false,
     auth: {
-      user: 'klicker',
-      password: 'klicker',
+      user: process.env.MONGO_USER,
+      password: process.env.MONGO_PASS,
     },
   })
 
-  // try {
-  // activate mongoose debug mode (log all queries)
+  try {
+    mongoose.connection
+      .once('open', () => {
+        console.log('[movo] Connection to MongoDB established.')
+      })
+      .on('error', (error) => {
+        throw new Error(`[movo] Could not perform migration: ${error}`)
+      })
 
-  mongoose.connection
-    .once('open', () => {
-      console.log('[movo] Connection to MongoDB established.')
+    const importSuccess = await movoImport({
+      userId: context.bindingData.userId,
+      dataset,
     })
-    .on('error', (error) => {
-      throw new Error(`[movo] Could not perform migration: ${error}`)
-    })
 
-  const importSuccess = await movoImport({
-    userId: context.bindingData.userId,
-    dataset,
-  })
-
-  console.log(importSuccess)
-
-  if (!importSuccess) {
-    throw new Error('[movo] Import not successful')
-  }
-
-  console.log('[movo] Going to send migration email')
-
-  const result = await axios.post(
-    process.env.API_URL,
-    {
-      query: `mutation movoNotification($userId: ID!, $token: String!) { movoNotification(userId: $userId, token: $token) }`,
-      variables: {
-        userId: context.bindingData.userId,
-        token: process.env.MOVO_NOTIFICATION_TOKEN,
-      },
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    if (!importSuccess) {
+      throw new Error('[movo] Import not successful')
     }
-  )
-  console.log('[movo] Initiated migration email with result', result)
-  // } catch (e) {
-  //   console.error(e)
-  //   // TODO: notify in slack that an import with user id failed -> look at file on azure
-  // } finally {
-  //   mongoose.disconnect()
-  // }
+
+    const result = await axios.post(
+      process.env.API_URL,
+      {
+        query: `mutation movoNotification($userId: ID!, $token: String!) { movoNotification(userId: $userId, token: $token) }`,
+        variables: {
+          userId: context.bindingData.userId,
+          token: process.env.MOVO_NOTIFICATION_TOKEN,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+  } catch (e) {
+    console.error(e)
+    // TODO: notify in slack that an import with user id failed -> look at file on azure
+  } finally {
+    mongoose.disconnect()
+  }
 }
 
 export default blobTrigger
