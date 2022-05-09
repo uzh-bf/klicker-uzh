@@ -107,16 +107,16 @@ function SessionArea({ sessionId }: Props) {
                 />
                 <div className="mt-4 font-bold text-gray-600">Connect with Us</div>
                 <SupportEntry
+                  href="https://www.klicker.uzh.ch/community"
+                  icon="talk"
+                  subtitle="A place for discussions and questions regarding the KlickerUZH"
+                  title="Community"
+                />
+                <SupportEntry
                   href="mailto:klicker.support@uzh.ch"
                   icon="mail outline"
                   subtitle="Contact us at klicker.support@uzh.ch"
                   title="Email"
-                />
-                <SupportEntry
-                  href="https://github.com/uzh-bf/klicker-uzh/discussions"
-                  icon="talk"
-                  subtitle="A place for discussions and questions regarding the KlickerUZH"
-                  title="Community"
                 />
                 <div className="mt-4 font-bold text-gray-600">About the Project</div>
                 <SupportEntry
