@@ -88,6 +88,10 @@ services:
     enabled: false
     env: qa
     webhook:
+  movo:
+    enabled: false
+    connectionString:
+    notificationToken:
 
 frontend:
   replicaCount: 1

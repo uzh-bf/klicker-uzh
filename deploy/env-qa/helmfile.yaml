@@ -31,6 +31,9 @@ releases:
         services:
           teams:
             webhook: '{{ env "TEAMS_WEBHOOK" }}'
+          movo:
+            connectionString: '{{ requiredEnv "MOVO_CONNECTION_STRING" }}'
+            notificationToken: '{{ requiredEnv "MOVO_NOTIFICATION_TOKEN" }}'
 
         featureFlags:
           persistedUsers: '{{ env "PERSISTED_USERS" }}'
