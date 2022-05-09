@@ -30,9 +30,9 @@ Additionally, in order to reduce the time spent on reviewing and refactoring cod
 
 We offer support for the KlickerUZH on various channels:
 
-- Github Issues on [uzh-bf/klicker-uzh](https://github.com/uzh-bf/klicker-uzh/issues)
 - Discussions on our [community platform](https://www.klicker.uzh.ch/community)
-- Users of our [public instance](https://app.klicker.uzh.ch) can also email us at [klicker.support@uzh.ch](mailto:klicker.support@uzh.ch)
+- Github Issues on [uzh-bf/klicker-uzh](https://github.com/uzh-bf/klicker-uzh/issues)
+- Feature Requests / Bug Reports on our [feedback platform](https://klicker-uzh.feedbear.com/boards/feature-requests)
 
 If you are affiliated with our organization, the University of Zurich, we would also like to invite you to join our internal user group on [Microsoft Teams](https://teams.microsoft.com/l/team/19%3afbf6198f94934e20ab86571dd73e8616%40thread.tacv2/conversations?groupId=1a1e9be8-effe-4e7d-98bd-d4a3c836c478&tenantId=c7e438db-e462-4c22-a90a-c358b16980b3), where you can talk to us and fellow users of the KlickerUZH.
 
