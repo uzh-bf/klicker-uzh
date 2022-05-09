@@ -52,7 +52,7 @@ function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElem
 
   // return shortened content including tooltip with full content (if not explicitely disabled)
   return (
-    <span title={children}>
+    <span>
       {withoutPopup ? (
         shortenedParsedContent
       ) : (

@@ -267,6 +267,7 @@ function QuestionEditForm({
                   <div className="questionInput questionTitle">
                     <AutoFocusInside>
                       <FormikInput
+                        required
                         /* error={errors.title}
                 errorMessage={
                   <FormattedMessage
