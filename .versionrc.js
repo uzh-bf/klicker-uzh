@@ -9,6 +9,7 @@ module.exports = {
     '',
     'apps/backend/',
     'apps/frontend/',
+    'apps/functions/',
     'apps/docs/',
     'packages/ui/',
     'packages/db/',
