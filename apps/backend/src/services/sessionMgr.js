@@ -9,11 +9,11 @@ const { v4: uuidv4, v5: uuidv5 } = require('uuid')
 
 const { ObjectId } = mongoose.Types
 
-const { sendSlackNotification } = require('./notifications')
-const { QuestionInstanceModel, SessionModel, UserModel, QuestionModel } = require('../models')
-const { getRedis } = require('../redis')
-const { pubsub, SESSION_UPDATED, RUNNING_SESSION_UPDATED } = require('../resolvers/subscriptions')
 const {
+  QuestionInstanceModel,
+  SessionModel,
+  UserModel,
+  QuestionModel,
   QUESTION_TYPES,
   QUESTION_GROUPS,
   SESSION_STATUS,
@@ -22,7 +22,11 @@ const {
   SESSION_STORAGE_MODE,
   SESSION_AUTHENTICATION_MODE,
   Errors,
-} = require('../constants')
+} = require('@klicker-uzh/db')
+const { sendSlackNotification } = require('./notifications')
+const { getRedis } = require('../redis')
+const { pubsub, SESSION_UPDATED, RUNNING_SESSION_UPDATED } = require('../resolvers/subscriptions')
+
 const { logDebug } = require('../lib/utils')
 
 const responseCache = getRedis('exec')

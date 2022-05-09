@@ -1,7 +1,7 @@
+const { QuestionModel } = require('@klicker-uzh/db')
 const QuestionService = require('../services/questions')
 const StatisticsService = require('../services/statistics')
 const { ensureLoaders } = require('../lib/loaders')
-const { QuestionModel } = require('../models')
 
 /* ----- queries ----- */
 const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {

@@ -1,8 +1,8 @@
 const JWT = require('jsonwebtoken')
 const { AuthenticationError, ForbiddenError } = require('apollo-server-express')
 const { rule, shield, allow, and } = require('graphql-shield')
+const { Errors, ROLES } = require('@klicker-uzh/db')
 const CFG = require('../klicker.conf.js')
-const { Errors, ROLES } = require('../constants')
 
 const APP_CFG = CFG.get('app')
 

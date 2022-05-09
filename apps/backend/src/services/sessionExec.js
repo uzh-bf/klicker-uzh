@@ -10,9 +10,17 @@ const { sortBy } = require('ramda')
 
 const { ObjectId } = mongoose.Types
 
+const {
+  QuestionInstanceModel,
+  UserModel,
+  FileModel,
+  SessionModel,
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+  SESSION_STATUS,
+  SESSION_STORAGE_MODE,
+} = require('@klicker-uzh/db')
 const CFG = require('../klicker.conf.js')
-const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
-const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
 const {

@@ -4,10 +4,9 @@ const { UserInputError } = require('apollo-server-express')
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
+const { UserModel, Errors } = require('@klicker-uzh/db')
 const AccountService = require('./accounts')
 const { initializeDb } = require('../lib/test/setup')
-const { Errors } = require('../constants')
-const { UserModel } = require('../models')
 
 const { ObjectId } = mongoose.Types
 
