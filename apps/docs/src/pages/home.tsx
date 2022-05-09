@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react'
 import Layout from '@theme/Layout'
 import { useColorMode } from '@docusaurus/theme-common'
-
+import { ArrowRightIcon } from '@heroicons/react/solid'
 import Image from '@theme/IdealImage'
 import ImageTile from '../components/landing/ImageTile'
 import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTextBlock from '../components/common/ImageTextBlock'
-import UserForm from '../components/UserForm'
 import { twMerge } from 'tailwind-merge'
 
 const features = [
@@ -229,18 +228,26 @@ function Home() {
             </div>
           </div>
           <div className="">
-            <h2 className="text-2xl font-bold sm:text-3xl">User Group</h2>
-            <p>
+            <h2 className="text-2xl font-bold sm:text-3xl">Community</h2>
+            <p className="mb-4">
               We strive to develop our roadmap and goals based on the needs of
               our users. The goal of our project on "Digital Skills" is to
               improve your capabilities in the area of digital interactions. If
               you are interested in classroom interaction and would like to be
               involved in future developments, we welcome you to join our
-              KlickerUZH user group with the following form.
+              KlickerUZH user community through the following link. To log in,
+              simply use your KlickerUZH credentials.
             </p>
-            <div className="max-w-lg mt-8 border border-gray-300 border-solid">
-              <UserForm />
-            </div>
+            <CustomButton
+              text={
+                <div>
+                  <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
+                  User Community
+                </div>
+              }
+              link="https://www.klicker.uzh.ch/community"
+              className="px-4 !ml-0 w-max"
+            />
           </div>
         </div>
       </div>
