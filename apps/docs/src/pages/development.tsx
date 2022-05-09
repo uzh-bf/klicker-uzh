@@ -2,7 +2,6 @@ import React from 'react'
 import Layout from '@theme/Layout'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 
-import UserForm from '../components/UserForm'
 import CustomButton from '../components/common/CustomButton'
 import RoadmapTile from '../components/development/RoadmapTile'
 
