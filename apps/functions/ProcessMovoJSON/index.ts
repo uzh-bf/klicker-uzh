@@ -13,6 +13,16 @@ const axios = require('axios')
 
 const { ObjectId } = mongoose.Types
 
+async function sendTeamsNotification(scope, text) {
+  if (process.env.TEAMS_WEBHOOK) {
+    return axios.post(process.env.TEAMS_WEBHOOK, {
+      text: `[${process.env.TEAMS_ENV}:${scope}] ${text}`,
+    })
+  }
+
+  return null
+}
+
 function prepareDemoSessionData({
   id,
   name,
@@ -234,7 +244,7 @@ const movoImport = async ({ userId, dataset }) => {
     console.log(error)
     return false
   }
-  return true
+  return user
 }
 
 const blobTrigger: AzureFunction = async function (
@@ -270,12 +280,12 @@ const blobTrigger: AzureFunction = async function (
         throw new Error(`[movo] Could not perform migration: ${error}`)
       })
 
-    const importSuccess = await movoImport({
+    const importedUser = await movoImport({
       userId: context.bindingData.userId,
       dataset,
     })
 
-    if (!importSuccess) {
+    if (!importedUser) {
       throw new Error('[movo] Import not successful')
     }
 
@@ -294,9 +304,17 @@ const blobTrigger: AzureFunction = async function (
         },
       }
     )
+
+    sendTeamsNotification(
+      'func/movo',
+      `Successful import for user ${importedUser.email}`
+    )
   } catch (e) {
     console.error(e)
-    // TODO: notify in slack that an import with user id failed -> look at file on azure
+    sendTeamsNotification(
+      'func/movo',
+      `Failed import for user ${context.bindingData.userId} with error ${e.message}`
+    )
   } finally {
     mongoose.disconnect()
   }
