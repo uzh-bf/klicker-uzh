@@ -47,7 +47,7 @@ releases:
               authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
               org: '{{ requiredEnv "SENTRY_ORG" }}'
               project: '{{ requiredEnv "SENTRY_PROJECT" }}'
-  - name: discourse
+  - name: klicker-community
     namespace: klicker-prod
     createNamespace: true
     chart: bitnami/discourse
@@ -70,3 +70,14 @@ releases:
             cert-manager.io/cluster-issuer: letsencrypt
           hostname: community.klicker.uzh.ch
           tls: true
+        redis:
+          enabled: false
+        externalRedis:
+          host: "klicker-prod-redis-master"
+        # postgresql:
+        #   enabled: false
+        # externalDatabase:
+        #   host:
+        #   user:
+        #   password:
+        #   database:
