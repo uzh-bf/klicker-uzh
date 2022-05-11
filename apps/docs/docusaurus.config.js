@@ -123,8 +123,8 @@ module.exports = {
         },
 
         {
-          to: 'blog',
-          label: 'Blog',
+          to: 'https://community.klicker.uzh.ch',
+          label: 'Community',
           position: 'right',
         },
         {
