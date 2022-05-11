@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react'
 import Cookies from 'js-cookie'
-import Link from 'next/link'
 import _get from 'lodash/get'
 import { useRouter } from 'next/router'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Message } from 'semantic-ui-react'
 import getConfig from 'next/config'
 import { push } from '@socialgouv/matomo-next'
 
@@ -54,8 +52,13 @@ function Login(): React.ReactElement {
 
               push(['trackEvent', 'User', 'Logged In'])
 
-              // redirect to question pool
-              router.push('/questions')
+              let redirectPath = '/questions'
+              const urlParams = new URLSearchParams(window?.location?.search)
+              if (urlParams.get('redirect_to')) {
+                redirectPath = `/${urlParams?.get('redirect_to')}`
+              }
+              // redirect to the specified redirect path (default: question pool)
+              router.push(redirectPath)
             }}
           />
 
