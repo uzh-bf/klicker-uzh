@@ -128,8 +128,13 @@ module.exports = {
           position: 'right',
         },
         {
-          href: 'https://klicker-uzh.feedbear.com/updates',
-          label: 'Releases',
+          href: 'https://community.klicker.uzh.ch/c/announce/5',
+          label: 'Announcements',
+          position: 'right',
+        },
+        {
+          href: 'https://klicker-uzh.feedbear.com',
+          label: 'Feedback',
           position: 'right',
         },
       ],
