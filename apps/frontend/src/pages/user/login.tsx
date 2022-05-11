@@ -29,15 +29,6 @@ function Login(): React.ReactElement {
     router.prefetch('/sessions')
   }, [])
 
-  let redirectPath = '/questions'
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window?.location.search)
-    if (urlParams.get('redirect_to')) {
-      redirectPath = `/${urlParams?.get('redirect_to')}`
-    }
-  }, [])
-
   const [login, { loading, error }] = useMutation(LoginMutation)
 
   return (
@@ -61,6 +52,11 @@ function Login(): React.ReactElement {
 
               push(['trackEvent', 'User', 'Logged In'])
 
+              let redirectPath = '/questions'
+              const urlParams = new URLSearchParams(window?.location?.search)
+              if (urlParams.get('redirect_to')) {
+                redirectPath = `/${urlParams?.get('redirect_to')}`
+              }
               // redirect to the specified redirect path (default: question pool)
               router.push(redirectPath)
             }}
