@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.28...v1.8.0-rc.29) (2022-05-11)
+
+## [1.8.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.27...v1.8.0-rc.28) (2022-05-11)
+
+
+### Other
+
+* add apps/functions to version upgrader ([5abba62](https://github.com/uzh-bf/klicker-uzh/commit/5abba62126f59d0ed58a2b9db420853e347197d0))
+* add movo and discourse to deployment configs ([52ee8ad](https://github.com/uzh-bf/klicker-uzh/commit/52ee8add76d275e0b066078af39bbc25e20b3c4c))
+* **deploy:** add production config for klicker community discourse ([e2dbb97](https://github.com/uzh-bf/klicker-uzh/commit/e2dbb97dc0a115fd5470abf971d765d6534317c4))
+* **functions:** add teams notification ([aca521d](https://github.com/uzh-bf/klicker-uzh/commit/aca521dc9097390e4c52e5fd4af633d8d0cbb715))
+* **functions:** move to separate root-level directory ([73d1b76](https://github.com/uzh-bf/klicker-uzh/commit/73d1b768b661593bd5689fd68f5a3476ae3bb0f0))
+* update version upgrader for new location of functions ([8b39b57](https://github.com/uzh-bf/klicker-uzh/commit/8b39b5711b6d2df182b625321462de23db59d84c))
+
+## [1.8.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.26...v1.8.0-rc.27) (2022-05-09)
+
+
+### Bug Fixes
+
+* remove browser tooltips on SC MC answer options on evaluation ([ab509e4](https://github.com/uzh-bf/klicker-uzh/commit/ab509e4ffec9b7b7a78fcdfd0f174c4f2d8f1e01))
+
+
+### Enhancements
+
+* initial work on serverless functions (movo import, add response) ([#2722](https://github.com/uzh-bf/klicker-uzh/issues/2722)) ([1d0d3c6](https://github.com/uzh-bf/klicker-uzh/commit/1d0d3c60907951ce1dd5103ac818dcd2f9caf935))
+
+
+### Other
+
+* add or replace links for new community platform ([da40464](https://github.com/uzh-bf/klicker-uzh/commit/da4046421fcc370b86021fb66dc43e09633f7d3d))
+* lockfile maintenance ([3abd001](https://github.com/uzh-bf/klicker-uzh/commit/3abd001f70359cae63ac37dfed6826fcb1c7e505))
+* lockfile maintenance ([f4d2d8a](https://github.com/uzh-bf/klicker-uzh/commit/f4d2d8abae4d3428fe909001e89e99c7884311e9))
+* remove internal support email for external users ([167f40b](https://github.com/uzh-bf/klicker-uzh/commit/167f40b0a4b8676f4538ef84ee1499d834633fb9))
+* replace missing user group form with link to community ([915baee](https://github.com/uzh-bf/klicker-uzh/commit/915baeee79abe59b8d63d8d99b0b3b29b2967160))
+
 ## [1.8.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.25...v1.8.0-rc.26) (2022-05-08)
 
 

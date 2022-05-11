@@ -9,6 +9,7 @@ const APP_CFG = CFG.get('app')
 const S3_CFG = CFG.get('s3')
 const SECURITY_CFG = CFG.get('security')
 const SERVICES_CFG = CFG.get('services')
+const AZURE_CFG = CFG.get('azure')
 
 const CONFIG = (phase) => {
   let config = {
@@ -54,6 +55,7 @@ const CONFIG = (phase) => {
       withFingerprinting: SECURITY_CFG.fingerprinting,
       withAai: APP_CFG.withAai,
       supportEmail: APP_CFG.supportEmail,
+      addResponseEndpoint: AZURE_CFG.addResponseEndpoint,
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,

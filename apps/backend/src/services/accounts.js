@@ -8,17 +8,26 @@ const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 const { v4: uuidv4 } = require('uuid')
-const objHash = require('object-hash')
+const { BlobServiceClient } = require('@azure/storage-blob')
 
 const { ObjectId } = mongoose.Types
 
+const {
+  QuestionInstanceModel,
+  TagModel,
+  FileModel,
+  SessionModel,
+  QuestionModel,
+  UserModel,
+  Errors,
+  ROLES,
+} = require('@klicker-uzh/db')
 const CFG = require('../klicker.conf.js')
 const validators = require('../lib/validators')
-const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel, UserModel } = require('../models')
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
-const { Errors, ROLES } = require('../constants')
 
 const APP_CFG = CFG.get('app')
+const MOVO_CFG = CFG.get('movo')
 
 const isDev = process.env.NODE_ENV !== 'production'
 
@@ -525,7 +534,7 @@ const signup = async (
       try {
         sendEmailNotification({
           html,
-          subject: 'Klicker UZH - Account Activation',
+          subject: 'KlickerUZH - Account Activation',
           to: normalizedEmail,
         })
       } catch (e) {
@@ -806,7 +815,7 @@ const requestPassword = async (res, email) => {
   try {
     sendEmailNotification({
       html,
-      subject: 'Klicker UZH - Password Reset',
+      subject: 'KlickerUZH - Password Reset',
       to: user.email,
     })
   } catch (e) {
@@ -840,7 +849,7 @@ const requestAccountDeletion = async (userId) => {
   try {
     sendEmailNotification({
       html,
-      subject: 'Klicker UZH - Account Deletion Request',
+      subject: 'KlickerUZH - Account Deletion Request',
       to: user.email,
     })
   } catch (e) {
@@ -896,160 +905,52 @@ const resolveAccountDeletion = async (userId) => {
  * @param {String} dataset Movo Dataset as stringified JSON object
  */
 const movoImport = async ({ userId, dataset }) => {
-  const movoObject = JSON.parse(dataset)
+  if (!MOVO_CFG.connectionString) {
+    return false
+  }
   const user = await UserModel.findById(userId)
+  const blobServiceClient = BlobServiceClient.fromConnectionString(MOVO_CFG.connectionString)
+  // reference to the container
+  const containerClient = blobServiceClient.getContainerClient('inbox')
+  // get block blob client
+  const blockBlobClient = containerClient.getBlockBlobClient(`${user.id}.json`)
 
-  // this variable is an object with the hashes of all created questions as keys and their Ids as values
-  const questionHashes = {}
+  console.log('Uploading to Azure storage as blob:', `${user.id}.json`)
+  const uploadBlobResponse = await blockBlobClient.upload(dataset, dataset.length)
+  console.log('Blob was uploaded successfully. requestId: ', uploadBlobResponse.requestId)
 
-  // create import from movo tag
-  const movoTag = await new TagModel({
-    name: 'Import from Movo',
-    questions: [],
-    user: userId,
-  }).save()
-  user.tags.push(movoTag.id)
+  return true
+}
+
+const sendMovoNotification = async ({ userId, token }) => {
+  console.log('received movo notification request')
+
+  if (!token || !MOVO_CFG.notificationToken || token !== MOVO_CFG.notificationToken) {
+    return false
+  }
+
+  const user = await UserModel.findById(userId)
+  if (!user) {
+    return false
+  }
+
+  //  send confirmation email
+  const html = compileEmailTemplate('movoImport', {
+    email: user.email,
+  })
 
   try {
-    movoObject.forEach((questionSet, index1) =>
-      questionSet.questions.forEach((question, index2) => {
-        const questionHash = objHash(question)
-        if (questionHashes[questionHash] === 'TODO') {
-          movoObject[index1].questions[index2].duplicate = true
-        } else {
-          questionHashes[questionHash] = 'TODO'
-          movoObject[index1].questions[index2].duplicate = false
-        }
-        movoObject[index1].questions[index2].hash = questionHash
-      })
-    )
-
-    let questions = []
-    let questionInstanceIds = []
-
-    questions = await Promise.all(
-      movoObject.map(async (questionSet) => {
-        let tempQuestions = []
-        if (questionSet.questions && questionSet.questions.length !== 0) {
-          // create questions for each questionSet (including deduplication)
-          tempQuestions = await Promise.all(
-            questionSet.questions.map(async (question) => {
-              // Check if the question already exists and skip it if so
-              if (question.duplicate === true) {
-                return null
-              }
-
-              // If question does not exist yet, create it
-              const newQuestion = await new QuestionModel({
-                tags: [movoTag.id],
-                title: question.title,
-                type: question.type,
-                user: userId,
-                versions: [
-                  {
-                    content: question.title,
-                    description: question.title,
-                    options: {
-                      SC: question.options.SC,
-                      MC: question.options.MC,
-                      FREE_RANCE: null,
-                    },
-                    files: [],
-                    solution: undefined,
-                  },
-                ],
-              }).save()
-
-              movoTag.questions.push(newQuestion.id)
-              user.questions.push(newQuestion.id)
-              questionHashes[question.hash] = newQuestion.id
-
-              return newQuestion
-            })
-          )
-        }
-        return tempQuestions
-      })
-    )
-
-    questions = questions.flat().filter((question) => question !== null)
-
-    movoObject.forEach(async (questionSet) => {
-      if (questionSet.questions && questionSet.questions.length !== 0) {
-        // Get questions from duplicate free question array that are part of the considered questionSet / session
-        const sessionQuestionIds = questionSet.questions.map((question) => questionHashes[question.hash])
-        const sessionQuestions = questions.filter((question) => sessionQuestionIds.includes(question.id))
-
-        // Test if every question in the block has results - otherwise treat it like missing results
-        if (questionSet.questions.every((question) => question.results !== null && question.results !== undefined)) {
-          // Create instances with results
-          const sessionId = ObjectId()
-
-          questionInstanceIds = await sessionQuestions.reduce(async (acc, question, currentIndex) => {
-            const newInstance = await new QuestionInstanceModel({
-              question: question.id,
-              session: sessionId,
-              user: userId,
-              version: 0,
-              results: questionSet.questions[currentIndex].results,
-            })
-
-            newInstance.save()
-            question.instances.push(newInstance.id)
-            return [...(await acc), newInstance.id]
-          }, Promise.resolve([]))
-
-          // Create Session with results
-          const movoSession = prepareDemoSessionData({
-            id: sessionId,
-            name: questionSet.setName,
-            status: 'COMPLETED',
-            user: userId,
-            blockInstances: questionInstanceIds.map((instanceId) => [instanceId]),
-            blockStatus: 'EXECUTED',
-            startedAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
-            finishedAt: new Date(`${questionSet.SetVotingDate}T11:00:00`),
-            createdAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
-          })
-          await movoSession.save()
-
-          user.sessions.push(movoSession.id)
-        } else {
-          // Create instances without results
-          const sessionId = ObjectId()
-
-          questionInstanceIds = await sessionQuestions.reduce(async (acc, question) => {
-            const newInstance = await new QuestionInstanceModel({
-              question: question.id,
-              session: sessionId,
-              user: userId,
-              version: 0,
-              results: null,
-            })
-            newInstance.save()
-            question.instances.push(newInstance.id)
-            return [...(await acc), newInstance.id]
-          }, Promise.resolve([]))
-
-          // Create Session without results
-          const movoSession = prepareDemoSessionData({
-            id: sessionId,
-            user: userId,
-            name: questionSet.setName,
-            blockInstances: questionInstanceIds.map((instanceId) => [instanceId]),
-            createdAt: new Date(`${questionSet.SetVotingDate}T10:00:00`),
-          })
-          await movoSession.save()
-
-          user.sessions.push(movoSession.id)
-        }
-      }
+    sendEmailNotification({
+      html,
+      subject: 'KlickerUZH - Migration from movo.ch',
+      to: user.email,
     })
-
-    await Promise.all([user.save(), movoTag.save()])
-  } catch (error) {
-    console.log(error)
+    sendSlackNotification('accounts', `Movo migration email has been sent to ${user.email}`)
+  } catch (e) {
+    sendSlackNotification('accounts', `Movo migration email could not be sent to ${user.email}`)
+    console.error(e)
   }
+
   return true
 }
 
@@ -1069,5 +970,6 @@ module.exports = {
   activateAccount,
   generateScopedToken,
   movoImport,
+  sendMovoNotification,
   AUTH_COOKIE_SETTINGS,
 }

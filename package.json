@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.8.0-rc.26",
+  "version": "1.8.0-rc.29",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -55,7 +55,7 @@
     "yaml": "1.10.2"
   },
   "volta": {
-    "node": "16.14.0",
+    "node": "16.14.2",
     "npm": "8.5.0"
   },
   "packageManager": "npm@8.5.0"

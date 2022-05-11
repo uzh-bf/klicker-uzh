@@ -1,9 +1,9 @@
 const crypto = require('crypto')
 const { parse: parseQuery } = require('querystring')
 
+const { UserModel } = require('@klicker-uzh/db')
 const cfg = require('../klicker.conf.js')
 const AccountService = require('../services/accounts')
-const { UserModel } = require('../models')
 
 const APP_CFG = cfg.get('app')
 
@@ -97,6 +97,9 @@ const activateAccountMutation = (parentValue, { activationToken }) => AccountSer
 const movoImportMutation = (parentValue, { dataset }, { auth }) =>
   AccountService.movoImport({ userId: auth.sub, dataset })
 
+const movoNotificationMutation = (parentValue, { userId, token }) =>
+  AccountService.sendMovoNotification({ userId, token })
+
 module.exports = {
   // queries
   allUsers: allUsersQuery,
@@ -120,4 +123,5 @@ module.exports = {
   resolveAccountDeletion: resolveAccountDeletionMutation,
   activateAccount: activateAccountMutation,
   movoImport: movoImportMutation,
+  movoNotification: movoNotificationMutation,
 }

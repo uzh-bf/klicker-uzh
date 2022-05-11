@@ -2,8 +2,7 @@ const _isNumber = require('lodash/isNumber')
 const { UserInputError } = require('apollo-server-express')
 
 const decode = require('unescape')
-const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
-const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
+const { QuestionModel, TagModel, UserModel, FileModel, QUESTION_GROUPS, QUESTION_TYPES } = require('@klicker-uzh/db')
 
 /**
  * Process tags when editing or creating a question

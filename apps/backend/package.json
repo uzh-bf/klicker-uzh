@@ -1,12 +1,14 @@
 {
   "name": "@klicker-uzh/backend",
-  "version": "1.8.0-rc.26",
+  "version": "1.8.0-rc.29",
   "main": "src/server.js",
   "engines": {
     "node": ">=16"
   },
   "license": "AGPL-3.0",
   "dependencies": {
+    "@azure/storage-blob": "12.9.0",
+    "@klicker-uzh/db": "*",
     "@graphql-tools/schema": "8.2.0",
     "apollo-server-express": "3.3.0",
     "apollo-server-plugin-response-cache": "3.2.0",

@@ -4,8 +4,7 @@ const _sum = require('lodash/sum')
 const _mapValues = require('lodash/mapValues')
 const _sumBy = require('lodash/sumBy')
 
-const { QuestionModel } = require('../models')
-const { QUESTION_GROUPS } = require('../constants')
+const { QuestionModel, QUESTION_GROUPS } = require('@klicker-uzh/db')
 
 async function computeQuestionStatistics({ ids, userId }) {
   const questions = await QuestionModel.find({

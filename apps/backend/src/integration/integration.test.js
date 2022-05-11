@@ -3,13 +3,19 @@ const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 const { map } = require('ramda')
 
+const {
+  UserModel,
+  Errors,
+  QUESTION_TYPES,
+  SESSION_STORAGE_MODE,
+  SESSION_AUTHENTICATION_MODE,
+  ROLES,
+} = require('@klicker-uzh/db')
 const Queries = require('./queries/index')
 const Mutations = require('./mutations/index')
 const AccountService = require('../services/accounts')
-const { UserModel } = require('../models')
 const { app } = require('../app')
 const { initializeDb } = require('../lib/test/setup')
-const { Errors, QUESTION_TYPES, SESSION_STORAGE_MODE, SESSION_AUTHENTICATION_MODE, ROLES } = require('../constants')
 const { getRedis } = require('../redis')
 
 process.env.NODE_ENV = 'test'

@@ -420,4 +420,18 @@ module.exports = convict({
       },
     },
   },
+  movo: {
+    connectionString: {
+      default: undefined,
+      env: 'MOVO_CONNECTION_STRING',
+      sensitive: true,
+      format: String,
+    },
+    notificationToken: {
+      default: undefined,
+      env: 'MOVO_NOTIFICATION_TOKEN',
+      sensitive: true,
+      format: String,
+    },
+  },
 })

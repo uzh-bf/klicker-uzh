@@ -39,6 +39,8 @@ services:
   teams:
     enabled: true
     env: qa
+  movo:
+    enabled: true
 
 frontend:
   hostname: app.klicker-qa.bf-app.ch

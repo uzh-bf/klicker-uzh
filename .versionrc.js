@@ -9,8 +9,10 @@ module.exports = {
     '',
     'apps/backend/',
     'apps/frontend/',
+    'functions/',
     'apps/docs/',
     'packages/ui/',
+    'packages/db/',
   ].reduce(
     (acc, path) => {
       return acc.concat({

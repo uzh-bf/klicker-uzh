@@ -46,3 +46,8 @@ data:
   SERVICES_TEAMS_ENV: {{ .Values.services.teams.env | quote }}
   SERVICES_TEAMS_WEBHOOK: {{ .Values.services.teams.webhook | quote }}
   {{ end }}
+
+  {{- if .Values.services.movo.enabled }}
+  MOVO_CONNECTION_STRING: {{ .Values.services.movo.connectionString | quote }}
+  MOVO_NOTIFICATION_TOKEN: {{ .Values.services.movo.notificationToken | quote }}
+  {{ end }}

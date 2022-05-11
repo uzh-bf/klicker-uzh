@@ -2,12 +2,18 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 
+const {
+  QuestionInstanceModel,
+  SessionModel,
+  UserModel,
+  SESSION_STATUS,
+  QUESTION_TYPES,
+  QUESTION_BLOCK_STATUS,
+} = require('@klicker-uzh/db')
 const SessionMgrService = require('./sessionMgr')
-const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
 const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
 const { getRedis } = require('../redis')
-const { SESSION_STATUS, QUESTION_TYPES, QUESTION_BLOCK_STATUS } = require('../constants')
 
 mongoose.Promise = Promise
 
