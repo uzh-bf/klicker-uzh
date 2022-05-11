@@ -1,15 +1,13 @@
 import { AzureFunction, Context } from '@azure/functions'
-const {
-  QuestionModel,
-  SessionModel,
-  UserModel,
-  TagModel,
-  QuestionInstanceModel,
-} = require('@klicker-uzh/db')
 const { v4: uuidv4 } = require('uuid')
 const mongoose = require('mongoose')
 const objHash = require('object-hash')
 const axios = require('axios')
+const { SessionModel } = require('../Shared/Session')
+const UserModel = require('../Shared/User')
+const TagModel = require('../Shared/Tag')
+const { QuestionModel } = require('../Shared/Question')
+const QuestionInstanceModel = require('../Shared/QuestionInstance')
 
 const { ObjectId } = mongoose.Types
 
@@ -247,10 +245,7 @@ const movoImport = async ({ userId, dataset }) => {
   return user
 }
 
-const blobTrigger: AzureFunction = async function (
-  context: Context,
-  blob: any
-): Promise<void> {
+const blobTrigger = async function (context, blob) {
   context.log(
     'Blob trigger function processed blob \n UserID:',
     context.bindingData.userId,
