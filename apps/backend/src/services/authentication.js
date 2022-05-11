@@ -30,7 +30,6 @@ const isAuthenticated = rule({ cache: 'contextual' })(async (parentValue, args, 
   if (context.auth && context.auth.sub) {
     return true
   }
-  console.log(context.req)
   return new AuthenticationError(Errors.UNAUTHORIZED)
 })
 
