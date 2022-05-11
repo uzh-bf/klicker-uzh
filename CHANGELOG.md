@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.29...v1.8.0-rc.30) (2022-05-11)
+
+
+### Enhancements
+
+* **frontend:** automatically redirect the user to his previously visited site on login ([#2726](https://github.com/uzh-bf/klicker-uzh/issues/2726)) ([4513697](https://github.com/uzh-bf/klicker-uzh/commit/4513697fc447f2215ca335a9e4e6cd00b512965f))
+
+
+### Other
+
+* **deploy:** enable movo on prod ([f949aae](https://github.com/uzh-bf/klicker-uzh/commit/f949aae419be961b61ef1b80f246e2ecf2bbbe00))
+* **deploy:** use existing postgres password ([9d92482](https://github.com/uzh-bf/klicker-uzh/commit/9d92482c54e650dd892d4e087a891eca5b4f4698))
+* **docs:** remove blog link and add community ([07f0547](https://github.com/uzh-bf/klicker-uzh/commit/07f0547ebe1204b939c287783aba5e73836f8ea8))
+* **docs:** update link to community ([5051beb](https://github.com/uzh-bf/klicker-uzh/commit/5051beb36e6ffe3981a0ff0b226e614bcc2ddb85))
+* **frontend:** add redirect_to parameter when login missing ([0bf1c00](https://github.com/uzh-bf/klicker-uzh/commit/0bf1c0089989910cda1942f1be873badb193b37c))
+
 ## [1.8.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.28...v1.8.0-rc.29) (2022-05-11)
 
 ## [1.8.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.27...v1.8.0-rc.28) (2022-05-11)
