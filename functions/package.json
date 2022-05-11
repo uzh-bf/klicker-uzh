@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/functions",
-  "version": "1.8.0-rc.28",
+  "version": "1.8.0-rc.29",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
