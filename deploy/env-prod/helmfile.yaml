@@ -74,8 +74,9 @@ releases:
           enabled: false
         externalRedis:
           host: "klicker-prod-redis-master"
-        # postgresql:
-        #   enabled: false
+        postgresql:
+          auth:
+            password: '{{ requiredEnv "POSTGRES_PASS" }}'
         # externalDatabase:
         #   host:
         #   user:
