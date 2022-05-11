@@ -46,10 +46,7 @@ const computeParticipantIdentifier = (authToken, namespace) => {
   return authToken.sub
 }
 
-const httpTrigger: AzureFunction = async function (
-  context: Context,
-  req: HttpRequest
-): Promise<void> {
+const httpTrigger = async function (context, req) {
   if (!req.body) {
     throw new Error('MISSING_RESPONSE_BODY')
   }
