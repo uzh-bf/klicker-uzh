@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.27...v1.8.0-rc.28) (2022-05-11)
+
+
+### Other
+
+* add apps/functions to version upgrader ([5abba62](https://github.com/uzh-bf/klicker-uzh/commit/5abba62126f59d0ed58a2b9db420853e347197d0))
+* add movo and discourse to deployment configs ([52ee8ad](https://github.com/uzh-bf/klicker-uzh/commit/52ee8add76d275e0b066078af39bbc25e20b3c4c))
+* **deploy:** add production config for klicker community discourse ([e2dbb97](https://github.com/uzh-bf/klicker-uzh/commit/e2dbb97dc0a115fd5470abf971d765d6534317c4))
+* **functions:** add teams notification ([aca521d](https://github.com/uzh-bf/klicker-uzh/commit/aca521dc9097390e4c52e5fd4af633d8d0cbb715))
+* **functions:** move to separate root-level directory ([73d1b76](https://github.com/uzh-bf/klicker-uzh/commit/73d1b768b661593bd5689fd68f5a3476ae3bb0f0))
+* update version upgrader for new location of functions ([8b39b57](https://github.com/uzh-bf/klicker-uzh/commit/8b39b5711b6d2df182b625321462de23db59d84c))
+
 ## [1.8.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.26...v1.8.0-rc.27) (2022-05-09)
 
 
