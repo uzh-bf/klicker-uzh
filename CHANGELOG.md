@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.33...v1.8.0-rc.34) (2022-05-12)
+
+
+### Other
+
+* **frontend:** replace websocket link with official implementation ([8469585](https://github.com/uzh-bf/klicker-uzh/commit/84695858ff7fdfafb81022669ba2328653d64fb7))
+
 ## [1.8.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.32...v1.8.0-rc.33) (2022-05-12)
 
 
