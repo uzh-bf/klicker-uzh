@@ -68,7 +68,7 @@ function Login(): React.ReactElement {
 
           {publicRuntimeConfig.withAai && (
             <div className="mt-4 text-right">
-              <a href="https://aai.klicker.uzh.ch/public" role="button">
+              <a href={`https://aai.klicker.uzh.ch/public?redirect_to=${redirectPath}`} role="button">
                 <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
               </a>
             </div>

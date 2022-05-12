@@ -77,7 +77,7 @@ return function (App $app) {
 
         // redirect the user to the app instead of returning a response
         return $response
-            ->withHeader('Location', isset($_ENV['REDIRECT_LOCATION']) ? $_ENV['REDIRECT_LOCATION'] : 'https://app.klicker.uzh.ch/entrypoint')
+            ->withHeader('Location', isset($_ENV['REDIRECT_LOCATION']) ? $_ENV['REDIRECT_LOCATION'] : 'https://app.klicker.uzh.ch/entrypoint?redirect_to=' . $query['redirect_to'])
             ->withStatus(302);
     });
 };

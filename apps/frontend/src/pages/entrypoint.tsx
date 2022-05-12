@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
 import { useLazyQuery } from '@apollo/client'
@@ -12,13 +12,22 @@ function Entrypoint(): React.ReactElement {
 
   const [checkAccountStatus, { data, error }] = useLazyQuery(CheckAccountStatusQuery)
 
+  const [redirectPath, setRedirectPath] = useState('/questions')
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window?.location?.search)
+    if (urlParams.get('redirect_to')) {
+      setRedirectPath(`/${decodeURIComponent(urlParams?.get('redirect_to'))}`)
+    }
+  }, [])
+
   useEffect((): void => {
     checkAccountStatus()
     if (data && data.checkAccountStatus) {
       push(['trackEvent', 'User', 'AAI Login'])
 
       Cookies.set('userId', data.checkAccountStatus, { secure: true })
-      router.push('/questions')
+      router.push(redirectPath)
     }
   }, [data])
 
