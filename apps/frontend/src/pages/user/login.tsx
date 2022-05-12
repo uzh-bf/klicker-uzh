@@ -25,11 +25,13 @@ function Login(): React.ReactElement {
   const router = useRouter()
 
   const [redirectPath, setRedirectPath] = useState('/questions')
+  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/questions')
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
     if (urlParams.get('redirect_to')) {
-      setRedirectPath(`/${decodeURIComponent(urlParams?.get('redirect_to'))}`)
+      setRedirectPath(`/${urlParams?.get('redirect_to')}`)
+      setDecodedRedirectPath(`/${decodeURIComponent(urlParams?.get('redirect_to'))}`)
     }
   }, [])
 
@@ -62,7 +64,7 @@ function Login(): React.ReactElement {
               push(['trackEvent', 'User', 'Logged In'])
 
               // redirect to the specified redirect path (default: question pool)
-              router.push(redirectPath)
+              router.push(decodedRedirectPath)
             }}
           />
 
