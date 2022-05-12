@@ -40,6 +40,8 @@ return function (App $app) {
     });
 
     $app->get('/public/', function (Request $request, Response $response) {
+        $query = $request->getQueryParams();
+
         $key = $_ENV['APP_SECRET'];
         $token = array(
             "iss" => isset($_ENV['AAI_ISSUER']) ? $_ENV['AAI_ISSUER'] : "aai.klicker.uzh.ch",
@@ -77,7 +79,7 @@ return function (App $app) {
 
         // redirect the user to the app instead of returning a response
         return $response
-            ->withHeader('Location', isset($_ENV['REDIRECT_LOCATION']) ? $_ENV['REDIRECT_LOCATION'] : 'https://app.klicker.uzh.ch/entrypoint')
+            ->withHeader('Location', isset($_ENV['REDIRECT_LOCATION']) ? $_ENV['REDIRECT_LOCATION'] : 'https://app.klicker.uzh.ch/entrypoint?redirect_to=' . $query['redirect_to'])
             ->withStatus(302);
     });
 };

@@ -1,10 +1,16 @@
 **/__pycache__/
 **/node_modules/
-.vscode/
 
+.turbo/
+__blobstorage__/
+__queuestorage__/
+
+__azurite**
 *.archive
 secrets*.yaml
 .env
 
 **/.DS_Store
 *.pem
+
+/apps/functions/local.settings.json

@@ -1,0 +1,244 @@
+---
+title: Real-time Feedback
+slug: real_time_feedback
+id: real_time_feedback
+description: Get instant feedback on key metrics like the speed and difficulty of your teaching
+keywords:
+  - instant audience feedback
+---
+
+import ChartGrid from '../../src/components/ChartGrid.tsx'
+import BarChart from '../../src/components/BarChart.tsx'
+import TableChart from '../../src/components/TableChart.tsx'
+import ImageModal from '../../src/components/ImageModal.tsx'
+import CaseSummary from '../../src/components/CaseSummary.tsx'
+
+<CaseSummary goals={[
+  'Enable students to provide instant feedback on key metrics regarding the lecture',
+  'Engage students by incorporating their feedback on the lecture',
+  'Allow lecturers to adapt their teaching based on key metrics impacting comprehension (speed and difficulty)'
+]} tags={[
+  'large class',
+  'small class',
+  'frontal teaching',
+  'interactive lecture',
+  'exercise sessions',
+  'in-person teaching',
+  'remote teaching',
+  'hybrid teaching'
+]}>
+  <p>
+    You are a lecturer and would like to get instant feedback on key metrics like the speed and difficulty of your teaching.
+    You start a session in the KlickerUZH after which students can provide feedback using the provided input sliders for speed and difficulty.
+    During the lecture, you have the lecturer cockpit in your view, which displays the aggregated votes of the last 10 minutes, allowing you to continuously adapt your teaching to the circumstances.
+    After the conclusion of your lecture, you view the timeline of the key metrics in its entirety, allowing you to visualize the development of the metrics and to pinpoint sections of your lecture that students found especially difficult or quick.
+  </p>
+</CaseSummary>
+
+## Implementation
+
+import ConfusionInput from '../../static/img/confusion_input.png'
+import ConfusionGauge from '../../static/img/confusion_gauge_single.png'
+import ConfusionCockpit from '../../static/img/confusion_cockpit.png'
+import ConfusionHistory from '../../static/img/evaluation_confusion.png'
+
+<ImageModal.Group>
+  <ImageModal src={ConfusionInput} description="The audience can give you feedback on the speed and difficulty of the lecture by dragging the corresponding sliders to one of five possible positions (ranging from very slow to very fast and very easy to very hard). Each participant can provide feedback up to once a minute." title="Audience View" />
+  <ImageModal className="p-1" src={ConfusionGauge} description="To reflect the current situation, the metrics gauges on the lecturer view display an aggregate of each metric based on the incoming feedbacks of the last ten minutes. The number of feedbacks in the aggregate is displayed so that the reliability of the measure can be judged." title="Metrics Gauges" />
+  <ImageModal src={ConfusionCockpit} description="The lecturer cockpit displays the real-time feedback gauges next to the pinned questions from Live Q&A. The bar on top of the window provides feedback at a quick glance, as it turns red when one of the gauges is in a red zone, and yellow when one of the gauges is in the orange zone." title="Lecturer Cockpit" />
+  <ImageModal src={ConfusionHistory} description="After the completion of a session, the development of real-time feedback metrics is plotted over time on the evaluation of the session. This allows lecturers to associate the development of the gauges with their lecture timing (e.g., to identify difficult parts)." title="Metrics Timeline" />
+</ImageModal.Group>
+
+## Evaluation
+
+To evaluate the viability of KlickerUZH Real-time Feedback in university teaching, we have created surveys for both lecturers and students for which we are currently gathering results. The surveys will remain active until and including spring 2022, and results will be updated periodically. Results shown here are not based on a statistically significant dataset or analysis.
+
+
+### Lecturers
+
+<ChartGrid>
+  <BarChart
+    likert
+    title='I believe that the confusion barometer is helpful as a form of live feedback during the lecture (e.g., with the lecturer cockpit).'
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 0,
+      },
+      {
+        name: 'Undecided',
+        count: 1,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 1,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 0,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title='I believe that the confusion barometer is helpful as an evaluation after the conclusion of the lecture (e.g., by analyzing the confusion time-series).'
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 1,
+      },
+      {
+        name: 'Undecided',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 0,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 1,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="Overall, how satisfied or dissatisfied are you with the Confusion Barometer?"
+    data={[
+      {
+        name: 'Extremely Dissatisfied',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Dissatisfied',
+        count: 0,
+      },
+      {
+        name: 'Neither',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Satisfied',
+        count: 2,
+      },
+      {
+        name: 'Extremely Satisfied',
+        count: 0,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title="How likely will you be continuing to use the Confusion Barometer functionality in your future teaching?"
+    data={[
+      {
+        name: 'Extremely Unlikely',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Unlikely',
+        count: 0,
+      },
+      {
+        name: 'Neither',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Likely',
+        count: 1,
+      },
+      {
+        name: 'Extremely Likely',
+        count: 1,
+      },
+    ]}
+  />
+</ChartGrid>
+
+### Students
+
+<TableChart
+  className="mb-4"
+  title="Have you interacted with the Confusion Barometer (i.e., rating speed and difficulty)?"
+  data={[
+    {
+      name: 'Yes',
+      count: 15,
+    },
+    {
+      name: 'No',
+      count: 9,
+    },
+    {
+      name: 'I did not know about the Confusion Barometer',
+      count: 5,
+    }
+  ]}
+/>
+
+<ChartGrid>
+  <BarChart
+    likert
+    title='I find it worthwile to provide the lecturer with feedback using the Confusion Barometer.'
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 1,
+      },
+      {
+        name: 'Undecided',
+        count: 3,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 3,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 5,
+      },
+    ]}
+  />
+  <BarChart
+    likert
+    title='I am confident that my feedback can help lecturers improve their teaching.'
+    data={[
+      {
+        name: 'Strongly Disagree',
+        count: 0,
+      },
+      {
+        name: 'Somewhat Disagree',
+        count: 0,
+      },
+      {
+        name: 'Undecided',
+        count: 2,
+      },
+      {
+        name: 'Somewhat Agree',
+        count: 4,
+      },
+      {
+        name: 'Strongly Agree',
+        count: 6,
+      },
+    ]}
+  />
+</ChartGrid>
+
+## Feedback
+
+If you have any feedback for us regarding this use case (e.g., extension ideas), please fill out the brief (2min) survey [here](https://hi.switchy.io/6csy). Thank you!

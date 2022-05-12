@@ -18,6 +18,9 @@ data:
   EMAIL_FROM: {{ .Values.email.from | quote }}
   EMAIL_HOST: {{ .Values.email.host | quote }}
   EMAIL_USER: {{ .Values.email.user | quote }}
+  EMAIL_REPLY_TO: {{ .Values.email.replyTo | quote }}
+  EMAIL_PORT: {{ .Values.email.port | quote }}
+  EMAIL_SECURE: {{ .Values.email.secure | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
   S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
@@ -42,4 +45,9 @@ data:
   SERVICES_TEAMS_ENABLED: 'true'
   SERVICES_TEAMS_ENV: {{ .Values.services.teams.env | quote }}
   SERVICES_TEAMS_WEBHOOK: {{ .Values.services.teams.webhook | quote }}
+  {{ end }}
+
+  {{- if .Values.services.movo.enabled }}
+  MOVO_CONNECTION_STRING: {{ .Values.services.movo.connectionString | quote }}
+  MOVO_NOTIFICATION_TOKEN: {{ .Values.services.movo.notificationToken | quote }}
   {{ end }}

@@ -1,0 +1,11 @@
+coverage/
+node_modules/
+.idea/
+
+*rdb
+*.archive
+*.log
+.env.local
+.env
+
+db/scripts/.env

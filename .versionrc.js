@@ -5,23 +5,29 @@ module.exports = {
       type: 'json',
     },
   ],
-  bumpFiles: ['', 'backend/', 'frontend/', 'landing/', 'docs/'].reduce(
+  bumpFiles: [
+    '',
+    'apps/backend/',
+    'apps/frontend/',
+    'functions/',
+    'apps/docs/',
+    'packages/ui/',
+    'packages/db/',
+  ].reduce(
     (acc, path) => {
-      return acc.concat(
-        {
-          filename: `${path}package.json`,
-          type: 'json',
-        },
-        {
-          filename: `${path}package-lock.json`,
-          type: 'json',
-        }
-      )
+      return acc.concat({
+        filename: `${path}package.json`,
+        type: 'json',
+      })
     },
     [
       {
         filename: `deploy/charts/klicker-uzh/Chart.yaml`,
         updater: 'util/yaml-updater.js',
+      },
+      {
+        filename: `package-lock.json`,
+        type: 'json',
       },
     ]
   ),

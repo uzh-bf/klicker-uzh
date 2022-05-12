@@ -1,0 +1,22 @@
+coverage/
+node_modules/
+
+bundles
+.next
+src/lang/.messages
+*.log
+dist/
+
+.idea/
+.DS_Store
+
+.env.local
+!.env
+
+.vercel
+
+# Sentry
+.sentryclirc
+
+# Sentry
+.sentryclirc

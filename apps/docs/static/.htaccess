@@ -1,0 +1,89 @@
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine  on
+  RewriteBase    /
+
+  RewriteRule ^blog/$ /blog.html [L]
+
+  RewriteRule ^docs/(.*) /$1 [R=301]
+
+  # redirect SPA routes to the index.html file
+  # RewriteRule    ^/tos$ index.html      [L]
+  # RewriteRule    ^/privacy$ index.html  [L]
+  # RewriteRule    ^/roadmap$ index.html  [L]
+
+  # redirect to the klickeruzh user group in ms teams
+  Redirect 301 /community "https://community.klicker.uzh.ch"
+
+  # redirect everything else to the new klicker
+  # except needed assets and routes of the landing SPA
+  # RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|docs|docs/|img/|_next/|static/|images/|page-data) [NC]
+  # RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
+  # RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=302]
+</IfModule>
+
+<IfModule mod_deflate.c>
+  # Compress HTML, CSS, JavaScript, Text, XML and fonts
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+  AddOutputFilterByType DEFLATE application/x-font
+  AddOutputFilterByType DEFLATE application/x-font-opentype
+  AddOutputFilterByType DEFLATE application/x-font-otf
+  AddOutputFilterByType DEFLATE application/x-font-truetype
+  AddOutputFilterByType DEFLATE application/x-font-ttf
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE font/opentype
+  AddOutputFilterByType DEFLATE font/otf
+  AddOutputFilterByType DEFLATE font/ttf
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE image/x-icon
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+
+  # Remove browser bugs (only needed for really old browsers)
+  BrowserMatch ^Mozilla/4 gzip-only-text/html
+  BrowserMatch ^Mozilla/4\.0[678] no-gzip
+  BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+  Header append Vary User-Agent
+</IfModule>
+
+<IfModule mod_headers.c>
+  <filesMatch ".(flv|gif|ico|jpg|jpeg|mp4|mpeg|png|svg|swf|webp)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+
+  <filesMatch ".(js|pdf)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+
+  <filesMatch ".(css)$">
+      Header set Cache-Control "max-age=2592000, public"
+  </filesMatch>
+</IfModule>
+
+# BEGIN Expire headers
+<IfModule mod_expires.c>
+  # Turn on the module.
+  ExpiresActive on
+  # Set the default expiry times.
+  ExpiresDefault "access plus 2 days"
+  ExpiresByType image/jpg "access plus 1 month"
+  ExpiresByType image/svg+xml "access 1 month"
+  ExpiresByType image/gif "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType text/javascript "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType image/ico "access plus 1 month"
+  ExpiresByType image/x-icon "access plus 1 month"
+  ExpiresByType text/html "access plus 600 seconds"
+</IfModule>
+# END Expire headers

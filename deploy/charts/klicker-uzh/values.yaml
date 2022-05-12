@@ -8,6 +8,10 @@ podSecurityContext: {}
 
 securityContext: {}
 
+email:
+  secure: true
+  port: 465
+
 redis:
   # architecture: standalone
   auth:
@@ -61,6 +65,7 @@ analytics:
   sentry:
     frontend:
       enabled: false
+      sampleRate: 0.2
     backend:
       enabled: false
   google:
@@ -83,6 +88,10 @@ services:
     enabled: false
     env: qa
     webhook:
+  movo:
+    enabled: false
+    connectionString:
+    notificationToken:
 
 frontend:
   replicaCount: 1
@@ -105,17 +114,17 @@ frontend:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 170Mi
+      cpu: 200m
+      memory: 200Mi
     limits:
-      cpu: 400m
-      memory: 300Mi
+      cpu: 1000m
+      memory: 500Mi
 
   autoscaling:
     enabled: false
-    minReplicas: 2
-    maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
+    minReplicas: 3
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
   vpa:
@@ -150,17 +159,17 @@ backend:
 
   resources:
     requests:
-      cpu: 150m
-      memory: 75Mi
+      cpu: 250m
+      memory: 120Mi
     limits:
-      cpu: 500m
-      memory: 200Mi
+      cpu: 1000m
+      memory: 500Mi
 
   autoscaling:
     enabled: false
-    minReplicas: 2
-    maxReplicas: 6
-    targetCPUUtilizationPercentage: 50
+    minReplicas: 3
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
   vpa:

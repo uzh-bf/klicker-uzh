@@ -2,6 +2,546 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.37...v1.8.0) (2022-05-12)
+
+## [1.8.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.36...v1.8.0-rc.37) (2022-05-12)
+
+
+### Bug Fixes
+
+* **frontend:** double encode the href for aai login ([a0cd461](https://github.com/uzh-bf/klicker-uzh/commit/a0cd4611a7e6b40389a14182d7ebea618ff3f328))
+
+## [1.8.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.35...v1.8.0-rc.36) (2022-05-12)
+
+
+### Bug Fixes
+
+* **frontend:** encode the redirect link for aai ([e3c365f](https://github.com/uzh-bf/klicker-uzh/commit/e3c365f6902651aa18db03a60febea2f1afb4f86))
+
+## [1.8.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.34...v1.8.0-rc.35) (2022-05-12)
+
+
+### Bug Fixes
+
+* **shibboleth:** ensure query is available in login ([4c4b4c9](https://github.com/uzh-bf/klicker-uzh/commit/4c4b4c9155d81c4c4fa3ab617fb47b502368683a))
+
+## [1.8.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.33...v1.8.0-rc.34) (2022-05-12)
+
+
+### Other
+
+* **frontend:** replace websocket link with official implementation ([8469585](https://github.com/uzh-bf/klicker-uzh/commit/84695858ff7fdfafb81022669ba2328653d64fb7))
+
+## [1.8.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.32...v1.8.0-rc.33) (2022-05-12)
+
+
+### Other
+
+* **frontend:** use encoded redirectPath for aai login ([202e3a7](https://github.com/uzh-bf/klicker-uzh/commit/202e3a7a8379147cc4f920b31aac3ec73d38be69))
+
+## [1.8.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.31...v1.8.0-rc.32) (2022-05-12)
+
+
+### Other
+
+* add redirect_to for AAI login ([805356c](https://github.com/uzh-bf/klicker-uzh/commit/805356cd1e5214dc233959d64238cf6fc02dcb0e))
+* **frontend:** use uri component encoding and useEffect for redirect_to ([f0402b7](https://github.com/uzh-bf/klicker-uzh/commit/f0402b74ad7412a8ff604f962cb399d5c53c1a6f))
+
+## [1.8.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.30...v1.8.0-rc.31) (2022-05-12)
+
+
+### Other
+
+* **backend:** adjust email text for movo ([6769938](https://github.com/uzh-bf/klicker-uzh/commit/6769938da3abcee9b2d4323d47135a6d0a82e2bd))
+* **docs:** add announcements and feedback to docs navbar ([80da897](https://github.com/uzh-bf/klicker-uzh/commit/80da89788bddd8772b942a98a2a6088790412c76))
+
+## [1.8.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.29...v1.8.0-rc.30) (2022-05-11)
+
+
+### Enhancements
+
+* **frontend:** automatically redirect the user to his previously visited site on login ([#2726](https://github.com/uzh-bf/klicker-uzh/issues/2726)) ([4513697](https://github.com/uzh-bf/klicker-uzh/commit/4513697fc447f2215ca335a9e4e6cd00b512965f))
+
+
+### Other
+
+* **deploy:** enable movo on prod ([f949aae](https://github.com/uzh-bf/klicker-uzh/commit/f949aae419be961b61ef1b80f246e2ecf2bbbe00))
+* **deploy:** use existing postgres password ([9d92482](https://github.com/uzh-bf/klicker-uzh/commit/9d92482c54e650dd892d4e087a891eca5b4f4698))
+* **docs:** remove blog link and add community ([07f0547](https://github.com/uzh-bf/klicker-uzh/commit/07f0547ebe1204b939c287783aba5e73836f8ea8))
+* **docs:** update link to community ([5051beb](https://github.com/uzh-bf/klicker-uzh/commit/5051beb36e6ffe3981a0ff0b226e614bcc2ddb85))
+* **frontend:** add redirect_to parameter when login missing ([0bf1c00](https://github.com/uzh-bf/klicker-uzh/commit/0bf1c0089989910cda1942f1be873badb193b37c))
+
+## [1.8.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.28...v1.8.0-rc.29) (2022-05-11)
+
+## [1.8.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.27...v1.8.0-rc.28) (2022-05-11)
+
+
+### Other
+
+* add apps/functions to version upgrader ([5abba62](https://github.com/uzh-bf/klicker-uzh/commit/5abba62126f59d0ed58a2b9db420853e347197d0))
+* add movo and discourse to deployment configs ([52ee8ad](https://github.com/uzh-bf/klicker-uzh/commit/52ee8add76d275e0b066078af39bbc25e20b3c4c))
+* **deploy:** add production config for klicker community discourse ([e2dbb97](https://github.com/uzh-bf/klicker-uzh/commit/e2dbb97dc0a115fd5470abf971d765d6534317c4))
+* **functions:** add teams notification ([aca521d](https://github.com/uzh-bf/klicker-uzh/commit/aca521dc9097390e4c52e5fd4af633d8d0cbb715))
+* **functions:** move to separate root-level directory ([73d1b76](https://github.com/uzh-bf/klicker-uzh/commit/73d1b768b661593bd5689fd68f5a3476ae3bb0f0))
+* update version upgrader for new location of functions ([8b39b57](https://github.com/uzh-bf/klicker-uzh/commit/8b39b5711b6d2df182b625321462de23db59d84c))
+
+## [1.8.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.26...v1.8.0-rc.27) (2022-05-09)
+
+
+### Bug Fixes
+
+* remove browser tooltips on SC MC answer options on evaluation ([ab509e4](https://github.com/uzh-bf/klicker-uzh/commit/ab509e4ffec9b7b7a78fcdfd0f174c4f2d8f1e01))
+
+
+### Enhancements
+
+* initial work on serverless functions (movo import, add response) ([#2722](https://github.com/uzh-bf/klicker-uzh/issues/2722)) ([1d0d3c6](https://github.com/uzh-bf/klicker-uzh/commit/1d0d3c60907951ce1dd5103ac818dcd2f9caf935))
+
+
+### Other
+
+* add or replace links for new community platform ([da40464](https://github.com/uzh-bf/klicker-uzh/commit/da4046421fcc370b86021fb66dc43e09633f7d3d))
+* lockfile maintenance ([3abd001](https://github.com/uzh-bf/klicker-uzh/commit/3abd001f70359cae63ac37dfed6826fcb1c7e505))
+* lockfile maintenance ([f4d2d8a](https://github.com/uzh-bf/klicker-uzh/commit/f4d2d8abae4d3428fe909001e89e99c7884311e9))
+* remove internal support email for external users ([167f40b](https://github.com/uzh-bf/klicker-uzh/commit/167f40b0a4b8676f4538ef84ee1499d834633fb9))
+* replace missing user group form with link to community ([915baee](https://github.com/uzh-bf/klicker-uzh/commit/915baeee79abe59b8d63d8d99b0b3b29b2967160))
+
+## [1.8.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.25...v1.8.0-rc.26) (2022-05-08)
+
+
+### Bug Fixes
+
+* **frontend:** fixed markdown parsing issue in regex ([31ec878](https://github.com/uzh-bf/klicker-uzh/commit/31ec878d78b9650c2bced05a27f74aa616037546))
+
+
+### Other
+
+* **deploy:** update config for containers ([390bf25](https://github.com/uzh-bf/klicker-uzh/commit/390bf254bbd2a2e4c042a258ef193c45740a5188))
+* lockfile maintenance ([d119e0d](https://github.com/uzh-bf/klicker-uzh/commit/d119e0dd561f9371cbd9ea0559268082b29e49f0))
+
+## [1.8.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.24...v1.8.0-rc.25) (2022-05-02)
+
+
+### Enhancements
+
+* **backend:** add the shortname to the redirect url as a username for discourse ([ffb042e](https://github.com/uzh-bf/klicker-uzh/commit/ffb042e392278ccb47b1856469f015840b6b3512))
+
+## [1.8.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.23...v1.8.0-rc.24) (2022-05-02)
+
+
+### Features
+
+* add endpoint to validate discourse login and redirect to the platform ([1a928be](https://github.com/uzh-bf/klicker-uzh/commit/1a928bed60c7cd671a39842b5d6842af45d0b86f))
+
+
+### Other
+
+* lockfile maintenance ([257dfe5](https://github.com/uzh-bf/klicker-uzh/commit/257dfe5263ae783cb8d508b4ef3b5ba16ab84814))
+
+## [1.8.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.22...v1.8.0-rc.23) (2022-05-02)
+
+
+### Bug Fixes
+
+* escaping special chars for slate state ([e19fd00](https://github.com/uzh-bf/klicker-uzh/commit/e19fd000c71aebf684ff8634135eb9e2aa810fbb))
+
+## [1.8.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.21...v1.8.0-rc.22) (2022-05-02)
+
+
+### Bug Fixes
+
+* **backend:** double escape backslashes to ensure correct latex rendering ([#2723](https://github.com/uzh-bf/klicker-uzh/issues/2723)) ([0405d7e](https://github.com/uzh-bf/klicker-uzh/commit/0405d7e355afa19e91f842b5fa773c7fbc669d23))
+
+
+### Enhancements
+
+* **docs:** add documentation for movo import to KlickerUZH ([2f0ddd5](https://github.com/uzh-bf/klicker-uzh/commit/2f0ddd5ddb78cccefb10464f404ccc691a935afb))
+
+
+### Other
+
+* **backend:** ignore db scripts .env ([5170951](https://github.com/uzh-bf/klicker-uzh/commit/51709516cdd8b20e58c46d936bf845fd7e61f177))
+* **backend:** update copyright year in docs footer ([e5e93a2](https://github.com/uzh-bf/klicker-uzh/commit/e5e93a27eb5b0ba129f472df33d801eecad1511f))
+* **docs:** adapt sponsoring docs ([90bb79a](https://github.com/uzh-bf/klicker-uzh/commit/90bb79a9792edcfaba1a61cf32640473885d7fea))
+* **docs:** ensure description is not added redundantly ([7994474](https://github.com/uzh-bf/klicker-uzh/commit/799447495981843d09802cd1dfedfaaa8939d53d))
+* **frontend:** add link to documentation from migration page instead of support email ([fb7322c](https://github.com/uzh-bf/klicker-uzh/commit/fb7322ceb9c30b0c13b65bf7a84ee0ca46e3292b))
+* **frontend:** remove usage history from language build ([4a99806](https://github.com/uzh-bf/klicker-uzh/commit/4a99806826e0ea1c7ef2d417b72dbd018d171bd7))
+* lockfile maintenance ([c836413](https://github.com/uzh-bf/klicker-uzh/commit/c83641379cde978b89705f39e665a15fad197301))
+* update wording in movo documentation file ([96eaee9](https://github.com/uzh-bf/klicker-uzh/commit/96eaee95a8e5196fe7ca907ee9c912e5b9a39255))
+
+## [1.8.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.20...v1.8.0-rc.21) (2022-04-19)
+
+
+### Bug Fixes
+
+* **ui:** ensure that the package builds in docker ([04ff08b](https://github.com/uzh-bf/klicker-uzh/commit/04ff08b0398a29d40cf5a682a7ed90712f13a47f))
+
+
+### Other
+
+* **docs:** add keywords and description for blog posts and use cases ([f3140a8](https://github.com/uzh-bf/klicker-uzh/commit/f3140a85e874d25ab4eb6e9bdedda3bdd81c77a8))
+* **docs:** update sponsoring contents ([3192858](https://github.com/uzh-bf/klicker-uzh/commit/31928582b35fc47016152730def28b8fac3042d0))
+
+## [1.8.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.19...v1.8.0-rc.20) (2022-04-19)
+
+
+### Enhancements
+
+* **frontend:** hide usage history and version dropdown if only one version of a question is available ([e332e25](https://github.com/uzh-bf/klicker-uzh/commit/e332e250683205ccaa11995da6e5ba23632feae4))
+
+## [1.8.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.18...v1.8.0-rc.19) (2022-04-19)
+
+
+### Bug Fixes
+
+* ensure that ui package is built in dev mode ([2f9a477](https://github.com/uzh-bf/klicker-uzh/commit/2f9a4777da49c2b0cae14aa921b16fff5c562c28))
+* **ui:** ensure that dev mode of the ui package integrates well with apps ([36cb2ea](https://github.com/uzh-bf/klicker-uzh/commit/36cb2eac294b39a15a5701880a68ba1ebbf97f6f))
+
+
+### Other
+
+* **docs:** add draft for sponsoring ([7b6522d](https://github.com/uzh-bf/klicker-uzh/commit/7b6522d583c1939d81a9a35f77012ecc705f570b))
+* **frontend:** hide contact info on movo page ([933833a](https://github.com/uzh-bf/klicker-uzh/commit/933833a967c2831396c4170073dc26f0447852fb))
+* lockfile maintenance ([93101ab](https://github.com/uzh-bf/klicker-uzh/commit/93101ab15f240a590e3f8b397169e20d25f9371d))
+
+## [1.8.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.17...v1.8.0-rc.18) (2022-04-18)
+
+
+### Other
+
+* **deploy:** migrate transactional emails to SES with new replyTo option ([9b4933e](https://github.com/uzh-bf/klicker-uzh/commit/9b4933e2dcdc11e5b7c18f08f767cc76dab42ae4))
+* **docs:** use png logo ([dc694fe](https://github.com/uzh-bf/klicker-uzh/commit/dc694fe685b0f4807d11913ef78fe114c0170838))
+
+
+### Enhancements
+
+* **backend:** enable question import from movo.ch ([#2720](https://github.com/uzh-bf/klicker-uzh/issues/2720)) ([88999b5](https://github.com/uzh-bf/klicker-uzh/commit/88999b5b6709108ad78bdffef4209520cce38875))
+
+## [1.8.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.16...v1.8.0-rc.17) (2022-04-09)
+
+
+### Bug Fixes
+
+* **backend:** allow email to be a string to include a display name ([ea16d51](https://github.com/uzh-bf/klicker-uzh/commit/ea16d516c27c904ea279fbcc42db208854fe6650))
+
+## [1.8.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.15...v1.8.0-rc.16) (2022-04-09)
+
+
+### Other
+
+* lockfile maintenance ([2932686](https://github.com/uzh-bf/klicker-uzh/commit/29326864ecf529734c6f2f5fd3be84bfb867236a))
+
+
+### Enhancements
+
+* **backend:** add replyTo for emails ([7b7291e](https://github.com/uzh-bf/klicker-uzh/commit/7b7291e3fe38be862a0c4c26c33d873cccba2006))
+
+## [1.8.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.14...v1.8.0-rc.15) (2022-04-09)
+
+
+### Bug Fixes
+
+* **ui:** embed necessary tailwind styles in the ui package ([bdc8d94](https://github.com/uzh-bf/klicker-uzh/commit/bdc8d94d5f6ef108e95159dec21188cf67d8aa23))
+
+
+### Enhancements
+
+* **docs:** improve page performance and SEO ([e4f946b](https://github.com/uzh-bf/klicker-uzh/commit/e4f946b338b1a2518ab5158c9174f0d58fd51e4e))
+* **frontend:** add klicker favicon ([ee2414c](https://github.com/uzh-bf/klicker-uzh/commit/ee2414c99ddac1ab795de0c1cb31bda1dbd3d70e))
+
+
+### Other
+
+* add app .env files to repo as they contain only dev values ([d164056](https://github.com/uzh-bf/klicker-uzh/commit/d1640566cebd1bb5dceb712045d7cdb891df00c6))
+* **deploy:** adapt autoscaling params ([4d5bd44](https://github.com/uzh-bf/klicker-uzh/commit/4d5bd44a208a7fa54387246d80672ed272342188))
+* **docs:** add robots.txt, favicon, and extended caching config ([3127c4b](https://github.com/uzh-bf/klicker-uzh/commit/3127c4b12038c3628e51becdcd953117145b990a))
+* **docs:** improve image quality and embed SVG logo ([9f9e427](https://github.com/uzh-bf/klicker-uzh/commit/9f9e427e2c983ea5398b550bd81c6e9b62242b77))
+* **docs:** update algolia search api key and matmomo url ([d771dc7](https://github.com/uzh-bf/klicker-uzh/commit/d771dc74d3b9612bcd42b68b36255609efd4e25a))
+* **docs:** update config for matomo, ideal image, and algolia ([832497e](https://github.com/uzh-bf/klicker-uzh/commit/832497e5be426541e224ec4a82cb224f8aac33bd))
+* **README:** update links ([05b6de3](https://github.com/uzh-bf/klicker-uzh/commit/05b6de3ec9f8aab4aa127b945fa74d5f65bb4fac))
+* remove cruft related to draft.js ([cfb2e58](https://github.com/uzh-bf/klicker-uzh/commit/cfb2e5808835c7bcc99a69cddfeb9dc66cb93787))
+
+## [1.8.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.13...v1.8.0-rc.14) (2022-04-04)
+
+
+### Other
+
+* **deploy:** add repositories to helmfiles and update doppler app ([8014688](https://github.com/uzh-bf/klicker-uzh/commit/80146885bec18a93b3a9cbdc7e0c54308d02e6cd))
+* **frontend:** actionbar migration to tailwind, eslint fixes ([c1507ea](https://github.com/uzh-bf/klicker-uzh/commit/c1507ea7f3a294cd880a8aa7da50e184d8842eaa))
+* **frontend:** fix typos from migration ([60b9e53](https://github.com/uzh-bf/klicker-uzh/commit/60b9e5371e147d5026476415fe9c3903122bb8f8))
+* **frontend:** migrate question component to tailwind ([16da031](https://github.com/uzh-bf/klicker-uzh/commit/16da031ce3e238a2d5307263bc4b9ddd5053e873))
+* **frontend:** sessionlist migration to tailwind, eslint fixes ([59b0a82](https://github.com/uzh-bf/klicker-uzh/commit/59b0a8226cc4e83fdbcbc309240bd8a3a48bde59))
+* lockfile maintenance ([613d435](https://github.com/uzh-bf/klicker-uzh/commit/613d43597db2a056763fd4902593a359b84a1b4e))
+
+
+### Enhancements
+
+* **backend:** populate new user accounts with demo data ([#2650](https://github.com/uzh-bf/klicker-uzh/issues/2650)) ([6237069](https://github.com/uzh-bf/klicker-uzh/commit/6237069055e620f2d8cca2a6086fe68d06156c08))
+
+## [1.8.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.12...v1.8.0-rc.13) (2022-03-28)
+
+
+### Bug Fixes
+
+* **frontend:** fixed pdf export/print of session evaluation ([e8c4cbf](https://github.com/uzh-bf/klicker-uzh/commit/e8c4cbf42b8d4da91ada714dfbb7a9f0a011503e))
+* **frontend:** ignore md list syntax at the beginning of SC and MC responses ([1c4afc9](https://github.com/uzh-bf/klicker-uzh/commit/1c4afc999b7a9e7e9d2a85dc13899eeadd6fbd25))
+* **frontend:** improve ellipsis shortened answers on evaluation layout and add compatibility with formulas ([937ed3d](https://github.com/uzh-bf/klicker-uzh/commit/937ed3dcdc20aac20d7f56e7fe767b19ec181fea))
+* **frontend:** match all markdown list styles in answering options and reduce font weight ([9e1b4c3](https://github.com/uzh-bf/klicker-uzh/commit/9e1b4c387853ec82aa01b01daafae8b2eceeb983))
+* **frontend:** only show ellipsis if something is cut after including all partially included formulas ([0487fa6](https://github.com/uzh-bf/klicker-uzh/commit/0487fa6f36aa725e36fbd1f4ac80aad181a248e3))
+* **frontend:** solve issue with NR questions on evaluation ([0a52ce8](https://github.com/uzh-bf/klicker-uzh/commit/0a52ce875bfb8277715ef61c2cc75c159910192d))
+
+
+### Other
+
+* **docs:** create stub file for movo migration ([a6c21ca](https://github.com/uzh-bf/klicker-uzh/commit/a6c21ca86f0d5aea962ee36d4653e4c0e1dbda93))
+* **frontend:** migrate most of the evaluation layout to tailwind to prepare restyling ([995d2cb](https://github.com/uzh-bf/klicker-uzh/commit/995d2cbc39de1a8960395cce2e8c8a766a1e0afa))
+* **frontend:** reworked evaluation layout without css grid ([e924b1e](https://github.com/uzh-bf/klicker-uzh/commit/e924b1e63203ce303e6bc926463d71a6c2143f0c))
+* **frontend:** simplify tailwind logic in multiple components ([3f55654](https://github.com/uzh-bf/klicker-uzh/commit/3f55654aba8dc614adffb09f2b35b19d3d087d98))
+
+
+### Enhancements
+
+* **frontend:** added functionality to collapse long questions on evaluation view ([663e3ee](https://github.com/uzh-bf/klicker-uzh/commit/663e3ee3fe8d92e8380d1bca574f96e563759011))
+
+## [1.8.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.11...v1.8.0-rc.12) (2022-03-08)
+
+
+### Bug Fixes
+
+* **backend:** remove break tags from description and add parsing for question editing ([018ec3e](https://github.com/uzh-bf/klicker-uzh/commit/018ec3e2bb77d18240e06fc5ee5831548eff7d47))
+* **backend:** special characters now included in unescaped form in description ([c2932ed](https://github.com/uzh-bf/klicker-uzh/commit/c2932ede335a57878a687508feaeb3486f232aa5))
+* **frontend:** ensure that something is returned from ellipsis ([25e0695](https://github.com/uzh-bf/klicker-uzh/commit/25e06953db242be68c9a918f5acad89e51ae54af))
+
+## [1.8.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.10...v1.8.0-rc.11) (2022-03-06)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that ingress is not recreated on deployments and update QA deployment for sentry ([c6e31ff](https://github.com/uzh-bf/klicker-uzh/commit/c6e31ffa0d3e57710e8876db67a45aa9d61a70c1))
+* **frontend:** update apollo cache config based on next example changes ([56f2528](https://github.com/uzh-bf/klicker-uzh/commit/56f25282d84d86ae4ad01ca7e5ae4a51301c018b))
+
+## [1.8.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.9...v1.8.0-rc.10) (2022-03-04)
+
+
+### Bug Fixes
+
+* **frontend:** try/catch on Notification constructor ([63d3bc1](https://github.com/uzh-bf/klicker-uzh/commit/63d3bc1a29b32d2a784ba8bfda5c9f49ef0b29ee))
+
+## [1.8.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.8...v1.8.0-rc.9) (2022-03-04)
+
+
+### Bug Fixes
+
+* **frontend:** ensure that sentry config is read correctly using next/config ([01e657a](https://github.com/uzh-bf/klicker-uzh/commit/01e657af99faaea5ab01a4beb6caf05af42e7751))
+
+## [1.8.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.7...v1.8.0-rc.8) (2022-03-03)
+
+
+### Other
+
+* **build:** ensure that node 16.14 is used in all stages of the docker container ([c2f7e24](https://github.com/uzh-bf/klicker-uzh/commit/c2f7e24be22eb5fd87018499482b55967fe3364c))
+
+## [1.8.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.6...v1.8.0-rc.7) (2022-03-03)
+
+
+### Bug Fixes
+
+* **frontend:** ensure sentry client is injected correctly ([0e482eb](https://github.com/uzh-bf/klicker-uzh/commit/0e482eb4c30b97914d63b627b015f8a9693d76e4))
+
+
+### Other
+
+* **frontend:** ensure dsn will be read from env ([86af2d9](https://github.com/uzh-bf/klicker-uzh/commit/86af2d998fd02da1e8628517d7f2da5947d96b87))
+
+## [1.8.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.5...v1.8.0-rc.6) (2022-03-03)
+
+
+### Bug Fixes
+
+* **deploy:** ensure public env sentry dsn is set ([6ec8301](https://github.com/uzh-bf/klicker-uzh/commit/6ec830115a7e6687a76b72ebfe71a66f1e0f0f44))
+* **frontend:** get sentry dsn from public env ([db338e0](https://github.com/uzh-bf/klicker-uzh/commit/db338e0ee34cd33014ef5a16afaeff1853abc7a3))
+
+## [1.8.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.4...v1.8.0-rc.5) (2022-03-03)
+
+
+### Other
+
+* **frontend:** sentry rework ([49f33ee](https://github.com/uzh-bf/klicker-uzh/commit/49f33ee7ec33f8fb88b212733d097fbde1eb3206))
+
+## [1.8.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.3...v1.8.0-rc.4) (2022-03-03)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that public is injected into the docker image ([a01ed39](https://github.com/uzh-bf/klicker-uzh/commit/a01ed396e6040bffee96a0c621be980388faa5b7))
+
+
+### Other
+
+* **deploy:** add sentry config for frontend ([c0eb641](https://github.com/uzh-bf/klicker-uzh/commit/c0eb641bde7ed5f2782bee18a2ba21642fc3955b))
+* **frontend:** upgrade @sentry/nextjs ([c31900c](https://github.com/uzh-bf/klicker-uzh/commit/c31900cf06a07596308d6c0af0f5b07320071007))
+
+## [1.8.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.2...v1.8.0-rc.3) (2022-03-03)
+
+
+### Other
+
+* update resources and loaderio ([cdda203](https://github.com/uzh-bf/klicker-uzh/commit/cdda20358165436623ed76704a20e436bc99f65e))
+
+## [1.8.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.1...v1.8.0-rc.2) (2022-03-01)
+
+
+### Bug Fixes
+
+* ensure that public evaluation works ([7557012](https://github.com/uzh-bf/klicker-uzh/commit/7557012f09455ba0c51553eaf53b04a9de2eabf1))
+* ensure that questions are not shown again to students ([479e7fb](https://github.com/uzh-bf/klicker-uzh/commit/479e7fb22bdbf9598bf028430b943c1915c45896))
+
+
+### Other
+
+* lockfile maintenance ([3953804](https://github.com/uzh-bf/klicker-uzh/commit/39538042bf1bf1416b1a6d4f55fd1bb4faa088d4))
+
+## [1.8.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.0...v1.8.0-rc.1) (2022-02-22)
+
+
+### Bug Fixes
+
+* **deploy:** update prd environment configuration ([08c33c5](https://github.com/uzh-bf/klicker-uzh/commit/08c33c5b15c772814f2e5e2255f6468025e420c9))
+* **frontend:** apply markdown pipeline only on contents longer than 2 characters ([08eece9](https://github.com/uzh-bf/klicker-uzh/commit/08eece9db60c7830658bb1fec236c0204c3dd5ba))
+
+
+### Other
+
+* **backend:** add version of the 22FS newsletter ([7dbc47a](https://github.com/uzh-bf/klicker-uzh/commit/7dbc47a5f00b3ae1807bee1dd5dac04e8f38d2f2))
+* **deploy:** increase replica counts for prod env ([4b4e5ef](https://github.com/uzh-bf/klicker-uzh/commit/4b4e5ef24b94c8aaea2b6cc3190d92a826b81721))
+* **deploy:** remove staging env ([e143a53](https://github.com/uzh-bf/klicker-uzh/commit/e143a53127f54519665d68477389d79b007c4e93))
+* **deploy:** update resource configuration of chart ([fc61bd4](https://github.com/uzh-bf/klicker-uzh/commit/fc61bd4090b696fb137ec006e8052d88ee821192))
+* **frontend:** update survey links ([8e89a5b](https://github.com/uzh-bf/klicker-uzh/commit/8e89a5b0064d75a57103133818239e074982e986))
+* lockfile maintenance ([3dc9adb](https://github.com/uzh-bf/klicker-uzh/commit/3dc9adb631de1e422cb92915072ade2712b8e8cf))
+
+## [1.8.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.5...v1.8.0-rc.0) (2022-02-20)
+
+
+### Bug Fixes
+
+* **frontend:** miscellaneous issues with latex display ([929e3e5](https://github.com/uzh-bf/klicker-uzh/commit/929e3e5d805751eb7795e640ee93ba1526fcffcc))
+* **frontend:** use rem for formula font sizes ([a97137e](https://github.com/uzh-bf/klicker-uzh/commit/a97137ede6cdbe8d8868e0ac64f609dbf1e956fe))
+
+
+### Documentation
+
+* update docs with new slate editor component screenshots and short description ([11cbdde](https://github.com/uzh-bf/klicker-uzh/commit/11cbdde729a3fe8f8dd7775ce06affba24a66d82))
+
+
+### Other
+
+* adapt formula font size ([a02d2a4](https://github.com/uzh-bf/klicker-uzh/commit/a02d2a45bd9350cad23c3826fb9972393b2004af))
+* **frontend:** add tooltip to available choices SC MC to mention markdown and latex support ([6112fdf](https://github.com/uzh-bf/klicker-uzh/commit/6112fdfea645e5924dc98ccab7b2dadee184d1bc))
+* **frontend:** reduce font size of formulas in answer options ([20c4dd2](https://github.com/uzh-bf/klicker-uzh/commit/20c4dd29c0f59c575bccb3cd7ddf773098d08070))
+
+
+### Enhancements
+
+* **deploy:** add the aks storage class for ZRS and increase node count ([b30426a](https://github.com/uzh-bf/klicker-uzh/commit/b30426a4929e433175744c9d40927da5ed5ec1f6))
+* **docs:** add better uptime announcement script ([610929b](https://github.com/uzh-bf/klicker-uzh/commit/610929b32909376d0cd3e269ad8a642072050490))
+
+## [1.8.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.4...v1.8.0-beta.5) (2022-02-19)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that next config is available in dockerfile ([efcbb02](https://github.com/uzh-bf/klicker-uzh/commit/efcbb02151cc8219fc6f47edaf9339edce7305fb))
+* **frontend:** ensure that the SC option input does not lose focus after one char ([af3aa7a](https://github.com/uzh-bf/klicker-uzh/commit/af3aa7aa74d9c0f4f52ec95d4d5b2ff649cd9a31))
+
+## [1.8.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.3...v1.8.0-beta.4) (2022-02-19)
+
+
+### Bug Fixes
+
+* **frontend:** use params.shortname on the join page ([86f4665](https://github.com/uzh-bf/klicker-uzh/commit/86f466521cdbd4a611334266a62dd2bde12526a4))
+
+## [1.8.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.2...v1.8.0-beta.3) (2022-02-19)
+
+
+### Other
+
+* **frontend:** refactor code to allow for ESM imports ([#2715](https://github.com/uzh-bf/klicker-uzh/issues/2715)) ([8eada87](https://github.com/uzh-bf/klicker-uzh/commit/8eada870f80121363d26be5ce5f181e8282cbd5a))
+* **frontend:** remove unused logging ([9661aff](https://github.com/uzh-bf/klicker-uzh/commit/9661aff2c5f3265a95e20a11d9750668e42e51c5))
+* **frontend:** update docs links throughout frontend ([d03cb75](https://github.com/uzh-bf/klicker-uzh/commit/d03cb75cff0b793846f7bdeca2e5d0be2b0afdb0))
+
+## [1.8.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.1...v1.8.0-beta.2) (2022-02-19)
+
+
+### Enhancements
+
+* **frontend:** add question preview to question edit modal ([0a9678f](https://github.com/uzh-bf/klicker-uzh/commit/0a9678f131f73010680bd018c92aeb67454d0204))
+* **frontend:** render formulas in answer options ([ab5d41a](https://github.com/uzh-bf/klicker-uzh/commit/ab5d41aa4718b2cbd8d8d760fac8f5d9d06225ed))
+* **frontend:** split buttons for inline and centered formulas ([e0d40e4](https://github.com/uzh-bf/klicker-uzh/commit/e0d40e4441dfb02176bf784f50c5c6fcaf0e8aa2))
+
+
+### Other
+
+* **db:** add migration script for 1.8 upgrade ([#2714](https://github.com/uzh-bf/klicker-uzh/issues/2714)) ([18ff160](https://github.com/uzh-bf/klicker-uzh/commit/18ff160018ec8e614f2234d007f4aaba9db4a2de))
+* **frontend:** remove references to confusion flag ([ac9bc14](https://github.com/uzh-bf/klicker-uzh/commit/ac9bc14ad3f93208f6d702c36e9622f4e7984992))
+* minor style fix after modifications of custom tooltips ([b8a1961](https://github.com/uzh-bf/klicker-uzh/commit/b8a196122d492f832cb14460e460f87a9685a5e5))
+* remove cruft helmfile ([a827ff6](https://github.com/uzh-bf/klicker-uzh/commit/a827ff6fa5260623e139cdc702e82270743474a3))
+
+## [1.8.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-beta.0...v1.8.0-beta.1) (2022-02-18)
+
+
+### Bug Fixes
+
+* **frontend:** add params for useMarkdown ([a079372](https://github.com/uzh-bf/klicker-uzh/commit/a079372c489b9d29365585ab779a6be27f64ae1b))
+
+
+### Other
+
+* **deploy:** pin versions of faculties and prod deployments ([0b8a5ca](https://github.com/uzh-bf/klicker-uzh/commit/0b8a5ca29758eb756506d71a01daea4d02eceaec))
+
+## [1.8.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0...v1.8.0-beta.0) (2022-02-18)
+
+
+### Features
+
+* **deploy:** add azure deployment automations with pulumi ([#2712](https://github.com/uzh-bf/klicker-uzh/issues/2712)) ([2795e1e](https://github.com/uzh-bf/klicker-uzh/commit/2795e1e7285f37182f90d84707f47716e4ee5a57))
+* **frontend:** new question content editor with formula capabilities ([#2707](https://github.com/uzh-bf/klicker-uzh/issues/2707)) ([bffb112](https://github.com/uzh-bf/klicker-uzh/commit/bffb1128cc2f030fa044c292bf96d40a9359c20d))
+
+
+### Bug Fixes
+
+* **docs:** disable ideal image plugin for now ([9b234c7](https://github.com/uzh-bf/klicker-uzh/commit/9b234c739bf8e2b81a4d63d1221843465e71752c))
+* **frontend:** fixed session evaluation button disabling logic ([7532c79](https://github.com/uzh-bf/klicker-uzh/commit/7532c792c7025c69279ab2cbfb94470553e35e4d))
+* **README:** update link to hero image ([90b8bed](https://github.com/uzh-bf/klicker-uzh/commit/90b8bedfae6d980f29bd20e6fdc1392b7d8418de))
+* **README:** update link to KlickerUZH logo ([42e188e](https://github.com/uzh-bf/klicker-uzh/commit/42e188eba35360f001731a035460b0f1cefac837))
+
+
+### Dependencies
+
+* add turborepo ([6fc9075](https://github.com/uzh-bf/klicker-uzh/commit/6fc907573f254f326f0289aaf0e20025d91c07aa))
+
+
+### Enhancements
+
+* **docs:** add a use case for the confusion barometer ([#2668](https://github.com/uzh-bf/klicker-uzh/issues/2668)) ([9bb47a3](https://github.com/uzh-bf/klicker-uzh/commit/9bb47a32e2f735fd9bd5f4949965ce21d6796282))
+* **docs:** add december 21 project update ([d1cdc17](https://github.com/uzh-bf/klicker-uzh/commit/d1cdc17f8e77ed62c71479b92210017cc54d1b4e))
+* **docs:** add new audience interaction features to docs ([fbdc51b](https://github.com/uzh-bf/klicker-uzh/commit/fbdc51b0c451b068bcfa9819f9ec35e78ee868e3))
+* **docs:** add remote teaching to QA use case ([13e05b4](https://github.com/uzh-bf/klicker-uzh/commit/13e05b4f019cbefa458d0439c35bdaab4324586a))
+* **docs:** add use case listing to roadmap items ([5ffe677](https://github.com/uzh-bf/klicker-uzh/commit/5ffe6778ba8bd869d82996e98a64098d91fecbfd))
+* **docs:** initial use case for q&a ([eaf27bb](https://github.com/uzh-bf/klicker-uzh/commit/eaf27bb541ed0acbf7a09e9521fa34161150fc3c))
+* **docs:** migrate landing page into docusaurus documentation and new monorepo solution ([#2659](https://github.com/uzh-bf/klicker-uzh/issues/2659)) ([9275120](https://github.com/uzh-bf/klicker-uzh/commit/927512043e8b978c5874bb524eac5c5ff321e28b))
+* **docs:** update use cases with feedbacks ([f7f431d](https://github.com/uzh-bf/klicker-uzh/commit/f7f431d7a9338e8f0ff860607df45177fd74faf0))
+* **landing:** redirect /community to MS teams ([a39f7fa](https://github.com/uzh-bf/klicker-uzh/commit/a39f7fa5ded2e6ba70c012f9cdc1d1e2f025d484))
+
+
+### Other
+
+* create new stub dockerfiles ([004c7b8](https://github.com/uzh-bf/klicker-uzh/commit/004c7b87ed16261005882e0124c4d3e9fd54643a))
+* **docs:** hide the implementation part ([4ef1bd4](https://github.com/uzh-bf/klicker-uzh/commit/4ef1bd43d98b319b6b81b94b123eac6c0bda4e75))
+* **docs:** upgrade docusaurus and change port to 5000 ([0692cba](https://github.com/uzh-bf/klicker-uzh/commit/0692cbadcc8fdd46ba0d572c80167d1dc46e054b))
+* **frontend:** migration of session list to tailwind css where possible ([eefe9fe](https://github.com/uzh-bf/klicker-uzh/commit/eefe9fedbc2adabf23970c490cb5c6cb4617ac3a))
+* **frontend:** migration of several small components to tailwind css ([549cd48](https://github.com/uzh-bf/klicker-uzh/commit/549cd48ec6efcaff63b181a8304ebd724a742532))
+* update docker configurations and monorepo setup ([#2710](https://github.com/uzh-bf/klicker-uzh/issues/2710)) ([1918191](https://github.com/uzh-bf/klicker-uzh/commit/1918191f491000bc5f1fc8bd20325ab78d47ab72))
+
 ## [1.7.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.7.0-rc.0...v1.7.0) (2021-12-07)
 
 
