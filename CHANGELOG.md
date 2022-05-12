@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.32...v1.8.0-rc.33) (2022-05-12)
+
+
+### Other
+
+* **frontend:** use encoded redirectPath for aai login ([202e3a7](https://github.com/uzh-bf/klicker-uzh/commit/202e3a7a8379147cc4f920b31aac3ec73d38be69))
+
 ## [1.8.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.31...v1.8.0-rc.32) (2022-05-12)
 
 
