@@ -77,6 +77,14 @@ module.exports = {
             from: '/',
             to: '/home',
           },
+          {
+            from: '/tos',
+            to: '/terms_of_service',
+          },
+          {
+            from: '/privacy',
+            to: '/privacy_policy',
+          },
         ],
       },
     ],
