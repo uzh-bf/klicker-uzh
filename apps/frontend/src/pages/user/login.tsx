@@ -24,13 +24,11 @@ function Login(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
 
-  const [redirectPath, setRedirectPath] = useState('/questions')
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/questions')
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
     if (urlParams.get('redirect_to')) {
-      setRedirectPath(urlParams?.get('redirect_to'))
       setDecodedRedirectPath(decodeURIComponent(urlParams?.get('redirect_to')))
     }
   }, [])
@@ -70,7 +68,10 @@ function Login(): React.ReactElement {
 
           {publicRuntimeConfig.withAai && (
             <div className="mt-4 text-right">
-              <a href={`https://aai.klicker.uzh.ch/public?redirect_to=${redirectPath}`} role="button">
+              <a
+                href={`https://aai.klicker.uzh.ch/public?redirect_to=${encodeURIComponent(decodedRedirectPath)}`}
+                role="button"
+              >
                 <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
               </a>
             </div>
