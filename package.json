@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.8.0-rc.30",
+  "version": "1.8.0-rc.31",
   "workspaces": [
     "apps/*",
     "packages/*"

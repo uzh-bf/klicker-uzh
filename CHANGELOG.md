@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.30...v1.8.0-rc.31) (2022-05-12)
+
+
+### Other
+
+* **backend:** adjust email text for movo ([6769938](https://github.com/uzh-bf/klicker-uzh/commit/6769938da3abcee9b2d4323d47135a6d0a82e2bd))
+* **docs:** add announcements and feedback to docs navbar ([80da897](https://github.com/uzh-bf/klicker-uzh/commit/80da89788bddd8772b942a98a2a6088790412c76))
+
 ## [1.8.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.29...v1.8.0-rc.30) (2022-05-11)
 
 
