@@ -30,8 +30,8 @@ function Login(): React.ReactElement {
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
     if (urlParams.get('redirect_to')) {
-      setRedirectPath(`/${urlParams?.get('redirect_to')}`)
-      setDecodedRedirectPath(`/${decodeURIComponent(urlParams?.get('redirect_to'))}`)
+      setRedirectPath(urlParams?.get('redirect_to'))
+      setDecodedRedirectPath(decodeURIComponent(urlParams?.get('redirect_to')))
     }
   }, [])
 
