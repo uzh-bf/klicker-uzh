@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Cookies from 'js-cookie'
 import _get from 'lodash/get'
 import { useRouter } from 'next/router'
@@ -23,6 +23,15 @@ const messages = defineMessages({
 function Login(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
+
+  const [redirectPath, setRedirectPath] = useState('/questions')
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window?.location?.search)
+    if (urlParams.get('redirect_to')) {
+      setRedirectPath(`/${decodeURIComponent(urlParams?.get('redirect_to'))}`)
+    }
+  }, [])
 
   useEffect((): void => {
     router.prefetch('/questions')
@@ -52,11 +61,6 @@ function Login(): React.ReactElement {
 
               push(['trackEvent', 'User', 'Logged In'])
 
-              let redirectPath = '/questions'
-              const urlParams = new URLSearchParams(window?.location?.search)
-              if (urlParams.get('redirect_to')) {
-                redirectPath = `/${urlParams?.get('redirect_to')}`
-              }
               // redirect to the specified redirect path (default: question pool)
               router.push(redirectPath)
             }}
