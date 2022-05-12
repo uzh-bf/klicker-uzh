@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/docs",
-  "version": "1.8.0-rc.30",
+  "version": "1.8.0-rc.31",
   "dependencies": {
     "@docusaurus/core": "2.0.0-beta.18",
     "@docusaurus/module-type-aliases": "2.0.0-beta.18",
