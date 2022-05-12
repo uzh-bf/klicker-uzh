@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.31...v1.8.0-rc.32) (2022-05-12)
+
+
+### Other
+
+* add redirect_to for AAI login ([805356c](https://github.com/uzh-bf/klicker-uzh/commit/805356cd1e5214dc233959d64238cf6fc02dcb0e))
+* **frontend:** use uri component encoding and useEffect for redirect_to ([f0402b7](https://github.com/uzh-bf/klicker-uzh/commit/f0402b74ad7412a8ff604f962cb399d5c53c1a6f))
+
 ## [1.8.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.30...v1.8.0-rc.31) (2022-05-12)
 
 
