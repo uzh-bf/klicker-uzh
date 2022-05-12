@@ -40,6 +40,8 @@ return function (App $app) {
     });
 
     $app->get('/public/', function (Request $request, Response $response) {
+        $query = $request->getQueryParams();
+
         $key = $_ENV['APP_SECRET'];
         $token = array(
             "iss" => isset($_ENV['AAI_ISSUER']) ? $_ENV['AAI_ISSUER'] : "aai.klicker.uzh.ch",
