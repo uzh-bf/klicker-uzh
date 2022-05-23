@@ -466,80 +466,80 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="flex flex-col h-full overflow-y-auto md:flex-row md:flex-wrap">
-        <div className="flex-1 h-full p-4 md:overflow-y-auto bg-primary-10 md:flex-initial md:width-[17rem]">
-          <TagList
-            activeTags={filters.tags}
-            activeType={filters.type}
-            handleReset={handleReset}
-            handleTagClick={handleTagClick}
-            handleToggleArchive={onToggleArchive}
-            isArchiveActive={filters.archive}
-          />
-        </div>
-        <div className="h-full p-4 md:flex-1">
-          {((): React.ReactElement | React.ReactElement[] => {
-            if (!data || loading) {
-              return <Loader active />
-            }
-
-            return [
-              <ActionBar
-                creationMode={creationMode}
-                deletionConfirmation={deletionConfirmation}
-                handleArchiveQuestions={onArchiveQuestions}
-                handleCreationModeToggle={onCreationModeToggle}
-                handleDeleteQuestions={onDeleteQuestions}
-                handleQuesionViewChange={onChangeQuestionView}
-                handleQuickBlock={onQuickBlock}
-                handleQuickBlocks={onQuickBlocks}
-                handleResetItemsChecked={handleResetSelection}
-                handleSetItemsChecked={handleSelectItems}
-                isArchiveActive={filters.archive}
-                isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
-                itemsChecked={selectedItems.ids}
-                key="action-bar"
-                questionView={questionView}
-                questions={processedQuestions}
-              />,
-              <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
-                <QuestionList
-                  creationMode={creationMode}
-                  isArchiveActive={filters.archive}
-                  questionView={questionView}
-                  questions={processedQuestions}
-                  selectedItems={selectedItems}
-                  onQuestionChecked={handleSelectItem}
-                />
-              </div>,
-            ]
-          })()}
-        </div>
-
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
-          <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
-            <Message
-              warning
-              className="!rounded-none"
-              content={
-                <FormattedMessage
-                  defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
-                  id="questionPool.survey"
-                  values={{
-                    link: (
-                      <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
-                        link
-                      </a>
-                    ),
-                  }}
-                />
-              }
-              icon="bullhorn"
-              onDismiss={() => setIsSurveyBannerVisible(false)}
+      <div className="flex justify-center h-full mx-10 md:mx-20">
+        <div className="flex flex-col md:flex-row max-w-[100rem] mt-10 gap-5">
+          <div className="p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max">
+            <TagList
+              activeTags={filters.tags}
+              activeType={filters.type}
+              handleReset={handleReset}
+              handleTagClick={handleTagClick}
+              handleToggleArchive={onToggleArchive}
+              isArchiveActive={filters.archive}
             />
           </div>
-        )}
+          <div className="">
+            {!data || loading ? (
+              <Loader active />
+            ) : (
+              <>
+                <ActionBar
+                  creationMode={creationMode}
+                  deletionConfirmation={deletionConfirmation}
+                  handleArchiveQuestions={onArchiveQuestions}
+                  handleCreationModeToggle={onCreationModeToggle}
+                  handleDeleteQuestions={onDeleteQuestions}
+                  handleQuesionViewChange={onChangeQuestionView}
+                  handleQuickBlock={onQuickBlock}
+                  handleQuickBlocks={onQuickBlocks}
+                  handleResetItemsChecked={handleResetSelection}
+                  handleSetItemsChecked={handleSelectItems}
+                  isArchiveActive={filters.archive}
+                  isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
+                  itemsChecked={selectedItems.ids}
+                  key="action-bar"
+                  questionView={questionView}
+                  questions={processedQuestions}
+                />
+                <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
+                  <QuestionList
+                    creationMode={creationMode}
+                    isArchiveActive={filters.archive}
+                    questionView={questionView}
+                    questions={processedQuestions}
+                    selectedItems={selectedItems}
+                    onQuestionChecked={handleSelectItem}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {/* lg:min-w-[50rem] bg-red-400 */}
+        </div>
       </div>
+      {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
+        <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
+          <Message
+            warning
+            className="!rounded-none"
+            content={
+              <FormattedMessage
+                defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
+                id="questionPool.survey"
+                values={{
+                  link: (
+                    <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
+                      link
+                    </a>
+                  ),
+                }}
+              />
+            }
+            icon="bullhorn"
+            onDismiss={() => setIsSurveyBannerVisible(false)}
+          />
+        </div>
+      )}
     </TeacherLayout>
   )
 }
