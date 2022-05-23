@@ -447,6 +447,8 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     return null
   }
 
+  // TODO: fix issue with the width of the question pool that it changes depending on the filter selection and question length
+
   return (
     <TeacherLayout
       fixedHeight
@@ -504,7 +506,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                 <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
                   <QuestionList
                     creationMode={creationMode}
-                    isArchiveActive={filters.archive}
                     questionView={questionView}
                     questions={processedQuestions}
                     selectedItems={selectedItems}

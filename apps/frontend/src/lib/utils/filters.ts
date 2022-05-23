@@ -63,10 +63,12 @@ export function filterQuestions(questions: any[], filters: any, index: any): any
     results = index.search(filters.title)
   }
 
-  results = results.filter(
-    ({ isArchived }): boolean =>
-      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
-  )
+  // only reduce the shown questions to the non-archived ones, if the archive filter is not active
+  if (!filters.archive) {
+    results = results.filter(
+      ({ isArchived }): boolean => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === false
+    )
+  }
 
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {

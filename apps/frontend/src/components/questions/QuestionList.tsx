@@ -8,7 +8,6 @@ import QuestionCompact from './QuestionCompact'
 
 interface Props {
   creationMode?: boolean
-  isArchiveActive?: boolean
   onQuestionChecked: any
   selectedItems: any
   questions?: any[]
@@ -26,7 +25,6 @@ function QuestionList({
   onQuestionChecked,
   creationMode,
   selectedItems,
-  isArchiveActive,
   questions,
   questionView,
 }: Props): React.ReactElement {
@@ -53,7 +51,7 @@ function QuestionList({
             checked={selectedItems.ids.includes(question.id)}
             draggable={creationMode}
             id={question.id}
-            isArchived={isArchiveActive}
+            isArchived={question.isArchived}
             key={question.id}
             lastUsed={Array.from(
               question.instances
@@ -91,7 +89,7 @@ function QuestionList({
               creationMode={creationMode}
               draggable={creationMode}
               id={question.id}
-              isArchived={isArchiveActive}
+              isArchived={question.isArchived}
               key={question.id}
               lastUsed={Array.from(
                 question.instances

@@ -2,6 +2,7 @@ import React from 'react'
 import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/client'
+import clsx from 'clsx'
 
 import { QUESTION_TYPES } from '../../constants'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
@@ -32,25 +33,22 @@ function TagList({
 
   return (
     <div className="text-[0.9rem]">
-      <Button basic fluid className="!p-2" onClick={(): void => handleReset()}>
+      <Button basic fluid className="!p-2 !mb-2" onClick={(): void => handleReset()}>
         <Icon name="remove circle" />
         <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
       </Button>
+      <Button
+        basic
+        fluid
+        active={isArchiveActive}
+        className={clsx('!p-2 hover:!text-red-500', isArchiveActive && '!text-red-500')}
+        onClick={(): void => handleToggleArchive(true)}
+      >
+        <List.Icon className={clsx('!mr-3', isArchiveActive && '!text-red-500')} color="grey" name="archive" />
+        <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
+      </Button>
 
       <List selection>
-        <List.Item active={isArchiveActive} className="!px-4 !py-1" onClick={(): void => handleToggleArchive(true)}>
-          <List.Content className="hover:!text-blue-500">
-            <List.Icon className="!mr-3" color="grey" name="archive" />
-            <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
-          </List.Content>
-        </List.Item>
-        <List.Item active={!isArchiveActive} className="!px-4 !py-1" onClick={(): void => handleToggleArchive(false)}>
-          <List.Content className="hover:!text-blue-500">
-            <List.Icon className="!mr-3" color="grey" name="list" />
-            <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
-          </List.Content>
-        </List.Item>
-
         <List.Header className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
           <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
         </List.Header>
