@@ -19,6 +19,7 @@ const defaultProps = {
   isArchiveActive: false,
 }
 
+// TODO: toggle between trash/archive and question pool with toggle switch, do not hide questions when in archive, but additionally show archive questions if toggled
 function TagList({
   activeTags,
   isArchiveActive,
@@ -30,83 +31,91 @@ function TagList({
   const { data, loading, error } = useQuery(TagListQuery)
 
   return (
-    <div className="tagList">
-      <Button basic fluid className="resetFilters" onClick={(): void => handleReset()}>
+    <div className="text-[0.9rem]">
+      <Button basic fluid className="!p-2" onClick={(): void => handleReset()}>
         <Icon name="remove circle" />
         <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
       </Button>
 
       <List selection>
-        <List.Item
-          active={isArchiveActive}
-          className="listItem archiveItem"
-          onClick={(): void => handleToggleArchive(true)}
-        >
-          <List.Icon name="archive" />
-          <List.Content>
+        <List.Item active={isArchiveActive} className="!px-4 !py-1" onClick={(): void => handleToggleArchive(true)}>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon className="!mr-3" color="grey" name="archive" />
             <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
           </List.Content>
         </List.Item>
-        <List.Item
-          active={!isArchiveActive}
-          className="listItem archiveItem"
-          onClick={(): void => handleToggleArchive(false)}
-        >
-          <List.Icon name="list" />
-          <List.Content>
+        <List.Item active={!isArchiveActive} className="!px-4 !py-1" onClick={(): void => handleToggleArchive(false)}>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon className="!mr-3" color="grey" name="list" />
             <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
           </List.Content>
         </List.Item>
 
-        <List.Header className="listHeader types">
+        <List.Header className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
           <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
         </List.Header>
         <List.Item
           active={activeType === QUESTION_TYPES.SC}
-          className="listItem"
+          className="!px-4 !py-1"
           key="SC"
           onClick={(): void => handleTagClick('SC', true)}
         >
-          <List.Icon name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'} />
-          <List.Content>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon
+              className="!mr-3"
+              color="grey"
+              name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
+            />
             <FormattedMessage defaultMessage="Single Choice (SC)" id="common.SC.label" />
           </List.Content>
         </List.Item>
         <List.Item
           active={activeType === QUESTION_TYPES.MC}
-          className="listItem"
+          className="!px-4 !py-1"
           key="MC"
           onClick={(): void => handleTagClick('MC', true)}
         >
-          <List.Icon name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'} />
-          <List.Content>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon
+              className="!mr-3"
+              color="grey"
+              name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
+            />
             <FormattedMessage defaultMessage="Multiple Choice (MC)" id="common.MC.label" />
           </List.Content>
         </List.Item>
         <List.Item
           active={activeType === QUESTION_TYPES.FREE}
-          className="listItem"
+          className="!px-4 !py-1"
           key="FREE"
           onClick={(): void => handleTagClick('FREE', true)}
         >
-          <List.Icon name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'} />
-          <List.Content>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon
+              className="!mr-3"
+              color="grey"
+              name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'}
+            />
             <FormattedMessage defaultMessage="Free Text (FT)" id="common.FREE.label" />
           </List.Content>
         </List.Item>
         <List.Item
           active={activeType === QUESTION_TYPES.FREE_RANGE}
-          className="listItem"
+          className="!px-4 !py-1"
           key="FREE_RANGE"
           onClick={(): void => handleTagClick('FREE_RANGE', true)}
         >
-          <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
-          <List.Content>
+          <List.Content className="hover:!text-blue-500">
+            <List.Icon
+              className="!mr-3"
+              color="grey"
+              name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'}
+            />
             <FormattedMessage defaultMessage="Numerical (NR)" id="common.FREE_RANGE.label" />
           </List.Content>
         </List.Item>
 
-        <List.Header className="listHeader tags">
+        <List.Header className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
           <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
         </List.Header>
 
@@ -129,55 +138,18 @@ function TagList({
             ({ id, name }): React.ReactElement => (
               <List.Item
                 active={activeTags.includes(name)}
-                className="listItem"
+                className="!px-4 !py-1"
                 key={id}
                 onClick={(): void => handleTagClick(name)}
               >
-                <List.Icon name="tag" />
-                <List.Content>{name}</List.Content>
+                <List.Content className="hover:!text-blue-500">
+                  <List.Icon className="!mr-3" color="grey" name="tag" /> {name}
+                </List.Content>
               </List.Item>
             )
           )
         })()}
       </List>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .tagList {
-          font-size: 0.9rem;
-
-          :global(.resetFilters) {
-            padding: 0.5rem;
-          }
-
-          :global(.listHeader) {
-            color: grey;
-            font-weight: bold;
-            padding: 0.3rem 1rem;
-            font-size: 1.05rem;
-            border-bottom: 1px solid lightgrey;
-            margin-bottom: 0.3rem;
-          }
-          :global(.listHeader.tags),
-          :global(.listHeader.types) {
-            margin-top: 1rem;
-          }
-          :global(.listItem.item) {
-            border-radius: 0;
-            padding: 0.3rem 1rem;
-
-            :global(i) {
-              padding: 0;
-            }
-
-            &:hover :global(.content),
-            &:hover :global(i) {
-              color: #2185d0;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

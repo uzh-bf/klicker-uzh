@@ -514,7 +514,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               </>
             )}
           </div>
-          {/* lg:min-w-[50rem] bg-red-400 */}
         </div>
       </div>
       {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
