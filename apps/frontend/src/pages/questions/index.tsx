@@ -38,6 +38,7 @@ import {
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import withFeatureFlags from '../../lib/withFeatureFlags'
 import useStickyState from '../../lib/hooks/useStickyState'
+import SearchArea from '../../components/common/navbar/SearchArea'
 
 const messages = defineMessages({
   pageTitle: {
@@ -454,15 +455,15 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       fixedHeight
       actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
-        search: {
-          handleSearch: _debounce(handleSearch, 200),
-          handleSortByChange,
-          handleSortOrderToggle,
-          sortBy: sort.by,
-          sortingTypes: QUESTION_SORTINGS,
-          sortOrder: sort.asc,
-          withSorting: true,
-        },
+        // search: {
+        //   handleSearch: _debounce(handleSearch, 200),
+        //   handleSortByChange,
+        //   handleSortOrderToggle,
+        //   sortBy: sort.by,
+        //   sortingTypes: QUESTION_SORTINGS,
+        //   sortOrder: sort.asc,
+        //   withSorting: true,
+        // },
         title: intl.formatMessage(messages.title),
       }}
       pageTitle={intl.formatMessage(messages.pageTitle)}
@@ -503,6 +504,17 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                   questionView={questionView}
                   questions={processedQuestions}
                 />
+                <div className="mt-2">
+                  <SearchArea
+                    withSorting
+                    handleSearch={_debounce(handleSearch, 200)}
+                    handleSortByChange={handleSortByChange}
+                    handleSortOrderToggle={handleSortOrderToggle}
+                    sortBy={sort.by}
+                    sortOrder={sort.asc}
+                    sortingTypes={QUESTION_SORTINGS}
+                  />
+                </div>
                 <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
                   <QuestionList
                     creationMode={creationMode}
