@@ -57,7 +57,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const { addToast } = useToasts()
 
   useEffect((): void => {
-    router.prefetch('/questions/details')
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
   })

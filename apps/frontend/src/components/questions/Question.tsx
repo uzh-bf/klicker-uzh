@@ -5,6 +5,7 @@ import { useDrag } from 'react-dnd'
 import { Checkbox, Button, Label } from 'semantic-ui-react'
 
 import QuestionTags from './QuestionTags'
+import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesShort } from '../../lib/utils/lang'
@@ -42,6 +43,7 @@ function Question({
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
   const { description } = versions[activeVersion]
   const intl = useIntl()
@@ -107,11 +109,19 @@ function Question({
 
           {/* // TODO: maybe outsource these buttons into separate component */}
           <div className="flex flex-col md:w-full w-max md:flex-row">
-            {/* // TODO: create preview button with preview of questions on push - evtl. create previewmodal component */}
+            {/* // TODO: improve and style preview component, maybe create preview with mobile phone background? */}
             <div className="mb-2 md:flex-1 md:mb-0">
-              <Button basic fluid className="!w-36" onClick={(): void => null}>
+              <Button basic fluid className="!w-36" onClick={(): void => setIsPreviewModalOpen(true)}>
                 <FormattedMessage defaultMessage="Preview" id="questionDetails.button.preview" />
               </Button>
+              {isPreviewModalOpen && (
+                <QuestionPreviewModal
+                  handleSetIsOpen={setIsPreviewModalOpen}
+                  isOpen={isPreviewModalOpen}
+                  question={versions[activeVersion]}
+                  type={type}
+                />
+              )}
             </div>
             {/* // TODO: restyle buttons, etc. */}
             <div className="mb-2 md:mr-3 w-36 md:mb-0">

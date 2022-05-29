@@ -20,6 +20,26 @@ query QuestionPool {
       content
       description
       createdAt
+      options {
+        SC {
+          choices {
+            correct
+            name
+          }
+        }
+        MC {
+          choices {
+            correct
+            name
+          }
+        }
+        FREE_RANGE {
+          restrictions {
+            min
+            max
+          }
+        }
+      }
     }
     createdAt
     updatedAt
