@@ -484,25 +484,27 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
             {!data || loading ? (
               <Loader active />
             ) : (
-              <>
-                <ActionBar
-                  creationMode={creationMode}
-                  deletionConfirmation={deletionConfirmation}
-                  handleArchiveQuestions={onArchiveQuestions}
-                  handleCreationModeToggle={onCreationModeToggle}
-                  handleDeleteQuestions={onDeleteQuestions}
-                  handleQuesionViewChange={onChangeQuestionView}
-                  handleQuickBlock={onQuickBlock}
-                  handleQuickBlocks={onQuickBlocks}
-                  handleResetItemsChecked={handleResetSelection}
-                  handleSetItemsChecked={handleSelectItems}
-                  isArchiveActive={filters.archive}
-                  isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
-                  itemsChecked={selectedItems.ids}
-                  key="action-bar"
-                  questionView={questionView}
-                  questions={processedQuestions}
-                />
+              <div className="flex flex-col w-full h-full">
+                <div className="w-full">
+                  <ActionBar
+                    creationMode={creationMode}
+                    deletionConfirmation={deletionConfirmation}
+                    handleArchiveQuestions={onArchiveQuestions}
+                    handleCreationModeToggle={onCreationModeToggle}
+                    handleDeleteQuestions={onDeleteQuestions}
+                    handleQuesionViewChange={onChangeQuestionView}
+                    handleQuickBlock={onQuickBlock}
+                    handleQuickBlocks={onQuickBlocks}
+                    handleResetItemsChecked={handleResetSelection}
+                    handleSetItemsChecked={handleSelectItems}
+                    isArchiveActive={filters.archive}
+                    isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
+                    itemsChecked={selectedItems.ids}
+                    key="action-bar"
+                    questionView={questionView}
+                    questions={processedQuestions}
+                  />
+                </div>
                 <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
                   <SearchArea
                     withSorting
@@ -514,7 +516,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     sortingTypes={QUESTION_SORTINGS}
                   />
                 </div>
-                <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto w-full" key="question-list">
+                <div className="w-full h-full mt-4 md:overflow-y-auto md:max-w-7xl md:mx-auto" key="question-list">
                   <QuestionList
                     creationMode={creationMode}
                     questionView={questionView}
@@ -523,7 +525,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     onQuestionChecked={handleSelectItem}
                   />
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
