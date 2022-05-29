@@ -469,7 +469,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       sidebar={{ activeItem: 'questionPool' }}
     >
       <div className="flex justify-center h-full mx-10 md:mx-20">
-        <div className="flex flex-col md:flex-row max-w-[100rem] mt-10 gap-5">
+        <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-10 gap-5">
           <div className="p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max">
             <TagList
               activeTags={filters.tags}
@@ -480,7 +480,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               isArchiveActive={filters.archive}
             />
           </div>
-          <div className="">
+          <div className="w-full">
             {!data || loading ? (
               <Loader active />
             ) : (
@@ -503,7 +503,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                   questionView={questionView}
                   questions={processedQuestions}
                 />
-                <div className="mt-2">
+                <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
                   <SearchArea
                     withSorting
                     handleSearch={_debounce(handleSearch, 200)}
@@ -514,7 +514,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     sortingTypes={QUESTION_SORTINGS}
                   />
                 </div>
-                <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
+                <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto w-full" key="question-list">
                   <QuestionList
                     creationMode={creationMode}
                     questionView={questionView}
