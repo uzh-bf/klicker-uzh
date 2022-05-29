@@ -60,6 +60,7 @@ function Question({
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
+    type: 'question',
   })
 
   useEffect(() => {
