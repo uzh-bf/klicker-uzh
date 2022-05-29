@@ -148,12 +148,20 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
                         id="user.registration.tos"
                         values={{
                           privacy: (
-                            <a href="http://www.klicker.uzh.ch/privacy" rel="noopener noreferrer" target="_blank">
+                            <a
+                              href="https://www.klicker.uzh.ch/privacy_policy"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
                               Privacy Policy
                             </a>
                           ),
                           terms: (
-                            <a href="http://www.klicker.uzh.ch/tos" rel="noopener noreferrer" target="_blank">
+                            <a
+                              href="https://www.klicker.uzh.ch/terms_of_service"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
                               Terms of Service
                             </a>
                           ),
