@@ -13,7 +13,6 @@ interface Props {
   creationMode?: boolean
   id: string
   isArchived: boolean
-  lastUsed?: any[]
   tags?: any[]
   title: string
   type: string
@@ -33,13 +32,11 @@ const defaultProps = {
 function QuestionCompact({
   checked,
   id,
-  lastUsed,
   tags,
   title,
   type,
   versions,
   onCheck,
-  draggable,
   creationMode,
   isArchived,
 }: Props): React.ReactElement {
@@ -60,6 +57,7 @@ function QuestionCompact({
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
+    type: 'question',
   })
 
   return (
