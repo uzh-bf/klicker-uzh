@@ -1153,6 +1153,12 @@
       "value": "Editieren"
     }
   ],
+  "questionDetails.button.preview": [
+    {
+      "type": 0,
+      "value": "Vorschau"
+    }
+  ],
   "questionDetails.usageHistory": [
     {
       "type": 0,

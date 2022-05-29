@@ -1125,6 +1125,12 @@
       "value": "View / Edit"
     }
   ],
+  "questionDetails.button.preview": [
+    {
+      "type": 0,
+      "value": "Preview"
+    }
+  ],
   "questionImport.button.addQuestions": [
     {
       "type": 0,
@@ -1963,12 +1969,6 @@
     {
       "type": 0,
       "value": "Show Archive"
-    }
-  ],
-  "tagList.string.showPool": [
-    {
-      "type": 0,
-      "value": "Show Pool"
     }
   ],
   "user.activateAccount.pageTitle": [

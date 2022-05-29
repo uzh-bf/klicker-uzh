@@ -182,6 +182,7 @@
   "joinSession.string.responseIgnored": "Ihre letzte Eingabe wurde ignoriert, da Sie nur einmal teilnehmen dürfen.",
   "questionDetails.button.duplicate": "Duplizieren",
   "questionDetails.button.edit": "Editieren",
+  "questionDetails.button.preview": "Vorschau",
   "questionDetails.usageHistory": "Verwendet in",
   "questionImport.button.addQuestions": "Fragen hinzufügen",
   "questionImport.button.upload": "Upload starten",

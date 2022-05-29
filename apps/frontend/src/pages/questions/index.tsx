@@ -449,7 +449,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   }
 
   // TODO: fix issue with the width of the question pool that it changes depending on the filter selection and question length
-
+  // TODO: remove feature flag and grid view
   return (
     <TeacherLayout
       fixedHeight

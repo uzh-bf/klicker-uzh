@@ -20,7 +20,6 @@ const defaultProps = {
   isArchiveActive: false,
 }
 
-// TODO: toggle between trash/archive and question pool with toggle switch, do not hide questions when in archive, but additionally show archive questions if toggled
 function TagList({
   activeTags,
   isArchiveActive,
