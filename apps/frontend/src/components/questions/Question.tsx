@@ -73,7 +73,7 @@ function Question({
     <>
       <div className="flex w-full mb-4 h-max flex-col-2">
         <div className="min-h-full my-auto mr-2">
-          <Checkbox activeVersion={activeVersion} checked={checked} id={id} onCheck={onCheck}>
+          <Checkbox checked={checked} id={id} onCheck={() => onCheck({ version: activeVersion })}>
             <CheckIcon />
           </Checkbox>
         </div>

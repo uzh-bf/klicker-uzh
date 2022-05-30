@@ -8,15 +8,13 @@ interface Props {
   onCheck: any
   id: string
   className?: string
-  activeVersion?: number
 }
 
 const defaultProps = {
   className: '',
-  activeVersion: 0,
 }
 
-function Checkbox({ children, checked, onCheck, id, className, activeVersion }: Props): React.ReactElement {
+function Checkbox({ children, checked, onCheck, id, className }: Props): React.ReactElement {
   return (
     <RadixCheckbox.Root
       defaultChecked
@@ -27,7 +25,7 @@ function Checkbox({ children, checked, onCheck, id, className, activeVersion }: 
         className
       )}
       id={`check-${id}`}
-      onCheckedChange={() => onCheck({ version: activeVersion })}
+      onCheckedChange={() => onCheck()}
     >
       <RadixCheckbox.CheckboxIndicator>{children}</RadixCheckbox.CheckboxIndicator>
     </RadixCheckbox.Root>
