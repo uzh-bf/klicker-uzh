@@ -93,7 +93,7 @@ function Question({
                 </Label>
               )}{' '}
               <a
-                className="flex-1 mr-10 text-xl font-bold cursor-pointer text-primary-strong"
+                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong"
                 role="button"
                 tabIndex={0}
                 type="button"
@@ -109,7 +109,7 @@ function Question({
             </div>
           </div>
 
-          <div className="mb-2">{description.length > 200 ? `${description.substring(0, 200)}...` : description}</div>
+          <div className="mb-2">{description.length > 120 ? `${description.substring(0, 120)}...` : description}</div>
 
           {/* // TODO: maybe outsource these buttons into separate component */}
           <div className="flex flex-col md:w-full w-max md:flex-row">

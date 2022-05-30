@@ -38,9 +38,10 @@ function SearchArea({
 }: Props) {
   const intl = useIntl()
   return (
-    <div className="searchArea">
+    <div className="flex flex-start">
       <Input
         fluid
+        className="!flex-1 !mr-4"
         icon="search"
         placeholder={intl.formatMessage(messages.searchPlaceholder)}
         onChange={(e): void => handleSearch(e.target.value)}
@@ -59,6 +60,7 @@ function SearchArea({
           />
           <Dropdown
             selection
+            className="!leading-4 text-base"
             options={sortingTypes.map(({ content, id }): any => ({
               text: content,
               value: id,
@@ -68,28 +70,6 @@ function SearchArea({
           />
         </>
       )}
-
-      <style jsx>{`
-        .searchArea {
-          @import 'src/theme';
-
-          display: flex;
-          justify-content: flex-start;
-
-          > :global(.input) {
-            flex: 1;
-            margin-right: 1rem;
-          }
-
-          :global(.dropdown),
-          input {
-            background-color: $color-primary-input;
-            color: $color-primary-strong;
-            line-height: 1rem;
-            font-size: 1rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }

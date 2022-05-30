@@ -4,7 +4,7 @@ import clsx from 'clsx'
 
 interface Props {
   children: React.ReactNode
-  checked: boolean
+  checked: boolean | 'indeterminate'
   onCheck: any
   id: string
   className?: string

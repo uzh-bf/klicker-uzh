@@ -454,15 +454,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       fixedHeight
       actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
-        // search: {
-        //   handleSearch: _debounce(handleSearch, 200),
-        //   handleSortByChange,
-        //   handleSortOrderToggle,
-        //   sortBy: sort.by,
-        //   sortingTypes: QUESTION_SORTINGS,
-        //   sortOrder: sort.asc,
-        //   withSorting: true,
-        // },
         title: intl.formatMessage(messages.title),
       }}
       pageTitle={intl.formatMessage(messages.pageTitle)}

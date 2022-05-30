@@ -5,14 +5,16 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label, Dropdown, Checkbox } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
+import { CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
 
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 import { omitDeep } from '../../lib/utils/omitDeep'
+import Checkbox from '../common/Checkbox'
 
 const messages = defineMessages({
   create: {
@@ -88,6 +90,16 @@ function ActionBar({
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
+
+  const itemCount = itemsChecked.length
+
+  useEffect(() => {
+    if (itemCount === questions.length) {
+      setAllItemsChecked(true)
+    } else {
+      setAllItemsChecked(false)
+    }
+  }, [itemCount, questions.length])
 
   useEffect((): void => {
     if (data) {
@@ -186,15 +198,21 @@ function ActionBar({
     // if all items have been checked, reset selection
     if (allItemsChecked) {
       handleResetItemsChecked()
-      setAllItemsChecked(false)
     } else {
       // otherwise, select all items
       handleSetItemsChecked(questions)
-      setAllItemsChecked(true)
     }
   }
 
-  const itemCount = itemsChecked.length
+  const getCheckboxState = (allItems, numOfItems) => {
+    if (allItems || numOfItems === questions.length) {
+      return true
+    }
+    if (!allItems && numOfItems > 0) {
+      return 'indeterminate'
+    }
+    return false
+  }
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
@@ -298,11 +316,13 @@ function ActionBar({
 
         <Label className="!flex !items-center !h-[36px]">
           <Checkbox
-            checked={allItemsChecked}
-            className="!mr-2"
-            indeterminate={!allItemsChecked && itemsChecked.length > 0}
-            onChange={(): void => onSetAllItemsChecked()}
-          />
+            checked={getCheckboxState(allItemsChecked, itemCount)}
+            id={'checkedCounter'}
+            onCheck={(): void => onSetAllItemsChecked()}
+          >
+            {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
+            {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
+          </Checkbox>
           <span>
             <FormattedMessage
               defaultMessage="{count} items checked"
