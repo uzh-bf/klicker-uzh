@@ -8,7 +8,7 @@ import QuestionTags from './QuestionTags'
 import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
-import { generateTypesShort } from '../../lib/utils/lang'
+import { generateTypesLabel } from '../../lib/utils/lang'
 
 interface Props {
   checked?: boolean
@@ -87,21 +87,24 @@ function Question({
           ref={drag}
         >
           <div className="flex flex-row">
-            {isArchived && (
-              <Label color="red" size="tiny">
-                <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
-              </Label>
-            )}{' '}
-            <a
-              className="flex-1 mr-10 text-xl font-bold cursor-pointer text-primary-strong"
-              role="button"
-              tabIndex={0}
-              type="button"
-              onClick={() => setIsModificationModalOpen(true)}
-              onKeyDown={() => setIsModificationModalOpen(true)}
-            >
-              {title} ({generateTypesShort(intl)[type]})
-            </a>
+            <div className="flex-1">
+              {isArchived && (
+                <Label color="red" size="tiny">
+                  <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+                </Label>
+              )}{' '}
+              <a
+                className="flex-1 mr-10 text-xl font-bold cursor-pointer text-primary-strong"
+                role="button"
+                tabIndex={0}
+                type="button"
+                onClick={() => setIsModificationModalOpen(true)}
+                onKeyDown={() => setIsModificationModalOpen(true)}
+              >
+                {title}
+              </a>
+              <div className="mb-2 italic">{generateTypesLabel(intl)[type]}</div>
+            </div>
             <div className="w-max">
               <QuestionTags tags={tags} />
             </div>
