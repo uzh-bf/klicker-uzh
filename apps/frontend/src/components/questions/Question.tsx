@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { useDrag } from 'react-dnd'
-import { Checkbox, Button, Label } from 'semantic-ui-react'
+import { Button, Label } from 'semantic-ui-react'
+import { CheckIcon } from '@heroicons/react/outline'
 
 import QuestionTags from './QuestionTags'
 import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesLabel } from '../../lib/utils/lang'
+import Checkbox from '../common/Checkbox'
 
 interface Props {
   checked?: boolean
@@ -71,12 +73,9 @@ function Question({
     <>
       <div className="flex w-full mb-4 h-max flex-col-2">
         <div className="min-h-full my-auto mr-2">
-          <Checkbox
-            checked={checked}
-            id={`check-${id}`}
-            type="checkbox"
-            onClick={(): void => onCheck({ version: activeVersion })}
-          />
+          <Checkbox activeVersion={activeVersion} checked={checked} id={id} onCheck={onCheck}>
+            <CheckIcon />
+          </Checkbox>
         </div>
         <div
           className={clsx(
