@@ -80,7 +80,7 @@ function Question({
         </div>
         <div
           className={clsx(
-            'flex flex-row w-full p-3 bg-gray-50 border border-solid rounded-lg md:flex-col',
+            'flex flex-row w-full p-3 bg-grey-20 border border-solid rounded-lg md:flex-col',
             draggable && 'cursor-[grab] hover:shadow-md',
             collectedProps.isDragging && 'opacity-50'
           )}
