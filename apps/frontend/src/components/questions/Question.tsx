@@ -86,17 +86,14 @@ function Question({
           )}
           ref={drag}
         >
-          <div className="md:flex-[0_0_auto] md:self-end">
-            <QuestionTags tags={tags} type={type} />
-          </div>
-          <div>
+          <div className="flex flex-row">
             {isArchived && (
               <Label color="red" size="tiny">
                 <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
               </Label>
             )}{' '}
             <a
-              className="text-xl font-bold cursor-pointer text-primary-strong"
+              className="flex-1 mr-10 text-xl font-bold cursor-pointer text-primary-strong"
               role="button"
               tabIndex={0}
               type="button"
@@ -105,8 +102,12 @@ function Question({
             >
               {title} ({generateTypesShort(intl)[type]})
             </a>
-            <div className="mb-2">{description.length > 200 ? `${description.substring(0, 200)}...` : description}</div>
+            <div className="w-max">
+              <QuestionTags tags={tags} />
+            </div>
           </div>
+
+          <div className="mb-2">{description.length > 200 ? `${description.substring(0, 200)}...` : description}</div>
 
           {/* // TODO: maybe outsource these buttons into separate component */}
           <div className="flex flex-col md:w-full w-max md:flex-row">

@@ -8,6 +8,7 @@ import FREECreationPreview from '../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_TYPES } from '../../constants'
 import { convertToSlate } from '../../lib/utils/slateMdConversion'
 
+// TODO: correct prop validation for question
 interface Props {
   isOpen: boolean
   // eslint-disable-next-line no-unused-vars
