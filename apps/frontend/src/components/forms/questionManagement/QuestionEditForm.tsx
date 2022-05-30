@@ -161,7 +161,6 @@ function QuestionEditForm({
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
   const content = useMemo(() => {
-    console.log(versions[initializeVersion].content)
     return versions[initializeVersion].content
       ? convertToSlate(versions[initializeVersion].content)
       : convertToSlate(versions[initializeVersion].description)

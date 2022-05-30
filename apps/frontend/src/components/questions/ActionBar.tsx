@@ -317,6 +317,7 @@ function ActionBar({
         <Label className="!flex !items-center !h-[36px]">
           <Checkbox
             checked={getCheckboxState(allItemsChecked, itemCount)}
+            className="mr-2"
             id={'checkedCounter'}
             onCheck={(): void => onSetAllItemsChecked()}
           >
