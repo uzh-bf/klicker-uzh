@@ -8,13 +8,16 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import * as Tooltip from '@radix-ui/react-tooltip'
 
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 import { omitDeep } from '../../lib/utils/omitDeep'
-import Checkbox from '../common/Checkbox'
+import CustomCheckbox from '../common/CustomCheckbox'
+import CustomButton from '../common/CustomButton'
 
 const messages = defineMessages({
   create: {
@@ -286,36 +289,86 @@ function ActionBar({
       </div>
 
       <div className="flex items-center">
-        <Dropdown button className="icon" direction="right" disabled={itemCount === 0} icon="wrench">
-          <Dropdown.Menu>
-            <Dropdown.Item icon labelPosition="left" size="small" onClick={onExportQuestions}>
-              <Icon name="download" />
-              <FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />
-            </Dropdown.Item>
-
-            <Dropdown.Item icon labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
-              <Icon name="calculator" />
-              <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
-            </Dropdown.Item>
-
-            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleArchiveQuestions()}>
-              <Icon name="archive" />
-              {isArchiveActive ? (
-                <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
-              ) : (
-                <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
+        {/* // TODO: outsource buttons with tooltip into different component */}
+        <Tooltip.Root>
+          <Tooltip.Trigger className="[all:_unset]">
+            <CustomButton
+              className={clsx(
+                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+                itemCount === 0 && '!cursor-default !shadow-none'
               )}
-            </Dropdown.Item>
-
-            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleDeleteQuestions(false)}>
-              <Icon name="trash" />
-              <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
-            </Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown>
+              disabled={itemCount === 0}
+              onClick={onExportQuestions}
+            >
+              <Icon className="!m-0" name="download" />
+            </CustomButton>
+          </Tooltip.Trigger>
+          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
+            <FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />
+            <Tooltip.Arrow />
+          </Tooltip.Content>
+        </Tooltip.Root>
+        <Tooltip.Root>
+          <Tooltip.Trigger className="[all:_unset]">
+            <CustomButton
+              className={clsx(
+                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+                itemCount === 0 && '!cursor-default !shadow-none'
+              )}
+              disabled={itemCount === 0}
+              onClick={onGetQuestionStatistics}
+            >
+              <Icon className="!m-0" name="calculator" />
+            </CustomButton>
+          </Tooltip.Trigger>
+          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
+            <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
+            <Tooltip.Arrow />
+          </Tooltip.Content>
+        </Tooltip.Root>
+        <Tooltip.Root>
+          <Tooltip.Trigger className="[all:_unset]">
+            <CustomButton
+              className={clsx(
+                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+                itemCount === 0 && '!cursor-default !shadow-none'
+              )}
+              disabled={itemCount === 0}
+              onClick={(): void => handleArchiveQuestions()}
+            >
+              <Icon className="!m-0" name="archive" />
+            </CustomButton>
+          </Tooltip.Trigger>
+          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
+            {isArchiveActive ? (
+              <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
+            ) : (
+              <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
+            )}
+            <Tooltip.Arrow />
+          </Tooltip.Content>
+        </Tooltip.Root>
+        <Tooltip.Root>
+          <Tooltip.Trigger className="[all:_unset]">
+            <CustomButton
+              className={clsx(
+                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+                itemCount === 0 && '!cursor-default !shadow-none'
+              )}
+              disabled={itemCount === 0}
+              onClick={(): void => handleDeleteQuestions(false)}
+            >
+              <Icon className="!m-0" name="trash" />
+            </CustomButton>
+          </Tooltip.Trigger>
+          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
+            <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
+            <Tooltip.Arrow />
+          </Tooltip.Content>
+        </Tooltip.Root>
 
         <Label className="!flex !items-center !h-[36px]">
-          <Checkbox
+          <CustomCheckbox
             checked={getCheckboxState(allItemsChecked, itemCount)}
             className="mr-2"
             id={'checkedCounter'}
@@ -323,7 +376,7 @@ function ActionBar({
           >
             {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
             {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
-          </Checkbox>
+          </CustomCheckbox>
           <span>
             <FormattedMessage
               defaultMessage="{count} items checked"
