@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { useDrag } from 'react-dnd'
-import { Button, Label } from 'semantic-ui-react'
+import { Label } from 'semantic-ui-react'
 import { CheckIcon } from '@heroicons/react/outline'
 
 import QuestionTags from './QuestionTags'
@@ -11,6 +11,7 @@ import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesLabel } from '../../lib/utils/lang'
 import Checkbox from '../common/Checkbox'
+import CustomButton from '../common/CustomButton'
 
 interface Props {
   checked?: boolean
@@ -111,13 +112,15 @@ function Question({
 
           <div className="mb-2">{description.length > 120 ? `${description.substring(0, 120)}...` : description}</div>
 
-          {/* // TODO: maybe outsource these buttons into separate component */}
           <div className="flex flex-col md:w-full w-max md:flex-row">
             {/* // TODO: improve and style preview component, maybe create preview with mobile phone background? */}
             <div className="mb-2 md:flex-1 md:mb-0">
-              <Button basic fluid className="!w-36" onClick={(): void => setIsPreviewModalOpen(true)}>
+              <CustomButton
+                className="bg-white shadow-md w-36 hover:shadow-none"
+                onClick={(): void => setIsPreviewModalOpen(true)}
+              >
                 <FormattedMessage defaultMessage="Preview" id="questionDetails.button.preview" />
-              </Button>
+              </CustomButton>
               {isPreviewModalOpen && (
                 <QuestionPreviewModal
                   handleSetIsOpen={setIsPreviewModalOpen}
@@ -127,11 +130,13 @@ function Question({
                 />
               )}
             </div>
-            {/* // TODO: restyle buttons, etc. */}
             <div className="mb-2 md:mr-3 w-36 md:mb-0">
-              <Button basic fluid onClick={(): void => setIsModificationModalOpen(true)}>
+              <CustomButton
+                className="bg-white shadow-md w-36 hover:shadow-none"
+                onClick={(): void => setIsModificationModalOpen(true)}
+              >
                 <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
-              </Button>
+              </CustomButton>
               {isModificationModalOpen && (
                 <QuestionDetailsModal
                   handleSetIsOpen={setIsModificationModalOpen}
@@ -141,9 +146,12 @@ function Question({
               )}
             </div>
             <div className="w-36">
-              <Button basic fluid onClick={(): void => setIsDuplicationModalOpen(true)}>
+              <CustomButton
+                className="bg-white shadow-md w-36 hover:shadow-none"
+                onClick={(): void => setIsDuplicationModalOpen(true)}
+              >
                 <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
-              </Button>
+              </CustomButton>
               {isDuplicationModalOpen && (
                 <QuestionDuplicationModal
                   handleSetIsOpen={setIsDuplicationModalOpen}
