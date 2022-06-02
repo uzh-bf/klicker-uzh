@@ -13,7 +13,6 @@ import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
 import clsx from 'clsx'
 
-import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
@@ -37,7 +36,6 @@ import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import withFeatureFlags from '../../lib/withFeatureFlags'
 import useStickyState from '../../lib/hooks/useStickyState'
 import SearchArea from '../../components/common/navbar/SearchArea'
 
@@ -52,7 +50,7 @@ const messages = defineMessages({
   },
 })
 
-function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
+function Index(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
@@ -98,7 +96,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
-  const [questionView, setQuestionView] = useState('list')
   const runningSessionId = _get(data, 'runningSessionId')
 
   const index = useMemo(() => {
@@ -349,6 +346,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               return
             }
 
+            // @ts-ignore
             const { questions } = cache.readQuery({ query: QuestionPoolQuery })
             cache.writeQuery({
               data: {
@@ -394,14 +392,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
-  const onChangeQuestionView = (newView: string): void => {
-    if (featureFlags?.flags?.questionPoolGridLayout) {
-      setQuestionView(newView)
-      push(['trackEvent', 'Question Pool', 'View Mode Toggled', newView])
-    }
-  }
-
-  // TODO: remove feature flag and grid view
   // TODO: fix height problem when the session creation modal is shown
   return (
     <TeacherLayout
@@ -481,16 +471,13 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                       handleArchiveQuestions={onArchiveQuestions}
                       handleCreationModeToggle={onCreationModeToggle}
                       handleDeleteQuestions={onDeleteQuestions}
-                      handleQuesionViewChange={onChangeQuestionView}
                       handleQuickBlock={onQuickBlock}
                       handleQuickBlocks={onQuickBlocks}
                       handleResetItemsChecked={handleResetSelection}
                       handleSetItemsChecked={handleSelectItems}
                       isArchiveActive={filters.archive}
-                      isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
                       itemsChecked={selectedItems.ids}
                       key="action-bar"
-                      questionView={questionView}
                       questions={processedQuestions}
                     />
                   </div>
@@ -508,7 +495,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                   <div className="w-full h-full mt-4 md:overflow-y-auto md:max-w-7xl md:mx-auto" key="question-list">
                     <QuestionList
                       creationMode={creationMode}
-                      questionView={questionView}
                       questions={processedQuestions}
                       selectedItems={selectedItems}
                       onQuestionChecked={handleSelectItem}
@@ -547,4 +533,4 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   )
 }
 
-export default withFeatureFlags(Index)
+export default Index
