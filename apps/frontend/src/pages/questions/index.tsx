@@ -401,8 +401,8 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     }
   }
 
-  // TODO: fix issue with the width of the question pool that it changes depending on the filter selection and question length
   // TODO: remove feature flag and grid view
+  // TODO: fix height problem when the session creation modal is shown
   return (
     <TeacherLayout
       fixedHeight
@@ -454,7 +454,12 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
         </div>
         <div className="flex justify-center h-full mx-10 md:mx-20">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-10 gap-5">
-            <div className="p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max">
+            <div
+              className={clsx(
+                'p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max',
+                creationMode && 'hidden md:block'
+              )}
+            >
               <TagList
                 activeTags={filters.tags}
                 activeType={filters.type}
