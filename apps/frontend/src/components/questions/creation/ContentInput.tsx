@@ -8,7 +8,7 @@ import isHotkey from 'is-hotkey'
 import clsx from 'clsx'
 
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 
 interface Props {
   activeVersion: number
@@ -67,7 +67,7 @@ function ContentInput({
           <Slate editor={editor} value={value} onChange={onChange}>
             <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-grey-20">
               <div className="flex flex-row flex-1 gap-2">
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isMarkActive(editor, 'bold') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -81,7 +81,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isMarkActive(editor, 'italic') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -95,7 +95,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isMarkActive(editor, 'code') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -109,7 +109,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isBlockActive(editor, 'block-quote') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -123,7 +123,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isBlockActive(editor, 'numbered-list') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -137,7 +137,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   className={clsx(isBlockActive(editor, 'bulleted-list') && '!bg-grey-40')}
                   content={
                     <FormattedMessage
@@ -151,7 +151,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   content={
                     <FormattedMessage
                       defaultMessage="Use this option to insert an inline LaTeX formula. Use the same format to enter formulas inside answer options."
@@ -175,7 +175,7 @@ function ContentInput({
                     </a>
                   }
                 />
-                <CustomTooltip
+                <SemanticCustomTooltip
                   content={
                     <FormattedMessage
                       defaultMessage="Use this option to insert a centered LaTeX formula (i.e., on a separate line)."

@@ -9,7 +9,7 @@ import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -308,7 +308,7 @@ function QuestionEditForm({
                     <label className="flex-1 header" htmlFor="content">
                       <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
-                      <CustomTooltip
+                      <SemanticCustomTooltip
                         className={'!ml-2'}
                         content={
                           <FormattedMessage

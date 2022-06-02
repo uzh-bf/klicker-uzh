@@ -4,7 +4,7 @@ import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import Button from '../common/Button'
-import CustomTooltip from '../common/CustomTooltip'
+import SemanticCustomTooltip from '../common/SemanticCustomTooltip'
 
 const messages = defineMessages({
   freeLabel: {
@@ -57,7 +57,7 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
       <label htmlFor="types">
         <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
 
-        <CustomTooltip
+        <SemanticCustomTooltip
           className={'!ml-2'}
           content={
             <FormattedMessage

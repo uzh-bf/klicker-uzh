@@ -4,7 +4,7 @@ import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QUESTION_TYPES } from '../../../constants'
-import CustomTooltips from '../../common/CustomTooltip'
+import SemanticCustomTooltips from '../../common/SemanticCustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -48,7 +48,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
           <label htmlFor="options">
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
 
-            <CustomTooltips
+            <SemanticCustomTooltips
               className={'!ml-2'}
               content={
                 <FormattedMessage

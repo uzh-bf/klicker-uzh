@@ -9,7 +9,6 @@ import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import * as Tooltip from '@radix-ui/react-tooltip'
 
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
@@ -18,6 +17,7 @@ import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMuta
 import { omitDeep } from '../../lib/utils/omitDeep'
 import CustomCheckbox from '../common/CustomCheckbox'
 import CustomButton from '../common/CustomButton'
+import CustomTooltip from '../common/CustomTooltip'
 
 const messages = defineMessages({
   create: {
@@ -289,83 +289,66 @@ function ActionBar({
       </div>
 
       <div className="flex items-center">
-        {/* // TODO: outsource buttons with tooltip into different component */}
-        <Tooltip.Root>
-          <Tooltip.Trigger className="[all:_unset]">
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
-              )}
-              disabled={itemCount === 0}
-              onClick={onExportQuestions}
-            >
-              <Icon className="!m-0" name="download" />
-            </CustomButton>
-          </Tooltip.Trigger>
-          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
-            <FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />
-            <Tooltip.Arrow />
-          </Tooltip.Content>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger className="[all:_unset]">
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
-              )}
-              disabled={itemCount === 0}
-              onClick={onGetQuestionStatistics}
-            >
-              <Icon className="!m-0" name="calculator" />
-            </CustomButton>
-          </Tooltip.Trigger>
-          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
-            <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
-            <Tooltip.Arrow />
-          </Tooltip.Content>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger className="[all:_unset]">
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
-              )}
-              disabled={itemCount === 0}
-              onClick={(): void => handleArchiveQuestions()}
-            >
-              <Icon className="!m-0" name="archive" />
-            </CustomButton>
-          </Tooltip.Trigger>
-          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
-            {isArchiveActive ? (
+        <CustomTooltip
+          tooltip={<FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />}
+        >
+          <CustomButton
+            className={clsx(
+              '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+              itemCount === 0 && '!cursor-default !shadow-none'
+            )}
+            disabled={itemCount === 0}
+            onClick={onExportQuestions}
+          >
+            <Icon className="!m-0" name="download" />
+          </CustomButton>
+        </CustomTooltip>
+        <CustomTooltip
+          tooltip={<FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />}
+        >
+          <CustomButton
+            className={clsx(
+              '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+              itemCount === 0 && '!cursor-default !shadow-none'
+            )}
+            disabled={itemCount === 0}
+            onClick={onGetQuestionStatistics}
+          >
+            <Icon className="!m-0" name="calculator" />
+          </CustomButton>
+        </CustomTooltip>
+        <CustomTooltip
+          tooltip={
+            isArchiveActive ? (
               <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
             ) : (
               <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
+            )
+          }
+        >
+          <CustomButton
+            className={clsx(
+              '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+              itemCount === 0 && '!cursor-default !shadow-none'
             )}
-            <Tooltip.Arrow />
-          </Tooltip.Content>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger className="[all:_unset]">
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
-              )}
-              disabled={itemCount === 0}
-              onClick={(): void => handleDeleteQuestions(false)}
-            >
-              <Icon className="!m-0" name="trash" />
-            </CustomButton>
-          </Tooltip.Trigger>
-          <Tooltip.Content className="p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20">
-            <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
-            <Tooltip.Arrow />
-          </Tooltip.Content>
-        </Tooltip.Root>
+            disabled={itemCount === 0}
+            onClick={(): void => handleArchiveQuestions()}
+          >
+            <Icon className="!m-0" name="archive" />
+          </CustomButton>
+        </CustomTooltip>
+        <CustomTooltip tooltip={<FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />}>
+          <CustomButton
+            className={clsx(
+              '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
+              itemCount === 0 && '!cursor-default !shadow-none'
+            )}
+            disabled={itemCount === 0}
+            onClick={(): void => handleDeleteQuestions(false)}
+          >
+            <Icon className="!m-0" name="trash" />
+          </CustomButton>
+        </CustomTooltip>
 
         <Label className="!flex !items-center !h-[36px]">
           <CustomCheckbox

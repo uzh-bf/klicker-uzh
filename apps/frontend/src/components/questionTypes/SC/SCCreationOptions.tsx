@@ -5,7 +5,7 @@ import { Form, Icon } from 'semantic-ui-react'
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 import { updateArrayElement, deleteArrayElement, reorder } from '../../../lib/utils/move'
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -52,7 +52,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         <label htmlFor="options">
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
-          <CustomTooltip
+          <SemanticCustomTooltip
             className={'!ml-2'}
             content={
               <FormattedMessage

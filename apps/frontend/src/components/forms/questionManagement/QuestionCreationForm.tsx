@@ -18,7 +18,7 @@ import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import FormikInput from '../components/FormikInput'
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -299,7 +299,7 @@ function QuestionCreationForm({
                   <label className="flex-1 header" htmlFor="content">
                     <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
-                    <CustomTooltip
+                    <SemanticCustomTooltip
                       className={'!ml-2'}
                       content={
                         <FormattedMessage

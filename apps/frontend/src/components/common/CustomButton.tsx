@@ -14,6 +14,7 @@ const defaultProps = {
   active: false,
   activeStyle: '',
   className: '',
+  disabled: false,
 }
 
 function CustomButton({ active, activeStyle, className, disabled, onClick, children }: Props): React.ReactElement {

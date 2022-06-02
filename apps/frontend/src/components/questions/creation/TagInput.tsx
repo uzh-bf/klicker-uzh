@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Dropdown, Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 
 interface Props {
   disabled?: boolean
@@ -39,7 +39,7 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
         <label htmlFor="tags">
           <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
 
-          <CustomTooltip
+          <SemanticCustomTooltip
             className={'!ml-2'}
             content={
               <FormattedMessage

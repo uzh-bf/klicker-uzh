@@ -3,7 +3,7 @@
 import React from 'react'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormikErrors, FormikTouched } from 'formik'
-import CustomTooltip from '../../common/CustomTooltip'
+import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 
 interface Props {
   action?: any
@@ -88,7 +88,7 @@ function FormikInput({
         <label htmlFor={name}>
           {label}
           {tooltip && (
-            <CustomTooltip
+            <SemanticCustomTooltip
               className={'!ml-2'}
               content={tooltip}
               trigger={

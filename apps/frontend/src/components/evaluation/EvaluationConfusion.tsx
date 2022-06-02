@@ -14,7 +14,7 @@ import {
   Line,
   ReferenceArea,
 } from 'recharts'
-import CustomTooltip from '../common/CustomTooltip'
+import SemanticCustomTooltip from '../common/SemanticCustomTooltip'
 
 interface EvaluationConfusionProps {
   confusionTS: any
@@ -104,7 +104,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
     <div className="flex flex-col justify-start h-full">
       <div className="flex-auto min-h-[10rem]">
         <div className="ml-2">
-          <CustomTooltip
+          <SemanticCustomTooltip
             content={
               <FormattedMessage
                 defaultMessage="The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
@@ -192,7 +192,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
               }}
             />
             <div className="flex-initial">
-              <CustomTooltip
+              <SemanticCustomTooltip
                 content={
                   <FormattedMessage
                     defaultMessage="With this field, the timestep size used on the x-axis of the plot can be chosen in seconds. The minimum timestep is 60 seconds, the default one 120 seconds."
@@ -226,7 +226,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
               }}
             />
             <div className="flex-initial">
-              <CustomTooltip
+              <SemanticCustomTooltip
                 content={
                   <FormattedMessage
                     defaultMessage="This field allows to set a custom factor (multiplied by the x-timestep) for the running window over which the average is computed. The minimum factor is 1, the default one is 3."

@@ -4,7 +4,7 @@ import { useIntl } from 'react-intl'
 
 import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
-import CustomTooltip from '../common/CustomTooltip'
+import SemanticCustomTooltip from '../common/SemanticCustomTooltip'
 
 interface Props {
   hasParticipantCount?: boolean
@@ -44,7 +44,7 @@ function QuestionSingle({
       data-for={`questionTooltip${id}`}
     >
       {id && description && onDelete && (
-        <CustomTooltip
+        <SemanticCustomTooltip
           content={<span>{description}</span>}
           trigger={
             <div>

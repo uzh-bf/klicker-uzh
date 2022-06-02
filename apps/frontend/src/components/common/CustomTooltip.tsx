@@ -1,36 +1,30 @@
-import { Popup, Icon } from 'semantic-ui-react'
 import clsx from 'clsx'
+import React from 'react'
+import * as Tooltip from '@radix-ui/react-tooltip'
 
-interface CustomTooltipProps {
-  content: any
-  iconName?: any
-  position?: any
-  trigger?: any
-  className?: any
+// trigger is passed as child of the component
+interface Props {
+  tooltip: React.ReactNode | string
+  tooltipStyle?: string
+  triggerStyle?: string
+  children: React.ReactNode
 }
 
-const CustomTooltip = ({ content, iconName, position, trigger, className }: CustomTooltipProps) => {
+const defaultProps = { tooltipStyle: '', triggerStyle: '' }
+
+function CustomTooltip({ tooltip, tooltipStyle, triggerStyle, children }: Props): React.ReactElement {
   return (
-    <span className={clsx(className)}>
-      <Popup
-        inverted
-        wide
-        content={content}
-        mouseEnterDelay={750}
-        mouseLeaveDelay={250}
-        position={position || 'right center'}
-        size="small"
-        style={{ opacity: 0.9 }}
-        trigger={
-          trigger || (
-            <a data-tip>
-              <Icon name={iconName} />
-            </a>
-          )
-        }
-      />
-    </span>
+    <Tooltip.Root>
+      <Tooltip.Trigger className={clsx('[all:_unset]', triggerStyle)}>{children}</Tooltip.Trigger>
+      <Tooltip.Content
+        className={clsx('p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20', tooltipStyle)}
+      >
+        {tooltip}
+        <Tooltip.Arrow />
+      </Tooltip.Content>
+    </Tooltip.Root>
   )
 }
 
+CustomTooltip.defaultProps = defaultProps
 export default CustomTooltip
