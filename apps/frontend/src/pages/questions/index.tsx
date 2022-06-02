@@ -11,6 +11,7 @@ import { useQuery, useMutation } from '@apollo/client'
 import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
+import clsx from 'clsx'
 
 import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
@@ -98,6 +99,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   } = useSortingAndFiltering()
 
   const [questionView, setQuestionView] = useState('list')
+  const runningSessionId = _get(data, 'runningSessionId')
 
   const index = useMemo(() => {
     if (data?.questions) {
@@ -399,151 +401,143 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     }
   }
 
-  const renderActionArea = (runningSessionId): React.ReactElement => {
-    if (creationMode) {
-      if (editSessionId) {
-        return (
-          <SessionEditForm
-            handleCreateSession={onCreateSession}
-            handleCreationModeToggle={onCreationModeToggle}
-            handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-            handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-            handleSetSessionBlocks={setSessionBlocks}
-            handleSetSessionDataStorageMode={setSessionDataStorageMode}
-            handleSetSessionName={setSessionName}
-            handleSetSessionParticipants={setSessionParticipants}
-            isAuthenticationEnabled={isAuthenticationEnabled}
-            runningSessionId={runningSessionId}
-            sessionAuthenticationMode={sessionAuthenticationMode}
-            sessionBlocks={sessionBlocks}
-            sessionDataStorageMode={sessionDataStorageMode}
-            sessionName={sessionName}
-            sessionParticipants={sessionParticipants}
-          />
-        )
-      }
-
-      return (
-        <SessionCreationForm
-          handleCreateSession={onCreateSession}
-          handleCreationModeToggle={onCreationModeToggle}
-          handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-          handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-          handleSetSessionBlocks={setSessionBlocks}
-          handleSetSessionDataStorageMode={setSessionDataStorageMode}
-          handleSetSessionName={setSessionName}
-          handleSetSessionParticipants={setSessionParticipants}
-          isAuthenticationEnabled={isAuthenticationEnabled}
-          runningSessionId={runningSessionId}
-          sessionAuthenticationMode={sessionAuthenticationMode}
-          sessionBlocks={sessionBlocks}
-          sessionDataStorageMode={sessionDataStorageMode}
-          sessionName={sessionName}
-          sessionParticipants={sessionParticipants}
-        />
-      )
-    }
-
-    return null
-  }
-
   // TODO: fix issue with the width of the question pool that it changes depending on the filter selection and question length
   // TODO: remove feature flag and grid view
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
         title: intl.formatMessage(messages.title),
       }}
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="flex justify-center h-full mx-10 md:mx-20">
-        <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-10 gap-5">
-          <div className="p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max">
-            <TagList
-              activeTags={filters.tags}
-              activeType={filters.type}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              handleToggleArchive={onToggleArchive}
-              isArchiveActive={filters.archive}
+      <div className="h-full overflow-y-scroll">
+        <div className={clsx('justify-center w-full print-hidden hidden', creationMode && '!flex')}>
+          {editSessionId ? (
+            <SessionEditForm
+              handleCreateSession={onCreateSession}
+              handleCreationModeToggle={onCreationModeToggle}
+              handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+              handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+              handleSetSessionBlocks={setSessionBlocks}
+              handleSetSessionDataStorageMode={setSessionDataStorageMode}
+              handleSetSessionName={setSessionName}
+              handleSetSessionParticipants={setSessionParticipants}
+              isAuthenticationEnabled={isAuthenticationEnabled}
+              runningSessionId={runningSessionId}
+              sessionAuthenticationMode={sessionAuthenticationMode}
+              sessionBlocks={sessionBlocks}
+              sessionDataStorageMode={sessionDataStorageMode}
+              sessionName={sessionName}
+              sessionParticipants={sessionParticipants}
+            />
+          ) : (
+            <SessionCreationForm
+              handleCreateSession={onCreateSession}
+              handleCreationModeToggle={onCreationModeToggle}
+              handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+              handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+              handleSetSessionBlocks={setSessionBlocks}
+              handleSetSessionDataStorageMode={setSessionDataStorageMode}
+              handleSetSessionName={setSessionName}
+              handleSetSessionParticipants={setSessionParticipants}
+              isAuthenticationEnabled={isAuthenticationEnabled}
+              runningSessionId={runningSessionId}
+              sessionAuthenticationMode={sessionAuthenticationMode}
+              sessionBlocks={sessionBlocks}
+              sessionDataStorageMode={sessionDataStorageMode}
+              sessionName={sessionName}
+              sessionParticipants={sessionParticipants}
+            />
+          )}
+        </div>
+        <div className="flex justify-center h-full mx-10 md:mx-20">
+          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-10 gap-5">
+            <div className="p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max">
+              <TagList
+                activeTags={filters.tags}
+                activeType={filters.type}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                handleToggleArchive={onToggleArchive}
+                isArchiveActive={filters.archive}
+              />
+            </div>
+            <div className="w-full">
+              {!data || loading ? (
+                <Loader active />
+              ) : (
+                <div className="flex flex-col w-full h-full">
+                  <div className="w-full">
+                    <ActionBar
+                      creationMode={creationMode}
+                      deletionConfirmation={deletionConfirmation}
+                      handleArchiveQuestions={onArchiveQuestions}
+                      handleCreationModeToggle={onCreationModeToggle}
+                      handleDeleteQuestions={onDeleteQuestions}
+                      handleQuesionViewChange={onChangeQuestionView}
+                      handleQuickBlock={onQuickBlock}
+                      handleQuickBlocks={onQuickBlocks}
+                      handleResetItemsChecked={handleResetSelection}
+                      handleSetItemsChecked={handleSelectItems}
+                      isArchiveActive={filters.archive}
+                      isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
+                      itemsChecked={selectedItems.ids}
+                      key="action-bar"
+                      questionView={questionView}
+                      questions={processedQuestions}
+                    />
+                  </div>
+                  <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
+                    <SearchArea
+                      withSorting
+                      handleSearch={_debounce(handleSearch, 200)}
+                      handleSortByChange={handleSortByChange}
+                      handleSortOrderToggle={handleSortOrderToggle}
+                      sortBy={sort.by}
+                      sortOrder={sort.asc}
+                      sortingTypes={QUESTION_SORTINGS}
+                    />
+                  </div>
+                  <div className="w-full h-full mt-4 md:overflow-y-auto md:max-w-7xl md:mx-auto" key="question-list">
+                    <QuestionList
+                      creationMode={creationMode}
+                      questionView={questionView}
+                      questions={processedQuestions}
+                      selectedItems={selectedItems}
+                      onQuestionChecked={handleSelectItem}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
+          <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
+            <Message
+              warning
+              className="!rounded-none"
+              content={
+                <FormattedMessage
+                  defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
+                  id="questionPool.survey"
+                  values={{
+                    link: (
+                      <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
+                        link
+                      </a>
+                    ),
+                  }}
+                />
+              }
+              icon="bullhorn"
+              onDismiss={() => setIsSurveyBannerVisible(false)}
             />
           </div>
-          <div className="w-full">
-            {!data || loading ? (
-              <Loader active />
-            ) : (
-              <div className="flex flex-col w-full h-full">
-                <div className="w-full">
-                  <ActionBar
-                    creationMode={creationMode}
-                    deletionConfirmation={deletionConfirmation}
-                    handleArchiveQuestions={onArchiveQuestions}
-                    handleCreationModeToggle={onCreationModeToggle}
-                    handleDeleteQuestions={onDeleteQuestions}
-                    handleQuesionViewChange={onChangeQuestionView}
-                    handleQuickBlock={onQuickBlock}
-                    handleQuickBlocks={onQuickBlocks}
-                    handleResetItemsChecked={handleResetSelection}
-                    handleSetItemsChecked={handleSelectItems}
-                    isArchiveActive={filters.archive}
-                    isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
-                    itemsChecked={selectedItems.ids}
-                    key="action-bar"
-                    questionView={questionView}
-                    questions={processedQuestions}
-                  />
-                </div>
-                <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
-                  <SearchArea
-                    withSorting
-                    handleSearch={_debounce(handleSearch, 200)}
-                    handleSortByChange={handleSortByChange}
-                    handleSortOrderToggle={handleSortOrderToggle}
-                    sortBy={sort.by}
-                    sortOrder={sort.asc}
-                    sortingTypes={QUESTION_SORTINGS}
-                  />
-                </div>
-                <div className="w-full h-full mt-4 md:overflow-y-auto md:max-w-7xl md:mx-auto" key="question-list">
-                  <QuestionList
-                    creationMode={creationMode}
-                    questionView={questionView}
-                    questions={processedQuestions}
-                    selectedItems={selectedItems}
-                    onQuestionChecked={handleSelectItem}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
-      {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
-        <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
-          <Message
-            warning
-            className="!rounded-none"
-            content={
-              <FormattedMessage
-                defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
-                id="questionPool.survey"
-                values={{
-                  link: (
-                    <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
-                      link
-                    </a>
-                  ),
-                }}
-              />
-            }
-            icon="bullhorn"
-            onDismiss={() => setIsSurveyBannerVisible(false)}
-          />
-        </div>
-      )}
     </TeacherLayout>
   )
 }

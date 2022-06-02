@@ -9,7 +9,6 @@ import Sidebar from '../common/sidebar/Sidebar'
 import SidebarItem from '../common/sidebar/SidebarItem'
 
 interface Props {
-  actionArea?: React.ReactElement
   children: React.ReactNode | any
   fixedHeight?: boolean
   navbar?: any
@@ -18,13 +17,12 @@ interface Props {
 }
 
 const defaultProps = {
-  actionArea: undefined,
   fixedHeight: false,
   navbar: undefined,
   pageTitle: 'TeacherLayout',
 }
 
-function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, sidebar }: Props): React.ReactElement {
+function TeacherLayout({ children, fixedHeight, navbar, pageTitle, sidebar }: Props): React.ReactElement {
   const router = useRouter()
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(false)
@@ -78,7 +76,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
           </div>
         )}
 
-        <div className="flex flex-1 overflow-hidden bg-white content">
+        <div className="flex flex-1 overflow-hidden bg-white">
           <Sidebar
             handleSidebarItemClick={handleSidebarItemClick}
             items={sidebarItems.map(
@@ -101,8 +99,6 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
             {typeof children === 'function' ? children() : children}
           </Sidebar>
         </div>
-
-        <div className="flex-initial print:hidden">{actionArea}</div>
       </div>
     </CommonLayout>
   )

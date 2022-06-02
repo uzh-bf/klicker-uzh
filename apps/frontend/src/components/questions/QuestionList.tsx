@@ -44,7 +44,7 @@ function QuestionList({
   }
 
   return (
-    <div>
+    <div className="mb-4">
       {questionView === 'list' &&
         questions.map((question): any => (
           <Question

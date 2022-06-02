@@ -151,7 +151,7 @@ function SessionCreationForm({
     })
 
   return (
-    <div className="creationForm">
+    <div className="w-full max-w-[100rem] mt-4 creationForm">
       <DragDropContext onDragEnd={onManageBlocks}>
         <form className="ui form sessionCreation" onSubmit={handleCreateSession('save')}>
           <div className="sessionTimeline">
@@ -424,20 +424,6 @@ function SessionCreationForm({
             :global(button) {
               margin-top: 0.5rem;
             }
-          }
-        }
-
-        .creationForm {
-          animation-name: slide-in;
-          animation-duration: 0.75s;
-        }
-
-        @keyframes slide-in {
-          0% {
-            transform: translateY(300px);
-          }
-          100% {
-            transform: translateY(0);
           }
         }
       `}</style>
