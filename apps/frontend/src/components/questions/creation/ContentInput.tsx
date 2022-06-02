@@ -75,7 +75,7 @@ function ContentInput({
                       id="slateEditor.formatContent.bold"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <MarkButton className="" format="bold" icon="bold" />
                     </a>
@@ -89,7 +89,7 @@ function ContentInput({
                       id="slateEditor.formatContent.italic"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <MarkButton className="" format="italic" icon="italic" />
                     </a>
@@ -103,7 +103,7 @@ function ContentInput({
                       id="slateEditor.formatContent.code"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <MarkButton className="" format="code" icon="code" />
                     </a>
@@ -117,7 +117,7 @@ function ContentInput({
                       id="slateEditor.formatContent.quote"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <BlockButton className="" format="block-quote" icon="quote right" />
                     </a>
@@ -131,7 +131,7 @@ function ContentInput({
                       id="slateEditor.formatContent.numberedList"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <BlockButton className="" format="numbered-list" icon="list ol" />
                     </a>
@@ -145,7 +145,7 @@ function ContentInput({
                       id="slateEditor.formatContent.bulletedList"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <BlockButton className="" format="bulleted-list" icon="list ul" />
                     </a>
@@ -158,7 +158,7 @@ function ContentInput({
                       id="slateEditor.formatContent.latexInline"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <Button
                         active={false}
@@ -182,7 +182,7 @@ function ContentInput({
                       id="slateEditor.formatContent.latexCentered"
                     />
                   }
-                  iconObject={
+                  trigger={
                     <a data-tip>
                       <Button
                         active={false}

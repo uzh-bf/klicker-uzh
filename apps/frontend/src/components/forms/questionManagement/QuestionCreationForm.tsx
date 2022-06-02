@@ -307,7 +307,7 @@ function QuestionCreationForm({
                           id="createQuestion.contentInput.tooltip"
                         />
                       }
-                      iconObject={
+                      trigger={
                         <a data-tip>
                           <Icon name="question circle" />
                         </a>

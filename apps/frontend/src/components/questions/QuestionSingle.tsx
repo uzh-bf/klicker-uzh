@@ -46,7 +46,7 @@ function QuestionSingle({
       {id && description && onDelete && (
         <CustomTooltip
           content={<span>{description}</span>}
-          iconObject={
+          trigger={
             <div>
               <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
                 <div className="font-bold">{generateTypesShort(intl)[type]}</div>

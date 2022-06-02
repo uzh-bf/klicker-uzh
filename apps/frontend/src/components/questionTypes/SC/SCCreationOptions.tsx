@@ -60,7 +60,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                 id="createQuestion.optionsSC.tooltip"
               />
             }
-            iconObject={
+            trigger={
               <a data-tip>
                 <Icon name="question circle" />
               </a>

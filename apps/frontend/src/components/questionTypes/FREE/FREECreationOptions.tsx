@@ -56,7 +56,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
                   id="createQuestion.optionsFREE.tooltip"
                 />
               }
-              iconObject={
+              trigger={
                 <a data-tip>
                   <Icon name="question circle" />
                 </a>

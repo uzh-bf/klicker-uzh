@@ -56,7 +56,7 @@ function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElem
       {withoutPopup ? (
         shortenedParsedContent
       ) : (
-        <CustomTooltip className={''} content={parsedContent} iconObject={shortenedParsedContent} />
+        <CustomTooltip className={''} content={parsedContent} trigger={shortenedParsedContent} />
       )}
     </span>
   )

@@ -91,7 +91,7 @@ function FormikInput({
             <CustomTooltip
               className={'!ml-2'}
               content={tooltip}
-              iconObject={
+              trigger={
                 <a data-tip>
                   <Icon className="icon" name="question circle" />
                 </a>

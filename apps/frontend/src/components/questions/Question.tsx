@@ -10,7 +10,7 @@ import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesLabel } from '../../lib/utils/lang'
-import Checkbox from '../common/Checkbox'
+import CustomCheckbox from '../common/CustomCheckbox'
 import CustomButton from '../common/CustomButton'
 
 interface Props {
@@ -74,9 +74,9 @@ function Question({
     <>
       <div className="flex w-full mb-4 h-max flex-col-2">
         <div className="min-h-full my-auto mr-2">
-          <Checkbox checked={checked} id={id} onCheck={() => onCheck({ version: activeVersion })}>
+          <CustomCheckbox checked={checked} id={id} onCheck={() => onCheck({ version: activeVersion })}>
             <CheckIcon />
-          </Checkbox>
+          </CustomCheckbox>
         </div>
         <div
           className={clsx(

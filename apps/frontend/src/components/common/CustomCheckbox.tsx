@@ -14,7 +14,7 @@ const defaultProps = {
   className: '',
 }
 
-function Checkbox({ children, checked, onCheck, id, className }: Props): React.ReactElement {
+function CustomCheckbox({ children, checked, onCheck, id, className }: Props): React.ReactElement {
   return (
     <RadixCheckbox.Root
       defaultChecked
@@ -32,6 +32,6 @@ function Checkbox({ children, checked, onCheck, id, className }: Props): React.R
   )
 }
 
-Checkbox.defaultProps = defaultProps
+CustomCheckbox.defaultProps = defaultProps
 
-export default Checkbox
+export default CustomCheckbox

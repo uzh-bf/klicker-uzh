@@ -65,7 +65,7 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
               id="createQuestion.questionType.tooltip"
             />
           }
-          iconObject={
+          trigger={
             <a data-tip>
               <Icon name="question circle" />
             </a>

@@ -5,11 +5,11 @@ interface CustomTooltipProps {
   content: any
   iconName?: any
   position?: any
-  iconObject?: any
+  trigger?: any
   className?: any
 }
 
-const CustomTooltip = ({ content, iconName, position, iconObject, className }: CustomTooltipProps) => {
+const CustomTooltip = ({ content, iconName, position, trigger, className }: CustomTooltipProps) => {
   return (
     <span className={clsx(className)}>
       <Popup
@@ -22,7 +22,7 @@ const CustomTooltip = ({ content, iconName, position, iconObject, className }: C
         size="small"
         style={{ opacity: 0.9 }}
         trigger={
-          iconObject || (
+          trigger || (
             <a data-tip>
               <Icon name={iconName} />
             </a>

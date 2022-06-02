@@ -47,7 +47,7 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
                 id="createQuestion.tagInput.tooltip"
               />
             }
-            iconObject={
+            trigger={
               <a data-tip>
                 <Icon name="question circle" />
               </a>
