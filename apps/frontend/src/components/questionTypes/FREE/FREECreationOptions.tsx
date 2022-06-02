@@ -4,7 +4,7 @@ import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QUESTION_TYPES } from '../../../constants'
-import SemanticCustomTooltips from '../../common/SemanticCustomTooltip'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -17,6 +17,8 @@ interface Props {
 
 const defaultProps = {
   disabled: false,
+  dirty: false,
+  invalid: undefined,
 }
 
 function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }: Props): React.ReactElement {
@@ -48,20 +50,18 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
           <label htmlFor="options">
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
 
-            <SemanticCustomTooltips
-              className={'!ml-2'}
-              content={
+            <CustomTooltip
+              tooltip={
                 <FormattedMessage
                   defaultMessage="Choose the allowed format of incoming responses."
                   id="createQuestion.optionsFREE.tooltip"
                 />
               }
-              trigger={
-                <a data-tip>
-                  <Icon name="question circle" />
-                </a>
-              }
-            />
+              tooltipStyle={'text-sm md:text-base max-w-[80%] md:max-w-full'}
+              withArrow={false}
+            >
+              <Icon className="!ml-2" color="blue" name="question circle" />
+            </CustomTooltip>
           </label>
 
           {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}

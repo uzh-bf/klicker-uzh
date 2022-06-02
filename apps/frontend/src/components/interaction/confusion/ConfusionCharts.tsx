@@ -1,7 +1,8 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
+import { Icon } from 'semantic-ui-react'
 
+import CustomTooltip from '../../common/CustomTooltip'
 import ConfusionSection from './ConfusionSection'
 
 const messages = defineMessages({
@@ -60,11 +61,13 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
   }
 
   const tooltipConfusion = (
-    <SemanticCustomTooltip
-      content={intl.formatMessage(messages.confusionInfo)}
-      iconName={'question circle'}
-      position={'left center'}
-    />
+    <CustomTooltip
+      tooltip={intl.formatMessage(messages.confusionInfo)}
+      tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[60%]'}
+      withArrow={false}
+    >
+      <Icon className="!ml-2" color="blue" name="question circle" />
+    </CustomTooltip>
   )
 
   const speedLabels = {

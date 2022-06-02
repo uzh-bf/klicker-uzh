@@ -1,6 +1,6 @@
 import React from 'react'
 import useMarkdown from '../../lib/hooks/useMarkdown'
-import SemanticCustomTooltip from './SemanticCustomTooltip'
+import CustomTooltip from './CustomTooltip'
 
 interface Props {
   children: string
@@ -56,7 +56,13 @@ function Ellipsis({ children, maxLength, withoutPopup }: Props): React.ReactElem
       {withoutPopup ? (
         shortenedParsedContent
       ) : (
-        <SemanticCustomTooltip className={''} content={parsedContent} trigger={shortenedParsedContent} />
+        <CustomTooltip
+          tooltip={parsedContent}
+          tooltipStyle={'!opacity-100 text-sm max-w-[50%] md:max-w-[60%]'}
+          withArrow={false}
+        >
+          {shortenedParsedContent}
+        </CustomTooltip>
       )}
     </span>
   )

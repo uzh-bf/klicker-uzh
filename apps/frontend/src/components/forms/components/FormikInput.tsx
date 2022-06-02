@@ -3,7 +3,7 @@
 import React from 'react'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormikErrors, FormikTouched } from 'formik'
-import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   action?: any
@@ -88,15 +88,14 @@ function FormikInput({
         <label htmlFor={name}>
           {label}
           {tooltip && (
-            <SemanticCustomTooltip
-              className={'!ml-2'}
-              content={tooltip}
-              trigger={
-                <a data-tip>
-                  <Icon className="icon" name="question circle" />
-                </a>
-              }
-            />
+            <CustomTooltip
+              tooltip={tooltip}
+              tooltipStyle={'max-w-[40%] md:max-w-[60%] text-sm md:text-base'}
+              triggerStyle={'!ml-2'}
+              withArrow={false}
+            >
+              <Icon className="icon" color="blue" name="question circle" />
+            </CustomTooltip>
           )}
         </label>
       )}

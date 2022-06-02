@@ -5,7 +5,7 @@ import { Form, Icon } from 'semantic-ui-react'
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 import { updateArrayElement, deleteArrayElement, reorder } from '../../../lib/utils/move'
-import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -15,6 +15,11 @@ interface Props {
   value: {
     choices: { correct: boolean; name: string }[]
   }
+}
+
+const defaultProps = {
+  dirty: false,
+  invalid: false,
 }
 
 function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props): React.ReactElement {
@@ -52,20 +57,18 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         <label htmlFor="options">
           <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
-          <SemanticCustomTooltip
-            className={'!ml-2'}
-            content={
+          <CustomTooltip
+            tooltip={
               <FormattedMessage
                 defaultMessage="Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side."
                 id="createQuestion.optionsSC.tooltip"
               />
             }
-            trigger={
-              <a data-tip>
-                <Icon name="question circle" />
-              </a>
-            }
-          />
+            tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
+            withArrow={false}
+          >
+            <Icon className="!ml-2" color="blue" name="question circle" />
+          </CustomTooltip>
         </label>
 
         <div className="options">
@@ -80,7 +83,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                 handleMoveUp={onMoveUp(index)}
                 handleSaveNewName={onSaveNewName(index)}
                 index={index}
-                key={index}
+                key={name}
                 name={name}
               />
             )
@@ -100,4 +103,5 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
   )
 }
 
+SCCreationOptions.defaultProps = defaultProps
 export default SCCreationOptions

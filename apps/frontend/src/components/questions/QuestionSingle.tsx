@@ -4,7 +4,6 @@ import { useIntl } from 'react-intl'
 
 import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
-import SemanticCustomTooltip from '../common/SemanticCustomTooltip'
 
 interface Props {
   hasParticipantCount?: boolean
@@ -44,23 +43,18 @@ function QuestionSingle({
       data-for={`questionTooltip${id}`}
     >
       {id && description && onDelete && (
-        <SemanticCustomTooltip
-          content={<span>{description}</span>}
-          trigger={
-            <div>
-              <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
-                <div className="font-bold">{generateTypesShort(intl)[type]}</div>
-                <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
-                  <Icon name="trash" />
-                </button>
-              </div>
-              <div className="text-center p-[0.3rem] text-primary-strong">
-                <Ellipsis>{title}</Ellipsis>
-                {version >= 0 && <span> {`(v${version + 1})`}</span>}
-              </div>
-            </div>
-          }
-        />
+        <div>
+          <div className="flex justify-between items-center p-[0.3rem] bg-primary-20">
+            <div className="font-bold">{generateTypesShort(intl)[type]}</div>
+            <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
+              <Icon name="trash" />
+            </button>
+          </div>
+          <div className="text-center p-[0.3rem] text-primary-strong">
+            <Ellipsis>{title}</Ellipsis>
+            {version >= 0 && <span> {`(v${version + 1})`}</span>}
+          </div>
+        </div>
       )}
 
       {!(id && description && onDelete) && (

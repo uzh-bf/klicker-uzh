@@ -4,7 +4,7 @@ import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import Button from '../common/Button'
-import SemanticCustomTooltip from '../common/SemanticCustomTooltip'
+import CustomTooltip from '../common/CustomTooltip'
 
 const messages = defineMessages({
   freeLabel: {
@@ -26,6 +26,7 @@ const messages = defineMessages({
 })
 
 interface Props {
+  // eslint-disable-next-line no-unused-vars
   onChange: (value: string) => void
   value: string
 }
@@ -57,20 +58,18 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
       <label htmlFor="types">
         <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
 
-        <SemanticCustomTooltip
-          className={'!ml-2'}
-          content={
+        <CustomTooltip
+          tooltip={
             <FormattedMessage
               defaultMessage="Choose the type of question you would like to create."
               id="createQuestion.questionType.tooltip"
             />
           }
-          trigger={
-            <a data-tip>
-              <Icon name="question circle" />
-            </a>
-          }
-        />
+          tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+          withArrow={false}
+        >
+          <Icon className="!ml-2" color="blue" name="question circle" />
+        </CustomTooltip>
       </label>
 
       <div className="types">

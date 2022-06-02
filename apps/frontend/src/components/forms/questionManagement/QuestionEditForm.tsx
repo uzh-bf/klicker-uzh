@@ -9,7 +9,6 @@ import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 
-import SemanticCustomTooltip from '../../common/SemanticCustomTooltip'
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -21,6 +20,7 @@ import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
 import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
+import CustomTooltip from '../../common/CustomTooltip'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -308,20 +308,19 @@ function QuestionEditForm({
                     <label className="flex-1 header" htmlFor="content">
                       <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
-                      <SemanticCustomTooltip
-                        className={'!ml-2'}
-                        content={
+                      <CustomTooltip
+                        tooltip={
                           <FormattedMessage
                             defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
                             id="createQuestion.contentInput.tooltip"
                           />
                         }
-                        trigger={
-                          <a data-tip>
-                            <Icon name="question circle" />
-                          </a>
-                        }
-                      />
+                        tooltipStyle={'text-sm md:text-base max-w-[25%] md:max-w-[40%]'}
+                        withArrow={false}
+                      >
+                        <Icon className="!ml-2" color="blue" name="question circle" />
+                        <span className="text-red-600">*</span>
+                      </CustomTooltip>
                     </label>
 
                     <Dropdown

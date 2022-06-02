@@ -7,12 +7,13 @@ interface Props {
   tooltip: React.ReactNode | string
   tooltipStyle?: string
   triggerStyle?: string
+  withArrow?: boolean
   children: React.ReactNode
 }
 
-const defaultProps = { tooltipStyle: '', triggerStyle: '' }
+const defaultProps = { tooltipStyle: '', triggerStyle: '', withArrow: true }
 
-function CustomTooltip({ tooltip, tooltipStyle, triggerStyle, children }: Props): React.ReactElement {
+function CustomTooltip({ tooltip, tooltipStyle, triggerStyle, withArrow, children }: Props): React.ReactElement {
   return (
     <Tooltip.Root>
       <Tooltip.Trigger className={clsx('[all:_unset]', triggerStyle)}>{children}</Tooltip.Trigger>
@@ -20,7 +21,7 @@ function CustomTooltip({ tooltip, tooltipStyle, triggerStyle, children }: Props)
         className={clsx('p-2 text-white bg-black border rounded-md opacity-80 border-1 border-grey-20', tooltipStyle)}
       >
         {tooltip}
-        <Tooltip.Arrow />
+        {withArrow && <Tooltip.Arrow />}
       </Tooltip.Content>
     </Tooltip.Root>
   )
