@@ -23,6 +23,7 @@
     "@heroicons/react": "1.0.5",
     "@klicker-uzh/ui": "*",
     "@radix-ui/react-checkbox": "0.1.5",
+    "@radix-ui/react-dropdown-menu": "0.1.6",
     "@radix-ui/react-slider": "0.1.1",
     "@radix-ui/react-tooltip": "0.1.7",
     "@sentry/nextjs": "6.18.1",
