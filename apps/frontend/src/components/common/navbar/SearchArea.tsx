@@ -1,6 +1,7 @@
 import { defineMessages, useIntl } from 'react-intl'
-import { Button, Dropdown, Input } from 'semantic-ui-react'
-import _find from 'lodash/find'
+import { Dropdown, Input } from 'semantic-ui-react'
+import { SortAscendingIcon, SortDescendingIcon } from '@heroicons/react/solid'
+import CustomButton from '../CustomButton'
 
 const messages = defineMessages({
   searchPlaceholder: {
@@ -37,6 +38,7 @@ function SearchArea({
   withSorting,
 }: Props) {
   const intl = useIntl()
+
   return (
     <div className="flex flex-start">
       <Input
@@ -51,13 +53,14 @@ function SearchArea({
 
       {withSorting && (
         <>
-          <Button
-            icon={`${(_find(sortingTypes, { id: sortBy }) || { labelStart: 'sort numeric' }).labelStart} ${
-              sortOrder ? 'ascending' : 'descending'
-            }`}
-            size="small"
+          <CustomButton
+            className={'!p-[0.65rem] bg-white  w-11 h-11 mr-1'}
+            disabled={false}
             onClick={handleSortOrderToggle}
-          />
+          >
+            {sortOrder ? <SortDescendingIcon /> : <SortAscendingIcon />}
+          </CustomButton>
+
           <Dropdown
             selection
             className="!leading-4 text-base"

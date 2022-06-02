@@ -105,7 +105,7 @@ function Question({
               </a>
               <div className="mb-2 italic">{generateTypesLabel(intl)[type]}</div>
             </div>
-            <div className="ml-6 w-max">
+            <div className="hidden ml-6 w-max md:block">
               <QuestionTags tags={tags} />
             </div>
           </div>
