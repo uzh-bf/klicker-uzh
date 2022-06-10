@@ -83,6 +83,7 @@ function ActionBar({
   const [allItemsChecked, setAllItemsChecked] = useState(false)
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
   const [creationModalOpen, setCreationModalOpen] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
@@ -252,8 +253,8 @@ function ActionBar({
                 setIsAnyModalOpen(false)
               }}
             />
-            <UploadModal>
-              <Dropdown.Item>
+            <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen}>
+              <Dropdown.Item onClick={() => setUploadModalOpen(true)}>
                 <Icon name="upload" />
                 <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
               </Dropdown.Item>

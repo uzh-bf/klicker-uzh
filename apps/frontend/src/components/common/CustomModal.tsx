@@ -5,7 +5,7 @@ import CustomButton from './CustomButton'
 
 interface Props {
   trigger: React.ReactNode
-  title?: string
+  title?: string | React.ReactNode
   open: boolean
   children: React.ReactNode
   submitLabel?: string
@@ -40,7 +40,7 @@ export function Modal({
         <RadixDialog.Overlay className="fixed top-0 bottom-0 left-0 right-0 grid items-center justify-center bg-gray-500 bg-opacity-50">
           <RadixDialog.Content
             className={clsx(
-              'flex flex-col max-w-7xl xl:w-[80rem] lg:w-[60rem] md:w-[50rem] sm:w-[40rem] w-[30rem] h-[90%] overflow-y-scroll gap-4 p-8 bg-white border shadow rounded-xl',
+              'flex flex-col max-w-7xl xl:w-[80rem] lg:w-[60rem] md:w-[50rem] sm:w-[40rem] w-[30rem] h-[90%] overflow-y-scroll gap-4 p-6 bg-white border shadow rounded-xl',
               className
             )}
           >

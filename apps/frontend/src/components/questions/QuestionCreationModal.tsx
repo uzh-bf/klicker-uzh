@@ -13,7 +13,6 @@ import QuestionCreationForm from '../forms/questionManagement/QuestionCreationFo
 interface Props {
   trigger: React.ReactNode
   open: boolean
-  // eslint-disable-next-line no-unused-vars
   onModalClose: () => void
   className?: string
 }

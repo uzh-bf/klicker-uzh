@@ -1,19 +1,25 @@
 import React, { useState, useCallback } from 'react'
-import { Modal, Button, Table, Icon } from 'semantic-ui-react'
+import { Button, Table, Icon } from 'semantic-ui-react'
 import { useApolloClient } from '@apollo/client'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import clsx from 'clsx'
 
 import Ellipsis from '../common/Ellipsis'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import CustomModal from '../common/CustomModal'
 
 interface Props {
   children: React.ReactChild
+  className: string
+  open: boolean
+  // eslint-disable-next-line no-unused-vars
+  setOpen: (arg: boolean) => void
 }
 
-function UploadModal({ children }: Props): React.ReactElement {
+function UploadModal({ className, children, open, setOpen }: Props): React.ReactElement {
   const client = useApolloClient()
   const [isLoading, setIsLoading] = useState(false)
   const [questions, setQuestions] = useState([])
@@ -97,63 +103,86 @@ function UploadModal({ children }: Props): React.ReactElement {
   }
 
   return (
-    <Modal closeIcon size="fullscreen" trigger={children} onClose={onResetImportState}>
-      <Modal.Header>
-        <FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />
-      </Modal.Header>
-      <Modal.Content>
-        <div className="flex flex-row flex-nowrap">
-          <div className="flex-[0_0_20%]" {...getRootProps()}>
-            <input {...getInputProps()} />
-            <Button fluid icon primary disabled={false} type="button">
-              <Icon name="plus" />
-              <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
-            </Button>
-          </div>
-          <div className="flex-1 pl-4">
-            <Table unstackable>
-              <Table.Header>
-                <Table.Row>
-                  <Table.HeaderCell>
-                    <FormattedMessage defaultMessage="Type" id="questionImport.string.questionType" />
-                  </Table.HeaderCell>
-                  <Table.HeaderCell>
-                    <FormattedMessage defaultMessage="Title" id="questionImport.string.questionTitle" />
-                  </Table.HeaderCell>
-                  <Table.HeaderCell>
-                    <FormattedMessage defaultMessage="Content" id="questionImport.string.questionContent" />
-                  </Table.HeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {questions.map(
-                  (question): React.ReactElement => (
-                    <Table.Row key={question.title}>
-                      <Table.Cell>{question.type}</Table.Cell>
-                      <Table.Cell>{question.title}</Table.Cell>
-                      <Table.Cell>
-                        <Ellipsis maxLength={15}>{question.description}</Ellipsis>
-                      </Table.Cell>
-                    </Table.Row>
-                  )
-                )}
-                {questions.length === 0 && (
-                  <Table.Row>
-                    <Table.Cell>-</Table.Cell>
-                  </Table.Row>
-                )}
-              </Table.Body>
-            </Table>
-          </div>
+    <CustomModal
+      className={clsx(className, '!h-max')}
+      open={open}
+      title={<FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />}
+      trigger={children}
+    >
+      <div className="flex flex-row flex-nowrap">
+        <div className="flex-[0_0_20%]" {...getRootProps()}>
+          <input {...getInputProps()} />
+          <Button fluid icon primary disabled={false} type="button">
+            <Icon name="plus" />
+            <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
+          </Button>
         </div>
-      </Modal.Content>
-      <Modal.Actions>
-        <Button icon primary disabled={questions.length === 0} loading={isLoading} onClick={onImportQuestions}>
+        <div className="flex-1 pl-4">
+          <Table unstackable>
+            <Table.Header>
+              <Table.Row>
+                <Table.HeaderCell>
+                  <FormattedMessage defaultMessage="Type" id="questionImport.string.questionType" />
+                </Table.HeaderCell>
+                <Table.HeaderCell>
+                  <FormattedMessage defaultMessage="Title" id="questionImport.string.questionTitle" />
+                </Table.HeaderCell>
+                <Table.HeaderCell>
+                  <FormattedMessage defaultMessage="Content" id="questionImport.string.questionContent" />
+                </Table.HeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {questions.map(
+                (question): React.ReactElement => (
+                  <Table.Row key={question.title}>
+                    <Table.Cell>{question.type}</Table.Cell>
+                    <Table.Cell>{question.title}</Table.Cell>
+                    <Table.Cell>
+                      <Ellipsis maxLength={15}>{question.description}</Ellipsis>
+                    </Table.Cell>
+                  </Table.Row>
+                )
+              )}
+              {questions.length === 0 && (
+                <Table.Row>
+                  <Table.Cell>-</Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </div>
+      </div>
+      <div className="flex flex-row justify-between">
+        <Button
+          icon
+          className="float-right !mr-0 !mt-2"
+          loading={isLoading}
+          onClick={() => {
+            setOpen(false)
+            onResetImportState()
+          }}
+        >
+          <Icon name="close" />
+          <FormattedMessage defaultMessage="Close" id="common.button.close" />
+        </Button>
+        <Button
+          icon
+          primary
+          className="float-right !mr-0 !mt-2"
+          disabled={questions.length === 0}
+          loading={isLoading}
+          onClick={() => {
+            onImportQuestions()
+            onResetImportState()
+            setOpen(false)
+          }}
+        >
           <Icon name="upload" />
           <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
         </Button>
-      </Modal.Actions>
-    </Modal>
+      </div>
+    </CustomModal>
   )
 }
 
