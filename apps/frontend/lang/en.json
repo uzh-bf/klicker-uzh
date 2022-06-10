@@ -174,6 +174,7 @@
   "joinSession.string.joinForbidden": "You are not permitted to join this session",
   "joinSession.string.questionNotification": "A new Klicker question is available",
   "joinSession.string.responseIgnored": "As you are only allowed to respond once, we did not count your latest response.",
+  "previewQuestion.title": "Question Preview",
   "questionDetails.button.duplicate": "Duplicate",
   "questionDetails.button.edit": "View / Edit",
   "questionDetails.button.preview": "Preview",

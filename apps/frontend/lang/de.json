@@ -180,6 +180,7 @@
   "joinSession.string.joinForbidden": "Sie sind nicht berechtigt, an dieser Session teilzunehmen.",
   "joinSession.string.questionNotification": "Eine neue Klicker-Frage ist verfügbar",
   "joinSession.string.responseIgnored": "Ihre letzte Eingabe wurde ignoriert, da Sie nur einmal teilnehmen dürfen.",
+  "previewQuestion.title": "Frage-Vorschau",
   "questionDetails.button.duplicate": "Duplizieren",
   "questionDetails.button.edit": "Editieren",
   "questionDetails.button.preview": "Vorschau",

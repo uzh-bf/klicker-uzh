@@ -18,7 +18,8 @@ import { QUESTION_TYPES } from '../../constants'
 
 interface Props {
   isOpen: boolean
-  handleSetIsOpen: (boolean) => void
+  // eslint-disable-next-line no-unused-vars
+  handleSetIsOpen: (arg: boolean) => void
   questionId: string
 }
 

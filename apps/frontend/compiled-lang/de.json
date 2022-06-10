@@ -1141,6 +1141,12 @@
       "value": "Ihre letzte Eingabe wurde ignoriert, da Sie nur einmal teilnehmen dürfen."
     }
   ],
+  "previewQuestion.title": [
+    {
+      "type": 0,
+      "value": "Frage-Vorschau"
+    }
+  ],
   "questionDetails.button.duplicate": [
     {
       "type": 0,

@@ -1113,6 +1113,12 @@
       "value": "As you are only allowed to respond once, we did not count your latest response."
     }
   ],
+  "previewQuestion.title": [
+    {
+      "type": 0,
+      "value": "Question Preview"
+    }
+  ],
   "questionDetails.button.duplicate": [
     {
       "type": 0,

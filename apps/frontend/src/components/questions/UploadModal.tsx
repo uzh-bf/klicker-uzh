@@ -108,7 +108,7 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
 
   return (
     <CustomModal
-      className={clsx(className, '!h-max')}
+      className={clsx(className, '!pb-2')}
       open={open}
       title={<FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />}
       trigger={children}
@@ -160,14 +160,13 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
       <div className="flex flex-row justify-between">
         <Button
           icon
-          className="float-right !mr-0 !mt-2"
+          className="float-right !mr-0 !mt-2 !px-6"
           loading={isLoading}
           onClick={() => {
             setOpen(false)
             onResetImportState()
           }}
         >
-          <Icon name="close" />
           <FormattedMessage defaultMessage="Close" id="common.button.close" />
         </Button>
         <Button

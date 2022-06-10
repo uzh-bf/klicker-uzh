@@ -86,7 +86,6 @@ function ActionBar({
   const [creationModalOpen, setCreationModalOpen] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false)
-  console.log(createDropdownOpen)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
