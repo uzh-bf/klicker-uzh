@@ -10,7 +10,9 @@ interface Props {
   children: React.ReactNode
   submitLabel?: string
   onSubmit?: () => void
+  submitStyle?: string
   discardLabel?: string
+  discardStyle?: string
   onDiscard?: () => void
   onOpenChange?: () => void
   className?: string
@@ -20,6 +22,13 @@ const defaultProps = {
   title: '',
   trigger: undefined,
   className: '',
+  submitLabel: undefined,
+  onSubmit: undefined,
+  discardLabel: undefined,
+  onDiscard: undefined,
+  onOpenChange: undefined,
+  submitStyle: '',
+  discardStyle: '',
 }
 
 export function Modal({
@@ -28,9 +37,11 @@ export function Modal({
   children,
   onDiscard,
   onSubmit,
+  submitStyle,
   open,
   onOpenChange,
   discardLabel,
+  discardStyle,
   submitLabel,
   className,
 }: Props) {
@@ -54,14 +65,18 @@ export function Modal({
               <div>
                 {onDiscard && (
                   <RadixDialog.Close asChild>
-                    <CustomButton onClick={onDiscard}>{discardLabel ?? 'Discard'}</CustomButton>
+                    <CustomButton className={clsx('py-2 text-lg font-bold px-7', discardStyle)} onClick={onDiscard}>
+                      {discardLabel ?? 'Close'}
+                    </CustomButton>
                   </RadixDialog.Close>
                 )}
               </div>
               <div>
                 {onSubmit && (
                   <RadixDialog.Close asChild>
-                    <CustomButton onClick={onSubmit}>{submitLabel ?? 'Submit'}</CustomButton>
+                    <CustomButton className={clsx('py-2 text-lg font-bold px-7', submitStyle)} onClick={onSubmit}>
+                      {submitLabel ?? 'Submit'}
+                    </CustomButton>
                   </RadixDialog.Close>
                 )}
               </div>

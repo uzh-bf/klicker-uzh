@@ -39,7 +39,7 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
     if (versions) {
       setActiveVersion(versions.length)
     }
-  }, [questionLoading])
+  }, [questionDetails, questionLoading])
 
   const onSubmit =
     (id: string): any =>

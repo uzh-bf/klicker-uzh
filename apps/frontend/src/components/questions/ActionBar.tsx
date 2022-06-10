@@ -225,7 +225,7 @@ function ActionBar({
             disabled={isAnyModalOpen || creationMode}
           >
             <div className="flex-1 h-full py-2.5 flex flex-row">
-              <PlusCircleIcon className="h-5 mr-3 font-bold text-white" />
+              <PlusCircleIcon className="mr-3 -mt-[0.2rem] -ml-1 font-bold text-white h-7" />
               <div className="font-bold mt-[0.085rem] text-white">Create</div>
             </div>
           </DropdownMenu.Trigger>
