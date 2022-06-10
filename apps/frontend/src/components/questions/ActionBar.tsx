@@ -85,6 +85,8 @@ function ActionBar({
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
   const [creationModalOpen, setCreationModalOpen] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [createDropdownOpen, setCreateDropdownOpen] = useState(false)
+  console.log(createDropdownOpen)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
@@ -215,55 +217,7 @@ function ActionBar({
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
       <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
-        {/* <Dropdown
-          button
-          labeled
-          className="primary icon !mr-0"
-          direction="left"
-          disabled={isAnyModalOpen}
-          icon="plus square"
-          text={intl.formatMessage(messages.create)}
-        >
-          <Dropdown.Menu>
-            <Dropdown.Item
-              disabled={!!creationMode}
-              onClick={() => {
-                handleCreationModeToggle()
-                setIsAnyModalOpen(true)
-              }}
-            >
-              <Icon name="play" />
-              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
-            </Dropdown.Item>
-
-            <QuestionCreationModal
-              open={creationModalOpen}
-              trigger={
-                <Dropdown.Item
-                  onClick={() => {
-                    setIsAnyModalOpen(true)
-                    setCreationModalOpen(true)
-                  }}
-                >
-                  <Icon name="question circle" />
-                  <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
-                </Dropdown.Item>
-              }
-              onModalClose={() => {
-                setCreationModalOpen(false)
-                setIsAnyModalOpen(false)
-              }}
-            />
-            <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen}>
-              <Dropdown.Item onClick={() => setUploadModalOpen(true)}>
-                <Icon name="upload" />
-                <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
-              </Dropdown.Item>
-            </UploadModal>
-          </Dropdown.Menu>
-        </Dropdown> */}
-
-        <DropdownMenu.Root>
+        <DropdownMenu.Root open={createDropdownOpen} onOpenChange={setCreateDropdownOpen}>
           <DropdownMenu.Trigger
             className={clsx(
               'flex flex-row w-32 pl-5 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-11',
@@ -282,7 +236,10 @@ function ActionBar({
               className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
               disabled={!!creationMode}
               key="newSession"
-              onClick={handleCreationModeToggle}
+              onClick={() => {
+                handleCreationModeToggle()
+                setCreateDropdownOpen(false)
+              }}
             >
               <Icon name="play" />
               <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
@@ -294,6 +251,7 @@ function ActionBar({
               disabled={!!creationMode}
               key="questionCreation"
               onClick={() => {
+                setCreateDropdownOpen(false)
                 setIsAnyModalOpen(true)
                 setCreationModalOpen(true)
               }}
@@ -307,7 +265,10 @@ function ActionBar({
               className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
               disabled={!!creationMode}
               key="uploadmodal"
-              onClick={() => setUploadModalOpen(true)}
+              onClick={() => {
+                setUploadModalOpen(true)
+                setCreateDropdownOpen(false)
+              }}
             >
               <Icon name="upload" />
               <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
