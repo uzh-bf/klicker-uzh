@@ -265,8 +265,11 @@ function ActionBar({
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
-            className="flex flex-row w-32 pl-5 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-11"
-            disabled={isAnyModalOpen}
+            className={clsx(
+              'flex flex-row w-32 pl-5 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-11',
+              (isAnyModalOpen || creationMode) && '!bg-blue-300 !cursor-default'
+            )}
+            disabled={isAnyModalOpen || creationMode}
           >
             <div className="flex-1 h-full py-2.5 flex flex-row">
               <PlusCircleIcon className="h-5 mr-3 font-bold text-white" />
@@ -285,43 +288,43 @@ function ActionBar({
               <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </DropdownMenu.Item>
             <div className="h-[0.075rem] bg-grey-80 opacity-40" />
-            <QuestionCreationModal
-              open={creationModalOpen}
-              trigger={
-                <Dropdown.Item
-                  className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
-                  disabled={!!creationMode}
-                  key="questionCreation"
-                  onClick={() => {
-                    setIsAnyModalOpen(true)
-                    setCreationModalOpen(true)
-                  }}
-                >
-                  <Icon name="question circle" />
-                  <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
-                </Dropdown.Item>
-              }
-              onModalClose={() => {
-                setCreationModalOpen(false)
-                setIsAnyModalOpen(false)
+
+            <Dropdown.Item
+              className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+              disabled={!!creationMode}
+              key="questionCreation"
+              onClick={() => {
+                setIsAnyModalOpen(true)
+                setCreationModalOpen(true)
               }}
-            />
+            >
+              <Icon name="question circle" />
+              <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
+            </Dropdown.Item>
             <div className="h-[0.075rem] bg-grey-80 opacity-40" />
-            <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen}>
-              <Dropdown.Item
-                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
-                disabled={!!creationMode}
-                key="uploadmodal"
-                onClick={() => setUploadModalOpen(true)}
-              >
-                <Icon name="upload" />
-                <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
-              </Dropdown.Item>
-            </UploadModal>
+
+            <Dropdown.Item
+              className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+              disabled={!!creationMode}
+              key="uploadmodal"
+              onClick={() => setUploadModalOpen(true)}
+            >
+              <Icon name="upload" />
+              <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+            </Dropdown.Item>
             <DropdownMenu.Arrow className="bg-white" />
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
+
+      <QuestionCreationModal
+        open={creationModalOpen}
+        onModalClose={() => {
+          setCreationModalOpen(false)
+          setIsAnyModalOpen(false)
+        }}
+      />
+      <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen} />
 
       <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
         {creationMode && (

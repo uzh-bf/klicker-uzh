@@ -12,11 +12,15 @@ import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import CustomModal from '../common/CustomModal'
 
 interface Props {
-  children: React.ReactChild
+  children?: React.ReactChild
   className: string
   open: boolean
   // eslint-disable-next-line no-unused-vars
   setOpen: (arg: boolean) => void
+}
+
+const defaultProps = {
+  children: undefined,
 }
 
 function UploadModal({ className, children, open, setOpen }: Props): React.ReactElement {
@@ -186,4 +190,5 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
   )
 }
 
+UploadModal.defaultProps = defaultProps
 export default UploadModal

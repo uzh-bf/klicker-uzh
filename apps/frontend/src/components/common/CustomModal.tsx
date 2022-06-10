@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import CustomButton from './CustomButton'
 
 interface Props {
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
   title?: string | React.ReactNode
   open: boolean
   children: React.ReactNode
@@ -18,6 +18,7 @@ interface Props {
 
 const defaultProps = {
   title: '',
+  trigger: undefined,
 }
 
 export function Modal({
@@ -34,7 +35,7 @@ export function Modal({
 }: Props) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
-      <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>
+      {trigger && <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>}
 
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed top-0 bottom-0 left-0 right-0 grid items-center justify-center bg-gray-500 bg-opacity-50">

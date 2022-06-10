@@ -11,13 +11,13 @@ import CustomModal from '../common/CustomModal'
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
 
 interface Props {
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
   open: boolean
   onModalClose: () => void
   className?: string
 }
 
-const defaultProps = { className: '' }
+const defaultProps = { className: '', trigger: undefined }
 
 function QuestionCreationModal({ trigger, open, onModalClose, className }: Props): React.ReactElement {
   const [createQuestion] = useMutation(CreateQuestionMutation)
