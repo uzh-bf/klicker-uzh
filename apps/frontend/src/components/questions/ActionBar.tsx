@@ -82,6 +82,7 @@ function ActionBar({
   const [csvData, setCsvData] = useState([])
   const [allItemsChecked, setAllItemsChecked] = useState(false)
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
+  const [creationModalOpen, setCreationModalOpen] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
@@ -222,18 +223,35 @@ function ActionBar({
           text={intl.formatMessage(messages.create)}
         >
           <Dropdown.Menu>
-            <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
+            <Dropdown.Item
+              disabled={!!creationMode}
+              onClick={() => {
+                handleCreationModeToggle()
+                setIsAnyModalOpen(true)
+              }}
+            >
               <Icon name="play" />
               <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
-            <QuestionCreationModal handleModalOpenChange={setIsAnyModalOpen}>
-              {({ setIsModalOpen }): any => (
-                <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
+
+            <QuestionCreationModal
+              open={creationModalOpen}
+              trigger={
+                <Dropdown.Item
+                  onClick={() => {
+                    setIsAnyModalOpen(true)
+                    setCreationModalOpen(true)
+                  }}
+                >
                   <Icon name="question circle" />
                   <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
                 </Dropdown.Item>
-              )}
-            </QuestionCreationModal>
+              }
+              onModalClose={() => {
+                setCreationModalOpen(false)
+                setIsAnyModalOpen(false)
+              }}
+            />
             <UploadModal>
               <Dropdown.Item>
                 <Icon name="upload" />
