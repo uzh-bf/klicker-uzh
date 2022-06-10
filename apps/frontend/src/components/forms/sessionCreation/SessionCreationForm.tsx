@@ -52,7 +52,6 @@ interface Props {
 }
 
 const defaultProps = {
-  sessionBlocks: [],
   sessionInteractionType: 'CREATE',
 }
 
@@ -151,20 +150,24 @@ function SessionCreationForm({
     })
 
   return (
-    <div className="w-full max-w-[100rem] mt-4 creationForm">
+    <div className="w-full max-w-[100rem] mt-4">
       <DragDropContext onDragEnd={onManageBlocks}>
-        <form className="ui form sessionCreation" onSubmit={handleCreateSession('save')}>
-          <div className="sessionTimeline">
+        <form
+          className="flex w-full border-solid rounded-md ui form border-gray-40"
+          onSubmit={handleCreateSession('save')}
+        >
+          <div className="flex flex-row flex-wrap flex-1 p-2 overflow-auto">
             {sessionBlocks.map(
               (block, blockIndex): React.ReactElement => (
-                <div className="block" key={block.id}>
-                  <div className="header">
-                    <div>
+                <div className="border-0 border-r border-solid border-grey-60 flex flex-col w-[200px]" key={block.id}>
+                  <div className="flex justify-between font-bold text-center align-center pt-0 pr-2 pb-[0.3rem] pl-2">
+                    <div className="pt-0.5">
                       {`Block ${blockIndex + 1}`} {`(${block.questions.length})`}
                     </div>
                     <div>
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="arrow left"
                         size="mini"
                         type="button"
@@ -172,6 +175,7 @@ function SessionCreationForm({
                       />
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="trash"
                         size="mini"
                         type="button"
@@ -179,6 +183,7 @@ function SessionCreationForm({
                       />
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="arrow right"
                         size="mini"
                         type="button"
@@ -188,7 +193,11 @@ function SessionCreationForm({
                   </div>
                   <Droppable droppableId={block.id}>
                     {(provided, snapshot): React.ReactElement => (
-                      <div className="questions" ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)}>
+                      <div
+                        className="flex-1 p-2 overflow-auto max-h-[20rem]"
+                        ref={provided.innerRef}
+                        style={getListStyle(snapshot.isDraggingOver)}
+                      >
                         {block.questions.map(
                           ({ id, key, title, type, version, description }, index): React.ReactElement => (
                             <Draggable draggableId={`${key}-${index}-${id}`} index={index} key={key}>
@@ -218,7 +227,7 @@ function SessionCreationForm({
                       </div>
                     )}
                   </Droppable>
-                  <div className="blockDropzone">
+                  <div className="flex-[0_0_3rem] my-0 mx-[0.5rem]">
                     <QuestionDropzone
                       onDrop={(question): void => {
                         onExtendBlock(block.id, { ...question, type: question.questionType })
@@ -228,18 +237,22 @@ function SessionCreationForm({
                 </div>
               )
             )}
-            <div className="newBlock">
-              <div className="header">
+            <div className="border-0 border-r border-solid border-grey-60 flex flex-col w-[200px]">
+              <div className="flex justify-between font-bold text-center align-center pt-0.5 pr-2 pb-[0.3rem] pl-2">
                 <FormattedMessage defaultMessage="New Block" id="form.createSession.newBlock" />
               </div>
               <Droppable droppableId="new-block">
                 {(provided, snapshot): React.ReactElement => (
-                  <div className="questions" ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)}>
+                  <div
+                    className="flex-1 p-2 overflow-auto max-h-[20rem]"
+                    ref={provided.innerRef}
+                    style={getListStyle(snapshot.isDraggingOver)}
+                  >
                     {provided.placeholder}
                   </div>
                 )}
               </Droppable>
-              <div className="blockDropzone">
+              <div className="flex-[0_0_3rem] my-0 mx-[0.5rem]">
                 <QuestionDropzone
                   onDrop={(question): void => {
                     onNewBlock({ ...question, type: question.questionType })
@@ -250,14 +263,18 @@ function SessionCreationForm({
             {sessionBlocks.length <= 1 && <InfoArea />}
           </div>
 
-          <div className="sessionConfig">
-            <div className="discardSession">
-              <button className="ui icon button discardButton" type="button" onClick={handleCreationModeToggle}>
+          <div className="sessionConfig flex-[0_0_17rem] p-4 pt-0 border-0 border-l border-solid border-grey-60 flex flex-col">
+            <div className="self-end h-8 -mt-8">
+              <button
+                className="h-8 px-4 py-2 text-center ui icon button"
+                type="button"
+                onClick={handleCreationModeToggle}
+              >
                 <Icon name="close" />
               </button>
             </div>
 
-            <h2 className="interactionType">
+            <h2 className="px-0 pt-2 pb-1 m-0 mb-2 !text-base border-0 border-b border-solid border-grey-60">
               {((): React.ReactElement => {
                 if (sessionInteractionType === 'MODIFY') {
                   return <FormattedMessage defaultMessage="Modify Session" id="form.createSession.interactionModify" />
@@ -271,7 +288,7 @@ function SessionCreationForm({
               })()}
             </h2>
 
-            <div className="sessionName">
+            <div className="flex-1 mb-2 ">
               <Input
                 name="sessionName"
                 placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
@@ -280,7 +297,7 @@ function SessionCreationForm({
               />
             </div>
 
-            <div className="sessionParticipants">
+            <div className="flex-1 mb-2">
               <SessionParticipantsModal
                 authenticationMode={sessionAuthenticationMode}
                 dataStorageMode={sessionDataStorageMode}
@@ -296,6 +313,7 @@ function SessionCreationForm({
             <Button
               fluid
               icon
+              className="!mt-2"
               disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               labelPosition="left"
               size="small"
@@ -308,6 +326,7 @@ function SessionCreationForm({
               fluid
               icon
               primary
+              className="!mt-2"
               disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               labelPosition="left"
               size="small"
@@ -325,108 +344,6 @@ function SessionCreationForm({
           </div>
         </form>
       </DragDropContext>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .sessionCreation {
-          border: 1px solid lightgrey;
-          display: flex;
-          width: 100%;
-
-          .sessionTimeline {
-            display: flex;
-            flex: 1;
-            flex-flow: row wrap;
-            padding: 0.5rem;
-            overflow: auto;
-
-            .block,
-            .newBlock {
-              border-right: 1px solid lightgrey;
-              display: flex;
-              flex-direction: column;
-              width: 200px;
-            }
-
-            .header {
-              display: flex;
-              justify-content: space-between;
-              font-weight: bold;
-              text-align: center;
-              align-items: center;
-              padding: 0 0.5rem 0.3rem 0.5rem;
-
-              :global(button.ui.basic.button) {
-                border: 0;
-                box-shadow: none;
-                padding: 0.5rem;
-                margin-right: 0;
-              }
-            }
-
-            .questions {
-              flex: 1;
-              padding: 0.5rem;
-              overflow: auto;
-              max-height: 23rem;
-
-              .question:not(:first-child) {
-                margin-top: 3px;
-              }
-            }
-
-            .blockDropzone {
-              flex: 0 0 3rem;
-              margin: 0 0.5rem;
-            }
-          }
-
-          .sessionConfig {
-            flex: 0 0 17rem;
-            padding: 1rem;
-            padding-top: 0;
-            border-left: 1px solid lightgrey;
-
-            display: flex;
-            flex-direction: column;
-
-            .discardSession {
-              align-self: flex-end;
-              height: 2rem;
-              margin-top: -2rem;
-
-              button {
-                height: 2rem;
-                padding: 0.5rem 1rem;
-                text-align: center;
-              }
-            }
-
-            h2.interactionType {
-              border-bottom: 1px solid lightgrey;
-              font-size: 1rem !important;
-              margin: 0;
-              padding: 0.5rem 0 0.25rem 0;
-              margin-bottom: 0.5rem;
-            }
-
-            .sessionName,
-            .sessionParticipants {
-              flex: 1;
-              margin-bottom: 0.5rem;
-
-              label {
-                font-weight: bold;
-              }
-            }
-
-            :global(button) {
-              margin-top: 0.5rem;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }
