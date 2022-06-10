@@ -65,7 +65,7 @@ function SearchArea({
           </CustomButton>
 
           <DropdownMenu.Root>
-            <DropdownMenu.Trigger className="flex flex-row pl-5 text-left bg-white border border-solid rounded-md w-44 h-11 border-grey-80">
+            <DropdownMenu.Trigger className="flex flex-row pl-5 text-left bg-white border border-solid rounded-md w-44 h-11 border-grey-80 hover:cursor-pointer">
               <div className="flex-1 h-full py-2.5">{sortingTypes.find((type) => type.id === sortBy).content}</div>
               <ChevronDownIcon className="w-5 mr-2" />
             </DropdownMenu.Trigger>
@@ -74,7 +74,7 @@ function SearchArea({
               {sortingTypes.map(({ content, id }, index): any => (
                 <>
                   <DropdownMenu.Item
-                    className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1"
+                    className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                     key={content}
                     onClick={() => handleSortByChange(id)}
                   >

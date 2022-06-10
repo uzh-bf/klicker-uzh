@@ -7,7 +7,8 @@ import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
-import { CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
+import { CheckIcon, MinusSmIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
 
 import QuestionCreationModal from './QuestionCreationModal'
@@ -214,7 +215,7 @@ function ActionBar({
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
       <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
-        <Dropdown
+        {/* <Dropdown
           button
           labeled
           className="primary icon !mr-0"
@@ -260,7 +261,66 @@ function ActionBar({
               </Dropdown.Item>
             </UploadModal>
           </Dropdown.Menu>
-        </Dropdown>
+        </Dropdown> */}
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger
+            className="flex flex-row w-32 pl-5 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-11"
+            disabled={isAnyModalOpen}
+          >
+            <div className="flex-1 h-full py-2.5 flex flex-row">
+              <PlusCircleIcon className="h-5 mr-3 font-bold text-white" />
+              <div className="font-bold mt-[0.085rem] text-white">Create</div>
+            </div>
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Content className="flex flex-col px-2 bg-white border border-solid rounded-md border-grey-80">
+            <DropdownMenu.Item
+              className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+              disabled={!!creationMode}
+              key="newSession"
+              onClick={handleCreationModeToggle}
+            >
+              <Icon name="play" />
+              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
+            </DropdownMenu.Item>
+            <div className="h-[0.075rem] bg-grey-80 opacity-40" />
+            <QuestionCreationModal
+              open={creationModalOpen}
+              trigger={
+                <Dropdown.Item
+                  className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+                  disabled={!!creationMode}
+                  key="questionCreation"
+                  onClick={() => {
+                    setIsAnyModalOpen(true)
+                    setCreationModalOpen(true)
+                  }}
+                >
+                  <Icon name="question circle" />
+                  <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
+                </Dropdown.Item>
+              }
+              onModalClose={() => {
+                setCreationModalOpen(false)
+                setIsAnyModalOpen(false)
+              }}
+            />
+            <div className="h-[0.075rem] bg-grey-80 opacity-40" />
+            <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen}>
+              <Dropdown.Item
+                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+                disabled={!!creationMode}
+                key="uploadmodal"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                <Icon name="upload" />
+                <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+              </Dropdown.Item>
+            </UploadModal>
+            <DropdownMenu.Arrow className="bg-white" />
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
 
       <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
@@ -396,5 +456,4 @@ function ActionBar({
 }
 
 ActionBar.defaultProps = defaultProps
-
 export default ActionBar
