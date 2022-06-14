@@ -473,20 +473,21 @@ function Index(): React.ReactElement {
                       handleDeleteQuestions={onDeleteQuestions}
                       handleQuickBlock={onQuickBlock}
                       handleQuickBlocks={onQuickBlocks}
-                      handleResetItemsChecked={handleResetSelection}
-                      handleSetItemsChecked={handleSelectItems}
                       isArchiveActive={filters.archive}
                       itemsChecked={selectedItems.ids}
                       key="action-bar"
-                      questions={processedQuestions}
                     />
                   </div>
                   <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
                     <SearchArea
                       withSorting
+                      handleResetItemsChecked={handleResetSelection}
                       handleSearch={_debounce(handleSearch, 200)}
+                      handleSetItemsChecked={handleSelectItems}
                       handleSortByChange={handleSortByChange}
                       handleSortOrderToggle={handleSortOrderToggle}
+                      itemsChecked={selectedItems.ids}
+                      questions={processedQuestions}
                       sortBy={sort.by}
                       sortOrder={sort.asc}
                       sortingTypes={QUESTION_SORTINGS}

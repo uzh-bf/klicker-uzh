@@ -1,5 +1,4 @@
 import React from 'react'
-import { Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import SCCreationOptions from '../questionTypes/SC/SCCreationOptions'
@@ -41,14 +40,11 @@ function QuestionPreviewModal({ isOpen, handleSetIsOpen, question, type }: Props
   const content = convertToSlate(question.content)
 
   return (
-    <CustomModal className="!pb-4" open={isOpen}>
+    <CustomModal className="!pb-4" open={isOpen} onDiscard={() => handleSetIsOpen(false)}>
       <div className="mb-4 text-xl font-bold">
         <FormattedMessage defaultMessage="Question Preview" id="previewQuestion.title" />
       </div>
       <Preview description={content} options={question.options[type]} questionType={type} />
-      <Button className="!mt-4" onClick={() => handleSetIsOpen(false)}>
-        Close
-      </Button>
     </CustomModal>
   )
 }

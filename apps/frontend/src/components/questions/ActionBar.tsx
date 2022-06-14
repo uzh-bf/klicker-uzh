@@ -5,9 +5,9 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
-import { CheckIcon, MinusSmIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
 
@@ -16,7 +16,6 @@ import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 import { omitDeep } from '../../lib/utils/omitDeep'
-import CustomCheckbox from '../common/CustomCheckbox'
 import CustomButton from '../common/CustomButton'
 import CustomTooltip from '../common/CustomTooltip'
 
@@ -48,18 +47,14 @@ interface Props {
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
-  handleSetItemsChecked: any
-  handleResetItemsChecked: any
   isArchiveActive?: boolean
   itemsChecked?: string[]
-  questions?: any[]
 }
 
 const defaultProps = {
   creationMode: false,
   isArchiveActive: false,
   itemsChecked: [],
-  questions: [],
 }
 
 function ActionBar({
@@ -72,16 +67,12 @@ function ActionBar({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
-  handleSetItemsChecked,
-  handleResetItemsChecked,
-  questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
   const { addToast } = useToasts()
 
   const [csvData, setCsvData] = useState([])
-  const [allItemsChecked, setAllItemsChecked] = useState(false)
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
   const [creationModalOpen, setCreationModalOpen] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
@@ -91,14 +82,6 @@ function ActionBar({
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
 
   const itemCount = itemsChecked.length
-
-  useEffect(() => {
-    if (itemCount === questions.length) {
-      setAllItemsChecked(true)
-    } else {
-      setAllItemsChecked(false)
-    }
-  }, [itemCount, questions.length])
 
   useEffect((): void => {
     if (data) {
@@ -191,26 +174,6 @@ function ActionBar({
     } catch (e) {
       console.error(e.message)
     }
-  }
-
-  const onSetAllItemsChecked = (): void => {
-    // if all items have been checked, reset selection
-    if (allItemsChecked) {
-      handleResetItemsChecked()
-    } else {
-      // otherwise, select all items
-      handleSetItemsChecked(questions)
-    }
-  }
-
-  const getCheckboxState = (allItems, numOfItems) => {
-    if (allItems || numOfItems === questions.length) {
-      return true
-    }
-    if (!allItems && numOfItems > 0) {
-      return 'indeterminate'
-    }
-    return false
   }
 
   return (
@@ -383,25 +346,6 @@ function ActionBar({
             <Icon className="!m-0" name="trash" />
           </CustomButton>
         </CustomTooltip>
-
-        <Label className="!flex !items-center !h-[36px]">
-          <CustomCheckbox
-            checked={getCheckboxState(allItemsChecked, itemCount)}
-            className="mr-2"
-            id={'checkedCounter'}
-            onCheck={(): void => onSetAllItemsChecked()}
-          >
-            {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
-            {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
-          </CustomCheckbox>
-          <span>
-            <FormattedMessage
-              defaultMessage="{count} items checked"
-              id="questionPool.string.itemsChecked"
-              values={{ count: itemCount }}
-            />
-          </span>
-        </Label>
 
         <Confirm
           cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}

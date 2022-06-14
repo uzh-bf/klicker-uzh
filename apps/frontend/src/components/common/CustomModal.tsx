@@ -65,7 +65,7 @@ export function Modal({
               <div>
                 {onDiscard && (
                   <RadixDialog.Close asChild>
-                    <CustomButton className={clsx('py-2 text-lg font-bold px-7', discardStyle)} onClick={onDiscard}>
+                    <CustomButton className={clsx('py-2 text-base font-bold px-7', discardStyle)} onClick={onDiscard}>
                       {discardLabel ?? 'Close'}
                     </CustomButton>
                   </RadixDialog.Close>
@@ -74,7 +74,7 @@ export function Modal({
               <div>
                 {onSubmit && (
                   <RadixDialog.Close asChild>
-                    <CustomButton className={clsx('py-2 text-lg font-bold px-7', submitStyle)} onClick={onSubmit}>
+                    <CustomButton className={clsx('py-2 text-base font-bold px-7', submitStyle)} onClick={onSubmit}>
                       {submitLabel ?? 'Submit'}
                     </CustomButton>
                   </RadixDialog.Close>

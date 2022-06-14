@@ -1,10 +1,13 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 import { Input } from 'semantic-ui-react'
 import { SortAscendingIcon, SortDescendingIcon, ChevronDownIcon } from '@heroicons/react/solid'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
+import { CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
+
 import CustomButton from '../CustomButton'
+import CustomCheckbox from '../CustomCheckbox'
 
 const messages = defineMessages({
   searchPlaceholder: {
@@ -25,10 +28,16 @@ interface Props {
   }[]
   sortOrder: boolean
   withSorting?: boolean
+  handleSetItemsChecked: any
+  handleResetItemsChecked: any
+  itemsChecked?: string[]
+  questions?: any[]
 }
 
 const defaultProps = {
   withSorting: false,
+  itemsChecked: [],
+  questions: [],
 }
 
 function SearchArea({
@@ -39,11 +48,54 @@ function SearchArea({
   sortingTypes,
   sortOrder,
   withSorting,
+  handleSetItemsChecked,
+  handleResetItemsChecked,
+  itemsChecked,
+  questions,
 }: Props) {
   const intl = useIntl()
+  const [allItemsChecked, setAllItemsChecked] = useState(false)
+  const itemCount = itemsChecked.length
+
+  const getCheckboxState = (allItems, numOfItems) => {
+    if (allItems || numOfItems === questions.length) {
+      return true
+    }
+    if (!allItems && numOfItems > 0) {
+      return 'indeterminate'
+    }
+    return false
+  }
+
+  const onSetAllItemsChecked = (): void => {
+    // if all items have been checked, reset selection
+    if (allItemsChecked) {
+      handleResetItemsChecked()
+    } else {
+      // otherwise, select all items
+      handleSetItemsChecked(questions)
+    }
+  }
+
+  useEffect(() => {
+    if (itemCount === questions.length) {
+      setAllItemsChecked(true)
+    } else {
+      setAllItemsChecked(false)
+    }
+  }, [itemCount, questions.length])
 
   return (
     <div className="flex flex-start">
+      <CustomCheckbox
+        checked={getCheckboxState(allItemsChecked, itemCount)}
+        className="my-auto mr-2"
+        id={'checkedCounter'}
+        onCheck={(): void => onSetAllItemsChecked()}
+      >
+        {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
+        {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
+      </CustomCheckbox>
       <Input
         fluid
         className="!flex-1 !mr-4"
