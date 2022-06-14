@@ -132,7 +132,8 @@ function Question({
             </div>
             <div className="mb-2 md:mr-3 w-36 md:mb-0">
               <CustomButton
-                className="bg-white shadow-md w-36 hover:shadow-none"
+                className={clsx('bg-white shadow-md w-36 hover:shadow-none', draggable && 'shadow-none')}
+                disabled={draggable}
                 onClick={(): void => setIsModificationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
@@ -147,7 +148,8 @@ function Question({
             </div>
             <div className="w-36">
               <CustomButton
-                className="bg-white shadow-md w-36 hover:shadow-none"
+                className={clsx('bg-white shadow-md w-36 hover:shadow-none', draggable && 'shadow-none')}
+                disabled={draggable}
                 onClick={(): void => setIsDuplicationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />

@@ -443,7 +443,7 @@ function Index(): React.ReactElement {
           )}
         </div>
         <div className="flex justify-center h-full mx-10 md:mx-20">
-          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-10 gap-5">
+          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-8 gap-5">
             <div
               className={clsx(
                 'p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max',

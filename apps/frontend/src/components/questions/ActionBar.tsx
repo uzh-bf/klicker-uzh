@@ -219,14 +219,14 @@ function ActionBar({
         <DropdownMenu.Root open={createDropdownOpen} onOpenChange={setCreateDropdownOpen}>
           <DropdownMenu.Trigger
             className={clsx(
-              'flex flex-row w-32 pl-5 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-11',
-              (isAnyModalOpen || creationMode) && '!bg-blue-300 !cursor-default'
+              'flex flex-row w-36 pl-7 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-[36px]',
+              (isAnyModalOpen || creationMode) && '!bg-blue-300 !cursor-not-allowed'
             )}
             disabled={isAnyModalOpen || creationMode}
           >
-            <div className="flex-1 h-full py-2.5 flex flex-row">
-              <PlusCircleIcon className="mr-3 -mt-[0.2rem] -ml-1 font-bold text-white h-7" />
-              <div className="font-bold mt-[0.085rem] text-white">Create</div>
+            <div className="flex-1 py-2.5 flex flex-row -mt-[0.04rem]">
+              <PlusCircleIcon className="mr-3 -mt-[0.23rem] -ml-1 font-bold text-white h-7" />
+              <div className="font-bold text-white">Create</div>
             </div>
           </DropdownMenu.Trigger>
 

@@ -20,7 +20,11 @@ const defaultProps = {
 function CustomButton({ active, activeStyle, className, disabled, onClick, children }: Props): React.ReactElement {
   return (
     <button
-      className={clsx(className, 'p-2 border border-solid rounded-md border-grey-80 align-center hover:cursor-pointer')}
+      className={clsx(
+        className,
+        'p-2 border border-solid rounded-md border-grey-80 align-center hover:cursor-pointer',
+        disabled && '!cursor-not-allowed'
+      )}
       disabled={disabled}
       type="button"
       onClick={onClick}

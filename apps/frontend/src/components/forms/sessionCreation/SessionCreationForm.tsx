@@ -153,13 +153,16 @@ function SessionCreationForm({
     <div className="w-full max-w-[100rem] mt-4">
       <DragDropContext onDragEnd={onManageBlocks}>
         <form
-          className="flex w-full border-solid rounded-md ui form border-gray-40"
+          className="flex w-full border-solid rounded-md ui form border-gray-40 h-[16rem]"
           onSubmit={handleCreateSession('save')}
         >
-          <div className="flex flex-row flex-wrap flex-1 p-2 overflow-auto">
+          <div className="flex flex-row flex-1 p-2 overflow-auto">
             {sessionBlocks.map(
               (block, blockIndex): React.ReactElement => (
-                <div className="border-0 border-r border-solid border-grey-60 flex flex-col w-[200px]" key={block.id}>
+                <div
+                  className="border-0 border-r border-solid border-grey-60 flex flex-col min-w-[200px] max-w-[200px]"
+                  key={block.id}
+                >
                   <div className="flex justify-between font-bold text-center align-center pt-0 pr-2 pb-[0.3rem] pl-2">
                     <div className="pt-0.5">
                       {`Block ${blockIndex + 1}`} {`(${block.questions.length})`}
@@ -194,7 +197,7 @@ function SessionCreationForm({
                   <Droppable droppableId={block.id}>
                     {(provided, snapshot): React.ReactElement => (
                       <div
-                        className="flex-1 p-2 overflow-auto max-h-[20rem]"
+                        className="flex-1 p-2 overflow-auto max-h-[10rem]"
                         ref={provided.innerRef}
                         style={getListStyle(snapshot.isDraggingOver)}
                       >
@@ -237,8 +240,8 @@ function SessionCreationForm({
                 </div>
               )
             )}
-            <div className="border-0 border-r border-solid border-grey-60 flex flex-col w-[200px]">
-              <div className="flex justify-between font-bold text-center align-center pt-0.5 pr-2 pb-[0.3rem] pl-2">
+            <div className="border-0 border-r border-solid border-grey-60 flex flex-col min-w-[200px]">
+              <div className="flex justify-between font-bold text-center align-center pt-0.5 pr-2 pb-[0.3rem] pl-2 max-h-[10rem] min-h-[10rem]">
                 <FormattedMessage defaultMessage="New Block" id="form.createSession.newBlock" />
               </div>
               <Droppable droppableId="new-block">
