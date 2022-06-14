@@ -13,7 +13,7 @@ import {
   deleteArrayElement,
 } from '../../../lib/utils/move'
 
-import QuestionSingle from '../../questions/QuestionSingle'
+import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
 import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
@@ -202,23 +202,20 @@ function SessionCreationForm({
                         style={getListStyle(snapshot.isDraggingOver)}
                       >
                         {block.questions.map(
-                          ({ id, key, title, type, version, description }, index): React.ReactElement => (
+                          ({ id, key, title, type }, index): React.ReactElement => (
                             <Draggable draggableId={`${key}-${index}-${id}`} index={index} key={key}>
                               {(innerProvided, innerSnapshot): React.ReactElement => (
                                 <div
-                                  className="question"
+                                  className="!bg-white"
                                   ref={innerProvided.innerRef}
                                   {...innerProvided.draggableProps}
                                   {...innerProvided.dragHandleProps}
                                   style={getItemStyle(innerSnapshot.isDragging, innerProvided.draggableProps.style)}
                                 >
-                                  <QuestionSingle
-                                    description={description}
-                                    hasParticipantCount={false}
+                                  <QuestionSingleCompact
                                     id={id}
                                     title={title}
                                     type={type}
-                                    version={version}
                                     onDelete={(): void => onRemoveQuestion(blockIndex, index)}
                                   />
                                 </div>
