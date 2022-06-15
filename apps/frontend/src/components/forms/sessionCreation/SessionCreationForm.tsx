@@ -196,7 +196,7 @@ function SessionCreationForm({
                     </div>
                   </div>
                   <div className="flex flex-row h-full">
-                    <div className="flex flex-col flex-1 h-full">
+                    <div className="flex flex-col flex-1 h-full max-h-[12.5rem]">
                       <Droppable droppableId={block.id}>
                         {(provided, snapshot): React.ReactElement => (
                           <div
@@ -230,7 +230,7 @@ function SessionCreationForm({
                           </div>
                         )}
                       </Droppable>
-                      <div className="flex-[0_0_3rem] my-0 mx-[0.5rem]">
+                      <div className="flex-[0_0_2rem] mt-4 my-0 mx-[0.5rem]">
                         <QuestionDropzone
                           onDrop={(question): void => {
                             onExtendBlock(block.id, { ...question, type: question.questionType })
@@ -270,7 +270,7 @@ function SessionCreationForm({
             )}
             <div
               className={clsx(
-                'border-0 border-b md:border-b-0 pb-4 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px]',
+                'border-0 border-b md:border-b-0 pb-4 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px] max-h-[15rem]',
                 sessionBlocks.length > 1 && 'border-b-0'
               )}
             >
@@ -288,7 +288,7 @@ function SessionCreationForm({
                   </div>
                 )}
               </Droppable>
-              <div className="flex-[0_0_3rem] my-0 mx-[0.5rem]">
+              <div className="flex-[0_0_2rem] my-0 mx-[0.5rem]">
                 <QuestionDropzone
                   onDrop={(question): void => {
                     onNewBlock({ ...question, type: question.questionType })
