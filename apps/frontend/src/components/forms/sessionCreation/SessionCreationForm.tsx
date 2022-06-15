@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
@@ -23,6 +23,8 @@ import SessionParticipantsModal, {
   DataStorageMode,
   AuthenticationMode,
 } from './participantsModal/SessionParticipantsModal'
+import CustomButton from '../../common/CustomButton'
+import CustomModal from '../../common/CustomModal'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -83,13 +85,13 @@ function SessionCreationForm({
   handleSetSessionParticipants,
   handleCreateSession,
   handleCreationModeToggle,
-  sessionInteractionType,
   sessionAuthenticationMode,
   sessionDataStorageMode,
   handleSetSessionAuthenticationMode,
   handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
+  const [isSettingsModalOpen, setSettingsModalOpen] = useState(false)
 
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
@@ -310,22 +312,9 @@ function SessionCreationForm({
               </button>
             </div>
 
-            <h2 className="px-0 pt-2 pb-1 m-0 mb-2 !text-base border-0 border-b border-solid border-grey-60">
-              {((): React.ReactElement => {
-                if (sessionInteractionType === 'MODIFY') {
-                  return <FormattedMessage defaultMessage="Modify Session" id="form.createSession.interactionModify" />
-                }
-
-                if (sessionInteractionType === 'COPY') {
-                  return <FormattedMessage defaultMessage="Copy Session" id="form.createSession.interactionCopy" />
-                }
-
-                return <FormattedMessage defaultMessage="Create Session" id="form.createSession.interactionCreate" />
-              })()}
-            </h2>
-
-            <div className="flex-1 mb-2 ">
+            <div className="flex-1 mt-2 mb-2">
               <Input
+                className="!mr-0 w-full"
                 name="sessionName"
                 placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
                 value={sessionName}
@@ -346,6 +335,15 @@ function SessionCreationForm({
               />
             </div>
 
+            <CustomButton onClick={() => setSettingsModalOpen(true)}>
+              <Icon className="!mr-4" name="settings" />
+              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+            </CustomButton>
+
+            <CustomModal open={isSettingsModalOpen} onDiscard={() => setSettingsModalOpen(false)}>
+              SETTINGS CONTENT TODO
+            </CustomModal>
+
             <Button
               fluid
               icon
@@ -356,7 +354,7 @@ function SessionCreationForm({
               type="submit"
             >
               <Icon name="save" />
-              <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
+              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
             </Button>
             <Button
               fluid
@@ -369,7 +367,7 @@ function SessionCreationForm({
               onClick={handleCreateSession('start')}
             >
               <Icon name="play" />
-              <FormattedMessage defaultMessage="Start" id="common.button.start" />
+              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
             </Button>
             {!!runningSessionId && (
               <FormattedMessage

@@ -107,16 +107,16 @@
       "value": "Speichern"
     }
   ],
+  "common.button.settings": [
+    {
+      "type": 0,
+      "value": "Einstellungen"
+    }
+  ],
   "common.button.skip": [
     {
       "type": 0,
       "value": "Überspringen"
-    }
-  ],
-  "common.button.start": [
-    {
-      "type": 0,
-      "value": "Start"
     }
   ],
   "common.button.submit": [
@@ -620,25 +620,13 @@
   "form.createSession.button.save": [
     {
       "type": 0,
-      "value": "Speichern & Schliessen"
+      "value": "Session speichern"
     }
   ],
-  "form.createSession.interactionCopy": [
+  "form.createSession.button.start": [
     {
       "type": 0,
-      "value": "Session kopieren"
-    }
-  ],
-  "form.createSession.interactionCreate": [
-    {
-      "type": 0,
-      "value": "Session erstellen"
-    }
-  ],
-  "form.createSession.interactionModify": [
-    {
-      "type": 0,
-      "value": "Session editieren"
+      "value": "Jetzt starten"
     }
   ],
   "form.createSession.newBlock": [
