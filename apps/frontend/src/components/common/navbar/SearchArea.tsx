@@ -28,8 +28,8 @@ interface Props {
   }[]
   sortOrder: boolean
   withSorting?: boolean
-  handleSetItemsChecked: any
-  handleResetItemsChecked: any
+  handleSetItemsChecked?: any
+  handleResetItemsChecked?: any
   itemsChecked?: string[]
   questions?: any[]
 }
@@ -38,6 +38,8 @@ const defaultProps = {
   withSorting: false,
   itemsChecked: [],
   questions: [],
+  handleSetItemsChecked: undefined,
+  handleResetItemsChecked: undefined,
 }
 
 function SearchArea({
@@ -87,15 +89,17 @@ function SearchArea({
 
   return (
     <div className="flex flex-start">
-      <CustomCheckbox
-        checked={getCheckboxState(allItemsChecked, itemCount)}
-        className="my-auto mr-2"
-        id={'checkedCounter'}
-        onCheck={(): void => onSetAllItemsChecked()}
-      >
-        {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
-        {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
-      </CustomCheckbox>
+      {itemsChecked && handleSetItemsChecked && handleResetItemsChecked && (
+        <CustomCheckbox
+          checked={getCheckboxState(allItemsChecked, itemCount)}
+          className="my-auto mr-2"
+          id={'checkedCounter'}
+          onCheck={(): void => onSetAllItemsChecked()}
+        >
+          {getCheckboxState(allItemsChecked, itemCount) === true ? <CheckIcon /> : null}
+          {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
+        </CustomCheckbox>
+      )}
       <Input
         fluid
         className="!flex-1 !mr-4"
