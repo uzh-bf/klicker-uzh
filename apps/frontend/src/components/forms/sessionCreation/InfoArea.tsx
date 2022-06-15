@@ -4,7 +4,7 @@ import { Message, Divider } from 'semantic-ui-react'
 
 function InfoArea(): React.ReactElement {
   return (
-    <div className="infoArea py-3 px-4 w-[350px]">
+    <div className="infoArea py-3 md:px-4 mx-auto md:mx-0 w-[350px]">
       <Message info className="!block">
         <FormattedMessage
           defaultMessage="Group questions inside a block to activate and evaluate them simultaneously."

@@ -86,7 +86,7 @@ function Question({
           )}
           ref={drag}
         >
-          <div className="flex flex-row">
+          <div className="flex flex-row flex-1">
             <div className="flex-1">
               {isArchived && (
                 <Label color="red" size="tiny">
@@ -104,13 +104,14 @@ function Question({
                 {title}
               </a>
               <div className="mb-2 italic">{generateTypesLabel(intl)[type]}</div>
+              <div className="flex-1 mb-2">
+                {description.length > 120 ? `${description.substring(0, 120)}...` : description}
+              </div>
             </div>
             <div className="hidden ml-6 w-max md:block">
               <QuestionTags tags={tags} />
             </div>
           </div>
-
-          <div className="mb-2">{description.length > 120 ? `${description.substring(0, 120)}...` : description}</div>
 
           <div className="flex flex-col md:w-full w-max md:flex-row">
             {/* // TODO: improve and style preview component, maybe create preview with mobile phone background? */}
