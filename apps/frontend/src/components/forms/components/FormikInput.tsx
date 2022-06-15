@@ -29,6 +29,7 @@ interface Props {
   type?: string
   value: string | number
   width?: any // SemanticWIDTHSNUMBER
+  className?: string
 }
 
 const defaultProps = {
@@ -42,6 +43,7 @@ const defaultProps = {
   required: false,
   tooltip: undefined,
   width: undefined,
+  className: '',
 }
 
 function FormikInput({
@@ -61,6 +63,7 @@ function FormikInput({
   width,
   tooltip,
   errorMessage,
+  className,
   // remaining props
   ...rest
 }: Props): React.ReactElement {
@@ -83,7 +86,7 @@ function FormikInput({
   const showError = touched && !!error
 
   return (
-    <Form.Field {...fieldProps}>
+    <Form.Field {...fieldProps} className={className}>
       {label && (
         <label htmlFor={name}>
           {label}

@@ -5,7 +5,7 @@ import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Message, List, Loader, Icon } from 'semantic-ui-react'
-import { Formik } from 'formik'
+import { Field, Formik } from 'formik'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 
 import FileDropzone from './FileDropzone'
@@ -17,7 +17,6 @@ import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
 import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
-import FormikInput from '../components/FormikInput'
 import CustomTooltip from '../../common/CustomTooltip'
 
 const { publicRuntimeConfig } = getConfig()
@@ -138,6 +137,7 @@ interface Props {
 const defaultProps = {
   isInitialValid: false,
   tags: [],
+  initialValues: undefined,
 }
 
 const typeComponents = {
@@ -177,7 +177,7 @@ function QuestionCreationForm({
   ]
 
   return (
-    <div className="questionCreationForm">
+    <div className="flex flex-col questionCreationForm">
       <Formik
         initialValues={
           initialValues || {
@@ -250,27 +250,32 @@ function QuestionCreationForm({
                   </Button>
                 </div>
 
-                <div className="questionInput questionTitle">
+                <div className="mb-4 questionInput questionTitle">
                   <AutoFocusInside>
-                    <FormikInput
-                      required
-                      /* error={errors.title}
-                  errorMessage={
-                    <FormattedMessage
-                      defaultMessage="Please provide a valid question title (summary)."
-                      id="form.questionTitle.invalid"
-                    />
-                  } */
+                    <label className="flex-1 text-xl !mb-2 font-bold" htmlFor="content">
+                      <span className="mb-10">{intl.formatMessage(messages.titleInput)}</span>
+
+                      <CustomTooltip
+                        tooltip={
+                          <FormattedMessage
+                            defaultMessage="Enter a short summarizing title for the question."
+                            id="createQuestion.titleInput.tooltip"
+                          />
+                        }
+                        tooltipStyle={'text-sm md:text-base max-w-[25%] md:max-w-[40%]'}
+                        withArrow={false}
+                      >
+                        <Icon className="!ml-2" color="blue" name="question circle" />
+                        <span className="text-red-600">*</span>
+                      </CustomTooltip>
+                    </label>
+
+                    <Field
+                      className="!mt-2"
                       handleBlur={handleBlur}
                       handleChange={handleChange}
                       label={intl.formatMessage(messages.titleInput)}
                       name="title"
-                      tooltip={
-                        <FormattedMessage
-                          defaultMessage="Enter a short summarizing title for the question."
-                          id="createQuestion.titleInput.tooltip"
-                        />
-                      }
                       touched={touched.title}
                       type="text"
                       value={values.title}
@@ -278,11 +283,11 @@ function QuestionCreationForm({
                   </AutoFocusInside>
                 </div>
 
-                <div className="questionInput questionType">
+                <div className="text-xl !mb-2 questionInput questionType">
                   <TypeChooser value={values.type} onChange={(newType): void => setFieldValue('type', newType)} />
                 </div>
 
-                <div className="questionInput questionTags">
+                <div className="text-xl !mb-2 questionInput questionTags">
                   {tagsLoading ? (
                     <Loader active />
                   ) : (
@@ -295,8 +300,8 @@ function QuestionCreationForm({
                   )}
                 </div>
 
-                <div className="questionInput questionContent">
-                  <label className="flex-1 header" htmlFor="content">
+                <div className="mb-4 questionInput questionContent">
+                  <label className="flex-1 text-xl !mb-2 font-bold" htmlFor="content">
                     <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
                     <CustomTooltip
@@ -323,8 +328,8 @@ function QuestionCreationForm({
                 </div>
 
                 {publicRuntimeConfig.s3root && (
-                  <div className="questionInput questionFiles">
-                    <h2>
+                  <div className="mb-4 questionInput questionFiles">
+                    <h2 className="!text-xl !mb-2">
                       <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
                     </h2>
                     <FileDropzone
@@ -334,7 +339,7 @@ function QuestionCreationForm({
                   </div>
                 )}
 
-                <div className="questionInput questionOptions">
+                <div className="mb-4 questionInput questionOptions">
                   <OptionsInput
                     type={values.type}
                     value={values.options}
@@ -342,8 +347,8 @@ function QuestionCreationForm({
                   />
                 </div>
 
-                <div className="questionPreview">
-                  <h2>
+                <div className="mb-4 questionPreview">
+                  <h2 className="!text-xl !mb-2">
                     <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
                   </h2>
                   <Preview description={values.content} options={values.options} questionType={values.type} />
@@ -358,23 +363,6 @@ function QuestionCreationForm({
         @import 'src/theme';
 
         .questionCreationForm :global(form) {
-          display: flex;
-          flex-direction: column;
-
-          .questionInput,
-          .questionPreview {
-            margin-bottom: 1rem;
-          }
-
-          .questionInput :global(label),
-          .questionPreview > h2,
-          .questionFiles > h2 {
-            font-size: 1.2rem !important;
-            margin: 0 !important;
-            margin-bottom: 0.5rem !important;
-            font-weight: bold;
-          }
-
           @supports (grid-gap: 1rem) {
             @include desktop-tablet-only {
               display: grid;
