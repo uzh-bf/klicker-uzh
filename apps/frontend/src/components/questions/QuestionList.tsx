@@ -6,19 +6,17 @@ import { FormattedMessage } from 'react-intl'
 import Question from './Question'
 
 interface Props {
-  creationMode?: boolean
   onQuestionChecked: any
   selectedItems: any
   questions?: any[]
 }
 
 const defaultProps = {
-  creationMode: false,
   isArchiveActive: false,
   questions: [],
 }
 
-function QuestionList({ onQuestionChecked, creationMode, selectedItems, questions }: Props): React.ReactElement {
+function QuestionList({ onQuestionChecked, selectedItems, questions }: Props): React.ReactElement {
   if (!questions) {
     return null
   }
@@ -39,7 +37,6 @@ function QuestionList({ onQuestionChecked, creationMode, selectedItems, question
       {questions.map((question): any => (
         <Question
           checked={selectedItems.ids.includes(question.id)}
-          draggable={creationMode}
           id={question.id}
           isArchived={question.isArchived}
           key={question.id}

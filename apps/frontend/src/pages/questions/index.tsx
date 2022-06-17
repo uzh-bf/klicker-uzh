@@ -11,7 +11,6 @@ import { useQuery, useMutation } from '@apollo/client'
 import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
-import clsx from 'clsx'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
@@ -402,12 +401,11 @@ function Index(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="h-full overflow-y-scroll">
-        <div className={clsx('justify-center w-full print-hidden hidden', creationMode && '!flex')}>
+      <div className="w-full h-full overflow-y-scroll">
+        <div className="flex justify-center w-full h-max md:h-72 print-hidden">
           {editSessionId ? (
             <SessionEditForm
               handleCreateSession={onCreateSession}
-              handleCreationModeToggle={onCreationModeToggle}
               handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
               handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
               handleSetSessionBlocks={setSessionBlocks}
@@ -425,7 +423,6 @@ function Index(): React.ReactElement {
           ) : (
             <SessionCreationForm
               handleCreateSession={onCreateSession}
-              handleCreationModeToggle={onCreationModeToggle}
               handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
               handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
               handleSetSessionBlocks={setSessionBlocks}
@@ -442,34 +439,26 @@ function Index(): React.ReactElement {
             />
           )}
         </div>
-        <div className="flex justify-center h-full mx-10 md:mx-20">
-          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-8 gap-5">
-            <div
-              className={clsx(
-                'p-4 md:min-w-[17rem] border border-black border-solid rounded-md h-max',
-                creationMode && 'hidden md:block'
-              )}
-            >
-              <TagList
-                activeTags={filters.tags}
-                activeType={filters.type}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                handleToggleArchive={onToggleArchive}
-                isArchiveActive={filters.archive}
-              />
-            </div>
+        <div className="flex  h-max justify-center md:min-h-[27.5rem] md:h-[calc(100vh-23.75rem)] mx-auto">
+          <div className="flex flex-col md:flex-row max-w-[100rem] h-full w-full mt-6 gap-5 mx-10 md:mx-20">
+            <TagList
+              activeTags={filters.tags}
+              activeType={filters.type}
+              handleReset={handleReset}
+              handleTagClick={handleTagClick}
+              handleToggleArchive={onToggleArchive}
+              isArchiveActive={filters.archive}
+            />
+
             <div className="w-full">
               {!data || loading ? (
                 <Loader active />
               ) : (
-                <div className="flex flex-col w-full h-full">
+                <div className="flex flex-col w-full">
                   <div className="w-full">
                     <ActionBar
-                      creationMode={creationMode}
                       deletionConfirmation={deletionConfirmation}
                       handleArchiveQuestions={onArchiveQuestions}
-                      handleCreationModeToggle={onCreationModeToggle}
                       handleDeleteQuestions={onDeleteQuestions}
                       handleQuickBlock={onQuickBlock}
                       handleQuickBlocks={onQuickBlocks}
@@ -493,9 +482,11 @@ function Index(): React.ReactElement {
                       sortingTypes={QUESTION_SORTINGS}
                     />
                   </div>
-                  <div className="w-full h-full mt-4 md:overflow-y-auto md:max-w-7xl md:mx-auto" key="question-list">
+                  <div
+                    className="w-full mt-4 md:min-h-[20rem] h-full md:h-[calc(100vh-30.5rem)] md:overflow-y-auto md:max-w-7xl md:mx-auto"
+                    key="question-list"
+                  >
                     <QuestionList
-                      creationMode={creationMode}
                       questions={processedQuestions}
                       selectedItems={selectedItems}
                       onQuestionChecked={handleSelectItem}
@@ -506,7 +497,7 @@ function Index(): React.ReactElement {
             </div>
           </div>
         </div>
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
           <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
             <Message
               warning

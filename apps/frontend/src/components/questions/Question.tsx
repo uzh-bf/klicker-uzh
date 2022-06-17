@@ -21,29 +21,17 @@ interface Props {
   title: string
   type: string
   versions: any[]
-  draggable: boolean
   onCheck: any
 }
 
 const defaultProps = {
   checked: false,
-  creationMode: false,
   isArchived: false,
   lastUsed: [],
   tags: [],
 }
 
-function Question({
-  checked,
-  id,
-  tags,
-  title,
-  type,
-  versions,
-  onCheck,
-  draggable,
-  isArchived,
-}: Props): React.ReactElement {
+function Question({ checked, id, tags, title, type, versions, onCheck, isArchived }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
@@ -80,8 +68,7 @@ function Question({
         </div>
         <div
           className={clsx(
-            'flex flex-row w-full p-3 bg-grey-20 border border-solid rounded-lg md:flex-col',
-            draggable && 'cursor-[grab] hover:shadow-md',
+            'flex flex-row w-full p-3 bg-grey-20 border border-solid rounded-lg md:flex-col cursor-[grab] hover:shadow-md',
             collectedProps.isDragging && 'opacity-50'
           )}
           ref={drag}
@@ -133,8 +120,7 @@ function Question({
             </div>
             <div className="mb-2 md:mr-3 w-36 md:mb-0">
               <CustomButton
-                className={clsx('bg-white shadow-md w-36 hover:shadow-none', draggable && 'shadow-none')}
-                disabled={draggable}
+                className="bg-white shadow-md w-36 hover:shadow-none"
                 onClick={(): void => setIsModificationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
@@ -149,8 +135,7 @@ function Question({
             </div>
             <div className="w-36">
               <CustomButton
-                className={clsx('bg-white shadow-md w-36 hover:shadow-none', draggable && 'shadow-none')}
-                disabled={draggable}
+                className="bg-white shadow-md w-36 hover:shadow-none"
                 onClick={(): void => setIsDuplicationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />

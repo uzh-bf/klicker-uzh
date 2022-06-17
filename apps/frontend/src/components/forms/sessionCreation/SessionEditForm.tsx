@@ -18,7 +18,6 @@ interface EditFormProps {
   handleSetIsAuthenticationEnabled: any
   runningSessionId: string
   handleCreateSession: any
-  handleCreationModeToggle: any
   sessionAuthenticationMode: AuthenticationMode
   handleSetSessionAuthenticationMode: any
   handleSetSessionDataStorageMode: any
@@ -48,7 +47,6 @@ function SessionEditForm({
   runningSessionId,
   handleCreateSession,
   handleSetSessionAuthenticationMode,
-  handleCreationModeToggle,
   handleSetSessionDataStorageMode,
   sessionDataStorageMode,
 }: EditFormProps): React.ReactElement {
@@ -86,7 +84,6 @@ function SessionEditForm({
   return (
     <SessionCreationForm
       handleCreateSession={handleCreateSession}
-      handleCreationModeToggle={handleCreationModeToggle}
       handleSetIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
       handleSetSessionAuthenticationMode={handleSetSessionAuthenticationMode}
       handleSetSessionBlocks={handleSetSessionBlocks}

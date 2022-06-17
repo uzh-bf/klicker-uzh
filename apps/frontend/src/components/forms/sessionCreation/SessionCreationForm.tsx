@@ -46,7 +46,6 @@ interface Props {
   handleSetSessionParticipants: any
   handleSetIsAuthenticationEnabled: any
   handleCreateSession: any
-  handleCreationModeToggle: any
   sessionInteractionType?: string
   sessionAuthenticationMode: AuthenticationMode
   sessionDataStorageMode: DataStorageMode
@@ -84,7 +83,6 @@ function SessionCreationForm({
   handleSetSessionName,
   handleSetSessionParticipants,
   handleCreateSession,
-  handleCreationModeToggle,
   sessionAuthenticationMode,
   sessionDataStorageMode,
   handleSetSessionAuthenticationMode,
@@ -302,16 +300,6 @@ function SessionCreationForm({
           </div>
 
           <div className="flex-[0_0_17rem] p-4 pt-0 border-0 border-t md:border-t-0 md:border-l border-solid border-grey-60 flex flex-col">
-            <div className="self-end h-8 -mt-8">
-              <button
-                className="h-8 px-4 py-2 text-center ui icon button"
-                type="button"
-                onClick={handleCreationModeToggle}
-              >
-                <Icon name="close" />
-              </button>
-            </div>
-
             <div className="flex-1 mt-2 mb-2">
               <Input
                 className="!mr-0 w-full"

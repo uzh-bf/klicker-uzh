@@ -40,10 +40,8 @@ const messages = defineMessages({
 })
 
 interface Props {
-  creationMode?: boolean
   deletionConfirmation: boolean
   handleArchiveQuestions: any
-  handleCreationModeToggle: any
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
@@ -52,18 +50,15 @@ interface Props {
 }
 
 const defaultProps = {
-  creationMode: false,
   isArchiveActive: false,
   itemsChecked: [],
 }
 
 function ActionBar({
   isArchiveActive,
-  creationMode,
   deletionConfirmation,
   itemsChecked,
   handleArchiveQuestions,
-  handleCreationModeToggle,
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
@@ -73,7 +68,6 @@ function ActionBar({
   const { addToast } = useToasts()
 
   const [csvData, setCsvData] = useState([])
-  const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
   const [creationModalOpen, setCreationModalOpen] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false)
@@ -180,13 +174,7 @@ function ActionBar({
     <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
       <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
         <DropdownMenu.Root open={createDropdownOpen} onOpenChange={setCreateDropdownOpen}>
-          <DropdownMenu.Trigger
-            className={clsx(
-              'flex flex-row w-36 pl-7 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-[36px]',
-              (isAnyModalOpen || creationMode) && '!bg-blue-300 !cursor-not-allowed'
-            )}
-            disabled={isAnyModalOpen || creationMode}
-          >
+          <DropdownMenu.Trigger className="flex flex-row w-36 pl-7 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-[36px]">
             <div className="flex-1 py-2.5 flex flex-row -mt-[0.04rem]">
               <PlusCircleIcon className="mr-3 -mt-[0.23rem] -ml-1 font-bold text-white h-7" />
               <div className="font-bold text-white">Create</div>
@@ -194,27 +182,11 @@ function ActionBar({
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content className="flex flex-col px-2 bg-white border border-solid rounded-md border-grey-80">
-            <DropdownMenu.Item
-              className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
-              disabled={!!creationMode}
-              key="newSession"
-              onClick={() => {
-                handleCreationModeToggle()
-                setCreateDropdownOpen(false)
-              }}
-            >
-              <Icon name="play" />
-              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
-            </DropdownMenu.Item>
-            <div className="h-[0.075rem] bg-grey-80 opacity-40" />
-
             <Dropdown.Item
               className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
-              disabled={!!creationMode}
               key="questionCreation"
               onClick={() => {
                 setCreateDropdownOpen(false)
-                setIsAnyModalOpen(true)
                 setCreationModalOpen(true)
               }}
             >
@@ -225,7 +197,6 @@ function ActionBar({
 
             <Dropdown.Item
               className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
-              disabled={!!creationMode}
               key="uploadmodal"
               onClick={() => {
                 setUploadModalOpen(true)
@@ -244,45 +215,42 @@ function ActionBar({
         open={creationModalOpen}
         onModalClose={() => {
           setCreationModalOpen(false)
-          setIsAnyModalOpen(false)
         }}
       />
       <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen} />
 
       <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
-        {creationMode && (
-          <>
-            <Button
-              icon
-              disabled={itemCount <= 1}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleQuickBlocks()}
-            >
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Split questions into {num} blocks"
-                id="questionPool.button.quickCreateSeparate"
-                values={{ num: itemCount }}
-              />
-            </Button>
+        <>
+          <Button
+            icon
+            disabled={itemCount <= 1}
+            labelPosition="left"
+            size="small"
+            onClick={(): void => handleQuickBlocks()}
+          >
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Split questions into {num} blocks"
+              id="questionPool.button.quickCreateSeparate"
+              values={{ num: itemCount }}
+            />
+          </Button>
 
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleQuickBlock()}
-            >
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Group questions into one block ({num}->1)"
-                id="questionPool.button.quickCreateSingle"
-                values={{ num: itemCount }}
-              />
-            </Button>
-          </>
-        )}
+          <Button
+            icon
+            disabled={itemCount === 0}
+            labelPosition="left"
+            size="small"
+            onClick={(): void => handleQuickBlock()}
+          >
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Group questions into one block ({num}->1)"
+              id="questionPool.button.quickCreateSingle"
+              values={{ num: itemCount }}
+            />
+          </Button>
+        </>
       </div>
 
       <div className="flex items-center">
