@@ -371,12 +371,6 @@
       "value": "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
     }
   ],
-  "createSession.title": [
-    {
-      "type": 0,
-      "value": "Session erstellen"
-    }
-  ],
   "customizableTable.deleteConfirmation": [
     {
       "type": 0,

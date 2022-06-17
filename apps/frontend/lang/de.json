@@ -57,7 +57,6 @@
   "createQuestion.tagInput.tooltip": "Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).",
   "createQuestion.titleInput.label": "Fragetitel",
   "createQuestion.titleInput.tooltip": "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.",
-  "createSession.title": "Session erstellen",
   "customizableTable.deleteConfirmation": "Sind Sie sicher, dass Sie Entität {activeId} löschen möchten?",
   "customizableTable.deleteEntity": "Entität löschen",
   "editQuestion.error": "Frage konnte nicht editiert werden: {error}",

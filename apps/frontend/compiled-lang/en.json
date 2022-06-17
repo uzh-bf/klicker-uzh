@@ -359,12 +359,6 @@
       "value": "Enter a short summarizing title for the question."
     }
   ],
-  "createSession.title": [
-    {
-      "type": 0,
-      "value": "Create Session"
-    }
-  ],
   "customizableTable.abortConfirmation": [
     {
       "type": 0,
@@ -1191,12 +1185,6 @@
       "value": "New Question"
     }
   ],
-  "questionPool.button.createSession": [
-    {
-      "type": 0,
-      "value": "New Session"
-    }
-  ],
   "questionPool.button.deleteQuestions": [
     {
       "type": 0,
@@ -1293,16 +1281,6 @@
     {
       "type": 0,
       "value": " selected questions? Consider moving them to the archive if you could have use for them in the future."
-    }
-  ],
-  "questionPool.string.itemsChecked": [
-    {
-      "type": 1,
-      "value": "count"
-    },
-    {
-      "type": 0,
-      "value": " items checked"
     }
   ],
   "questionPool.survey": [
