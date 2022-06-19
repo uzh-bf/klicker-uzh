@@ -7,7 +7,7 @@ import { push } from '@socialgouv/matomo-next'
 
 import { UserContext } from '../../../lib/userContext'
 import AccountArea from './AccountArea'
-import SearchArea from './SearchArea'
+import SearchArea from './SearchField'
 import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
 
@@ -19,13 +19,11 @@ interface Props {
     handleSearch: any
     handleSortByChange: any
     handleSortOrderToggle: any
-    sortBy: string
     sortingTypes: {
       content: string
       id: string
       labelStart: string
     }[]
-    sortOrder: boolean
     withSorting: boolean
   }
   handleSidebarToggle: () => void
@@ -61,15 +59,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
       {search && (
         <div className="searchArea">
-          <SearchArea
-            handleSearch={search.handleSearch}
-            handleSortByChange={search.handleSortByChange}
-            handleSortOrderToggle={search.handleSortOrderToggle}
-            sortBy={search.sortBy}
-            sortOrder={search.sortOrder}
-            sortingTypes={search.sortingTypes}
-            withSorting={search.withSorting}
-          />
+          <SearchArea handleSearch={search.handleSearch} />
         </div>
       )}
 

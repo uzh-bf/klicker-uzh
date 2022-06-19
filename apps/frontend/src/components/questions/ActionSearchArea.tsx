@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Dropdown, Input } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { PlusCircleIcon, CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
 import { SortAscendingIcon, SortDescendingIcon, ChevronDownIcon } from '@heroicons/react/solid'
@@ -20,6 +20,7 @@ import { omitDeep } from '../../lib/utils/omitDeep'
 import CustomButton from '../common/CustomButton'
 import CustomTooltip from '../common/CustomTooltip'
 import CustomCheckbox from '../common/CustomCheckbox'
+import SearchField from '../common/navbar/SearchField'
 
 const messages = defineMessages({
   create: {
@@ -405,15 +406,7 @@ function ActionSearchArea({
             {getCheckboxState(allItemsChecked, itemCount) === 'indeterminate' ? <MinusSmIcon /> : null}
           </CustomCheckbox>
         )}
-        <Input
-          fluid
-          className="!flex-1 !mr-4"
-          icon="search"
-          placeholder={intl.formatMessage(messages.searchPlaceholder)}
-          onChange={(e): void => handleSearch(e.target.value)}
-        >
-          <input />
-        </Input>
+        <SearchField handleSearch={handleSearch} />
 
         {withSorting && (
           <>
