@@ -20,7 +20,7 @@ import { omitDeep } from '../../lib/utils/omitDeep'
 import CustomButton from '../common/CustomButton'
 import CustomTooltip from '../common/CustomTooltip'
 import CustomCheckbox from '../common/CustomCheckbox'
-import SearchField from '../common/navbar/SearchField'
+import SearchField from '../common/SearchField'
 
 const messages = defineMessages({
   create: {

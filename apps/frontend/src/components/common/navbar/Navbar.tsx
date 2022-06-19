@@ -7,7 +7,7 @@ import { push } from '@socialgouv/matomo-next'
 
 import { UserContext } from '../../../lib/userContext'
 import AccountArea from './AccountArea'
-import SearchArea from './SearchField'
+import SearchArea from '../SearchField'
 import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
 
