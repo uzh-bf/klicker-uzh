@@ -171,7 +171,7 @@ function ActionBar({
   }
 
   return (
-    <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:max-w-7xl md:m-auto">
+    <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between md:m-auto">
       <div className="flex flex-col flex-1 md:flex-[0_0_auto] md:flex-row md:order-3">
         <DropdownMenu.Root open={createDropdownOpen} onOpenChange={setCreateDropdownOpen}>
           <DropdownMenu.Trigger className="flex flex-row w-36 pl-7 text-left border-0 rounded-md bg-sky-600 hover:bg-sky-700 hover:cursor-pointer h-[36px]">

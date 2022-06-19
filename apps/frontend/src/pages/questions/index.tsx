@@ -467,7 +467,7 @@ function Index(): React.ReactElement {
                       key="action-bar"
                     />
                   </div>
-                  <div className="w-full mt-2 md:max-w-7xl md:mx-auto">
+                  <div className="w-full mt-2 md:mx-auto">
                     <SearchArea
                       withSorting
                       handleResetItemsChecked={handleResetSelection}
@@ -483,7 +483,7 @@ function Index(): React.ReactElement {
                     />
                   </div>
                   <div
-                    className="w-full mt-4 md:min-h-[20rem] h-full md:h-[calc(100vh-30.5rem)] md:overflow-y-auto md:max-w-7xl md:mx-auto"
+                    className="w-full mt-4 md:min-h-[20rem] h-full md:h-[calc(100vh-30.5rem)] md:overflow-y-auto  md:mx-auto"
                     key="question-list"
                   >
                     <QuestionList
