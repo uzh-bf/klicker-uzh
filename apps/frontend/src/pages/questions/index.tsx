@@ -28,7 +28,7 @@ import SessionEditForm from '../../components/forms/sessionCreation/SessionEditF
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
-import ActionBar from '../../components/questions/ActionBar'
+import ActionSearchArea from '../../components/questions/ActionSearchArea'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
 import {
@@ -36,7 +36,6 @@ import {
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import useStickyState from '../../lib/hooks/useStickyState'
-import SearchArea from '../../components/common/navbar/SearchArea'
 
 const messages = defineMessages({
   pageTitle: {
@@ -455,33 +454,27 @@ function Index(): React.ReactElement {
                 <Loader active />
               ) : (
                 <div className="flex flex-col w-full">
-                  <div className="w-full">
-                    <ActionBar
-                      deletionConfirmation={deletionConfirmation}
-                      handleArchiveQuestions={onArchiveQuestions}
-                      handleDeleteQuestions={onDeleteQuestions}
-                      handleQuickBlock={onQuickBlock}
-                      handleQuickBlocks={onQuickBlocks}
-                      isArchiveActive={filters.archive}
-                      itemsChecked={selectedItems.ids}
-                      key="action-bar"
-                    />
-                  </div>
-                  <div className="w-full mt-2 md:mx-auto">
-                    <SearchArea
-                      withSorting
-                      handleResetItemsChecked={handleResetSelection}
-                      handleSearch={_debounce(handleSearch, 200)}
-                      handleSetItemsChecked={handleSelectItems}
-                      handleSortByChange={handleSortByChange}
-                      handleSortOrderToggle={handleSortOrderToggle}
-                      itemsChecked={selectedItems.ids}
-                      questions={processedQuestions}
-                      sortBy={sort.by}
-                      sortOrder={sort.asc}
-                      sortingTypes={QUESTION_SORTINGS}
-                    />
-                  </div>
+                  <ActionSearchArea
+                    withSorting
+                    deletionConfirmation={deletionConfirmation}
+                    handleArchiveQuestions={onArchiveQuestions}
+                    handleDeleteQuestions={onDeleteQuestions}
+                    handleQuickBlock={onQuickBlock}
+                    handleQuickBlocks={onQuickBlocks}
+                    handleResetItemsChecked={handleResetSelection}
+                    handleSearch={_debounce(handleSearch, 200)}
+                    handleSetItemsChecked={handleSelectItems}
+                    handleSortByChange={handleSortByChange}
+                    handleSortOrderToggle={handleSortOrderToggle}
+                    isArchiveActive={filters.archive}
+                    itemsChecked={selectedItems.ids}
+                    key="action-area"
+                    questions={processedQuestions}
+                    sortBy={sort.by}
+                    sortOrder={sort.asc}
+                    sortingTypes={QUESTION_SORTINGS}
+                  />
+
                   <div
                     className="w-full mt-4 md:min-h-[20rem] h-full md:h-[calc(100vh-30.5rem)] md:overflow-y-auto  md:mx-auto"
                     key="question-list"
