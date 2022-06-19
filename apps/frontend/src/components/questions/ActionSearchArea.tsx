@@ -210,7 +210,7 @@ function ActionSearchArea({
     if (allItems || numOfItems === questions.length) {
       return true
     }
-    if (!allItems && numOfItems > 0) {
+    if (numOfItems > 0) {
       return 'indeterminate'
     }
     return false

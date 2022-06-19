@@ -390,7 +390,6 @@ function Index(): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
-  // TODO: fix height problem when the session creation modal is shown
   return (
     <TeacherLayout
       fixedHeight

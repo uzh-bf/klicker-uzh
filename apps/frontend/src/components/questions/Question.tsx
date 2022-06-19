@@ -101,7 +101,6 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
           </div>
 
           <div className="flex flex-col md:w-full w-max md:flex-row">
-            {/* // TODO: improve and style preview component, maybe create preview with mobile phone background? */}
             <div className="mb-2 md:flex-1 md:mb-0">
               <CustomButton
                 className="bg-white shadow-md w-36 hover:shadow-none"
