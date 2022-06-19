@@ -67,11 +67,15 @@ interface Props {
   sessionId: string
   timeLimit?: number
   isAuthenticationEnabled?: boolean
+  isStaticPreview?: boolean
 }
 
 const defaultProps = {
-  questions: [],
   isAuthenticationEnabled: false,
+  message: '',
+  expiresAt: undefined,
+  timeLimit: undefined,
+  isStaticPreview: false,
 }
 
 function QuestionArea({
@@ -84,6 +88,7 @@ function QuestionArea({
   expiresAt,
   timeLimit,
   isAuthenticationEnabled,
+  isStaticPreview,
 }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
@@ -101,40 +106,47 @@ function QuestionArea({
   }, [])
 
   useEffect(() => {
-    if (!sessionStorage?.getItem(`notification ${questions[0].id}`)) {
-      if (questions.length > 0) {
-        createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
+    if (!isStaticPreview) {
+      if (!sessionStorage?.getItem(`notification ${questions[0].id}`)) {
+        if (questions.length > 0) {
+          createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
+        }
+        sessionStorage?.setItem(`notification ${questions[0].id}`, 'sent')
       }
-      sessionStorage?.setItem(`notification ${questions[0].id}`, 'sent')
     }
   }, [questions.length])
 
   useEffect((): void => {
-    const exec = async () => {
-      try {
-        let storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
-          responses: [],
-        }
-
-        if (typeof storedResponses === 'string') {
-          storedResponses = JSON.parse(storedResponses)
-        }
-
-        const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
-          if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
-            return indices
+    if (!isStaticPreview) {
+      const exec = async () => {
+        try {
+          let storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
+            responses: [],
           }
 
-          return [...indices, index]
-        }, [])
+          if (typeof storedResponses === 'string') {
+            storedResponses = JSON.parse(storedResponses)
+          }
 
-        setActiveQuestion(remaining[0])
-        setRemainingQuestions(remaining)
-      } catch (e) {
-        console.error(e)
+          const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
+            if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
+              return indices
+            }
+
+            return [...indices, index]
+          }, [])
+
+          setActiveQuestion(remaining[0])
+          setRemainingQuestions(remaining)
+        } catch (e) {
+          console.error(e)
+        }
       }
+      exec()
+    } else {
+      setActiveQuestion(0)
+      setRemainingQuestions([0])
     }
-    exec()
   }, [sessionId, shortname, questions])
 
   const onActiveChoicesChange =
@@ -200,47 +212,55 @@ function QuestionArea({
     }
 
   const onSubmit = async (): Promise<void> => {
-    const { id: instanceId, execution, type } = questions[activeQuestion]
+    if (!isStaticPreview) {
+      const { id: instanceId, execution, type } = questions[activeQuestion]
 
-    // if the question has been answered, add a response
-    if (typeof inputValue !== 'undefined') {
-      if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
-        handleNewResponse({ instanceId, response: { choices: inputValue } })
-      } else if (QUESTION_GROUPS.FREE.includes(type)) {
-        handleNewResponse({ instanceId, response: { value: String(inputValue) } })
+      // if the question has been answered, add a response
+      if (typeof inputValue !== 'undefined') {
+        if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
+          handleNewResponse({ instanceId, response: { choices: inputValue } })
+        } else if (QUESTION_GROUPS.FREE.includes(type)) {
+          handleNewResponse({ instanceId, response: { value: String(inputValue) } })
+        }
+      } else {
+        push(['trackEvent', 'Join Session', 'Question Skipped'])
       }
+
+      // update the stored responses
+      if (typeof window !== 'undefined') {
+        try {
+          const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
+          const stringified = JSON.stringify(
+            prevResponses
+              ? {
+                  responses: [...JSON.parse(prevResponses).responses, `${instanceId}-${execution}`],
+                  timestamp: dayjs().unix(),
+                }
+              : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
+          )
+          await localForage.setItem(`${shortname}-${sessionId}-responses`, stringified)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      // calculate the new indices of remaining questions
+      const newRemaining = _without(remainingQuestions, activeQuestion)
+
+      setActiveQuestion(newRemaining[0] || 0)
+      setInputState({
+        inputEmpty: true,
+        inputValid: false,
+        inputValue: undefined,
+      })
+      setRemainingQuestions(newRemaining)
     } else {
-      push(['trackEvent', 'Join Session', 'Question Skipped'])
+      setInputState({
+        inputEmpty: true,
+        inputValid: false,
+        inputValue: undefined,
+      })
     }
-
-    // update the stored responses
-    if (typeof window !== 'undefined') {
-      try {
-        const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
-        const stringified = JSON.stringify(
-          prevResponses
-            ? {
-                responses: [...JSON.parse(prevResponses).responses, `${instanceId}-${execution}`],
-                timestamp: dayjs().unix(),
-              }
-            : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-        )
-        await localForage.setItem(`${shortname}-${sessionId}-responses`, stringified)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    // calculate the new indices of remaining questions
-    const newRemaining = _without(remainingQuestions, activeQuestion)
-
-    setActiveQuestion(newRemaining[0] || 0)
-    setInputState({
-      inputEmpty: true,
-      inputValid: false,
-      inputValue: undefined,
-    })
-    setRemainingQuestions(newRemaining)
   }
 
   const currentQuestion = questions[activeQuestion]
@@ -248,14 +268,22 @@ function QuestionArea({
   return (
     <div
       className={clsx(
-        'questionArea bg-white flex-1 md:flex md:flex-col md:shadow md:rounded-xl p-4',
+        'bg-white flex-1 md:flex',
+        !isStaticPreview && 'md:flex-col md:shadow md:rounded-xl p-4',
+        isStaticPreview && 'flex-col',
         active ? 'flex' : 'hidden'
       )}
     >
-      <h1 className="hidden mb-2 md:block md:!text-lg">
-        {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
-        <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
-      </h1>
+      {!isStaticPreview ? (
+        <h1 className="hidden mb-2 md:block md:!text-lg">
+          {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
+          <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
+        </h1>
+      ) : (
+        <div className="mb-4 text-xl font-bold">
+          <FormattedMessage defaultMessage="Question Preview" id="previewQuestion.title" />
+        </div>
+      )}
 
       {((): React.ReactElement => {
         if (remainingQuestions.length === 0) {
