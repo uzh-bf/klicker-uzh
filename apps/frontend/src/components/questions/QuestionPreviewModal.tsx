@@ -13,7 +13,7 @@ interface Props {
 
 function QuestionPreviewModal({ isOpen, handleSetIsOpen, question, type }: Props): React.ReactElement {
   return (
-    <CustomModal className="!pb-4" open={isOpen} onDiscard={() => handleSetIsOpen(false)}>
+    <CustomModal escapeEnabled className="!pb-4" open={isOpen} onDiscard={() => handleSetIsOpen(false)}>
       <QuestionArea
         active
         isStaticPreview

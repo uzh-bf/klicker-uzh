@@ -9,6 +9,7 @@ interface Props {
   open: boolean
   children: React.ReactNode
   submitLabel?: string
+  escapeEnabled?: boolean
   onSubmit?: () => void
   submitStyle?: string
   discardLabel?: string
@@ -23,6 +24,7 @@ const defaultProps = {
   trigger: undefined,
   className: '',
   submitLabel: undefined,
+  escapeEnabled: false,
   onSubmit: undefined,
   discardLabel: undefined,
   onDiscard: undefined,
@@ -38,6 +40,7 @@ export function Modal({
   onDiscard,
   onSubmit,
   submitStyle,
+  escapeEnabled,
   open,
   onOpenChange,
   discardLabel,
@@ -56,6 +59,7 @@ export function Modal({
               'flex flex-col max-w-7xl xl:w-[80rem] lg:w-[60rem] md:w-[50rem] sm:w-[40rem] w-[30rem] max-h-[90%] overflow-y-scroll gap-4 p-6 bg-white border shadow rounded-xl',
               className
             )}
+            onEscapeKeyDown={escapeEnabled ? onDiscard : null}
           >
             {title && <RadixDialog.Title className="pb-2 text-xl font-bold border-b">{title}</RadixDialog.Title>}
 
