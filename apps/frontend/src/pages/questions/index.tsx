@@ -3,7 +3,6 @@ import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
-import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
@@ -63,9 +62,6 @@ function Index(): React.ReactElement {
     'gamification-survey-visible'
   )
 
-  const [creationMode, setCreationMode] = useState(
-    (): boolean => !!router.query.creationMode || !!router.query.editSessionId
-  )
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
@@ -114,22 +110,6 @@ function Index(): React.ReactElement {
   }, [data, filters, sort, index])
 
   const { editSessionId, copy: copyMode } = router.query
-
-  const onCreationModeToggle = (): void => {
-    // if the creation mode was activated before, reset blocks on toggle
-    if (creationMode) {
-      setCreationMode(false)
-      setSessionBlocks([])
-      setIsAuthenticationEnabled(false)
-      setSessionParticipants([])
-      setSessionAuthenticationMode('PASSWORD')
-      setSessionDataStorageMode('SECRET')
-    } else {
-      // turn on creation mode
-      setCreationMode(true)
-      setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
-    }
-  }
 
   // override the toggle archive function
   // need to reset the selection on toggling archive to not apply actions to hidden questions
@@ -302,8 +282,12 @@ function Index(): React.ReactElement {
           })
         }
 
-        // disable creation mode
-        onCreationModeToggle()
+        setSessionBlocks([])
+        setIsAuthenticationEnabled(false)
+        setSessionParticipants([])
+        setSessionAuthenticationMode('PASSWORD')
+        setSessionDataStorageMode('SECRET')
+        setSessionName('')
       } catch ({ message }) {
         console.error(message)
         addToast(

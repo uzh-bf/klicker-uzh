@@ -91,6 +91,8 @@ function SessionCreationForm({
   const intl = useIntl()
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false)
 
+  // TODO: setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
+
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
   const onExtendBlock = (blockId, question): void => {
@@ -323,40 +325,39 @@ function SessionCreationForm({
               />
             </div>
 
-            <CustomButton onClick={() => setSettingsModalOpen(true)}>
+            <CustomButton type="button" onClick={() => setSettingsModalOpen(true)}>
               <Icon className="!mr-4" name="settings" />
               <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
             </CustomButton>
 
-            <CustomModal open={isSettingsModalOpen} onDiscard={() => setSettingsModalOpen(false)}>
+            <CustomModal escapeEnabled open={isSettingsModalOpen} onDiscard={() => setSettingsModalOpen(false)}>
               SETTINGS CONTENT TODO
             </CustomModal>
 
-            <Button
-              fluid
-              icon
+            <CustomButton
               className="!mt-2"
               disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              labelPosition="left"
-              size="small"
               type="submit"
+              onClick={() => null}
             >
-              <Icon name="save" />
+              <Icon className="!mr-4" name="save" />
               <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
-            </Button>
-            <Button
-              fluid
-              icon
-              primary
-              className="!mt-2"
+            </CustomButton>
+
+            <CustomButton
+              className={clsx(
+                '!mt-2  text-white bg-sky-600 opacity-60',
+                !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
+                  'hover:bg-sky-700 !opacity-100'
+              )}
               disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              labelPosition="left"
-              size="small"
+              type="submit"
               onClick={handleCreateSession('start')}
             >
-              <Icon name="play" />
+              <Icon className="!mr-4" name="play" />
               <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
-            </Button>
+            </CustomButton>
+
             {!!runningSessionId && (
               <FormattedMessage
                 defaultMessage="A session is already running"

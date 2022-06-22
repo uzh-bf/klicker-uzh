@@ -6,6 +6,7 @@ interface Props {
   activeStyle?: string
   className?: string
   disabled?: boolean
+  type?: 'button' | 'submit' | 'reset'
   onClick: () => void
   children: React.ReactNode
 }
@@ -15,9 +16,18 @@ const defaultProps = {
   activeStyle: '',
   className: '',
   disabled: false,
+  type: 'button',
 }
 
-function CustomButton({ active, activeStyle, className, disabled, onClick, children }: Props): React.ReactElement {
+function CustomButton({
+  active,
+  activeStyle,
+  className,
+  disabled,
+  type,
+  onClick,
+  children,
+}: Props): React.ReactElement {
   return (
     <button
       className={clsx(
@@ -26,7 +36,8 @@ function CustomButton({ active, activeStyle, className, disabled, onClick, child
         disabled && '!cursor-not-allowed'
       )}
       disabled={disabled}
-      type="button"
+      // eslint-disable-next-line react/button-has-type
+      type={type || 'button'}
       onClick={onClick}
     >
       <div className={active ? activeStyle : ''}>{children}</div>
