@@ -1,9 +1,10 @@
 import React from 'react'
 import * as RadixCheckbox from '@radix-ui/react-checkbox'
 import clsx from 'clsx'
+import { CheckIcon } from '@heroicons/react/outline'
 
 interface Props {
-  children: React.ReactNode
+  children?: React.ReactNode
   checked: boolean | 'indeterminate'
   onCheck: any
   id: string
@@ -12,6 +13,7 @@ interface Props {
 
 const defaultProps = {
   className: '',
+  children: undefined,
 }
 
 function CustomCheckbox({ children, checked, onCheck, id, className }: Props): React.ReactElement {
@@ -27,7 +29,7 @@ function CustomCheckbox({ children, checked, onCheck, id, className }: Props): R
       id={`check-${id}`}
       onCheckedChange={() => onCheck()}
     >
-      <RadixCheckbox.CheckboxIndicator>{children}</RadixCheckbox.CheckboxIndicator>
+      <RadixCheckbox.CheckboxIndicator>{children || <CheckIcon />}</RadixCheckbox.CheckboxIndicator>
     </RadixCheckbox.Root>
   )
 }

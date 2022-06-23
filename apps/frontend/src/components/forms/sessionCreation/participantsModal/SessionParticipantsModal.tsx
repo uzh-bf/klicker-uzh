@@ -1,13 +1,12 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react'
 import { Icon, Modal, Button, Checkbox, Step } from 'semantic-ui-react'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 
 import Authentication from './Authentication'
 import Participants from './Participants'
-// import DataStorage from './DataStorage'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
-export type DataStorageMode = 'COMPLETE' | 'SECRET'
 
 const messages = defineMessages({
   participantAuthentication: {
@@ -31,8 +30,6 @@ interface Props {
   onChangeParticipants: (participants: string[]) => void
   onChangeAuthenticationMode: (mode: AuthenticationMode) => void
   authenticationMode: AuthenticationMode
-  dataStorageMode: DataStorageMode
-  onChangeDataStorageMode: (mode: DataStorageMode) => void
 }
 
 function SessionParticipantsModal({
@@ -42,8 +39,6 @@ function SessionParticipantsModal({
   onChangeParticipants,
   onChangeAuthenticationMode,
   authenticationMode,
-  // dataStorageMode,
-  onChangeDataStorageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -53,7 +48,6 @@ function SessionParticipantsModal({
   const onDiscardSettings = (): void => {
     onChangeParticipants([])
     onChangeAuthenticationMode(null)
-    onChangeDataStorageMode(null)
     setActiveStep(0)
     setIsModalOpen(false)
   }
@@ -72,12 +66,6 @@ function SessionParticipantsModal({
 
   const triggerButton = (
     <div>
-      <Checkbox
-        checked={isAuthenticationEnabled}
-        label={intl.formatMessage(messages.participantAuthentication)}
-        size="tiny"
-        onChange={onChangeAuthenticationEnabled}
-      />
       {isAuthenticationEnabled && (
         <Button
           fluid
@@ -125,16 +113,6 @@ function SessionParticipantsModal({
           />
         )}
 
-        {/* Feature is not implemented yet
-          activeStep === 2 && (
-          <DataStorage
-            dataStorageMode={dataStorageMode}
-            onActivatePreviousStep={(): void => setActiveStep(1)}
-            onChangeDataStorageMode={onChangeDataStorageMode}
-            onSaveSettings={onSaveParticipants}
-          />
-        ) */}
-
         <Step.Group attached="top" size="small">
           <Step active={activeStep === 0} onClick={(): void => setActiveStep(0)}>
             <Icon name="lock" />
@@ -159,19 +137,6 @@ function SessionParticipantsModal({
               </Step.Title>
             </Step.Content>
           </Step>
-          {/* Feature not implemented yet
-          <Step active={activeStep === 2} onClick={(): void => setActiveStep(2)}>
-            <Icon name="database" />
-            <Step.Content>
-              <Step.Title>
-                <FormattedMessage
-                  defaultMessage="Data Storage"
-                  id="form.createSession.participantAuth.steps.dataStorage"
-                />
-              </Step.Title>
-            </Step.Content>
-          </Step>
-          */}
         </Step.Group>
       </Modal>
     </div>

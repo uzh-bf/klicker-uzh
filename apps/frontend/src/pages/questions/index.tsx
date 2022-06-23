@@ -30,10 +30,7 @@ import TagList from '../../components/questions/TagList'
 import ActionSearchArea from '../../components/questions/ActionSearchArea'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
-import {
-  AuthenticationMode,
-  DataStorageMode,
-} from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
+import { AuthenticationMode } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
@@ -69,7 +66,6 @@ function Index(): React.ReactElement {
   const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
   const [sessionParticipants, setSessionParticipants] = useState([])
   const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('NONE' as AuthenticationMode)
-  const [sessionDataStorageMode, setSessionDataStorageMode] = useState('SECRET' as DataStorageMode)
 
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
@@ -233,7 +229,6 @@ function Index(): React.ReactElement {
               name: sessionName,
               participants: sessionParticipants.map((username) => ({ username })),
               authenticationMode: sessionAuthenticationMode,
-              storageMode: sessionDataStorageMode,
             },
           })
 
@@ -247,7 +242,6 @@ function Index(): React.ReactElement {
               name: sessionName,
               participants: sessionParticipants.map((username) => ({ username })),
               authenticationMode: sessionAuthenticationMode,
-              storageMode: sessionDataStorageMode,
             },
           })
 
@@ -286,7 +280,6 @@ function Index(): React.ReactElement {
         setIsAuthenticationEnabled(false)
         setSessionParticipants([])
         setSessionAuthenticationMode('PASSWORD')
-        setSessionDataStorageMode('SECRET')
         setSessionName('')
       } catch ({ message }) {
         console.error(message)
@@ -391,16 +384,15 @@ function Index(): React.ReactElement {
               handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
               handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
               handleSetSessionBlocks={setSessionBlocks}
-              handleSetSessionDataStorageMode={setSessionDataStorageMode}
               handleSetSessionName={setSessionName}
               handleSetSessionParticipants={setSessionParticipants}
               isAuthenticationEnabled={isAuthenticationEnabled}
               runningSessionId={runningSessionId}
               sessionAuthenticationMode={sessionAuthenticationMode}
               sessionBlocks={sessionBlocks}
-              sessionDataStorageMode={sessionDataStorageMode}
               sessionName={sessionName}
               sessionParticipants={sessionParticipants}
+              setSessionName={setSessionName}
             />
           ) : (
             <SessionCreationForm
@@ -408,16 +400,15 @@ function Index(): React.ReactElement {
               handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
               handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
               handleSetSessionBlocks={setSessionBlocks}
-              handleSetSessionDataStorageMode={setSessionDataStorageMode}
               handleSetSessionName={setSessionName}
               handleSetSessionParticipants={setSessionParticipants}
               isAuthenticationEnabled={isAuthenticationEnabled}
               runningSessionId={runningSessionId}
               sessionAuthenticationMode={sessionAuthenticationMode}
               sessionBlocks={sessionBlocks}
-              sessionDataStorageMode={sessionDataStorageMode}
               sessionName={sessionName}
               sessionParticipants={sessionParticipants}
+              setSessionName={setSessionName}
             />
           )}
         </div>

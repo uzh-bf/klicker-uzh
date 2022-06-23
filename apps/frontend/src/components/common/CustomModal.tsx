@@ -9,11 +9,13 @@ interface Props {
   open: boolean
   children: React.ReactNode
   submitLabel?: string
+  submitEnabled?: boolean
   escapeEnabled?: boolean
   onSubmit?: () => void
   submitStyle?: string
   discardLabel?: string
   discardStyle?: string
+  discardEnabled?: boolean
   onDiscard?: () => void
   onOpenChange?: () => void
   className?: string
@@ -24,10 +26,12 @@ const defaultProps = {
   trigger: undefined,
   className: '',
   submitLabel: undefined,
+  submitEnabled: false,
   escapeEnabled: false,
   onSubmit: undefined,
   discardLabel: undefined,
   onDiscard: undefined,
+  discardEnabled: true,
   onOpenChange: undefined,
   submitStyle: '',
   discardStyle: '',
@@ -40,11 +44,13 @@ export function Modal({
   onDiscard,
   onSubmit,
   submitStyle,
+  submitEnabled,
   escapeEnabled,
   open,
   onOpenChange,
   discardLabel,
   discardStyle,
+  discardEnabled,
   submitLabel,
   className,
 }: Props) {
@@ -69,7 +75,11 @@ export function Modal({
               <div>
                 {onDiscard && (
                   <RadixDialog.Close asChild>
-                    <CustomButton className={clsx('py-2 text-base font-bold px-7', discardStyle)} onClick={onDiscard}>
+                    <CustomButton
+                      className={clsx('py-2 text-base font-bold px-7', discardStyle)}
+                      disabled={!discardEnabled}
+                      onClick={onDiscard}
+                    >
                       {discardLabel ?? 'Close'}
                     </CustomButton>
                   </RadixDialog.Close>
@@ -78,7 +88,11 @@ export function Modal({
               <div>
                 {onSubmit && (
                   <RadixDialog.Close asChild>
-                    <CustomButton className={clsx('py-2 text-base font-bold px-7', submitStyle)} onClick={onSubmit}>
+                    <CustomButton
+                      className={clsx('py-2 text-base font-bold px-7', submitStyle)}
+                      disabled={!submitEnabled}
+                      onClick={onSubmit}
+                    >
                       {submitLabel ?? 'Submit'}
                     </CustomButton>
                   </RadixDialog.Close>

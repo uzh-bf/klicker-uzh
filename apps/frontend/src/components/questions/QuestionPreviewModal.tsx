@@ -17,7 +17,7 @@ function QuestionPreviewModal({ isOpen, handleSetIsOpen, question, type }: Props
       <QuestionArea
         active
         isStaticPreview
-        handleNewResponse={() => console.log('submit toggled in preview')}
+        handleNewResponse={null}
         questions={[{ ...question, type }]}
         sessionId={undefined}
         shortname={undefined}

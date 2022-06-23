@@ -13,7 +13,6 @@ interface Props {
 
 function QuestionSingleCompact({ id, type, title, onDelete }: Props): React.ReactElement {
   const intl = useIntl()
-  console.log(title.length)
 
   return (
     <>

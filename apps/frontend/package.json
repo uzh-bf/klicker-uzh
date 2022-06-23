@@ -26,6 +26,7 @@
     "@radix-ui/react-dialog": "0.1.7",
     "@radix-ui/react-dropdown-menu": "0.1.6",
     "@radix-ui/react-slider": "0.1.1",
+    "@radix-ui/react-switch": "0.1.5",
     "@radix-ui/react-tooltip": "0.1.7",
     "@sentry/nextjs": "6.18.1",
     "@socialgouv/matomo-next": "1.2.2",

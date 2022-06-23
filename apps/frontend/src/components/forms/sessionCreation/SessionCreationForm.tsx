@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import {
   removeQuestion,
   moveQuestion,
@@ -19,12 +20,10 @@ import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 import validationSchema from '../common/validationSchema'
-import SessionParticipantsModal, {
-  DataStorageMode,
-  AuthenticationMode,
-} from './participantsModal/SessionParticipantsModal'
+import SessionParticipantsModal, { AuthenticationMode } from './participantsModal/SessionParticipantsModal'
 import CustomButton from '../../common/CustomButton'
 import CustomModal from '../../common/CustomModal'
+import SessionParticipantSettings from './SessionParticipantSettings'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -46,11 +45,10 @@ interface Props {
   handleSetSessionParticipants: any
   handleSetIsAuthenticationEnabled: any
   handleCreateSession: any
+  setSessionName: any
   sessionInteractionType?: string
   sessionAuthenticationMode: AuthenticationMode
-  sessionDataStorageMode: DataStorageMode
   handleSetSessionAuthenticationMode: any
-  handleSetSessionDataStorageMode: any
 }
 
 const defaultProps = {
@@ -83,15 +81,12 @@ function SessionCreationForm({
   handleSetSessionName,
   handleSetSessionParticipants,
   handleCreateSession,
+  setSessionName,
   sessionAuthenticationMode,
-  sessionDataStorageMode,
   handleSetSessionAuthenticationMode,
-  handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false)
-
-  // TODO: setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
 
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
@@ -151,6 +146,10 @@ function SessionCreationForm({
     .isValidSync({
       name: sessionName,
     })
+
+  useEffect(() => {
+    setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
+  })
 
   return (
     <div className="w-full mx-10 md:mx-20 max-w-[100rem] mt-4">
@@ -312,26 +311,36 @@ function SessionCreationForm({
               />
             </div>
 
-            <div className="flex-1 mb-2">
-              <SessionParticipantsModal
-                authenticationMode={sessionAuthenticationMode}
-                dataStorageMode={sessionDataStorageMode}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                participants={sessionParticipants}
-                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
-                onChangeDataStorageMode={handleSetSessionDataStorageMode}
-                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
-                onChangeParticipants={handleSetSessionParticipants}
-              />
-            </div>
-
             <CustomButton type="button" onClick={() => setSettingsModalOpen(true)}>
               <Icon className="!mr-4" name="settings" />
               <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
             </CustomButton>
 
-            <CustomModal escapeEnabled open={isSettingsModalOpen} onDiscard={() => setSettingsModalOpen(false)}>
-              SETTINGS CONTENT TODO
+            <CustomModal
+              discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              open={isSettingsModalOpen}
+              onDiscard={() => setSettingsModalOpen(false)}
+            >
+              <div className="mb-2 text-xl font-bold">Session Settings</div>
+              <SessionParticipantSettings
+                authenticationMode={sessionAuthenticationMode}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                participants={sessionParticipants}
+                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                onChangeParticipants={handleSetSessionParticipants}
+              />
+              {/* <div className="flex-1 mb-2">
+                <SessionParticipantsModal
+                  authenticationMode={sessionAuthenticationMode}
+                  isAuthenticationEnabled={isAuthenticationEnabled}
+                  participants={sessionParticipants}
+                  onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                  onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                  onChangeParticipants={handleSetSessionParticipants}
+                />
+              </div> */}
             </CustomModal>
 
             <CustomButton
