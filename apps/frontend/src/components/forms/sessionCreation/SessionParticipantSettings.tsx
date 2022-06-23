@@ -1,11 +1,13 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react'
-import { Icon, Modal, Button, Checkbox, Step } from 'semantic-ui-react'
+import React from 'react'
+import { Icon } from 'semantic-ui-react'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 
 import CustomSwitch from '../../common/CustomSwitch'
 import CustomTooltip from '../../common/CustomTooltip'
 import CustomCheckbox from '../../common/CustomCheckbox'
+
+import Participants from './participantsModal/Participants'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
 
@@ -116,10 +118,13 @@ function SessionParticipantSettings({
           </div>
         </div>
       )}
-      {/* 
-      LIST WITH PARTICIPANTS
-      RED highlighted tag to show that something is missing and why
-      closing / escape is disabled */}
+
+      {/* // TODO: The stuff itself can be copied from the component (works as expected), BUT on close and reopen the text field is empty and mobile? */}
+      {isAuthenticationEnabled && (
+        <Participants participants={participants} onChangeParticipants={onChangeParticipants} />
+      )}
+
+      {/* // TODO RED highlighted tag to show that something is missing and why */}
     </div>
   )
 }

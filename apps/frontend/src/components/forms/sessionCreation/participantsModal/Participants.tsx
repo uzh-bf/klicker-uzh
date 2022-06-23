@@ -12,16 +12,9 @@ const messages = defineMessages({
 interface Props {
   participants: string[]
   onChangeParticipants: (participants: string[]) => void
-  onActivatePreviousStep: () => void
-  onSaveSettings: () => void
 }
 
-function Participants({
-  participants,
-  onChangeParticipants,
-  onActivatePreviousStep,
-  onSaveSettings,
-}: Props): React.ReactElement {
+function Participants({ participants, onChangeParticipants }: Props): React.ReactElement {
   const intl = useIntl()
 
   const [participantsRaw, setParticipantsRaw] = useState('')
@@ -91,15 +84,6 @@ function Participants({
           </Grid.Row>
         </Grid>
       </Modal.Content>
-
-      <Modal.Actions>
-        <Button type="button" onClick={onActivatePreviousStep}>
-          <FormattedMessage defaultMessage="Back" id="common.button.back" />
-        </Button>
-        <Button primary disabled={!participants || participants.length === 0} type="button" onClick={onSaveSettings}>
-          <FormattedMessage defaultMessage="Save" id="common.button.save" />
-        </Button>
-      </Modal.Actions>
     </>
   )
 }

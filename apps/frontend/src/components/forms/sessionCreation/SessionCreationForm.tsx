@@ -20,10 +20,9 @@ import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 import validationSchema from '../common/validationSchema'
-import SessionParticipantsModal, { AuthenticationMode } from './participantsModal/SessionParticipantsModal'
 import CustomButton from '../../common/CustomButton'
 import CustomModal from '../../common/CustomModal'
-import SessionParticipantSettings from './SessionParticipantSettings'
+import SessionParticipantSettings, { AuthenticationMode } from './SessionParticipantSettings'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -331,16 +330,6 @@ function SessionCreationForm({
                 onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
                 onChangeParticipants={handleSetSessionParticipants}
               />
-              {/* <div className="flex-1 mb-2">
-                <SessionParticipantsModal
-                  authenticationMode={sessionAuthenticationMode}
-                  isAuthenticationEnabled={isAuthenticationEnabled}
-                  participants={sessionParticipants}
-                  onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
-                  onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
-                  onChangeParticipants={handleSetSessionParticipants}
-                />
-              </div> */}
             </CustomModal>
 
             <CustomButton
