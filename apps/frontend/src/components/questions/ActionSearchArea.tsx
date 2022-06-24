@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Dropdown } from 'semantic-ui-react'
+import { Button, Confirm, Icon } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { PlusCircleIcon, CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
 import { SortAscendingIcon, SortDescendingIcon, ChevronDownIcon } from '@heroicons/react/solid'
@@ -247,7 +247,7 @@ function ActionSearchArea({
             </DropdownMenu.Trigger>
 
             <DropdownMenu.Content className="flex flex-col px-2 bg-white border border-solid rounded-md border-grey-80">
-              <Dropdown.Item
+              <DropdownMenu.Item
                 className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                 key="questionCreation"
                 onClick={() => {
@@ -257,10 +257,10 @@ function ActionSearchArea({
               >
                 <Icon name="question circle" />
                 <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
-              </Dropdown.Item>
+              </DropdownMenu.Item>
               <div className="h-[0.075rem] bg-grey-80 opacity-40" />
 
-              <Dropdown.Item
+              <DropdownMenu.Item
                 className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                 key="uploadmodal"
                 onClick={() => {
@@ -270,7 +270,7 @@ function ActionSearchArea({
               >
                 <Icon name="upload" />
                 <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
-              </Dropdown.Item>
+              </DropdownMenu.Item>
               <DropdownMenu.Arrow className="bg-white" />
             </DropdownMenu.Content>
           </DropdownMenu.Root>

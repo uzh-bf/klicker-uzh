@@ -76,8 +76,8 @@ export function Modal({
 
             <div
               className={clsx(
-                'grid gap-2 md:gap-4 gird-cols-1 md:grid-cols-3',
-                errorMessages?.length === 0 && 'md:!grid-cols-2 mt-12'
+                'grid gap-2 md:gap-4 gird-cols-1 mt-12 md:mt-0 md:grid-cols-3',
+                errorMessages?.length === 0 && 'md:!grid-cols-2 !mt-12'
               )}
             >
               <div className="relative">
