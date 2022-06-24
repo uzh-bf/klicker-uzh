@@ -6,6 +6,7 @@ import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
+
 import {
   removeQuestion,
   moveQuestion,
@@ -14,11 +15,9 @@ import {
   reorder,
   deleteArrayElement,
 } from '../../../lib/utils/move'
-
 import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
 import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
-
 import validationSchema from '../common/validationSchema'
 import CustomButton from '../../common/CustomButton'
 import CustomModal from '../../common/CustomModal'
@@ -86,6 +85,7 @@ function SessionCreationForm({
 }: Props): React.ReactElement {
   const intl = useIntl()
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [settingErrors, setSettingErrors] = useState([])
 
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
@@ -317,15 +317,21 @@ function SessionCreationForm({
 
             <CustomModal
               discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              errorMessages={settingErrors}
               escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
               open={isSettingsModalOpen}
               onDiscard={() => setSettingsModalOpen(false)}
+              onSubmit={() => true}
             >
               <div className="mb-2 text-xl font-bold">Session Settings</div>
               <SessionParticipantSettings
+                addError={(newError: string) => setSettingErrors([...settingErrors, newError])}
                 authenticationMode={sessionAuthenticationMode}
                 isAuthenticationEnabled={isAuthenticationEnabled}
                 participants={sessionParticipants}
+                removeError={(error: string) =>
+                  setSettingErrors(settingErrors.filter((oldError) => oldError !== error))
+                }
                 onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
                 onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
                 onChangeParticipants={handleSetSessionParticipants}

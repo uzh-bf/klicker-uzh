@@ -18,6 +18,7 @@ interface Props {
   discardEnabled?: boolean
   onDiscard?: () => void
   onOpenChange?: () => void
+  errorMessages?: string[]
   className?: string
 }
 
@@ -35,6 +36,7 @@ const defaultProps = {
   onOpenChange: undefined,
   submitStyle: '',
   discardStyle: '',
+  errorMessages: [],
 }
 
 export function Modal({
@@ -53,6 +55,7 @@ export function Modal({
   discardEnabled,
   submitLabel,
   className,
+  errorMessages,
 }: Props) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -71,12 +74,17 @@ export function Modal({
 
             <div>{children}</div>
 
-            <div className="flex flex-row justify-between">
-              <div>
+            <div
+              className={clsx(
+                'grid gap-2 md:gap-4 gird-cols-1 md:grid-cols-3',
+                errorMessages?.length === 0 && 'md:!grid-cols-2 mt-12'
+              )}
+            >
+              <div className="relative">
                 {onDiscard && (
-                  <RadixDialog.Close asChild>
+                  <RadixDialog.Close asChild className="absolute bottom-0 left-0 mt-max">
                     <CustomButton
-                      className={clsx('py-2 text-base font-bold px-7', discardStyle)}
+                      className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', discardStyle)}
                       disabled={!discardEnabled}
                       onClick={onDiscard}
                     >
@@ -85,11 +93,23 @@ export function Modal({
                   </RadixDialog.Close>
                 )}
               </div>
-              <div>
+              <div
+                className={clsx(
+                  'gap-2 p-1 text-center bg-red-100 border border-red-300 border-solid rounded-md md:w-full',
+                  errorMessages?.length === 0 && 'hidden'
+                )}
+              >
+                {errorMessages.map((error) => (
+                  <div className="text-red-800" key={error}>
+                    {error}
+                  </div>
+                ))}
+              </div>
+              <div className="relative">
                 {onSubmit && (
-                  <RadixDialog.Close asChild>
+                  <RadixDialog.Close asChild className="absolute bottom-0 right-0">
                     <CustomButton
-                      className={clsx('py-2 text-base font-bold px-7', submitStyle)}
+                      className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', submitStyle)}
                       disabled={!submitEnabled}
                       onClick={onSubmit}
                     >

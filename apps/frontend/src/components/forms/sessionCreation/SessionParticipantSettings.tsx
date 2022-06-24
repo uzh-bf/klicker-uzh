@@ -39,6 +39,8 @@ interface SessionParticipantSettingProps {
   onChangeParticipants: (participants: string[]) => void
   onChangeAuthenticationMode: (mode: AuthenticationMode) => void
   authenticationMode: AuthenticationMode
+  addError: (newError: string) => void
+  removeError: (error: string) => void
 }
 
 function SessionParticipantSettings({
@@ -48,6 +50,8 @@ function SessionParticipantSettings({
   onChangeParticipants,
   onChangeAuthenticationMode,
   authenticationMode,
+  addError,
+  removeError,
 }: SessionParticipantSettingProps): React.ReactElement {
   const intl = useIntl()
   const [participantsRaw, setParticipantsRaw] = useState('')
@@ -80,7 +84,14 @@ function SessionParticipantSettings({
 
   useEffect(() => {
     setParticipantsRaw(getParticipants(participants))
-  }, [participants])
+    if (isAuthenticationEnabled && participants.length === 0) {
+      // TODO: error message internationalized
+      addError('TODO: error because of empty participants')
+    } else if (!isAuthenticationEnabled || participants.length !== 0) {
+      removeError('TODO: error because of empty participants')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticationEnabled, participants])
 
   return (
     <div>
@@ -92,7 +103,7 @@ function SessionParticipantSettings({
           onCheck={() => {
             onChangeAuthenticationEnabled()
             onChangeAuthenticationMode('PASSWORD')
-          }} // () => onChangeIsAuthenticationEnabled(!isAuthenticationEnabled)
+          }}
         />
         <div className="h-full my-auto font-bold">{intl.formatMessage(messages.participantAuthentication)}</div>
       </div>
@@ -137,7 +148,7 @@ function SessionParticipantSettings({
 
       {isAuthenticationEnabled && (
         <div className="ml-7">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <form className="w-full text-right">
               <div>
                 <textarea
@@ -178,8 +189,6 @@ function SessionParticipantSettings({
           </div>
         </div>
       )}
-
-      {/* // TODO RED highlighted tag to show that something is missing and why */}
     </div>
   )
 }
