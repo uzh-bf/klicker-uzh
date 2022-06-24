@@ -725,6 +725,12 @@
       "value": "Bitte einen Fragetitel definieren."
     }
   ],
+  "form.editQuestion.versions.title": [
+    {
+      "type": 0,
+      "value": "Ältere Versionen"
+    }
+  ],
   "form.email.invalid": [
     {
       "type": 0,

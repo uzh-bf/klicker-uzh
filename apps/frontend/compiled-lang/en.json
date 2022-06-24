@@ -715,6 +715,12 @@
       "value": "Please add a question title."
     }
   ],
+  "form.editQuestion.versions.title": [
+    {
+      "type": 0,
+      "value": "History"
+    }
+  ],
   "form.email.invalid": [
     {
       "type": 0,

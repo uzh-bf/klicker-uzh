@@ -248,7 +248,7 @@ function ActionSearchArea({
 
             <DropdownMenu.Content className="flex flex-col px-2 bg-white border border-solid rounded-md border-grey-80">
               <DropdownMenu.Item
-                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-4 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                 key="questionCreation"
                 onClick={() => {
                   setCreateDropdownOpen(false)
@@ -261,7 +261,7 @@ function ActionSearchArea({
               <div className="h-[0.075rem] bg-grey-80 opacity-40" />
 
               <DropdownMenu.Item
-                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
+                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-4 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                 key="uploadmodal"
                 onClick={() => {
                   setUploadModalOpen(true)
@@ -271,7 +271,7 @@ function ActionSearchArea({
                 <Icon name="upload" />
                 <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
               </DropdownMenu.Item>
-              <DropdownMenu.Arrow className="bg-white" />
+              <DropdownMenu.Arrow className="fill-gray-400" />
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         </div>
@@ -443,7 +443,7 @@ function ActionSearchArea({
                   </>
                 ))}
 
-                <DropdownMenu.Arrow className="bg-white" />
+                <DropdownMenu.Arrow className="fill-gray-400" />
               </DropdownMenu.Content>
             </DropdownMenu.Root>
           </>

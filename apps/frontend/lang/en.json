@@ -111,6 +111,7 @@
   "form.editQuestion.options.minMaxRange.invalid": "Please specify a range from min to max.",
   "form.editQuestion.tags.empty": "Please add at least one tag.",
   "form.editQuestion.title.empty": "Please add a question title.",
+  "form.editQuestion.versions.title": "History",
   "form.email.invalid": "Please provide a valid email address.",
   "form.email.label": "Email",
   "form.email.notAvailable": "An account for this email address already exists. Please provide another address.",

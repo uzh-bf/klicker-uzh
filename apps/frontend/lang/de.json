@@ -114,6 +114,7 @@
   "form.editQuestion.options.minMaxRange.invalid": "Bitte einen gültigen Zahlenbereich angeben.",
   "form.editQuestion.tags.empty": "Bitte mindestens einen Tag hinzufügen.",
   "form.editQuestion.title.empty": "Bitte einen Fragetitel definieren.",
+  "form.editQuestion.versions.title": "Ältere Versionen",
   "form.email.invalid": "Bitte eine gültige Email-Adresse angeben.",
   "form.email.label": "Email",
   "form.email.notAvailable": "Es existiert bereits ein Account unter dieser Email. Bitte versuchen Sie eine andere Adresse.",
