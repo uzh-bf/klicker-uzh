@@ -30,7 +30,7 @@ import TagList from '../../components/questions/TagList'
 import ActionSearchArea from '../../components/questions/ActionSearchArea'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
-import { AuthenticationMode } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
+import { AuthenticationMode } from '../../components/forms/sessionCreation/SessionParticipantSettings'
 import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({

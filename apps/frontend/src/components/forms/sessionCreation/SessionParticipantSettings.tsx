@@ -1,13 +1,13 @@
 /* eslint-disable no-unused-vars */
-import React from 'react'
+import React, { useState } from 'react'
 import { Icon } from 'semantic-ui-react'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+import clsx from 'clsx'
 
 import CustomSwitch from '../../common/CustomSwitch'
 import CustomTooltip from '../../common/CustomTooltip'
 import CustomCheckbox from '../../common/CustomCheckbox'
-
-import Participants from './participantsModal/Participants'
+import CustomButton from '../../common/CustomButton'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
 
@@ -16,14 +16,10 @@ const messages = defineMessages({
     defaultMessage: 'Participant Authentication',
     id: 'form.createSession.participantAuth.string.participantAuthentication',
   },
-  //   xParticipants: {
-  //     defaultMessage: '{num} Participants',
-  //     id: 'form.createSession.participantAuth.button.xParticipants',
-  //   },
-  //   setParticipants: {
-  //     defaultMessage: 'Set Participants',
-  //     id: 'form.createSession.participantAuth.button.setParticipants',
-  //   },
+  participantsPlaceholder: {
+    defaultMessage: 'Input your participants (each on a new line)',
+    id: 'form.createSession.participantAuth.string.participantsPlaceholder',
+  },
   passwordDistributionDescription: {
     defaultMessage:
       'After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password combinations that you can distribute to your participants.',
@@ -64,7 +60,24 @@ function SessionParticipantSettings({
     onChangeIsAuthenticationEnabled(!isAuthenticationEnabled)
   }
 
-  console.log(authenticationMode)
+  const onParseParticipants = (): void => {
+    try {
+      const participantList = participantsRaw
+        .replace(/;|,/g, '\n')
+        .split('\n')
+        .map((participant) => participant.replace(/ /g, ''))
+        .filter((item, pos, self) => self.indexOf(item) === pos)
+      onChangeParticipants(participantList)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const getParticipants = (participantList: any): string => {
+    return participantList.join('\n')
+  }
+
+  const [participantsRaw, setParticipantsRaw] = useState(getParticipants(participants))
 
   return (
     <div>
@@ -78,11 +91,11 @@ function SessionParticipantSettings({
             onChangeAuthenticationMode('PASSWORD')
           }} // () => onChangeIsAuthenticationEnabled(!isAuthenticationEnabled)
         />
-        <div className="h-full my-auto">{intl.formatMessage(messages.participantAuthentication)}</div>
+        <div className="h-full my-auto font-bold">{intl.formatMessage(messages.participantAuthentication)}</div>
       </div>
 
       {isAuthenticationEnabled && (
-        <div className="flex flex-row h-10 py-auto">
+        <div className="flex flex-row h-10 ml-7 py-auto">
           <div className="my-auto">
             <FormattedMessage
               defaultMessage="Password Distribution"
@@ -119,9 +132,48 @@ function SessionParticipantSettings({
         </div>
       )}
 
-      {/* // TODO: The stuff itself can be copied from the component (works as expected), BUT on close and reopen the text field is empty and mobile? */}
       {isAuthenticationEnabled && (
-        <Participants participants={participants} onChangeParticipants={onChangeParticipants} />
+        <div className="ml-7">
+          <div className="grid grid-cols-2 gap-6">
+            <form className="w-full text-right">
+              <div>
+                <textarea
+                  className="w-full text-start !unset p-3 mb-2 border border-solid border-grey-40 rounded-md"
+                  name="name"
+                  placeholder={intl.formatMessage(messages.participantsPlaceholder)}
+                  rows={10}
+                  value={participantsRaw}
+                  onChange={(e): void => setParticipantsRaw(e.target.value as string)}
+                />
+              </div>
+              <CustomButton
+                className={clsx('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
+                onClick={onParseParticipants}
+              >
+                <FormattedMessage
+                  defaultMessage="Update Participants"
+                  id="form.createSession.participantAuth.button.updateParticipants"
+                />
+              </CustomButton>
+            </form>
+            <div className="max-h-full border border-solid rounded-md h-max border-grey-40">
+              <div className="p-3 font-bold border-0 border-b border-solid bg-grey-20 border-grey-">
+                <FormattedMessage
+                  defaultMessage="Participants"
+                  id="form.createSession.participantAuth.string.participants"
+                />
+                : {participants.length}
+              </div>
+              <div className="overflow-y-scroll h-72">
+                {participants.map((participant) => (
+                  <div className="p-3 border-0 border-b border-solid border-grey-40 last:border-b-0" key={participant}>
+                    {participant}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* // TODO RED highlighted tag to show that something is missing and why */}

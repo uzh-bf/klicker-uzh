@@ -5,7 +5,7 @@ import { useQuery } from '@apollo/client'
 import SessionDetailsQuery from '../../../graphql/queries/SessionDetailsQuery.graphql'
 
 import SessionCreationForm from './SessionCreationForm'
-import { AuthenticationMode } from './participantsModal/SessionParticipantsModal'
+import { AuthenticationMode } from './SessionParticipantSettings'
 
 interface EditFormProps {
   sessionBlocks: any[]
