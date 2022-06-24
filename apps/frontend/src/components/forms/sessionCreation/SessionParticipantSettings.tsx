@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icon } from 'semantic-ui-react'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 import clsx from 'clsx'
@@ -50,6 +50,7 @@ function SessionParticipantSettings({
   authenticationMode,
 }: SessionParticipantSettingProps): React.ReactElement {
   const intl = useIntl()
+  const [participantsRaw, setParticipantsRaw] = useState('')
 
   const onChangeAuthenticationEnabled = (): void => {
     // if authentication will be disabled, reset the participants
@@ -77,7 +78,9 @@ function SessionParticipantSettings({
     return participantList.join('\n')
   }
 
-  const [participantsRaw, setParticipantsRaw] = useState(getParticipants(participants))
+  useEffect(() => {
+    setParticipantsRaw(getParticipants(participants))
+  }, [participants])
 
   return (
     <div>
