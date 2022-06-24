@@ -65,12 +65,6 @@
       "value": "Close"
     }
   ],
-  "common.button.continue": [
-    {
-      "type": 0,
-      "value": "Continue"
-    }
-  ],
   "common.button.discard": [
     {
       "type": 0,
@@ -141,12 +135,6 @@
     {
       "type": 0,
       "value": "Logout"
-    }
-  ],
-  "common.string.or": [
-    {
-      "type": 0,
-      "value": "Or"
     }
   ],
   "common.string.password": [
@@ -619,50 +607,10 @@
       "value": "New Block"
     }
   ],
-  "form.createSession.participantAuth.aggregatedResults.description": [
-    {
-      "type": 0,
-      "value": "The results of a session will only be stored in an aggregated format, making it impossible to derive the responses of individual participants."
-    }
-  ],
-  "form.createSession.participantAuth.aggregatedResults.title": [
-    {
-      "type": 0,
-      "value": "Aggregated Results"
-    }
-  ],
-  "form.createSession.participantAuth.button.setParticipants": [
-    {
-      "type": 0,
-      "value": "Set Participants"
-    }
-  ],
   "form.createSession.participantAuth.button.updateParticipants": [
     {
       "type": 0,
       "value": "Update Participants"
-    }
-  ],
-  "form.createSession.participantAuth.button.xParticipants": [
-    {
-      "type": 1,
-      "value": "num"
-    },
-    {
-      "type": 0,
-      "value": " Participants"
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.description": [
-    {
-      "type": 0,
-      "value": "The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username."
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.title": [
-    {
-      "type": 0,
-      "value": "Complete Results"
     }
   ],
   "form.createSession.participantAuth.passwordDistribution.description": [
@@ -675,18 +623,6 @@
     {
       "type": 0,
       "value": "Password Distribution"
-    }
-  ],
-  "form.createSession.participantAuth.steps.authentication": [
-    {
-      "type": 0,
-      "value": "Authentication"
-    }
-  ],
-  "form.createSession.participantAuth.steps.participants": [
-    {
-      "type": 0,
-      "value": "Participants"
     }
   ],
   "form.createSession.participantAuth.string.participantAuthentication": [
@@ -723,6 +659,18 @@
     {
       "type": 0,
       "value": "Session Name"
+    }
+  ],
+  "form.createSession.settings.errors.participantAuth": [
+    {
+      "type": 0,
+      "value": "Authentication cannot be enabled with an empty participant lists. Please add participants or disable authentication."
+    }
+  ],
+  "form.createSession.settings.title": [
+    {
+      "type": 0,
+      "value": "Session Settings"
     }
   ],
   "form.createSession.string.alreadyRunning": [

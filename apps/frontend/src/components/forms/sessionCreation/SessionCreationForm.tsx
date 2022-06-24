@@ -30,6 +30,10 @@ const messages = defineMessages({
     defaultMessage: 'Session Name',
     id: 'form.createSession.sessionName',
   },
+  sessionSettingsTitle: {
+    defaultMessage: 'Session Settings',
+    id: 'form.createSession.settings.title',
+  },
 })
 
 interface Props {
@@ -321,9 +325,8 @@ function SessionCreationForm({
               escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
               open={isSettingsModalOpen}
               onDiscard={() => setSettingsModalOpen(false)}
-              onSubmit={() => true}
             >
-              <div className="mb-2 text-xl font-bold">Session Settings</div>
+              <div className="mb-2 text-xl font-bold">{intl.formatMessage(messages.sessionSettingsTitle)}</div>
               <SessionParticipantSettings
                 addError={(newError: string) => setSettingErrors([...settingErrors, newError])}
                 authenticationMode={sessionAuthenticationMode}

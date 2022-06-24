@@ -77,12 +77,6 @@
       "value": "Schliessen"
     }
   ],
-  "common.button.continue": [
-    {
-      "type": 0,
-      "value": "Weiter"
-    }
-  ],
   "common.button.discard": [
     {
       "type": 0,
@@ -159,12 +153,6 @@
     {
       "type": 0,
       "value": "Logout"
-    }
-  ],
-  "common.string.or": [
-    {
-      "type": 0,
-      "value": "Oder"
     }
   ],
   "common.string.password": [
@@ -629,50 +617,10 @@
       "value": "Neuer Frageblock"
     }
   ],
-  "form.createSession.participantAuth.aggregatedResults.description": [
-    {
-      "type": 0,
-      "value": "Die Resultate der Session werden nur in aggregierter Form gespeichert. Es ist daher nicht möglich, die Antworten spezifischer Teilnehmer anzusehen."
-    }
-  ],
-  "form.createSession.participantAuth.aggregatedResults.title": [
-    {
-      "type": 0,
-      "value": "Aggregierte Resultate"
-    }
-  ],
-  "form.createSession.participantAuth.button.setParticipants": [
-    {
-      "type": 0,
-      "value": "Teilnehmer definieren"
-    }
-  ],
   "form.createSession.participantAuth.button.updateParticipants": [
     {
       "type": 0,
       "value": "Teilnehmer anpassen"
-    }
-  ],
-  "form.createSession.participantAuth.button.xParticipants": [
-    {
-      "type": 1,
-      "value": "num"
-    },
-    {
-      "type": 0,
-      "value": " Teilnehmer"
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.description": [
-    {
-      "type": 0,
-      "value": "Die Resultate werden vollständig gespeichert, so dass Sie die Resultate einzelner Teilnehmer identifzieren können."
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.title": [
-    {
-      "type": 0,
-      "value": "Vollständige Resultate"
     }
   ],
   "form.createSession.participantAuth.passwordDistribution.description": [
@@ -685,24 +633,6 @@
     {
       "type": 0,
       "value": "Passwort-Export"
-    }
-  ],
-  "form.createSession.participantAuth.steps.authentication": [
-    {
-      "type": 0,
-      "value": "Authentifizierung"
-    }
-  ],
-  "form.createSession.participantAuth.steps.dataStorage": [
-    {
-      "type": 0,
-      "value": "Datenspeicherung"
-    }
-  ],
-  "form.createSession.participantAuth.steps.participants": [
-    {
-      "type": 0,
-      "value": "Teilnehmerliste"
     }
   ],
   "form.createSession.participantAuth.string.participantAuthentication": [
@@ -739,6 +669,18 @@
     {
       "type": 0,
       "value": "Session-Name"
+    }
+  ],
+  "form.createSession.settings.errors.participantAuth": [
+    {
+      "type": 0,
+      "value": "Authentifizierung kann nicht mit einer leeren Teilnehmerliste genutzt werden. Bitte fügen Sie Teilnehmer hinzu oder deaktivieren sie die Authentifizierung."
+    }
+  ],
+  "form.createSession.settings.title": [
+    {
+      "type": 0,
+      "value": "Session Einstellungen"
     }
   ],
   "form.createSession.string.alreadyRunning": [

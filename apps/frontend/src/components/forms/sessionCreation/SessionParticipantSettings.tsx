@@ -30,6 +30,11 @@ const messages = defineMessages({
       'After your upload of a list of SwitchAAI accounts (exact matches by email), participants will get access to your KlickerUZH session using their personal SwitchAAI login. Therefore, you will not be able to emulate any of your participants.',
     id: 'form.createSession.participantAuth.switchAai.description',
   },
+  emptyParticipantListError: {
+    defaultMessage:
+      'Authentication cannot be enabled with an empty participant lists. Please add participants or disable authentication.',
+    id: 'form.createSession.settings.errors.participantAuth',
+  },
 })
 
 interface SessionParticipantSettingProps {
@@ -85,10 +90,9 @@ function SessionParticipantSettings({
   useEffect(() => {
     setParticipantsRaw(getParticipants(participants))
     if (isAuthenticationEnabled && participants.length === 0) {
-      // TODO: error message internationalized
-      addError('TODO: error because of empty participants')
+      addError(intl.formatMessage(messages.emptyParticipantListError))
     } else if (!isAuthenticationEnabled || participants.length !== 0) {
-      removeError('TODO: error because of empty participants')
+      removeError(intl.formatMessage(messages.emptyParticipantListError))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticationEnabled, participants])
