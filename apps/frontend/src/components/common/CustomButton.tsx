@@ -8,6 +8,9 @@ interface Props {
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
   onClick: () => void
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  onFocus?: () => void
   children: React.ReactNode
 }
 
@@ -17,6 +20,9 @@ const defaultProps = {
   className: '',
   disabled: false,
   type: 'button',
+  onMouseEnter: undefined,
+  onMouseLeave: undefined,
+  onFocus: undefined,
 }
 
 function CustomButton({
@@ -26,6 +32,9 @@ function CustomButton({
   disabled,
   type,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
   children,
 }: Props): React.ReactElement {
   return (
@@ -39,6 +48,9 @@ function CustomButton({
       // eslint-disable-next-line react/button-has-type
       type={type || 'button'}
       onClick={onClick}
+      onFocus={onFocus}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <div className={active ? activeStyle : ''}>{children}</div>
     </button>

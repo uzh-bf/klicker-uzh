@@ -154,47 +154,51 @@ function Index(): React.ReactElement {
   }
 
   // build a single block from all the checked questions
-  const onQuickBlock = (): void => {
-    // reset the checked questions
-    handleResetSelection()
-
-    setSessionBlocks([
-      ...sessionBlocks,
-      {
-        id: UUIDv4(),
-        questions: selectedItems.items.map(({ id, title, type, version }): any => ({
-          id,
-          key: UUIDv4(),
-          title,
-          type,
-          version,
-        })),
-      },
-    ])
-
-    push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
-  }
-
-  // build a separate block for each checked question
-  const onQuickBlocks = (): void => {
-    // reset the checked questions
-    handleResetSelection()
-
-    setSessionBlocks([
-      ...sessionBlocks,
-      ...selectedItems.items.map(({ id, title, type, version }): any => ({
-        id: UUIDv4(),
-        questions: [
-          {
+  const onQuickBlock = (submitSelection: boolean): void => {
+    if (!submitSelection) {
+      setSessionBlocks([
+        ...sessionBlocks,
+        {
+          id: UUIDv4(),
+          questions: selectedItems.items.map(({ id, title, type, version }): any => ({
             id,
             key: UUIDv4(),
             title,
             type,
             version,
-          },
-        ],
-      })),
-    ])
+          })),
+        },
+      ])
+    } else {
+      // reset question selection on submit
+      handleResetSelection()
+    }
+
+    push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
+  }
+
+  // build a separate block for each checked question
+  const onQuickBlocks = (submitSelection: boolean): void => {
+    if (!submitSelection) {
+      setSessionBlocks([
+        ...sessionBlocks,
+        ...selectedItems.items.map(({ id, title, type, version }): any => ({
+          id: UUIDv4(),
+          questions: [
+            {
+              id,
+              key: UUIDv4(),
+              title,
+              type,
+              version,
+            },
+          ],
+        })),
+      ])
+    } else {
+      // reset question selection on submit
+      handleResetSelection()
+    }
 
     push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
   }
@@ -444,6 +448,8 @@ function Index(): React.ReactElement {
                     itemsChecked={selectedItems.ids}
                     key="action-area"
                     questions={processedQuestions}
+                    sessionBlocks={sessionBlocks}
+                    setSessionBlocks={setSessionBlocks}
                     sortBy={sort.by}
                     sortOrder={sort.asc}
                     sortingTypes={QUESTION_SORTINGS}

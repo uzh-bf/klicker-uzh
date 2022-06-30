@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon } from 'semantic-ui-react'
+import { Confirm, Icon } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { PlusCircleIcon, CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
 import { SortAscendingIcon, SortDescendingIcon, ChevronDownIcon } from '@heroicons/react/solid'
@@ -52,6 +52,7 @@ interface Props {
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
+  setSessionBlocks: any
   isArchiveActive?: boolean
   itemsChecked?: string[]
   handleSearch: any
@@ -68,6 +69,7 @@ interface Props {
   handleSetItemsChecked?: any
   handleResetItemsChecked?: any
   questions?: any[]
+  sessionBlocks: any[]
 }
 
 const defaultProps = {
@@ -87,6 +89,7 @@ function ActionSearchArea({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
+  setSessionBlocks,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
@@ -97,6 +100,7 @@ function ActionSearchArea({
   handleSetItemsChecked,
   handleResetItemsChecked,
   questions,
+  sessionBlocks,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -112,6 +116,7 @@ function ActionSearchArea({
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
 
   const itemCount = itemsChecked.length
+  const [previousSessionBlocks, setPreviousSessionBlocks] = useState([])
 
   useEffect((): void => {
     if (data) {
@@ -285,37 +290,52 @@ function ActionSearchArea({
         <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen} />
 
         <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
-          <>
-            <Button
-              icon
-              disabled={itemCount <= 1}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleQuickBlocks()}
-            >
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Split questions into {num} blocks"
-                id="questionPool.button.quickCreateSeparate"
-                values={{ num: itemCount }}
-              />
-            </Button>
-
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleQuickBlock()}
-            >
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Group questions into one block ({num}->1)"
-                id="questionPool.button.quickCreateSingle"
-                values={{ num: itemCount }}
-              />
-            </Button>
-          </>
+          <CustomButton
+            className="h-10 mr-2"
+            disabled={itemCount <= 1}
+            onClick={(): void => handleQuickBlocks(true)}
+            onMouseEnter={(): void => {
+              if (itemCount > 1) {
+                setPreviousSessionBlocks(sessionBlocks)
+                handleQuickBlocks(false)
+              }
+            }}
+            onMouseLeave={(): void => {
+              if (itemCount > 1) {
+                setSessionBlocks(previousSessionBlocks)
+              }
+            }}
+          >
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Split questions into {num} blocks"
+              id="questionPool.button.quickCreateSeparate"
+              values={{ num: itemCount }}
+            />
+          </CustomButton>
+          <CustomButton
+            className="h-10"
+            disabled={itemCount === 0}
+            onClick={(): void => handleQuickBlock(true)}
+            onMouseEnter={(): void => {
+              if (itemCount > 1) {
+                setPreviousSessionBlocks(sessionBlocks)
+                handleQuickBlock(false)
+              }
+            }}
+            onMouseLeave={(): void => {
+              if (itemCount > 1) {
+                setSessionBlocks(previousSessionBlocks)
+              }
+            }}
+          >
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Split questions into {num} blocks"
+              id="questionPool.button.quickCreateSeparate"
+              values={{ num: itemCount }}
+            />
+          </CustomButton>
         </div>
 
         <div className="flex items-center">
