@@ -58,6 +58,7 @@ interface Props {
   handleSearch: any
   handleSortByChange: any
   handleSortOrderToggle: any
+  handleQuickStart: any
   sortBy: string
   sortingTypes: {
     content: string
@@ -93,6 +94,7 @@ function ActionSearchArea({
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
+  handleQuickStart,
   sortBy,
   sortingTypes,
   sortOrder,
@@ -314,7 +316,7 @@ function ActionSearchArea({
             />
           </CustomButton>
           <CustomButton
-            className="h-10"
+            className="h-10 mr-2"
             disabled={itemCount === 0}
             onClick={(): void => handleQuickBlock(true)}
             onMouseEnter={(): void => {
@@ -333,6 +335,18 @@ function ActionSearchArea({
             <FormattedMessage
               defaultMessage="Split questions into {num} blocks"
               id="questionPool.button.quickCreateSeparate"
+              values={{ num: itemCount }}
+            />
+          </CustomButton>
+          <CustomButton
+            className={clsx('h-10 text-white bg-sky-600 opacity-80', itemCount !== 0 && 'opacity-100')}
+            disabled={itemCount === 0}
+            onClick={async (): Promise<void> => handleQuickStart()}
+          >
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Quick Start Session"
+              id="questionPool.button.quickStartSession"
               values={{ num: itemCount }}
             />
           </CustomButton>

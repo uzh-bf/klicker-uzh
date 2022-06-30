@@ -203,6 +203,54 @@ function Index(): React.ReactElement {
     push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
   }
 
+  const handleQuickStart = async (): Promise<void> => {
+    setSessionBlocks([
+      ...sessionBlocks,
+      ...selectedItems.items.map(({ id, title, type, version }): any => ({
+        id: UUIDv4(),
+        questions: [
+          {
+            id,
+            key: UUIDv4(),
+            title,
+            type,
+            version,
+          },
+        ],
+      })),
+    ])
+
+    const blocks = selectedItems.items.map((question: any): any => {
+      return {
+        questions: [
+          {
+            question: question.id,
+            version: question.version || 0,
+          },
+        ],
+      }
+    })
+    handleResetSelection()
+    setSessionBlocks([])
+
+    const result = await createSession({
+      refetchQueries: [{ query: SessionListQuery }],
+      variables: {
+        blocks,
+        name: sessionName,
+        participants: sessionParticipants.map((username) => ({ username })),
+        authenticationMode: sessionAuthenticationMode,
+      },
+    })
+    await startSession({
+      refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+      variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
+    })
+
+    push(['trackEvent', 'Question Pool', 'Quick Start Session'])
+    router.push('/sessions/running')
+  }
+
   // handle creating a new session
   const onCreateSession =
     (type): any =>
@@ -439,6 +487,7 @@ function Index(): React.ReactElement {
                     handleDeleteQuestions={onDeleteQuestions}
                     handleQuickBlock={onQuickBlock}
                     handleQuickBlocks={onQuickBlocks}
+                    handleQuickStart={handleQuickStart}
                     handleResetItemsChecked={handleResetSelection}
                     handleSearch={_debounce(handleSearch, 200)}
                     handleSetItemsChecked={handleSelectItems}

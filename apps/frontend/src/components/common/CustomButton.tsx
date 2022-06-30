@@ -7,10 +7,11 @@ interface Props {
   className?: string
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
-  onClick: () => void
+  onClick?: () => void
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
+  onSubmit?: () => void
   children: React.ReactNode
 }
 
@@ -20,8 +21,10 @@ const defaultProps = {
   className: '',
   disabled: false,
   type: 'button',
+  onClick: undefined,
   onMouseEnter: undefined,
   onMouseLeave: undefined,
+  onSubmit: undefined,
   onFocus: undefined,
 }
 
@@ -35,6 +38,7 @@ function CustomButton({
   onMouseEnter,
   onMouseLeave,
   onFocus,
+  onSubmit,
   children,
 }: Props): React.ReactElement {
   return (
@@ -51,6 +55,7 @@ function CustomButton({
       onFocus={onFocus}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onSubmit={onSubmit}
     >
       <div className={active ? activeStyle : ''}>{children}</div>
     </button>
