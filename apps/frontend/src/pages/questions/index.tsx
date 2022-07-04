@@ -429,42 +429,44 @@ function Index(): React.ReactElement {
       sidebar={{ activeItem: 'questionPool' }}
     >
       <div className="w-full h-full overflow-y-scroll">
-        <div className="flex justify-center w-full h-max md:h-72 print-hidden">
-          {editSessionId ? (
-            <SessionEditForm
-              handleCreateSession={onCreateSession}
-              handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-              handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-              handleSetSessionBlocks={setSessionBlocks}
-              handleSetSessionName={setSessionName}
-              handleSetSessionParticipants={setSessionParticipants}
-              isAuthenticationEnabled={isAuthenticationEnabled}
-              runningSessionId={runningSessionId}
-              sessionAuthenticationMode={sessionAuthenticationMode}
-              sessionBlocks={sessionBlocks}
-              sessionName={sessionName}
-              sessionParticipants={sessionParticipants}
-              setSessionName={setSessionName}
-            />
-          ) : (
-            <SessionCreationForm
-              handleCreateSession={onCreateSession}
-              handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-              handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-              handleSetSessionBlocks={setSessionBlocks}
-              handleSetSessionName={setSessionName}
-              handleSetSessionParticipants={setSessionParticipants}
-              isAuthenticationEnabled={isAuthenticationEnabled}
-              runningSessionId={runningSessionId}
-              sessionAuthenticationMode={sessionAuthenticationMode}
-              sessionBlocks={sessionBlocks}
-              sessionName={sessionName}
-              sessionParticipants={sessionParticipants}
-              setSessionName={setSessionName}
-            />
-          )}
+        <div className="flex justify-center mx-10 md:h-72 print-hidden md:mx-20">
+          <div className="max-w-[100rem] h-full w-full mt-6 gap-5">
+            {editSessionId ? (
+              <SessionEditForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            ) : (
+              <SessionCreationForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            )}
+          </div>
         </div>
-        <div className="flex  h-max justify-center md:min-h-[27.5rem] md:h-[calc(100vh-23.75rem)] mx-auto">
+        <div className="flex h-max justify-center md:min-h-[27.5rem] md:h-[calc(100vh-23.75rem)] mx-auto">
           <div className="flex flex-col md:flex-row max-w-[100rem] h-full w-full mt-6 gap-5 mx-10 md:mx-20">
             <TagList
               activeTags={filters.tags}

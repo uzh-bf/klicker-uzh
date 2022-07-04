@@ -473,6 +473,7 @@ function ActionSearchArea({
                         'h-[0.075rem] bg-grey-80 opacity-40',
                         sortingTypes.length - 1 === index && 'hidden'
                       )}
+                      key={content}
                     />
                   </>
                 ))}

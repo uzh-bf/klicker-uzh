@@ -155,7 +155,7 @@ function SessionCreationForm({
   })
 
   return (
-    <div className="w-full mx-10 md:mx-20 max-w-[100rem] mt-4">
+    <div className="w-full mt-4">
       <DragDropContext onDragEnd={onManageBlocks}>
         <form
           className="flex flex-col md:flex-row w-full border-solid rounded-md ui form border-gray-40 md:h-[16rem]"
