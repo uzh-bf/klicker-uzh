@@ -161,6 +161,79 @@ function SessionCreationForm({
           className="flex flex-col md:flex-row w-full border-solid rounded-md ui form border-gray-40 md:h-[16rem]"
           onSubmit={handleCreateSession('save')}
         >
+          <div className="flex-[0_0_17rem] p-4 pb-2 pt-0 border-0 border-t md:border-t-0 md:border-r border-solid border-grey-60 flex flex-col">
+            <div className="flex-1 mt-2 mb-2">
+              <div className="ml-0.5 text-left w-full font-bold">
+                {intl.formatMessage(messages.sessionNamePlaceholder)}
+              </div>
+              <Input
+                className="!mr-0 w-full"
+                name="sessionName"
+                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
+                value={sessionName}
+                onChange={onChangeName}
+              />
+            </div>
+
+            <CustomButton type="button" onClick={() => setSettingsModalOpen(true)}>
+              <Icon className="!mr-4" name="settings" />
+              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+            </CustomButton>
+
+            <CustomModal
+              discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              errorMessages={settingErrors}
+              escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              open={isSettingsModalOpen}
+              onDiscard={() => setSettingsModalOpen(false)}
+            >
+              <div className="mb-2 text-xl font-bold">{intl.formatMessage(messages.sessionSettingsTitle)}</div>
+              <SessionParticipantSettings
+                addError={(newError: string) => setSettingErrors([...settingErrors, newError])}
+                authenticationMode={sessionAuthenticationMode}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                participants={sessionParticipants}
+                removeError={(error: string) =>
+                  setSettingErrors(settingErrors.filter((oldError) => oldError !== error))
+                }
+                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                onChangeParticipants={handleSetSessionParticipants}
+              />
+            </CustomModal>
+
+            <CustomButton
+              className="!mt-2"
+              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
+              type="submit"
+              onClick={() => null}
+            >
+              <Icon className="!mr-4" name="save" />
+              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
+            </CustomButton>
+
+            <CustomButton
+              className={clsx(
+                '!mt-2 text-white bg-sky-600 opacity-60',
+                !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
+                  'hover:bg-sky-700 !opacity-100'
+              )}
+              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
+              type="submit"
+              onClick={handleCreateSession('start')}
+            >
+              <Icon className="!mr-4" name="play" />
+              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
+            </CustomButton>
+
+            {!!runningSessionId && (
+              <FormattedMessage
+                defaultMessage="A session is already running"
+                id="form.createSession.string.alreadyRunning"
+              />
+            )}
+          </div>
+
           <div className="flex flex-col flex-1 p-2 overflow-auto md:flex-row">
             {sessionBlocks.map(
               (block, blockIndex): React.ReactElement => (
@@ -301,76 +374,6 @@ function SessionCreationForm({
               </div>
             </div>
             {sessionBlocks.length <= 1 && <InfoArea />}
-          </div>
-
-          <div className="flex-[0_0_17rem] p-4 pt-0 border-0 border-t md:border-t-0 md:border-l border-solid border-grey-60 flex flex-col">
-            <div className="flex-1 mt-2 mb-2">
-              <Input
-                className="!mr-0 w-full"
-                name="sessionName"
-                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
-                value={sessionName}
-                onChange={onChangeName}
-              />
-            </div>
-
-            <CustomButton type="button" onClick={() => setSettingsModalOpen(true)}>
-              <Icon className="!mr-4" name="settings" />
-              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
-            </CustomButton>
-
-            <CustomModal
-              discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
-              errorMessages={settingErrors}
-              escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
-              open={isSettingsModalOpen}
-              onDiscard={() => setSettingsModalOpen(false)}
-            >
-              <div className="mb-2 text-xl font-bold">{intl.formatMessage(messages.sessionSettingsTitle)}</div>
-              <SessionParticipantSettings
-                addError={(newError: string) => setSettingErrors([...settingErrors, newError])}
-                authenticationMode={sessionAuthenticationMode}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                participants={sessionParticipants}
-                removeError={(error: string) =>
-                  setSettingErrors(settingErrors.filter((oldError) => oldError !== error))
-                }
-                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
-                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
-                onChangeParticipants={handleSetSessionParticipants}
-              />
-            </CustomModal>
-
-            <CustomButton
-              className="!mt-2"
-              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              type="submit"
-              onClick={() => null}
-            >
-              <Icon className="!mr-4" name="save" />
-              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
-            </CustomButton>
-
-            <CustomButton
-              className={clsx(
-                '!mt-2  text-white bg-sky-600 opacity-60',
-                !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
-                  'hover:bg-sky-700 !opacity-100'
-              )}
-              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              type="submit"
-              onClick={handleCreateSession('start')}
-            >
-              <Icon className="!mr-4" name="play" />
-              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
-            </CustomButton>
-
-            {!!runningSessionId && (
-              <FormattedMessage
-                defaultMessage="A session is already running"
-                id="form.createSession.string.alreadyRunning"
-              />
-            )}
           </div>
         </form>
       </DragDropContext>
