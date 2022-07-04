@@ -333,8 +333,8 @@ function ActionSearchArea({
           >
             <Icon name="lightning" />
             <FormattedMessage
-              defaultMessage="Split questions into {num} blocks"
-              id="questionPool.button.quickCreateSeparate"
+              defaultMessage="Group questions into one block ({num}->1)"
+              id="questionPool.button.quickCreateSingle"
               values={{ num: itemCount }}
             />
           </CustomButton>
