@@ -293,7 +293,7 @@ function ActionSearchArea({
 
         <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
           <CustomButton
-            className="h-10 mr-2"
+            className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount <= 1 && '!bg-grey-20')}
             disabled={itemCount <= 1}
             onClick={(): void => handleQuickBlocks(true)}
             onMouseEnter={(): void => {
@@ -316,7 +316,7 @@ function ActionSearchArea({
             />
           </CustomButton>
           <CustomButton
-            className="h-10 mr-2"
+            className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount === 0 && '!bg-grey-20')}
             disabled={itemCount === 0}
             onClick={(): void => handleQuickBlock(true)}
             onMouseEnter={(): void => {
@@ -339,7 +339,10 @@ function ActionSearchArea({
             />
           </CustomButton>
           <CustomButton
-            className={clsx('h-10 text-white bg-sky-600 opacity-80', itemCount !== 0 && 'opacity-100')}
+            className={clsx(
+              'h-10 text-white bg-sky-600  opacity-80',
+              itemCount !== 0 && 'opacity-100 hover:bg-sky-700'
+            )}
             disabled={itemCount === 0}
             onClick={async (): Promise<void> => handleQuickStart()}
           >
@@ -445,7 +448,7 @@ function ActionSearchArea({
         {withSorting && (
           <>
             <CustomButton
-              className={'!p-[0.65rem] bg-white w-11 h-11 mr-1'}
+              className="!p-[0.65rem] bg-white w-11 h-11 mr-1"
               disabled={false}
               onClick={handleSortOrderToggle}
             >

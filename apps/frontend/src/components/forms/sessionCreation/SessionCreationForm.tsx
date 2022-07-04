@@ -175,7 +175,11 @@ function SessionCreationForm({
               />
             </div>
 
-            <CustomButton type="button" onClick={() => setSettingsModalOpen(true)}>
+            <CustomButton
+              className="bg-grey-20 hover:bg-grey-40"
+              type="button"
+              onClick={() => setSettingsModalOpen(true)}
+            >
               <Icon className="!mr-4" name="settings" />
               <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
             </CustomButton>
@@ -203,7 +207,7 @@ function SessionCreationForm({
             </CustomModal>
 
             <CustomButton
-              className="!mt-2"
+              className="!mt-2 bg-grey-20 hover:bg-grey-40"
               disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               type="submit"
               onClick={() => null}
