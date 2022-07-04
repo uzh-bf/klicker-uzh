@@ -2,8 +2,6 @@ import clsx from 'clsx'
 import React from 'react'
 
 interface Props {
-  active?: boolean
-  activeStyle?: string
   className?: string
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
@@ -16,8 +14,6 @@ interface Props {
 }
 
 const defaultProps = {
-  active: false,
-  activeStyle: '',
   className: '',
   disabled: false,
   type: 'button',
@@ -29,8 +25,6 @@ const defaultProps = {
 }
 
 function CustomButton({
-  active,
-  activeStyle,
   className,
   disabled,
   type,
@@ -45,7 +39,7 @@ function CustomButton({
     <button
       className={clsx(
         className,
-        'p-2 border border-solid rounded-md border-grey-80 align-center hover:cursor-pointer',
+        'p-2 border border-solid rounded-md border-grey-80 align-center items-center hover:cursor-pointer',
         disabled && '!cursor-not-allowed'
       )}
       disabled={disabled}
@@ -57,7 +51,7 @@ function CustomButton({
       onMouseLeave={onMouseLeave}
       onSubmit={onSubmit}
     >
-      <div className={active ? activeStyle : ''}>{children}</div>
+      {children}
     </button>
   )
 }

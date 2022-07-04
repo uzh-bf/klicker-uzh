@@ -359,7 +359,7 @@ function ActionSearchArea({
             <CustomButton
               className={clsx(
                 '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
+                itemCount === 0 && '!shadow-none'
               )}
               disabled={itemCount === 0}
               onClick={onExportQuestions}
@@ -373,7 +373,7 @@ function ActionSearchArea({
             <CustomButton
               className={clsx(
                 '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
+                itemCount === 0 && '!shadow-none'
               )}
               disabled={itemCount === 0}
               onClick={onGetQuestionStatistics}
@@ -393,7 +393,7 @@ function ActionSearchArea({
             <CustomButton
               className={clsx(
                 '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
+                itemCount === 0 && '!shadow-none'
               )}
               disabled={itemCount === 0}
               onClick={(): void => handleArchiveQuestions()}
@@ -407,7 +407,7 @@ function ActionSearchArea({
             <CustomButton
               className={clsx(
                 '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!cursor-default !shadow-none'
+                itemCount === 0 && '!shadow-none'
               )}
               disabled={itemCount === 0}
               onClick={(): void => handleDeleteQuestions(false)}

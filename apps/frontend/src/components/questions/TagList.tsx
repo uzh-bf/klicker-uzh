@@ -1,11 +1,13 @@
 import React from 'react'
-import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
+import { List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/client'
 import clsx from 'clsx'
+import { XCircleIcon, ArchiveIcon } from '@heroicons/react/outline'
 
 import { QUESTION_TYPES } from '../../constants'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
+import CustomButton from '../common/CustomButton'
 
 interface Props {
   activeTags: any[]
@@ -33,20 +35,24 @@ function TagList({
   return (
     <div className="h-full pb-2">
       <div className="p-4 md:min-w-[17rem] border border-black border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-scroll">
-        <Button basic fluid className="!p-2 !mb-2" onClick={(): void => handleReset()}>
-          <Icon name="remove circle" />
+        <CustomButton
+          className="w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row justify-center"
+          onClick={(): void => handleReset()}
+        >
+          <XCircleIcon className="h-5 mr-2" />
           <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
-        </Button>
-        <Button
-          basic
-          fluid
-          active={isArchiveActive}
-          className={clsx('!p-2 hover:!text-red-500', isArchiveActive && '!text-red-500')}
+        </CustomButton>
+
+        <CustomButton
+          className={clsx(
+            isArchiveActive && 'text-red-600',
+            'w-full text-base bg-white hover:bg-grey-40 hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
+          )}
           onClick={(): void => handleToggleArchive(true)}
         >
-          <List.Icon className={clsx('!mr-3', isArchiveActive && '!text-red-500')} color="grey" name="archive" />
+          <ArchiveIcon className="h-5 mr-2" />
           <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
-        </Button>
+        </CustomButton>
 
         <List selection>
           <List.Header className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
