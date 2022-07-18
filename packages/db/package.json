@@ -17,5 +17,8 @@
   "volta": {
     "node": "16.14.0",
     "npm": "8.5.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.1"
   }
 }
