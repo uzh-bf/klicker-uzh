@@ -9,9 +9,9 @@ __azurite**
 *.archive
 secrets*.yaml
 .env
+**/**/.env
 
 **/.DS_Store
 *.pem
 
 /apps/functions/local.settings.json
-
