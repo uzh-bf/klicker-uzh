@@ -2,12 +2,12 @@ import React from 'react'
 import { List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/client'
-import clsx from 'clsx'
-import { XCircleIcon, ArchiveIcon } from '@heroicons/react/outline'
+import { faFileArchive, faXmarkCircle } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
+import { Button } from '@uzh-bf/design-system'
 import { QUESTION_TYPES } from '../../constants'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
-import CustomButton from '../common/CustomButton'
 
 interface Props {
   activeTags: any[]
@@ -34,25 +34,24 @@ function TagList({
 
   return (
     <div className="h-full pb-2">
-      <div className="p-4 md:min-w-[17rem] border border-black border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-scroll">
-        <CustomButton
-          className="w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row justify-center"
-          onClick={(): void => handleReset()}
-        >
-          <XCircleIcon className="h-5 mr-2" />
-          <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
-        </CustomButton>
+      <div className="p-4 space-y-2 md:min-w-[17rem] border border-black border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-scroll">
+        <Button fluid onClick={(): void => handleReset()}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faXmarkCircle} />
+          </Button.Icon>
+          <Button.Label>
+            <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
+          </Button.Label>
+        </Button>
 
-        <CustomButton
-          className={clsx(
-            isArchiveActive && 'text-red-600',
-            'w-full text-base bg-white hover:bg-grey-40 hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
-          )}
-          onClick={(): void => handleToggleArchive(true)}
-        >
-          <ArchiveIcon className="h-5 mr-2" />
-          <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
-        </CustomButton>
+        <Button fluid active={isArchiveActive} onClick={(): void => handleToggleArchive(true)}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faFileArchive} />
+          </Button.Icon>
+          <Button.Label>
+            <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
+          </Button.Label>
+        </Button>
 
         <List selection>
           <List.Header className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">

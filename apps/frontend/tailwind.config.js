@@ -1,3 +1,5 @@
+const { TailwindColorsUZH } = require('@uzh-bf/design-system/dist/constants')
+
 module.exports = {
   content: ['./src/**/*.{js,ts,jsx,tsx}', './node_modules/semantic-ui-react/dist/**/*.js'],
   theme: {
@@ -8,6 +10,7 @@ module.exports = {
         '2xl': '1536px',
       },
       colors: {
+        ...TailwindColorsUZH,
         'blue-100': '#0028a5',
         'blue-80': '#3353b7',
         'blue-60': '#667ec9',
