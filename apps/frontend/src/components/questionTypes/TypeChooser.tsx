@@ -26,6 +26,7 @@ const messages = defineMessages({
 })
 
 interface Props {
+  // eslint-disable-next-line no-unused-vars
   onChange: (value: string) => void
   value: string
 }
@@ -58,19 +59,17 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
         <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
 
         <CustomTooltip
-          className={'!ml-2'}
-          content={
+          tooltip={
             <FormattedMessage
               defaultMessage="Choose the type of question you would like to create."
               id="createQuestion.questionType.tooltip"
             />
           }
-          iconObject={
-            <a data-tip>
-              <Icon name="question circle" />
-            </a>
-          }
-        />
+          tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+          withArrow={false}
+        >
+          <Icon className="!ml-2" color="blue" name="question circle" />
+        </CustomTooltip>
       </label>
 
       <div className="types">

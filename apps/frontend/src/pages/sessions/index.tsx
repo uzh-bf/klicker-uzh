@@ -31,7 +31,7 @@ function Index(): React.ReactElement {
 
   const [startSession] = useMutation(StartSessionMutation)
 
-  const { handleSearch, handleSort, filters } = useSortingAndFiltering()
+  const { handleSearch, filters } = useSortingAndFiltering()
 
   const onStartSession =
     (id: string): any =>
@@ -64,10 +64,6 @@ function Index(): React.ReactElement {
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),
-          handleSort,
-          query: '',
-          sortBy: '',
-          sortOrder: '',
         },
         title: intl.formatMessage(messages.title),
       }}

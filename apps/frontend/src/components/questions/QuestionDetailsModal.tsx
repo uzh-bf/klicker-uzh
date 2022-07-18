@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { Modal } from 'semantic-ui-react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
@@ -15,10 +14,12 @@ import ModifyQuestionMutation from '../../graphql/mutations/ModifyQuestionMutati
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
 import { convertToMd } from '../../lib/utils/slateMdConversion'
+import CustomModal from '../common/CustomModal'
 
 interface Props {
   isOpen: boolean
-  handleSetIsOpen: (boolean) => void
+  // eslint-disable-next-line no-unused-vars
+  handleSetIsOpen: (arg: boolean) => void
   questionId: string
 }
 
@@ -38,7 +39,7 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
     if (versions) {
       setActiveVersion(versions.length)
     }
-  }, [questionLoading])
+  }, [questionDetails, questionLoading])
 
   const onSubmit =
     (id: string): any =>
@@ -123,48 +124,37 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
   }
 
   return (
-    <Modal
-      closeOnDimmerClick={false}
-      open={isOpen}
-      size="large"
-      // we don't want to have ESC close the modal, so don't do this
-      // onClose={(): void => setIsModalOpen(false)}
-    >
-      {/* <Modal.Header>
-        <FormattedMessage defaultMessage="Edit Question" id="editQuestion.title" />
-      </Modal.Header> */}
-      <Modal.Content>
-        {((): React.ReactElement => {
-          // if everything was loaded successfully, render the edit form
-          const { id, tags, title, type, versions } = _pick(questionDetails.question, [
-            'id',
-            'tags',
-            'title',
-            'type',
-            'versions',
-          ])
+    <CustomModal className="!pb-4" open={isOpen}>
+      {((): React.ReactElement => {
+        // if everything was loaded successfully, render the edit form
+        const { id, tags, title, type, versions } = _pick(questionDetails.question, [
+          'id',
+          'tags',
+          'title',
+          'type',
+          'versions',
+        ])
 
-          return (
-            <QuestionEditForm
-              activeVersion={activeVersion}
-              allTags={tagList.tags}
-              editSuccess={{
-                message: (error && error.message) || null,
-                success: (data && !error) || null,
-              }}
-              handleActiveVersionChange={setActiveVersion}
-              handleDiscard={(): void => handleSetIsOpen(false)}
-              handleSubmit={onSubmit(id)}
-              loading={loading}
-              questionTags={tags}
-              title={title}
-              type={type}
-              versions={versions}
-            />
-          )
-        })()}
-      </Modal.Content>
-    </Modal>
+        return (
+          <QuestionEditForm
+            activeVersion={activeVersion}
+            allTags={tagList.tags}
+            editSuccess={{
+              message: (error && error.message) || null,
+              success: (data && !error) || null,
+            }}
+            handleActiveVersionChange={setActiveVersion}
+            handleDiscard={(): void => handleSetIsOpen(false)}
+            handleSubmit={onSubmit(id)}
+            loading={loading}
+            questionTags={tags}
+            title={title}
+            type={type}
+            versions={versions}
+          />
+        )
+      })()}
+    </CustomModal>
   )
 }
 

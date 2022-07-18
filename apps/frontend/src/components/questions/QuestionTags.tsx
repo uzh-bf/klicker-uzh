@@ -1,55 +1,19 @@
 import React from 'react'
-import { useIntl } from 'react-intl'
-
-import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
   tags: { id: string; name: string }[]
-  type: string
 }
 
-function QuestionTags({ tags, type }: Props): React.ReactElement {
-  const intl = useIntl()
-
+function QuestionTags({ tags }: Props): React.ReactElement {
   return (
-    <div className="questionTags">
+    <div className="flex flex-row">
       {tags.map(
         (tag): React.ReactElement => (
-          <div className="border border-b-0 border-solid border-primary tag bg-primary-bg" key={tag.id}>
+          <div className="p-1 px-2 m-1 mt-0 bg-white border border-solid rounded-md border-blue-40 w-max" key={tag.id}>
             {tag.name}
           </div>
         )
       )}
-
-      <div className="font-bold border border-b-0 border-l-0 border-solid border-primary tag bg-primary-50">
-        {generateTypesShort(intl)[type]}
-      </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .questionTags {
-          display: flex;
-          flex-flow: row wrap;
-
-          .tag {
-            padding: 0.3rem 0.5rem;
-            flex: 1;
-            text-align: center;
-          }
-
-          @include desktop-tablet-only {
-            align-items: flex-end;
-            flex-flow: row nowrap;
-            justify-content: flex-end;
-
-            .tag {
-              padding: 0.5rem 1rem;
-              flex: 0 1 auto;
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

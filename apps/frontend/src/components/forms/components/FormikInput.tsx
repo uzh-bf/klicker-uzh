@@ -29,6 +29,7 @@ interface Props {
   type?: string
   value: string | number
   width?: any // SemanticWIDTHSNUMBER
+  className?: string
 }
 
 const defaultProps = {
@@ -42,6 +43,7 @@ const defaultProps = {
   required: false,
   tooltip: undefined,
   width: undefined,
+  className: '',
 }
 
 function FormikInput({
@@ -61,6 +63,7 @@ function FormikInput({
   width,
   tooltip,
   errorMessage,
+  className,
   // remaining props
   ...rest
 }: Props): React.ReactElement {
@@ -83,20 +86,19 @@ function FormikInput({
   const showError = touched && !!error
 
   return (
-    <Form.Field {...fieldProps}>
+    <Form.Field {...fieldProps} className={className}>
       {label && (
         <label htmlFor={name}>
           {label}
           {tooltip && (
             <CustomTooltip
-              className={'!ml-2'}
-              content={tooltip}
-              iconObject={
-                <a data-tip>
-                  <Icon className="icon" name="question circle" />
-                </a>
-              }
-            />
+              tooltip={tooltip}
+              tooltipStyle={'max-w-[40%] md:max-w-[60%] text-sm md:text-base'}
+              triggerStyle={'!ml-2'}
+              withArrow={false}
+            >
+              <Icon className="icon" color="blue" name="question circle" />
+            </CustomTooltip>
           )}
         </label>
       )}

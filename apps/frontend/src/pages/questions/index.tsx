@@ -3,7 +3,6 @@ import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
-import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
@@ -12,7 +11,6 @@ import { Loader, Message } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 import { push } from '@socialgouv/matomo-next'
 
-import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useSelection from '../../lib/hooks/useSelection'
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
@@ -29,14 +27,10 @@ import SessionEditForm from '../../components/forms/sessionCreation/SessionEditF
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
-import ActionBar from '../../components/questions/ActionBar'
+import ActionSearchArea from '../../components/questions/ActionSearchArea'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
-import {
-  AuthenticationMode,
-  DataStorageMode,
-} from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
-import withFeatureFlags from '../../lib/withFeatureFlags'
+import { AuthenticationMode } from '../../components/forms/sessionCreation/SessionParticipantSettings'
 import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
@@ -50,13 +44,12 @@ const messages = defineMessages({
   },
 })
 
-function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
+function Index(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
   const { addToast } = useToasts()
 
   useEffect((): void => {
-    router.prefetch('/questions/details')
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
   })
@@ -66,9 +59,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     'gamification-survey-visible'
   )
 
-  const [creationMode, setCreationMode] = useState(
-    (): boolean => !!router.query.creationMode || !!router.query.editSessionId
-  )
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
@@ -76,7 +66,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
   const [sessionParticipants, setSessionParticipants] = useState([])
   const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('NONE' as AuthenticationMode)
-  const [sessionDataStorageMode, setSessionDataStorageMode] = useState('SECRET' as DataStorageMode)
 
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
@@ -97,7 +86,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
-  const [questionView, setQuestionView] = useState('list')
+  const runningSessionId = _get(data, 'runningSessionId')
 
   const index = useMemo(() => {
     if (data?.questions) {
@@ -117,22 +106,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   }, [data, filters, sort, index])
 
   const { editSessionId, copy: copyMode } = router.query
-
-  const onCreationModeToggle = (): void => {
-    // if the creation mode was activated before, reset blocks on toggle
-    if (creationMode) {
-      setCreationMode(false)
-      setSessionBlocks([])
-      setIsAuthenticationEnabled(false)
-      setSessionParticipants([])
-      setSessionAuthenticationMode('PASSWORD')
-      setSessionDataStorageMode('SECRET')
-    } else {
-      // turn on creation mode
-      setCreationMode(true)
-      setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
-    }
-  }
 
   // override the toggle archive function
   // need to reset the selection on toggling archive to not apply actions to hidden questions
@@ -181,32 +154,56 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   }
 
   // build a single block from all the checked questions
-  const onQuickBlock = (): void => {
-    // reset the checked questions
-    handleResetSelection()
-
-    setSessionBlocks([
-      ...sessionBlocks,
-      {
-        id: UUIDv4(),
-        questions: selectedItems.items.map(({ id, title, type, version }): any => ({
-          id,
-          key: UUIDv4(),
-          title,
-          type,
-          version,
-        })),
-      },
-    ])
+  const onQuickBlock = (submitSelection: boolean): void => {
+    if (!submitSelection) {
+      setSessionBlocks([
+        ...sessionBlocks,
+        {
+          id: UUIDv4(),
+          questions: selectedItems.items.map(({ id, title, type, version }): any => ({
+            id,
+            key: UUIDv4(),
+            title,
+            type,
+            version,
+          })),
+        },
+      ])
+    } else {
+      // reset question selection on submit
+      handleResetSelection()
+    }
 
     push(['trackEvent', 'Question Pool', 'Quick Block Created', selectedItems.items.length])
   }
 
   // build a separate block for each checked question
-  const onQuickBlocks = (): void => {
-    // reset the checked questions
-    handleResetSelection()
+  const onQuickBlocks = (submitSelection: boolean): void => {
+    if (!submitSelection) {
+      setSessionBlocks([
+        ...sessionBlocks,
+        ...selectedItems.items.map(({ id, title, type, version }): any => ({
+          id: UUIDv4(),
+          questions: [
+            {
+              id,
+              key: UUIDv4(),
+              title,
+              type,
+              version,
+            },
+          ],
+        })),
+      ])
+    } else {
+      // reset question selection on submit
+      handleResetSelection()
+    }
 
+    push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
+  }
+
+  const handleQuickStart = async (): Promise<void> => {
     setSessionBlocks([
       ...sessionBlocks,
       ...selectedItems.items.map(({ id, title, type, version }): any => ({
@@ -223,7 +220,35 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
       })),
     ])
 
-    push(['trackEvent', 'Question Pool', 'Quick Blocks Created', selectedItems.items.length])
+    const blocks = selectedItems.items.map((question: any): any => {
+      return {
+        questions: [
+          {
+            question: question.id,
+            version: question.version || 0,
+          },
+        ],
+      }
+    })
+    handleResetSelection()
+    setSessionBlocks([])
+
+    const result = await createSession({
+      refetchQueries: [{ query: SessionListQuery }],
+      variables: {
+        blocks,
+        name: sessionName,
+        participants: sessionParticipants.map((username) => ({ username })),
+        authenticationMode: sessionAuthenticationMode,
+      },
+    })
+    await startSession({
+      refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+      variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
+    })
+
+    push(['trackEvent', 'Question Pool', 'Quick Start Session'])
+    router.push('/sessions/running')
   }
 
   // handle creating a new session
@@ -256,7 +281,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               name: sessionName,
               participants: sessionParticipants.map((username) => ({ username })),
               authenticationMode: sessionAuthenticationMode,
-              storageMode: sessionDataStorageMode,
             },
           })
 
@@ -270,7 +294,6 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               name: sessionName,
               participants: sessionParticipants.map((username) => ({ username })),
               authenticationMode: sessionAuthenticationMode,
-              storageMode: sessionDataStorageMode,
             },
           })
 
@@ -305,8 +328,11 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
           })
         }
 
-        // disable creation mode
-        onCreationModeToggle()
+        setSessionBlocks([])
+        setIsAuthenticationEnabled(false)
+        setSessionParticipants([])
+        setSessionAuthenticationMode('PASSWORD')
+        setSessionName('')
       } catch ({ message }) {
         console.error(message)
         addToast(
@@ -347,6 +373,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
               return
             }
 
+            // @ts-ignore
             const { questions } = cache.readQuery({ query: QuestionPoolQuery })
             cache.writeQuery({
               data: {
@@ -392,131 +419,109 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
-  const onChangeQuestionView = (newView: string): void => {
-    if (featureFlags?.flags?.questionPoolGridLayout) {
-      setQuestionView(newView)
-      push(['trackEvent', 'Question Pool', 'View Mode Toggled', newView])
-    }
-  }
-
-  const renderActionArea = (runningSessionId): React.ReactElement => {
-    if (creationMode) {
-      if (editSessionId) {
-        return (
-          <SessionEditForm
-            handleCreateSession={onCreateSession}
-            handleCreationModeToggle={onCreationModeToggle}
-            handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-            handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-            handleSetSessionBlocks={setSessionBlocks}
-            handleSetSessionDataStorageMode={setSessionDataStorageMode}
-            handleSetSessionName={setSessionName}
-            handleSetSessionParticipants={setSessionParticipants}
-            isAuthenticationEnabled={isAuthenticationEnabled}
-            runningSessionId={runningSessionId}
-            sessionAuthenticationMode={sessionAuthenticationMode}
-            sessionBlocks={sessionBlocks}
-            sessionDataStorageMode={sessionDataStorageMode}
-            sessionName={sessionName}
-            sessionParticipants={sessionParticipants}
-          />
-        )
-      }
-
-      return (
-        <SessionCreationForm
-          handleCreateSession={onCreateSession}
-          handleCreationModeToggle={onCreationModeToggle}
-          handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-          handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
-          handleSetSessionBlocks={setSessionBlocks}
-          handleSetSessionDataStorageMode={setSessionDataStorageMode}
-          handleSetSessionName={setSessionName}
-          handleSetSessionParticipants={setSessionParticipants}
-          isAuthenticationEnabled={isAuthenticationEnabled}
-          runningSessionId={runningSessionId}
-          sessionAuthenticationMode={sessionAuthenticationMode}
-          sessionBlocks={sessionBlocks}
-          sessionDataStorageMode={sessionDataStorageMode}
-          sessionName={sessionName}
-          sessionParticipants={sessionParticipants}
-        />
-      )
-    }
-
-    return null
-  }
-
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={renderActionArea(_get(data, 'runningSessionId'))}
       navbar={{
-        search: {
-          handleSearch: _debounce(handleSearch, 200),
-          handleSortByChange,
-          handleSortOrderToggle,
-          sortBy: sort.by,
-          sortingTypes: QUESTION_SORTINGS,
-          sortOrder: sort.asc,
-          withSorting: true,
-        },
         title: intl.formatMessage(messages.title),
       }}
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
-      <div className="flex flex-col h-full overflow-y-auto md:flex-row md:flex-wrap">
-        <div className="flex-1 h-full p-4 md:overflow-y-auto bg-primary-10 md:flex-initial md:width-[17rem]">
-          <TagList
-            activeTags={filters.tags}
-            activeType={filters.type}
-            handleReset={handleReset}
-            handleTagClick={handleTagClick}
-            handleToggleArchive={onToggleArchive}
-            isArchiveActive={filters.archive}
-          />
+      <div className="w-full h-full overflow-y-scroll">
+        <div className="flex justify-center mx-10 md:h-72 print-hidden md:mx-20">
+          <div className="max-w-[100rem] h-full w-full mt-6 gap-5">
+            {editSessionId ? (
+              <SessionEditForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            ) : (
+              <SessionCreationForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            )}
+          </div>
         </div>
-        <div className="h-full p-4 md:flex-1">
-          {((): React.ReactElement | React.ReactElement[] => {
-            if (!data || loading) {
-              return <Loader active />
-            }
+        <div className="flex h-max justify-center md:min-h-[27.5rem] md:h-[calc(100vh-23.75rem)] mx-auto">
+          <div className="flex flex-col md:flex-row max-w-[100rem] h-full w-full mt-6 gap-5 mx-10 md:mx-20">
+            <TagList
+              activeTags={filters.tags}
+              activeType={filters.type}
+              handleReset={handleReset}
+              handleTagClick={handleTagClick}
+              handleToggleArchive={onToggleArchive}
+              isArchiveActive={filters.archive}
+            />
 
-            return [
-              <ActionBar
-                creationMode={creationMode}
-                deletionConfirmation={deletionConfirmation}
-                handleArchiveQuestions={onArchiveQuestions}
-                handleCreationModeToggle={onCreationModeToggle}
-                handleDeleteQuestions={onDeleteQuestions}
-                handleQuesionViewChange={onChangeQuestionView}
-                handleQuickBlock={onQuickBlock}
-                handleQuickBlocks={onQuickBlocks}
-                handleResetItemsChecked={handleResetSelection}
-                handleSetItemsChecked={handleSelectItems}
-                isArchiveActive={filters.archive}
-                isViewToggleVisible={featureFlags?.flags?.questionPoolGridLayout}
-                itemsChecked={selectedItems.ids}
-                key="action-bar"
-                questionView={questionView}
-                questions={processedQuestions}
-              />,
-              <div className="md:max-w-7xl md:mx-auto h-[95%] mt-4 md:overflow-y-auto" key="question-list">
-                <QuestionList
-                  creationMode={creationMode}
-                  isArchiveActive={filters.archive}
-                  questionView={questionView}
-                  questions={processedQuestions}
-                  selectedItems={selectedItems}
-                  onQuestionChecked={handleSelectItem}
-                />
-              </div>,
-            ]
-          })()}
+            <div className="w-full">
+              {!data || loading ? (
+                <Loader active />
+              ) : (
+                <div className="flex flex-col w-full">
+                  <ActionSearchArea
+                    withSorting
+                    deletionConfirmation={deletionConfirmation}
+                    handleArchiveQuestions={onArchiveQuestions}
+                    handleDeleteQuestions={onDeleteQuestions}
+                    handleQuickBlock={onQuickBlock}
+                    handleQuickBlocks={onQuickBlocks}
+                    handleQuickStart={handleQuickStart}
+                    handleResetItemsChecked={handleResetSelection}
+                    handleSearch={_debounce(handleSearch, 200)}
+                    handleSetItemsChecked={handleSelectItems}
+                    handleSortByChange={handleSortByChange}
+                    handleSortOrderToggle={handleSortOrderToggle}
+                    isArchiveActive={filters.archive}
+                    itemsChecked={selectedItems.ids}
+                    key="action-area"
+                    questions={processedQuestions}
+                    sessionBlocks={sessionBlocks}
+                    setSessionBlocks={setSessionBlocks}
+                    sortBy={sort.by}
+                    sortOrder={sort.asc}
+                    sortingTypes={QUESTION_SORTINGS}
+                  />
+
+                  <div
+                    className="w-full mt-4 md:min-h-[20rem] h-full md:h-[calc(100vh-30.5rem)] md:overflow-y-auto  md:mx-auto"
+                    key="question-list"
+                  >
+                    <QuestionList
+                      questions={processedQuestions}
+                      selectedItems={selectedItems}
+                      onQuestionChecked={handleSelectItem}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
+        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
           <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
             <Message
               warning
@@ -544,4 +549,4 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
   )
 }
 
-export default withFeatureFlags(Index)
+export default Index

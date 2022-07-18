@@ -4,7 +4,7 @@ import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QUESTION_TYPES } from '../../../constants'
-import CustomTooltips from '../../common/CustomTooltip'
+import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
   dirty?: boolean
@@ -17,6 +17,8 @@ interface Props {
 
 const defaultProps = {
   disabled: false,
+  dirty: false,
+  invalid: undefined,
 }
 
 function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }: Props): React.ReactElement {
@@ -42,33 +44,31 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
   }
 
   return (
-    <div className="FREECreationOptions">
+    <div>
       {type === QUESTION_TYPES.FREE_RANGE && (
         <Form.Field required error={dirty && invalid}>
-          <label htmlFor="options">
+          <label className="!text-xl" htmlFor="options">
             <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
 
-            <CustomTooltips
-              className={'!ml-2'}
-              content={
+            <CustomTooltip
+              tooltip={
                 <FormattedMessage
                   defaultMessage="Choose the allowed format of incoming responses."
                   id="createQuestion.optionsFREE.tooltip"
                 />
               }
-              iconObject={
-                <a data-tip>
-                  <Icon name="question circle" />
-                </a>
-              }
-            />
+              tooltipStyle={'text-sm md:text-base max-w-[80%] md:max-w-full'}
+              withArrow={false}
+            >
+              <Icon className="!ml-2" color="blue" name="question circle" />
+            </CustomTooltip>
           </label>
 
           {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 
-          <div className="range">
-            <Form.Field>
-              <label htmlFor="min">
+          <div className="flex flex-col mt-4 md:flex-row">
+            <Form.Field className="!w-40 !mr-4">
+              <label className="!text-lg" htmlFor="min">
                 <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
               </label>
               <Input
@@ -81,8 +81,8 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
               />
             </Form.Field>
 
-            <Form.Field>
-              <label htmlFor="max">
+            <Form.Field className="!w-40">
+              <label className="!text-lg" htmlFor="max">
                 <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
               </label>
               <Input
@@ -97,45 +97,6 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
           </div>
         </Form.Field>
       )}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .FREECreationOptions {
-          @include tooltip-icon;
-
-          .optionsChooser {
-            display: flex;
-
-            > :global(*):not(:last-child) {
-              margin-right: 1rem;
-            }
-          }
-
-          .range {
-            display: flex;
-            flex-direction: column;
-
-            margin-top: 1rem;
-
-            :global(.field) > label {
-              font-size: 1rem;
-            }
-
-            @include desktop-tablet-only {
-              flex-direction: row;
-
-              :global(.field) {
-                width: 10rem;
-
-                &:not(:last-child) {
-                  margin-right: 1rem;
-                }
-              }
-            }
-          }
-        }
-      `}</style>
     </div>
   )
 }

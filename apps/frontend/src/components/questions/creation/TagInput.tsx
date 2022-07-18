@@ -40,19 +40,17 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
           <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
 
           <CustomTooltip
-            className={'!ml-2'}
-            content={
+            tooltip={
               <FormattedMessage
                 defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
                 id="createQuestion.tagInput.tooltip"
               />
             }
-            iconObject={
-              <a data-tip>
-                <Icon name="question circle" />
-              </a>
-            }
-          />
+            tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+            withArrow={false}
+          >
+            <Icon className="!ml-2" color="blue" name="question circle" />
+          </CustomTooltip>
         </label>
 
         <Dropdown

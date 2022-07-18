@@ -17,6 +17,11 @@ interface Props {
   }
 }
 
+const defaultProps = {
+  dirty: false,
+  invalid: false,
+}
+
 function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props): React.ReactElement {
   const { choices } = value
 
@@ -47,57 +52,47 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
       handleChange(reorder(choices, index, index + 1))
 
   return (
-    <div className="SCCreationOptions">
-      <Form.Field required error={dirty && invalid}>
-        <label htmlFor="options">
-          <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
+    <Form.Field required error={dirty && invalid}>
+      <label className="!text-xl" htmlFor="options">
+        <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
 
-          <CustomTooltip
-            className={'!ml-2'}
-            content={
-              <FormattedMessage
-                defaultMessage="Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side."
-                id="createQuestion.optionsSC.tooltip"
-              />
-            }
-            iconObject={
-              <a data-tip>
-                <Icon name="question circle" />
-              </a>
-            }
-          />
-        </label>
+        <CustomTooltip
+          tooltip={
+            <FormattedMessage
+              defaultMessage="Add answering options the respondents can choose from. All fields include full support for markdown formatting and inline LaTeX formulas enclosed by two $-signs on each side."
+              id="createQuestion.optionsSC.tooltip"
+            />
+          }
+          tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
+          withArrow={false}
+        >
+          <Icon className="!ml-2" color="blue" name="question circle" />
+        </CustomTooltip>
+      </label>
 
-        <div className="options">
-          {choices.map(
-            ({ correct, name }, index): React.ReactElement => (
-              <SCCreationOption
-                correct={correct}
-                disabled={disabled}
-                handleCorrectToggle={onToggleOptionCorrect(index)}
-                handleDelete={onDeleteOption(index)}
-                handleMoveDown={onMoveDown(index)}
-                handleMoveUp={onMoveUp(index)}
-                handleSaveNewName={onSaveNewName(index)}
-                index={index}
-                key={index}
-                name={name}
-              />
-            )
-          )}
-        </div>
+      <div className="options">
+        {choices.map(
+          ({ correct, name }, index): React.ReactElement => (
+            <SCCreationOption
+              correct={correct}
+              disabled={disabled}
+              handleCorrectToggle={onToggleOptionCorrect(index)}
+              handleDelete={onDeleteOption(index)}
+              handleMoveDown={onMoveDown(index)}
+              handleMoveUp={onMoveUp(index)}
+              handleSaveNewName={onSaveNewName(index)}
+              index={index}
+              key={name}
+              name={name}
+            />
+          )
+        )}
+      </div>
 
-        {!disabled && <SCCreationPlaceholder handleSave={onNewOption} />}
-      </Form.Field>
-
-      <style jsx>{`
-        @import 'src/theme';
-        .SCCreationOptions {
-          @include tooltip-icon;
-        }
-      `}</style>
-    </div>
+      {!disabled && <SCCreationPlaceholder handleSave={onNewOption} />}
+    </Form.Field>
   )
 }
 
+SCCreationOptions.defaultProps = defaultProps
 export default SCCreationOptions
