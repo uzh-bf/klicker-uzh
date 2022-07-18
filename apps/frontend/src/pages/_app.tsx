@@ -9,6 +9,7 @@ import { ApolloProvider } from '@apollo/client'
 import getConfig from 'next/config'
 import Router, { useRouter } from 'next/router'
 import { init, push } from '@socialgouv/matomo-next'
+import { ThemeProvider } from '@uzh-bf/design-system'
 
 import { useApollo } from '../lib/apollo'
 import { polyfill } from '../polyfills.mjs'
@@ -86,19 +87,32 @@ function Klicker({ Component, pageProps, locale, messages }) {
       {publicRuntimeConfig.googleAnalyticsTrackingId && <GoogleAnalytics />}
       {publicRuntimeConfig.happyKitAnalyticsKey && <HappyKitAnalytics />}
 
-      <DndProvider backend={HTML5Backend}>
-        <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
-          <ApolloProvider client={apolloClient}>
-            <ToastProvider autoDismiss>
-              <UserContext.Provider value={user}>
-                <StrictMode>
-                  <Component {...pageProps} />
-                </StrictMode>
-              </UserContext.Provider>
-            </ToastProvider>
-          </ApolloProvider>
-        </IntlProvider>
-      </DndProvider>
+      <ThemeProvider
+        theme={{
+          primaryBg: 'bg-uzh-blue-20',
+          primaryBgHover: 'hover:bg-uzh-blue-20',
+          primaryBorder: 'border-uzh-blue-40',
+          primaryBorderHover: 'hover:border-uzh-blue-40',
+          primaryText: 'text-uzh-blue-100',
+          primaryTextHover: 'hover:text-uzh-blue-100',
+          primaryFill: 'fill-uzh-blue-80',
+          primaryFillHover: 'hover:fill-uzh-blue-100',
+        }}
+      >
+        <DndProvider backend={HTML5Backend}>
+          <IntlProvider defaultLocale="en" locale={locale} messages={messages}>
+            <ApolloProvider client={apolloClient}>
+              <ToastProvider autoDismiss>
+                <UserContext.Provider value={user}>
+                  <StrictMode>
+                    <Component {...pageProps} />
+                  </StrictMode>
+                </UserContext.Provider>
+              </ToastProvider>
+            </ApolloProvider>
+          </IntlProvider>
+        </DndProvider>
+      </ThemeProvider>
     </>
   )
 }
