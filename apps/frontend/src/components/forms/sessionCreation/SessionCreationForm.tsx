@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
+import clsx from 'clsx'
+import dayjs from 'dayjs'
+
 import {
   removeQuestion,
   moveQuestion,
@@ -12,16 +15,13 @@ import {
   reorder,
   deleteArrayElement,
 } from '../../../lib/utils/move'
-
-import QuestionSingle from '../../questions/QuestionSingle'
+import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
 import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
-
 import validationSchema from '../common/validationSchema'
-import SessionParticipantsModal, {
-  DataStorageMode,
-  AuthenticationMode,
-} from './participantsModal/SessionParticipantsModal'
+import CustomButton from '../../common/CustomButton'
+import CustomModal from '../../common/CustomModal'
+import SessionParticipantSettings, { AuthenticationMode } from './SessionParticipantSettings'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -29,6 +29,10 @@ const messages = defineMessages({
   sessionNamePlaceholder: {
     defaultMessage: 'Session Name',
     id: 'form.createSession.sessionName',
+  },
+  sessionSettingsTitle: {
+    defaultMessage: 'Session Settings',
+    id: 'form.createSession.settings.title',
   },
 })
 
@@ -43,16 +47,13 @@ interface Props {
   handleSetSessionParticipants: any
   handleSetIsAuthenticationEnabled: any
   handleCreateSession: any
-  handleCreationModeToggle: any
+  setSessionName: any
   sessionInteractionType?: string
   sessionAuthenticationMode: AuthenticationMode
-  sessionDataStorageMode: DataStorageMode
   handleSetSessionAuthenticationMode: any
-  handleSetSessionDataStorageMode: any
 }
 
 const defaultProps = {
-  sessionBlocks: [],
   sessionInteractionType: 'CREATE',
 }
 
@@ -82,14 +83,13 @@ function SessionCreationForm({
   handleSetSessionName,
   handleSetSessionParticipants,
   handleCreateSession,
-  handleCreationModeToggle,
-  sessionInteractionType,
+  setSessionName,
   sessionAuthenticationMode,
-  sessionDataStorageMode,
   handleSetSessionAuthenticationMode,
-  handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
+  const [isSettingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [settingErrors, setSettingErrors] = useState([])
 
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
@@ -150,21 +150,109 @@ function SessionCreationForm({
       name: sessionName,
     })
 
+  useEffect(() => {
+    setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
+  })
+
   return (
-    <div className="creationForm">
+    <div className="w-full mt-4">
       <DragDropContext onDragEnd={onManageBlocks}>
-        <form className="ui form sessionCreation" onSubmit={handleCreateSession('save')}>
-          <div className="sessionTimeline">
+        <form
+          className="flex flex-col md:flex-row w-full border-solid rounded-md ui form border-gray-40 md:h-[16rem]"
+          onSubmit={handleCreateSession('save')}
+        >
+          <div className="flex-[0_0_17rem] p-4 pb-2 pt-0 border-0 border-t md:border-t-0 md:border-r border-solid border-grey-60 flex flex-col">
+            <div className="flex-1 mt-2 mb-2">
+              <div className="ml-0.5 text-left w-full font-bold">
+                {intl.formatMessage(messages.sessionNamePlaceholder)}
+              </div>
+              <Input
+                className="!mr-0 w-full"
+                name="sessionName"
+                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
+                value={sessionName}
+                onChange={onChangeName}
+              />
+            </div>
+
+            <CustomButton
+              className="bg-grey-20 hover:bg-grey-40"
+              type="button"
+              onClick={() => setSettingsModalOpen(true)}
+            >
+              <Icon className="!mr-4" name="settings" />
+              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+            </CustomButton>
+
+            <CustomModal
+              discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              errorMessages={settingErrors}
+              escapeEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
+              open={isSettingsModalOpen}
+              onDiscard={() => setSettingsModalOpen(false)}
+            >
+              <div className="mb-2 text-xl font-bold">{intl.formatMessage(messages.sessionSettingsTitle)}</div>
+              <SessionParticipantSettings
+                addError={(newError: string) => setSettingErrors([...settingErrors, newError])}
+                authenticationMode={sessionAuthenticationMode}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                participants={sessionParticipants}
+                removeError={(error: string) =>
+                  setSettingErrors(settingErrors.filter((oldError) => oldError !== error))
+                }
+                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                onChangeParticipants={handleSetSessionParticipants}
+              />
+            </CustomModal>
+
+            <CustomButton
+              className="!mt-2 bg-grey-20 hover:bg-grey-40"
+              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
+              type="submit"
+              onClick={() => null}
+            >
+              <Icon className="!mr-4" name="save" />
+              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
+            </CustomButton>
+
+            <CustomButton
+              className={clsx(
+                '!mt-2 text-white bg-sky-600 opacity-60',
+                !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
+                  'hover:bg-sky-700 !opacity-100'
+              )}
+              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
+              type="submit"
+              onClick={handleCreateSession('start')}
+            >
+              <Icon className="!mr-4" name="play" />
+              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
+            </CustomButton>
+
+            {!!runningSessionId && (
+              <FormattedMessage
+                defaultMessage="A session is already running"
+                id="form.createSession.string.alreadyRunning"
+              />
+            )}
+          </div>
+
+          <div className="flex flex-col flex-1 p-2 overflow-auto md:flex-row">
             {sessionBlocks.map(
               (block, blockIndex): React.ReactElement => (
-                <div className="block" key={block.id}>
-                  <div className="header">
-                    <div>
+                <div
+                  className="border-0 border-b md:border-b-0 pb-3 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px] w-full md:max-w-[200px]"
+                  key={block.id}
+                >
+                  <div className="flex flex-row justify-between font-bold text-center align-center pt-0 pr-2 pb-[0.3rem] pl-2">
+                    <div className="pt-3 md:pt-0.5">
                       {`Block ${blockIndex + 1}`} {`(${block.questions.length})`}
                     </div>
-                    <div>
+                    <div className="hidden md:block">
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="arrow left"
                         size="mini"
                         type="button"
@@ -172,6 +260,7 @@ function SessionCreationForm({
                       />
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="trash"
                         size="mini"
                         type="button"
@@ -179,6 +268,7 @@ function SessionCreationForm({
                       />
                       <Button
                         basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
                         icon="arrow right"
                         size="mini"
                         type="button"
@@ -186,60 +276,100 @@ function SessionCreationForm({
                       />
                     </div>
                   </div>
-                  <Droppable droppableId={block.id}>
-                    {(provided, snapshot): React.ReactElement => (
-                      <div className="questions" ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)}>
-                        {block.questions.map(
-                          ({ id, key, title, type, version, description }, index): React.ReactElement => (
-                            <Draggable draggableId={`${key}-${index}-${id}`} index={index} key={key}>
-                              {(innerProvided, innerSnapshot): React.ReactElement => (
-                                <div
-                                  className="question"
-                                  ref={innerProvided.innerRef}
-                                  {...innerProvided.draggableProps}
-                                  {...innerProvided.dragHandleProps}
-                                  style={getItemStyle(innerSnapshot.isDragging, innerProvided.draggableProps.style)}
-                                >
-                                  <QuestionSingle
-                                    description={description}
-                                    hasParticipantCount={false}
-                                    id={id}
-                                    title={title}
-                                    type={type}
-                                    version={version}
-                                    onDelete={(): void => onRemoveQuestion(blockIndex, index)}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          )
+                  <div className="flex flex-row h-full">
+                    <div className="flex flex-col flex-1 h-full max-h-[12.5rem]">
+                      <Droppable droppableId={block.id}>
+                        {(provided, snapshot): React.ReactElement => (
+                          <div
+                            className="flex-1 p-2 overflow-auto max-h-[10rem]"
+                            ref={provided.innerRef}
+                            style={getListStyle(snapshot.isDraggingOver)}
+                          >
+                            {block.questions.map(
+                              ({ id, key, title, type }, index): React.ReactElement => (
+                                <Draggable draggableId={`${key}-${index}-${id}`} index={index} key={key}>
+                                  {(innerProvided, innerSnapshot): React.ReactElement => (
+                                    <div
+                                      className="!bg-white"
+                                      ref={innerProvided.innerRef}
+                                      {...innerProvided.draggableProps}
+                                      {...innerProvided.dragHandleProps}
+                                      style={getItemStyle(innerSnapshot.isDragging, innerProvided.draggableProps.style)}
+                                    >
+                                      <QuestionSingleCompact
+                                        id={id}
+                                        title={title}
+                                        type={type}
+                                        onDelete={(): void => onRemoveQuestion(blockIndex, index)}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              )
+                            )}
+                            {provided.placeholder}
+                          </div>
                         )}
-                        {provided.placeholder}
+                      </Droppable>
+                      <div className="flex-[0_0_2rem] mt-4 my-0 mx-[0.5rem]">
+                        <QuestionDropzone
+                          onDrop={(question): void => {
+                            onExtendBlock(block.id, { ...question, type: question.questionType })
+                          }}
+                        />
                       </div>
-                    )}
-                  </Droppable>
-                  <div className="blockDropzone">
-                    <QuestionDropzone
-                      onDrop={(question): void => {
-                        onExtendBlock(block.id, { ...question, type: question.questionType })
-                      }}
-                    />
+                    </div>
+                    <div className="flex flex-col md:hidden">
+                      <Button
+                        basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
+                        icon="arrow up"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onReorderBlocks(blockIndex, blockIndex - 1)}
+                      />
+                      <Button
+                        basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
+                        icon="trash"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onRemoveBlock(blockIndex)}
+                      />
+                      <Button
+                        basic
+                        className="!p-2 !mr-0 !border-0 !shadow-none"
+                        icon="arrow down"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
+                      />
+                    </div>
                   </div>
                 </div>
               )
             )}
-            <div className="newBlock">
-              <div className="header">
+            <div
+              className={clsx(
+                'border-0 border-b md:border-b-0 pb-4 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px] max-h-[15rem]',
+                sessionBlocks.length > 1 && 'border-b-0'
+              )}
+            >
+              <div className="flex justify-between font-bold text-center align-center pt-3 md:pt-0.5 pr-2 pb-[0.3rem] pl-2 max-h-[10rem] md:min-h-[10rem]">
                 <FormattedMessage defaultMessage="New Block" id="form.createSession.newBlock" />
               </div>
               <Droppable droppableId="new-block">
                 {(provided, snapshot): React.ReactElement => (
-                  <div className="questions" ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)}>
+                  <div
+                    className="flex-1 p-2 overflow-auto max-h-[20rem]"
+                    ref={provided.innerRef}
+                    style={getListStyle(snapshot.isDraggingOver)}
+                  >
                     {provided.placeholder}
                   </div>
                 )}
               </Droppable>
-              <div className="blockDropzone">
+              <div className="flex-[0_0_2rem] my-0 mx-[0.5rem]">
                 <QuestionDropzone
                   onDrop={(question): void => {
                     onNewBlock({ ...question, type: question.questionType })
@@ -249,198 +379,8 @@ function SessionCreationForm({
             </div>
             {sessionBlocks.length <= 1 && <InfoArea />}
           </div>
-
-          <div className="sessionConfig">
-            <div className="discardSession">
-              <button className="ui icon button discardButton" type="button" onClick={handleCreationModeToggle}>
-                <Icon name="close" />
-              </button>
-            </div>
-
-            <h2 className="interactionType">
-              {((): React.ReactElement => {
-                if (sessionInteractionType === 'MODIFY') {
-                  return <FormattedMessage defaultMessage="Modify Session" id="form.createSession.interactionModify" />
-                }
-
-                if (sessionInteractionType === 'COPY') {
-                  return <FormattedMessage defaultMessage="Copy Session" id="form.createSession.interactionCopy" />
-                }
-
-                return <FormattedMessage defaultMessage="Create Session" id="form.createSession.interactionCreate" />
-              })()}
-            </h2>
-
-            <div className="sessionName">
-              <Input
-                name="sessionName"
-                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
-                value={sessionName}
-                onChange={onChangeName}
-              />
-            </div>
-
-            <div className="sessionParticipants">
-              <SessionParticipantsModal
-                authenticationMode={sessionAuthenticationMode}
-                dataStorageMode={sessionDataStorageMode}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                participants={sessionParticipants}
-                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
-                onChangeDataStorageMode={handleSetSessionDataStorageMode}
-                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
-                onChangeParticipants={handleSetSessionParticipants}
-              />
-            </div>
-
-            <Button
-              fluid
-              icon
-              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              labelPosition="left"
-              size="small"
-              type="submit"
-            >
-              <Icon name="save" />
-              <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
-            </Button>
-            <Button
-              fluid
-              icon
-              primary
-              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
-              labelPosition="left"
-              size="small"
-              onClick={handleCreateSession('start')}
-            >
-              <Icon name="play" />
-              <FormattedMessage defaultMessage="Start" id="common.button.start" />
-            </Button>
-            {!!runningSessionId && (
-              <FormattedMessage
-                defaultMessage="A session is already running"
-                id="form.createSession.string.alreadyRunning"
-              />
-            )}
-          </div>
         </form>
       </DragDropContext>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .sessionCreation {
-          border: 1px solid lightgrey;
-          display: flex;
-          width: 100%;
-
-          .sessionTimeline {
-            display: flex;
-            flex: 1;
-            flex-flow: row wrap;
-            padding: 0.5rem;
-            overflow: auto;
-
-            .block,
-            .newBlock {
-              border-right: 1px solid lightgrey;
-              display: flex;
-              flex-direction: column;
-              width: 200px;
-            }
-
-            .header {
-              display: flex;
-              justify-content: space-between;
-              font-weight: bold;
-              text-align: center;
-              align-items: center;
-              padding: 0 0.5rem 0.3rem 0.5rem;
-
-              :global(button.ui.basic.button) {
-                border: 0;
-                box-shadow: none;
-                padding: 0.5rem;
-                margin-right: 0;
-              }
-            }
-
-            .questions {
-              flex: 1;
-              padding: 0.5rem;
-              overflow: auto;
-              max-height: 23rem;
-
-              .question:not(:first-child) {
-                margin-top: 3px;
-              }
-            }
-
-            .blockDropzone {
-              flex: 0 0 3rem;
-              margin: 0 0.5rem;
-            }
-          }
-
-          .sessionConfig {
-            flex: 0 0 17rem;
-            padding: 1rem;
-            padding-top: 0;
-            border-left: 1px solid lightgrey;
-
-            display: flex;
-            flex-direction: column;
-
-            .discardSession {
-              align-self: flex-end;
-              height: 2rem;
-              margin-top: -2rem;
-
-              button {
-                height: 2rem;
-                padding: 0.5rem 1rem;
-                text-align: center;
-              }
-            }
-
-            h2.interactionType {
-              border-bottom: 1px solid lightgrey;
-              font-size: 1rem !important;
-              margin: 0;
-              padding: 0.5rem 0 0.25rem 0;
-              margin-bottom: 0.5rem;
-            }
-
-            .sessionName,
-            .sessionParticipants {
-              flex: 1;
-              margin-bottom: 0.5rem;
-
-              label {
-                font-weight: bold;
-              }
-            }
-
-            :global(button) {
-              margin-top: 0.5rem;
-            }
-          }
-        }
-
-        .creationForm {
-          animation-name: slide-in;
-          animation-duration: 0.75s;
-        }
-
-        @keyframes slide-in {
-          0% {
-            transform: translateY(300px);
-          }
-          100% {
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }

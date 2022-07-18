@@ -5,7 +5,7 @@ import { useQuery } from '@apollo/client'
 import SessionDetailsQuery from '../../../graphql/queries/SessionDetailsQuery.graphql'
 
 import SessionCreationForm from './SessionCreationForm'
-import { AuthenticationMode, DataStorageMode } from './participantsModal/SessionParticipantsModal'
+import { AuthenticationMode } from './SessionParticipantSettings'
 
 interface EditFormProps {
   sessionBlocks: any[]
@@ -18,11 +18,9 @@ interface EditFormProps {
   handleSetIsAuthenticationEnabled: any
   runningSessionId: string
   handleCreateSession: any
-  handleCreationModeToggle: any
   sessionAuthenticationMode: AuthenticationMode
   handleSetSessionAuthenticationMode: any
-  handleSetSessionDataStorageMode: any
-  sessionDataStorageMode: DataStorageMode
+  setSessionName: any
 }
 
 function getInteractionType(sessionId, copyMode): 'CREATE' | 'COPY' | 'MODIFY' {
@@ -48,9 +46,7 @@ function SessionEditForm({
   runningSessionId,
   handleCreateSession,
   handleSetSessionAuthenticationMode,
-  handleCreationModeToggle,
-  handleSetSessionDataStorageMode,
-  sessionDataStorageMode,
+  setSessionName,
 }: EditFormProps): React.ReactElement {
   const router = useRouter()
 
@@ -86,21 +82,19 @@ function SessionEditForm({
   return (
     <SessionCreationForm
       handleCreateSession={handleCreateSession}
-      handleCreationModeToggle={handleCreationModeToggle}
       handleSetIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
       handleSetSessionAuthenticationMode={handleSetSessionAuthenticationMode}
       handleSetSessionBlocks={handleSetSessionBlocks}
-      handleSetSessionDataStorageMode={handleSetSessionDataStorageMode}
       handleSetSessionName={handleSetSessionName}
       handleSetSessionParticipants={handleSetSessionParticipants}
       isAuthenticationEnabled={isAuthenticationEnabled}
       runningSessionId={runningSessionId}
       sessionAuthenticationMode={sessionAuthenticationMode}
       sessionBlocks={sessionBlocks}
-      sessionDataStorageMode={sessionDataStorageMode}
       sessionInteractionType={getInteractionType(data.session.id, router.query.copy)}
       sessionName={sessionName}
       sessionParticipants={sessionParticipants}
+      setSessionName={setSessionName}
     />
   )
 }

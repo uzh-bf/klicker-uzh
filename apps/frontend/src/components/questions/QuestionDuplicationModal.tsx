@@ -3,7 +3,6 @@ import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 import { useQuery, useMutation } from '@apollo/client'
-import { Modal } from 'semantic-ui-react'
 
 import { convertToSlate, convertToMd } from '../../lib/utils/slateMdConversion'
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
@@ -15,10 +14,12 @@ import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresigne
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
 import { omitDeepArray, omitDeep } from '../../lib/utils/omitDeep'
 import { QUESTION_TYPES } from '../../constants'
+import CustomModal from '../common/CustomModal'
 
 interface Props {
   isOpen: boolean
-  handleSetIsOpen: (boolean) => void
+  // eslint-disable-next-line no-unused-vars
+  handleSetIsOpen: (arg: boolean) => void
   questionId: string
 }
 
@@ -82,118 +83,107 @@ function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props
   }
 
   return (
-    <Modal
-      closeOnDimmerClick={false}
-      open={isOpen}
-      size="large"
-      // we don't want to have ESC close the modal, so don't do this
-      // onClose={(): void => setIsModalOpen(false)}
-    >
-      {/* <Modal.Header>
-        <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
-      </Modal.Header> */}
-      <Modal.Content>
-        {((): React.ReactElement => {
-          const { tags, title, type, versions } = _pick(questionDetails.question, ['tags', 'title', 'type', 'versions'])
+    <CustomModal className="!pb-4" open={isOpen}>
+      {((): React.ReactElement => {
+        const { tags, title, type, versions } = _pick(questionDetails.question, ['tags', 'title', 'type', 'versions'])
 
-          const duplicateTitle = ' (Duplicate)'
+        const duplicateTitle = ' (Duplicate)'
 
-          // When duplicating, duplicate newest version of the question
-          const initializeVersion = versions.length - 1
+        // When duplicating, duplicate newest version of the question
+        const initializeVersion = versions.length - 1
 
-          // Depending on original question type, populate newly created question instance
-          // with missing fields.
-          const prepForm = versions
-          let duplicateData = null
-          switch (type) {
-            case QUESTION_TYPES.FREE:
-              duplicateData = {
-                ...prepForm[initializeVersion],
-                options: {
-                  [type]: {
-                    ...prepForm[initializeVersion].options[type],
-                    choices: [],
-                    randomized: false,
-                    restrictions: {
-                      max: null,
-                      min: null,
-                    },
+        // Depending on original question type, populate newly created question instance
+        // with missing fields.
+        const prepForm = versions
+        let duplicateData = null
+        switch (type) {
+          case QUESTION_TYPES.FREE:
+            duplicateData = {
+              ...prepForm[initializeVersion],
+              options: {
+                [type]: {
+                  ...prepForm[initializeVersion].options[type],
+                  choices: [],
+                  randomized: false,
+                  restrictions: {
+                    max: null,
+                    min: null,
                   },
                 },
-              }
-              break
-            case QUESTION_TYPES.FREE_RANGE:
-              duplicateData = {
-                ...prepForm[initializeVersion],
-                options: {
-                  [type]: {
-                    ...prepForm[initializeVersion].options[type],
-                    choices: [],
-                    randomized: false,
+              },
+            }
+            break
+          case QUESTION_TYPES.FREE_RANGE:
+            duplicateData = {
+              ...prepForm[initializeVersion],
+              options: {
+                [type]: {
+                  ...prepForm[initializeVersion].options[type],
+                  choices: [],
+                  randomized: false,
+                },
+              },
+            }
+            break
+          case QUESTION_TYPES.SC:
+            duplicateData = {
+              ...prepForm[initializeVersion],
+              options: {
+                [type]: {
+                  ...prepForm[initializeVersion].options[type],
+                  randomized: false,
+                  restrictions: {
+                    max: null,
+                    min: null,
                   },
                 },
-              }
-              break
-            case QUESTION_TYPES.SC:
-              duplicateData = {
-                ...prepForm[initializeVersion],
-                options: {
-                  [type]: {
-                    ...prepForm[initializeVersion].options[type],
-                    randomized: false,
-                    restrictions: {
-                      max: null,
-                      min: null,
-                    },
+              },
+            }
+            break
+          case QUESTION_TYPES.MC:
+            duplicateData = {
+              ...prepForm[initializeVersion],
+              options: {
+                [type]: {
+                  ...prepForm[initializeVersion].options[type],
+                  randomized: false,
+                  restrictions: {
+                    max: null,
+                    min: null,
                   },
                 },
-              }
-              break
-            case QUESTION_TYPES.MC:
-              duplicateData = {
-                ...prepForm[initializeVersion],
-                options: {
-                  [type]: {
-                    ...prepForm[initializeVersion].options[type],
-                    randomized: false,
-                    restrictions: {
-                      max: null,
-                      min: null,
-                    },
-                  },
-                },
-              }
-              break
-            default:
-              break
-          }
+              },
+            }
+            break
+          default:
+            break
+        }
 
-          const initialValues = {
-            content: duplicateData.content
-              ? convertToSlate(duplicateData.content)
-              : convertToSlate(duplicateData.description),
-            files: duplicateData.files || [],
-            options: duplicateData.options[type] || {},
-            tags: tags.map((tag): string => tag.name),
-            title: title + duplicateTitle,
-            type,
-            versions: prepForm,
-          }
+        const initialValues = {
+          content: duplicateData.content
+            ? convertToSlate(duplicateData.content)
+            : convertToSlate(duplicateData.description),
+          files: duplicateData.files || [],
+          options: duplicateData.options[type] || {},
+          tags: tags.map((tag): string => tag.name),
+          title: title + duplicateTitle,
+          type,
+          versions: prepForm,
+        }
 
-          return (
-            <QuestionCreationForm
-              isInitialValid
-              initialValues={initialValues}
-              tags={tagList.tags}
-              tagsLoading={tagsLoading}
-              onDiscard={(): void => handleSetIsOpen(false)}
-              // handle submitting a new question
-              onSubmit={onSubmit}
-            />
-          )
-        })()}
-      </Modal.Content>
-    </Modal>
+        return (
+          <QuestionCreationForm
+            isInitialValid
+            initialValues={initialValues}
+            tags={tagList.tags}
+            tagsLoading={tagsLoading}
+            onDiscard={(): void => handleSetIsOpen(false)}
+            // handle submitting a new question
+            onSubmit={onSubmit}
+          />
+        )
+      })()}
+    </CustomModal>
   )
 }
 

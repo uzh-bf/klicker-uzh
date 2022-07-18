@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { repeat } from 'ramda'
-import { Input } from 'semantic-ui-react'
+import { Input, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import {
   ResponsiveContainer,
@@ -14,6 +14,7 @@ import {
   Line,
   ReferenceArea,
 } from 'recharts'
+
 import CustomTooltip from '../common/CustomTooltip'
 
 interface EvaluationConfusionProps {
@@ -105,14 +106,17 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
       <div className="flex-auto min-h-[10rem]">
         <div className="ml-2">
           <CustomTooltip
-            content={
+            tooltip={
               <FormattedMessage
                 defaultMessage="The graphs below show all student confusion feedbacks that were received during the Klicker Session from beginning to end. The values are normalized to the interval [-1,1] and set to zero if there are no feedbacks in a given timeframe. The exact number of feedbacks per timeframe can be read by moving the cursor over the datapoints."
                 id="evaluationSession.confusion.graphExplanation"
               />
             }
-            iconName={'question circle'}
-          />
+            tooltipStyle={'max-w-[20%] md:max-w-[30%]'}
+            withArrow={false}
+          >
+            <Icon color="blue" name="question circle" />
+          </CustomTooltip>
         </div>
 
         <ResponsiveContainer className="mb-4" height="70%" key="speedConfusion" width="95%">
@@ -193,14 +197,17 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             />
             <div className="flex-initial">
               <CustomTooltip
-                content={
+                tooltip={
                   <FormattedMessage
                     defaultMessage="With this field, the timestep size used on the x-axis of the plot can be chosen in seconds. The minimum timestep is 60 seconds, the default one 120 seconds."
                     id="evaluationSession.confusion.timestep"
                   />
                 }
-                iconName={'question circle'}
-              />
+                tooltipStyle={'max-w-[20%] md:max-w-[30%]'}
+                withArrow={false}
+              >
+                <Icon color="blue" name="question circle" />
+              </CustomTooltip>
             </div>
           </div>
         </div>
@@ -227,14 +234,17 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             />
             <div className="flex-initial">
               <CustomTooltip
-                content={
+                tooltip={
                   <FormattedMessage
                     defaultMessage="This field allows to set a custom factor (multiplied by the x-timestep) for the running window over which the average is computed. The minimum factor is 1, the default one is 3."
                     id="evaluationSession.confusion.windowLength"
                   />
                 }
-                iconName={'question circle'}
-              />
+                tooltipStyle={'max-w-[20%] md:max-w-[30%]'}
+                withArrow={false}
+              >
+                <Icon color="blue" name="question circle" />
+              </CustomTooltip>
             </div>
           </div>
         </div>

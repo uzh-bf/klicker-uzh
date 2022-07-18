@@ -1,12 +1,10 @@
 import clsx from 'clsx'
-import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
-import localForage from 'localforage'
 import getConfig from 'next/config'
 
 import useStickyState from '../../lib/hooks/useStickyState'
@@ -42,9 +40,13 @@ const messages = defineMessages({
   },
 })
 
+interface JoinProps {
+  shortname: string
+}
+
 const { publicRuntimeConfig } = getConfig()
 
-function Join({ shortname }): React.ReactElement {
+function Join({ shortname }: JoinProps): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
 

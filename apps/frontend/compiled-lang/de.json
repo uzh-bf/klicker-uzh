@@ -77,12 +77,6 @@
       "value": "Schliessen"
     }
   ],
-  "common.button.continue": [
-    {
-      "type": 0,
-      "value": "Weiter"
-    }
-  ],
   "common.button.discard": [
     {
       "type": 0,
@@ -107,16 +101,16 @@
       "value": "Speichern"
     }
   ],
+  "common.button.settings": [
+    {
+      "type": 0,
+      "value": "Einstellungen"
+    }
+  ],
   "common.button.skip": [
     {
       "type": 0,
       "value": "Überspringen"
-    }
-  ],
-  "common.button.start": [
-    {
-      "type": 0,
-      "value": "Start"
     }
   ],
   "common.button.submit": [
@@ -159,12 +153,6 @@
     {
       "type": 0,
       "value": "Logout"
-    }
-  ],
-  "common.string.or": [
-    {
-      "type": 0,
-      "value": "Oder"
     }
   ],
   "common.string.password": [
@@ -369,12 +357,6 @@
     {
       "type": 0,
       "value": "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
-    }
-  ],
-  "createSession.title": [
-    {
-      "type": 0,
-      "value": "Session erstellen"
     }
   ],
   "customizableTable.deleteConfirmation": [
@@ -620,25 +602,13 @@
   "form.createSession.button.save": [
     {
       "type": 0,
-      "value": "Speichern & Schliessen"
+      "value": "Session speichern"
     }
   ],
-  "form.createSession.interactionCopy": [
+  "form.createSession.button.start": [
     {
       "type": 0,
-      "value": "Session kopieren"
-    }
-  ],
-  "form.createSession.interactionCreate": [
-    {
-      "type": 0,
-      "value": "Session erstellen"
-    }
-  ],
-  "form.createSession.interactionModify": [
-    {
-      "type": 0,
-      "value": "Session editieren"
+      "value": "Jetzt starten"
     }
   ],
   "form.createSession.newBlock": [
@@ -647,50 +617,10 @@
       "value": "Neuer Frageblock"
     }
   ],
-  "form.createSession.participantAuth.aggregatedResults.description": [
-    {
-      "type": 0,
-      "value": "Die Resultate der Session werden nur in aggregierter Form gespeichert. Es ist daher nicht möglich, die Antworten spezifischer Teilnehmer anzusehen."
-    }
-  ],
-  "form.createSession.participantAuth.aggregatedResults.title": [
-    {
-      "type": 0,
-      "value": "Aggregierte Resultate"
-    }
-  ],
-  "form.createSession.participantAuth.button.setParticipants": [
-    {
-      "type": 0,
-      "value": "Teilnehmer definieren"
-    }
-  ],
   "form.createSession.participantAuth.button.updateParticipants": [
     {
       "type": 0,
       "value": "Teilnehmer anpassen"
-    }
-  ],
-  "form.createSession.participantAuth.button.xParticipants": [
-    {
-      "type": 1,
-      "value": "num"
-    },
-    {
-      "type": 0,
-      "value": " Teilnehmer"
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.description": [
-    {
-      "type": 0,
-      "value": "Die Resultate werden vollständig gespeichert, so dass Sie die Resultate einzelner Teilnehmer identifzieren können."
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.title": [
-    {
-      "type": 0,
-      "value": "Vollständige Resultate"
     }
   ],
   "form.createSession.participantAuth.passwordDistribution.description": [
@@ -703,24 +633,6 @@
     {
       "type": 0,
       "value": "Passwort-Export"
-    }
-  ],
-  "form.createSession.participantAuth.steps.authentication": [
-    {
-      "type": 0,
-      "value": "Authentifizierung"
-    }
-  ],
-  "form.createSession.participantAuth.steps.dataStorage": [
-    {
-      "type": 0,
-      "value": "Datenspeicherung"
-    }
-  ],
-  "form.createSession.participantAuth.steps.participants": [
-    {
-      "type": 0,
-      "value": "Teilnehmerliste"
     }
   ],
   "form.createSession.participantAuth.string.participantAuthentication": [
@@ -757,6 +669,18 @@
     {
       "type": 0,
       "value": "Session-Name"
+    }
+  ],
+  "form.createSession.settings.errors.participantAuth": [
+    {
+      "type": 0,
+      "value": "Authentifizierung kann nicht mit einer leeren Teilnehmerliste genutzt werden. Bitte fügen Sie Teilnehmer hinzu oder deaktivieren sie die Authentifizierung."
+    }
+  ],
+  "form.createSession.settings.title": [
+    {
+      "type": 0,
+      "value": "Session Einstellungen"
     }
   ],
   "form.createSession.string.alreadyRunning": [
@@ -799,6 +723,12 @@
     {
       "type": 0,
       "value": "Bitte einen Fragetitel definieren."
+    }
+  ],
+  "form.editQuestion.versions.title": [
+    {
+      "type": 0,
+      "value": "Ältere Versionen"
     }
   ],
   "form.email.invalid": [
@@ -1141,6 +1071,12 @@
       "value": "Ihre letzte Eingabe wurde ignoriert, da Sie nur einmal teilnehmen dürfen."
     }
   ],
+  "previewQuestion.title": [
+    {
+      "type": 0,
+      "value": "Frage-Vorschau"
+    }
+  ],
   "questionDetails.button.duplicate": [
     {
       "type": 0,
@@ -1151,6 +1087,12 @@
     {
       "type": 0,
       "value": "Editieren"
+    }
+  ],
+  "questionDetails.button.preview": [
+    {
+      "type": 0,
+      "value": "Vorschau"
     }
   ],
   "questionDetails.usageHistory": [

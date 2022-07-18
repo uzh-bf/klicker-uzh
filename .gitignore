@@ -15,4 +15,3 @@ secrets*.yaml
 
 /apps/functions/local.settings.json
 
-.vscode

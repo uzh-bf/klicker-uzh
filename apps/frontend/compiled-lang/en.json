@@ -65,12 +65,6 @@
       "value": "Close"
     }
   ],
-  "common.button.continue": [
-    {
-      "type": 0,
-      "value": "Continue"
-    }
-  ],
   "common.button.discard": [
     {
       "type": 0,
@@ -95,16 +89,16 @@
       "value": "Save"
     }
   ],
+  "common.button.settings": [
+    {
+      "type": 0,
+      "value": "Settings"
+    }
+  ],
   "common.button.skip": [
     {
       "type": 0,
       "value": "Skip"
-    }
-  ],
-  "common.button.start": [
-    {
-      "type": 0,
-      "value": "Start"
     }
   ],
   "common.button.submit": [
@@ -141,12 +135,6 @@
     {
       "type": 0,
       "value": "Logout"
-    }
-  ],
-  "common.string.or": [
-    {
-      "type": 0,
-      "value": "Or"
     }
   ],
   "common.string.password": [
@@ -357,12 +345,6 @@
     {
       "type": 0,
       "value": "Enter a short summarizing title for the question."
-    }
-  ],
-  "createSession.title": [
-    {
-      "type": 0,
-      "value": "Create Session"
     }
   ],
   "customizableTable.abortConfirmation": [
@@ -610,25 +592,13 @@
   "form.createSession.button.save": [
     {
       "type": 0,
-      "value": "Save & Close"
+      "value": "Save Session"
     }
   ],
-  "form.createSession.interactionCopy": [
+  "form.createSession.button.start": [
     {
       "type": 0,
-      "value": "Copy Session"
-    }
-  ],
-  "form.createSession.interactionCreate": [
-    {
-      "type": 0,
-      "value": "Create Session"
-    }
-  ],
-  "form.createSession.interactionModify": [
-    {
-      "type": 0,
-      "value": "Modify Session"
+      "value": "Start Now"
     }
   ],
   "form.createSession.newBlock": [
@@ -637,50 +607,10 @@
       "value": "New Block"
     }
   ],
-  "form.createSession.participantAuth.aggregatedResults.description": [
-    {
-      "type": 0,
-      "value": "The results of a session will only be stored in an aggregated format, making it impossible to derive the responses of individual participants."
-    }
-  ],
-  "form.createSession.participantAuth.aggregatedResults.title": [
-    {
-      "type": 0,
-      "value": "Aggregated Results"
-    }
-  ],
-  "form.createSession.participantAuth.button.setParticipants": [
-    {
-      "type": 0,
-      "value": "Set Participants"
-    }
-  ],
   "form.createSession.participantAuth.button.updateParticipants": [
     {
       "type": 0,
       "value": "Update Participants"
-    }
-  ],
-  "form.createSession.participantAuth.button.xParticipants": [
-    {
-      "type": 1,
-      "value": "num"
-    },
-    {
-      "type": 0,
-      "value": " Participants"
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.description": [
-    {
-      "type": 0,
-      "value": "The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username."
-    }
-  ],
-  "form.createSession.participantAuth.completeResults.title": [
-    {
-      "type": 0,
-      "value": "Complete Results"
     }
   ],
   "form.createSession.participantAuth.passwordDistribution.description": [
@@ -693,18 +623,6 @@
     {
       "type": 0,
       "value": "Password Distribution"
-    }
-  ],
-  "form.createSession.participantAuth.steps.authentication": [
-    {
-      "type": 0,
-      "value": "Authentication"
-    }
-  ],
-  "form.createSession.participantAuth.steps.participants": [
-    {
-      "type": 0,
-      "value": "Participants"
     }
   ],
   "form.createSession.participantAuth.string.participantAuthentication": [
@@ -741,6 +659,18 @@
     {
       "type": 0,
       "value": "Session Name"
+    }
+  ],
+  "form.createSession.settings.errors.participantAuth": [
+    {
+      "type": 0,
+      "value": "Authentication cannot be enabled with an empty participant lists. Please add participants or disable authentication."
+    }
+  ],
+  "form.createSession.settings.title": [
+    {
+      "type": 0,
+      "value": "Session Settings"
     }
   ],
   "form.createSession.string.alreadyRunning": [
@@ -783,6 +713,12 @@
     {
       "type": 0,
       "value": "Please add a question title."
+    }
+  ],
+  "form.editQuestion.versions.title": [
+    {
+      "type": 0,
+      "value": "History"
     }
   ],
   "form.email.invalid": [
@@ -1113,6 +1049,12 @@
       "value": "As you are only allowed to respond once, we did not count your latest response."
     }
   ],
+  "previewQuestion.title": [
+    {
+      "type": 0,
+      "value": "Question Preview"
+    }
+  ],
   "questionDetails.button.duplicate": [
     {
       "type": 0,
@@ -1123,6 +1065,12 @@
     {
       "type": 0,
       "value": "View / Edit"
+    }
+  ],
+  "questionDetails.button.preview": [
+    {
+      "type": 0,
+      "value": "Preview"
     }
   ],
   "questionImport.button.addQuestions": [
@@ -1189,12 +1137,6 @@
     {
       "type": 0,
       "value": "New Question"
-    }
-  ],
-  "questionPool.button.createSession": [
-    {
-      "type": 0,
-      "value": "New Session"
     }
   ],
   "questionPool.button.deleteQuestions": [
@@ -1293,16 +1235,6 @@
     {
       "type": 0,
       "value": " selected questions? Consider moving them to the archive if you could have use for them in the future."
-    }
-  ],
-  "questionPool.string.itemsChecked": [
-    {
-      "type": 1,
-      "value": "count"
-    },
-    {
-      "type": 0,
-      "value": " items checked"
     }
   ],
   "questionPool.survey": [
@@ -1963,12 +1895,6 @@
     {
       "type": 0,
       "value": "Show Archive"
-    }
-  ],
-  "tagList.string.showPool": [
-    {
-      "type": 0,
-      "value": "Show Pool"
     }
   ],
   "user.activateAccount.pageTitle": [

@@ -3,13 +3,15 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Dropdown, Message, Icon } from 'semantic-ui-react'
+import { Button, Form, Message, Icon } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { ArrowDownIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 
-import CustomTooltip from '../../common/CustomTooltip'
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
@@ -21,6 +23,7 @@ import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
 import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
 import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
+import CustomTooltip from '../../common/CustomTooltip'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -52,6 +55,10 @@ const messages = defineMessages({
   titleInput: {
     defaultMessage: 'Question Title',
     id: 'editQuestion.titleInput.label',
+  },
+  historyTitle: {
+    defaultMessage: 'History',
+    id: 'form.editQuestion.versions.title',
   },
 })
 
@@ -153,6 +160,7 @@ function QuestionEditForm({
   versions,
 }: Props): React.ReactElement {
   const intl = useIntl()
+  const [versionsDropdownOpen, setVersionsDropdownOpen] = useState(false)
 
   // if the active version would be out of array bounds, we are creating a new one
   const isNewVersion = activeVersion === versions.length
@@ -161,7 +169,6 @@ function QuestionEditForm({
   const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
 
   const content = useMemo(() => {
-    console.log(versions[initializeVersion].content)
     return versions[initializeVersion].content
       ? convertToSlate(versions[initializeVersion].content)
       : convertToSlate(versions[initializeVersion].description)
@@ -209,8 +216,10 @@ function QuestionEditForm({
             const { message, success } = editSuccess
 
             // use changed state to track changes in the editing process
+            // eslint-disable-next-line react-hooks/rules-of-hooks
             const [hasAnythingChanged, setHasAnythingChanged] = useState(false)
 
+            // eslint-disable-next-line react-hooks/rules-of-hooks
             useEffect(() => {
               setHasAnythingChanged(!areValuesTheSame(initialValues, values))
             }, [values])
@@ -268,13 +277,6 @@ function QuestionEditForm({
                     <AutoFocusInside>
                       <FormikInput
                         required
-                        /* error={errors.title}
-                errorMessage={
-                  <FormattedMessage
-                    defaultMessage="Please provide a valid question title (summary)."
-                    id="form.questionTitle.invalid"
-                  />
-                } */
                         handleBlur={handleBlur}
                         handleChange={handleChange}
                         label={intl.formatMessage(messages.titleInput)}
@@ -310,48 +312,58 @@ function QuestionEditForm({
                       <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
 
                       <CustomTooltip
-                        className={'!ml-2'}
-                        content={
+                        tooltip={
                           <FormattedMessage
                             defaultMessage="Enter the question you want to ask the audience. The rich text editor supports the following (block) styles: bold text, italic text, code, quotes, numbered lists, unnumbered lists and LaTeX formulas. Hover over the buttons for more detailed information."
                             id="createQuestion.contentInput.tooltip"
                           />
                         }
-                        iconObject={
-                          <a data-tip>
-                            <Icon name="question circle" />
-                          </a>
-                        }
-                      />
+                        tooltipStyle={'text-sm md:text-base max-w-[25%] md:max-w-[40%]'}
+                        withArrow={false}
+                      >
+                        <Icon className="!ml-2" color="blue" name="question circle" />
+                        <span className="text-red-600">*</span>
+                      </CustomTooltip>
                     </label>
 
-                    <Dropdown
-                      text={isNewVersion ? `v${versionOptions.length + 1} (draft)` : `v${activeVersion + 1}`}
-                      value={activeVersion}
-                    >
-                      <Dropdown.Menu>
-                        <Dropdown.Item
-                          active={isNewVersion}
+                    <DropdownMenu.Root open={versionsDropdownOpen} onOpenChange={setVersionsDropdownOpen}>
+                      <DropdownMenu.Trigger className="flex flex-row h-full bg-white border-0 cursor-pointer unset">
+                        <div>{intl.formatMessage(messages.historyTitle)}</div>
+                        <ArrowDownIcon
+                          className={clsx(
+                            'ml-1 h-4 my-auto',
+                            versionsDropdownOpen && 'rotate-180 transition-transform'
+                          )}
+                        />
+                      </DropdownMenu.Trigger>
+
+                      <DropdownMenu.Content className="flex flex-col px-2 bg-white border border-solid rounded-md border-grey-80">
+                        <DropdownMenu.Item
+                          className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                           onClick={(): void => handleActiveVersionChange(versionOptions.length)}
                         >
-                          {`v${versionOptions.length + 1} (draft)`}
-                        </Dropdown.Item>
+                          <div className={clsx(activeVersion === versionOptions.length && 'font-bold')}>
+                            {`v${versionOptions.length + 1} (draft)`}
+                          </div>
+                        </DropdownMenu.Item>
 
                         {versionOptions
                           .map(
                             ({ id, text }: any, index): React.ReactElement => (
-                              <Dropdown.Item
-                                active={activeVersion === index}
+                              <DropdownMenu.Item
+                                className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                                 key={id}
                                 onClick={(): void => handleActiveVersionChange(index)}
                               >
-                                {text}
-                              </Dropdown.Item>
+                                <div className={clsx(activeVersion === index && 'font-bold')}>{text}</div>
+                              </DropdownMenu.Item>
                             )
                           )
                           .reverse()}
-                      </Dropdown.Menu>
-                    </Dropdown>
+
+                        <DropdownMenu.Arrow className="fill-gray-400" />
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
                   </div>
 
                   <ContentInput
