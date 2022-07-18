@@ -15,6 +15,7 @@ ErrorDocument 404 /404.html
 
   # redirect to the klickeruzh user group in ms teams
   Redirect 301 /community "https://community.klicker.uzh.ch"
+  Redirect 302 /teams "https://teams.microsoft.com/l/team/19%3afbf6198f94934e20ab86571dd73e8616%40thread.tacv2/conversations?groupId=1a1e9be8-effe-4e7d-98bd-d4a3c836c478&tenantId=c7e438db-e462-4c22-a90a-c358b16980b3"
 
   # redirect everything else to the new klicker
   # except needed assets and routes of the landing SPA
