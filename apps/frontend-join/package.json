@@ -1,0 +1,11 @@
+{
+  "name": "@klicker-uzh/frontend-join",
+  "version": "1.8.0",
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {}
+}
