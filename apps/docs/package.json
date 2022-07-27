@@ -40,6 +40,6 @@
     "write-translations": "docusaurus-write-translations"
   },
   "volta": {
-    "node": "16.16.0"
+    "extends": "../../package.json"
   }
 }

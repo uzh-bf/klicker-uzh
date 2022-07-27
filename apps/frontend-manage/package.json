@@ -9,6 +9,6 @@
   "devDependencies": {},
   "scripts": {},
   "volta": {
-    "node": "16.16.0"
+    "extends": "../../package.json"
   }
 }
