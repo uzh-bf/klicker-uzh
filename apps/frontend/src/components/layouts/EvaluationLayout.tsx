@@ -45,6 +45,7 @@ interface Props {
   pageTitle?: string
   sessionId: string
   showGraph?: boolean
+  setShowGraph?: (showGraph: boolean) => void
   showSolution?: boolean
   statistics?: { bins: number; onChangeBins: any; mean: number; median: number }
   title: string
@@ -66,6 +67,7 @@ const defaultProps = {
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
   showGraph: false,
+  setShowGraph: undefined,
   showSolution: false,
   statistics: undefined,
   totalResponses: undefined,
@@ -98,6 +100,7 @@ function EvaluationLayout({
   showConfusionTS,
   showFeedback,
   showGraph,
+  setShowGraph,
   showQuestionLayout,
   showSolution,
   statistics,
@@ -179,6 +182,13 @@ function EvaluationLayout({
     } else if (activateFeedback) {
       onChangeShowFeedback(true)
       onChangeShowConfusionTS(false)
+    }
+
+    if (sessionStatus === SESSION_STATUS.RUNNING && showSolution) {
+      onToggleShowSolution()
+    }
+    if (sessionStatus === SESSION_STATUS.RUNNING && showGraph) {
+      setShowGraph(false)
     }
 
     setCurrentIndex(index)
@@ -411,6 +421,7 @@ function EvaluationLayout({
               showQuestionLayout && (
                 <Checkbox
                   toggle
+                  checked={showSolution}
                   className="print:!hidden"
                   defaultChecked={showSolution}
                   label={intl.formatMessage(messages.showSolutionLabel)}
