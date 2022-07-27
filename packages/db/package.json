@@ -14,11 +14,10 @@
     "uuid": "8.3.2",
     "validator": "13.6.0"
   },
-  "volta": {
-    "node": "16.14.0",
-    "npm": "8.5.0"
-  },
   "devDependencies": {
     "dotenv": "^16.0.1"
+  },
+  "volta": {
+    "node": "16.16.0"
   }
 }

@@ -40,7 +40,6 @@
     "write-translations": "docusaurus-write-translations"
   },
   "volta": {
-    "node": "16.14.0",
-    "npm": "8.5.0"
+    "node": "16.16.0"
   }
 }
