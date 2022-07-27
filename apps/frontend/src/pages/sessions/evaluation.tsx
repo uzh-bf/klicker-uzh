@@ -161,6 +161,7 @@ function Evaluation(): React.ReactElement {
                 pageTitle: intl.formatMessage(messages.pageTitle),
                 sessionId,
                 showGraph,
+                setShowGraph,
                 files: question?.versions[version].files,
                 showSolution,
                 statistics: activeInstance.statistics,
