@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react'
+import { ArrowRightIcon } from '@heroicons/react/solid'
+import { Button } from '@klicker-uzh/ui'
+import { twMerge } from 'tailwind-merge'
+
 import Layout from '@theme/Layout'
 import { useColorMode } from '@docusaurus/theme-common'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 import Image from '@theme/IdealImage'
 import ImageTile from '../components/landing/ImageTile'
-import CustomButton from '../components/common/CustomButton'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTextBlock from '../components/common/ImageTextBlock'
-import { twMerge } from 'tailwind-merge'
 
 const features = [
   {
@@ -238,7 +239,7 @@ function Home() {
               KlickerUZH user community through the following link. To log in,
               simply use your KlickerUZH credentials.
             </p>
-            <CustomButton
+            <Button
               text={
                 <div>
                   <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
@@ -272,12 +273,12 @@ const TitleImage = ({ imgSrc }) => {
       )}
     >
       <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
-        <CustomButton
+        <Button
           text="Login"
           className="bg-white w-36"
           link="https://app.klicker.uzh.ch/user/login"
         />
-        <CustomButton
+        <Button
           text="Sign Up"
           className="bg-white w-36"
           link="https://app.klicker.uzh.ch/user/registration"
@@ -299,7 +300,7 @@ const TitleImage = ({ imgSrc }) => {
       </h1>
 
       <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
-        <CustomButton
+        <Button
           text="Sign Up"
           className={twMerge(
             'w-64 md:text-lg md:w-52',
@@ -307,7 +308,7 @@ const TitleImage = ({ imgSrc }) => {
           )}
           link="https://app.klicker.uzh.ch/user/registration"
         />
-        <CustomButton
+        <Button
           text="Getting Started"
           className={twMerge(
             'w-64 md:text-lg md:w-52',
@@ -315,7 +316,7 @@ const TitleImage = ({ imgSrc }) => {
           )}
           link="introduction/getting_started"
         />
-        <CustomButton
+        <Button
           text="Get Involved"
           className={twMerge(
             'w-64 md:text-lg md:w-52',

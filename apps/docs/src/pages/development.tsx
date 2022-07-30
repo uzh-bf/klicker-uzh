@@ -2,7 +2,7 @@ import React from 'react'
 import Layout from '@theme/Layout'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 
-import CustomButton from '../components/common/CustomButton'
+import { Button } from '@klicker-uzh/ui'
 import RoadmapTile from '../components/development/RoadmapTile'
 
 const Development = () => {
@@ -98,7 +98,7 @@ const Development = () => {
               reports, as well as to like inputs from other users. This helps us
               to prioritize features requested more often by our users.
             </div>
-            <CustomButton
+            <Button
               text={
                 <div>
                   <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
@@ -120,7 +120,7 @@ const Development = () => {
               KlickerUZH user community through the following link. To log in on
               the platform, just use your KlickerUZH credentials.
             </div>
-            <CustomButton
+            <Button
               text={
                 <div>
                   <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
