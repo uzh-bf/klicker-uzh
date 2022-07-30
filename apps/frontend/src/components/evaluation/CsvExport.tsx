@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { CSVLink } from 'react-csv'
-import { Button } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTable } from '@fortawesome/free-solid-svg-icons'
 
 interface Props {
   activeInstances: any[]
   sessionId: string
-}
-
-const defaultProps = {
-  activeInstances: [],
 }
 
 function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
@@ -30,14 +28,13 @@ function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
   }, [activeInstances.length, sessionId])
 
   return (
-    <div className="csvExport">
-      <CSVLink data={csvData} filename={`klicker-results-${sessionId}.csv`}>
-        <Button content="Export CSV" icon="table" />
-      </CSVLink>
-    </div>
+    <CSVLink data={csvData} filename={`klicker-results-${sessionId}.csv`}>
+      <Button className="mr-1 py-1 px-3">
+        <FontAwesomeIcon icon={faTable} />
+        <div>Export CSV</div>
+      </Button>
+    </CSVLink>
   )
 }
-
-CsvExport.defaultProps = defaultProps
 
 export default CsvExport

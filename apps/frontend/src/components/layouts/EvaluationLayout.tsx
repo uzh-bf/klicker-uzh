@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
-import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/outline'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFile } from '@fortawesome/free-solid-svg-icons'
 
 import useMarkdown from '../../lib/hooks/useMarkdown'
 import CommonLayout from './CommonLayout'
@@ -421,7 +424,10 @@ function EvaluationLayout({
               <div className="flex print:hidden">
                 <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
                 <a href={`/sessions/print/${sessionId}`}>
-                  <Button content="Export PDF" icon="file" />
+                  <Button className="py-1 px-3">
+                    <FontAwesomeIcon icon={faFile} />
+                    <div>Export PDF</div>
+                  </Button>
                 </a>
               </div>
             )}
@@ -434,7 +440,10 @@ function EvaluationLayout({
             )}
             {showFeedback && (
               <div className="print:hidden">
-                <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
+                <Button onClick={() => window.print()}>
+                  <FontAwesomeIcon icon={faFile} />
+                  <div>Print / PDF</div>
+                </Button>
               </div>
             )}
           </div>

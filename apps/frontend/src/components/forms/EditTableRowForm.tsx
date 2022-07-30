@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import { Button, Confirm, Table, Dropdown } from 'semantic-ui-react'
+import { Confirm, Table, Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFloppyDisk, faRotateLeft } from '@fortawesome/free-solid-svg-icons'
+
 import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
 
@@ -21,9 +25,9 @@ function ConfirmationContent({
         <FormattedMessage defaultMessage="The following changes will be made" id="forms.editTableRow.changeLeading" />:
         {'\n'}
       </h3>
-      {columns.map((column, key) =>
+      {columns.map((column) =>
         initialValues[column.attributeName] !== values[column.attributeName] ? (
-          <p key={key.toString()}>
+          <p key={column.title}>
             {'\n'}
             {column.title}: {initialValues[column.attributeName]} -&gt; {values[column.attributeName]}
           </p>
@@ -86,7 +90,7 @@ function EditTableRowForm({
           {columns.map(
             (column, key): React.ReactElement =>
               (column.isEditable && !column.isDropdown && (
-                <Table.Cell key={key.toString()} verticalAlign={'top'} width={column.width}>
+                <Table.Cell key={column.attributeName} verticalAlign={'top'} width={column.width}>
                   <FormikInput
                     required
                     error={errors[column.attributeName]}
@@ -101,7 +105,7 @@ function EditTableRowForm({
                 </Table.Cell>
               )) ||
               (column.isEditable && column.isDropdown && (
-                <Table.Cell key={key.toString()} verticalAlign={'top'} width={column.width}>
+                <Table.Cell key={`dropDownElem${key.toString()}`} verticalAlign={'top'} width={column.width}>
                   <Dropdown
                     compact
                     selection
@@ -115,7 +119,7 @@ function EditTableRowForm({
                   />
                 </Table.Cell>
               )) || (
-                <Table.Cell key={key.toString()} verticalAlign={'middle'} width={column.width}>
+                <Table.Cell key={`tableValue${key.toString()}`} verticalAlign={'middle'} width={column.width}>
                   {values[column.attributeName]}
                 </Table.Cell>
               )
@@ -123,15 +127,17 @@ function EditTableRowForm({
           <Table.Cell textAlign="right">
             <div className="buttonCell">
               <Button
-                primary
-                className="save"
+                className="mr-1 w-10 h-10"
                 disabled={!isValid || (!dirty && (!initialValues.role || initialValues.role === activeRole))}
-                icon="save"
                 onClick={(): void => {
                   handleModification(data.id, values, false)
                 }}
-              />
-              <Button className="discard" icon="undo" type="button" onClick={onDiscard} />
+              >
+                <FontAwesomeIcon icon={faFloppyDisk} />
+              </Button>
+              <Button className="w-10 h-10" icon="undo" onClick={onDiscard}>
+                <FontAwesomeIcon icon={faRotateLeft} />
+              </Button>
             </div>
           </Table.Cell>
 

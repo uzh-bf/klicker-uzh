@@ -1,7 +1,7 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Button } from 'semantic-ui-react'
 import { SizeMe } from 'react-sizeme'
+import { Button } from '@uzh-bf/design-system'
 
 import BarChart from './charts/BarChart'
 import StackChart from './charts/StackChart'
@@ -11,7 +11,6 @@ import CloudChart from './charts/CloudChart'
 import HistogramChart from './charts/HistogramChart'
 import { SESSION_STATUS } from '../../constants'
 
-// TODO
 interface Props {
   activeVisualization: string
   data?: {
@@ -83,7 +82,7 @@ function Chart({
         if (!showGraph) {
           return (
             <div className="flex items-center justify-center h-full">
-              <Button className="showGraphButton" onClick={handleShowGraph}>
+              <Button className="bg-uzh-grey-20 border-1 border-solid" onClick={handleShowGraph}>
                 <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
               </Button>
             </div>

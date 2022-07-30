@@ -1,7 +1,7 @@
 import React from 'react'
 import * as RadixDialog from '@radix-ui/react-dialog'
 import clsx from 'clsx'
-import CustomButton from './CustomButton'
+import { Button } from '@uzh-bf/design-system'
 
 interface Props {
   trigger?: React.ReactNode
@@ -83,13 +83,13 @@ export function Modal({
               <div className="relative">
                 {onDiscard && (
                   <RadixDialog.Close asChild className="absolute bottom-0 left-0 mt-max">
-                    <CustomButton
+                    <Button
                       className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', discardStyle)}
                       disabled={!discardEnabled}
                       onClick={onDiscard}
                     >
                       {discardLabel ?? 'Close'}
-                    </CustomButton>
+                    </Button>
                   </RadixDialog.Close>
                 )}
               </div>
@@ -108,13 +108,13 @@ export function Modal({
               <div className="relative">
                 {onSubmit && (
                   <RadixDialog.Close asChild className="absolute bottom-0 right-0">
-                    <CustomButton
+                    <Button
                       className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', submitStyle)}
                       disabled={!submitEnabled}
                       onClick={onSubmit}
                     >
                       {submitLabel ?? 'Submit'}
-                    </CustomButton>
+                    </Button>
                   </RadixDialog.Close>
                 )}
               </div>
