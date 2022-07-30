@@ -4,6 +4,7 @@ import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/outline'
+import { cloneDeep } from 'lodash'
 
 import useMarkdown from '../../lib/hooks/useMarkdown'
 import CommonLayout from './CommonLayout'
@@ -40,13 +41,12 @@ interface Props {
   instanceSummary?: any[]
   onChangeActiveInstance: (index: number) => void
   onChangeVisualizationType: (questionType: string, visualizationType: string) => void
-  onToggleShowSolution: () => void
+  setShowSolution: (showSolution: boolean[]) => void
   options: any
   pageTitle?: string
   sessionId: string
   showGraph?: boolean
-  setShowGraph?: (showGraph: boolean) => void
-  showSolution?: boolean
+  showSolution?: boolean[]
   statistics?: { bins: number; onChangeBins: any; mean: number; median: number }
   title: string
   totalResponses?: number
@@ -67,8 +67,7 @@ const defaultProps = {
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
   showGraph: false,
-  setShowGraph: undefined,
-  showSolution: false,
+  showSolution: [],
   statistics: undefined,
   totalResponses: undefined,
   choices: undefined,
@@ -92,7 +91,7 @@ function EvaluationLayout({
   onChangeShowConfusionTS,
   onChangeShowFeedback,
   onChangeVisualizationType,
-  onToggleShowSolution,
+  setShowSolution,
   options,
   pageTitle,
   sessionId,
@@ -100,7 +99,6 @@ function EvaluationLayout({
   showConfusionTS,
   showFeedback,
   showGraph,
-  setShowGraph,
   showQuestionLayout,
   showSolution,
   statistics,
@@ -184,14 +182,14 @@ function EvaluationLayout({
       onChangeShowConfusionTS(false)
     }
 
-    if (sessionStatus === SESSION_STATUS.RUNNING && showSolution) {
-      onToggleShowSolution()
-    }
-    if (sessionStatus === SESSION_STATUS.RUNNING && showGraph) {
-      setShowGraph(false)
-    }
-
     setCurrentIndex(index)
+  }
+
+  const onToggleSolution = () => {
+    const newShowSolution = cloneDeep(showSolution)
+    newShowSolution[currentIndex] = !showSolution[currentIndex]
+    setShowSolution(newShowSolution)
+    sessionStorage?.setItem(`showSolution${sessionId}`, JSON.stringify(newShowSolution))
   }
 
   return (
@@ -389,7 +387,7 @@ function EvaluationLayout({
                         questionOptions={options}
                         questionType={type}
                         showGraph={showGraph}
-                        showSolution={showSolution}
+                        showSolution={showSolution[currentIndex]}
                       />
                     </div>
                   )}
@@ -421,11 +419,10 @@ function EvaluationLayout({
               showQuestionLayout && (
                 <Checkbox
                   toggle
-                  checked={showSolution}
+                  checked={showSolution[currentIndex] ?? false}
                   className="print:!hidden"
-                  defaultChecked={showSolution}
                   label={intl.formatMessage(messages.showSolutionLabel)}
-                  onChange={onToggleShowSolution}
+                  onChange={onToggleSolution}
                 />
               )}
             {showQuestionLayout && (
