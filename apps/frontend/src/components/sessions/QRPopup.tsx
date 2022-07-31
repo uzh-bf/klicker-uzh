@@ -1,5 +1,8 @@
 import React from 'react'
-import { Popup, Button, Icon } from 'semantic-ui-react'
+import { Popup } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FormattedMessage } from 'react-intl'
 import { QRCode } from 'react-qrcode-logo'
 import Link from 'next/link'
@@ -24,7 +27,7 @@ function QRPopup({ shortname }: Props): React.ReactElement {
       position="bottom right"
       trigger={
         <Button icon className="w-[41%] sm:w-max !mr-0" labelPosition="left" size="small">
-          <Icon name="qrcode" />
+          <FontAwesomeIcon icon={faQrcode} />
           QR Code
         </Button>
       }
@@ -47,7 +50,7 @@ function QRPopup({ shortname }: Props): React.ReactElement {
 
           <Link passHref href={`/qr/${shortname}`}>
             <a target="_blank">
-              <Button fluid primary>
+              <Button fluid className="text-lg font-bold text-white bg-uzh-blue-80 h-11">
                 <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
               </Button>
             </a>

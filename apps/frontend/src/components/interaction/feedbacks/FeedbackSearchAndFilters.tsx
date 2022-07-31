@@ -1,4 +1,7 @@
-import { Input, Checkbox, Button, Dropdown } from 'semantic-ui-react'
+import { Input, Checkbox, Dropdown } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPrint } from '@fortawesome/free-solid-svg-icons'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 const messages = defineMessages({
@@ -142,7 +145,9 @@ function FeedbackSearchAndFilters({
       </div>
 
       <div className="flex flex-row">
-        <Button basic className="!mt-4 md:!mt-0 !mr-2" icon="print" onClick={() => window.print()} />
+        <Button className="justify-center mt-4 mr-2 w-11 h-11 md:mt-0" icon="print" onClick={() => window.print()}>
+          <FontAwesomeIcon icon={faPrint} />
+        </Button>
         <Dropdown
           selection
           className="flex flex-1 mt-4 md:mt-0"

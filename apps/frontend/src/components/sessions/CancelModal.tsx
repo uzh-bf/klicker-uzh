@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
-import { Button, Header, Icon, Modal } from 'semantic-ui-react'
+import { Header, Modal } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FormattedMessage } from 'react-intl'
 
 interface Props {
@@ -15,15 +18,9 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
       open={isOpen}
       size="small"
       trigger={
-        <Button
-          icon
-          className="flex-1 sm:flex-initial !mr-0"
-          labelPosition="left"
-          size="small"
-          onClick={(): void => setIsOpen(true)}
-        >
+        <Button className="flex-1 h-10 px-4 sm:flex-initial" onClick={(): void => setIsOpen(true)}>
+          <FontAwesomeIcon icon={faXmark} size="lg" />
           <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
-          <Icon name="cancel" />
         </Button>
       }
       onClose={(): void => setIsOpen(false)}
@@ -40,10 +37,10 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
         />
       </Modal.Content>
       <Modal.Actions>
-        <Button onClick={(): void => setIsOpen(false)}>
+        <Button className="h-10 px-4 mr-2 font-bold" onClick={(): void => setIsOpen(false)}>
           <FormattedMessage defaultMessage="No" id="common.button.no" />
         </Button>
-        <Button primary onClick={handleCancelSession}>
+        <Button className="h-10 px-4 mr-2 font-bold text-white bg-uzh-blue-80" onClick={handleCancelSession}>
           <FormattedMessage defaultMessage="Yes" id="common.button.yes" />
         </Button>
       </Modal.Actions>

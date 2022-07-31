@@ -4,6 +4,7 @@ import { FormattedMessage, useIntl } from 'react-intl'
 import { useDrag } from 'react-dnd'
 import { Label } from 'semantic-ui-react'
 import { CheckIcon } from '@heroicons/react/outline'
+import { Button } from '@uzh-bf/design-system'
 
 import QuestionTags from './QuestionTags'
 import QuestionPreviewModal from './QuestionPreviewModal'
@@ -11,7 +12,6 @@ import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesLabel } from '../../lib/utils/lang'
 import CustomCheckbox from '../common/CustomCheckbox'
-import CustomButton from '../common/CustomButton'
 
 interface Props {
   checked?: boolean
@@ -102,12 +102,9 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
 
           <div className="flex flex-col md:w-full w-max md:flex-row">
             <div className="mb-2 md:flex-1 md:mb-0">
-              <CustomButton
-                className="bg-white shadow-md w-36 hover:shadow-none"
-                onClick={(): void => setIsPreviewModalOpen(true)}
-              >
+              <Button className="justify-center h-10 bg-white w-36" onClick={(): void => setIsPreviewModalOpen(true)}>
                 <FormattedMessage defaultMessage="Preview" id="questionDetails.button.preview" />
-              </CustomButton>
+              </Button>
               {isPreviewModalOpen && (
                 <QuestionPreviewModal
                   handleSetIsOpen={setIsPreviewModalOpen}
@@ -118,12 +115,12 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
               )}
             </div>
             <div className="mb-2 md:mr-3 w-36 md:mb-0">
-              <CustomButton
-                className="bg-white shadow-md w-36 hover:shadow-none"
+              <Button
+                className="justify-center h-10 bg-white w-36"
                 onClick={(): void => setIsModificationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
-              </CustomButton>
+              </Button>
               {isModificationModalOpen && (
                 <QuestionDetailsModal
                   handleSetIsOpen={setIsModificationModalOpen}
@@ -133,12 +130,12 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
               )}
             </div>
             <div className="w-36">
-              <CustomButton
-                className="bg-white shadow-md w-36 hover:shadow-none"
+              <Button
+                className="justify-center h-10 bg-white w-36"
                 onClick={(): void => setIsDuplicationModalOpen(true)}
               >
                 <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
-              </CustomButton>
+              </Button>
               {isDuplicationModalOpen && (
                 <QuestionDuplicationModal
                   handleSetIsOpen={setIsDuplicationModalOpen}

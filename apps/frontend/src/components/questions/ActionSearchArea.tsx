@@ -8,8 +8,19 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Confirm, Icon } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { PlusCircleIcon, CheckIcon, MinusSmIcon } from '@heroicons/react/outline'
-import { SortAscendingIcon, SortDescendingIcon, ChevronDownIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon } from '@heroicons/react/solid'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faArchive,
+  faArrowDownWideShort,
+  faArrowUpWideShort,
+  faBoltLightning,
+  faCalculator,
+  faDownload,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import clsx from 'clsx'
 
 import QuestionCreationModal from './QuestionCreationModal'
@@ -17,7 +28,6 @@ import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 import { omitDeep } from '../../lib/utils/omitDeep'
-import CustomButton from '../common/CustomButton'
 import CustomTooltip from '../common/CustomTooltip'
 import CustomCheckbox from '../common/CustomCheckbox'
 import SearchField from '../common/SearchField'
@@ -59,6 +69,7 @@ interface Props {
   handleSortByChange: any
   handleSortOrderToggle: any
   handleQuickStart: any
+  runningSessionId: string | undefined
   sortBy: string
   sortingTypes: {
     content: string
@@ -95,6 +106,7 @@ function ActionSearchArea({
   handleSortByChange,
   handleSortOrderToggle,
   handleQuickStart,
+  runningSessionId,
   sortBy,
   sortingTypes,
   sortOrder,
@@ -292,7 +304,7 @@ function ActionSearchArea({
         <UploadModal className="" open={uploadModalOpen} setOpen={setUploadModalOpen} />
 
         <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
-          <CustomButton
+          <Button
             className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount <= 1 && '!bg-grey-20')}
             disabled={itemCount <= 1}
             onClick={(): void => handleQuickBlocks(true)}
@@ -308,81 +320,77 @@ function ActionSearchArea({
               }
             }}
           >
-            <Icon name="lightning" />
+            <FontAwesomeIcon icon={faBoltLightning} />
             <FormattedMessage
               defaultMessage="Split questions into {num} blocks"
               id="questionPool.button.quickCreateSeparate"
               values={{ num: itemCount }}
             />
-          </CustomButton>
-          <CustomButton
+          </Button>
+          <Button
             className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount === 0 && '!bg-grey-20')}
             disabled={itemCount === 0}
             onClick={(): void => handleQuickBlock(true)}
             onMouseEnter={(): void => {
-              if (itemCount > 1) {
+              if (itemCount > 0) {
                 setPreviousSessionBlocks(sessionBlocks)
                 handleQuickBlock(false)
               }
             }}
             onMouseLeave={(): void => {
-              if (itemCount > 1) {
+              if (itemCount > 0) {
                 setSessionBlocks(previousSessionBlocks)
               }
             }}
           >
-            <Icon name="lightning" />
+            <FontAwesomeIcon icon={faBoltLightning} />
             <FormattedMessage
               defaultMessage="Group questions into one block ({num}->1)"
               id="questionPool.button.quickCreateSingle"
               values={{ num: itemCount }}
             />
-          </CustomButton>
-          <CustomButton
+          </Button>
+          {console.log(runningSessionId)}
+          {console.log(itemCount === 0 || runningSessionId !== null)}
+          <Button
             className={clsx(
-              'h-10 text-white bg-sky-600  opacity-80',
-              itemCount !== 0 && 'opacity-100 hover:bg-sky-700'
+              'h-10 text-white bg-sky-600 hover:bg-sky-700',
+              (itemCount === 0 || runningSessionId !== null) && 'opacity-80 hover:bg-sky-600'
             )}
-            disabled={itemCount === 0}
+            disabled={itemCount === 0 || runningSessionId !== null}
             onClick={async (): Promise<void> => handleQuickStart()}
           >
-            <Icon name="lightning" />
+            <FontAwesomeIcon icon={faBoltLightning} />
             <FormattedMessage
               defaultMessage="Quick Start Session"
               id="questionPool.button.quickStartSession"
               values={{ num: itemCount }}
             />
-          </CustomButton>
+          </Button>
         </div>
 
         <div className="flex items-center">
           <CustomTooltip
             tooltip={<FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />}
           >
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!shadow-none'
-              )}
+            <Button
+              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
               disabled={itemCount === 0}
               onClick={onExportQuestions}
             >
-              <Icon className="!m-0" name="download" />
-            </CustomButton>
+              <FontAwesomeIcon icon={faDownload} size="lg" />
+            </Button>
           </CustomTooltip>
           <CustomTooltip
             tooltip={<FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />}
           >
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!shadow-none'
-              )}
+            <Button
+              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
               disabled={itemCount === 0}
               onClick={onGetQuestionStatistics}
             >
-              <Icon className="!m-0" name="calculator" />
-            </CustomButton>
+              <FontAwesomeIcon icon={faCalculator} size="lg" />
+            </Button>
           </CustomTooltip>
           <CustomTooltip
             tooltip={
@@ -393,30 +401,24 @@ function ActionSearchArea({
               )
             }
           >
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!shadow-none'
-              )}
+            <Button
+              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleArchiveQuestions()}
             >
-              <Icon className="!m-0" name="archive" />
-            </CustomButton>
+              <FontAwesomeIcon icon={faArchive} size="lg" />
+            </Button>
           </CustomTooltip>
           <CustomTooltip
             tooltip={<FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />}
           >
-            <CustomButton
-              className={clsx(
-                '!p-[0.65rem] bg-white shadow-md hover:!shadow-none mr-1',
-                itemCount === 0 && '!shadow-none'
-              )}
+            <Button
+              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleDeleteQuestions(false)}
             >
-              <Icon className="!m-0" name="trash" />
-            </CustomButton>
+              <FontAwesomeIcon icon={faTrash} size="lg" />
+            </Button>
           </CustomTooltip>
 
           <Confirm
@@ -447,13 +449,13 @@ function ActionSearchArea({
 
         {withSorting && (
           <>
-            <CustomButton
-              className="!p-[0.65rem] bg-white w-11 h-11 mr-1"
-              disabled={false}
-              onClick={handleSortOrderToggle}
-            >
-              {sortOrder ? <SortDescendingIcon /> : <SortAscendingIcon />}
-            </CustomButton>
+            <Button className="justify-center mr-1 bg-white w-11 h-11" disabled={false} onClick={handleSortOrderToggle}>
+              {sortOrder ? (
+                <FontAwesomeIcon icon={faArrowDownWideShort} size="lg" />
+              ) : (
+                <FontAwesomeIcon icon={faArrowUpWideShort} size="lg" />
+              )}
+            </Button>
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger className="flex flex-row pl-5 text-left bg-white border border-solid rounded-md w-44 h-11 border-grey-80 hover:cursor-pointer">

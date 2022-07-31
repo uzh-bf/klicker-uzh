@@ -3,7 +3,9 @@ import { useMutation } from '@apollo/client'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import { Form, Button } from 'semantic-ui-react'
+import { Form } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
 
 import FormikInput from '../components/FormikInput'
 import ChangePasswordMutation from '../../../graphql/mutations/ChangePasswordMutation.graphql'
@@ -63,9 +65,11 @@ function PasswordUpdateForm(): React.ReactElement {
               value={values.passwordRepeat}
             />
             <Button
-              primary
+              className={twMerge(
+                'float-right h-10 px-4 bg-uzh-blue-80 font-bold text-white',
+                (isSubmitting || !isValid || !dirty) && 'opacity-60'
+              )}
               disabled={isSubmitting || !isValid || !dirty}
-              floated="right"
               loading={isSubmitting}
               type="submit"
             >

@@ -1,6 +1,6 @@
 import React from 'react'
 import clsx from 'clsx'
-import { Button } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import useMarkdown from '../../../lib/hooks/useMarkdown'
 
 interface Props {
@@ -24,7 +24,7 @@ function Option({ active, children, disabled, id, onClick }) {
   const content = useMarkdown({ content: children.replace(/^(- |[0-9]+\. |\* |\+ )/g, '') })
   return (
     <div className={clsx('option', { active })} key={id}>
-      <Button fluid className="mr-0 !font-medium" disabled={disabled} onClick={onClick}>
+      <Button fluid className="h-10 mr-0 font-medium" disabled={disabled} onClick={onClick}>
         {content}
       </Button>
 

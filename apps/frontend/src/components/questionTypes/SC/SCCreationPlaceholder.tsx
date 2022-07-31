@@ -1,6 +1,10 @@
 import React, { RefObject, useState } from 'react'
 import clsx from 'clsx'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowDown, faArrowUp, faCheck, faTrash, faXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { twMerge } from 'tailwind-merge'
+
 import styles from './styles'
 
 interface Props {
@@ -45,67 +49,53 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   }
 
   return (
-    <div className={clsx('option', { inputMode })}>
-      <button className="leftAction" disabled={inputMode} type="button" onClick={onInputModeToggle}>
-        {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
-      </button>
-
-      <button
-        className={clsx('toggle', { correct, disabled: inputMode })}
+    <div className={clsx('option h-16', { inputMode })}>
+      <Button
+        className={twMerge(
+          '!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center leftAction w-full',
+          inputMode && 'w-12'
+        )}
         disabled={inputMode}
-        type="button"
-        onClick={onCorrectToggle}
+        onClick={onInputModeToggle}
       >
-        {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-      </button>
+        {inputMode ? <FontAwesomeIcon icon={faTrash} size="lg" /> : <FontAwesomeIcon icon={faPlus} size="lg" />}
+      </Button>
 
-      <input ref={focusField} type="text" value={name} onBlur={onSave} onChange={onNameChange} onKeyDown={onKeyPress} />
+      {inputMode && (
+        <Button
+          className={twMerge(
+            'h-10 w-10 self-center mx-2 bg-red-600 text-white justify-center',
+            correct && 'bg-green-600'
+          )}
+          disabled={inputMode}
+          onClick={onCorrectToggle}
+        >
+          {correct ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faXmark} />}
+        </Button>
+      )}
 
-      <div className="moveHandles">
-        <Button basic disabled icon="arrow up" size="mini" type="button" />
-        <Button basic disabled icon="arrow down" size="mini" type="button" />
-      </div>
+      <input
+        className={twMerge('opactiy-100', !inputMode && 'hidden')}
+        ref={focusField}
+        type="text"
+        value={name}
+        onBlur={onSave}
+        onChange={onNameChange}
+        onKeyDown={onKeyPress}
+      />
+
+      {inputMode && (
+        <div className="flex flex-col justify-between my-0.5">
+          <Button disabled className="!border-none !shadow-none">
+            <FontAwesomeIcon icon={faArrowUp} />
+          </Button>
+          <Button disabled className="!border-none !shadow-none">
+            <FontAwesomeIcon icon={faArrowDown} />
+          </Button>
+        </div>
+      )}
 
       <style jsx>{styles}</style>
-      <style jsx>{`
-        .leftAction {
-          flex: 0 0 100%;
-
-          border-right: none;
-          transition: flex-basis 0.3s;
-        }
-
-        input,
-        .toggle,
-        .rightAction {
-          flex: 1;
-
-          opacity: 0;
-        }
-
-        .inputMode > input,
-        .inputMode > .toggle,
-        .inputMode > .rightAction {
-          opacity: 1;
-        }
-
-        .inputMode > .leftAction,
-        .inputMode > .rightAction {
-          flex: 0 0 3rem;
-        }
-
-        .inputMode > .leftAction {
-          border-right: 1px solid grey;
-        }
-
-        .inputMode > .toggle {
-          flex: 0 0 auto;
-        }
-
-        .inputMode > input {
-          flex: 1;
-        }
-      `}</style>
     </div>
   )
 }

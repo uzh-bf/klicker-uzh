@@ -1,7 +1,8 @@
 import React from 'react'
 import { Formik } from 'formik'
 import { useIntl, FormattedMessage } from 'react-intl'
-import { Form, Button } from 'semantic-ui-react'
+import { Form } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { object, string } from 'yup'
 
 import FormikInput from './components/FormikInput'
@@ -69,7 +70,7 @@ function ParticipantLoginForm({ onSubmit }: Props): React.ReactElement {
             value={values.password}
           />
 
-          <Button primary disabled={!isValid || isSubmitting} type="submit">
+          <Button disabled={!isValid || isSubmitting} type="submit">
             <FormattedMessage defaultMessage="Login" id="common.button.login" />
           </Button>
         </Form>

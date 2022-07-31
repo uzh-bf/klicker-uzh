@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
-import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
+import { Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
 import getConfig from 'next/config'
 import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
@@ -10,6 +10,11 @@ import { pick } from 'ramda'
 import { PlayIcon, StopIcon } from '@heroicons/react/solid'
 import { PauseIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFile } from '@fortawesome/free-regular-svg-icons'
+import { faArrowRight, faPause, faPlay, faStop, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { twMerge } from 'tailwind-merge'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -51,27 +56,27 @@ const messages = defineMessages({
 function getMessage(intl, num: number, max: number): any {
   if (num === 0) {
     return {
-      icon: 'play',
+      icon: faPlay,
       label: intl.formatMessage(messages.buttonStart),
     }
   }
 
   if (num % 2 === 1) {
     return {
-      icon: 'right arrow',
+      icon: faArrowRight,
       label: intl.formatMessage(messages.buttonCloseBlock),
     }
   }
 
   if (num === max) {
     return {
-      icon: 'stop',
+      icon: faStop,
       label: intl.formatMessage(messages.buttonFinish),
     }
   }
 
   return {
-    icon: 'right arrow',
+    icon: faArrowRight,
     label: intl.formatMessage(messages.buttonOpenBlock),
   }
 }
@@ -197,8 +202,8 @@ function SessionTimeline({
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
             <QRPopup shortname={shortname} />
             <a className="flex-1" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-              <Button fluid icon className="!mr-0" labelPosition="left" size="small">
-                <Icon name="external" />
+              <Button fluid className="h-10" labelPosition="left">
+                <FontAwesomeIcon icon={faUpRightFromSquare} />
                 <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
               </Button>
             </a>
@@ -206,8 +211,8 @@ function SessionTimeline({
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
             <Link passHref prefetch href={`/sessions/evaluation/${sessionId}`}>
               <a className="flex-1" rel="noopener noreferrer" target="_blank">
-                <Button fluid icon className="!mr-0" disabled={isFeedbackSession} labelPosition="left" size="small">
-                  <Icon name="external" />
+                <Button fluid className="h-10" disabled={isFeedbackSession}>
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
                   <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
                 </Button>
               </a>
@@ -325,8 +330,8 @@ function SessionTimeline({
                           { label: 'password', key: 'password' },
                         ]}
                       >
-                        <Button icon>
-                          <Icon name="file" />
+                        <Button icon className="h-10 px-3">
+                          <FontAwesomeIcon icon={faFile} />
                           Download (CSV)
                         </Button>
                       </CSVLink>
@@ -420,14 +425,8 @@ function SessionTimeline({
       <div className="flex flex-col flex-wrap items-start justify-between flex-1 gap-2 mt-2 sm:flex-row">
         <div className="flex flex-row items-start w-full gap-2 sm:w-max">
           {!isParticipantAuthenticationEnabled && (
-            <Button
-              icon
-              className="flex-1 sm:flex-initial !mr-0"
-              labelPosition="left"
-              size="small"
-              onClick={handlePauseSession}
-            >
-              <Icon name="pause" />
+            <Button className="justify-center flex-1 h-10 px-4 sm:flex-initial" onClick={handlePauseSession}>
+              <FontAwesomeIcon icon={faPause} size="lg" />
               <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
             </Button>
           )}
@@ -437,23 +436,24 @@ function SessionTimeline({
         {isFeedbackSession ? (
           <Button
             // show the session finish button for feedback sessions
-            className="!mr-0"
-            color="red"
-            content={getMessage(intl, 2, 2).label}
-            icon={getMessage(intl, 2, 2).icon}
-            labelPosition="left"
+            className="h-10 bg-uzh-red-60"
             onClick={handleEndSession}
-          />
+          >
+            <FontAwesomeIcon icon={getMessage(intl, 2, 2).icon} size="lg" />
+            {getMessage(intl, 2, 2).label}
+          </Button>
         ) : (
           <Button
             // show dynamic buttons for all other sessions
-            className="!mr-0 !w-full sm:!w-max"
-            color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
-            content={getMessage(intl, activeStep, blocks.length * 2).label}
-            icon={getMessage(intl, activeStep, blocks.length * 2).icon}
-            labelPosition="left"
+            className={twMerge(
+              'h-10 w-full sm:w-max justify-center bg-uzh-blue-80 text-white font-bold px-4',
+              activeStep === blocks.length * 2 && 'opacity-60'
+            )}
             onClick={activeStep >= blocks.length * 2 ? handleEndSession : handleNextBlock}
-          />
+          >
+            <FontAwesomeIcon icon={getMessage(intl, activeStep, blocks.length * 2).icon} size="lg" />
+            {getMessage(intl, activeStep, blocks.length * 2).label}
+          </Button>
         )}
       </div>
     </div>

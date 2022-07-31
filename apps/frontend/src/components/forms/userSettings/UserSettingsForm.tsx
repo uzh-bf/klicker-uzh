@@ -1,8 +1,9 @@
 import React from 'react'
 import _get from 'lodash/get'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
-import { Message, Button, Tab } from 'semantic-ui-react'
+import { Message, Tab } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
+import { Button } from '@uzh-bf/design-system'
 
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'
@@ -74,7 +75,7 @@ function UserSettingsForm(): React.ReactElement {
               </Message>
             ) : (
               <Button
-                color="red"
+                className="h-10 px-4 font-bold text-white bg-red-600"
                 disabled={success}
                 loading={loading}
                 onClick={(): void => {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon, Button } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import * as Slider from '@radix-ui/react-slider'
 import clsx from 'clsx'
 
@@ -50,9 +50,9 @@ function ConfusionDialog({ title, value, disabled, handleChange, labels, icons }
         onValueChange={([newValue]) => handleChange(newValue)}
       >
         <div className="absolute bottom-0 left-0 right-0 flex flex-row justify-between text-3xl">
-          <i className="icon !mr-0">{icons.min}</i>
-          <i className="icon !mr-0">{icons.mid}</i>
-          <i className="icon !mr-0">{icons.max}</i>
+          <i className="icon !mr-0">{icons.min || labels.min}</i>
+          <i className="icon !mr-0">{icons.mid || labels.mid}</i>
+          <i className="icon !mr-0">{icons.max || labels.max}</i>
         </div>
 
         <Slider.Track className="relative flex-1 h-4 bg-gray-200 rounded-xl">

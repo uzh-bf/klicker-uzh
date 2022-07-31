@@ -1,7 +1,11 @@
 import React from 'react'
 import clsx from 'clsx'
-import { Icon, Button, Input, Popup } from 'semantic-ui-react'
+import { Input, Popup } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FormattedMessage } from 'react-intl'
+import { faArrowDown, faArrowUp, faCheck, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { twMerge } from 'tailwind-merge'
 
 import styles from './styles'
 
@@ -32,10 +36,14 @@ function SCCreationOption({
   handleMoveDown,
 }: Props): React.ReactElement {
   return (
-    <div className={clsx('option', { correct })}>
-      <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
-        <Icon name="trash" />
-      </button>
+    <div className={clsx('option h-16', { correct })}>
+      <Button
+        className="!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center w-12"
+        disabled={disabled}
+        onClick={handleDelete}
+      >
+        <FontAwesomeIcon icon={faTrash} size="lg" />
+      </Button>
 
       <Popup
         inverted
@@ -52,14 +60,16 @@ function SCCreationOption({
         size="small"
         style={{ opacity: 0.9 }}
         trigger={
-          <button
-            className={clsx('toggle', { correct })}
+          <Button
+            className={twMerge(
+              'h-10 w-10 self-center mx-2 bg-red-600 text-white justify-center',
+              correct && 'bg-green-600'
+            )}
             disabled={disabled}
-            type="button"
             onClick={handleCorrectToggle}
           >
-            {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-          </button>
+            {correct ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faXmark} />}
+          </Button>
         }
       />
 
@@ -70,9 +80,13 @@ function SCCreationOption({
         onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
       />
 
-      <div className="moveHandles">
-        <Button basic icon="arrow up" size="mini" type="button" onClick={handleMoveUp} />
-        <Button basic icon="arrow down" size="mini" type="button" onClick={handleMoveDown} />
+      <div className="flex flex-col justify-between my-0.5">
+        <Button className="!border-none !shadow-none" onClick={handleMoveUp}>
+          <FontAwesomeIcon icon={faArrowUp} />
+        </Button>
+        <Button className="!border-none !shadow-none" onClick={handleMoveDown}>
+          <FontAwesomeIcon icon={faArrowDown} />
+        </Button>
       </div>
 
       <style jsx>{styles}</style>

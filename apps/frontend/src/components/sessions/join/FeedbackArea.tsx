@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, Button, TextArea, Message } from 'semantic-ui-react'

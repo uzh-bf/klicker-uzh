@@ -3,13 +3,15 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Message, Icon } from 'semantic-ui-react'
+import { Form, Message, Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ArrowDownIcon } from '@heroicons/react/outline'
+import { twMerge } from 'tailwind-merge'
 import clsx from 'clsx'
 
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
@@ -228,12 +230,12 @@ function QuestionEditForm({
               <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
                 <div className="actionArea">
                   {!hasAnythingChanged && (
-                    <Button className="close" size="large" type="button" onClick={handleDiscard}>
+                    <Button className="h-10 px-4 font-bold close" onClick={handleDiscard}>
                       <FormattedMessage defaultMessage="Close" id="common.button.close" />
                     </Button>
                   )}
                   {hasAnythingChanged && (
-                    <Button className="discard" size="large" type="button" onClick={handleDiscard}>
+                    <Button className="h-10 px-4 font-bold discard" size="large" type="button" onClick={handleDiscard}>
                       <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
                     </Button>
                   )}
@@ -252,11 +254,12 @@ function QuestionEditForm({
                   </div>
 
                   <Button
-                    primary
-                    className="save"
+                    className={twMerge(
+                      'save h-10 px-4 font-bold bg-uzh-blue-80 text-white',
+                      (!_isEmpty(errors) || !hasAnythingChanged) && 'opacity-60'
+                    )}
                     disabled={!_isEmpty(errors) || !hasAnythingChanged}
                     loading={loading && isSubmitting}
-                    size="large"
                     type="submit"
                   >
                     <FormattedMessage defaultMessage="Save" id="common.button.save" />

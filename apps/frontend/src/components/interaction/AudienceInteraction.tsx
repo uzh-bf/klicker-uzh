@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
+import { Checkbox, Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage } from 'react-intl'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 
@@ -80,8 +83,8 @@ function AudienceInteraction({
           {isFeedbackChannelActive && (
             <div className="order-3 md:order-1">
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-                <Button text labelPosition="left" size="small">
-                  <Icon name="external" />
+                <Button className="h-10 px-4" labelPosition="left">
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
                   <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
                 </Button>
               </a>
