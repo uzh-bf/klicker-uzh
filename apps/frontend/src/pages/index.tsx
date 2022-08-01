@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/router'
-import { Button, List, Input } from 'semantic-ui-react'
+import { List, Input } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { push } from '@socialgouv/matomo-next'
 import Image from 'next/image'
-import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
+import { twMerge } from 'tailwind-merge'
 
+import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
 import StaticLayout from '../components/layouts/StaticLayout'
 
 const links = [
@@ -49,8 +51,10 @@ function Index(): React.ReactElement {
             onChange={(e): void => setShortname(e.target.value)}
           />
           <Button
-            primary
-            className="!mr-0 !mt-2 lg:!mt-0"
+            className={twMerge(
+              'mt-2 lg:mt-0 h-11 bg-uzh-blue-80 font-bold text-white px-4',
+              (!shortname || shortname === '') && 'opacity-60'
+            )}
             disabled={!shortname || shortname === ''}
             onClick={redirectToJoin}
           >
@@ -162,7 +166,7 @@ function Index(): React.ReactElement {
             (link): React.ReactElement => (
               <List.Item className="mb-4 !inline-block mr-2" key={link.label}>
                 <a href={link.href} target="_self">
-                  <Button primary>{link.label}</Button>
+                  <Button className="px-4 font-bold text-white h-11 bg-uzh-blue-80">{link.label}</Button>
                 </a>
               </List.Item>
             )

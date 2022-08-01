@@ -3,7 +3,10 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Message } from 'semantic-ui-react'
+import { Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faRotate } from '@fortawesome/free-solid-svg-icons'
 import { push } from '@socialgouv/matomo-next'
 import getConfig from 'next/config'
 
@@ -105,7 +108,9 @@ function Join({ shortname }: JoinProps): React.ReactElement {
     return (
       <div className="p-4 font-bold noSession">
         {extraMessage && <Message error>{extraMessage}</Message>}
-        <Button className="!mb-4 !mr-4" icon="refresh" onClick={(): void => window.location.reload()} />
+        <Button className="justify-center w-10 h-10 mr-4" onClick={(): void => window.location.reload()}>
+          <FontAwesomeIcon icon={faRotate} />
+        </Button>
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"

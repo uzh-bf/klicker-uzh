@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
-import { Form, Button, TextArea, Message } from 'semantic-ui-react'
+import { Form, TextArea, Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
+import { twMerge } from 'tailwind-merge'
+
 import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
@@ -323,10 +326,8 @@ function FeedbackArea({
             </Form.Field>
 
             <Button
-              primary
-              className="self-end !mr-0"
+              className={twMerge('self-end font-bold text-white bg-uzh-blue-80', !feedbackInputValue && 'opacity-60')}
               disabled={!feedbackInputValue}
-              size="tiny"
               type="submit"
               onClick={onNewFeedback}
             >

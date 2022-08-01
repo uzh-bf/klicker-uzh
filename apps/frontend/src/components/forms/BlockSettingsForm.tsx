@@ -142,7 +142,7 @@ function BlockSettingsForm({
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button className="mr-1 p-2 px-3" icon="times" type="button" onClick={onModalClose}>
+            <Button className="p-2 px-3 mr-1" onClick={onModalClose}>
               <FontAwesomeIcon icon={faXmark} size="lg" />
               <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
             </Button>
