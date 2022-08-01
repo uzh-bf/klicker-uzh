@@ -121,7 +121,7 @@ function MovoImport(): React.ReactElement {
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faPlus} />
               </Button.Icon>
-              <div>Select Movo Export</div>
+              <Button.Label>Select Movo Export</Button.Label>
             </Button>
           </div>
           <div className="flex-1 pl-4 my-auto font-bold">Selected File: {filename}</div>
@@ -148,7 +148,7 @@ function MovoImport(): React.ReactElement {
             <Button.Icon className="mr-1">
               <FontAwesomeIcon icon={faUpload} />
             </Button.Icon>
-            <div>Confirm Upload</div>
+            <Button.Label>Confirm Upload</Button.Label>
           </Button>
         </div>
 

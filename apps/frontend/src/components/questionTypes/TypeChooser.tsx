@@ -81,7 +81,7 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
               key={typeValue}
               onClick={(): void => onChange(typeValue)}
             >
-              {name}
+              <Button.Label>{name}</Button.Label>
             </Button>
           )
         )}

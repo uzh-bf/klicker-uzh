@@ -230,12 +230,16 @@ function QuestionEditForm({
                 <div className="actionArea">
                   {!hasAnythingChanged && (
                     <Button className="h-10 px-4 font-bold close" onClick={handleDiscard}>
-                      <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                      <Button.Label>
+                        <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                      </Button.Label>
                     </Button>
                   )}
                   {hasAnythingChanged && (
                     <Button className="h-10 px-4 font-bold discard" size="large" type="button" onClick={handleDiscard}>
-                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                      <Button.Label>
+                        <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                      </Button.Label>
                     </Button>
                   )}
 
@@ -258,7 +262,9 @@ function QuestionEditForm({
                     loading={loading && isSubmitting}
                     type="submit"
                   >
-                    <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    </Button.Label>
                   </Button>
                 </div>
 

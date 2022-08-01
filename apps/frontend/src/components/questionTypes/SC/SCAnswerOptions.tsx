@@ -25,7 +25,7 @@ function Option({ active, children, disabled, id, onClick }) {
   return (
     <div className={clsx('option', { active })} key={id}>
       <Button fluid className="h-10 mr-0 font-medium" disabled={disabled} onClick={onClick}>
-        {content}
+        <Button.Label>{content}</Button.Label>
       </Button>
 
       <style jsx>{`

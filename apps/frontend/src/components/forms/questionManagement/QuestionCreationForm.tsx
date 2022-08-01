@@ -225,7 +225,9 @@ function QuestionCreationForm({
               <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
                 <div className="questionActions">
                   <Button className="h-10 px-4 font-bold discard" size="large" onClick={onDiscard}>
-                    <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    </Button.Label>
                   </Button>
                   <div>
                     {_some(errors) && (
@@ -245,7 +247,9 @@ function QuestionCreationForm({
                     loading={isSubmitting}
                     type="submit"
                   >
-                    <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    </Button.Label>
                   </Button>
                 </div>
 

@@ -33,7 +33,7 @@ function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
         <Button.Icon>
           <FontAwesomeIcon icon={faTable} />
         </Button.Icon>
-        <div>Export CSV</div>
+        <Button.Label>Export CSV</Button.Label>
       </Button>
     </CSVLink>
   )

@@ -46,7 +46,7 @@ function Print(): React.ReactElement<any> {
                 <Button.Icon className="mr-1">
                   <FontAwesomeIcon icon={faPrint} />
                 </Button.Icon>
-                Print / PDF Download
+                <Button.Label>Print / PDF Download</Button.Label>
               </Button>
             </div>
 

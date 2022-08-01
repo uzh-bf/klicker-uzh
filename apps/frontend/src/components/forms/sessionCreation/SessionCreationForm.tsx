@@ -193,7 +193,9 @@ function SessionCreationForm({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faGears} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+              </Button.Label>
             </Button>
 
             <CustomModal
@@ -226,7 +228,9 @@ function SessionCreationForm({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
+              </Button.Label>
             </Button>
 
             <Button
@@ -242,7 +246,9 @@ function SessionCreationForm({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faPlay} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
+              </Button.Label>
             </Button>
 
             {!!runningSessionId && (

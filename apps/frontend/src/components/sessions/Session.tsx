@@ -274,7 +274,9 @@ function Session({
                 <Button.Icon className="mr-1">
                   <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                 </Button.Icon>
-                <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
+                </Button.Label>
               </Button>
             </a>
           )}
@@ -288,7 +290,7 @@ function Session({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={button.icon} />
               </Button.Icon>
-              {button.message}
+              <Button.Label>{button.message}</Button.Label>
             </Button>
           )}
         </div>

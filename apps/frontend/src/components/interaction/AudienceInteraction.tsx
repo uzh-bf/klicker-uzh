@@ -87,7 +87,9 @@ function AudienceInteraction({
                   <Button.Icon>
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
-                  <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                  <Button.Label>
+                    <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                  </Button.Label>
                 </Button>
               </a>
             </div>

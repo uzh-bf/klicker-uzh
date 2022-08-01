@@ -168,10 +168,12 @@ function SessionParticipantSettings({
                 className={twMerge('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
                 onClick={onParseParticipants}
               >
-                <FormattedMessage
-                  defaultMessage="Update Participants"
-                  id="form.createSession.participantAuth.button.updateParticipants"
-                />
+                <Button.Label>
+                  <FormattedMessage
+                    defaultMessage="Update Participants"
+                    id="form.createSession.participantAuth.button.updateParticipants"
+                  />
+                </Button.Label>
               </Button>
             </form>
             <div className="max-h-full border border-solid rounded-md h-max border-grey-40">

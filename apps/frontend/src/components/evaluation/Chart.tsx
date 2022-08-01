@@ -82,8 +82,10 @@ function Chart({
         if (!showGraph) {
           return (
             <div className="flex items-center justify-center h-full">
-              <Button className="bg-uzh-grey-20 border-1 border-solid" onClick={handleShowGraph}>
-                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
+              <Button className="border-solid bg-uzh-grey-20 border-1" onClick={handleShowGraph}>
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
+                </Button.Label>
               </Button>
             </div>
           )

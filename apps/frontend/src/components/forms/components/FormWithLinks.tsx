@@ -42,7 +42,7 @@ function FormWithLinks({ button, children, links }: Props): React.ReactElement {
             type="submit"
             onClick={button.onSubmit}
           >
-            {button.label}
+            <Button.Label>{button.label}</Button.Label>
           </Button>
 
           <div className="mt-4 md:order-0 md:mt-0">

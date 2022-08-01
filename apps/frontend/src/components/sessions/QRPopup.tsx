@@ -53,7 +53,9 @@ function QRPopup({ shortname }: Props): React.ReactElement {
           <Link passHref href={`/qr/${shortname}`}>
             <a target="_blank">
               <Button fluid className="text-lg font-bold text-white bg-uzh-blue-80 h-11">
-                <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
+                </Button.Label>
               </Button>
             </a>
           </Link>

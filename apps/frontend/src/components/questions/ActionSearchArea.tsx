@@ -323,11 +323,13 @@ function ActionSearchArea({
             <Button.Icon>
               <FontAwesomeIcon icon={faBoltLightning} />
             </Button.Icon>
-            <FormattedMessage
-              defaultMessage="Split questions into {num} blocks"
-              id="questionPool.button.quickCreateSeparate"
-              values={{ num: itemCount }}
-            />
+            <Button.Label>
+              <FormattedMessage
+                defaultMessage="Split questions into {num} blocks"
+                id="questionPool.button.quickCreateSeparate"
+                values={{ num: itemCount }}
+              />
+            </Button.Label>
           </Button>
           <Button
             className="h-10 mr-2 bg-grey-20 hover:bg-grey-40 disabled:!bg-grey-20"
@@ -348,11 +350,13 @@ function ActionSearchArea({
             <Button.Icon>
               <FontAwesomeIcon icon={faBoltLightning} />
             </Button.Icon>
-            <FormattedMessage
-              defaultMessage="Group questions into one block ({num}->1)"
-              id="questionPool.button.quickCreateSingle"
-              values={{ num: itemCount }}
-            />
+            <Button.Label>
+              <FormattedMessage
+                defaultMessage="Group questions into one block ({num}->1)"
+                id="questionPool.button.quickCreateSingle"
+                values={{ num: itemCount }}
+              />
+            </Button.Label>
           </Button>
           {console.log(runningSessionId)}
           {console.log(itemCount === 0 || runningSessionId !== null)}
@@ -364,11 +368,13 @@ function ActionSearchArea({
             <Button.Icon>
               <FontAwesomeIcon icon={faBoltLightning} />
             </Button.Icon>
-            <FormattedMessage
-              defaultMessage="Quick Start Session"
-              id="questionPool.button.quickStartSession"
-              values={{ num: itemCount }}
-            />
+            <Button.Label>
+              <FormattedMessage
+                defaultMessage="Quick Start Session"
+                id="questionPool.button.quickStartSession"
+                values={{ num: itemCount }}
+              />
+            </Button.Label>
           </Button>
         </div>
 
@@ -394,9 +400,9 @@ function ActionSearchArea({
               disabled={itemCount === 0}
               onClick={onGetQuestionStatistics}
             >
-              <Icon.Button>
+              <Button.Icon>
                 <FontAwesomeIcon icon={faCalculator} size="lg" />
-              </Icon.Button>
+              </Button.Icon>
             </Button>
           </CustomTooltip>
           <CustomTooltip

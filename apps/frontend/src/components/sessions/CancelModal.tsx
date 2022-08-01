@@ -22,7 +22,9 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
           <Button.Icon>
             <FontAwesomeIcon icon={faXmark} size="lg" />
           </Button.Icon>
-          <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
+          </Button.Label>
         </Button>
       }
       onClose={(): void => setIsOpen(false)}
@@ -40,10 +42,14 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
       </Modal.Content>
       <Modal.Actions>
         <Button className="h-10 px-4 mr-2 font-bold" onClick={(): void => setIsOpen(false)}>
-          <FormattedMessage defaultMessage="No" id="common.button.no" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="No" id="common.button.no" />
+          </Button.Label>
         </Button>
         <Button className="h-10 px-4 mr-2 font-bold text-white bg-uzh-blue-80" onClick={handleCancelSession}>
-          <FormattedMessage defaultMessage="Yes" id="common.button.yes" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Yes" id="common.button.yes" />
+          </Button.Label>
         </Button>
       </Modal.Actions>
     </Modal>

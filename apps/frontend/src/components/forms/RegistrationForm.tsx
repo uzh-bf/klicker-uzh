@@ -180,7 +180,9 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
                 loading={loading && isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+                </Button.Label>
               </Button>
             </div>
           </Form>

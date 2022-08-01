@@ -55,7 +55,7 @@ function Index(): React.ReactElement {
             disabled={!shortname || shortname === ''}
             onClick={redirectToJoin}
           >
-            Participate
+            <Button.Label>Participate</Button.Label>
           </Button>
         </div>
 
@@ -163,7 +163,9 @@ function Index(): React.ReactElement {
             (link): React.ReactElement => (
               <List.Item className="mb-4 !inline-block mr-2" key={link.label}>
                 <a href={link.href} target="_self">
-                  <Button className="px-4 font-bold text-white h-11 bg-uzh-blue-80">{link.label}</Button>
+                  <Button className="px-4 font-bold text-white h-11 bg-uzh-blue-80">
+                    <Button.Label>{link.label}</Button.Label>
+                  </Button>
                 </a>
               </List.Item>
             )

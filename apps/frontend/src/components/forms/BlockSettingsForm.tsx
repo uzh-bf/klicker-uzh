@@ -148,7 +148,9 @@ function BlockSettingsForm({
               <Button.Icon>
                 <FontAwesomeIcon icon={faXmark} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+              </Button.Label>
             </Button>
             <Button
               className="p-2 px-3"
@@ -159,7 +161,9 @@ function BlockSettingsForm({
               <Button.Icon>
                 <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              </Button.Label>
             </Button>
           </Modal.Actions>
         </Modal>

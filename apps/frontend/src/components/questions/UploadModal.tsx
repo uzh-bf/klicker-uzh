@@ -123,7 +123,9 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
             <Button.Icon>
               <FontAwesomeIcon icon={faPlus} />
             </Button.Icon>
-            <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
+            </Button.Label>
           </Button>
         </div>
         <div className="flex-1 pl-4">
@@ -171,7 +173,9 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
             onResetImportState()
           }}
         >
-          <FormattedMessage defaultMessage="Close" id="common.button.close" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Close" id="common.button.close" />
+          </Button.Label>
         </Button>
         <Button
           className="float-right h-10 px-5 mt-2 bg-uzh-blue-80 disabled:opacity-60"
@@ -186,7 +190,9 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
           <Button.Icon>
             <FontAwesomeIcon icon={faUpload} />
           </Button.Icon>
-          <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
+          </Button.Label>
         </Button>
       </div>
     </CustomModal>

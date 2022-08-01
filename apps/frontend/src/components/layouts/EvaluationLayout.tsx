@@ -428,7 +428,7 @@ function EvaluationLayout({
                     <Button.Icon>
                       <FontAwesomeIcon icon={faFile} />
                     </Button.Icon>
-                    <div>Export PDF</div>
+                    <Button.Label>Export PDF</Button.Label>
                   </Button>
                 </a>
               </div>
@@ -446,7 +446,7 @@ function EvaluationLayout({
                   <Button.Icon>
                     <FontAwesomeIcon icon={faFile} />
                   </Button.Icon>
-                  <div>Print / PDF</div>
+                  <Button.Label>Print / PDF</Button.Label>
                 </Button>
               </div>
             )}

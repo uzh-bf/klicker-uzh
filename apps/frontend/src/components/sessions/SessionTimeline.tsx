@@ -205,7 +205,13 @@ function SessionTimeline({
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
-                <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
+                <Button.Label>
+                  <FormattedMessage
+                    defaultMessage="Student View"
+                    id="sessionArea.toJoinSession"
+                    values={{ shortname }}
+                  />
+                </Button.Label>
               </Button>
             </a>
           </div>
@@ -216,7 +222,9 @@ function SessionTimeline({
                   <Button.Icon>
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
-                  <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
+                  <Button.Label>
+                    <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
+                  </Button.Label>
                 </Button>
               </a>
             </Link>
@@ -337,7 +345,7 @@ function SessionTimeline({
                           <Button.Icon>
                             <FontAwesomeIcon icon={faFile} />
                           </Button.Icon>
-                          Download (CSV)
+                          <Button.Label>Download (CSV)</Button.Label>
                         </Button>
                       </CSVLink>
                     </Modal.Actions>
@@ -434,7 +442,9 @@ function SessionTimeline({
               <Button.Icon>
                 <FontAwesomeIcon icon={faPause} size="lg" />
               </Button.Icon>
-              <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
+              </Button.Label>
             </Button>
           )}
           <CancelModal handleCancelSession={handleCancelSession} />
@@ -449,7 +459,7 @@ function SessionTimeline({
             <Button.Icon>
               <FontAwesomeIcon icon={getMessage(intl, 2, 2).icon} size="lg" />
             </Button.Icon>
-            {getMessage(intl, 2, 2).label}
+            <Button.Label>{getMessage(intl, 2, 2).label}</Button.Label>
           </Button>
         ) : (
           <Button
@@ -460,7 +470,7 @@ function SessionTimeline({
             <Button.Icon>
               <FontAwesomeIcon icon={getMessage(intl, activeStep, blocks.length * 2).icon} size="lg" />
             </Button.Icon>
-            {getMessage(intl, activeStep, blocks.length * 2).label}
+            <Button.Label>{getMessage(intl, activeStep, blocks.length * 2).label}</Button.Label>
           </Button>
         )}
       </div>

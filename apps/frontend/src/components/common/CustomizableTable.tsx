@@ -144,7 +144,9 @@ function CustomizableTable({
                               setEditableRow(index)
                             }}
                           >
-                            <FontAwesomeIcon icon={faPenToSquare} />
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faPenToSquare} />
+                            </Button.Icon>
                           </Button>
                         )}
                         {hasAbort && (
@@ -155,7 +157,9 @@ function CustomizableTable({
                               setActiveId(object.id)
                             }}
                           >
-                            <FontAwesomeIcon icon={faStop} />
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faStop} />
+                            </Button.Icon>
                           </Button>
                         )}
                         {hasDeletion && (
@@ -166,7 +170,9 @@ function CustomizableTable({
                               setActiveId(object.id)
                             }}
                           >
-                            <FontAwesomeIcon icon={faTrashCan} />
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faTrashCan} />
+                            </Button.Icon>
                           </Button>
                         )}
                       </div>

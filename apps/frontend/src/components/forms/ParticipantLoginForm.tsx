@@ -71,7 +71,9 @@ function ParticipantLoginForm({ onSubmit }: Props): React.ReactElement {
           />
 
           <Button disabled={!isValid || isSubmitting} type="submit">
-            <FormattedMessage defaultMessage="Login" id="common.button.login" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Login" id="common.button.login" />
+            </Button.Label>
           </Button>
         </Form>
       )}

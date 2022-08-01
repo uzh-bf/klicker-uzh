@@ -82,10 +82,12 @@ function UserSettingsForm(): React.ReactElement {
                   requestAccountDeletion()
                 }}
               >
-                <FormattedMessage
-                  defaultMessage="Yes, I want to delete my account!"
-                  id="form.userSettings.button.requestAccountDeletion"
-                />
+                <Button.Label>
+                  <FormattedMessage
+                    defaultMessage="Yes, I want to delete my account!"
+                    id="form.userSettings.button.requestAccountDeletion"
+                  />
+                </Button.Label>
               </Button>
             )}
           </Tab.Pane>

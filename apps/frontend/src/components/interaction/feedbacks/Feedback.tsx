@@ -124,7 +124,9 @@ function Feedback({
                 }
               }}
             >
-              <FontAwesomeIcon icon={faTrashCan} />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrashCan} />
+              </Button.Icon>
             </Button>
             <Button
               className="h-9"
@@ -134,7 +136,15 @@ function Feedback({
                 setIsEditingActive((prev) => !prev)
               }}
             >
-              {isEditingActive ? <FontAwesomeIcon icon={faArrowUp} /> : <FontAwesomeIcon icon={faArrowDown} />}
+              {isEditingActive ? (
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowUp} />
+                </Button.Icon>
+              ) : (
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowDown} />
+                </Button.Icon>
+              )}
             </Button>
           </div>
         </div>
@@ -194,7 +204,7 @@ function Feedback({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faThumbTack} />
               </Button.Icon>
-              {pinned ? 'Unpin' : 'Pin'}
+              <Button.Label>{pinned ? 'Unpin' : 'Pin'}</Button.Label>
             </Button>
             <Button
               className="px-5"
@@ -228,7 +238,7 @@ function Feedback({
               <Button.Icon className="mr-1">
                 <FontAwesomeIcon icon={faPaperPlane} />
               </Button.Icon>
-              Respond
+              <Button.Label>Respond</Button.Label>
             </Button>
           </div>
         </div>

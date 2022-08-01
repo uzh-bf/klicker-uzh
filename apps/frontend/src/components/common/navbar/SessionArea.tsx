@@ -49,7 +49,9 @@ function SessionArea({ sessionId }: Props) {
           <Button.Icon className="mr-2">
             <FontAwesomeIcon icon={faPlay} size="lg" />
           </Button.Icon>
-          <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+          </Button.Label>
         </Button>
       </Menu.Item>
 

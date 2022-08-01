@@ -103,7 +103,9 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
           <div className="flex flex-col md:w-full w-max md:flex-row">
             <div className="mb-2 md:flex-1 md:mb-0">
               <Button className="justify-center h-10 bg-white w-36" onClick={(): void => setIsPreviewModalOpen(true)}>
-                <FormattedMessage defaultMessage="Preview" id="questionDetails.button.preview" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Preview" id="questionDetails.button.preview" />
+                </Button.Label>
               </Button>
               {isPreviewModalOpen && (
                 <QuestionPreviewModal
@@ -119,7 +121,9 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
                 className="justify-center h-10 bg-white w-36"
                 onClick={(): void => setIsModificationModalOpen(true)}
               >
-                <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
+                </Button.Label>
               </Button>
               {isModificationModalOpen && (
                 <QuestionDetailsModal
@@ -134,7 +138,9 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
                 className="justify-center h-10 bg-white w-36"
                 onClick={(): void => setIsDuplicationModalOpen(true)}
               >
-                <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
+                </Button.Label>
               </Button>
               {isDuplicationModalOpen && (
                 <QuestionDuplicationModal

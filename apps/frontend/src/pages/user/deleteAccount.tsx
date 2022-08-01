@@ -63,7 +63,9 @@ function DeleteAccount(): React.ReactElement {
                   push(['trackEvent', 'User', 'Account Deleted'])
                 }}
               >
-                <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
+                </Button.Label>
               </Button>
 
               {error && <Message error>{error.message}</Message>}

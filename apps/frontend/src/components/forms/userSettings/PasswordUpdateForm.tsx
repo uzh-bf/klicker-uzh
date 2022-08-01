@@ -69,7 +69,9 @@ function PasswordUpdateForm(): React.ReactElement {
               loading={isSubmitting}
               type="submit"
             >
-              <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
+              </Button.Label>
             </Button>
           </Form>
         )}

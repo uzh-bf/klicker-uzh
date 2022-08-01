@@ -50,9 +50,13 @@ function ActionMenu({
       <div className="flex-initial w-24">
         <Button fluid className="!mr-0 h-full" disabled={isSubmitDisabled} onClick={onSubmit}>
           {isSkipModeActive ? (
-            <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
+            </Button.Label>
           ) : (
-            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button.Label>
           )}
         </Button>
       </div>

@@ -88,7 +88,7 @@ export function Modal({
                       disabled={!discardEnabled}
                       onClick={onDiscard}
                     >
-                      {discardLabel ?? 'Close'}
+                      <Button.Label>{discardLabel ?? 'Close'}</Button.Label>
                     </Button>
                   </RadixDialog.Close>
                 )}
@@ -113,7 +113,7 @@ export function Modal({
                       disabled={!submitEnabled}
                       onClick={onSubmit}
                     >
-                      {submitLabel ?? 'Submit'}
+                      <Button.Label>{submitLabel ?? 'Submit'}</Button.Label>
                     </Button>
                   </RadixDialog.Close>
                 )}
