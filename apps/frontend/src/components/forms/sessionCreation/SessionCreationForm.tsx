@@ -190,7 +190,9 @@ function SessionCreationForm({
               className="justify-center bg-grey-20 hover:bg-grey-40 h-9"
               onClick={() => setSettingsModalOpen(true)}
             >
-              <FontAwesomeIcon className="mr-1" icon={faGears} size="lg" />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faGears} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
             </Button>
 
@@ -221,7 +223,9 @@ function SessionCreationForm({
               disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               type="submit"
             >
-              <FontAwesomeIcon className="mr-1" icon={faFloppyDisk} size="lg" />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
             </Button>
 
@@ -235,7 +239,9 @@ function SessionCreationForm({
               type="submit"
               onClick={handleCreateSession('start')}
             >
-              <FontAwesomeIcon className="mr-1" icon={faPlay} size="lg" />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPlay} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
             </Button>
 
@@ -264,21 +270,27 @@ function SessionCreationForm({
                         className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex - 1)}
                       >
-                        <FontAwesomeIcon icon={faArrowLeft} />
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowLeft} />
+                        </Button.Icon>
                       </Button>
                       <Button
                         basic
                         className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onRemoveBlock(blockIndex)}
                       >
-                        <FontAwesomeIcon icon={faTrashCan} />
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faTrashCan} />
+                        </Button.Icon>
                       </Button>
                       <Button
                         basic
                         className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
                       >
-                        <FontAwesomeIcon icon={faArrowRight} />
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowRight} />
+                        </Button.Icon>
                       </Button>
                     </div>
                   </div>
@@ -333,13 +345,17 @@ function SessionCreationForm({
                         <FontAwesomeIcon icon={faArrowUp} />
                       </Button>
                       <Button className="p-2 border-0 shadow-none h-7" onClick={(): void => onRemoveBlock(blockIndex)}>
-                        <FontAwesomeIcon icon={faTrashCan} />
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faTrashCan} />
+                        </Button.Icon>
                       </Button>
                       <Button
                         className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
                       >
-                        <FontAwesomeIcon icon={faArrowDown} />
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowDown} />
+                        </Button.Icon>
                       </Button>
                     </div>
                   </div>

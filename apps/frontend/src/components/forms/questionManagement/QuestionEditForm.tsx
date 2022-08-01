@@ -11,7 +11,6 @@ import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ArrowDownIcon } from '@heroicons/react/outline'
-import { twMerge } from 'tailwind-merge'
 import clsx from 'clsx'
 
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
@@ -254,10 +253,7 @@ function QuestionEditForm({
                   </div>
 
                   <Button
-                    className={twMerge(
-                      'save h-10 px-4 font-bold bg-uzh-blue-80 text-white',
-                      (!_isEmpty(errors) || !hasAnythingChanged) && 'opacity-60'
-                    )}
+                    className="h-10 px-4 font-bold text-white save bg-uzh-blue-80 disabled:opacity-60"
                     disabled={!_isEmpty(errors) || !hasAnythingChanged}
                     loading={loading && isSubmitting}
                     type="submit"

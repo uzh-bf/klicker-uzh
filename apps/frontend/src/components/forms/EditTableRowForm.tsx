@@ -127,16 +127,20 @@ function EditTableRowForm({
           <Table.Cell textAlign="right">
             <div className="buttonCell">
               <Button
-                className="mr-1 w-10 h-10"
+                className="w-10 h-10 mr-1"
                 disabled={!isValid || (!dirty && (!initialValues.role || initialValues.role === activeRole))}
                 onClick={(): void => {
                   handleModification(data.id, values, false)
                 }}
               >
-                <FontAwesomeIcon icon={faFloppyDisk} />
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faFloppyDisk} />
+                </Button.Icon>
               </Button>
-              <Button className="w-10 h-10" icon="undo" onClick={onDiscard}>
-                <FontAwesomeIcon icon={faRotateLeft} />
+              <Button className="w-10 h-10" onClick={onDiscard}>
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faRotateLeft} />
+                </Button.Icon>
               </Button>
             </div>
           </Table.Cell>

@@ -184,7 +184,9 @@ function TableChart({
                         })
                       }}
                     >
-                      <FontAwesomeIcon icon={faTrashCan} />
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faTrashCan} />
+                      </Button.Icon>
                     </Button>
                   </Table.Cell>
                 )}

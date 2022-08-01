@@ -29,8 +29,10 @@ function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
 
   return (
     <CSVLink data={csvData} filename={`klicker-results-${sessionId}.csv`}>
-      <Button className="mr-1 py-1 px-3">
-        <FontAwesomeIcon icon={faTable} />
+      <Button className="px-3 py-1 mr-1">
+        <Button.Icon>
+          <FontAwesomeIcon icon={faTable} />
+        </Button.Icon>
         <div>Export CSV</div>
       </Button>
     </CSVLink>

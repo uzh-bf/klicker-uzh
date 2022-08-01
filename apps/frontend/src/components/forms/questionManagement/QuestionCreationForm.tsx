@@ -8,7 +8,6 @@ import { Form, Message, List, Loader, Icon } from 'semantic-ui-react'
 import { Field, Formik } from 'formik'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { Button } from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
 
 import FileDropzone from './FileDropzone'
 import ContentInput from '../../questions/creation/ContentInput'
@@ -241,10 +240,7 @@ function QuestionCreationForm({
                     )}
                   </div>
                   <Button
-                    className={twMerge(
-                      'save h-10 px-4 font-bold bg-uzh-blue-80 text-white',
-                      (!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))) && 'opacity-60'
-                    )}
+                    className="h-10 px-4 font-bold text-white save bg-uzh-blue-80 disabled:opacity-60"
                     disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
                     loading={isSubmitting}
                     type="submit"

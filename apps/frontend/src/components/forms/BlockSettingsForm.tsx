@@ -100,7 +100,9 @@ function BlockSettingsForm({
                 required
                 action={
                   <Button onClick={onResetTimeLimit({ setFieldValue, setSubmitting })}>
-                    <FontAwesomeIcon icon={faXmark} size="lg" />
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faXmark} size="lg" />
+                    </Button.Icon>
                   </Button>
                 }
                 actionPosition="left"
@@ -143,7 +145,9 @@ function BlockSettingsForm({
           </Modal.Content>
           <Modal.Actions>
             <Button className="p-2 px-3 mr-1" onClick={onModalClose}>
-              <FontAwesomeIcon icon={faXmark} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faXmark} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
             </Button>
             <Button
@@ -152,7 +156,9 @@ function BlockSettingsForm({
               type="submit"
               onClick={(): any => handleSubmit()}
             >
-              <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Save" id="common.button.save" />
             </Button>
           </Modal.Actions>

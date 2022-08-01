@@ -305,7 +305,7 @@ function ActionSearchArea({
 
         <div className="flex flex-col flex-1 md:order-2 md:flex-[0_0_auto] md:flex-row">
           <Button
-            className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount <= 1 && '!bg-grey-20')}
+            className="h-10 mr-2 bg-grey-20 hover:bg-grey-40 disabled:!bg-grey-20"
             disabled={itemCount <= 1}
             onClick={(): void => handleQuickBlocks(true)}
             onMouseEnter={(): void => {
@@ -320,7 +320,9 @@ function ActionSearchArea({
               }
             }}
           >
-            <FontAwesomeIcon icon={faBoltLightning} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faBoltLightning} />
+            </Button.Icon>
             <FormattedMessage
               defaultMessage="Split questions into {num} blocks"
               id="questionPool.button.quickCreateSeparate"
@@ -328,7 +330,7 @@ function ActionSearchArea({
             />
           </Button>
           <Button
-            className={clsx('h-10 mr-2 bg-grey-20 hover:bg-grey-40', itemCount === 0 && '!bg-grey-20')}
+            className="h-10 mr-2 bg-grey-20 hover:bg-grey-40 disabled:!bg-grey-20"
             disabled={itemCount === 0}
             onClick={(): void => handleQuickBlock(true)}
             onMouseEnter={(): void => {
@@ -343,7 +345,9 @@ function ActionSearchArea({
               }
             }}
           >
-            <FontAwesomeIcon icon={faBoltLightning} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faBoltLightning} />
+            </Button.Icon>
             <FormattedMessage
               defaultMessage="Group questions into one block ({num}->1)"
               id="questionPool.button.quickCreateSingle"
@@ -353,14 +357,13 @@ function ActionSearchArea({
           {console.log(runningSessionId)}
           {console.log(itemCount === 0 || runningSessionId !== null)}
           <Button
-            className={clsx(
-              'h-10 text-white bg-sky-600 hover:bg-sky-700',
-              (itemCount === 0 || runningSessionId !== null) && 'opacity-80 hover:bg-sky-600'
-            )}
+            className="h-10 text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-80 disabled:hover:bg-sky-600"
             disabled={itemCount === 0 || runningSessionId !== null}
             onClick={async (): Promise<void> => handleQuickStart()}
           >
-            <FontAwesomeIcon icon={faBoltLightning} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faBoltLightning} />
+            </Button.Icon>
             <FormattedMessage
               defaultMessage="Quick Start Session"
               id="questionPool.button.quickStartSession"
@@ -374,22 +377,26 @@ function ActionSearchArea({
             tooltip={<FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
+              className={clsx('mr-1 h-10 w-10 justify-center disabled:shadow-none')}
               disabled={itemCount === 0}
               onClick={onExportQuestions}
             >
-              <FontAwesomeIcon icon={faDownload} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faDownload} size="lg" />
+              </Button.Icon>
             </Button>
           </CustomTooltip>
           <CustomTooltip
             tooltip={<FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
+              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={onGetQuestionStatistics}
             >
-              <FontAwesomeIcon icon={faCalculator} size="lg" />
+              <Icon.Button>
+                <FontAwesomeIcon icon={faCalculator} size="lg" />
+              </Icon.Button>
             </Button>
           </CustomTooltip>
           <CustomTooltip
@@ -402,22 +409,26 @@ function ActionSearchArea({
             }
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
+              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleArchiveQuestions()}
             >
-              <FontAwesomeIcon icon={faArchive} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArchive} size="lg" />
+              </Button.Icon>
             </Button>
           </CustomTooltip>
           <CustomTooltip
             tooltip={<FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center', itemCount === 0 && '!shadow-none')}
+              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleDeleteQuestions(false)}
             >
-              <FontAwesomeIcon icon={faTrash} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrash} size="lg" />
+              </Button.Icon>
             </Button>
           </CustomTooltip>
 
@@ -451,9 +462,13 @@ function ActionSearchArea({
           <>
             <Button className="justify-center mr-1 bg-white w-11 h-11" disabled={false} onClick={handleSortOrderToggle}>
               {sortOrder ? (
-                <FontAwesomeIcon icon={faArrowDownWideShort} size="lg" />
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowDownWideShort} size="lg" />
+                </Button.Icon>
               ) : (
-                <FontAwesomeIcon icon={faArrowUpWideShort} size="lg" />
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowUpWideShort} size="lg" />
+                </Button.Icon>
               )}
             </Button>
 

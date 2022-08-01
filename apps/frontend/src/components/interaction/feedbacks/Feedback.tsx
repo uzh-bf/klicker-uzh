@@ -80,7 +80,6 @@ function Feedback({
     <div>
       <Button
         className="w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary"
-        role="button"
         onClick={() => setIsEditingActive((prev) => !prev)}
       >
         <div className="flex-1 no-page-break-inside">
@@ -166,7 +165,9 @@ function Feedback({
                 </div>
                 <div className="ml-2 print:hidden">
                   <Button className="justify-center mr-1 w-9 h-9" onClick={() => onDeleteResponse(response.id)}>
-                    <FontAwesomeIcon icon={faTrashCan} />
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faTrashCan} />
+                    </Button.Icon>
                   </Button>
                 </div>
               </div>
@@ -190,7 +191,9 @@ function Feedback({
           </div>
           <div className="flex flex-col flex-initial gap-2 pl-4">
             <Button className="px-5" disabled={resolved} onClick={() => onPinFeedback(!pinned)}>
-              <FontAwesomeIcon className="mr-1" icon={faThumbTack} />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faThumbTack} />
+              </Button.Icon>
               {pinned ? 'Unpin' : 'Pin'}
             </Button>
             <Button
@@ -204,25 +207,27 @@ function Feedback({
               }}
             >
               {resolved ? (
-                <FontAwesomeIcon className="mr-1" icon={faLockOpen} />
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faLockOpen} />
+                </Button.Icon>
               ) : (
-                <FontAwesomeIcon className="mr-1" icon={faLock} />
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faLock} />
+                </Button.Icon>
               )}
               {resolved ? 'Reopen' : 'Resolve'}{' '}
             </Button>
             <Button
-              className={twMerge(
-                'text-white bg-uzh-blue-80 px-5',
-                (resolved || !formik.isValid || !formik.dirty) && 'opacity-60'
-              )}
+              className="px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={resolved || !formik.isValid || !formik.dirty}
-              icon="send"
               onClick={() => {
                 formik.submitForm()
                 setIsEditingActive(false)
               }}
             >
-              <FontAwesomeIcon className="mr-1" icon={faPaperPlane} />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPaperPlane} />
+              </Button.Icon>
               Respond
             </Button>
           </div>

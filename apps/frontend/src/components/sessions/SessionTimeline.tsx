@@ -14,7 +14,6 @@ import { Button } from '@uzh-bf/design-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFile } from '@fortawesome/free-regular-svg-icons'
 import { faArrowRight, faPause, faPlay, faStop, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
-import { twMerge } from 'tailwind-merge'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -202,8 +201,10 @@ function SessionTimeline({
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
             <QRPopup shortname={shortname} />
             <a className="flex-1" href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
-              <Button fluid className="h-10" labelPosition="left">
-                <FontAwesomeIcon icon={faUpRightFromSquare} />
+              <Button fluid className="h-10">
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                </Button.Icon>
                 <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
               </Button>
             </a>
@@ -212,7 +213,9 @@ function SessionTimeline({
             <Link passHref prefetch href={`/sessions/evaluation/${sessionId}`}>
               <a className="flex-1" rel="noopener noreferrer" target="_blank">
                 <Button fluid className="h-10" disabled={isFeedbackSession}>
-                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  </Button.Icon>
                   <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
                 </Button>
               </a>
@@ -330,8 +333,10 @@ function SessionTimeline({
                           { label: 'password', key: 'password' },
                         ]}
                       >
-                        <Button icon className="h-10 px-3">
-                          <FontAwesomeIcon icon={faFile} />
+                        <Button className="h-10 px-3">
+                          <Button.Icon>
+                            <FontAwesomeIcon icon={faFile} />
+                          </Button.Icon>
                           Download (CSV)
                         </Button>
                       </CSVLink>
@@ -426,7 +431,9 @@ function SessionTimeline({
         <div className="flex flex-row items-start w-full gap-2 sm:w-max">
           {!isParticipantAuthenticationEnabled && (
             <Button className="justify-center flex-1 h-10 px-4 sm:flex-initial" onClick={handlePauseSession}>
-              <FontAwesomeIcon icon={faPause} size="lg" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faPause} size="lg" />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
             </Button>
           )}
@@ -439,19 +446,20 @@ function SessionTimeline({
             className="h-10 bg-uzh-red-60"
             onClick={handleEndSession}
           >
-            <FontAwesomeIcon icon={getMessage(intl, 2, 2).icon} size="lg" />
+            <Button.Icon>
+              <FontAwesomeIcon icon={getMessage(intl, 2, 2).icon} size="lg" />
+            </Button.Icon>
             {getMessage(intl, 2, 2).label}
           </Button>
         ) : (
           <Button
             // show dynamic buttons for all other sessions
-            className={twMerge(
-              'h-10 w-full sm:w-max justify-center bg-uzh-blue-80 text-white font-bold px-4',
-              activeStep === blocks.length * 2 && 'opacity-60'
-            )}
+            className="justify-center w-full h-10 px-4 font-bold text-white sm:w-max bg-uzh-blue-80 disabled:opacity-60"
             onClick={activeStep >= blocks.length * 2 ? handleEndSession : handleNextBlock}
           >
-            <FontAwesomeIcon icon={getMessage(intl, activeStep, blocks.length * 2).icon} size="lg" />
+            <Button.Icon>
+              <FontAwesomeIcon icon={getMessage(intl, activeStep, blocks.length * 2).icon} size="lg" />
+            </Button.Icon>
             {getMessage(intl, activeStep, blocks.length * 2).label}
           </Button>
         )}

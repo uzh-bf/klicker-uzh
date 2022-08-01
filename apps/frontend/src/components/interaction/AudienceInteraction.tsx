@@ -83,8 +83,10 @@ function AudienceInteraction({
           {isFeedbackChannelActive && (
             <div className="order-3 md:order-1">
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-                <Button className="h-10 px-4" labelPosition="left">
-                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                <Button className="h-10 px-4">
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  </Button.Icon>
                   <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
                 </Button>
               </a>

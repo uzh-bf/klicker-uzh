@@ -57,7 +57,9 @@ function PublicFeedback({
               disabled={resolved}
               onClick={onUpvoteFeedback}
             >
-              <FontAwesomeIcon icon={faThumbsUp} />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faThumbsUp} />
+              </Button.Icon>
             </Button>
           </div>
         </div>
@@ -81,7 +83,9 @@ function PublicFeedback({
                   )}
                   onClick={() => onPositiveResponseReaction(response.id)}
                 >
-                  <FontAwesomeIcon icon={faThumbsUp} />
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faThumbsUp} />
+                  </Button.Icon>
                 </Button>
                 <Button
                   className={twMerge(
@@ -90,7 +94,9 @@ function PublicFeedback({
                   )}
                   onClick={() => onNegativeResponseReaction(response.id)}
                 >
-                  <FontAwesomeIcon icon={faQuestion} />
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faQuestion} />
+                  </Button.Icon>
                 </Button>
               </div>
             </div>

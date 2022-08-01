@@ -104,7 +104,15 @@ function FeedbackChannel({
                       handlePublishFeedback(id, !published)
                     }}
                   >
-                    {published ? <FontAwesomeIcon icon={faEye} /> : <FontAwesomeIcon icon={faEyeSlash} />}
+                    {published ? (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEye} />
+                      </Button.Icon>
+                    ) : (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEyeSlash} />
+                      </Button.Icon>
+                    )}
                   </Button>
                 </div>
               )}

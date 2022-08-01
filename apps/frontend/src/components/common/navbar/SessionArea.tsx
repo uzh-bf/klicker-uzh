@@ -46,7 +46,9 @@ function SessionArea({ sessionId }: Props) {
           disabled={!sessionId}
           onClick={() => router.push('/sessions/running')}
         >
-          <FontAwesomeIcon className="mr-2" icon={faPlay} size="lg" />
+          <Button.Icon className="mr-2">
+            <FontAwesomeIcon icon={faPlay} size="lg" />
+          </Button.Icon>
           <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
         </Button>
       </Menu.Item>

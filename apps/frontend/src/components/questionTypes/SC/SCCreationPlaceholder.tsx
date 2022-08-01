@@ -51,14 +51,19 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   return (
     <div className={clsx('option h-16', { inputMode })}>
       <Button
-        className={twMerge(
-          '!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center leftAction w-full',
-          inputMode && 'w-12'
-        )}
+        className="!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center leftAction w-full disabled:w-12"
         disabled={inputMode}
         onClick={onInputModeToggle}
       >
-        {inputMode ? <FontAwesomeIcon icon={faTrash} size="lg" /> : <FontAwesomeIcon icon={faPlus} size="lg" />}
+        {inputMode ? (
+          <Button.Icon>
+            <FontAwesomeIcon icon={faTrash} size="lg" />
+          </Button.Icon>
+        ) : (
+          <Button.Icon>
+            <FontAwesomeIcon icon={faPlus} size="lg" />
+          </Button.Icon>
+        )}
       </Button>
 
       {inputMode && (
@@ -70,7 +75,15 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
           disabled={inputMode}
           onClick={onCorrectToggle}
         >
-          {correct ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faXmark} />}
+          {correct ? (
+            <Button.Icon>
+              <FontAwesomeIcon icon={faCheck} />
+            </Button.Icon>
+          ) : (
+            <Button.Icon>
+              <FontAwesomeIcon icon={faXmark} />
+            </Button.Icon>
+          )}
         </Button>
       )}
 
@@ -87,10 +100,14 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
       {inputMode && (
         <div className="flex flex-col justify-between my-0.5">
           <Button disabled className="!border-none !shadow-none">
-            <FontAwesomeIcon icon={faArrowUp} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowUp} />
+            </Button.Icon>
           </Button>
           <Button disabled className="!border-none !shadow-none">
-            <FontAwesomeIcon icon={faArrowDown} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowDown} />
+            </Button.Icon>
           </Button>
         </div>
       )}

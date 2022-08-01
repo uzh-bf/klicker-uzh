@@ -51,10 +51,7 @@ function Index(): React.ReactElement {
             onChange={(e): void => setShortname(e.target.value)}
           />
           <Button
-            className={twMerge(
-              'mt-2 lg:mt-0 h-11 bg-uzh-blue-80 font-bold text-white px-4',
-              (!shortname || shortname === '') && 'opacity-60'
-            )}
+            className={twMerge('mt-2 lg:mt-0 h-11 bg-uzh-blue-80 font-bold text-white px-4 disabled:opacity-60')}
             disabled={!shortname || shortname === ''}
             onClick={redirectToJoin}
           >

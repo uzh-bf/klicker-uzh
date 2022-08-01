@@ -42,7 +42,9 @@ function SCCreationOption({
         disabled={disabled}
         onClick={handleDelete}
       >
-        <FontAwesomeIcon icon={faTrash} size="lg" />
+        <Button.Icon>
+          <FontAwesomeIcon icon={faTrash} size="lg" />
+        </Button.Icon>
       </Button>
 
       <Popup
@@ -68,7 +70,15 @@ function SCCreationOption({
             disabled={disabled}
             onClick={handleCorrectToggle}
           >
-            {correct ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faXmark} />}
+            {correct ? (
+              <Button.Icon>
+                <FontAwesomeIcon icon={faCheck} />
+              </Button.Icon>
+            ) : (
+              <Button.Icon>
+                <FontAwesomeIcon icon={faXmark} />
+              </Button.Icon>
+            )}
           </Button>
         }
       />
@@ -82,10 +92,14 @@ function SCCreationOption({
 
       <div className="flex flex-col justify-between my-0.5">
         <Button className="!border-none !shadow-none" onClick={handleMoveUp}>
-          <FontAwesomeIcon icon={faArrowUp} />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArrowUp} />
+          </Button.Icon>
         </Button>
         <Button className="!border-none !shadow-none" onClick={handleMoveDown}>
-          <FontAwesomeIcon icon={faArrowDown} />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArrowDown} />
+          </Button.Icon>
         </Button>
       </div>
 

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { Icon } from 'semantic-ui-react'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
-import clsx from 'clsx'
 import { Button } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
 
 import CustomSwitch from '../../common/CustomSwitch'
 import CustomTooltip from '../../common/CustomTooltip'
@@ -165,7 +165,7 @@ function SessionParticipantSettings({
                 />
               </div>
               <Button
-                className={clsx('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
+                className={twMerge('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
                 onClick={onParseParticipants}
               >
                 <FormattedMessage

@@ -43,7 +43,9 @@ function Print(): React.ReactElement<any> {
                 className="justify-center font-bold text-white h-11 bg-uzh-blue-80"
                 onClick={() => window.print()}
               >
-                <FontAwesomeIcon icon={faPrint} className="mr-1" />
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faPrint} />
+                </Button.Icon>
                 Print / PDF Download
               </Button>
             </div>

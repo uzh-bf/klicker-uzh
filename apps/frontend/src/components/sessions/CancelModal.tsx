@@ -19,7 +19,9 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
       size="small"
       trigger={
         <Button className="flex-1 h-10 px-4 sm:flex-initial" onClick={(): void => setIsOpen(true)}>
-          <FontAwesomeIcon icon={faXmark} size="lg" />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faXmark} size="lg" />
+          </Button.Icon>
           <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
         </Button>
       }

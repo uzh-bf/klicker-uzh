@@ -87,7 +87,9 @@ function StudentLayout({
               disabled={!isInteractionEnabled}
               onClick={sidebar.handleToggleSidebarVisible}
             >
-              <FontAwesomeIcon icon={faBars} />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faBars} />
+              </Button.Icon>
             </Button>
             {isInteractionEnabled && <NotificationBadge count={totalUnseenCount} />}
           </div>
@@ -95,8 +97,10 @@ function StudentLayout({
           <h1 className="m-0 !text-lg">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
           </h1>
-          <Button basic className="justify-center w-10 h-10" onClick={(): void => window.location.reload()}>
-            <FontAwesomeIcon icon={faArrowsRotate} />
+          <Button className="justify-center w-10 h-10" onClick={(): void => window.location.reload()}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowsRotate} />
+            </Button.Icon>
           </Button>
         </div>
 

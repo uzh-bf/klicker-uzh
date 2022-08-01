@@ -145,8 +145,10 @@ function FeedbackSearchAndFilters({
       </div>
 
       <div className="flex flex-row">
-        <Button className="justify-center mt-4 mr-2 w-11 h-11 md:mt-0" icon="print" onClick={() => window.print()}>
-          <FontAwesomeIcon icon={faPrint} />
+        <Button className="justify-center mt-4 mr-2 w-11 h-11 md:mt-0" onClick={() => window.print()}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faPrint} />
+          </Button.Icon>
         </Button>
         <Dropdown
           selection

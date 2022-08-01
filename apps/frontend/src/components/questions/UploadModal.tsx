@@ -3,7 +3,6 @@ import { Table } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
-import { twMerge } from 'tailwind-merge'
 import { useApolloClient } from '@apollo/client'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
@@ -121,7 +120,9 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
         <div className="flex-[0_0_20%]" {...getRootProps()}>
           <input {...getInputProps()} />
           <Button fluid className="h-10" disabled={false}>
-            <FontAwesomeIcon icon={faPlus} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faPlus} />
+            </Button.Icon>
             <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
           </Button>
         </div>
@@ -173,7 +174,7 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
           <FormattedMessage defaultMessage="Close" id="common.button.close" />
         </Button>
         <Button
-          className={twMerge('float-right mt-2 bg-uzh-blue-80 h-10 px-5', questions.length === 0 && 'opacity-60')}
+          className="float-right h-10 px-5 mt-2 bg-uzh-blue-80 disabled:opacity-60"
           disabled={questions.length === 0}
           loading={isLoading}
           onClick={() => {
@@ -182,7 +183,9 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
             setOpen(false)
           }}
         >
-          <FontAwesomeIcon icon={faUpload} />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faUpload} />
+          </Button.Icon>
           <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
         </Button>
       </div>

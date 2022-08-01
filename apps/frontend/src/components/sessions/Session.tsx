@@ -271,7 +271,9 @@ function Session({
                 className="justify-center w-full font-bold h-11"
                 disabled={isFeedbackSession && confusionTS.length === 0 && feedbacks.length === 0}
               >
-                <FontAwesomeIcon className="mr-1" icon={faArrowUpRightFromSquare} />
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                </Button.Icon>
                 <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
               </Button>
             </a>
@@ -283,7 +285,9 @@ function Session({
               disabled={button.disabled}
               onClick={button.onClick}
             >
-              <FontAwesomeIcon className="mr-1" icon={button.icon} />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={button.icon} />
+              </Button.Icon>
               {button.message}
             </Button>
           )}

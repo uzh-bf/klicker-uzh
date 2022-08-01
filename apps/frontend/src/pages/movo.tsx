@@ -115,19 +115,18 @@ function MovoImport(): React.ReactElement {
             <input {...getInputProps()} />
             <Button
               fluid
-              className={twMerge('font-bold text-white bg-uzh-blue-80 h-10 px-5', submissionSucc && 'opacity-60')}
+              className={twMerge('font-bold text-white bg-uzh-blue-80 h-10 px-5 disabled:opacity-60')}
               disabled={submissionSucc}
             >
-              <FontAwesomeIcon className="mr-1" icon={faPlus} />
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPlus} />
+              </Button.Icon>
               <div>Select Movo Export</div>
             </Button>
           </div>
           <div className="flex-1 pl-4 my-auto font-bold">Selected File: {filename}</div>
           <Button
-            className={twMerge(
-              'font-bold text-white bg-green-700 h-10 px-5 justify-center',
-              (movoJSON === '' || submissionSucc === true) && 'opacity-60'
-            )}
+            className="justify-center h-10 px-5 font-bold text-white bg-green-700 disabled:opacity-60"
             disabled={movoJSON === '' || submissionSucc === true}
             onClick={async () => {
               try {
@@ -146,7 +145,9 @@ function MovoImport(): React.ReactElement {
               }
             }}
           >
-            <FontAwesomeIcon className="mr-1" icon={faUpload} />
+            <Button.Icon className="mr-1">
+              <FontAwesomeIcon icon={faUpload} />
+            </Button.Icon>
             <div>Confirm Upload</div>
           </Button>
         </div>

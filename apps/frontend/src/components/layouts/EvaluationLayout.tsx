@@ -424,8 +424,10 @@ function EvaluationLayout({
               <div className="flex print:hidden">
                 <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
                 <a href={`/sessions/print/${sessionId}`}>
-                  <Button className="py-1 px-3">
-                    <FontAwesomeIcon icon={faFile} />
+                  <Button className="px-3 py-1">
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faFile} />
+                    </Button.Icon>
                     <div>Export PDF</div>
                   </Button>
                 </a>
@@ -441,7 +443,9 @@ function EvaluationLayout({
             {showFeedback && (
               <div className="print:hidden">
                 <Button onClick={() => window.print()}>
-                  <FontAwesomeIcon icon={faFile} />
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faFile} />
+                  </Button.Icon>
                   <div>Print / PDF</div>
                 </Button>
               </div>

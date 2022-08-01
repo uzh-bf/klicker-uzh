@@ -5,7 +5,6 @@ import { Form, TextArea, Message } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
-import { twMerge } from 'tailwind-merge'
 
 import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
@@ -326,7 +325,7 @@ function FeedbackArea({
             </Form.Field>
 
             <Button
-              className={twMerge('self-end font-bold text-white bg-uzh-blue-80', !feedbackInputValue && 'opacity-60')}
+              className="self-end font-bold text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={!feedbackInputValue}
               type="submit"
               onClick={onNewFeedback}

@@ -109,7 +109,9 @@ function Join({ shortname }: JoinProps): React.ReactElement {
       <div className="p-4 font-bold noSession">
         {extraMessage && <Message error>{extraMessage}</Message>}
         <Button className="justify-center w-10 h-10 mr-4" onClick={(): void => window.location.reload()}>
-          <FontAwesomeIcon icon={faRotate} />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faRotate} />
+          </Button.Icon>
         </Button>
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."

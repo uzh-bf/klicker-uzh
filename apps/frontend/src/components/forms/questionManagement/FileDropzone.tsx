@@ -84,7 +84,9 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
                 }
               }}
             >
-              <FontAwesomeIcon icon={faTrashCan} />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrashCan} />
+              </Button.Icon>
               <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
             </Button>
           </Card.Content>
@@ -102,8 +104,10 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     <div className="fileDropzone">
       <div className="dropzone" {...getRootProps()}>
         <input {...getInputProps()} />
-        <Button fluid className="h-10" disabled={disabled} type="button">
-          <FontAwesomeIcon icon={faUpload} />
+        <Button fluid className="h-10" disabled={disabled}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faUpload} />
+          </Button.Icon>
           <FormattedMessage defaultMessage="Upload" id="fileDropzone.button.upload" />
         </Button>
         <div className="dndInfo">or Drag & Drop</div>

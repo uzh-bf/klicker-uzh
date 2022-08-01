@@ -2,7 +2,6 @@ import React from 'react'
 import Link from 'next/link'
 import { Form, List } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
 
 interface Props {
   button: {
@@ -37,10 +36,7 @@ function FormWithLinks({ button, children, links }: Props): React.ReactElement {
 
         <div className="flex flex-col md:flex-row md:justify-between">
           <Button
-            className={twMerge(
-              'h-10 px-4 bg-uzh-blue-80 text-white flex-[0_0_100%] md:flex-[0_0_auto] order-1 justify-center',
-              (button.invalid || button.disabled) && 'opacity-60'
-            )}
+            className="h-10 px-4 bg-uzh-blue-80 text-white flex-[0_0_100%] md:flex-[0_0_auto] order-1 justify-center disabled:opacity-60"
             disabled={button.invalid || button.disabled}
             loading={button.loading}
             type="submit"

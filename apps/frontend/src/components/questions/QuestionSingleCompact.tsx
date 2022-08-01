@@ -25,7 +25,9 @@ function QuestionSingleCompact({ id, type, title, onDelete }: Props): React.Reac
             <div className="">{generateTypesLabel(intl)[type]}</div>
 
             <Button className="justify-center w-6 h-6" onClick={onDelete}>
-              <FontAwesomeIcon icon={faTrash} />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrash} />
+              </Button.Icon>
             </Button>
           </div>
 
@@ -34,7 +36,9 @@ function QuestionSingleCompact({ id, type, title, onDelete }: Props): React.Reac
             <div className="hidden group-hover:block">{title}</div>
           </div>
           <Button className="justify-center w-6 h-6 group-hover:hidden" onClick={onDelete}>
-            <FontAwesomeIcon icon={faTrash} />
+            <Button.Icon>
+              <FontAwesomeIcon icon={faTrash} />
+            </Button.Icon>
           </Button>
         </div>
       </div>
