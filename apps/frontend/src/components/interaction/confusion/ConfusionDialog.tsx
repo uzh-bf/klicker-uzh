@@ -1,7 +1,7 @@
 import React from 'react'
 import { Icon } from 'semantic-ui-react'
 import * as Slider from '@radix-ui/react-slider'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   disabled?: boolean
@@ -56,11 +56,11 @@ function ConfusionDialog({ title, value, disabled, handleChange, labels, icons }
         </div>
 
         <Slider.Track className="relative flex-1 h-4 bg-gray-200 rounded-xl">
-          <Slider.Range className={clsx('absolute h-full rounded-full', RANGE_COLOR_MAP[String(value)])} />
+          <Slider.Range className={twMerge('absolute h-full rounded-full', RANGE_COLOR_MAP[String(value)])} />
         </Slider.Track>
 
         <Slider.Thumb
-          className={clsx(
+          className={twMerge(
             'w-12 h-12 flex flex-col items-center justify-center bg-white border-3 border-solid rounded-full shadow-lg focus:outline-none',
             disabled ? 'cursor-not-allowed' : 'cursor-move',
             disabled ? 'border-gray-300' : BORDER_COLOR_MAP[value]

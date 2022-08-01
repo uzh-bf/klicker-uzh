@@ -15,7 +15,6 @@ import {
   faThumbTack,
 } from '@fortawesome/free-solid-svg-icons'
 import * as Yup from 'yup'
-import clsx from 'clsx'
 
 interface IFeedbackResponse {
   id: string
@@ -151,7 +150,7 @@ function Feedback({
       </Button>
 
       <div
-        className={clsx(
+        className={twMerge(
           'p-4 print:p-2 print:pr-0 border print:border-0 border-t-0 border-gray-300 border-solid',
           !isEditingActive && 'hidden print:block'
         )}
@@ -167,10 +166,10 @@ function Feedback({
                 <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>
               <div className="flex flex-row items-center flex-initial print:hidden">
-                <div className={clsx('text-gray-500')}>
+                <div className={twMerge('text-gray-500')}>
                   {response.positiveReactions} <Icon name="thumbs up outline" />
                 </div>
-                <div className={clsx('ml-2', 'text-gray-500')}>
+                <div className={twMerge('ml-2', 'text-gray-500')}>
                   {response.negativeReactions} <Icon name="question" />
                 </div>
                 <div className="ml-2 print:hidden">

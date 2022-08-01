@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
@@ -9,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRotate } from '@fortawesome/free-solid-svg-icons'
 import { push } from '@socialgouv/matomo-next'
 import getConfig from 'next/config'
+import { twMerge } from 'tailwind-merge'
 
 import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
@@ -274,7 +274,7 @@ function Join({ shortname }: JoinProps): React.ReactElement {
           />
         ) : (
           <div
-            className={clsx(
+            className={twMerge(
               'flex-1 bg-white md:flex md:flex-col md:shadow md:rounded-xl p-4',
               sidebarActiveItem !== 'activeQuestion' && 'hidden'
             )}

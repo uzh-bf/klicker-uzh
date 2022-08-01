@@ -1,5 +1,5 @@
 import React from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { Button } from '@uzh-bf/design-system'
 import useMarkdown from '../../../lib/hooks/useMarkdown'
 
@@ -23,7 +23,7 @@ const defaultProps = {
 function Option({ active, children, disabled, id, onClick }) {
   const content = useMarkdown({ content: children.replace(/^(- |[0-9]+\. |\* |\+ )/g, '') })
   return (
-    <div className={clsx('option', { active })} key={id}>
+    <div className={twMerge('option', { active })} key={id}>
       <Button fluid className="h-10 mr-0 font-medium" disabled={disabled} onClick={onClick}>
         <Button.Label>{content}</Button.Label>
       </Button>

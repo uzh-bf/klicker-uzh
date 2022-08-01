@@ -5,7 +5,7 @@ import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage } from 'react-intl'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
@@ -143,7 +143,7 @@ function AudienceInteraction({
                 push(['trackEvent', 'Running Session', 'Feedback Moderation Toggled', String(!isFeedbackChannelPublic)])
               }}
             />
-            <span className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+            <span className={twMerge(!isFeedbackChannelActive && 'text-gray-400')}>
               <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
             </span>
           </div>

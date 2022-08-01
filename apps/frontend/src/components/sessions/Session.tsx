@@ -8,7 +8,7 @@ import { Button } from '@uzh-bf/design-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
@@ -257,7 +257,7 @@ function Session({
 
           {status !== SESSION_STATUS.CREATED && (
             <a
-              className={clsx(
+              className={twMerge(
                 isFeedbackSession &&
                   confusionTS.length === 0 &&
                   feedbacks.length === 0 &&

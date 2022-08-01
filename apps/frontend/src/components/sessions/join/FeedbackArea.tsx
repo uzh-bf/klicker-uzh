@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
 import { Form, TextArea, Message } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
@@ -307,7 +307,9 @@ function FeedbackArea({
   }
 
   return (
-    <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
+    <div
+      className={twMerge('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}
+    >
       <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
@@ -315,7 +317,7 @@ function FeedbackArea({
           <Form className="flex flex-col">
             <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
+                className={twMerge('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}

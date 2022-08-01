@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
@@ -371,21 +371,21 @@ function SessionTimeline({
               key={block.id}
             >
               <div
-                className={clsx(
+                className={twMerge(
                   'my-[0.2rem] mx-0 py-2 px-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]',
                   index === 0 && '!mt-0 !pt-0 md:!ml-0 md:!pl-0'
                 )}
               >
                 {index === 0 ? (
                   <PlayIcon
-                    className={clsx(
+                    className={twMerge(
                       'h-10 -mb-1.5 bg-white text-grey-40',
                       index === activeStep / 2 && '!text-green-700'
                     )}
                   />
                 ) : (
                   <PauseIcon
-                    className={clsx(
+                    className={twMerge(
                       'h-10 -mb-1.5 bg-white text-grey-40',
                       index === activeStep / 2 && '!text-green-700'
                     )}
@@ -416,7 +416,7 @@ function SessionTimeline({
               {index === blocks.length - 1 && (
                 <div className="my-[0.2rem] mx-0 py-2 px-0 !pb-0 !mb-0 md:!pr-0 md:!mr-0 md:my-0 md:mx-[0.2rem] md:py-0 md:px-[0.7rem]">
                   <StopIcon
-                    className={clsx(
+                    className={twMerge(
                       'h-10 -mb-1.5 bg-white text-grey-40',
                       activeStep === blocks.length * 2 && '!text-red-600'
                     )}

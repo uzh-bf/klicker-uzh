@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
@@ -190,11 +190,8 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
-        className={clsx(
-          'flex flex-col print:h-auto print:max-h-auto min-h-screen md:h-screen md:max-h-screen md:max-w-full evaluationLayout',
-          {
-            fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
-          }
+        className={twMerge(
+          'flex flex-col print:h-auto print:max-h-auto min-h-screen md:h-screen md:max-h-screen md:max-w-full evaluationLayout'
         )}
       >
         {((): React.ReactElement => {
@@ -223,7 +220,7 @@ function EvaluationLayout({
                   onClick={(): void => activateInstance(currentIndex + 1)}
                 />
 
-                <div className={clsx('instanceDropdown', instanceSummary.length >= 7 ? 'block' : 'hidden')}>
+                <div className={twMerge('instanceDropdown', instanceSummary.length >= 7 ? 'block' : 'hidden')}>
                   <Menu.Item
                     fitted
                     active={showQuestionLayout}
@@ -249,13 +246,7 @@ function EvaluationLayout({
                       <Menu.Item
                         fitted
                         active={index === currentIndex}
-                        className={clsx(
-                          'hoverable',
-                          'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8',
-                          {
-                            executed: blockStatus === 'EXECUTED',
-                          }
-                        )}
+                        className="hoverable md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8"
                         key={id}
                         onClick={(): void => {
                           activateInstance(index)
@@ -271,7 +262,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showFeedback}
-                    className={clsx(
+                    className={twMerge(
                       'hoverable',
                       'feedback',
                       'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
@@ -289,7 +280,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showConfusionTS}
-                    className={clsx(
+                    className={twMerge(
                       'hoverable',
                       'feedback',
                       'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
@@ -309,7 +300,7 @@ function EvaluationLayout({
 
         <div className="bg-primary-bg">
           <div
-            className={clsx(
+            className={twMerge(
               questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
               !showExtensibleButton && 'border-solid border-b-only border-primary',
               showExtensibleButton &&
@@ -351,7 +342,7 @@ function EvaluationLayout({
           !showFeedback &&
           !showConfusionTS ? (
             <div
-              className={clsx(
+              className={twMerge(
                 'w-full h-[20rem] print:h-max-content md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-16.5rem)]',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
@@ -360,7 +351,7 @@ function EvaluationLayout({
             </div>
           ) : (
             <div
-              className={clsx(
+              className={twMerge(
                 'h-full w-full',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
@@ -495,10 +486,6 @@ function EvaluationLayout({
 
                     :global(> .item.hoverable:hover) {
                       background-color: $color-primary-10p;
-                    }
-
-                    :global(> .item.executed) {
-                      color: grey;
                     }
 
                     :global(> .item.feedback) {

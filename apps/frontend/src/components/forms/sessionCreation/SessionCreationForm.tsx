@@ -5,7 +5,7 @@ import { Input } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import dayjs from 'dayjs'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
@@ -234,7 +234,7 @@ function SessionCreationForm({
             </Button>
 
             <Button
-              className={clsx(
+              className={twMerge(
                 '!mt-2 text-white bg-sky-600 opacity-60 justify-center h-9',
                 !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
                   'hover:bg-sky-700 !opacity-100'
@@ -369,7 +369,7 @@ function SessionCreationForm({
               )
             )}
             <div
-              className={clsx(
+              className={twMerge(
                 'border-0 border-b md:border-b-0 pb-4 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px] max-h-[15rem]',
                 sessionBlocks.length > 1 && 'border-b-0'
               )}

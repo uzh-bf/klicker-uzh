@@ -1,5 +1,4 @@
 import React from 'react'
-import clsx from 'clsx'
 import { Input, Popup } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -36,7 +35,7 @@ function SCCreationOption({
   handleMoveDown,
 }: Props): React.ReactElement {
   return (
-    <div className={clsx('option h-16', { correct })}>
+    <div className="h-16 option">
       <Button
         className="!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center w-12"
         disabled={disabled}
@@ -90,7 +89,7 @@ function SCCreationOption({
         onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
       />
 
-      <div className="flex flex-col justify-between my-0.5">
+      <div className="flex flex-col">
         <Button className="!border-none !shadow-none" onClick={handleMoveUp}>
           <Button.Icon>
             <FontAwesomeIcon icon={faArrowUp} />

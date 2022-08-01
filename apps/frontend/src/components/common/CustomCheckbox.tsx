@@ -1,6 +1,6 @@
 import React from 'react'
 import * as RadixCheckbox from '@radix-ui/react-checkbox'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { CheckIcon } from '@heroicons/react/outline'
 
 interface Props {
@@ -21,7 +21,7 @@ function CustomCheckbox({ children, checked, onCheck, id, className }: Props): R
     <RadixCheckbox.Root
       defaultChecked
       checked={checked}
-      className={clsx(
+      className={twMerge(
         'flex justify-center w-5 h-5 p-0 bg-white border border-solid rounded-md border-grey-80 align-center',
         checked && 'border-black',
         className

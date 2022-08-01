@@ -1,6 +1,6 @@
 import React from 'react'
 import * as RadixDialog from '@radix-ui/react-dialog'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { Button } from '@uzh-bf/design-system'
 
 interface Props {
@@ -64,7 +64,7 @@ export function Modal({
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed top-0 bottom-0 left-0 right-0 grid items-center justify-center bg-gray-500 bg-opacity-50">
           <RadixDialog.Content
-            className={clsx(
+            className={twMerge(
               'flex flex-col max-w-7xl xl:w-[80rem] lg:w-[60rem] md:w-[50rem] sm:w-[40rem] w-[30rem] max-h-[90%] overflow-y-scroll gap-4 p-6 bg-white border shadow rounded-xl',
               className
             )}
@@ -75,7 +75,7 @@ export function Modal({
             <div>{children}</div>
 
             <div
-              className={clsx(
+              className={twMerge(
                 'grid gap-2 md:gap-4 gird-cols-1 mt-12 md:mt-0 md:grid-cols-3',
                 errorMessages?.length === 0 && 'md:!grid-cols-2 !mt-12'
               )}
@@ -84,7 +84,7 @@ export function Modal({
                 {onDiscard && (
                   <RadixDialog.Close asChild className="absolute bottom-0 left-0 mt-max">
                     <Button
-                      className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', discardStyle)}
+                      className={twMerge('py-2 text-base font-bold px-7 w-full md:w-max', discardStyle)}
                       disabled={!discardEnabled}
                       onClick={onDiscard}
                     >
@@ -94,7 +94,7 @@ export function Modal({
                 )}
               </div>
               <div
-                className={clsx(
+                className={twMerge(
                   'gap-2 p-1 text-center bg-red-100 border border-red-300 border-solid rounded-md md:w-full',
                   errorMessages?.length === 0 && 'hidden'
                 )}
@@ -109,7 +109,7 @@ export function Modal({
                 {onSubmit && (
                   <RadixDialog.Close asChild className="absolute bottom-0 right-0">
                     <Button
-                      className={clsx('py-2 text-base font-bold px-7 w-full md:w-max', submitStyle)}
+                      className={twMerge('py-2 text-base font-bold px-7 w-full md:w-max', submitStyle)}
                       disabled={!submitEnabled}
                       onClick={onSubmit}
                     >

@@ -7,7 +7,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
 import { useDropzone } from 'react-dropzone'
 import { useToasts } from 'react-toast-notifications'
-import clsx from 'clsx'
 import { push } from '@socialgouv/matomo-next'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -153,7 +152,7 @@ function MovoImport(): React.ReactElement {
         </div>
 
         <div
-          className={clsx(
+          className={twMerge(
             'flex-row p-3 mt-5 bg-green-400 border border-gray-500 border-solid rounded hidden',
             submissionSucc && '!flex'
           )}

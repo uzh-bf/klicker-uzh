@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { useDrag } from 'react-dnd'
 import { Label } from 'semantic-ui-react'
@@ -67,7 +67,7 @@ function Question({ checked, id, tags, title, type, versions, onCheck, isArchive
           </CustomCheckbox>
         </div>
         <div
-          className={clsx(
+          className={twMerge(
             'flex flex-row w-full p-3 bg-grey-20 border border-solid rounded-lg md:flex-col cursor-[grab] hover:shadow-md',
             collectedProps.isDragging && 'opacity-50'
           )}

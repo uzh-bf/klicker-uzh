@@ -3,7 +3,7 @@ import { useQuery } from '@apollo/client'
 import Head from 'next/head'
 import { Icon, Dropdown } from 'semantic-ui-react'
 import dayjs from 'dayjs'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import withFeatureFlags from '../../lib/withFeatureFlags'
 import ConfusionBarometer from '../../components/interaction/confusion/ConfusionBarometer'
@@ -58,7 +58,7 @@ function Feedbacks({ featureFlags }: PageWithFeatureFlags) {
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'flex flex-row p-4 gap-8',
         withConfusionBarometer && 'border-t-[30px] border-t-only border-solid',
         withConfusionBarometer && borderColor

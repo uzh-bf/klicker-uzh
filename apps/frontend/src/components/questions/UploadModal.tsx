@@ -7,7 +7,7 @@ import { useApolloClient } from '@apollo/client'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import Ellipsis from '../common/Ellipsis'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
@@ -111,7 +111,7 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
 
   return (
     <CustomModal
-      className={clsx(className, '!pb-2')}
+      className={twMerge(className, '!pb-2')}
       open={open}
       title={<FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />}
       trigger={children}

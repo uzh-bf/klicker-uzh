@@ -21,7 +21,7 @@ import {
   faDownload,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
@@ -383,7 +383,7 @@ function ActionSearchArea({
             tooltip={<FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center disabled:shadow-none')}
+              className={twMerge('mr-1 h-10 w-10 justify-center disabled:shadow-none')}
               disabled={itemCount === 0}
               onClick={onExportQuestions}
             >
@@ -396,7 +396,7 @@ function ActionSearchArea({
             tooltip={<FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
+              className={twMerge('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={onGetQuestionStatistics}
             >
@@ -415,7 +415,7 @@ function ActionSearchArea({
             }
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
+              className={twMerge('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleArchiveQuestions()}
             >
@@ -428,7 +428,7 @@ function ActionSearchArea({
             tooltip={<FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />}
           >
             <Button
-              className={clsx('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
+              className={twMerge('mr-1 h-10 w-10 justify-center disabled:!shadow-none')}
               disabled={itemCount === 0}
               onClick={(): void => handleDeleteQuestions(false)}
             >
@@ -492,10 +492,10 @@ function ActionSearchArea({
                       key={content}
                       onClick={() => handleSortByChange(id)}
                     >
-                      <span className={clsx(sortBy === id && 'font-bold', 'text-lg')}>{content}</span>
+                      <span className={twMerge(sortBy === id && 'font-bold', 'text-lg')}>{content}</span>
                     </DropdownMenu.Item>
                     <div
-                      className={clsx(
+                      className={twMerge(
                         'h-[0.075rem] bg-grey-80 opacity-40',
                         sortingTypes.length - 1 === index && 'hidden'
                       )}

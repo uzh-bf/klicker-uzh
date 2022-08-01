@@ -1,5 +1,5 @@
 import React from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import { Dropdown, Icon } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
 
@@ -70,7 +70,7 @@ function QuestionBlock({
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'p-4 flex flex-col gap-2 bg-gray-50 border border-solid border-gray-100',
         status === 'ACTIVE' && 'bg-green-100'
       )}

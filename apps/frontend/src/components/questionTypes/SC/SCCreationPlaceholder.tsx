@@ -1,5 +1,4 @@
 import React, { RefObject, useState } from 'react'
-import clsx from 'clsx'
 import { Button } from '@uzh-bf/design-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowDown, faArrowUp, faCheck, faTrash, faXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
@@ -49,7 +48,7 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   }
 
   return (
-    <div className={clsx('option h-16', { inputMode })}>
+    <div className="h-16 option">
       <Button
         className="!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center leftAction w-full disabled:w-12"
         disabled={inputMode}
