@@ -186,6 +186,7 @@
   "questionPool.button.importQuestions": "Questions via Import",
   "questionPool.button.quickCreateSeparate": "Split questions into {num} blocks",
   "questionPool.button.quickCreateSingle": "Group questions into one block ({num}->1)",
+  "questionPool.button.quickStartSession": "Quick Start Session",
   "questionPool.button.unarchiveQuestions": "Unarchive",
   "questionPool.pageTitle": "Question Pool",
   "questionPool.question.titleArchive": "ARCHIVED",
