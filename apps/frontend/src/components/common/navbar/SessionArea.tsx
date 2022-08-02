@@ -124,7 +124,7 @@ function SessionArea({ sessionId }: Props) {
                 ) : null}
                 <div className="mt-4 font-bold text-gray-600">About the Project</div>
                 <SupportEntry
-                  href="https://www.klicker.uzh.ch/blog"
+                  href="https://community.klicker.uzh.ch/tag/project-update"
                   icon="info"
                   subtitle="Regular updates regarding the progress of our project"
                   title="Project Updates"
@@ -136,7 +136,7 @@ function SessionArea({ sessionId }: Props) {
                   title="Roadmap"
                 />
                 <SupportEntry
-                  href="https://klicker-uzh.feedbear.com/updates"
+                  href="https://community.klicker.uzh.ch/tag/release"
                   icon="list"
                   subtitle="Overview of changes in our latest releases"
                   title="Release Notes"
