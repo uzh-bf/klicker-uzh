@@ -6,5 +6,5 @@ version: 1.8.1
 appVersion: v1.8.1
 dependencies:
   - name: redis
-    version: 15.3.2
+    version: 15.7.6
     repository: https://charts.bitnami.com/bitnami
