@@ -42,14 +42,14 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
-            - mountPath: /etc/shibboleth/sp-cert.pem
-              name: sp-cert
-              readOnly: true
-              subPath: sp-cert.pem
             - mountPath: /etc/shibboleth/sp-key.pem
               name: sp-key
               readOnly: true
               subPath: sp-key.pem
+            - mountPath: /etc/shibboleth/sp-cert-2022.pem
+              name: sp-cert-2022
+              readOnly: true
+              subPath: sp-cert-2022.pem
             - mountPath: /var/run/shibboleth
               name: shib-socket
             # - mountPath: /etc/shibboleth/shibboleth2.xml
@@ -74,13 +74,13 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-        - name: sp-cert
-          secret:
-            defaultMode: 0440
-            items:
-              - key: sp-cert.pem
-                path: sp-cert.pem
-            secretName: aai-sp-cert
+        # - name: sp-cert
+        #   secret:
+        #     defaultMode: 0440
+        #     items:
+        #       - key: sp-cert.pem
+        #         path: sp-cert.pem
+        #     secretName: aai-sp-cert
         - name: sp-key
           secret:
             defaultMode: 0440
@@ -88,6 +88,13 @@ spec:
               - key: sp-key.pem
                 path: sp-key.pem
             secretName: aai-sp-key
+        - name: sp-cert-2022
+          secret:
+            defaultMode: 0440
+            items:
+              - key: sp-cert-2022.pem
+                path: sp-cert-2022.pem
+            secretName: aai-sp-cert-2022
         - emptyDir: {}
           name: shib-socket
         # - configMap:
