@@ -6,18 +6,24 @@ import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { toValueArray } from '../../lib/utils/math'
 import { CHART_DEFAULTS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 
-function ComputeActiveInstance({ activeInstances, children, sessionStatus }): React.ReactElement {
+function ComputeActiveInstance({ activeInstances, children, sessionStatus, sessionId }): React.ReactElement {
   const [activeInstanceIndex, setActiveInstanceIndex] = useState(0)
 
   useEffect((): void => {
     const firstActiveIndex = activeInstances.findIndex((instance): boolean => instance.blockStatus === 'ACTIVE')
     setActiveInstanceIndex(firstActiveIndex >= 0 ? firstActiveIndex : 0)
-  }, [activeInstances.length])
+  }, [activeInstances])
 
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
   const [bins, setBins] = useState(null)
   const [showGraph, setShowGraph] = useState(null)
-  const [showSolution, setShowSolution] = useState(sessionStatus !== SESSION_STATUS.RUNNING)
+
+  const showSolutionDefault =
+    JSON.parse(sessionStorage?.getItem(`showSolution${sessionId}`)) ||
+    new Array(activeInstances.length).fill(sessionStatus !== SESSION_STATUS.RUNNING)
+
+  sessionStorage?.setItem(`showSolution${sessionId}`, JSON.stringify(showSolutionDefault))
+  const [showSolution, setShowSolution] = useState(showSolutionDefault)
 
   if (!activeInstances || activeInstances.length === 0) {
     return children({
