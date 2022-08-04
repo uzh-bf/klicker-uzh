@@ -13,9 +13,6 @@ const graphQLServer = createServer({
       type Mutation {
         getFileName(file: File!): String
       }
-      type Subscription {
-        countdown(from: Int!): Int!
-      }
     `,
     resolvers: {
       Query: {
@@ -24,21 +21,14 @@ const graphQLServer = createServer({
       Mutation: {
         getFileName: (root, { file }: { file: File }) => file.name,
       },
-      Subscription: {
-        countdown: {
-          async *subscribe(_, { from }) {
-            for (let i = from; i >= 0; i--) {
-              await new Promise((resolve) => setTimeout(resolve, 1000))
-              yield { countdown: i }
-            }
-          },
-        },
-      },
     },
   },
   logging: false,
+  graphiql: {
+    endpoint: '/api/graphql',
+  },
 })
 
-app.use('/graphql', graphQLServer)
+app.use('/api/graphql', graphQLServer)
 
 export default app
