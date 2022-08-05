@@ -19,7 +19,9 @@
   },
   "homepage": "https://www.klicker.uzh.ch/",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
+    "Florina Vogel <florina.vogel@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -28,8 +30,7 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
