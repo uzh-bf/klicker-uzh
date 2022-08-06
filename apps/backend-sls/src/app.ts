@@ -1,8 +1,13 @@
 import express from 'express'
 import passport from 'passport'
 import cookieParser from 'cookie-parser'
-import { Strategy as JWTStrategy, ExtractJwt } from 'passport-jwt'
+import { Strategy as JWTStrategy } from 'passport-jwt'
 import { createServer } from '@graphql-yoga/node'
+import { AuthSchema, Rules } from './graphql/authorization'
+import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import path from 'path'
+import { makeSchema } from 'nexus'
+import * as types from '././graphql/nexus'
 
 const app = express()
 
@@ -21,9 +26,7 @@ passport.use(
       // TODO: if there is a user matching the JWT, return it
       // TODO: if there was an error, return it
       // TODO: if there was no user and no error, return
-      return done(null, {
-        ...jwt,
-      })
+      return done(null, jwt)
     }
   )
 )
@@ -36,26 +39,22 @@ app.use((req: any, res, next) =>
   })(req, res, next)
 )
 
-const graphQLServer = createServer({
-  schema: {
-    typeDefs: /* GraphQL */ `
-      scalar File
-      type Query {
-        hello: String
-      }
-      type Mutation {
-        getFileName(file: File!): String
-      }
-    `,
-    resolvers: {
-      Query: {
-        hello: (_, args, ctx: any) => `world ${ctx.user?.sub}`,
-      },
-      Mutation: {
-        getFileName: (root, { file }: { file: File }) => file.name,
-      },
-    },
+const schema = makeSchema({
+  types,
+  outputs: {
+    typegen: path.join(process.cwd(), 'src/types/nexus-typegen.ts'),
+    schema: path.join(process.cwd(), 'src/graphql/schema.graphql'),
   },
+})
+
+const graphQLServer = createServer({
+  schema,
+  plugins: [
+    authZEnvelopPlugin({
+      rules: Rules,
+      authSchema: AuthSchema,
+    }),
+  ],
   context({ req }: any) {
     return {
       user: req.locals?.user,

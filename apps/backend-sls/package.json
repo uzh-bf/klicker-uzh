@@ -16,9 +16,14 @@
     "dev": "npm-run-all --parallel dev:dts dev:func",
     "dev:dts": "dts watch --entry src/index.ts",
     "dev:func": "func start",
+    "generate": "npm-run-all generate:prisma generate:nexus",
+    "generate:prisma": "prisma generate",
+    "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/app.ts",
     "test": "dts test"
   },
   "dependencies": {
+    "@graphql-authz/core": "1.2.1",
+    "@graphql-authz/envelop-plugin": "1.0.3",
     "@graphql-yoga/node": "2.13.4",
     "@prisma/client": "4.1.1",
     "@vendia/serverless-express": "4.10.1",
@@ -51,11 +56,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "dts lint"
-    }
   },
   "jest": {
     "testEnvironment": "node"
