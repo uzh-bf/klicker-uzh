@@ -44,7 +44,7 @@ export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
   Mutation: { // field return type
-    hello: string; // String!
+    login: string; // ID!
   }
   Query: { // field return type
     hello: string; // String!
@@ -53,7 +53,7 @@ export interface NexusGenFieldTypes {
 
 export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
-    hello: 'String'
+    login: 'ID'
   }
   Query: { // field return type name
     hello: 'String'
@@ -61,6 +61,12 @@ export interface NexusGenFieldTypeNames {
 }
 
 export interface NexusGenArgTypes {
+  Mutation: {
+    login: { // args
+      email: string; // String!
+      password: string; // String!
+    }
+  }
 }
 
 export interface NexusGenAbstractTypeMembers {

@@ -17,15 +17,16 @@ enum UserRole {
 model User {
   id String @id @default(uuid()) @db.Uuid
 
-  email       String  @unique
-  shortname   String  @unique
-  password    String
-  description String?
-
-  role UserRole @default(USER)
-
   isActive Boolean @default(false)
   isAAI    Boolean @default(false)
+
+  email        String  @unique
+  shortname    String  @unique
+  password     String
+  description  String?
+  shibbolethId String?
+
+  role UserRole @default(USER)
 
   lastLoginAt DateTime?
 

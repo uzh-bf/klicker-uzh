@@ -3,7 +3,7 @@
 
 
 type Mutation {
-  hello: String!
+  login(email: String!, password: String!): ID!
 }
 
 type Query {

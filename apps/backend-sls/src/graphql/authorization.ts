@@ -11,7 +11,7 @@ export const Rules = {
 export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Reject'] } },
-    hello: { __authz: { rules: ['IsAuthenticated'] } },
+    login: { __authz: { rules: ['Allow'] } },
   },
   Query: {
     '*': { __authz: { rules: ['Reject'] } },

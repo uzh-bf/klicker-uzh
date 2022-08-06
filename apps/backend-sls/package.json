@@ -19,6 +19,11 @@
     "generate": "npm-run-all generate:prisma generate:nexus",
     "generate:prisma": "prisma generate",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/app.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "prisma:reset": "prisma reset",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "ts-node -P tsconfig.nexus.json prisma/seed.ts",
     "test": "dts test"
   },
   "dependencies": {
@@ -30,6 +35,7 @@
     "cookie-parser": "1.4.6",
     "express": "4.18.1",
     "graphql": "16.5.0",
+    "jsonwebtoken": "8.5.1",
     "nexus": "1.3.0",
     "passport": "0.6.0",
     "passport-jwt": "4.0.0"

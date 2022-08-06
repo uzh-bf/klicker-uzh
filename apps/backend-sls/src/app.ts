@@ -8,6 +8,7 @@ import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import path from 'path'
 import { makeSchema } from 'nexus'
 import * as types from '././graphql/nexus'
+import enhanceContext from './lib/context'
 
 const app = express()
 
@@ -55,11 +56,7 @@ const graphQLServer = createServer({
       authSchema: AuthSchema,
     }),
   ],
-  context({ req }: any) {
-    return {
-      user: req.locals?.user,
-    }
-  },
+  context: enhanceContext,
   // logging: false,
   // graphiql: {
   //   endpoint: '/api/graphql',
