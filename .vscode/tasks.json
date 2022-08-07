@@ -6,26 +6,37 @@
       "command": "host start",
       "problemMatcher": "$func-node-watch",
       "isBackground": true,
-      "dependsOn": "npm install (functions)",
+      "dependsOn": "npm build (serverless)",
       "options": {
-        "cwd": "${workspaceFolder}/functions"
+        "cwd": "${workspaceFolder}/serverless"
       }
     },
     {
       "type": "shell",
-      "label": "npm install (functions)",
+      "label": "npm build (serverless)",
+      "command": "npm run build",
+      "dependsOn": "npm install (serverless)",
+      "problemMatcher": "$tsc",
+      "options": {
+        "cwd": "${workspaceFolder}/serverless"
+      }
+    },
+    {
+      "type": "shell",
+      "label": "npm install (serverless)",
       "command": "npm install",
       "options": {
-        "cwd": "${workspaceFolder}/functions"
+        "cwd": "${workspaceFolder}/serverless"
       }
     },
     {
       "type": "shell",
-      "label": "npm prune (functions)",
+      "label": "npm prune (serverless)",
       "command": "npm prune --production",
+      "dependsOn": "npm build (serverless)",
       "problemMatcher": [],
       "options": {
-        "cwd": "${workspaceFolder}/functions"
+        "cwd": "${workspaceFolder}/serverless"
       }
     }
   ]

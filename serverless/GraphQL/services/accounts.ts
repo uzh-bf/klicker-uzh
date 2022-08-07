@@ -22,8 +22,6 @@ export async function login(
     }
   )
 
-  console.warn(ctx.prisma)
-
   const user = await ctx.prisma.user.findFirst({
     where: {
       email,
@@ -31,17 +29,13 @@ export async function login(
     },
   })
 
-  console.warn(user)
-
   if (!user) throw new Error('LOGIN_FAILED')
 
   ctx.res.cookie('jwt', jwt, {
-    domain: 'localhost',
+    domain: process.env.API_DOMAIN ?? 'localhost',
     path: '/api/graphql',
-    // domain: APP_CFG.cookieDomain || APP_CFG.domain,
-    // httpOnly: true,
-    // maxAge: 86400000,
-    // path: APP_CFG.path ? `${APP_CFG.path}/graphql` : '/graphql',
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 7,
     // secure: !isDev && APP_CFG.https,
   })
 

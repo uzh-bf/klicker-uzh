@@ -1,24 +1,25 @@
 {
-  "name": "@klicker-uzh/backend-sls",
+  "name": "@klicker-uzh/serverless",
   "version": "2.0.0-alpha.0",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
-  "module": "dist/backend-sls.esm.js",
+  "module": "dist/serverless.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "build": "dts build --entry src/index.ts",
+    "build": "npm-run-all generate build:app",
+    "build:app": "dts build --entry GraphQL/index.ts",
     "lint": "dts lint",
     "size": "size-limit",
     "dev": "npm-run-all --parallel dev:dts dev:func",
-    "dev:dts": "dts watch --entry src/index.ts",
+    "dev:dts": "dts watch --entry GraphQL/index.ts",
     "dev:func": "func start",
     "generate": "npm-run-all generate:prisma generate:nexus",
     "generate:prisma": "prisma generate",
-    "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/app.ts",
+    "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json GraphQL/app.ts",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "prisma:reset": "prisma reset",
@@ -61,7 +62,7 @@
     "typescript": "4.7.4"
   },
   "volta": {
-    "extends": "../../package.json"
+    "extends": "../package.json"
   },
   "jest": {
     "testEnvironment": "node"

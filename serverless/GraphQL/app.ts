@@ -57,7 +57,7 @@ const graphQLServer = createServer({
     }),
   ],
   context: enhanceContext,
-  // logging: false,
+  logging: true,
   // graphiql: {
   //   endpoint: '/api/graphql',
   // },
