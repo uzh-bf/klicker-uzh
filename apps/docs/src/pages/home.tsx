@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useColorMode } from '@docusaurus/theme-common'
