@@ -1,9 +1,8 @@
-import { twMerge } from 'tailwind-merge'
-import React from 'react'
 import { ArrowRightIcon } from '@heroicons/react/solid'
-import Zoom from 'react-medium-image-zoom'
 import Image from '@theme/IdealImage'
+import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import { twMerge } from 'tailwind-merge'
 
 interface ImageTextBlockProps {
   title: string

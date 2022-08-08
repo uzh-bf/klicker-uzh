@@ -1,6 +1,5 @@
-import { twMerge } from 'tailwind-merge'
-import React from 'react'
 import { ArrowRightIcon } from '@heroicons/react/solid'
+import { twMerge } from 'tailwind-merge'
 
 interface TitleTextBlockProps {
   title: string
