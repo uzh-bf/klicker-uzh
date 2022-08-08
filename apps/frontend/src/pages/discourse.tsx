@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react'
-import { useRouter } from 'next/router'
 import { useLazyQuery } from '@apollo/client'
+import { useRouter } from 'next/router'
+import React, { useEffect } from 'react'
 import { Message } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
 
 import ValidateDiscourseLoginQuery from '../graphql/queries/ValidateDiscourseLoginQuery.graphql'
 

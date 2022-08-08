@@ -1,15 +1,15 @@
-import React from 'react'
+import { Button } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
 import getConfig from 'next/config'
+import React from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Checkbox, Form } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { object, boolean } from 'yup'
-import { Formik } from 'formik'
+import { boolean, object } from 'yup'
 
-import FormikInput from './components/FormikInput'
-import validationSchema from './common/validationSchema'
 import messages from './common/messages'
+import validationSchema from './common/validationSchema'
+import FormikInput from './components/FormikInput'
 
 const { publicRuntimeConfig } = getConfig()
 

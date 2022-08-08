@@ -1,12 +1,12 @@
-import React from 'react'
-import { Popup } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import getConfig from 'next/config'
+import Link from 'next/link'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { QRCode } from 'react-qrcode-logo'
-import Link from 'next/link'
-import getConfig from 'next/config'
+import { Popup } from 'semantic-ui-react'
 
 const { publicRuntimeConfig } = getConfig()
 

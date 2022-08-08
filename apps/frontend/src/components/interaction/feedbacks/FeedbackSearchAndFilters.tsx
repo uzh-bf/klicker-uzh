@@ -1,8 +1,8 @@
-import { Input, Checkbox, Dropdown } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Checkbox, Dropdown, Input } from 'semantic-ui-react'
 
 const messages = defineMessages({
   searchPlaceholder: {

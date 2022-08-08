@@ -1,6 +1,6 @@
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Button } from '@uzh-bf/design-system'
 import useMarkdown from '../../../lib/hooks/useMarkdown'
 
 interface Props {

@@ -1,6 +1,6 @@
 import _get from 'lodash/get'
 
-import { moveQuestion, appendNewBlock, addToBlock, removeQuestion } from './move'
+import { addToBlock, appendNewBlock, moveQuestion, removeQuestion } from './move'
 
 describe('move', () => {
   const blocks = [

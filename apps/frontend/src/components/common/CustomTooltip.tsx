@@ -1,6 +1,6 @@
+import * as Tooltip from '@radix-ui/react-tooltip'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import * as Tooltip from '@radix-ui/react-tooltip'
 
 // trigger is passed as child of the component
 interface Props {

@@ -1,7 +1,7 @@
-import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import _isFinite from 'lodash/isFinite'
+import React from 'react'
 import { Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import Ellipsis from '../common/Ellipsis'

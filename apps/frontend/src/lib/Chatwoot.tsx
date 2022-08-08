@@ -1,6 +1,6 @@
-import Script from 'next/script'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
+import Script from 'next/script'
 
 const { publicRuntimeConfig } = getConfig()
 

@@ -1,6 +1,6 @@
 import React from 'react'
-import { Loader } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
+import { Loader } from 'semantic-ui-react'
 
 import TeacherLayout from '../layouts/TeacherLayout'
 

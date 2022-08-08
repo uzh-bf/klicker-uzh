@@ -1,17 +1,17 @@
-import { useState, useContext } from 'react'
-import { Menu, Modal } from 'semantic-ui-react'
-import Image from 'next/image'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
 import { Button } from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { useContext, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Menu, Modal } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
-import SupportEntry from './SupportEntry'
 import { UserContext } from '../../../lib/userContext'
+import SupportEntry from './SupportEntry'
 
 const messages = defineMessages({
   support: {

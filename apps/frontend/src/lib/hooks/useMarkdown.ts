@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react'
-import { unified } from 'unified'
-import markdown from 'remark-parse'
-import math from 'remark-math'
-import remark2rehype from 'remark-rehype'
+import katex from 'rehype-katex'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
-import katex from 'rehype-katex'
+import math from 'remark-math'
+import markdown from 'remark-parse'
+import remark2rehype from 'remark-rehype'
+import { unified } from 'unified'
 
 interface Params {
   content: any

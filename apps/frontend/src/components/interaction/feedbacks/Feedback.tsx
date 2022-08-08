@@ -1,10 +1,3 @@
-import { useState } from 'react'
-import dayjs from 'dayjs'
-import { Icon, TextArea, Form } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { useFormik } from 'formik'
-import { twMerge } from 'tailwind-merge'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
@@ -14,6 +7,13 @@ import {
   faPaperPlane,
   faThumbTack,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import { useFormik } from 'formik'
+import { useState } from 'react'
+import { Form, Icon, TextArea } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface IFeedbackResponse {

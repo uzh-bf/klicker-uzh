@@ -1,7 +1,7 @@
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
 
 import { QUESTION_TYPES } from '../../constants'
 import CustomTooltip from '../common/CustomTooltip'

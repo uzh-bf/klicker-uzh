@@ -1,6 +1,6 @@
+import * as Slider from '@radix-ui/react-slider'
 import React from 'react'
 import { Icon } from 'semantic-ui-react'
-import * as Slider from '@radix-ui/react-slider'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {

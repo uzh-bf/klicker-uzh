@@ -1,7 +1,7 @@
-import React from 'react'
-import * as RadixCheckbox from '@radix-ui/react-checkbox'
-import { twMerge } from 'tailwind-merge'
 import { CheckIcon } from '@heroicons/react/outline'
+import * as RadixCheckbox from '@radix-ui/react-checkbox'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   children?: React.ReactNode

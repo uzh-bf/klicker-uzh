@@ -1,6 +1,6 @@
+import * as Switch from '@radix-ui/react-switch'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import * as Switch from '@radix-ui/react-switch'
 
 interface SwitchProps {
   checked: boolean

@@ -1,6 +1,6 @@
+import markdown from 'remark-parse'
 import slate, { serialize } from 'remark-slate'
 import { unified } from 'unified'
-import markdown from 'remark-parse'
 
 export const convertToMd = (slateObj) => {
   const slateObjCopy = JSON.parse(JSON.stringify(slateObj))

@@ -1,16 +1,16 @@
 /* eslint-disable no-mixed-operators,no-plusplus,no-loop-func */
-import React from 'react'
-import _minBy from 'lodash/minBy'
-import _maxBy from 'lodash/maxBy'
-import _sumBy from 'lodash/sumBy'
-import _round from 'lodash/round'
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
+import _maxBy from 'lodash/maxBy'
+import _minBy from 'lodash/minBy'
+import _round from 'lodash/round'
+import _sumBy from 'lodash/sumBy'
+import React from 'react'
 import {
   Bar,
   BarChart,
   Brush,
-  ReferenceLine,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,

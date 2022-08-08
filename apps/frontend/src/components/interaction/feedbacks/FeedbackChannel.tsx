@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Message } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
 
-import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
+import useStickyState from '../../../lib/hooks/useStickyState'
+import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
-import useStickyState from '../../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   notificationTitle: {

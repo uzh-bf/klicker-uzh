@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { Header, Modal } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
+import { Header, Modal } from 'semantic-ui-react'
 
 interface Props {
   handleCancelSession: () => void

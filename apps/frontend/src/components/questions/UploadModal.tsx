@@ -1,18 +1,18 @@
-import React, { useState, useCallback } from 'react'
-import { Table } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
 import { useApolloClient } from '@apollo/client'
+import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import React, { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import { Table } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
-import Ellipsis from '../common/Ellipsis'
-import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import CustomModal from '../common/CustomModal'
+import Ellipsis from '../common/Ellipsis'
 
 interface Props {
   children?: React.ReactChild

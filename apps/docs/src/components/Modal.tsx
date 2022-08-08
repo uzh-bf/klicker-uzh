@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { Dialog } from '@headlessui/react'
+import { useState } from 'react'
 
 function Modal({ imgSrc, caption }) {
   let [isOpen, setIsOpen] = useState(true)
