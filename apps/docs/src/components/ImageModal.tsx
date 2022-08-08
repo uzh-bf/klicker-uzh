@@ -1,6 +1,7 @@
 import Image from '@theme/IdealImage'
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
+import React from 'react'
 
 function ImageModal({ title, description, src, className }) {
   return (

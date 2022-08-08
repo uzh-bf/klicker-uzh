@@ -1,4 +1,5 @@
 import Layout from '@theme/Layout'
+import React from 'react'
 
 import RoadmapTile from '../components/development/RoadmapTile'
 import DocsButton from '../components/DocsButton'
