@@ -16,12 +16,12 @@ function DocsButton({ url, text, icon, className }: DocsButtonProps) {
     <Button
       onClick={() => window.open(url, '_blank')}
       className={twMerge(
-        'flex h-12 flex-row justify-center px-4 text-base',
+        'flex h-12 flex-row justify-center px-4 text-base border-none shadow cursor-pointer items-center',
         className
       )}
     >
-      <Button.Icon>
-        {icon || <FontAwesomeIcon icon={faArrowRight} className="h-5 mr-1" />}
+      <Button.Icon className="mr-2">
+        {icon || <FontAwesomeIcon icon={faArrowRight} />}
       </Button.Icon>
       <Button.Label>{text}</Button.Label>
     </Button>

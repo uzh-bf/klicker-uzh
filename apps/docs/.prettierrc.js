@@ -1,5 +1,2 @@
-module.exports = {
-  semi: false,
-  singleQuote: true,
-  trailingComma: "es5",
-};
+import { PrettierConfig } from '@uzh-bf/design-system/dist/constants'
+module.exports = PrettierConfig
