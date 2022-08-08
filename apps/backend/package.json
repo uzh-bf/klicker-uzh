@@ -65,7 +65,7 @@
     "ws": "8.2.1"
   },
   "devDependencies": {
-    "@uzh-bf/design-system": "0.0.21",
+    "@uzh-bf/design-system": "0.0.22",
     "eslint": "7.32.0",
     "eslint-config-airbnb-base": "14.2.1",
     "eslint-config-prettier": "8.3.0",
@@ -74,7 +74,8 @@
     "jest": "26.6.3",
     "lint-staged": "11.1.2",
     "nodemon": "2.0.12",
-    "prettier": "2.3.2",
+    "prettier": "2.7.1",
+    "prettier-plugin-organize-imports": "3.0.3",
     "supertest": "5.0.0"
   },
   "scripts": {
