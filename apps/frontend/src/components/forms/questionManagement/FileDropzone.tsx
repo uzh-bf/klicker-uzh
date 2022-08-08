@@ -2,7 +2,11 @@ import React, { useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
-import { Icon, Card, Image, Button, Input } from 'semantic-ui-react'
+import { Card, Image, Input } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faUpload } from '@fortawesome/free-solid-svg-icons'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -72,18 +76,20 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
           </Card.Content>
           <Card.Content extra>
             <Button
-              basic
-              color="red"
+              className="h-10 px-3 text-red-600 border border-red-600 border-solid"
               disabled={disabled}
-              type="button"
               onClick={(): void => {
                 if (!disabled) {
                   onChangeFiles(files.filter((_, ix): boolean => ix !== index))
                 }
               }}
             >
-              <Icon name="trash" />
-              <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrashCan} />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
+              </Button.Label>
             </Button>
           </Card.Content>
         </Card>
@@ -100,9 +106,13 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     <div className="fileDropzone">
       <div className="dropzone" {...getRootProps()}>
         <input {...getInputProps()} />
-        <Button fluid color="grey" disabled={disabled} type="button">
-          <Icon name="upload" />
-          <FormattedMessage defaultMessage="Upload" id="fileDropzone.button.upload" />
+        <Button fluid className="h-10" disabled={disabled}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faUpload} />
+          </Button.Icon>
+          <Button.Label>
+            <FormattedMessage defaultMessage="Upload" id="fileDropzone.button.upload" />
+          </Button.Label>
         </Button>
         <div className="dndInfo">or Drag & Drop</div>
       </div>

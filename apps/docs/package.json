@@ -11,27 +11,31 @@
     "@gabrielcsapo/docusaurus-plugin-matomo": "0.1.2",
     "@headlessui/react": "1.5.0",
     "@heroicons/react": "1.0.6",
-    "@klicker-uzh/ui": "*",
     "@tsconfig/docusaurus": "1.0.5",
+    "@uzh-bf/design-system": "0.0.20",
+    "autoprefixer": "10.4.8",
     "cross-env": "7.0.3",
     "nodemon": "2.0.15",
     "npm-run-all": "4.1.5",
+    "postcss": "8.4.16",
+    "prettier": "2.7.1",
+    "prettier-plugin-organize-imports": "3.0.3",
+    "prettier-plugin-tailwindcss": "0.1.13",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-medium-image-zoom": "4.3.6",
     "recharts": "2.1.9",
-    "tailwind-merge": "1.2.1",
-    "tailwindcss": "3.0.23",
-    "typescript": "4.6.3"
+    "tailwind-merge": "1.5.1",
+    "tailwindcss": "3.1.8",
+    "typescript": "4.7.4"
   },
   "scripts": {
     "build": "docusaurus build",
     "deploy": "docusaurus deploy",
-    "dev": "npm-run-all --parallel dev_docusaurus dev_tailwind",
-    "dev_docusaurus": "nodemon -w docusaurus.config.js -w sidebars.js --port 5000",
-    "dev_tailwind": "npx tailwindcss -i ./src/css/globals.css -o ./src/css/custom.css --watch",
+    "dev": "docusaurus start --port 5000",
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
+    "format": "prettier --write src/",
     "rename-version": "docusaurus-rename-version",
     "serve": "docusaurus serve",
     "start": "docusaurus start",
@@ -40,7 +44,6 @@
     "write-translations": "docusaurus-write-translations"
   },
   "volta": {
-    "node": "16.14.0",
-    "npm": "8.5.0"
+    "extends": "../../package.json"
   }
 }

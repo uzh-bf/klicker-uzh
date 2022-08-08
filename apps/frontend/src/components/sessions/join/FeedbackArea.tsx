@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react'
-import clsx from 'clsx'
+import React, { useState, useEffect } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
-import { Form, Button, TextArea, Message } from 'semantic-ui-react'
+import { Form, TextArea, Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { partition, sortBy } from 'ramda'
 import dayjs from 'dayjs'
+
 import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedbackAddedSubscription from '../../../graphql/subscriptions/PublicFeedbackAddedSubscription.graphql'
 import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/PublicFeedbackRemovedSubscription.graphql'
@@ -305,7 +307,9 @@ function FeedbackArea({
   }
 
   return (
-    <div className={clsx('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}>
+    <div
+      className={twMerge('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}
+    >
       <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
@@ -313,7 +317,7 @@ function FeedbackArea({
           <Form className="flex flex-col">
             <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className={clsx('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
+                className={twMerge('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
                 name="feedbackInput"
                 placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
                 rows={4}
@@ -323,14 +327,14 @@ function FeedbackArea({
             </Form.Field>
 
             <Button
-              primary
-              className="self-end !mr-0"
+              className="self-end font-bold text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={!feedbackInputValue}
-              size="tiny"
               type="submit"
               onClick={onNewFeedback}
             >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              </Button.Label>
             </Button>
           </Form>
         </div>

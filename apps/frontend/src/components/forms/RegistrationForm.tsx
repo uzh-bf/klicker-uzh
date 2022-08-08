@@ -2,7 +2,8 @@ import React from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import getConfig from 'next/config'
 import { FormattedMessage, useIntl } from 'react-intl'
-import { Button, Checkbox, Form } from 'semantic-ui-react'
+import { Checkbox, Form } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { object, boolean } from 'yup'
 import { Formik } from 'formik'
 
@@ -174,13 +175,14 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
                 />
               </Form.Field>
               <Button
-                primary
+                className="h-10 px-4 text-white bg-uzh-blue-80"
                 disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                floated="right"
                 loading={loading && isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+                </Button.Label>
               </Button>
             </div>
           </Form>

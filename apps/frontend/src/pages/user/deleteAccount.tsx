@@ -2,7 +2,8 @@ import React from 'react'
 import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Button, Message } from 'semantic-ui-react'
+import { Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { push } from '@socialgouv/matomo-next'
 
@@ -47,23 +48,24 @@ function DeleteAccount(): React.ReactElement {
           }
 
           return (
-            <div className="flex flex-col flex-grow md:flex-row">
-              <Link href="/questions">
-                <Button primary className="!w-full md:!w-1/2 !mb-1 md:!mb-0">
+            <div className="flex flex-col flex-grow mt-2 md:gap-2 md:flex-row">
+              <Link passHref href="/questions">
+                <Button className="justify-center w-full mb-1 font-bold text-white md:w-1/2 md:mb-0 bg-uzh-blue-80 h-11">
                   <FormattedMessage defaultMessage="No, take me back." id="user.deleteAccount.button.cancel" />
                 </Button>
               </Link>
 
               <Button
-                className="!w-full md:!w-1/2 !mr-0"
-                color="red"
+                className="justify-center w-full mr-0 font-bold text-white bg-red-700 md:w-1/2 h-11"
                 loading={loading}
                 onClick={(): void => {
                   deleteAccount({ variables: { deletionToken: router.query.deletionToken } })
                   push(['trackEvent', 'User', 'Account Deleted'])
                 }}
               >
-                <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
+                </Button.Label>
               </Button>
 
               {error && <Message error>{error.message}</Message>}

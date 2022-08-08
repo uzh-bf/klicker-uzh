@@ -1,5 +1,8 @@
-import { Message, Button } from 'semantic-ui-react'
 import { useEffect, useState } from 'react'
+import { Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 
 import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
@@ -96,13 +99,21 @@ function FeedbackChannel({
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    basic
-                    compact
-                    icon={published ? 'eye' : 'eye slash outline'}
+                    className="justify-center mr-2 w-9 h-9"
                     onClick={() => {
                       handlePublishFeedback(id, !published)
                     }}
-                  />
+                  >
+                    {published ? (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEye} />
+                      </Button.Icon>
+                    ) : (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEyeSlash} />
+                      </Button.Icon>
+                    )}
+                  </Button>
                 </div>
               )}
               <div className="flex-1">

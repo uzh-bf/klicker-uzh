@@ -1,5 +1,6 @@
 import React from 'react'
-import { Button, Progress } from 'semantic-ui-react'
+import { Progress } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage } from 'react-intl'
 
 import Countdown from './Countdown'
@@ -17,6 +18,8 @@ interface Props {
 const defaultProps = {
   isSkipModeActive: true,
   isSubmitDisabled: false,
+  expiresAt: undefined,
+  timeLimit: undefined,
 }
 
 function ActionMenu({
@@ -29,7 +32,7 @@ function ActionMenu({
   timeLimit,
 }: Props): React.ReactElement {
   return (
-    <div className="flex flex-row gap-2 border-t border-primary-20">
+    <div className="flex flex-row gap-2">
       {expiresAt && (
         <div className="flex-initial w-12">
           <Countdown
@@ -44,20 +47,16 @@ function ActionMenu({
       <div className="flex-1">
         <Progress autoSuccess className="!m-0 !p-1" progress="ratio" total={numItems} value={activeIndex} />
       </div>
-      <div className="flex-initial w-24 actions">
-        <Button
-          fluid
-          basic={isSkipModeActive}
-          className="!mr-0 h-full"
-          disabled={isSubmitDisabled}
-          primary={!isSkipModeActive}
-          size="tiny"
-          onClick={onSubmit}
-        >
+      <div className="flex-initial w-24">
+        <Button fluid className="!mr-0 h-full" disabled={isSubmitDisabled} onClick={onSubmit}>
           {isSkipModeActive ? (
-            <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
+            </Button.Label>
           ) : (
-            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            <Button.Label>
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button.Label>
           )}
         </Button>
       </div>

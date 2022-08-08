@@ -5,7 +5,8 @@ import { useQuery, useMutation } from '@apollo/client'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import { Form, Button } from 'semantic-ui-react'
+import { Form } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 
 import ModifyUserMutation from '../../../graphql/mutations/ModifyUserMutation.graphql'
 import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
@@ -106,13 +107,14 @@ function AccountDataForm(): React.ReactElement {
               value={values.useCase}
             />
             <Button
-              primary
+              className="float-right h-10 px-4 font-bold text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={isSubmitting || !isValid || !dirty}
-              floated="right"
               loading={isSubmitting}
               type="submit"
             >
-              <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
+              </Button.Label>
             </Button>
           </Form>
         )}
