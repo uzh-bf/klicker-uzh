@@ -1,13 +1,13 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react'
-import { Icon } from 'semantic-ui-react'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 import { Button } from '@uzh-bf/design-system'
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Icon } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
+import CustomCheckbox from '../../common/CustomCheckbox'
 import CustomSwitch from '../../common/CustomSwitch'
 import CustomTooltip from '../../common/CustomTooltip'
-import CustomCheckbox from '../../common/CustomCheckbox'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
 

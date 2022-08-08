@@ -1,9 +1,9 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
+import { convertToMd } from '../../../lib/utils/slateMdConversion'
 import QuestionDescription from '../QuestionDescription'
 import SCAnswerOptions from './SCAnswerOptions'
-import { convertToMd } from '../../../lib/utils/slateMdConversion'
 
 interface Props {
   description?: string

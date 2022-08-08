@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
-import dayjs from 'dayjs'
 import { useMutation, useQuery } from '@apollo/client'
-import { Loader, Message } from 'semantic-ui-react'
+import dayjs from 'dayjs'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import { Loader, Message } from 'semantic-ui-react'
 
-import CustomizableTable from '../common/CustomizableTable'
 import AbortSessionMutation from '../../graphql/mutations/AbortSessionMutation.graphql'
 import RunningSessionListQuery from '../../graphql/queries/RunningSessionListQuery.graphql'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
+import CustomizableTable from '../common/CustomizableTable'
 
 interface Props {
   filters: any

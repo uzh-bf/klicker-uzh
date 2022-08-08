@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { FormattedMessage, useIntl } from 'react-intl'
-import { useDrag } from 'react-dnd'
-import { Label } from 'semantic-ui-react'
 import { CheckIcon } from '@heroicons/react/outline'
 import { Button } from '@uzh-bf/design-system'
+import React, { useEffect, useState } from 'react'
+import { useDrag } from 'react-dnd'
+import { FormattedMessage, useIntl } from 'react-intl'
+import { Label } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import QuestionTags from './QuestionTags'
-import QuestionPreviewModal from './QuestionPreviewModal'
-import QuestionDetailsModal from './QuestionDetailsModal'
-import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { generateTypesLabel } from '../../lib/utils/lang'
 import CustomCheckbox from '../common/CustomCheckbox'
+import QuestionDetailsModal from './QuestionDetailsModal'
+import QuestionDuplicationModal from './QuestionDuplicationModal'
+import QuestionPreviewModal from './QuestionPreviewModal'
+import QuestionTags from './QuestionTags'
 
 interface Props {
   checked?: boolean

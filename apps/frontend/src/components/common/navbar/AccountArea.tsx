@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { Icon, Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Dropdown, Icon } from 'semantic-ui-react'
 
 import { ROLES } from '../../../constants'
 

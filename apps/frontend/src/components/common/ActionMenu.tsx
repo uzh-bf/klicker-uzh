@@ -1,7 +1,7 @@
-import React from 'react'
-import { Progress } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
+import { Progress } from 'semantic-ui-react'
 
 import Countdown from './Countdown'
 

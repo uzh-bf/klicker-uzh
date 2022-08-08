@@ -1,14 +1,14 @@
+import { faArrowsRotate, faBars } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowsRotate, faBars } from '@fortawesome/free-solid-svg-icons'
 
-import CommonLayout from './CommonLayout'
+import NotificationBadge from '../common/NotificationBadge'
 import Sidebar from '../common/sidebar/Sidebar'
 import SidebarItem from '../common/sidebar/SidebarItem'
-import NotificationBadge from '../common/NotificationBadge'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   children: React.ReactNode

@@ -1,7 +1,7 @@
-import React, { RefObject, useState } from 'react'
-import { Button } from '@uzh-bf/design-system'
+import { faArrowDown, faArrowUp, faCheck, faPlus, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowDown, faArrowUp, faCheck, faTrash, faXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { Button } from '@uzh-bf/design-system'
+import React, { RefObject, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import styles from './styles'

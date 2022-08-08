@@ -1,17 +1,17 @@
-import React, { useState } from 'react'
-import _isEmpty from 'lodash/isEmpty'
-import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Dropdown, Form, Modal, Checkbox } from 'semantic-ui-react'
-import { Formik } from 'formik'
-import { object, number, boolean } from 'yup'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFloppyDisk } from '@fortawesome/free-regular-svg-icons'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
+import _isEmpty from 'lodash/isEmpty'
+import React, { useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Checkbox, Dropdown, Form, Modal } from 'semantic-ui-react'
+import { boolean, number, object } from 'yup'
 
-import FormikInput from './components/FormikInput'
 import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
+import FormikInput from './components/FormikInput'
 
 interface Props {
   disabled?: boolean

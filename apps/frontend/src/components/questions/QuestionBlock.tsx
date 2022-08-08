@@ -1,11 +1,11 @@
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
-import { Dropdown, Icon } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
+import { Dropdown, Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
+import Countdown from '../common/Countdown'
 import BlockSettingsForm from '../forms/BlockSettingsForm'
 import QuestionSingle from './QuestionSingle'
-import Countdown from '../common/Countdown'
 import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {

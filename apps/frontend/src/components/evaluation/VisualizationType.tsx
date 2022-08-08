@@ -1,7 +1,7 @@
-import React from 'react'
-import { Dropdown } from 'semantic-ui-react'
-import { defineMessages, useIntl } from 'react-intl'
 import { push } from '@socialgouv/matomo-next'
+import React from 'react'
+import { defineMessages, useIntl } from 'react-intl'
+import { Dropdown } from 'semantic-ui-react'
 
 import { CHART_TYPES } from '../../constants'
 

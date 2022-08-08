@@ -1,9 +1,9 @@
-import React from 'react'
-import { List, Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/client'
 import { faFileArchive, faXmarkCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import React from 'react'
+import { FormattedMessage } from 'react-intl'
+import { List, Loader, Message } from 'semantic-ui-react'
 
 import { Button } from '@uzh-bf/design-system'
 import { QUESTION_TYPES } from '../../constants'

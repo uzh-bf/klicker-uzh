@@ -1,10 +1,10 @@
+import _debounce from 'lodash/debounce'
 import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-import _debounce from 'lodash/debounce'
 
-import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
 import AdminArea from '../../components/admin/AdminArea'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
+import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 
 const messages = defineMessages({
   pageTitle: {

@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect } from 'react'
-import { useDropzone } from 'react-dropzone'
-import getConfig from 'next/config'
-import { FormattedMessage } from 'react-intl'
-import { Card, Image, Input } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faUpload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import getConfig from 'next/config'
+import React, { useCallback, useEffect } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { FormattedMessage } from 'react-intl'
+import { Card, Image, Input } from 'semantic-ui-react'
 
 const { publicRuntimeConfig } = getConfig()
 

@@ -1,6 +1,6 @@
+import { push } from '@socialgouv/matomo-next'
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
 
 import useCookie from '../../../lib/hooks/useCookie'
 

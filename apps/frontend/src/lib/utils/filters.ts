@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 
-import _every from 'lodash/every'
 import dayjs from 'dayjs'
+import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
 import * as JsSearch from 'js-search'
 

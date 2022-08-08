@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
+import React, { useEffect, useState } from 'react'
+import { buildStyles, CircularProgressbar } from 'react-circular-progressbar'
 import { Icon } from 'semantic-ui-react'
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
 
 import 'react-circular-progressbar/dist/styles.css'
 

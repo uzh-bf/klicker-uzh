@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Dropdown, Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Dropdown, Form, Icon } from 'semantic-ui-react'
 import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {

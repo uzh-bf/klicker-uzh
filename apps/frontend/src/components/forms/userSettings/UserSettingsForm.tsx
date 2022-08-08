@@ -1,13 +1,13 @@
-import React from 'react'
-import _get from 'lodash/get'
-import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
-import { Message, Tab } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { Button } from '@uzh-bf/design-system'
+import _get from 'lodash/get'
+import React from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message, Tab } from 'semantic-ui-react'
 
+import RequestAccountDeletionMutation from '../../../graphql/mutations/RequestAccountDeletionMutation.graphql'
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'
-import RequestAccountDeletionMutation from '../../../graphql/mutations/RequestAccountDeletionMutation.graphql'
 
 const messages = defineMessages({
   accountDataItem: {

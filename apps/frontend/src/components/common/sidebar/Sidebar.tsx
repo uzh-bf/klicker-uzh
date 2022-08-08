@@ -1,8 +1,8 @@
+import Image from 'next/image'
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
-import Image from 'next/image'
-import LanguageSwitcher from './LanguageSwitcher'
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
+import LanguageSwitcher from './LanguageSwitcher'
 
 interface Props {
   children: React.ReactNode

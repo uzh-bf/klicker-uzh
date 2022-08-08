@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { useRouter } from 'next/router'
-import { List, Input } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
 import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
+import React, { useState } from 'react'
+import { Input, List } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
 import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'

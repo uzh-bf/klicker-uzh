@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import Layout from '@theme/Layout'
 import { useColorMode } from '@docusaurus/theme-common'
 import Image from '@theme/IdealImage'
-import ImageTile from '../components/landing/ImageTile'
-import TitleTextBlock from '../components/common/TitleTextBlock'
+import Layout from '@theme/Layout'
 import ImageTextBlock from '../components/common/ImageTextBlock'
+import TitleTextBlock from '../components/common/TitleTextBlock'
 import DocsButton from '../components/DocsButton'
+import ImageTile from '../components/landing/ImageTile'
 
 const features = [
   {

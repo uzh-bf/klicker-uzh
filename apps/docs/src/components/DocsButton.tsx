@@ -1,7 +1,7 @@
-import React from 'react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DocsButtonProps {

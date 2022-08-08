@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
 import { useRouter } from 'next/router'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { twMerge } from 'tailwind-merge'
 
-import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
 import Sidebar from '../common/sidebar/Sidebar'
 import SidebarItem from '../common/sidebar/SidebarItem'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   children: React.ReactNode | any

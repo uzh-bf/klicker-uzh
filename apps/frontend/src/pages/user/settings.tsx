@@ -1,8 +1,8 @@
 import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 
-import TeacherLayout from '../../components/layouts/TeacherLayout'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 
 const messages = defineMessages({
   pageTitle: {

@@ -1,9 +1,9 @@
-import React from 'react'
+import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
-import { useMutation } from '@apollo/client'
-import { Message, Icon } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
+import React from 'react'
+import { Icon, Message } from 'semantic-ui-react'
 
 import { FormattedMessage } from 'react-intl'
 import ParticipantLoginForm from '../components/forms/ParticipantLoginForm'

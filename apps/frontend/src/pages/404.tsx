@@ -1,7 +1,7 @@
-import Error from 'next/error'
-import { useEffect } from 'react'
 import { push } from '@socialgouv/matomo-next'
+import Error from 'next/error'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 export default function NotFound() {
   const router = useRouter()

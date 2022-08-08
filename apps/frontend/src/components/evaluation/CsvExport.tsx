@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { CSVLink } from 'react-csv'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTable } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import React, { useEffect, useState } from 'react'
+import { CSVLink } from 'react-csv'
 
 interface Props {
   activeInstances: any[]

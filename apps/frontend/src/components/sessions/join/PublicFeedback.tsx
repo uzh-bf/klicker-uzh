@@ -1,10 +1,10 @@
+import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { twMerge } from 'tailwind-merge'
-import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 
 import { IFeedback } from '../../../@types/feedbacks'
 
