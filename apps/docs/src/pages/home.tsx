@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
-import Layout from '@theme/Layout'
-import { useColorMode } from '@docusaurus/theme-common'
-import { ArrowRightIcon } from '@heroicons/react/solid'
-import Image from '@theme/IdealImage'
-import ImageTile from '../components/landing/ImageTile'
-import CustomButton from '../components/common/CustomButton'
-import TitleTextBlock from '../components/common/TitleTextBlock'
-import ImageTextBlock from '../components/common/ImageTextBlock'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+import { useColorMode } from '@docusaurus/theme-common'
+import Image from '@theme/IdealImage'
+import Layout from '@theme/Layout'
+import ImageTextBlock from '../components/common/ImageTextBlock'
+import TitleTextBlock from '../components/common/TitleTextBlock'
+import DocsButton from '../components/DocsButton'
+import ImageTile from '../components/landing/ImageTile'
 
 const features = [
   {
@@ -151,8 +151,8 @@ function Home() {
     <Layout title="Welcome">
       <TitleImage imgSrc={require('../../static/img/timeline_mac.png')} />
 
-      <div className="flex flex-col gap-8 p-4 m-auto md:p-8 md:gap-16 max-w-7xl">
-        <div className="flex flex-col justify-between gap-12 md:gap-4 md:flex-row">
+      <div className="flex flex-col gap-8 p-4 m-auto max-w-7xl md:gap-16 md:p-8">
+        <div className="flex flex-col justify-between gap-12 md:flex-row md:gap-4">
           <ImageTile
             content="Feature Complete and Easy to Use"
             imgSrc={require('../../static/img/question_pool_demo.png')}
@@ -238,15 +238,9 @@ function Home() {
               KlickerUZH user community through the following link. To log in,
               simply use your KlickerUZH credentials.
             </p>
-            <CustomButton
-              text={
-                <div>
-                  <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
-                  User Community
-                </div>
-              }
-              link="https://www.klicker.uzh.ch/community"
-              className="px-4 !ml-0 w-max"
+            <DocsButton
+              text="User Community"
+              url="https://www.klicker.uzh.ch/community"
             />
           </div>
         </div>
@@ -272,19 +266,19 @@ const TitleImage = ({ imgSrc }) => {
       )}
     >
       <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
-        <CustomButton
+        <DocsButton
           text="Login"
+          url="https://app.klicker.uzh.ch/user/login"
           className="bg-white w-36"
-          link="https://app.klicker.uzh.ch/user/login"
         />
-        <CustomButton
+        <DocsButton
           text="Sign Up"
+          url="https://app.klicker.uzh.ch/user/registration"
           className="bg-white w-36"
-          link="https://app.klicker.uzh.ch/user/registration"
         />
       </div>
 
-      <div className="pt-20 m-auto text-center lg:pt-14 max-w-[80%] md:max-w-[1200px]">
+      <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1200px] lg:pt-14">
         <Image
           alt="KlickerUZH Running Session with Audience Interaction"
           img={imgSrc}
@@ -293,35 +287,35 @@ const TitleImage = ({ imgSrc }) => {
 
       <h1 className="items-center justify-center mt-4 mb-4">
         <KlickerLogo className="w-44 sm:w-48 md:w-64" />
-        <div className="mt-2 mr-1 text-xl font-bold md:mt-4 sm:text-2xl md:text-3xl">
+        <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
           Open Source Audience Interaction
         </div>
       </h1>
 
       <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
-        <CustomButton
+        <DocsButton
           text="Sign Up"
           className={twMerge(
-            'w-64 md:text-lg md:w-52',
+            'w-64 md:w-52 md:text-lg',
             !isDarkTheme && 'bg-gray-50'
           )}
-          link="https://app.klicker.uzh.ch/user/registration"
+          url="https://app.klicker.uzh.ch/user/registration"
         />
-        <CustomButton
+        <DocsButton
           text="Getting Started"
           className={twMerge(
-            'w-64 md:text-lg md:w-52',
+            'w-64 md:w-52 md:text-lg',
             !isDarkTheme && 'bg-gray-50'
           )}
-          link="introduction/getting_started"
+          url="introduction/getting_started"
         />
-        <CustomButton
+        <DocsButton
           text="Get Involved"
           className={twMerge(
-            'w-64 md:text-lg md:w-52',
+            'w-64 md:w-52 md:text-lg',
             !isDarkTheme && 'bg-gray-50'
           )}
-          link="development"
+          url="development"
         />
       </div>
     </div>

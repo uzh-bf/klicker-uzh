@@ -47,6 +47,17 @@ module.exports = {
     ],
   ],
   plugins: [
+    async function docusaurusTailwindPlugin(context, options) {
+      return {
+        name: 'docusaurus-tailwindcss',
+        configurePostCss(postcssOptions) {
+          // ref: https://dev.to/sajclarke_62/using-tailwindcss-v3-in-docusaurus-in-5-steps-5c26
+          postcssOptions.plugins.push(require('tailwindcss'))
+          postcssOptions.plugins.push(require('autoprefixer'))
+          return postcssOptions
+        },
+      }
+    },
     [
       '@gabrielcsapo/docusaurus-plugin-matomo',
       {

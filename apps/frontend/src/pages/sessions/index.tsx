@@ -1,17 +1,17 @@
-import React from 'react'
-import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useMutation } from '@apollo/client'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
+import React from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 
-import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
-import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
-import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
-import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
-import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
+import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
+import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
+import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 
 const messages = defineMessages({
   pageTitle: {

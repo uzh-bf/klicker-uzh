@@ -1,11 +1,11 @@
 import React from 'react'
-import clsx from 'clsx'
-import { Dropdown, Icon } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
+import { Dropdown, Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
+import Countdown from '../common/Countdown'
 import BlockSettingsForm from '../forms/BlockSettingsForm'
 import QuestionSingle from './QuestionSingle'
-import Countdown from '../common/Countdown'
 import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {
@@ -70,7 +70,7 @@ function QuestionBlock({
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'p-4 flex flex-col gap-2 bg-gray-50 border border-solid border-gray-100',
         status === 'ACTIVE' && 'bg-green-100'
       )}

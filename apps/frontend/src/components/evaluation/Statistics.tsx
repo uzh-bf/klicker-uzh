@@ -1,8 +1,8 @@
-import React from 'react'
-import _round from 'lodash/round'
-import { FormattedMessage } from 'react-intl'
-import { Input, Popup, Icon } from 'semantic-ui-react'
 import _isNumber from 'lodash/isNumber'
+import _round from 'lodash/round'
+import React from 'react'
+import { FormattedMessage } from 'react-intl'
+import { Icon, Input, Popup } from 'semantic-ui-react'
 
 import EvaluationListItem from './EvaluationListItem'
 

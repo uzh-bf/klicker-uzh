@@ -1,5 +1,4 @@
 import { twMerge } from 'tailwind-merge'
-import React from 'react'
 
 export default function TableChart({ className, title, data }) {
   const total = data.reduce((acc, item) => item.count + acc, 0)

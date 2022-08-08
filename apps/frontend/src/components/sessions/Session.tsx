@@ -1,16 +1,19 @@
-import React, { useState } from 'react'
-import dayjs from 'dayjs'
-import Link from 'next/link'
-import _get from 'lodash/get'
 import { useMutation } from '@apollo/client'
-import { Confirm, Button, Label, Icon, Message, Dropdown } from 'semantic-ui-react'
+import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import _get from 'lodash/get'
+import Link from 'next/link'
+import React, { useState } from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import clsx from 'clsx'
+import { Confirm, Dropdown, Icon, Label, Message } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
-import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
-import QuestionBlock from '../questions/QuestionBlock'
 import { SESSION_STATUS } from '../../constants'
+import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import QuestionBlock from '../questions/QuestionBlock'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -173,7 +176,7 @@ function Session({
           )
         )}
 
-        <div className="flex flex-col actionArea md:self-start md:w-[11rem]">
+        <div className="flex flex-col actionArea md:self-start md:w-[11rem] gap-2">
           <Dropdown button labeled className="icon left" icon="wrench" text="Options">
             <Dropdown.Menu>
               {status === SESSION_STATUS.CREATED && (
@@ -254,7 +257,7 @@ function Session({
 
           {status !== SESSION_STATUS.CREATED && (
             <a
-              className={clsx(
+              className={twMerge(
                 isFeedbackSession &&
                   confusionTS.length === 0 &&
                   feedbacks.length === 0 &&
@@ -265,21 +268,29 @@ function Session({
               target="_blank"
             >
               <Button
-                icon
-                primary
+                className="justify-center w-full font-bold h-11"
                 disabled={isFeedbackSession && confusionTS.length === 0 && feedbacks.length === 0}
-                labelPosition="left"
               >
-                <Icon name="external" />
-                <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                </Button.Icon>
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
+                </Button.Label>
               </Button>
             </a>
           )}
 
           {button && !button.hidden && (
-            <Button icon primary disabled={button.disabled} labelPosition="left" onClick={button.onClick}>
-              <Icon name={button.icon} />
-              {button.message}
+            <Button
+              className="justify-center w-full font-bold h-11"
+              disabled={button.disabled}
+              onClick={button.onClick}
+            >
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={button.icon} />
+              </Button.Icon>
+              <Button.Label>{button.message}</Button.Label>
             </Button>
           )}
         </div>

@@ -1,7 +1,7 @@
 import React from 'react'
-import clsx from 'clsx'
 import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   onDrop: any
@@ -19,7 +19,7 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'dropzone flex items-center border border-dashed border-grey-100 bg-grey-20 justify-center text-2xl h-full w-full rounded',
         collectedProps.canDrop && '!border-2 !border-solid border-blue-300',
         collectedProps.isOver && '!bg-blue-300'

@@ -1,16 +1,16 @@
-import React, { useState } from 'react'
 import _get from 'lodash/get'
-import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
+import React, { useState } from 'react'
+import { defineMessages, useIntl } from 'react-intl'
 
 // import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
-import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
-import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
-import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import Chart from '../../components/evaluation/Chart'
-import LoadSessionData from '../../components/sessions/LoadSessionData'
-import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 import EvaluationConfusion from '../../components/evaluation/EvaluationConfusion'
+import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
+import EvaluationLayout from '../../components/layouts/EvaluationLayout'
+import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
+import LoadSessionData from '../../components/sessions/LoadSessionData'
+import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 
 const messages = defineMessages({
   pageTitle: {

@@ -1,9 +1,12 @@
-import React, { useState } from 'react'
-import _sortBy from 'lodash/sortBy'
 import { useMutation } from '@apollo/client'
-import { Button, Table, Icon } from 'semantic-ui-react'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import _sortBy from 'lodash/sortBy'
+import React, { useState } from 'react'
+import { Icon, Table } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import clsx from 'clsx'
 import { QUESTION_GROUPS } from '../../../constants'
 import DeleteResponseMutation from '../../../graphql/mutations/DeleteResponseMutation.graphql'
 import SessionEvaluationQuery from '../../../graphql/queries/SessionEvaluationQuery.graphql'
@@ -61,7 +64,7 @@ function TableChart({
         <Table.Header>
           <Table.HeaderCell
             collapsing
-            className={clsx('p-1 cursor-pointer', sortBy === 'count' && 'bg-gray-100')}
+            className={twMerge('p-1 cursor-pointer', sortBy === 'count' && 'bg-gray-100')}
             onClick={onSort('count')}
           >
             Count
@@ -69,7 +72,7 @@ function TableChart({
               (sortDirection === 'ascending' ? <Icon name="angle up" /> : <Icon name="angle down" />)}
           </Table.HeaderCell>
           <Table.HeaderCell
-            className={clsx('p-1 cursor-pointer', sortBy === 'value' && 'bg-gray-100')}
+            className={twMerge('p-1 cursor-pointer', sortBy === 'value' && 'bg-gray-100')}
             onClick={onSort('value')}
           >
             Value
@@ -80,7 +83,7 @@ function TableChart({
           {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
             <Table.HeaderCell
               collapsing
-              className={clsx('p-1 cursor-pointer', sortBy === 'percentage' && 'bg-gray-100')}
+              className={twMerge('p-1 cursor-pointer', sortBy === 'percentage' && 'bg-gray-100')}
               onClick={onSort('percentage')}
             >
               %
@@ -92,7 +95,7 @@ function TableChart({
           {isSolutionShown && (
             <Table.HeaderCell
               collapsing
-              className={clsx('p-1 cursor-pointer', sortBy === 'correct' && 'bg-gray-100')}
+              className={twMerge('p-1 cursor-pointer', sortBy === 'correct' && 'bg-gray-100')}
               onClick={onSort('correct')}
             >
               T/F
@@ -121,8 +124,6 @@ function TableChart({
                 {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
                   <Table.Cell className="noPrint">
                     <Button
-                      icon="trash"
-                      size="tiny"
                       onClick={async (): Promise<void> => {
                         await deleteResponse({
                           optimisticResponse: {
@@ -135,6 +136,7 @@ function TableChart({
                             }
 
                             // read the session from cache
+                            // @ts-ignore
                             const { session } = cache.readQuery({
                               query: SessionEvaluationQuery,
                               variables: { sessionId },
@@ -181,7 +183,11 @@ function TableChart({
                           },
                         })
                       }}
-                    />
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faTrashCan} />
+                      </Button.Icon>
+                    </Button>
                   </Table.Cell>
                 )}
               </Table.Row>

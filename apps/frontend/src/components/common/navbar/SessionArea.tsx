@@ -1,11 +1,17 @@
-import { useState, useContext } from 'react'
-import { Button, Icon, Menu, Modal } from 'semantic-ui-react'
-import Image from 'next/image'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { useContext, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Menu, Modal } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
+
 import KlickerLogoSrc from '../../../../public/KlickerUZH_Gray_Transparent.png'
-import SupportEntry from './SupportEntry'
 import { UserContext } from '../../../lib/userContext'
+import SupportEntry from './SupportEntry'
 
 const messages = defineMessages({
   support: {
@@ -28,6 +34,7 @@ const defaultProps = {
 
 function SessionArea({ sessionId }: Props) {
   const intl = useIntl()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const user = useContext(UserContext)
 
@@ -35,15 +42,16 @@ function SessionArea({ sessionId }: Props) {
     <>
       <Menu.Item>
         <Button
-          icon
-          as="a"
-          color={sessionId ? 'green' : undefined}
+          className={twMerge(sessionId && 'bg-green-600 hover:bg-green-700', 'p-3 border-0')}
           disabled={!sessionId}
-          href="/sessions/running"
-          labelPosition="left"
+          onClick={() => router.push('/sessions/running')}
         >
-          <Icon name="play" />
-          <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+          <Button.Icon className="mr-2">
+            <FontAwesomeIcon icon={faPlay} size="lg" />
+          </Button.Icon>
+          <Button.Label>
+            <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+          </Button.Label>
         </Button>
       </Menu.Item>
 

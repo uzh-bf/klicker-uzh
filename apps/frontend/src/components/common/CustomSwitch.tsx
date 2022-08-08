@@ -1,6 +1,6 @@
-import React from 'react'
-import clsx from 'clsx'
 import * as Switch from '@radix-ui/react-switch'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface SwitchProps {
   checked: boolean
@@ -18,10 +18,10 @@ function CustomSwitch({ checked, classNameRoot, classNameThumb, onCheckedChange 
   return (
     <Switch.Root
       checked={checked}
-      className={clsx('relative w-12 h-[1.6rem] bg-black rounded-full border-0 unset', classNameRoot)}
+      className={twMerge('relative w-12 h-[1.6rem] bg-black rounded-full border-0 unset', classNameRoot)}
       onCheckedChange={onCheckedChange}
     >
-      <Switch.Thumb className={clsx('block w-5 h-5 bg-white rounded-full', classNameThumb)} />
+      <Switch.Thumb className={twMerge('block w-5 h-5 bg-white rounded-full', classNameThumb)} />
     </Switch.Root>
   )
 }

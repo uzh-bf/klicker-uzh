@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { max, min, mean, median, quantileSeq, std } from 'mathjs'
+import _round from 'lodash/round'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
+import React, { useEffect, useState } from 'react'
 
-import { toValueArray } from '../../lib/utils/math'
 import { CHART_DEFAULTS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
+import { toValueArray } from '../../lib/utils/math'
 
 function ComputeActiveInstance({ activeInstances, children, sessionStatus, sessionId }): React.ReactElement {
   const [activeInstanceIndex, setActiveInstanceIndex] = useState(0)

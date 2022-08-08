@@ -1,9 +1,20 @@
-import { useState } from 'react'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faArrowDown,
+  faArrowUp,
+  faLock,
+  faLockOpen,
+  faPaperPlane,
+  faThumbTack,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Icon, Button, TextArea, Form } from 'semantic-ui-react'
 import { useFormik } from 'formik'
+import { useState } from 'react'
+import { Form, Icon, TextArea } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import clsx from 'clsx'
 
 interface IFeedbackResponse {
   id: string
@@ -66,9 +77,8 @@ function Feedback({
 
   return (
     <div>
-      <div
-        className="flex items-center pl-4 p-2 border border-solid bg-primary-10% border-primary rounded shadow hover:shadow-md hover:cursor-pointer"
-        role="button"
+      <Button
+        className="w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary"
         onClick={() => setIsEditingActive((prev) => !prev)}
       >
         <div className="flex-1 no-page-break-inside">
@@ -103,12 +113,7 @@ function Feedback({
               <div className="hidden mr-4 text-gray-500 md:block">{responses.length} responses given</div>
             )}
             <Button
-              compact
-              basic={!isBeingDeleted}
-              className="!mr-2"
-              color={isBeingDeleted ? 'red' : undefined}
-              icon="trash"
-              size="tiny"
+              className={twMerge('mr-1 h-9', isBeingDeleted && 'bg-red-600 text-white')}
               onClick={(e) => {
                 e.stopPropagation()
                 if (isBeingDeleted) {
@@ -117,23 +122,35 @@ function Feedback({
                   setIsBeingDeleted(true)
                 }
               }}
-            />
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrashCan} />
+              </Button.Icon>
+            </Button>
             <Button
-              basic
-              compact
+              className="h-9"
               icon={isEditingActive ? 'arrow up' : 'arrow down'}
-              size="tiny"
               onClick={(e) => {
                 e.stopPropagation()
                 setIsEditingActive((prev) => !prev)
               }}
-            />
+            >
+              {isEditingActive ? (
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowUp} />
+                </Button.Icon>
+              ) : (
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowDown} />
+                </Button.Icon>
+              )}
+            </Button>
           </div>
         </div>
-      </div>
+      </Button>
 
       <div
-        className={clsx(
+        className={twMerge(
           'p-4 print:p-2 print:pr-0 border print:border-0 border-t-0 border-gray-300 border-solid',
           !isEditingActive && 'hidden print:block'
         )}
@@ -149,14 +166,18 @@ function Feedback({
                 <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>
               <div className="flex flex-row items-center flex-initial print:hidden">
-                <div className={clsx('text-gray-500')}>
+                <div className={twMerge('text-gray-500')}>
                   {response.positiveReactions} <Icon name="thumbs up outline" />
                 </div>
-                <div className={clsx('ml-2', 'text-gray-500')}>
+                <div className={twMerge('ml-2', 'text-gray-500')}>
                   {response.negativeReactions} <Icon name="question" />
                 </div>
                 <div className="ml-2 print:hidden">
-                  <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />
+                  <Button className="justify-center mr-1 w-9 h-9" onClick={() => onDeleteResponse(response.id)}>
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faTrashCan} />
+                    </Button.Icon>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -177,42 +198,47 @@ function Feedback({
               />
             </Form>
           </div>
-          <div className="flex flex-col flex-initial pl-4">
+          <div className="flex flex-col flex-initial gap-2 pl-4">
+            <Button className="px-5" disabled={resolved} onClick={() => onPinFeedback(!pinned)}>
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faThumbTack} />
+              </Button.Icon>
+              <Button.Label>{pinned ? 'Unpin' : 'Pin'}</Button.Label>
+            </Button>
             <Button
-              compact
-              className="!mr-0"
-              content={pinned ? 'Unpin' : 'Pin'}
-              disabled={resolved}
-              icon="pin"
-              labelPosition="left"
-              onClick={() => onPinFeedback(!pinned)}
-            />
-            <Button
-              compact
-              className="!mt-2 !mr-0"
-              content={resolved ? 'Reopen' : 'Resolve'}
+              className="px-5"
               icon={resolved ? 'lock open' : 'lock'}
-              labelPosition="left"
               onClick={() => {
                 onResolveFeedback(!resolved)
                 if (!resolved) {
                   setIsEditingActive(false)
                 }
               }}
-            />
+            >
+              {resolved ? (
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faLockOpen} />
+                </Button.Icon>
+              ) : (
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faLock} />
+                </Button.Icon>
+              )}
+              {resolved ? 'Reopen' : 'Resolve'}{' '}
+            </Button>
             <Button
-              compact
-              primary
-              className="!mt-2 !mr-0"
-              content="Respond"
+              className="px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={resolved || !formik.isValid || !formik.dirty}
-              icon="send"
-              labelPosition="left"
               onClick={() => {
                 formik.submitForm()
                 setIsEditingActive(false)
               }}
-            />
+            >
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPaperPlane} />
+              </Button.Icon>
+              <Button.Label>Respond</Button.Label>
+            </Button>
           </div>
         </div>
       </div>

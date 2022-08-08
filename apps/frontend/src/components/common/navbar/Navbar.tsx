@@ -1,15 +1,15 @@
-import React, { useContext } from 'react'
-import getConfig from 'next/config'
-import { useRouter } from 'next/router'
-import { Icon, Menu } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
 import { push } from '@socialgouv/matomo-next'
+import getConfig from 'next/config'
+import { useRouter } from 'next/router'
+import React, { useContext } from 'react'
+import { Icon, Menu } from 'semantic-ui-react'
 
-import { UserContext } from '../../../lib/userContext'
-import AccountArea from './AccountArea'
-import SearchArea from '../SearchField'
-import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
+import { UserContext } from '../../../lib/userContext'
+import SearchArea from '../SearchField'
+import AccountArea from './AccountArea'
+import SessionArea from './SessionArea'
 
 const { publicRuntimeConfig } = getConfig()
 

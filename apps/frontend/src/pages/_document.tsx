@@ -1,7 +1,6 @@
 /* eslint-disable react/no-danger */
 
-import Document, { Html, Head, Main, NextScript, DocumentContext } from 'next/document'
-import React from 'react'
+import Document, { DocumentContext, Head, Html, Main, NextScript } from 'next/document'
 
 interface Props {
   locale: string

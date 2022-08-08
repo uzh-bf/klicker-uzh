@@ -2,8 +2,8 @@ import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 import { Tab } from 'semantic-ui-react'
 
-import UserList from './UserList'
 import RunningSessionList from './RunningSessionList'
+import UserList from './UserList'
 
 const messages = defineMessages({
   userManagement: {

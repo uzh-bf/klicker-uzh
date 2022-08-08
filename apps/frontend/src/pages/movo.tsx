@@ -1,17 +1,20 @@
-import React, { useState, useCallback, useContext } from 'react'
 import { useMutation } from '@apollo/client'
+import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
 import Image from 'next/image'
-import { Button, Icon } from 'semantic-ui-react'
+import { useRouter } from 'next/router'
+import React, { useCallback, useContext, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useToasts } from 'react-toast-notifications'
-import clsx from 'clsx'
-import { push } from '@socialgouv/matomo-next'
-import { useRouter } from 'next/router'
+import { Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import { UserContext } from '../lib/userContext'
-import MovoImportMutation from '../graphql/mutations/MovoImportMutation.graphql'
-import LogoutMutation from '../graphql/mutations/LogoutMutation.graphql'
 import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
+import LogoutMutation from '../graphql/mutations/LogoutMutation.graphql'
+import MovoImportMutation from '../graphql/mutations/MovoImportMutation.graphql'
+import { UserContext } from '../lib/userContext'
 
 function MovoImport(): React.ReactElement {
   const [movoImport] = useMutation(MovoImportMutation)
@@ -109,18 +112,20 @@ function MovoImport(): React.ReactElement {
         <div className="flex flex-row flex-nowrap">
           <div {...getRootProps()}>
             <input {...getInputProps()} />
-            <Button fluid icon primary disabled={submissionSucc} type="button">
-              <div className="flex flex-row">
-                <Icon className="!mr-4" name="plus" />
-                <div>Select Movo Export</div>
-              </div>
+            <Button
+              fluid
+              className={twMerge('font-bold text-white bg-uzh-blue-80 h-10 px-5 disabled:opacity-60')}
+              disabled={submissionSucc}
+            >
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPlus} />
+              </Button.Icon>
+              <Button.Label>Select Movo Export</Button.Label>
             </Button>
           </div>
           <div className="flex-1 pl-4 my-auto font-bold">Selected File: {filename}</div>
           <Button
-            icon
-            primary
-            className="!bg-green-700 !max-h-11"
+            className="justify-center h-10 px-5 font-bold text-white bg-green-700 disabled:opacity-60"
             disabled={movoJSON === '' || submissionSucc === true}
             onClick={async () => {
               try {
@@ -139,15 +144,15 @@ function MovoImport(): React.ReactElement {
               }
             }}
           >
-            <div className="flex flex-row">
-              <Icon className="!mr-4" name="upload" />
-              <div>Confirm Upload</div>
-            </div>
+            <Button.Icon className="mr-1">
+              <FontAwesomeIcon icon={faUpload} />
+            </Button.Icon>
+            <Button.Label>Confirm Upload</Button.Label>
           </Button>
         </div>
 
         <div
-          className={clsx(
+          className={twMerge(
             'flex-row p-3 mt-5 bg-green-400 border border-gray-500 border-solid rounded hidden',
             submissionSucc && '!flex'
           )}

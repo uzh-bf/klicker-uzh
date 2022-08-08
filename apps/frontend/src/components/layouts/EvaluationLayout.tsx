@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
+import { faFile } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { Button } from '@uzh-bf/design-system'
 import getConfig from 'next/config'
+import React, { useEffect, useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
-import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/outline'
-import { cloneDeep } from 'lodash'
+import { Checkbox, Dropdown, Icon, Menu } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
+import { CHART_TYPES, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import useMarkdown from '../../lib/hooks/useMarkdown'
-import CommonLayout from './CommonLayout'
+import CsvExport from '../evaluation/CsvExport'
 import Info from '../evaluation/Info'
 import Possibilities from '../evaluation/Possibilities'
 import Statistics from '../evaluation/Statistics'
 import VisualizationType from '../evaluation/VisualizationType'
-import CsvExport from '../evaluation/CsvExport'
-import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import QuestionFiles from '../sessions/join/QuestionFiles'
+import CommonLayout from './CommonLayout'
 
 /* eslint-disable no-unused-vars */
 const { publicRuntimeConfig } = getConfig()
@@ -195,11 +197,8 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
-        className={clsx(
-          'flex flex-col print:h-auto print:max-h-auto min-h-screen md:h-screen md:max-h-screen md:max-w-full evaluationLayout',
-          {
-            fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
-          }
+        className={twMerge(
+          'flex flex-col print:h-auto print:max-h-auto min-h-screen md:h-screen md:max-h-screen md:max-w-full evaluationLayout'
         )}
       >
         {((): React.ReactElement => {
@@ -228,7 +227,7 @@ function EvaluationLayout({
                   onClick={(): void => activateInstance(currentIndex + 1)}
                 />
 
-                <div className={clsx('instanceDropdown', instanceSummary.length >= 7 ? 'block' : 'hidden')}>
+                <div className={twMerge('instanceDropdown', instanceSummary.length >= 7 ? 'block' : 'hidden')}>
                   <Menu.Item
                     fitted
                     active={showQuestionLayout}
@@ -254,13 +253,7 @@ function EvaluationLayout({
                       <Menu.Item
                         fitted
                         active={index === currentIndex}
-                        className={clsx(
-                          'hoverable',
-                          'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8',
-                          {
-                            executed: blockStatus === 'EXECUTED',
-                          }
-                        )}
+                        className="hoverable md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8"
                         key={id}
                         onClick={(): void => {
                           activateInstance(index)
@@ -276,7 +269,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showFeedback}
-                    className={clsx(
+                    className={twMerge(
                       'hoverable',
                       'feedback',
                       'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
@@ -294,7 +287,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showConfusionTS}
-                    className={clsx(
+                    className={twMerge(
                       'hoverable',
                       'feedback',
                       'md:!text-[0.7rem] md:!py-0 md:!px-[0.6rem] md:!mx-0 md:!mt-0 md:!mb-[-1px] md:!h-8'
@@ -314,7 +307,7 @@ function EvaluationLayout({
 
         <div className="bg-primary-bg">
           <div
-            className={clsx(
+            className={twMerge(
               questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
               !showExtensibleButton && 'border-solid border-b-only border-primary',
               showExtensibleButton &&
@@ -356,7 +349,7 @@ function EvaluationLayout({
           !showFeedback &&
           !showConfusionTS ? (
             <div
-              className={clsx(
+              className={twMerge(
                 'w-full h-[20rem] print:h-max-content md:w-[calc(100vw_-_18rem)] md:h-[calc(100vh-16.5rem)]',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
@@ -365,7 +358,7 @@ function EvaluationLayout({
             </div>
           ) : (
             <div
-              className={clsx(
+              className={twMerge(
                 'h-full w-full',
                 showQuestionLayout ? 'md:border md:border-solid md:border-gray-300' : '0'
               )}
@@ -429,7 +422,12 @@ function EvaluationLayout({
               <div className="flex print:hidden">
                 <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
                 <a href={`/sessions/print/${sessionId}`}>
-                  <Button content="Export PDF" icon="file" />
+                  <Button className="px-3 py-1">
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faFile} />
+                    </Button.Icon>
+                    <Button.Label>Export PDF</Button.Label>
+                  </Button>
                 </a>
               </div>
             )}
@@ -442,7 +440,12 @@ function EvaluationLayout({
             )}
             {showFeedback && (
               <div className="print:hidden">
-                <Button className="!mr-0" content="Print / PDF" icon="file" onClick={() => window.print()} />
+                <Button onClick={() => window.print()}>
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faFile} />
+                  </Button.Icon>
+                  <Button.Label>Print / PDF</Button.Label>
+                </Button>
               </div>
             )}
           </div>
@@ -490,10 +493,6 @@ function EvaluationLayout({
 
                     :global(> .item.hoverable:hover) {
                       background-color: $color-primary-10p;
-                    }
-
-                    :global(> .item.executed) {
-                      color: grey;
                     }
 
                     :global(> .item.feedback) {

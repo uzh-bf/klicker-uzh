@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react'
 import { useMutation } from '@apollo/client'
-import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
-import clsx from 'clsx'
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
+import { useEffect } from 'react'
+import { FormattedMessage } from 'react-intl'
+import { Checkbox, Message } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import ConfusionBarometer from './confusion/ConfusionBarometer'
-import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
-import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
-import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
-import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
+import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedbackResponseMutation.graphql'
 import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
 import PublishFeedbackMutation from '../../graphql/mutations/PublishFeedbackMutation.graphql'
 import ResolveFeedbackMutation from '../../graphql/mutations/ResolveFeedbackMutation.graphql'
 import RespondToFeedbackMutation from '../../graphql/mutations/RespondToFeedbackMutation.graphql'
-import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedbackResponseMutation.graphql'
+import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
+import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
+import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
+import ConfusionBarometer from './confusion/ConfusionBarometer'
+import FeedbackChannel from './feedbacks/FeedbackChannel'
 
 interface Props {
   sessionId: string
@@ -80,9 +83,13 @@ function AudienceInteraction({
           {isFeedbackChannelActive && (
             <div className="order-3 md:order-1">
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-                <Button text labelPosition="left" size="small">
-                  <Icon name="external" />
-                  <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                <Button className="h-10 px-4">
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  </Button.Icon>
+                  <Button.Label>
+                    <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                  </Button.Label>
                 </Button>
               </a>
             </div>
@@ -136,7 +143,7 @@ function AudienceInteraction({
                 push(['trackEvent', 'Running Session', 'Feedback Moderation Toggled', String(!isFeedbackChannelPublic)])
               }}
             />
-            <span className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+            <span className={twMerge(!isFeedbackChannelActive && 'text-gray-400')}>
               <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
             </span>
           </div>

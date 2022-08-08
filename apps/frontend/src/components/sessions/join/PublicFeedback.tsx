@@ -1,6 +1,11 @@
+import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { Icon, Button } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
+
 import { IFeedback } from '../../../@types/feedbacks'
 
 interface Props extends Omit<IFeedback, 'id'> {
@@ -48,15 +53,14 @@ function PublicFeedback({
           </div>
           <div className="flex-initial mt-1 mr-1">
             <Button
-              compact
-              basic={!upvoted}
-              className="text-xl text-gray-500 !mr-0"
-              color={upvoted ? 'blue' : undefined}
+              className={twMerge('text-lg h-8 w-8 justify-center', upvoted && 'bg-uzh-blue-60 text-white')}
               disabled={resolved}
-              icon={upvoted ? 'thumbs up' : 'thumbs up outline'}
-              size="small"
               onClick={onUpvoteFeedback}
-            />
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faThumbsUp} />
+              </Button.Icon>
+            </Button>
           </div>
         </div>
       </div>
@@ -73,21 +77,27 @@ function PublicFeedback({
               </div>
               <div className="flex-initial">
                 <Button
-                  compact
-                  basic={!response.positive}
-                  color={response.positive ? 'blue' : undefined}
-                  icon={response.positive ? 'thumbs up' : 'thumbs up outline'}
-                  size="small"
+                  className={twMerge(
+                    'text-lg h-7 w-7 justify-center mr-0.5',
+                    response.positive && 'bg-uzh-blue-60 text-white'
+                  )}
                   onClick={() => onPositiveResponseReaction(response.id)}
-                />
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faThumbsUp} />
+                  </Button.Icon>
+                </Button>
                 <Button
-                  compact
-                  basic={!response.negative}
-                  color={response.negative ? 'blue' : undefined}
-                  icon="question"
-                  size="small"
+                  className={twMerge(
+                    'text-lg h-7 w-7 justify-center',
+                    response.negative && 'bg-uzh-blue-60 text-white'
+                  )}
                   onClick={() => onNegativeResponseReaction(response.id)}
-                />
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faQuestion} />
+                  </Button.Icon>
+                </Button>
               </div>
             </div>
           ))}

@@ -1,25 +1,28 @@
-import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Message } from 'semantic-ui-react'
+import { faRotate } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
 import getConfig from 'next/config'
+import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import useStickyState from '../../lib/hooks/useStickyState'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import FeedbackArea from '../../components/sessions/join/FeedbackArea'
 import QuestionArea from '../../components/sessions/join/QuestionArea'
 import AddFeedbackMutation from '../../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../../graphql/mutations/AddResponseMutation.graphql'
-import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutation.graphql'
 import ReactToFeedbackResponseMutation from '../../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
+import UpvoteFeedbackMutation from '../../graphql/mutations/UpvoteFeedbackMutation.graphql'
+import JoinQAQuery from '../../graphql/queries/JoinQAQuery.graphql'
 import JoinSessionQuery from '../../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../../graphql/subscriptions/UpdateSessionSubscription.graphql'
-import useFingerprint from '../../lib/hooks/useFingerprint'
-import JoinQAQuery from '../../graphql/queries/JoinQAQuery.graphql'
 import { APOLLO_STATE_PROP_NAME, initializeApollo } from '../../lib/apollo'
+import useFingerprint from '../../lib/hooks/useFingerprint'
+import useStickyState from '../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -105,7 +108,11 @@ function Join({ shortname }: JoinProps): React.ReactElement {
     return (
       <div className="p-4 font-bold noSession">
         {extraMessage && <Message error>{extraMessage}</Message>}
-        <Button className="!mb-4 !mr-4" icon="refresh" onClick={(): void => window.location.reload()} />
+        <Button className="justify-center w-10 h-10 mr-4" onClick={(): void => window.location.reload()}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faRotate} />
+          </Button.Icon>
+        </Button>
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
@@ -267,7 +274,7 @@ function Join({ shortname }: JoinProps): React.ReactElement {
           />
         ) : (
           <div
-            className={clsx(
+            className={twMerge(
               'flex-1 bg-white md:flex md:flex-col md:shadow md:rounded-xl p-4',
               sidebarActiveItem !== 'activeQuestion' && 'hidden'
             )}

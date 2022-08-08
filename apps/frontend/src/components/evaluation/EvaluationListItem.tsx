@@ -1,7 +1,7 @@
-import React from 'react'
-import clsx from 'clsx'
 import _isFinite from 'lodash/isFinite'
+import React from 'react'
 import { Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import Ellipsis from '../common/Ellipsis'
@@ -37,7 +37,7 @@ function EvaluationListItem({
   showGraph,
 }: Props): React.ReactElement {
   return (
-    <div className={clsx('evaluationListItem', { correct, reverse })}>
+    <div className={twMerge('evaluationListItem', correct && 'bg-[rgb(164_255_72)]')}>
       {color && (
         <div className="colorSquare">
           <Icon name="square" />

@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { filterQuestions, filterByTitle, buildIndex } from './filters'
+import { filterQuestions } from './filters'
 
 const questions = [
   {

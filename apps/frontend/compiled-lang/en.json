@@ -1205,6 +1205,12 @@
       "value": "->1)"
     }
   ],
+  "questionPool.button.quickStartSession": [
+    {
+      "type": 0,
+      "value": "Quick Start Session"
+    }
+  ],
   "questionPool.button.unarchiveQuestions": [
     {
       "type": 0,

@@ -1,8 +1,10 @@
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
-import { Icon } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
-import { generateTypesShort, generateTypesLabel } from '../../lib/utils/lang'
+import { generateTypesLabel, generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
   id: string
@@ -21,18 +23,23 @@ function QuestionSingleCompact({ id, type, title, onDelete }: Props): React.Reac
           <div className="block font-bold group-hover:hidden">{generateTypesShort(intl)[type]}</div>
           <div className="flex-row justify-between hidden w-full font-bold group-hover:flex">
             <div className="">{generateTypesLabel(intl)[type]}</div>
-            <button className="ui basic icon button !p-[3px] !m-0" type="button" onClick={onDelete}>
-              <Icon name="trash" />
-            </button>
+
+            <Button className="justify-center w-6 h-6" onClick={onDelete}>
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrash} />
+              </Button.Icon>
+            </Button>
           </div>
 
           <div className="group">
             <div className="block group-hover:hidden">{title.length < 12 ? title : `${title.substring(0, 12)}...`}</div>
             <div className="hidden group-hover:block">{title}</div>
           </div>
-          <button className="ui basic icon button !p-[3px] !m-0 group-hover:hidden" type="button" onClick={onDelete}>
-            <Icon name="trash" />
-          </button>
+          <Button className="justify-center w-6 h-6 group-hover:hidden" onClick={onDelete}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faTrash} />
+            </Button.Icon>
+          </Button>
         </div>
       </div>
     </>

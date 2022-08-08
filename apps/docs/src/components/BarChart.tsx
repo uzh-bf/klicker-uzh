@@ -1,14 +1,13 @@
-import { twMerge } from 'tailwind-merge'
-import React from 'react'
 import {
-  ResponsiveContainer,
-  BarChart as RechartsBarChart,
   Bar,
+  BarChart as RechartsBarChart,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  Legend,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 
 export default function BarChart({ className, legend, likert, title, data }) {
   const total = data.reduce((acc, item) => item.count + acc, 0)

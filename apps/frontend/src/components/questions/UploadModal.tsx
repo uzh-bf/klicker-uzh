@@ -1,15 +1,18 @@
-import React, { useState, useCallback } from 'react'
-import { Button, Table, Icon } from 'semantic-ui-react'
 import { useApolloClient } from '@apollo/client'
+import { faPlus, faUpload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import React, { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
-import clsx from 'clsx'
+import { Table } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
-import Ellipsis from '../common/Ellipsis'
-import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import CustomModal from '../common/CustomModal'
+import Ellipsis from '../common/Ellipsis'
 
 interface Props {
   children?: React.ReactChild
@@ -108,7 +111,7 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
 
   return (
     <CustomModal
-      className={clsx(className, '!pb-2')}
+      className={twMerge(className, '!pb-2')}
       open={open}
       title={<FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />}
       trigger={children}
@@ -116,9 +119,13 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
       <div className="flex flex-row flex-nowrap">
         <div className="flex-[0_0_20%]" {...getRootProps()}>
           <input {...getInputProps()} />
-          <Button fluid icon primary disabled={false} type="button">
-            <Icon name="plus" />
-            <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
+          <Button fluid className="h-10" disabled={false}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faPlus} />
+            </Button.Icon>
+            <Button.Label>
+              <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
+            </Button.Label>
           </Button>
         </div>
         <div className="flex-1 pl-4">
@@ -159,20 +166,19 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
       </div>
       <div className="flex flex-row justify-between">
         <Button
-          icon
-          className="float-right !mr-0 !mt-2 !px-6"
+          className="float-right h-10 px-6 mt-2"
           loading={isLoading}
           onClick={() => {
             setOpen(false)
             onResetImportState()
           }}
         >
-          <FormattedMessage defaultMessage="Close" id="common.button.close" />
+          <Button.Label>
+            <FormattedMessage defaultMessage="Close" id="common.button.close" />
+          </Button.Label>
         </Button>
         <Button
-          icon
-          primary
-          className="float-right !mr-0 !mt-2"
+          className="float-right h-10 px-5 mt-2 bg-uzh-blue-80 disabled:opacity-60"
           disabled={questions.length === 0}
           loading={isLoading}
           onClick={() => {
@@ -181,8 +187,12 @@ function UploadModal({ className, children, open, setOpen }: Props): React.React
             setOpen(false)
           }}
         >
-          <Icon name="upload" />
-          <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
+          <Button.Icon>
+            <FontAwesomeIcon icon={faUpload} />
+          </Button.Icon>
+          <Button.Label>
+            <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
+          </Button.Label>
         </Button>
       </div>
     </CustomModal>

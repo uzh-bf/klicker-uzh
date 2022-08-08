@@ -1,17 +1,16 @@
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Button } from 'semantic-ui-react'
 import { SizeMe } from 'react-sizeme'
 
+import { SESSION_STATUS } from '../../constants'
 import BarChart from './charts/BarChart'
-import StackChart from './charts/StackChart'
-import PieChart from './charts/PieChart'
-import TableChart from './charts/TableChart'
 import CloudChart from './charts/CloudChart'
 import HistogramChart from './charts/HistogramChart'
-import { SESSION_STATUS } from '../../constants'
+import PieChart from './charts/PieChart'
+import StackChart from './charts/StackChart'
+import TableChart from './charts/TableChart'
 
-// TODO
 interface Props {
   activeVisualization: string
   data?: {
@@ -83,8 +82,10 @@ function Chart({
         if (!showGraph) {
           return (
             <div className="flex items-center justify-center h-full">
-              <Button className="showGraphButton" onClick={handleShowGraph}>
-                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
+              <Button className="border-solid bg-uzh-grey-20 border-1" onClick={handleShowGraph}>
+                <Button.Label>
+                  <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
+                </Button.Label>
               </Button>
             </div>
           )

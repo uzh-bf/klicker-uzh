@@ -1,7 +1,7 @@
+import dayjs from 'dayjs'
 import React from 'react'
 import { Icon } from 'semantic-ui-react'
-import dayjs from 'dayjs'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
@@ -73,10 +73,10 @@ function FeedbackBlock({ feedback }: FeedbackBlockProps): React.ReactElement {
                 </div>
               </div>
               <div className="flex flex-row items-center flex-initial print:hidden">
-                <div className={clsx('text-gray-500')}>
+                <div className={twMerge('text-gray-500')}>
                   {response.positiveReactions} <Icon name="thumbs up outline" />
                 </div>
-                <div className={clsx('ml-2', 'text-gray-500')}>
+                <div className={twMerge('ml-2', 'text-gray-500')}>
                   {response.negativeReactions} <Icon name="question" />
                 </div>
               </div>

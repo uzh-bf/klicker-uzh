@@ -1,13 +1,13 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react'
+import { Button } from '@uzh-bf/design-system'
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
+import CustomCheckbox from '../../common/CustomCheckbox'
 import CustomSwitch from '../../common/CustomSwitch'
 import CustomTooltip from '../../common/CustomTooltip'
-import CustomCheckbox from '../../common/CustomCheckbox'
-import CustomButton from '../../common/CustomButton'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
 
@@ -164,15 +164,17 @@ function SessionParticipantSettings({
                   onChange={(e): void => setParticipantsRaw(e.target.value as string)}
                 />
               </div>
-              <CustomButton
-                className={clsx('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
+              <Button
+                className={twMerge('p-3 font-bold', participants.length === 0 && 'text-white bg-red-600')}
                 onClick={onParseParticipants}
               >
-                <FormattedMessage
-                  defaultMessage="Update Participants"
-                  id="form.createSession.participantAuth.button.updateParticipants"
-                />
-              </CustomButton>
+                <Button.Label>
+                  <FormattedMessage
+                    defaultMessage="Update Participants"
+                    id="form.createSession.participantAuth.button.updateParticipants"
+                  />
+                </Button.Label>
+              </Button>
             </form>
             <div className="max-h-full border border-solid rounded-md h-max border-grey-40">
               <div className="p-3 font-bold border-0 border-b border-solid bg-grey-20 border-grey-">

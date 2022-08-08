@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
 import { useRouter } from 'next/router'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
-import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
 import Sidebar from '../common/sidebar/Sidebar'
 import SidebarItem from '../common/sidebar/SidebarItem'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   children: React.ReactNode | any
@@ -63,7 +63,7 @@ function TeacherLayout({ children, fixedHeight, navbar, pageTitle, sidebar }: Pr
 
   return (
     <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className={clsx('flex flex-col', fixedHeight ? 'h-screen min-h-[initial]' : 'h-[initial] min-h-screen')}>
+      <div className={twMerge('flex flex-col', fixedHeight ? 'h-screen min-h-[initial]' : 'h-[initial] min-h-screen')}>
         {navbar && (
           <div className="flex-initial print:hidden">
             <Navbar

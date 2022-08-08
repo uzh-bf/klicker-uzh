@@ -1,8 +1,13 @@
-import React, { useState } from 'react'
+import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faStop } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
-import { Button, Table, Confirm } from 'semantic-ui-react'
+import React, { useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
+import { Confirm, Table } from 'semantic-ui-react'
+
 import EditTableRowForm from '../forms/EditTableRowForm'
 
 const messages = defineMessages({
@@ -56,6 +61,9 @@ const defaultProps = {
   hasAbort: false,
   hasDeletion: false,
   hasModification: false,
+  handleAbort: undefined,
+  handleDeletion: undefined,
+  handleModification: undefined,
 }
 
 const defaultColumnProperties = {
@@ -106,7 +114,7 @@ function CustomizableTable({
           {columnsWithDefaults.map(
             (column, key): React.ReactElement => (
               <Table.HeaderCell
-                key={key.toString()}
+                key={`tableHeader${key.toString()}`}
                 sorted={sortBy === column.attributeName ? sortDirection : null}
                 width={column.width}
                 onClick={onSort(column.attributeName)}
@@ -120,40 +128,52 @@ function CustomizableTable({
           {sortedData.map(
             (object, index): React.ReactElement =>
               (editableRow !== index && (
-                <Table.Row className="displayRow" key={index.toString()}>
+                <Table.Row className="displayRow" key={`tableRow${index.toString()}`}>
                   {columns.map(
                     (column, key): React.ReactElement => (
-                      <Table.Cell key={key.toString()}>{_get(object, column.attributeName)}</Table.Cell>
+                      <Table.Cell key={`tableCell${key.toString()}`}>{_get(object, column.attributeName)}</Table.Cell>
                     )
                   )}
                   {(hasModification || hasDeletion || hasAbort) && (
                     <Table.Cell textAlign="right">
-                      <div className="flex flex-row-reverse">
+                      <div className="flex flex-row-reverse gap-1">
                         {hasModification && (
                           <Button
-                            icon="edit"
+                            className="w-10 h-10"
                             onClick={(): void => {
                               setEditableRow(index)
                             }}
-                          />
+                          >
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faPenToSquare} />
+                            </Button.Icon>
+                          </Button>
                         )}
                         {hasAbort && (
                           <Button
-                            icon="stop"
+                            className="w-10 h-10"
                             onClick={(): void => {
                               handleAbort(object.id, false)
                               setActiveId(object.id)
                             }}
-                          />
+                          >
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faStop} />
+                            </Button.Icon>
+                          </Button>
                         )}
                         {hasDeletion && (
                           <Button
-                            icon="trash"
+                            className="w-10 h-10"
                             onClick={(): void => {
                               handleDeletion(object.id, false)
                               setActiveId(object.id)
                             }}
-                          />
+                          >
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faTrashCan} />
+                            </Button.Icon>
+                          </Button>
                         )}
                       </div>
                     </Table.Cell>

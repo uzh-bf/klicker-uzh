@@ -1,11 +1,11 @@
-import React, { PropsWithChildren, Ref, useCallback, useEffect, useMemo } from 'react'
-import { Form, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
-import { Editor, Transforms, createEditor, Element as SlateElement } from 'slate'
-import { Editable, withReact, useSlate, Slate } from 'slate-react'
-import { withHistory } from 'slate-history'
 import isHotkey from 'is-hotkey'
-import clsx from 'clsx'
+import React, { PropsWithChildren, Ref, useCallback, useEffect, useMemo } from 'react'
+import { FormattedMessage } from 'react-intl'
+import { Form, Icon } from 'semantic-ui-react'
+import { createEditor, Editor, Element as SlateElement, Transforms } from 'slate'
+import { withHistory } from 'slate-history'
+import { Editable, Slate, useSlate, withReact } from 'slate-react'
+import { twMerge } from 'tailwind-merge'
 
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import CustomTooltip from '../../common/CustomTooltip'
@@ -60,7 +60,7 @@ function ContentInput({
   }, [activeVersion, versions])
 
   return (
-    <div className={clsx(disabled && 'pointer-events-none opacity-70')}>
+    <div className={twMerge(disabled && 'pointer-events-none opacity-70')}>
       <Form.Field required error={touched && error}>
         <div className="mt-2 border border-solid rounded">
           {/* eslint-disable-next-line react/no-children-prop */}
@@ -75,7 +75,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                  triggerStyle={clsx(isMarkActive(editor, 'bold') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isMarkActive(editor, 'bold') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <MarkButton className="" format="bold" icon="bold" />
@@ -89,7 +89,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                  triggerStyle={clsx(isMarkActive(editor, 'italic') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isMarkActive(editor, 'italic') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <MarkButton className="" format="italic" icon="italic" />
@@ -103,7 +103,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
-                  triggerStyle={clsx(isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <MarkButton className="" format="code" icon="code" />
@@ -117,7 +117,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[70%]'}
-                  triggerStyle={clsx(isBlockActive(editor, 'block-quote') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isBlockActive(editor, 'block-quote') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <BlockButton className="" format="block-quote" icon="quote right" />
@@ -131,7 +131,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
-                  triggerStyle={clsx(isBlockActive(editor, 'numbered-list') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isBlockActive(editor, 'numbered-list') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <BlockButton className="" format="numbered-list" icon="list ol" />
@@ -145,7 +145,7 @@ function ContentInput({
                     />
                   }
                   tooltipStyle={'text-sm md:text-base max-w-[40%] md:max-w-[50%]'}
-                  triggerStyle={clsx(isBlockActive(editor, 'bulleted-list') && '!bg-grey-40 !rounded-md')}
+                  triggerStyle={twMerge(isBlockActive(editor, 'bulleted-list') && '!bg-grey-40 !rounded-md')}
                   withArrow={false}
                 >
                   <BlockButton className="" format="bulleted-list" icon="list ul" />
@@ -351,7 +351,7 @@ const BlockButton = ({ format, icon, className }: any) => {
         toggleBlock(editor, format)
       }}
     >
-      <div className={clsx('ml-1 mt-0.5', className)}>
+      <div className={twMerge('ml-1 mt-0.5', className)}>
         <Icon color={isBlockActive(editor, format) ? 'black' : 'grey'} name={icon} />
       </div>
     </Button>
@@ -368,7 +368,7 @@ const MarkButton = ({ format, icon, className }: any) => {
         toggleMark(editor, format)
       }}
     >
-      <div className={clsx('ml-[0.3rem] mt-0.5', className)}>
+      <div className={twMerge('ml-[0.3rem] mt-0.5', className)}>
         <Icon color={isMarkActive(editor, format) ? 'black' : 'grey'} name={icon} />
       </div>
     </Button>
@@ -392,7 +392,7 @@ export const Button = React.forwardRef(
   ) => (
     <span
       {...props}
-      className={clsx(
+      className={twMerge(
         className,
         'cursor-pointer h-7 w-7 mr-2 rounded',
         active && !reversed && 'bg-grey-40',

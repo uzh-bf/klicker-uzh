@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import localForage from 'localforage'
+import { useEffect, useState } from 'react'
 
 function useStickyState(defaultValue, key) {
   const [hasInitialized, setHasInitialized] = useState(false)

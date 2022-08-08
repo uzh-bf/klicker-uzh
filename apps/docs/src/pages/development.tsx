@@ -1,9 +1,7 @@
-import React from 'react'
 import Layout from '@theme/Layout'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 
-import CustomButton from '../components/common/CustomButton'
 import RoadmapTile from '../components/development/RoadmapTile'
+import DocsButton from '../components/DocsButton'
 
 const Development = () => {
   const tileContent = [
@@ -76,7 +74,7 @@ const Development = () => {
             <img src="/img/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
-        <div className="grid justify-between w-full grid-cols-1 gap-4 mb-16 lg:gap-4 md:grid-cols-3">
+        <div className="grid justify-between w-full grid-cols-1 gap-4 mb-16 md:grid-cols-3 lg:gap-4">
           {tileContent.map((tile: any) => (
             <RoadmapTile
               title={tile.title}
@@ -98,15 +96,9 @@ const Development = () => {
               reports, as well as to like inputs from other users. This helps us
               to prioritize features requested more often by our users.
             </div>
-            <CustomButton
-              text={
-                <div>
-                  <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
-                  Roadmap on Feedbear
-                </div>
-              }
-              link="https://klicker-uzh.feedbear.com/boards/feature-requests"
-              className="px-4 !ml-0 w-max"
+            <DocsButton
+              url="https://klicker-uzh.feedbear.com/boards/feature-requests"
+              text="Roadmap on Feedbear"
             />
           </div>
           <div className="w-full md:w-1/2">
@@ -120,15 +112,9 @@ const Development = () => {
               KlickerUZH user community through the following link. To log in on
               the platform, just use your KlickerUZH credentials.
             </div>
-            <CustomButton
-              text={
-                <div>
-                  <ArrowRightIcon className="h-5 mr-2 align-text-bottom" />
-                  User Community
-                </div>
-              }
-              link="https://www.klicker.uzh.ch/community"
-              className="px-4 !ml-0 w-max"
+            <DocsButton
+              url="https://www.klicker.uzh.ch/community"
+              text="User Community"
             />
           </div>
         </div>

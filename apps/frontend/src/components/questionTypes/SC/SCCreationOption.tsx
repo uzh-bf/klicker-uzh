@@ -1,7 +1,10 @@
+import { faArrowDown, faArrowUp, faCheck, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
-import clsx from 'clsx'
-import { Icon, Button, Input, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Input, Popup } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
 import styles from './styles'
 
@@ -32,10 +35,16 @@ function SCCreationOption({
   handleMoveDown,
 }: Props): React.ReactElement {
   return (
-    <div className={clsx('option', { correct })}>
-      <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
-        <Icon name="trash" />
-      </button>
+    <div className="h-16 option">
+      <Button
+        className="!shadow-none !border-0 !rounded-none bg-uzh-grey-40 justify-center w-12"
+        disabled={disabled}
+        onClick={handleDelete}
+      >
+        <Button.Icon>
+          <FontAwesomeIcon icon={faTrash} size="lg" />
+        </Button.Icon>
+      </Button>
 
       <Popup
         inverted
@@ -52,14 +61,24 @@ function SCCreationOption({
         size="small"
         style={{ opacity: 0.9 }}
         trigger={
-          <button
-            className={clsx('toggle', { correct })}
+          <Button
+            className={twMerge(
+              'h-10 w-10 self-center mx-2 bg-red-600 text-white justify-center',
+              correct && 'bg-green-600'
+            )}
             disabled={disabled}
-            type="button"
             onClick={handleCorrectToggle}
           >
-            {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-          </button>
+            {correct ? (
+              <Button.Icon>
+                <FontAwesomeIcon icon={faCheck} />
+              </Button.Icon>
+            ) : (
+              <Button.Icon>
+                <FontAwesomeIcon icon={faXmark} />
+              </Button.Icon>
+            )}
+          </Button>
         }
       />
 
@@ -70,9 +89,17 @@ function SCCreationOption({
         onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
       />
 
-      <div className="moveHandles">
-        <Button basic icon="arrow up" size="mini" type="button" onClick={handleMoveUp} />
-        <Button basic icon="arrow down" size="mini" type="button" onClick={handleMoveDown} />
+      <div className="flex flex-col">
+        <Button className="!border-none !shadow-none" onClick={handleMoveUp}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArrowUp} />
+          </Button.Icon>
+        </Button>
+        <Button className="!border-none !shadow-none" onClick={handleMoveDown}>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArrowDown} />
+          </Button.Icon>
+        </Button>
       </div>
 
       <style jsx>{styles}</style>

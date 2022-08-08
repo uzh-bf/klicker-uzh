@@ -1,23 +1,24 @@
-import React from 'react'
-import getConfig from 'next/config'
+import { Button } from '@uzh-bf/design-system'
+import { Field, Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Message, List, Loader, Icon } from 'semantic-ui-react'
-import { Field, Formik } from 'formik'
+import getConfig from 'next/config'
+import React from 'react'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Form, Icon, List, Loader, Message } from 'semantic-ui-react'
 
-import FileDropzone from './FileDropzone'
-import ContentInput from '../../questions/creation/ContentInput'
-import TagInput from '../../questions/creation/TagInput'
-import TypeChooser from '../../questionTypes/TypeChooser'
-import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
-import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
-import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
-import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import CustomTooltip from '../../common/CustomTooltip'
+import ContentInput from '../../questions/creation/ContentInput'
+import TagInput from '../../questions/creation/TagInput'
+import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
+import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
+import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
+import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
+import TypeChooser from '../../questionTypes/TypeChooser'
+import FileDropzone from './FileDropzone'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -223,8 +224,10 @@ function QuestionCreationForm({
             <FocusLock>
               <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
                 <div className="questionActions">
-                  <Button className="discard" size="large" type="button" onClick={onDiscard}>
-                    <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                  <Button className="h-10 px-4 font-bold discard" size="large" onClick={onDiscard}>
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    </Button.Label>
                   </Button>
                   <div>
                     {_some(errors) && (
@@ -239,14 +242,14 @@ function QuestionCreationForm({
                     )}
                   </div>
                   <Button
-                    primary
-                    className="save"
+                    className="h-10 px-4 font-bold text-white save bg-uzh-blue-80 disabled:opacity-60"
                     disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
                     loading={isSubmitting}
-                    size="large"
                     type="submit"
                   >
-                    <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    </Button.Label>
                   </Button>
                 </div>
 

@@ -1,5 +1,4 @@
 import { twMerge } from 'tailwind-merge'
-import React from 'react'
 
 import Image from '@theme/IdealImage'
 

@@ -1,12 +1,13 @@
-import React from 'react'
-import _get from 'lodash/get'
-import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
-import { Message, Button, Tab } from 'semantic-ui-react'
 import { useMutation } from '@apollo/client'
+import { Button } from '@uzh-bf/design-system'
+import _get from 'lodash/get'
+import React from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message, Tab } from 'semantic-ui-react'
 
+import RequestAccountDeletionMutation from '../../../graphql/mutations/RequestAccountDeletionMutation.graphql'
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'
-import RequestAccountDeletionMutation from '../../../graphql/mutations/RequestAccountDeletionMutation.graphql'
 
 const messages = defineMessages({
   accountDataItem: {
@@ -74,17 +75,19 @@ function UserSettingsForm(): React.ReactElement {
               </Message>
             ) : (
               <Button
-                color="red"
+                className="h-10 px-4 font-bold text-white bg-red-600"
                 disabled={success}
                 loading={loading}
                 onClick={(): void => {
                   requestAccountDeletion()
                 }}
               >
-                <FormattedMessage
-                  defaultMessage="Yes, I want to delete my account!"
-                  id="form.userSettings.button.requestAccountDeletion"
-                />
+                <Button.Label>
+                  <FormattedMessage
+                    defaultMessage="Yes, I want to delete my account!"
+                    id="form.userSettings.button.requestAccountDeletion"
+                  />
+                </Button.Label>
               </Button>
             )}
           </Tab.Pane>

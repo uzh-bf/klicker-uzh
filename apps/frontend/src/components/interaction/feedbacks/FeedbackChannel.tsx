@@ -1,12 +1,15 @@
-import { Message, Button } from 'semantic-ui-react'
+import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import { useEffect, useState } from 'react'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
 
-import { requestNotificationPermissions, createNotification } from '../../../lib/utils/notifications'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
+import useStickyState from '../../../lib/hooks/useStickyState'
+import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
-import useStickyState from '../../../lib/hooks/useStickyState'
 
 const messages = defineMessages({
   notificationTitle: {
@@ -96,13 +99,21 @@ function FeedbackChannel({
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    basic
-                    compact
-                    icon={published ? 'eye' : 'eye slash outline'}
+                    className="justify-center mr-2 w-9 h-9"
                     onClick={() => {
                       handlePublishFeedback(id, !published)
                     }}
-                  />
+                  >
+                    {published ? (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEye} />
+                      </Button.Icon>
+                    ) : (
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faEyeSlash} />
+                      </Button.Icon>
+                    )}
+                  </Button>
                 </div>
               )}
               <div className="flex-1">

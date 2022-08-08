@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
 import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 import localForage from 'localforage'
 import _debounce from 'lodash/debounce'
-import { push } from '@socialgouv/matomo-next'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
-import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
 import AddConfusionTSMutation from '../../../graphql/mutations/AddConfusionTSMutation.graphql'
+import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
 
 const messages = defineMessages({
   feedbackPlaceholder: {

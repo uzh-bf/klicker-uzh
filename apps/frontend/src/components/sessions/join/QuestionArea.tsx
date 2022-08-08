@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
-import _without from 'lodash/without'
-import _get from 'lodash/get'
-import v8n from 'v8n'
-import dayjs from 'dayjs'
-import getConfig from 'next/config'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { push } from '@socialgouv/matomo-next'
+import dayjs from 'dayjs'
 import localForage from 'localforage'
+import _get from 'lodash/get'
+import _without from 'lodash/without'
+import getConfig from 'next/config'
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { twMerge } from 'tailwind-merge'
+import v8n from 'v8n'
 
 import { Icon, Message } from 'semantic-ui-react'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
-import QuestionFiles from './QuestionFiles'
-import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
+import FREEAnswerOptions from '../../questionTypes/FREE/FREEAnswerOptions'
 import QuestionDescription from '../../questionTypes/QuestionDescription'
 import SCAnswerOptions from '../../questionTypes/SC/SCAnswerOptions'
-import FREEAnswerOptions from '../../questionTypes/FREE/FREEAnswerOptions'
+import QuestionFiles from './QuestionFiles'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -267,7 +267,7 @@ function QuestionArea({
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'bg-white flex-1 md:flex',
         !isStaticPreview && 'md:flex-col md:shadow md:rounded-xl p-4',
         isStaticPreview && 'flex-col',

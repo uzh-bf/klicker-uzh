@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import { useLazyQuery } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
-import { useLazyQuery } from '@apollo/client'
+import React, { useEffect, useState } from 'react'
 import { Message } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
 
 import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 

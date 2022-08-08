@@ -1,4 +1,4 @@
-import { string, ref } from 'yup'
+import { ref, string } from 'yup'
 
 import { ROLES } from '../../../constants'
 

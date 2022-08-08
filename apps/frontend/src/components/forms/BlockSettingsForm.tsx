@@ -1,12 +1,17 @@
-import React, { useState } from 'react'
-import _isEmpty from 'lodash/isEmpty'
-import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Dropdown, Form, Button, Modal, Checkbox, Message } from 'semantic-ui-react'
+import { faFloppyDisk } from '@fortawesome/free-regular-svg-icons'
+import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
-import { object, number, boolean } from 'yup'
-import FormikInput from './components/FormikInput'
+import _isEmpty from 'lodash/isEmpty'
+import React, { useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Checkbox, Dropdown, Form, Modal } from 'semantic-ui-react'
+import { boolean, number, object } from 'yup'
+
 import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
+import FormikInput from './components/FormikInput'
 
 interface Props {
   disabled?: boolean
@@ -93,7 +98,13 @@ function BlockSettingsForm({
             <Form loading={isSubmitting}>
               <FormikInput
                 required
-                action={<Button icon="times" onClick={onResetTimeLimit({ setFieldValue, setSubmitting })} />}
+                action={
+                  <Button onClick={onResetTimeLimit({ setFieldValue, setSubmitting })}>
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faXmark} size="lg" />
+                    </Button.Icon>
+                  </Button>
+                }
                 actionPosition="left"
                 error={errors.timeLimit}
                 // errorMessage={intl.formatMessage(messages.emailInvalid)}
@@ -133,17 +144,26 @@ function BlockSettingsForm({
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button icon="times" type="button" onClick={onModalClose}>
-              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            <Button className="p-2 px-3 mr-1" onClick={onModalClose}>
+              <Button.Icon>
+                <FontAwesomeIcon icon={faXmark} size="lg" />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+              </Button.Label>
             </Button>
             <Button
-              primary
+              className="p-2 px-3"
               disabled={isSubmitting || !_isEmpty(errors)}
-              icon="save"
               type="submit"
               onClick={(): any => handleSubmit()}
             >
-              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              <Button.Icon>
+                <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              </Button.Label>
             </Button>
           </Modal.Actions>
         </Modal>

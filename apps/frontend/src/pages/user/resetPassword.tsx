@@ -1,13 +1,13 @@
-import React from 'react'
-import Link from 'next/link'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Message } from 'semantic-ui-react'
-import { useRouter } from 'next/router'
 import { push } from '@socialgouv/matomo-next'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import React from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
 
 const messages = defineMessages({

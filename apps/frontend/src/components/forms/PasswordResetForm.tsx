@@ -1,13 +1,13 @@
-import React from 'react'
-import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
-import { object } from 'yup'
+import _isEmpty from 'lodash/isEmpty'
+import React from 'react'
 import { useIntl } from 'react-intl'
+import { object } from 'yup'
 
-import FormWithLinks from './components/FormWithLinks'
-import FormikInput from './components/FormikInput'
-import validationSchema from './common/validationSchema'
 import messages from './common/messages'
+import validationSchema from './common/validationSchema'
+import FormikInput from './components/FormikInput'
+import FormWithLinks from './components/FormWithLinks'
 
 const { password, passwordRepeat } = validationSchema
 

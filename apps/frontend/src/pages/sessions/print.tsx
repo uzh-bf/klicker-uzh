@@ -1,22 +1,23 @@
 /* eslint-disable */
-import React, { useState } from 'react'
-import _round from 'lodash/round'
+import { faPrint } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import _get from 'lodash/get'
-import { FormattedMessage } from 'react-intl'
+import _round from 'lodash/round'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import { useRouter } from 'next/router'
-import { max, min, mean, median, quantileSeq, std } from 'mathjs'
-import { Button } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
+import React, { useState } from 'react'
+import { FormattedMessage } from 'react-intl'
 
-import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
-import { toValueArray } from '../../lib/utils/math'
+import Markdown from '../../components/common/Markdown'
 import Chart from '../../components/evaluation/Chart'
 import Possibilities from '../../components/evaluation/Possibilities'
 import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
-import { extractInstancesFromSession } from './evaluation'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
-import Markdown from '../../components/common/Markdown'
+import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
+import { toValueArray } from '../../lib/utils/math'
+import { extractInstancesFromSession } from './evaluation'
 
 function Print(): React.ReactElement<any> {
   const router = useRouter()
@@ -39,12 +40,14 @@ function Print(): React.ReactElement<any> {
           <CommonLayout baseFontSize="16">
             <div className="p-2 print:hidden">
               <Button
-                primary
-                content="Print / PDF Download"
-                icon="print"
-                className="!m-0"
+                className="justify-center font-bold text-white h-11 bg-uzh-blue-80"
                 onClick={() => window.print()}
-              />
+              >
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faPrint} />
+                </Button.Icon>
+                <Button.Label>Print / PDF Download</Button.Label>
+              </Button>
             </div>
 
             {activeInstances.map((activeInstance) => {

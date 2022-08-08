@@ -1,17 +1,16 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
+import { ApolloClient, ApolloLink, InMemoryCache, split } from '@apollo/client'
+import { BatchHttpLink } from '@apollo/client/link/batch-http'
+import { onError } from '@apollo/client/link/error'
+import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
+import { getMainDefinition } from '@apollo/client/utilities'
+import { sha256 } from 'crypto-hash'
+import { createClient } from 'graphql-ws'
 import fetch from 'isomorphic-unfetch'
 import getConfig from 'next/config'
 import Router from 'next/router'
-import { ApolloClient, ApolloLink, split, InMemoryCache, Operation, FetchResult, Observable } from '@apollo/client'
-import { BatchHttpLink } from '@apollo/client/link/batch-http'
-import { onError } from '@apollo/client/link/error'
-import { getMainDefinition } from '@apollo/client/utilities'
-import { print, GraphQLError } from 'graphql'
-import { createClient, ClientOptions, Client } from 'graphql-ws'
-import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
-import { sha256 } from 'crypto-hash'
-import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 
 export default function createApolloClient() {
   const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()

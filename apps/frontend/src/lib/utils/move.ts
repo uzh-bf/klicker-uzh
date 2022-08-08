@@ -1,5 +1,5 @@
-import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
+import { v4 as UUIDv4 } from 'uuid'
 
 export function insertArrayElement(array: any[], index: number, value: any, replace = false): any[] {
   return [...array.slice(0, index), value, ...array.slice(replace ? index + 1 : index)]
