@@ -1,11 +1,11 @@
+import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
 
 const messages = defineMessages({

@@ -1,37 +1,37 @@
-import React, { useState, useEffect } from 'react'
-import { v4 as UUIDv4 } from 'uuid'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { Input } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
-import { object } from 'yup'
-import { twMerge } from 'tailwind-merge'
-import dayjs from 'dayjs'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  faGears,
-  faFloppyDisk,
-  faPlay,
+  faArrowDown,
   faArrowLeft,
   faArrowRight,
-  faArrowDown,
   faArrowUp,
+  faFloppyDisk,
+  faGears,
+  faPlay,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import React, { useEffect, useState } from 'react'
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Input } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
+import { v4 as UUIDv4 } from 'uuid'
+import { object } from 'yup'
 
 import {
-  removeQuestion,
-  moveQuestion,
   addToBlock,
   appendNewBlock,
-  reorder,
   deleteArrayElement,
+  moveQuestion,
+  removeQuestion,
+  reorder,
 } from '../../../lib/utils/move'
-import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
-import QuestionDropzone from './QuestionDropzone'
-import InfoArea from './InfoArea'
-import validationSchema from '../common/validationSchema'
 import CustomModal from '../../common/CustomModal'
+import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
+import validationSchema from '../common/validationSchema'
+import InfoArea from './InfoArea'
+import QuestionDropzone from './QuestionDropzone'
 import SessionParticipantSettings, { AuthenticationMode } from './SessionParticipantSettings'
 
 const { sessionName: sessionNameValidator } = validationSchema

@@ -1,15 +1,15 @@
-import { useState, useMemo } from 'react'
 import { useQuery } from '@apollo/client'
-import Head from 'next/head'
-import { Icon, Dropdown } from 'semantic-ui-react'
 import dayjs from 'dayjs'
+import Head from 'next/head'
+import { useMemo, useState } from 'react'
+import { Dropdown, Icon } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
-import withFeatureFlags from '../../lib/withFeatureFlags'
+import { PageWithFeatureFlags } from '../../@types/AppFlags'
 import ConfusionBarometer from '../../components/interaction/confusion/ConfusionBarometer'
 import PinnedFeedbacksQuery from '../../graphql/queries/PinnedFeedbacksQuery.graphql'
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
-import { PageWithFeatureFlags } from '../../@types/AppFlags'
+import withFeatureFlags from '../../lib/withFeatureFlags'
 
 function Feedbacks({ featureFlags }: PageWithFeatureFlags) {
   const [sortBy, setSortBy] = useState('upvotes')

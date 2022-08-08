@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
-import _get from 'lodash/get'
-import _sortBy from 'lodash/sortBy'
-import { Table, Confirm } from 'semantic-ui-react'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faStop } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import _get from 'lodash/get'
+import _sortBy from 'lodash/sortBy'
+import React, { useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
+import { Confirm, Table } from 'semantic-ui-react'
 
 import EditTableRowForm from '../forms/EditTableRowForm'
 

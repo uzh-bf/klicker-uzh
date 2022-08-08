@@ -1,10 +1,10 @@
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { useIntl } from 'react-intl'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
 
-import { generateTypesShort, generateTypesLabel } from '../../lib/utils/lang'
+import { generateTypesLabel, generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
   id: string

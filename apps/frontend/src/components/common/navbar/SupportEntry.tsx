@@ -1,5 +1,5 @@
-import { Header, Icon, SemanticICONS } from 'semantic-ui-react'
 import Link from 'next/link'
+import { Header, Icon, SemanticICONS } from 'semantic-ui-react'
 
 interface Props {
   title: string

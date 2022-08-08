@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import dayjs from 'dayjs'
 import * as JsSearch from 'js-search'
 import _sortBy from 'lodash/sortBy'
-import dayjs from 'dayjs'
+import { useEffect, useState } from 'react'
 
 const defaultFilterParams = {
   showResolvedInitial: true,

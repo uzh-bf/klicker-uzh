@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-sort-props */
 
-import React from 'react'
 import Head from 'next/head'
+import React from 'react'
 
 interface Props {
   baseFontSize?: string | number

@@ -1,5 +1,5 @@
 import React from 'react'
-import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import CustomTooltip from '../../common/CustomTooltip'

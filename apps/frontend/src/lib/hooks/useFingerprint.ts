@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
 import Cookies from 'js-cookie'
 import getConfig from 'next/config'
+import { useEffect, useState } from 'react'
 
 const { publicRuntimeConfig } = getConfig()
 

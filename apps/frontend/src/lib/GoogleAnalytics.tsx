@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
-import Script from 'next/script'
 import { useRouter } from 'next/router'
+import Script from 'next/script'
+import { useEffect } from 'react'
 
 import * as gtag from './gtag'
 

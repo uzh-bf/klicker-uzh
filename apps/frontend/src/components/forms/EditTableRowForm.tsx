@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
-import { Formik } from 'formik'
-import { object } from 'yup'
-import { Confirm, Table, Dropdown } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
-import { Button } from '@uzh-bf/design-system'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFloppyDisk, faRotateLeft } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
+import React, { useState } from 'react'
+import { FormattedMessage } from 'react-intl'
+import { Confirm, Dropdown, Table } from 'semantic-ui-react'
+import { object } from 'yup'
 
-import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
+import FormikInput from './components/FormikInput'
 
 function ConfirmationContent({
   columns,

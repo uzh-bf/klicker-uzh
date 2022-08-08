@@ -1,19 +1,19 @@
-import React, { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { repeat } from 'ramda'
-import { Input, Icon } from 'semantic-ui-react'
+import { useMemo, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import {
-  ResponsiveContainer,
-  LineChart,
   CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
   Legend,
   Line,
+  LineChart,
   ReferenceArea,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
+import { Icon, Input } from 'semantic-ui-react'
 
 import CustomTooltip from '../common/CustomTooltip'
 

@@ -1,6 +1,6 @@
 import { useFlags } from '@happykit/flags/client'
-import { useContext } from 'react'
 import getConfig from 'next/config'
+import { useContext } from 'react'
 
 import { AppFlags, FeatureFlags } from '../@types/AppFlags'
 import { UserContext } from './userContext'

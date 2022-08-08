@@ -1,5 +1,5 @@
-import React from 'react'
 import dynamic from 'next/dynamic'
+import React from 'react'
 
 // HACK: ensure that the react-d3-speedometer is not loaded on SSR
 const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), { ssr: false })

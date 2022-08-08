@@ -1,17 +1,17 @@
 /* eslint-disable */
 
-import glob from 'glob'
-import cookieParser from 'cookie-parser'
-import express from 'express'
-import next from 'next'
 import compression from 'compression'
+import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import { basename } from 'path'
 import crypto from 'crypto'
+import express from 'express'
+import glob from 'glob'
+import helmet from 'helmet'
 import Redis from 'ioredis'
 import LRUCache from 'lru-cache'
+import morgan from 'morgan'
+import next from 'next'
+import { basename } from 'path'
 
 // import the configuration
 import CFG from './klicker.conf.mjs'

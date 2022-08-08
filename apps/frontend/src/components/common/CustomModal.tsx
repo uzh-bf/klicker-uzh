@@ -1,7 +1,7 @@
-import React from 'react'
 import * as RadixDialog from '@radix-ui/react-dialog'
-import { twMerge } from 'tailwind-merge'
 import { Button } from '@uzh-bf/design-system'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   trigger?: React.ReactNode

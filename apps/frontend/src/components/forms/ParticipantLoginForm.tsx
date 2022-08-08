@@ -1,12 +1,12 @@
-import React from 'react'
-import { Formik } from 'formik'
-import { useIntl, FormattedMessage } from 'react-intl'
-import { Form } from 'semantic-ui-react'
 import { Button } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
+import React from 'react'
+import { FormattedMessage, useIntl } from 'react-intl'
+import { Form } from 'semantic-ui-react'
 import { object, string } from 'yup'
 
-import FormikInput from './components/FormikInput'
 import messages from './common/messages'
+import FormikInput from './components/FormikInput'
 
 interface Props {
   onSubmit: ({ username, password }) => void

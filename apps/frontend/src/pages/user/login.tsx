@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import { useMutation } from '@apollo/client'
+import { push } from '@socialgouv/matomo-next'
 import Cookies from 'js-cookie'
 import _get from 'lodash/get'
-import { useRouter } from 'next/router'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from '@apollo/client'
 import getConfig from 'next/config'
-import { push } from '@socialgouv/matomo-next'
+import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
 
 const { publicRuntimeConfig } = getConfig()

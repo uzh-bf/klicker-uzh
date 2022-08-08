@@ -1,7 +1,7 @@
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   onDrop: any

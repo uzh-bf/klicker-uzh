@@ -1,8 +1,8 @@
 /* eslint-disable jsx-a11y/label-has-for */
 
+import { FormikErrors, FormikTouched } from 'formik'
 import React from 'react'
 import { Form, Icon, Input } from 'semantic-ui-react'
-import { FormikErrors, FormikTouched } from 'formik'
 import CustomTooltip from '../../common/CustomTooltip'
 
 interface Props {
