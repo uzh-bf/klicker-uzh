@@ -3,14 +3,15 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Form, Message, Icon } from 'semantic-ui-react'
+import { Form, Message, Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { equals, omit } from 'ramda'
 import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 import { is } from 'immutable'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ArrowDownIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 import { convertToSlate } from '../../../lib/utils/slateMdConversion'
 import FileDropzone from './FileDropzone'
@@ -228,13 +229,17 @@ function QuestionEditForm({
               <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
                 <div className="actionArea">
                   {!hasAnythingChanged && (
-                    <Button className="close" size="large" type="button" onClick={handleDiscard}>
-                      <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                    <Button className="h-10 px-4 font-bold close" onClick={handleDiscard}>
+                      <Button.Label>
+                        <FormattedMessage defaultMessage="Close" id="common.button.close" />
+                      </Button.Label>
                     </Button>
                   )}
                   {hasAnythingChanged && (
-                    <Button className="discard" size="large" type="button" onClick={handleDiscard}>
-                      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                    <Button className="h-10 px-4 font-bold discard" size="large" type="button" onClick={handleDiscard}>
+                      <Button.Label>
+                        <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                      </Button.Label>
                     </Button>
                   )}
 
@@ -252,14 +257,14 @@ function QuestionEditForm({
                   </div>
 
                   <Button
-                    primary
-                    className="save"
+                    className="h-10 px-4 font-bold text-white save bg-uzh-blue-80 disabled:opacity-60"
                     disabled={!_isEmpty(errors) || !hasAnythingChanged}
                     loading={loading && isSubmitting}
-                    size="large"
                     type="submit"
                   >
-                    <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    <Button.Label>
+                      <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                    </Button.Label>
                   </Button>
                 </div>
 
@@ -330,7 +335,7 @@ function QuestionEditForm({
                       <DropdownMenu.Trigger className="flex flex-row h-full bg-white border-0 cursor-pointer unset">
                         <div>{intl.formatMessage(messages.historyTitle)}</div>
                         <ArrowDownIcon
-                          className={clsx(
+                          className={twMerge(
                             'ml-1 h-4 my-auto',
                             versionsDropdownOpen && 'rotate-180 transition-transform'
                           )}
@@ -342,7 +347,7 @@ function QuestionEditForm({
                           className="[all:_unset] w-50 hover:bg-blue-20 bg-white align-middle !px-6 !py-1 !rounded-md !my-1 hover:cursor-pointer"
                           onClick={(): void => handleActiveVersionChange(versionOptions.length)}
                         >
-                          <div className={clsx(activeVersion === versionOptions.length && 'font-bold')}>
+                          <div className={twMerge(activeVersion === versionOptions.length && 'font-bold')}>
                             {`v${versionOptions.length + 1} (draft)`}
                           </div>
                         </DropdownMenu.Item>
@@ -355,7 +360,7 @@ function QuestionEditForm({
                                 key={id}
                                 onClick={(): void => handleActiveVersionChange(index)}
                               >
-                                <div className={clsx(activeVersion === index && 'font-bold')}>{text}</div>
+                                <div className={twMerge(activeVersion === index && 'font-bold')}>{text}</div>
                               </DropdownMenu.Item>
                             )
                           )

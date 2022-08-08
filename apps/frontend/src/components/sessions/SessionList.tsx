@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { useQuery } from '@apollo/client'
+import { faCopy, faPlay, faPause } from '@fortawesome/free-solid-svg-icons'
 
 import Session from './Session'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
@@ -12,19 +13,19 @@ import { buildIndex, filterByTitle } from '../../lib/utils/filters'
 // prepare possible status messages for different session stati
 const statusCases = {
   [SESSION_STATUS.COMPLETED]: {
-    icon: 'copy',
+    icon: faCopy,
     message: <FormattedMessage defaultMessage="Copy" id="session.button.completed.content" />,
   },
   [SESSION_STATUS.CREATED]: {
-    icon: 'play',
+    icon: faPlay,
     message: <FormattedMessage defaultMessage="Start" id="session.button.created.content" />,
   },
   [SESSION_STATUS.RUNNING]: {
-    icon: 'play',
+    icon: faPlay,
     message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
   },
   [SESSION_STATUS.PAUSED]: {
-    icon: 'pause',
+    icon: faPause,
     message: <FormattedMessage defaultMessage="Continue" id="session.button.paused.content" />,
   },
 }

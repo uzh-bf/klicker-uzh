@@ -5,8 +5,9 @@ import _get from 'lodash/get'
 import { FormattedMessage } from 'react-intl'
 import { useRouter } from 'next/router'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
-import { Button } from 'semantic-ui-react'
-import { push } from '@socialgouv/matomo-next'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPrint } from '@fortawesome/free-solid-svg-icons'
 
 import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
 import { toValueArray } from '../../lib/utils/math'
@@ -39,12 +40,14 @@ function Print(): React.ReactElement<any> {
           <CommonLayout baseFontSize="16">
             <div className="p-2 print:hidden">
               <Button
-                primary
-                content="Print / PDF Download"
-                icon="print"
-                className="!m-0"
+                className="justify-center font-bold text-white h-11 bg-uzh-blue-80"
                 onClick={() => window.print()}
-              />
+              >
+                <Button.Icon className="mr-1">
+                  <FontAwesomeIcon icon={faPrint} />
+                </Button.Icon>
+                <Button.Label>Print / PDF Download</Button.Label>
+              </Button>
             </div>
 
             {activeInstances.map((activeInstance) => {

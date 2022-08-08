@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Button, Icon } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowsRotate, faBars } from '@fortawesome/free-solid-svg-icons'
 
 import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
@@ -79,20 +82,26 @@ function StudentLayout({
         <div className="border-0 !border-b border-solid border-gray-300  flex justify-between flex-initial p-[0.3rem] items-center md:!hidden">
           <div className="relative h-10 mt-0 w-11">
             <Button
-              basic
               active={sidebar.sidebarVisible}
-              className="absolute z-0 !m-0"
+              className="justify-center w-10 h-10"
               disabled={!isInteractionEnabled}
-              icon="content"
               onClick={sidebar.handleToggleSidebarVisible}
-            />
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faBars} />
+              </Button.Icon>
+            </Button>
             {isInteractionEnabled && <NotificationBadge count={totalUnseenCount} />}
           </div>
 
           <h1 className="m-0 !text-lg">
             {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
           </h1>
-          <Button basic className="!m-0" icon="refresh" onClick={(): void => window.location.reload()} />
+          <Button className="justify-center w-10 h-10" onClick={(): void => window.location.reload()}>
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowsRotate} />
+            </Button.Icon>
+          </Button>
         </div>
 
         <div className="flex flex-1">

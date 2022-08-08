@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { Checkbox, Message, Button, Icon } from 'semantic-ui-react'
+import { Checkbox, Message } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage } from 'react-intl'
-import clsx from 'clsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { twMerge } from 'tailwind-merge'
 import { push } from '@socialgouv/matomo-next'
 
 import ConfusionBarometer from './confusion/ConfusionBarometer'
@@ -80,9 +83,13 @@ function AudienceInteraction({
           {isFeedbackChannelActive && (
             <div className="order-3 md:order-1">
               <a href={`/sessions/feedbacks`} rel="noopener noreferrer" target="_blank">
-                <Button text labelPosition="left" size="small">
-                  <Icon name="external" />
-                  <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                <Button className="h-10 px-4">
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  </Button.Icon>
+                  <Button.Label>
+                    <FormattedMessage defaultMessage="Lecturer Cockpit" id="runningSession.button.lecturerCockpit" />
+                  </Button.Label>
                 </Button>
               </a>
             </div>
@@ -136,7 +143,7 @@ function AudienceInteraction({
                 push(['trackEvent', 'Running Session', 'Feedback Moderation Toggled', String(!isFeedbackChannelPublic)])
               }}
             />
-            <span className={clsx(!isFeedbackChannelActive && 'text-gray-400')}>
+            <span className={twMerge(!isFeedbackChannelActive && 'text-gray-400')}>
               <FormattedMessage defaultMessage="Enable Moderation" id="runningSession.switches.enablemoderation" />
             </span>
           </div>

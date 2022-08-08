@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import _without from 'lodash/without'
 import _get from 'lodash/get'
 import v8n from 'v8n'
@@ -267,7 +267,7 @@ function QuestionArea({
 
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'bg-white flex-1 md:flex',
         !isStaticPreview && 'md:flex-col md:shadow md:rounded-xl p-4',
         isStaticPreview && 'flex-col',

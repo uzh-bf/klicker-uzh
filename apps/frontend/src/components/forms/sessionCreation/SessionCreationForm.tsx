@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { Button, Icon, Input } from 'semantic-ui-react'
+import { Input } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 import dayjs from 'dayjs'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faGears,
+  faFloppyDisk,
+  faPlay,
+  faArrowLeft,
+  faArrowRight,
+  faArrowDown,
+  faArrowUp,
+} from '@fortawesome/free-solid-svg-icons'
 
 import {
   removeQuestion,
@@ -19,7 +31,6 @@ import QuestionSingleCompact from '../../questions/QuestionSingleCompact'
 import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 import validationSchema from '../common/validationSchema'
-import CustomButton from '../../common/CustomButton'
 import CustomModal from '../../common/CustomModal'
 import SessionParticipantSettings, { AuthenticationMode } from './SessionParticipantSettings'
 
@@ -175,14 +186,17 @@ function SessionCreationForm({
               />
             </div>
 
-            <CustomButton
-              className="bg-grey-20 hover:bg-grey-40"
-              type="button"
+            <Button
+              className="justify-center bg-grey-20 hover:bg-grey-40 h-9"
               onClick={() => setSettingsModalOpen(true)}
             >
-              <Icon className="!mr-4" name="settings" />
-              <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
-            </CustomButton>
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faGears} size="lg" />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Settings" id="common.button.settings" />
+              </Button.Label>
+            </Button>
 
             <CustomModal
               discardEnabled={!isAuthenticationEnabled || sessionParticipants.length !== 0}
@@ -206,19 +220,22 @@ function SessionCreationForm({
               />
             </CustomModal>
 
-            <CustomButton
-              className="!mt-2 bg-grey-20 hover:bg-grey-40"
+            <Button
+              className="!mt-2 bg-grey-20 hover:bg-grey-40 justify-center h-9"
               disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               type="submit"
-              onClick={() => null}
             >
-              <Icon className="!mr-4" name="save" />
-              <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
-            </CustomButton>
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faFloppyDisk} size="lg" />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Save Session" id="form.createSession.button.save" />
+              </Button.Label>
+            </Button>
 
-            <CustomButton
-              className={clsx(
-                '!mt-2 text-white bg-sky-600 opacity-60',
+            <Button
+              className={twMerge(
+                '!mt-2 text-white bg-sky-600 opacity-60 justify-center h-9',
                 !(!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)) &&
                   'hover:bg-sky-700 !opacity-100'
               )}
@@ -226,9 +243,13 @@ function SessionCreationForm({
               type="submit"
               onClick={handleCreateSession('start')}
             >
-              <Icon className="!mr-4" name="play" />
-              <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
-            </CustomButton>
+              <Button.Icon className="mr-1">
+                <FontAwesomeIcon icon={faPlay} size="lg" />
+              </Button.Icon>
+              <Button.Label>
+                <FormattedMessage defaultMessage="Start Now" id="form.createSession.button.start" />
+              </Button.Label>
+            </Button>
 
             {!!runningSessionId && (
               <FormattedMessage
@@ -252,28 +273,31 @@ function SessionCreationForm({
                     <div className="hidden md:block">
                       <Button
                         basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="arrow left"
-                        size="mini"
-                        type="button"
+                        className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex - 1)}
-                      />
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowLeft} />
+                        </Button.Icon>
+                      </Button>
                       <Button
                         basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="trash"
-                        size="mini"
-                        type="button"
+                        className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onRemoveBlock(blockIndex)}
-                      />
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faTrashCan} />
+                        </Button.Icon>
+                      </Button>
                       <Button
                         basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="arrow right"
-                        size="mini"
-                        type="button"
+                        className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
-                      />
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowRight} />
+                        </Button.Icon>
+                      </Button>
                     </div>
                   </div>
                   <div className="flex flex-row h-full">
@@ -321,36 +345,31 @@ function SessionCreationForm({
                     </div>
                     <div className="flex flex-col md:hidden">
                       <Button
-                        basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="arrow up"
-                        size="mini"
-                        type="button"
+                        className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex - 1)}
-                      />
+                      >
+                        <FontAwesomeIcon icon={faArrowUp} />
+                      </Button>
+                      <Button className="p-2 border-0 shadow-none h-7" onClick={(): void => onRemoveBlock(blockIndex)}>
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faTrashCan} />
+                        </Button.Icon>
+                      </Button>
                       <Button
-                        basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="trash"
-                        size="mini"
-                        type="button"
-                        onClick={(): void => onRemoveBlock(blockIndex)}
-                      />
-                      <Button
-                        basic
-                        className="!p-2 !mr-0 !border-0 !shadow-none"
-                        icon="arrow down"
-                        size="mini"
-                        type="button"
+                        className="p-2 border-0 shadow-none h-7"
                         onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
-                      />
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faArrowDown} />
+                        </Button.Icon>
+                      </Button>
                     </div>
                   </div>
                 </div>
               )
             )}
             <div
-              className={clsx(
+              className={twMerge(
                 'border-0 border-b md:border-b-0 pb-4 md:pb-0 md:border-r border-solid border-grey-60 flex flex-col min-w-[200px] max-h-[15rem]',
                 sessionBlocks.length > 1 && 'border-b-0'
               )}

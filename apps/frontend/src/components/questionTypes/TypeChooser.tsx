@@ -1,9 +1,9 @@
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
+import { Button } from '@uzh-bf/design-system'
 
 import { QUESTION_TYPES } from '../../constants'
-import Button from '../common/Button'
 import CustomTooltip from '../common/CustomTooltip'
 
 const messages = defineMessages({
@@ -72,39 +72,20 @@ function TypeChooser({ value, onChange }: Props): React.ReactElement {
         </CustomTooltip>
       </label>
 
-      <div className="types">
+      <div className="flex flex-col gap-2">
         {types.map(
           ({ name, value: typeValue }): React.ReactElement => (
             <Button
               active={typeValue === value}
+              className="justify-center py-2 text-lg h-11"
               key={typeValue}
-              type="button"
               onClick={(): void => onChange(typeValue)}
             >
-              {name}
+              <Button.Label>{name}</Button.Label>
             </Button>
           )
         )}
       </div>
-
-      <style jsx>
-        {`
-          @import 'src/theme';
-
-          .typeChooser {
-            @include tooltip-icon;
-
-            .types {
-              display: flex;
-              flex-direction: column;
-
-              > :global(*):not(:last-child) {
-                margin-bottom: 0.5rem;
-              }
-            }
-          }
-        `}
-      </style>
     </div>
   )
 }

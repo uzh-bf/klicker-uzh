@@ -499,6 +499,7 @@ function Index(): React.ReactElement {
                     itemsChecked={selectedItems.ids}
                     key="action-area"
                     questions={processedQuestions}
+                    runningSessionId={runningSessionId}
                     sessionBlocks={sessionBlocks}
                     setSessionBlocks={setSessionBlocks}
                     sortBy={sort.by}
