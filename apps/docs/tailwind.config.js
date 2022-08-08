@@ -1,7 +1,7 @@
 const { TailwindColorsUZH } = require('@uzh-bf/design-system/dist/constants')
 
 module.exports = {
-  content: ['./src/**/*.tsx', './docs/**/*.mdx', './blog/**/*.mdx'],
+  content: ['./src/**/*.tsx', './docs/**/*.mdx'],
   theme: {
     extend: {
       colors: {

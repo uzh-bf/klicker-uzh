@@ -116,7 +116,7 @@ function Index(): React.ReactElement {
               <List.Item>
                 <List.Icon name="bullhorn" size="large" verticalAlign="middle" />
                 <List.Content>
-                  <List.Header as="a" href="https://www.klicker.uzh.ch/blog" target="_blank">
+                  <List.Header as="a" href="https://community.klicker.uzh.ch/c/announce/5" target="_blank">
                     Project Updates
                   </List.Header>
                   <List.Description>Updates on developments</List.Description>

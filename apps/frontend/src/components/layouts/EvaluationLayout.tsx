@@ -2,6 +2,7 @@ import { faFile } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { Button } from '@uzh-bf/design-system'
+import { cloneDeep } from 'lodash'
 import getConfig from 'next/config'
 import React, { useEffect, useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
@@ -43,12 +44,12 @@ interface Props {
   instanceSummary?: any[]
   onChangeActiveInstance: (index: number) => void
   onChangeVisualizationType: (questionType: string, visualizationType: string) => void
-  onToggleShowSolution: () => void
+  setShowSolution: (showSolution: boolean[]) => void
   options: any
   pageTitle?: string
   sessionId: string
   showGraph?: boolean
-  showSolution?: boolean
+  showSolution?: boolean[]
   statistics?: { bins: number; onChangeBins: any; mean: number; median: number }
   title: string
   totalResponses?: number
@@ -69,7 +70,7 @@ const defaultProps = {
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
   showGraph: false,
-  showSolution: false,
+  showSolution: [],
   statistics: undefined,
   totalResponses: undefined,
   choices: undefined,
@@ -93,7 +94,7 @@ function EvaluationLayout({
   onChangeShowConfusionTS,
   onChangeShowFeedback,
   onChangeVisualizationType,
-  onToggleShowSolution,
+  setShowSolution,
   options,
   pageTitle,
   sessionId,
@@ -185,6 +186,13 @@ function EvaluationLayout({
     }
 
     setCurrentIndex(index)
+  }
+
+  const onToggleSolution = () => {
+    const newShowSolution = cloneDeep(showSolution)
+    newShowSolution[currentIndex] = !showSolution[currentIndex]
+    setShowSolution(newShowSolution)
+    sessionStorage?.setItem(`showSolution${sessionId}`, JSON.stringify(newShowSolution))
   }
 
   return (
@@ -373,7 +381,7 @@ function EvaluationLayout({
                         questionOptions={options}
                         questionType={type}
                         showGraph={showGraph}
-                        showSolution={showSolution}
+                        showSolution={showSolution[currentIndex]}
                       />
                     </div>
                   )}
@@ -405,10 +413,10 @@ function EvaluationLayout({
               showQuestionLayout && (
                 <Checkbox
                   toggle
+                  checked={showSolution[currentIndex] ?? false}
                   className="print:!hidden"
-                  defaultChecked={showSolution}
                   label={intl.formatMessage(messages.showSolutionLabel)}
-                  onChange={onToggleShowSolution}
+                  onChange={onToggleSolution}
                 />
               )}
             {showQuestionLayout && (

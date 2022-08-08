@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0...v1.8.1) (2022-08-02)
+
+
+### Bug Fixes
+
+* **docs:** add client-side redirects for old tos and privacy links ([1010e39](https://github.com/uzh-bf/klicker-uzh/commit/1010e3900701d73484318427e0f2b65e2e1f1763))
+* **README:** update link to FAQ ([8f1de36](https://github.com/uzh-bf/klicker-uzh/commit/8f1de3612b544717efb8fb5d87cd2fd5b7c21730))
+
+
+### Enhancements
+
+* **docs:** adjust documentation for movo export to KlickerUZH ([#2730](https://github.com/uzh-bf/klicker-uzh/issues/2730)) ([58c44eb](https://github.com/uzh-bf/klicker-uzh/commit/58c44eb14b07c832ff10b5e761f85cfcad2276d2))
+
+
+### Documentation
+
+* **frontend:** added link to movo community page on corresponding docs page ([91a1c5e](https://github.com/uzh-bf/klicker-uzh/commit/91a1c5ea29a66eae56fbe98eba63853a9c7c1fc3))
+
+
+### Other
+
+* **deploy:** update pulumi scripts ([ca9afc8](https://github.com/uzh-bf/klicker-uzh/commit/ca9afc8cedf42d928b0aa41196ca076128ddf8c8))
+* **docs:** add redirect to MS Teams ([52f3df7](https://github.com/uzh-bf/klicker-uzh/commit/52f3df76b657f7b645727821217de0935110f89d))
+* **frontend:** fix links to privacy policy and tos on signup page ([a893a8b](https://github.com/uzh-bf/klicker-uzh/commit/a893a8be24931f0d444d87befb4ab9a4100839db))
+* lockfile maintenance ([be134c8](https://github.com/uzh-bf/klicker-uzh/commit/be134c8eb67707166e91cccc1242fd9419e07774))
+* **shibboleth:** replace certificate path ([4d7e6cb](https://github.com/uzh-bf/klicker-uzh/commit/4d7e6cb23529b4515045ff9d6ea842d5142babd0))
+
 ## [1.8.0](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.37...v1.8.0) (2022-05-12)
 
 ## [1.8.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0-rc.36...v1.8.0-rc.37) (2022-05-12)

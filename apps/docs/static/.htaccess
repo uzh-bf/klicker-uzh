@@ -4,7 +4,7 @@ ErrorDocument 404 /404.html
   RewriteEngine  on
   RewriteBase    /
 
-  RewriteRule ^blog/$ /blog.html [L]
+  RewriteRule ^blog\/ https://community.klicker.uzh.ch/tag/project-update [L]
 
   RewriteRule ^docs/(.*) /$1 [R=301]
 
