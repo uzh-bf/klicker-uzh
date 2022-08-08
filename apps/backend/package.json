@@ -8,8 +8,8 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@azure/storage-blob": "12.9.0",
-    "@klicker-uzh/db": "*",
     "@graphql-tools/schema": "8.2.0",
+    "@klicker-uzh/db": "*",
     "apollo-server-express": "3.3.0",
     "apollo-server-plugin-response-cache": "3.2.0",
     "aws-sdk": "2.984.0",
@@ -65,6 +65,7 @@
     "ws": "8.2.1"
   },
   "devDependencies": {
+    "@uzh-bf/design-system": "0.0.21",
     "eslint": "7.32.0",
     "eslint-config-airbnb-base": "14.2.1",
     "eslint-config-prettier": "8.3.0",
@@ -80,8 +81,8 @@
     "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json src/server.js",
     "dev:inspect": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json --inspect src/server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node src/server.js",
-    "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",
-    "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",
+    "format": "prettier --write src/",
+    "format:ci": "prettier --list-different src/",
     "lint": "eslint \"src/**/*.js\"",
     "lint:staged": "lint-staged",
     "start": "cross-env NODE_ENV=production node src/server.js",
