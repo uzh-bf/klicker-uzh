@@ -7,7 +7,7 @@ import { AuthSchema, Rules } from './graphql/authorization'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import path from 'path'
 import { makeSchema } from 'nexus'
-import * as types from '././graphql/nexus'
+import * as types from './graphql/nexus'
 import enhanceContext from './lib/context'
 
 const app = express()
@@ -43,8 +43,8 @@ app.use((req: any, res, next) =>
 const schema = makeSchema({
   types,
   outputs: {
-    typegen: path.join(process.cwd(), 'src/types/nexus-typegen.ts'),
-    schema: path.join(process.cwd(), 'src/graphql/schema.graphql'),
+    typegen: path.join(process.cwd(), 'GraphQL/types/nexus-typegen.ts'),
+    schema: path.join(process.cwd(), 'GraphQL/graphql/schema.graphql'),
   },
 })
 

@@ -2,6 +2,8 @@
   "extends": "@tsconfig/recommended/tsconfig.json",
   "include": ["GraphQL", "dist"],
   "compilerOptions": {
-    "module": "CommonJS"
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "allowJs": true
   }
 }
