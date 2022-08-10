@@ -10,7 +10,17 @@ export async function getLearningElementData(
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
+    include: {
+      course: true,
+      instances: true,
+    },
   })
 
-  return element
+  console.warn(element)
+  console.warn(element?.instances[0].questionData)
+
+  return {
+    ...element,
+    instance: element?.instances[0],
+  }
 }

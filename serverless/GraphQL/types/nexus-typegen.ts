@@ -4,9 +4,31 @@
  */
 
 
-
-
-
+import type { core } from "nexus"
+declare global {
+  interface NexusGenCustomInputMethods<TypeName extends string> {
+    /**
+     * The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+     */
+    json<FieldName extends string>(fieldName: FieldName, opts?: core.CommonInputFieldConfig<TypeName, FieldName>): void // "JSONObject";
+    /**
+     * A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+     */
+    date<FieldName extends string>(fieldName: FieldName, opts?: core.CommonInputFieldConfig<TypeName, FieldName>): void // "DateTime";
+  }
+}
+declare global {
+  interface NexusGenCustomOutputMethods<TypeName extends string> {
+    /**
+     * The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+     */
+    json<FieldName extends string>(fieldName: FieldName, ...opts: core.ScalarOutSpread<TypeName, FieldName>): void // "JSONObject";
+    /**
+     * A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+     */
+    date<FieldName extends string>(fieldName: FieldName, ...opts: core.ScalarOutSpread<TypeName, FieldName>): void // "DateTime";
+  }
+}
 
 
 declare global {
@@ -25,14 +47,26 @@ export interface NexusGenScalars {
   Float: number
   Boolean: boolean
   ID: string
+  DateTime: any
+  JSONObject: any
 }
 
 export interface NexusGenObjects {
-  LearningElement: { // root type
+  Course: { // root type
     id?: string | null; // ID
+    learningElements?: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+  }
+  LearningElement: { // root type
+    course?: NexusGenRootTypes['Course'] | null; // Course
+    id?: string | null; // ID
+    instance?: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
   }
   Mutation: {};
   Query: {};
+  QuestionInstance: { // root type
+    id?: string | null; // ID
+    questionData?: NexusGenScalars['JSONObject'] | null; // JSONObject
+  }
 }
 
 export interface NexusGenInterfaces {
@@ -46,8 +80,14 @@ export type NexusGenRootTypes = NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
-  LearningElement: { // field return type
+  Course: { // field return type
     id: string | null; // ID
+    learningElements: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+  }
+  LearningElement: { // field return type
+    course: NexusGenRootTypes['Course'] | null; // Course
+    id: string | null; // ID
+    instance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
   }
   Mutation: { // field return type
     login: string; // ID!
@@ -55,17 +95,31 @@ export interface NexusGenFieldTypes {
   Query: { // field return type
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
+  QuestionInstance: { // field return type
+    id: string | null; // ID
+    questionData: NexusGenScalars['JSONObject'] | null; // JSONObject
+  }
 }
 
 export interface NexusGenFieldTypeNames {
-  LearningElement: { // field return type name
+  Course: { // field return type name
     id: 'ID'
+    learningElements: 'LearningElement'
+  }
+  LearningElement: { // field return type name
+    course: 'Course'
+    id: 'ID'
+    instance: 'QuestionInstance'
   }
   Mutation: { // field return type name
     login: 'ID'
   }
   Query: { // field return type name
     learningElement: 'LearningElement'
+  }
+  QuestionInstance: { // field return type name
+    id: 'ID'
+    questionData: 'JSONObject'
   }
 }
 

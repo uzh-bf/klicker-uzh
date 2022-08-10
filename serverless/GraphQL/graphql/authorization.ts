@@ -15,6 +15,6 @@ export const AuthSchema = {
   },
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
-    hello: { __authz: { rules: ['IsAuthenticated'] } },
+    // learningElement: { __authz: { rules: ['IsAuthenticated'] } },
   },
 }
