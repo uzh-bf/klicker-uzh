@@ -28,6 +28,9 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
+  LearningElement: { // root type
+    id?: string | null; // ID
+  }
   Mutation: {};
   Query: {};
 }
@@ -43,20 +46,26 @@ export type NexusGenRootTypes = NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
+  LearningElement: { // field return type
+    id: string | null; // ID
+  }
   Mutation: { // field return type
     login: string; // ID!
   }
   Query: { // field return type
-    hello: string; // String!
+    learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
 }
 
 export interface NexusGenFieldTypeNames {
+  LearningElement: { // field return type name
+    id: 'ID'
+  }
   Mutation: { // field return type name
     login: 'ID'
   }
   Query: { // field return type name
-    hello: 'String'
+    learningElement: 'LearningElement'
   }
 }
 
@@ -65,6 +74,11 @@ export interface NexusGenArgTypes {
     login: { // args
       email: string; // String!
       password: string; // String!
+    }
+  }
+  Query: {
+    learningElement: { // args
+      id: string; // ID!
     }
   }
 }

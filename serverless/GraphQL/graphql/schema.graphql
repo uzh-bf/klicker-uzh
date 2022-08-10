@@ -2,10 +2,14 @@
 ### Do not make changes to this file directly
 
 
+type LearningElement {
+  id: ID
+}
+
 type Mutation {
   login(email: String!, password: String!): ID!
 }
 
 type Query {
-  hello: String!
+  learningElement(id: ID!): LearningElement
 }

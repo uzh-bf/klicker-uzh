@@ -208,8 +208,8 @@ model LearningElement {
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
-  scheduledFrom  DateTime
-  scheduledUntil DateTime
+  scheduledStartAt DateTime
+  scheduledEndAt   DateTime
 
   instances QuestionInstance[]
 
