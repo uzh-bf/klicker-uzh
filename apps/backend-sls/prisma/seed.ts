@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@klicker-uzh/graphql'
 
 async function main(prisma: PrismaClient) {
   const user = await prisma.user.upsert({

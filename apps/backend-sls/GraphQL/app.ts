@@ -1,14 +1,11 @@
+import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { createServer } from '@graphql-yoga/node'
+import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import cookieParser from 'cookie-parser'
 import express from 'express'
 import passport from 'passport'
-import cookieParser from 'cookie-parser'
 import { Strategy as JWTStrategy } from 'passport-jwt'
-import { createServer } from '@graphql-yoga/node'
 import { AuthSchema, Rules } from './graphql/authorization'
-import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
-import path from 'path'
-import { makeSchema } from 'nexus'
-import * as types from './graphql/nexus'
-import enhanceContext from './lib/context'
 
 const app = express()
 
@@ -39,14 +36,6 @@ app.use((req: any, res, next) =>
     next()
   })(req, res, next)
 )
-
-const schema = makeSchema({
-  types,
-  outputs: {
-    typegen: path.join(process.cwd(), 'GraphQL/types/nexus-typegen.ts'),
-    schema: path.join(process.cwd(), 'GraphQL/graphql/schema.graphql'),
-  },
-})
 
 const graphQLServer = createServer({
   schema,

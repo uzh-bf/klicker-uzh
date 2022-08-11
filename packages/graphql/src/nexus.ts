@@ -1,8 +1,8 @@
-import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
-import { Context } from '../lib/context'
-import * as AccountService from '../services/accounts'
-import * as LearningElementService from '../services/learningElements'
+import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
+import { Context } from './lib/context'
+import * as AccountService from './services/accounts'
+import * as LearningElementService from './services/learningElements'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
