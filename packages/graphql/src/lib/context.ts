@@ -1,5 +1,5 @@
+import { PrismaClient } from '@prisma/client'
 import { Request, Response } from 'express'
-import { PrismaClient } from '../prisma/client'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }

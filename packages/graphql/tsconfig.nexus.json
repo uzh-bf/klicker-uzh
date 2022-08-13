@@ -3,6 +3,7 @@
   "include": ["src", "dist"],
   "compilerOptions": {
     "module": "CommonJS",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "allowJs": true
   }
 }

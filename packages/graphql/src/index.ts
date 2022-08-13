@@ -1,9 +1,8 @@
 import { makeSchema } from 'nexus'
 import path from 'path'
-export { default as enhanceContext } from './lib/context'
-export * from './prisma/client'
-
 import * as types from './nexus'
+export * as Prisma from '@prisma/client'
+export { default as enhanceContext } from './lib/context'
 
 export const schema = makeSchema({
   types,
