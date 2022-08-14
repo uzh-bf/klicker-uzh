@@ -1,14 +1,15 @@
 {
-  "name": "@klicker-uzh/frontend-learning-old",
+  "name": "@klicker-uzh/frontend-learning",
   "version": "2.0.0-alpha.0",
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_ENV=development next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@klicker-uzh/graphql": "*",
     "@apollo/client": "3.6.9",
     "@uzh-bf/design-system": "0.0.25",
     "graphql": "16.5.0",

@@ -11,9 +11,11 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "dts build",
+    "build": "dts build --entry src/index.ts --entry src/ops.ts",
+    "dev": "NODE_ENV=development dts watch --entry src/index.ts --entry src/ops.ts",
     "lint": "dts lint",
-    "generate": "npm-run-all generate:prisma generate:nexus",
+    "generate": "npm-run-all generate:prisma generate:nexus generate:graphql",
+    "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:prisma": "prisma generate --schema=src/prisma/schema.prisma",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
@@ -21,7 +23,6 @@
     "prisma:reset": "prisma reset --schema=src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "size": "size-limit",
-    "start": "dts watch",
     "test": "dts test"
   },
   "husky": {
@@ -46,6 +47,14 @@
     }
   ],
   "devDependencies": {
+    "@graphql-codegen/cli": "2.11.6",
+    "@graphql-codegen/fragment-matcher": "3.3.1",
+    "@graphql-codegen/introspection": "2.2.1",
+    "@graphql-codegen/typed-document-node": "2.3.3",
+    "@graphql-codegen/typescript": "2.7.3",
+    "@graphql-codegen/typescript-operations": "2.5.3",
+    "@graphql-codegen/typescript-react-apollo": "3.3.3",
+    "@graphql-codegen/typescript-resolvers": "2.7.3",
     "@size-limit/preset-small-lib": "8.0.0",
     "@tsconfig/recommended": "1.0.1",
     "@types/express": "^4.17.13",

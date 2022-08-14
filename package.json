@@ -33,7 +33,7 @@
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "NODE_ENV=development turbo run dev",
     "build": "turbo run build",
     "lint:staged": "turbo run lint:staged",
     "test:changed": "turbo run test:changed",
@@ -52,11 +52,11 @@
     "happo.io": "6.8.0",
     "husky": "7.0.2",
     "standard-version": "9.3.1",
-    "turbo": "1.1.2",
+    "turbo": "1.4.3",
     "yaml": "1.10.2"
   },
   "volta": {
     "node": "16.16.0"
   },
-  "packageManager": "npm"
+  "packageManager": "npm@8.11.0"
 }

@@ -13,7 +13,7 @@
     "build": "dts build --entry GraphQL/index.ts",
     "lint": "dts lint",
     "size": "size-limit",
-    "dev": "npm-run-all --parallel dev:dts dev:func",
+    "dev": "NODE_ENV=development npm-run-all --parallel dev:dts dev:func",
     "dev:dts": "dts watch --entry GraphQL/index.ts",
     "dev:func": "func start",
     "seed": "ts-node prisma/seed.ts",
