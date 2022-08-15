@@ -1,0 +1,23 @@
+{
+  "name": "@klicker-uzh/db",
+  "version": "1.8.1",
+  "main": "index.js",
+  "module": "index.js",
+  "files": [
+    "index.js",
+    "models"
+  ],
+  "scripts": {},
+  "peerDependencies": {
+    "lodash": "4.17.21",
+    "mongoose": "5.13.7",
+    "uuid": "8.3.2",
+    "validator": "13.6.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.1"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

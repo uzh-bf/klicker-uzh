@@ -1,0 +1,12 @@
+query GetLearningElement($id: ID!) {
+  learningElement(id: $id) {
+    id
+    course {
+      id
+    }
+    instance {
+      id
+      questionData
+    }
+  }
+}

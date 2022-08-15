@@ -1,0 +1,40 @@
+{
+  "name": "@klicker-uzh/frontend-pwa",
+  "version": "2.0.0-alpha.0",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "dev": "NODE_ENV=development next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@apollo/client": "3.6.9",
+    "@klicker-uzh/graphql": "*",
+    "@uzh-bf/design-system": "0.0.25",
+    "graphql": "16.5.0",
+    "next": "12.2.4",
+    "ramda": "0.28.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.0.0",
+    "@types/ramda": "0.28.15",
+    "@types/react": "18.0.15",
+    "@types/react-dom": "18.0.6",
+    "autoprefixer": "10.4.8",
+    "eslint": "8.20.0",
+    "eslint-config-next": "12.2.4",
+    "postcss": "8.4.14",
+    "prettier-plugin-organize-imports": "3.0.3",
+    "tailwindcss": "3.1.8",
+    "typescript": "4.7.4"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

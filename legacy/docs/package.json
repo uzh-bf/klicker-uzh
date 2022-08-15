@@ -1,0 +1,49 @@
+{
+  "name": "@klicker-uzh/docs",
+  "version": "2.0.0-alpha.0",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@docusaurus/core": "2.0.0-beta.18",
+    "@docusaurus/module-type-aliases": "2.0.0-beta.18",
+    "@docusaurus/plugin-client-redirects": "2.0.0-beta.18",
+    "@docusaurus/plugin-ideal-image": "2.0.0-beta.18",
+    "@docusaurus/preset-classic": "2.0.0-beta.18",
+    "@docusaurus/theme-common": "2.0.0-beta.18",
+    "@gabrielcsapo/docusaurus-plugin-matomo": "0.1.2",
+    "@headlessui/react": "1.5.0",
+    "@heroicons/react": "1.0.6",
+    "@tsconfig/docusaurus": "1.0.5",
+    "@uzh-bf/design-system": "0.0.22",
+    "autoprefixer": "10.4.8",
+    "cross-env": "7.0.3",
+    "nodemon": "2.0.15",
+    "npm-run-all": "4.1.5",
+    "postcss": "8.4.16",
+    "prettier": "2.7.1",
+    "prettier-plugin-organize-imports": "3.0.3",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-medium-image-zoom": "4.3.6",
+    "recharts": "2.1.9",
+    "tailwind-merge": "1.5.1",
+    "tailwindcss": "3.1.8",
+    "typescript": "4.7.4"
+  },
+  "scripts": {
+    "build": "docusaurus build",
+    "deploy": "docusaurus deploy",
+    "dev": "docusaurus start --port 5000",
+    "docusaurus": "docusaurus",
+    "examples": "docusaurus-examples",
+    "format": "prettier --write src/",
+    "rename-version": "docusaurus-rename-version",
+    "serve": "docusaurus serve",
+    "start": "docusaurus start",
+    "swizzle": "docusaurus swizzle",
+    "version": "docusaurus-version",
+    "write-translations": "docusaurus-write-translations"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

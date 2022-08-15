@@ -1,5 +1,5 @@
 {
-  "baseBranch": "origin/dev",
+  "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "lint:staged": {
       "dependsOn": ["lint:staged"],
@@ -10,8 +10,8 @@
       "outputs": []
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next"]
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["dist/**", ".next/**"]
     },
     "dev": {
       "cache": false
