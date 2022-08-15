@@ -135,6 +135,8 @@ model Course {
 
   isArchived Boolean @default(false)
 
+  pinCode Int @default(1800)
+
   name        String
   displayName String
   description String?
