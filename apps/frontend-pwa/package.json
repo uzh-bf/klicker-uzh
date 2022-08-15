@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "NODE_ENV=development next dev",
     "build": "next build",
+    "export": "next build && next export",
     "start": "next start",
     "lint": "next lint"
   },
@@ -14,6 +15,7 @@
     "@uzh-bf/design-system": "0.0.25",
     "graphql": "16.5.0",
     "next": "12.2.4",
+    "next-pwa": "5.5.4",
     "ramda": "0.28.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"

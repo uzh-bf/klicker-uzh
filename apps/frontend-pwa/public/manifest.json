@@ -1,0 +1,37 @@
+{
+    "theme_color": "#3353b7",
+    "background_color": "#99a9db",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "/",
+    "name": "Klicker UZH PWA",
+    "short_name": "Klicker UZH",
+    "description": "Open Source Audience Interaction",
+    "orientation": "portrait",
+    "icons": [
+        {
+          "src": "/manifest-icon-192.maskable.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "any"
+        },
+        {
+          "src": "/manifest-icon-192.maskable.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "maskable"
+        },
+        {
+          "src": "/manifest-icon-512.maskable.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any"
+        },
+        {
+          "src": "/manifest-icon-512.maskable.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "maskable"
+        }
+      ]
+    }
