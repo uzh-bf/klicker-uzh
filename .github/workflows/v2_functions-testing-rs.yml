@@ -28,9 +28,9 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          npm install
-          mv node_modules/* ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules/
+          rm package.json package-lock.json
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          npm install --package-lock=false
           ls -la
           cat package.json
           ls -la node_modules
