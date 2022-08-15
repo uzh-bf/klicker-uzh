@@ -1,6 +1,8 @@
-import { PrismaClient } from '@klicker-uzh/graphql'
+require('dotenv').config()
 
-async function main(prisma: PrismaClient) {
+const { PrismaClient } = require('@klicker-uzh/prisma')
+
+async function main(prisma: typeof PrismaClient) {
   const user = await prisma.user.upsert({
     create: {
       email: 'roland.schlaefli@bf.uzh.ch',
