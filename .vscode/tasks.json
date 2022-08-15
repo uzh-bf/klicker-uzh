@@ -8,7 +8,7 @@
       "isBackground": true,
       "dependsOn": "npm build (serverless)",
       "options": {
-        "cwd": "${workspaceFolder}/serverless"
+        "cwd": "${workspaceFolder}/apps/backend-sls"
       }
     },
     {
@@ -18,7 +18,7 @@
       "dependsOn": "npm install (serverless)",
       "problemMatcher": "$tsc",
       "options": {
-        "cwd": "${workspaceFolder}/serverless"
+        "cwd": "${workspaceFolder}/apps/backend-sls"
       }
     },
     {
@@ -26,7 +26,7 @@
       "label": "npm install (serverless)",
       "command": "npm install",
       "options": {
-        "cwd": "${workspaceFolder}/serverless"
+        "cwd": "${workspaceFolder}/apps/backend-sls"
       }
     },
     {
@@ -36,7 +36,7 @@
       "dependsOn": "npm build (serverless)",
       "problemMatcher": [],
       "options": {
-        "cwd": "${workspaceFolder}/serverless"
+        "cwd": "${workspaceFolder}/apps/backend-sls"
       }
     }
   ]

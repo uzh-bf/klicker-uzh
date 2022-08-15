@@ -1,9 +1,9 @@
 {
-  "azureFunctions.deploySubpath": "serverless",
+  "azureFunctions.deploySubpath": "apps/backend-sls",
   "azureFunctions.postDeployTask": "npm install (serverless)",
   "azureFunctions.projectLanguage": "TypeScript",
   "azureFunctions.projectRuntime": "~4",
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (serverless)",
-  "azureFunctions.projectSubpath": "serverless"
+  "azureFunctions.projectSubpath": "apps/backend-sls"
 }
