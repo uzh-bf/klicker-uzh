@@ -35,7 +35,7 @@ jobs:
           cat package.json
           ls -la node_modules
           npm run build --if-present
-          npm run test --if-present
+          npm prune --omit=dev
           popd
 
       - name: 'Run Azure Functions Action'
