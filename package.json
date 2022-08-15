@@ -45,7 +45,6 @@
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "prepare": "husky install",
     "happo": "happo"
   },
   "devDependencies": {
