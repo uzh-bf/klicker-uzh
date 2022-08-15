@@ -1,0 +1,222 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
+  output          = "../client"
+}
+
+datasource db {
+  provider          = "postgres"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model Account {
+  id String @id @default(uuid()) @db.Uuid
+
+  ssoType String
+  ssoId   String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  isActive Boolean @default(false)
+  isAAI    Boolean @default(false)
+
+  email               String    @unique
+  shortname           String    @unique
+  password            String
+  salt                String
+  description         String?
+  lastLoginAt         DateTime?
+  deletionToken       String?
+  deletionRequestedAt DateTime?
+
+  role UserRole @default(USER)
+
+  accounts          Account[]
+  courses           Course[]
+  questions         Question[]
+  attachments       Attachment[]
+  tags              Tag[]
+  questionInstances QuestionInstance[]
+  sessions          Session[]
+  learningElements  LearningElement[]
+  microSessions     MicroSession[]
+}
+
+enum AttachmentType {
+  PNG
+  JPEG
+  GIF
+}
+
+model Attachment {
+  id String @id @default(uuid()) @db.Uuid
+
+  name         String
+  originalName String
+  description  String?
+
+  type AttachmentType
+
+  question   Question? @relation(fields: [questionId], references: [id])
+  questionId String?   @db.Uuid
+  owner      User      @relation(fields: [ownerId], references: [id])
+  ownerId    String    @db.Uuid
+}
+
+enum QuestionType {
+  SC
+  MC
+  FREE_TEXT
+  NUMERICAL
+}
+
+model Question {
+  id String @id @default(uuid()) @db.Uuid
+
+  isArchived Boolean @default(false)
+  isDeleted  Boolean @default(false)
+
+  name         String
+  content      String
+  contentPlain String
+  options      Json
+
+  type QuestionType
+
+  attachments Attachment[]
+  tags        Tag[]
+  instances   QuestionInstance[]
+
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String @db.Uuid
+}
+
+model Tag {
+  id Int @id @default(autoincrement())
+
+  questions Question[]
+
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String @db.Uuid
+}
+
+model QuestionInstance {
+  id String @id @default(uuid()) @db.Uuid
+
+  questionData Json
+  results      Json
+
+  sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id])
+  sessionBlockId    Int?
+  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id])
+  learningElementId String?          @db.Uuid
+  microSession      MicroSession?    @relation(fields: [microSessionId], references: [id])
+  microSessionId    String?          @db.Uuid
+
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String   @db.Uuid
+  owner      User     @relation(fields: [ownerId], references: [id])
+  ownerId    String   @db.Uuid
+}
+
+model Course {
+  id String @id @default(uuid()) @db.Uuid
+
+  isArchived Boolean @default(false)
+
+  pinCode Int @default(1800)
+
+  name        String
+  displayName String
+  description String?
+
+  sessions         Session[]
+  learningElements LearningElement[]
+  microSessions    MicroSession[]
+
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String @db.Uuid
+}
+
+enum SessionStatus {
+  PLANNED
+  SCHEDULED
+  RUNNING
+  COMPLETED
+}
+
+enum AccessMode {
+  PUBLIC
+  RESTRICTED
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  namespace   String   @default(uuid()) @db.Uuid
+  execution   Int      @default(0)
+  name        String
+  displayName String
+  settings    Json
+  startedAt   DateTime
+  finishedAt  DateTime
+
+  accessMode AccessMode    @default(PUBLIC)
+  status     SessionStatus
+
+  blocks SessionBlock[]
+
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+}
+
+model SessionBlock {
+  id Int @id @default(autoincrement())
+
+  expiresAt       DateTime?
+  timeLimit       Int?
+  randomSelection Int?
+
+  instances QuestionInstance[]
+
+  session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String  @db.Uuid
+}
+
+model LearningElement {
+  id String @id @default(uuid()) @db.Uuid
+
+  instances QuestionInstance[]
+
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+}
+
+model MicroSession {
+  id String @id @default(uuid()) @db.Uuid
+
+  scheduledStartAt DateTime
+  scheduledEndAt   DateTime
+
+  instances QuestionInstance[]
+
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+}

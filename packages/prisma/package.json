@@ -1,0 +1,48 @@
+{
+  "name": "@klicker-uzh/prisma",
+  "version": "2.0.0-alpha.2",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "analyze": "size-limit --why",
+    "build": "tsup src/index.ts && mkdir -p dist/runtime && cp src/client/index.d.ts src/prisma/schema.prisma dist/ && cp src/client/runtime/*.d.ts dist/runtime/",
+    "generate": "prisma generate --schema=src/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
+    "prisma:reset": "prisma reset --schema=src/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
+    "size": "size-limit"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "size-limit": [
+    {
+      "path": "dist/prisma.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/prisma.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "8.0.0",
+    "@tsconfig/recommended": "1.0.1",
+    "prisma": "4.2.1",
+    "size-limit": "8.0.0",
+    "tsup": "6.2.2",
+    "typescript": "4.7.4"
+  },
+  "dependencies": {
+    "@prisma/client": "4.2.1"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}
