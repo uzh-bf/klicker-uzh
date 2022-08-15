@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "module": "dist/graphql.esm.js",
@@ -14,14 +14,9 @@
     "build": "dts build --entry src/index.ts --entry src/ops.ts",
     "dev": "NODE_ENV=development dts watch --entry src/index.ts --entry src/ops.ts",
     "lint": "dts lint",
-    "generate": "npm-run-all generate:prisma generate:nexus generate:graphql",
+    "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
-    "generate:prisma": "prisma generate --schema=src/prisma/schema.prisma",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
-    "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
-    "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
-    "prisma:reset": "prisma reset --schema=src/prisma/schema.prisma",
-    "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "size": "size-limit",
     "test": "dts test"
   },
@@ -63,13 +58,12 @@
     "husky": "8.0.1",
     "prettier": "2.7.1",
     "prettier-plugin-organize-imports": "3.0.3",
-    "prisma": "4.2.1",
     "size-limit": "8.0.0",
     "tslib": "2.4.0",
     "typescript": "4.7.4"
   },
   "dependencies": {
-    "@prisma/client": "4.2.1",
+    "@klicker-uzh/prisma": "^2.0.0-alpha.0",
     "graphql": "16.5.0",
     "graphql-scalars": "1.18.0",
     "nexus": "1.3.0"

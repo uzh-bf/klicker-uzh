@@ -1,5 +1,5 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
-import * as Prisma from '../prisma/client/index'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -8,10 +8,10 @@ interface BaseContext {
 }
 
 export interface Context extends BaseContext {
-  prisma: Prisma.PrismaClient
+  prisma: PrismaClient
 }
 
-const prisma = new Prisma.PrismaClient()
+const prisma = new PrismaClient()
 
 function enhanceContext({ req }: BaseContext) {
   return {
