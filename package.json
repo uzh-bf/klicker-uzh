@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "1.8.1",
+  "version": "2.0.0-alpha.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -19,7 +19,9 @@
   },
   "homepage": "https://www.klicker.uzh.ch/",
   "maintainers": [
-    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
+    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
+    "Florina Vogel <florina.vogel@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -28,11 +30,10 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "NODE_ENV=development turbo run dev",
     "build": "turbo run build",
     "lint:staged": "turbo run lint:staged",
     "test:changed": "turbo run test:changed",
@@ -44,14 +45,14 @@
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "husky": "husky install",
+    "prepare": "husky install",
     "happo": "happo"
   },
   "devDependencies": {
     "happo.io": "6.8.0",
     "husky": "7.0.2",
     "standard-version": "9.3.1",
-    "turbo": "1.1.2",
+    "turbo": "1.4.3",
     "yaml": "1.10.2"
   },
   "volta": {

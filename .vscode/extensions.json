@@ -1,0 +1,28 @@
+{
+  "recommendations": [
+    "ms-azuretools.vscode-azurefunctions",
+    "aaron-bond.better-comments",
+    "mikestead.dotenv",
+    "editorconfig.editorconfig",
+    "dbaeumer.vscode-eslint",
+    "github.vscode-pull-request-github",
+    "eamodio.gitlens",
+    "wix.glean",
+    "graphql.vscode-graphql",
+    "graphql.vscode-graphql-syntax",
+    "heybourn.headwind",
+    "wix.vscode-import-cost",
+    "davidlday.languagetool-linter",
+    "ms-vsliveshare.vsliveshare",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "mjmlio.vscode-mjml",
+    "christian-kohler.npm-intellisense",
+    "christian-kohler.path-intellisense",
+    "jakewilson.vscode-placeholder-images",
+    "esbenp.prettier-vscode",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "austenc.tailwind-docs"
+  ]
+}
