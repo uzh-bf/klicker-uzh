@@ -61,6 +61,8 @@
     "@uzh-bf/design-system": "0.0.25",
     "dts-cli": "1.5.2",
     "husky": "8.0.1",
+    "prettier": "2.7.1",
+    "prettier-plugin-organize-imports": "3.0.3",
     "prisma": "4.2.1",
     "size-limit": "8.0.0",
     "tslib": "2.4.0",
