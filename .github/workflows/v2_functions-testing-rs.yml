@@ -31,9 +31,6 @@ jobs:
           rm package.json package-lock.json
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           npm install --package-lock=false
-          ls -la
-          cat package.json
-          ls -la node_modules
           npm run build --if-present
           npm prune --omit=dev
           popd
