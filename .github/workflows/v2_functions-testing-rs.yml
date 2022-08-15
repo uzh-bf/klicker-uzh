@@ -30,6 +30,9 @@ jobs:
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           npm install
+          ls -la
+          cat package.json
+          ls -la node_modules
           npm run build --if-present
           npm run test --if-present
           popd
