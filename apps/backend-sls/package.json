@@ -23,7 +23,7 @@
     "@graphql-authz/core": "1.2.1",
     "@graphql-authz/envelop-plugin": "1.0.3",
     "@graphql-yoga/node": "2.13.6",
-    "@klicker-uzh/graphql": "*",
+    "@klicker-uzh/graphql": "^2.0.0-alpha.0",
     "@vendia/serverless-express": "4.10.1",
     "cookie-parser": "1.4.6",
     "express": "4.18.1",
