@@ -1,3 +1,9 @@
+- `.env` files in `packages/graphql` und `apps/backend-sls`
+- `local.settings.json` in `apps/backend-sls`
+- install Azure Functions Core Tools
+  - https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Ccsharp%2Cportal%2Cbash
+  - https://github.com/Azure/azure-functions-core-tools/blob/v4.x/README.md#other-linux-distributions
+
 ![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray_Transparent.png)
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
