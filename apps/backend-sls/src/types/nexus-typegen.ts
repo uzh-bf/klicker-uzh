@@ -54,12 +54,12 @@ export interface NexusGenScalars {
 export interface NexusGenObjects {
   Course: { // root type
     id?: string | null; // ID
-    learningElements?: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
   }
   LearningElement: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
     id?: string | null; // ID
-    instance?: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
+    instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: {};
   Query: {};
@@ -82,12 +82,12 @@ export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 export interface NexusGenFieldTypes {
   Course: { // field return type
     id: string | null; // ID
-    learningElements: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
     id: string | null; // ID
-    instance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: { // field return type
     login: string; // ID!
@@ -109,7 +109,7 @@ export interface NexusGenFieldTypeNames {
   LearningElement: { // field return type name
     course: 'Course'
     id: 'ID'
-    instance: 'QuestionInstance'
+    instances: 'QuestionInstance'
   }
   Mutation: { // field return type name
     login: 'ID'
