@@ -23,7 +23,7 @@ export const Course = objectType({
   definition(t) {
     t.id('id')
 
-    t.field('learningElements', {
+    t.list.field('learningElements', {
       type: LearningElement,
     })
   },
@@ -34,7 +34,7 @@ export const LearningElement = objectType({
   definition(t) {
     t.id('id')
 
-    t.field('instance', {
+    t.list.field('instances', {
       type: QuestionInstance,
     })
 
