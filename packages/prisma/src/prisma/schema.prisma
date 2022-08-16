@@ -4,6 +4,10 @@ generator client {
   output          = "../client"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
 datasource db {
   provider          = "postgres"
   url               = env("DATABASE_URL")
@@ -52,6 +56,8 @@ model User {
   learningElements  LearningElement[]
   microSessions     MicroSession[]
 }
+
+// ----- QUESTION MANAGEMENT -----
 
 enum AttachmentType {
   PNG
@@ -130,6 +136,8 @@ model QuestionInstance {
   ownerId    String   @db.Uuid
 }
 
+// ----- INTERACTIONS -----
+
 model Course {
   id String @id @default(uuid()) @db.Uuid
 
@@ -147,6 +155,8 @@ model Course {
 
   owner   User   @relation(fields: [ownerId], references: [id])
   ownerId String @db.Uuid
+
+  participations Participation[]
 }
 
 enum SessionStatus {
@@ -219,4 +229,69 @@ model MicroSession {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
+}
+
+model Feedback {
+  id Int @id @default(autoincrement())
+
+  isPublished Boolean @default(false)
+  isPinned    Boolean @default(false)
+  isResolved  Boolean @default(false)
+
+  content String
+  votes   Int    @default(0)
+
+  responses FeedbackResponse[]
+
+  resolvedAt DateTime?
+}
+
+model FeedbackResponse {
+  id Int @id @default(autoincrement())
+
+  content           String
+  positiveReactions Int
+  negativeReactions Int
+
+  feedback   Feedback? @relation(fields: [feedbackId], references: [id])
+  feedbackId Int?
+}
+
+model ConfusionTimestep {
+  id Int @id @default(autoincrement())
+
+  difficulty Int
+  speed      Int
+}
+
+// ----- PARTICIPANTS -----
+
+model ParticipantAccount {
+  id String @id @default(uuid()) @db.Uuid
+
+  ssoType String
+  ssoId   String
+
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+}
+
+model Participant {
+  id String @id @default(uuid()) @db.Uuid
+
+  pseudonym String
+  email     String
+
+  accounts       ParticipantAccount[]
+  participations Participation[]
+}
+
+model Participation {
+  id String @id @default(uuid()) @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
 }
