@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "2.0.0-alpha.7",
+  "version": "2.0.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "NODE_ENV=production tsup && mkdir -p dist/runtime && cp src/client/index.d.ts src/prisma/schema.prisma dist/ && cp src/client/runtime/*.d.ts dist/runtime/ && cp src/client/*.so.node dist/",
+    "build": "NODE_ENV=production tsup && mkdir -p dist/runtime && cp src/client/index.d.ts src/prisma/schema.prisma dist/ && cp src/client/runtime/*.d.ts dist/runtime/ && cp src/client/*1.1.x.so.node dist/",
     "dev": "NODE_ENV=development tsup --watch",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
