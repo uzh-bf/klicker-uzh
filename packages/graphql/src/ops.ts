@@ -22,14 +22,14 @@ export type Scalars = {
 export type Course = {
   __typename?: 'Course';
   id?: Maybe<Scalars['ID']>;
-  learningElements?: Maybe<LearningElement>;
+  learningElements?: Maybe<Array<Maybe<LearningElement>>>;
 };
 
 export type LearningElement = {
   __typename?: 'LearningElement';
   course?: Maybe<Course>;
   id?: Maybe<Scalars['ID']>;
-  instance?: Maybe<QuestionInstance>;
+  instances?: Maybe<Array<Maybe<QuestionInstance>>>;
 };
 
 export type Mutation = {
@@ -64,7 +64,7 @@ export type GetLearningElementQueryVariables = Exact<{
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instance?: { __typename?: 'QuestionInstance', id?: string | null, questionData?: any | null } | null } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, questionData?: any | null } | null> | null } | null };
 
 
 
@@ -163,7 +163,7 @@ export type ResolversParentTypes = {
 
 export type CourseResolvers<ContextType = any, ParentType extends ResolversParentTypes['Course'] = ResolversParentTypes['Course']> = {
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  learningElements?: Resolver<Maybe<ResolversTypes['LearningElement']>, ParentType, ContextType>;
+  learningElements?: Resolver<Maybe<Array<Maybe<ResolversTypes['LearningElement']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -178,7 +178,7 @@ export interface JsonObjectScalarConfig extends GraphQLScalarTypeConfig<Resolver
 export type LearningElementResolvers<ContextType = any, ParentType extends ResolversParentTypes['LearningElement'] = ResolversParentTypes['LearningElement']> = {
   course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  instance?: Resolver<Maybe<ResolversTypes['QuestionInstance']>, ParentType, ContextType>;
+  instances?: Resolver<Maybe<Array<Maybe<ResolversTypes['QuestionInstance']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -208,7 +208,7 @@ export type Resolvers<ContextType = any> = {
 
 
 
-export const GetLearningElementDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetLearningElement"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"learningElement"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"instance"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"}}]}}]}}]}}]} as unknown as DocumentNode<GetLearningElementQuery, GetLearningElementQueryVariables>;
+export const GetLearningElementDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetLearningElement"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"learningElement"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"}}]}}]}}]}}]} as unknown as DocumentNode<GetLearningElementQuery, GetLearningElementQueryVariables>;
 
       export interface PossibleTypesResultData {
         possibleTypes: {

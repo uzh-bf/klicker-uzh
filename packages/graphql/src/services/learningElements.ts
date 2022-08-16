@@ -16,11 +16,7 @@ export async function getLearningElementData(
     },
   })
 
-  console.warn(element)
-  console.warn(element?.instances[0].questionData)
-
   return {
     ...element,
-    instance: element?.instances[0],
   }
 }

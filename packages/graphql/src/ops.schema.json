@@ -40,9 +40,13 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "OBJECT",
-              "name": "LearningElement",
-              "ofType": null
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "LearningElement",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -113,13 +117,17 @@
             "deprecationReason": null
           },
           {
-            "name": "instance",
+            "name": "instances",
             "description": null,
             "args": [],
             "type": {
-              "kind": "OBJECT",
-              "name": "QuestionInstance",
-              "ofType": null
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "QuestionInstance",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null

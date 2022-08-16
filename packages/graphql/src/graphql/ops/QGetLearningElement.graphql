@@ -4,7 +4,7 @@ query GetLearningElement($id: ID!) {
     course {
       id
     }
-    instance {
+    instances {
       id
       questionData
     }

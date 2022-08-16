@@ -4,7 +4,7 @@
 
 type Course {
   id: ID
-  learningElements: LearningElement
+  learningElements: [LearningElement]
 }
 
 """
@@ -20,7 +20,7 @@ scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publicati
 type LearningElement {
   course: Course
   id: ID
-  instance: QuestionInstance
+  instances: [QuestionInstance]
 }
 
 type Mutation {
