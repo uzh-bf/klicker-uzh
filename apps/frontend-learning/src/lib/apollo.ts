@@ -1,16 +1,16 @@
-import { useMemo } from 'react'
-import { ApolloClient, HttpLink, InMemoryCache, from } from '@apollo/client'
+import { ApolloClient, from, HttpLink, InMemoryCache } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
 import { concatPagination } from '@apollo/client/utilities'
 import merge from 'deepmerge'
 import getConfig from 'next/config'
 import { equals } from 'ramda'
+import { useMemo } from 'react'
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: any
 
-const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
+const { publicRuntimeConfig } = getConfig()
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
@@ -23,7 +23,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 })
 
 const httpLink = new HttpLink({
-  uri: publicRuntimeConfig.apiURL || 'http://localhost:7071/api/graphql',
+  uri: publicRuntimeConfig.apiURL,
   credentials: 'same-origin',
 })
 
