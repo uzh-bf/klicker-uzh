@@ -281,6 +281,8 @@ model Participant {
 
   pseudonym String
   email     String
+  password  String
+  salt      String
 
   accounts       ParticipantAccount[]
   participations Participation[]
@@ -288,6 +290,8 @@ model Participant {
 
 model Participation {
   id String @id @default(uuid()) @db.Uuid
+
+  points Int @default(0)
 
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
