@@ -1,4 +1,5 @@
-import getLtiContext from '@klicker-uzh/lti'
+import { extractLtiData } from '@klicker-uzh/lti'
+import { GetServerSideProps } from 'next'
 
 function CourseOverview({ context }: any) {
   return (
@@ -10,20 +11,16 @@ function CourseOverview({ context }: any) {
   )
 }
 
-export const getServerSideProps = async (ctx: any) => {
-  const ltiContext = await getLtiContext({
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const ltiContext = await extractLtiData({
     ctx,
     key: 'key',
     secret: 'secret',
-    persist: false,
-    cookieOptions: {
-      path: '/',
-    },
   })
   console.warn(ltiContext)
   return {
     props: {
-      context: ltiContext,
+      context: {},
     },
   }
 }

@@ -11,11 +11,11 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@klicker-uzh/graphql": "^2.0.0-alpha.0",
+    "@klicker-uzh/lti": "^2.0.0-alpha.0",
     "@uzh-bf/design-system": "0.0.25",
     "deepmerge": "4.2.2",
     "graphql": "16.5.0",
     "next": "12.2.4",
-    "@klicker-uzh/lti": "^0.2.0-alpha.0",
     "ramda": "0.28.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
