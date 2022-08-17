@@ -1,0 +1,42 @@
+{
+  "name": "@klicker-uzh/lti",
+  "version": "2.0.0-alpha.7",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "analyze": "size-limit --why",
+    "build": "NODE_ENV=production tsup",
+    "dev": "NODE_ENV=development tsup --watch",
+    "size": "size-limit"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "limit": "10 KB"
+    }
+  ],
+  "peerDependencies": {
+    "next": "^12.0.0"
+  },
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "8.0.0",
+    "@tsconfig/node16": "1.0.3",
+    "@tsconfig/recommended": "1.0.1",
+    "size-limit": "8.0.0",
+    "tsup": "6.2.2",
+    "typescript": "4.7.4"
+  },
+  "dependencies": {
+    "body-parser": "1.20.0"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}
