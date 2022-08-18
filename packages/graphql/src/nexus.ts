@@ -3,6 +3,7 @@ import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
 import { Context } from './lib/context'
 import * as AccountService from './services/accounts'
 import * as LearningElementService from './services/learningElements'
+import * as ParticipantService from './services/participants'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
@@ -70,6 +71,14 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: Context) {
         return AccountService.login(args, ctx)
+      },
+    })
+
+    t.nonNull.field('registerParticipantFromLTI', {
+      type: 'ID',
+      args: {},
+      resolve(_, args, ctx: Context) {
+        return ParticipantService.registerParticipantFromLTI(args, ctx)
       },
     })
   },

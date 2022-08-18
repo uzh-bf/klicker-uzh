@@ -1,23 +1,21 @@
-import { extractLtiData } from '@klicker-uzh/lti'
+import bodyParser from 'body-parser'
 import { GetServerSideProps } from 'next'
 
 function CourseOverview({ context }: any) {
-  return (
-    <div className="flex flex-row p-4">
-      <pre>
-        <code>{JSON.stringify(context, null, 2)}</code>
-      </pre>
-    </div>
-  )
+  return <div className="flex flex-row p-4"></div>
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const ltiContext = await extractLtiData({
-    ctx,
-    key: 'key',
-    secret: 'secret',
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+  const { request, response } = await new Promise((resolve) => {
+    bodyParser.urlencoded({ extended: true })(req, res, () => {
+      bodyParser.json()(req, res, () => {
+        resolve({ request: req, response: res })
+      })
+    })
   })
-  console.warn(ltiContext)
+
+  // TODO: ...
+
   return {
     props: {
       context: {},
