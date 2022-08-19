@@ -45,7 +45,6 @@ model User {
   email               String    @unique
   shortname           String    @unique
   password            String
-  salt                String
   description         String?
   lastLoginAt         DateTime?
   deletionToken       String?
@@ -289,7 +288,6 @@ model Participant {
   pseudonym String
   email     String
   password  String
-  salt      String
 
   accounts       ParticipantAccount[]
   participations Participation[]

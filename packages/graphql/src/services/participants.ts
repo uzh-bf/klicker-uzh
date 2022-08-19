@@ -1,9 +1,9 @@
 import { SSOType, UserRole } from '@klicker-uzh/prisma'
+import bcrypt from 'bcrypt'
 import generatePassword from 'generate-password'
 import JWT from 'jsonwebtoken'
+import { normalizeEmail } from 'validator'
 import { Context } from '../lib/context'
-import { generatePasswordHash } from '../lib/crypto'
-const { normalizeEmail } = require('validator')
 
 interface RegisterParticipantFromLTIArgs {
   participantId: string
@@ -43,7 +43,7 @@ export async function registerParticipantFromLTI(
       numbers: true,
     })
 
-    const { hash, salt } = generatePasswordHash(password)
+    const hash = bcrypt.hashSync(password, 12)
 
     // normalize the email address to remove any ambiguity
     const normalizedEmail = normalizeEmail(participantEmail)
@@ -57,7 +57,6 @@ export async function registerParticipantFromLTI(
             email: normalizedEmail,
             password: hash,
             pseudonym,
-            salt,
           },
         },
       },
