@@ -3,6 +3,14 @@
 - install Azure Functions Core Tools
   - https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Ccsharp%2Cportal%2Cbash
   - https://github.com/Azure/azure-functions-core-tools/blob/v4.x/README.md#other-linux-distributions
+- Download Postman https://www.postman.com/downloads/ to test API requests
+
+### Get Things Running
+
+- Run `npm install` on the top level of the repository to install all required dependencies (including prisma, etc.)
+- Switch to `packages/prisma` and run `npm run generate` and `npm run build`
+- Switch to `packages/graphql` and run `npm run generate` and `npm run build`
+- Switch to the app you are working on and run `npm install` and `npm run dev`
 
 ![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray_Transparent.png)
 
