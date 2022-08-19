@@ -9,7 +9,9 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "NODE_ENV=production tsup && mkdir -p dist/runtime && cp src/client/index.d.ts src/prisma/schema.prisma dist/ && cp src/client/runtime/*.d.ts dist/runtime/ && cp src/client/*1.1.x.so.node dist/",
+    "build": "npm-run-all build:ts build:copy",
+    "build:ts": "NODE_ENV=production tsup",
+    "build:copy": "node src/copy.js",
     "dev": "NODE_ENV=development tsup --watch",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
@@ -32,6 +34,7 @@
     "@size-limit/preset-small-lib": "8.0.0",
     "@tsconfig/node16": "1.0.3",
     "@tsconfig/recommended": "1.0.1",
+    "npm-run-all": "4.1.5",
     "prisma": "4.2.1",
     "prisma-erd-generator": "1.0.2",
     "size-limit": "8.0.0",
