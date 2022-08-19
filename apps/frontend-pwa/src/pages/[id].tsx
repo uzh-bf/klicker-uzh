@@ -16,7 +16,7 @@ function Index() {
 
   return (
     <div className="p-4">
-      {data.learningElement?.instance?.questionData.content}
+
     </div>
   )
 }
