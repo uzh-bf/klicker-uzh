@@ -7,12 +7,12 @@
     },
     "dev": {
       "cache": false,
-      "dependsOn": ["generate", "^dev"],
+      "dependsOn": ["generate", "^build"],
       "outputs": ["dist/**", ".next/**"]
     },
     "generate": {
-      "cache": false,
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "outputs": ["src/client/**", "dist/**"]
     }
   }
 }

@@ -10,7 +10,7 @@
   "scripts": {
     "analyze": "size-limit --why",
     "build": "NODE_ENV=production tsup",
-    "dev": "NODE_ENV=development tsup --watch",
+    "build:watch": "NODE_ENV=development tsup --watch",
     "size": "size-limit"
   },
   "engines": {
