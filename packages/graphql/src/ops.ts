@@ -35,6 +35,7 @@ export type LearningElement = {
 export type Mutation = {
   __typename?: 'Mutation';
   login: Scalars['ID'];
+  registerParticipantFromLTI: Scalars['ID'];
 };
 
 
@@ -184,6 +185,7 @@ export type LearningElementResolvers<ContextType = any, ParentType extends Resol
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   login?: Resolver<ResolversTypes['ID'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'email' | 'password'>>;
+  registerParticipantFromLTI?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
