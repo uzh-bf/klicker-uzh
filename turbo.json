@@ -9,6 +9,10 @@
       "cache": false,
       "dependsOn": ["generate", "^dev"],
       "outputs": ["dist/**", ".next/**"]
+    },
+    "generate": {
+      "cache": false,
+      "dependsOn": ["^build"]
     }
   }
 }

@@ -33,7 +33,7 @@
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
