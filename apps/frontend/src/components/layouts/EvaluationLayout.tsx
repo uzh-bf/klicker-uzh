@@ -422,6 +422,7 @@ function EvaluationLayout({
                   checked={showSolution[currentIndex] ?? false}
                   className="print:!hidden"
                   label={intl.formatMessage(messages.showSolutionLabel)}
+                  disabled={sessionStatus === SESSION_STATUS.COMPLETED}
                   onChange={onToggleSolution}
                 />
               )}

@@ -23,7 +23,7 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus, sessi
     new Array(activeInstances.length).fill(sessionStatus !== SESSION_STATUS.RUNNING)
 
   sessionStorage?.setItem(`showSolution${sessionId}`, JSON.stringify(showSolutionDefault))
-  const [showSolution, setShowSolution] = useState(showSolutionDefault)
+  const [showSolution, setShowSolution] = useState(sessionStatus === SESSION_STATUS.COMPLETED ? new Array(activeInstances.length).fill(true) : showSolutionDefault)
 
   if (!activeInstances || activeInstances.length === 0) {
     return children({
