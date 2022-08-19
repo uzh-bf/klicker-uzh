@@ -45,10 +45,9 @@
     "release:rc:dry": "standard-version --dry-run --prerelease rc"
   },
   "devDependencies": {
-    "husky": "7.0.2",
-    "standard-version": "9.3.1",
+    "standard-version": "9.5.0",
     "turbo": "1.4.3",
-    "yaml": "1.10.2"
+    "yaml": "2.1.1"
   },
   "volta": {
     "node": "16.17.0"
