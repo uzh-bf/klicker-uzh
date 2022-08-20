@@ -10,7 +10,17 @@ function CourseOverview({ context }: any) {
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, res } = ctx
+  const cookies = nookies.get(ctx)
 
+  // if the user already has a participant token, skip registration
+  if (cookies['participant_token']) {
+    return {
+      props: {},
+    }
+  }
+
+  // extract the body from the LTI request
+  // TODO: verify that there is an LTI body and that it is valid
   const { request, response } = await new Promise((resolve) => {
     bodyParser.urlencoded({ extended: true })(req, res, () => {
       bodyParser.json()(req, res, () => {
@@ -37,7 +47,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       result.data?.registerParticipantFromLTI,
       {
         domain: process.env.API_DOMAIN ?? 'localhost',
-        path: '/api/graphql',
+        path: '/',
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 7,
         secure: process.env.NODE_ENV === 'production',
