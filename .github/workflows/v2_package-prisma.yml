@@ -1,0 +1,51 @@
+name: Build and publish prisma package to NPM and GH Packages
+
+on:
+  push:
+    branches:
+      - v2
+    # paths:
+    #   - "packages/prisma/**"
+  workflow_dispatch:
+
+env:
+  PACKAGE_PATH: 'packages/prisma'
+  NODE_VERSION: '16.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v2
+
+      - name: Setup Node ${{ env.NODE_VERSION }} Environment
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Npm'
+        shell: bash
+        run: |
+          rm package.json package-lock.json
+          pushd './${{ env.APP_PATH }}'
+          npm install --package-lock=false
+
+      - name: Generate
+        run: npm run generate --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          check-version: true
+
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          registry: https://npm.pkg.github.com
+          access: public
+          check-version: true
