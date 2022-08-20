@@ -1,5 +1,5 @@
 function Index() {
-  return <div className="p-4">Hallo, I am a PWA!</div>
+  return <div className="p-4">Welcome to the PWA!</div>
 }
 
 export default Index
