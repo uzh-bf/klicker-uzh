@@ -2,6 +2,101 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.1...v2.0.0-alpha.10) (2022-08-20)
+
+
+### Features
+
+* add simple LTI participant registration on a course overview page ([#2741](https://github.com/uzh-bf/klicker-uzh/issues/2741)) ([a4cc12f](https://github.com/uzh-bf/klicker-uzh/commit/a4cc12f2f4f230fd6b59cdcbb90bfccb99ac91ab))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that prettier config is imported correctly ([c2bc054](https://github.com/uzh-bf/klicker-uzh/commit/c2bc054ae06fd27cfd93eab819348118ac6bf848))
+* **docs:** add react import to all files with jsx ([fe1a9d8](https://github.com/uzh-bf/klicker-uzh/commit/fe1a9d863a2b5f98414ecf63a116974339365b83))
+* **packages/prisma:** generate openssl-1.1 target beside native ([42127ab](https://github.com/uzh-bf/klicker-uzh/commit/42127ab0466a4daa8576211f8ead82ea87aef690))
+
+
+### Refactors
+
+* **frontend:** replace all buttons by design system component ([#2737](https://github.com/uzh-bf/klicker-uzh/issues/2737)) ([8336a27](https://github.com/uzh-bf/klicker-uzh/commit/8336a27038e1faa9f84a4bdc7d2de58796cf5950))
+
+
+### Build and CI
+
+* add Azure Static Web Apps workflow file ([c3d86ca](https://github.com/uzh-bf/klicker-uzh/commit/c3d86cacfb7f5e46d32863cd6ea70c346748352b))
+
+
+### Other
+
+* **apps/backend-sls:** add node16 tsconfig ([235149e](https://github.com/uzh-bf/klicker-uzh/commit/235149efba9b4becaac5828fdeff978f136ed8d4))
+* **apps/backend-sls:** update paths to serverless app ([96d725b](https://github.com/uzh-bf/klicker-uzh/commit/96d725b6538c10f9dbd799635d6e52f56f65683a))
+* **apps/frontend-learning:** add basic lti integration ([7eb0209](https://github.com/uzh-bf/klicker-uzh/commit/7eb02099a50054c1b0f3d567ca5ed938546f9d60))
+* **apps/frontend-learning:** integrate with own lti package ([0eb17ed](https://github.com/uzh-bf/klicker-uzh/commit/0eb17ed9a0a5ef626c886b1c9d311786957860ea))
+* **apps/frontend-pwa:** add .map files to gitignore ([5b58ee8](https://github.com/uzh-bf/klicker-uzh/commit/5b58ee88252b7a2017e1dc179c7861ccec3f65cf))
+* **backend-sls:** make dependent on new prisma package ([8f061d8](https://github.com/uzh-bf/klicker-uzh/commit/8f061d8c1054451154cd903822570f80303ada2c))
+* **backend-sls:** use current alpha version of @klicker-uzh/graphql ([318b857](https://github.com/uzh-bf/klicker-uzh/commit/318b857c6a3e9597a54cbefdf614f1832362366a))
+* **ci:** install in repo root and move node_modules ([b2d7c48](https://github.com/uzh-bf/klicker-uzh/commit/b2d7c486423a1f058f9b3d84d521b217edbc17ff))
+* **ci:** omit dev dependencies after build ([019ab11](https://github.com/uzh-bf/klicker-uzh/commit/019ab11098b94c64447a66f466ad391ec546203d))
+* **ci:** print additional info ([189da44](https://github.com/uzh-bf/klicker-uzh/commit/189da446b7e239a41c788bfea5f5257a43b12e58))
+* **ci:** remove monorepo package definitions in PWA build ([e1f4432](https://github.com/uzh-bf/klicker-uzh/commit/e1f44328ac574784bf7a67814b424d73d3bd9b5f))
+* **ci:** try npm install without package lock ([cd593ab](https://github.com/uzh-bf/klicker-uzh/commit/cd593ab3bc066f1d98c98be5514448f4d3be0196))
+* **ci:** try to disable monorepo in action ([48bc43d](https://github.com/uzh-bf/klicker-uzh/commit/48bc43d66e4641cd45c69b45754d96a0dfe1e1b9))
+* **ci:** update package path for azure functions ([3b3b94e](https://github.com/uzh-bf/klicker-uzh/commit/3b3b94e21d7a4bd140a0d55073b0584f9429e4b1))
+* **ci:** use node 16 in azure static web app deploy ([d1d3b5c](https://github.com/uzh-bf/klicker-uzh/commit/d1d3b5ca1ffc7c7fb37198770272b84e69a4bbb1))
+* **deploy:** update redis dependency in helm chart ([9cfbed4](https://github.com/uzh-bf/klicker-uzh/commit/9cfbed45d36a504a2c746830d68c6bc735b84724))
+* **docs:** remove blog page from klicker website and replace it by corresponding community entries ([1f3d2fb](https://github.com/uzh-bf/klicker-uzh/commit/1f3d2fb68a7fa582ee1c678d8b38bf89724315f5))
+* ensure prettier, prettier-plugin-organize-imports, tailwind-merge are installed where needed ([fbc6f97](https://github.com/uzh-bf/klicker-uzh/commit/fbc6f970de3d768819fd78f18b3a004ae93480f9))
+* **frontend-pwa:** use current alpha version of @klicker-uzh/graphql ([d4c734a](https://github.com/uzh-bf/klicker-uzh/commit/d4c734a92e93b721c081b503df5228466fa7e856))
+* lockfile maintenance ([6bfde89](https://github.com/uzh-bf/klicker-uzh/commit/6bfde896bd2471a9f7b52f4ada140be9aa2f2e26))
+* lockfile maintenance ([5f74ff2](https://github.com/uzh-bf/klicker-uzh/commit/5f74ff2cf97d46ec7de609610899cacca7e69eca))
+* lockfile maintenance ([f7da61a](https://github.com/uzh-bf/klicker-uzh/commit/f7da61ae6735156d3b4b5f8ea42b969c78cb01d0))
+* lockfile maintenance ([5762f11](https://github.com/uzh-bf/klicker-uzh/commit/5762f11e6c35f77bbc072bbe44bf97fa0a25ffb3))
+* lockfile maintenance ([89d13c3](https://github.com/uzh-bf/klicker-uzh/commit/89d13c3fc6d394f23d64ccf2ef2f6f0ce22aa98c))
+* lockfile maintenance ([3834e01](https://github.com/uzh-bf/klicker-uzh/commit/3834e012fcacb357d2e85fe3b8819e740dbda505))
+* lockfile maintenance ([9760935](https://github.com/uzh-bf/klicker-uzh/commit/9760935e857c9bf853c039bf4136c3f059368652))
+* **packages/graphql:** make dependant on new prisma package ([2be0026](https://github.com/uzh-bf/klicker-uzh/commit/2be00269fa12afe0776794dbf3e0d8e99d40dd60))
+* **packages/graphql:** move prisma client to built directory ([73d3a68](https://github.com/uzh-bf/klicker-uzh/commit/73d3a687a182482b85201acf5b1c3e715f181ba9))
+* **packages/graphql:** version bump ([e70a5fd](https://github.com/uzh-bf/klicker-uzh/commit/e70a5fd538ebb91365ca986cf11548a143dbe347))
+* **packages/graphql:** version bump ([0f83bf8](https://github.com/uzh-bf/klicker-uzh/commit/0f83bf831b37f0e620d25f16cae6f1d310bd6c84))
+* **packages/lti:** initial work on lti package ([809f99a](https://github.com/uzh-bf/klicker-uzh/commit/809f99a20090793878568962132130493137edcb))
+* **packages/prisma:** copy query engine to dist ([283f421](https://github.com/uzh-bf/klicker-uzh/commit/283f4214b471c2ecbdedef396cea2682a6f197cf))
+* **packages/prisma:** generate prisma SVG ([23af08c](https://github.com/uzh-bf/klicker-uzh/commit/23af08ce8d909536cf90cf9f1c1ac1880edd51a3))
+* **packages/prisma:** move prisma to a dedicated package ([731d137](https://github.com/uzh-bf/klicker-uzh/commit/731d137c310a72cee209ffa5aab913d0e43d777b))
+* **packages/prisma:** use a copy script to copy dist files ([47b2760](https://github.com/uzh-bf/klicker-uzh/commit/47b27605299f9e5322c5286c1419fc4961a28724))
+* **packages/prisma:** version bump ([1bcaa22](https://github.com/uzh-bf/klicker-uzh/commit/1bcaa22d34e0480bbf48818318803081e3e74cdc))
+* reformat codebase including prettier-plugin-organize-imports ([#2739](https://github.com/uzh-bf/klicker-uzh/issues/2739)) ([f8019c6](https://github.com/uzh-bf/klicker-uzh/commit/f8019c6af4ed3faf04b11e47b892b1ac168d6c3b))
+* regenerate lockfile ([15eafb2](https://github.com/uzh-bf/klicker-uzh/commit/15eafb207683c9d562fed43a293d485eaaab6312))
+* remove cruft ([e2458a2](https://github.com/uzh-bf/klicker-uzh/commit/e2458a2f97144e749872885b312cf724121dd507))
+* stub out new backend and frontend apps ([41414b2](https://github.com/uzh-bf/klicker-uzh/commit/41414b23c1a5434b434e128a7b46ebf8b179dd59))
+* update readme with required setup steps ([1aa726d](https://github.com/uzh-bf/klicker-uzh/commit/1aa726d1869d28b776cb08e6ca0ce77843b24b31))
+* upgrade design system ([f2aa914](https://github.com/uzh-bf/klicker-uzh/commit/f2aa9147ed754c9aa67165a09f88d5968e7e46f0))
+* volta upgrades ([4e1007b](https://github.com/uzh-bf/klicker-uzh/commit/4e1007b08c53c60713944ce408d5e671d9046539))
+
+
+### Dependencies
+
+* **packages/graphql:** install prettier and imports plugin ([8965ef8](https://github.com/uzh-bf/klicker-uzh/commit/8965ef81ea40a45880998c1eb55fefbf5eeac9d9))
+* upgrade [@klicker-uzh](https://github.com/klicker-uzh) dependencies ([81b007e](https://github.com/uzh-bf/klicker-uzh/commit/81b007e1a255fa0d734d0cdfe14ae66528253fe1))
+
+
+### Enhancements
+
+* **apps/backend-sls:** ensure learning elements and instances are exposed as a list ([920cb2c](https://github.com/uzh-bf/klicker-uzh/commit/920cb2ca301d6a6bc7aaf41bfdc6ab0ab1a23870))
+* **apps/frontend-learning:** make the cookie domain configurable ([b771399](https://github.com/uzh-bf/klicker-uzh/commit/b771399d11616e47eb71706b2400a3ce5ef10d77))
+* **apps/frontend-learning:** stub pages for elements and courses ([7c5302d](https://github.com/uzh-bf/klicker-uzh/commit/7c5302d3f780abb5c26584790036c7f838eb5ff1))
+* **apps/frontend-pwa:** setup foundations for next-pwa ([#2740](https://github.com/uzh-bf/klicker-uzh/issues/2740)) ([7faabfe](https://github.com/uzh-bf/klicker-uzh/commit/7faabfeebfcde76951a4f1547485c6e83806b686))
+* bootstrap new app architecture ([#2736](https://github.com/uzh-bf/klicker-uzh/issues/2736)) ([6e7d7c4](https://github.com/uzh-bf/klicker-uzh/commit/6e7d7c4799273bd6ae1098d2c22d112f24d53502))
+* **db:** add initial stats generation script ([8e696d2](https://github.com/uzh-bf/klicker-uzh/commit/8e696d20565c483b86ff0da80290b8e6295784bb))
+* ensure that the participant is only registered if there is no cookie present yet ([9857c52](https://github.com/uzh-bf/klicker-uzh/commit/9857c522bc291ce270506484027f2dd4206ff2aa))
+* **frontend:** add percentage figures to multiple choice question evaluation ([e4d6aad](https://github.com/uzh-bf/klicker-uzh/commit/e4d6aade403f201647b2b0b8b4b2cc03e010624d))
+* **frontend:** integrate with uzh-bf/design-system ([0191e95](https://github.com/uzh-bf/klicker-uzh/commit/0191e9595fab9a0bf5777fe759fb4b1de97c28b3))
+* **frontend:** redesigned question pool, simplified session creation and quick start functionality ([#2731](https://github.com/uzh-bf/klicker-uzh/issues/2731)) ([3f090d2](https://github.com/uzh-bf/klicker-uzh/commit/3f090d2326572270f37866a833ccd7e9a0ae41f3))
+* **frontend:** revised show solution logic on evaluation ([ffc4397](https://github.com/uzh-bf/klicker-uzh/commit/ffc439739da8db3407ff1f45301e2ecc523c819f))
+* **frontend:** turn off showGraph and showSolution on change of active instance on running session evaluation ([0df3316](https://github.com/uzh-bf/klicker-uzh/commit/0df331632380312f9c88fc09b112fdb9e2e2bbed))
+* **packages/graphql:** improve login process for user ([3dbcf18](https://github.com/uzh-bf/klicker-uzh/commit/3dbcf18de91e9fb5b9305a9dd91cba74c8c14565))
+* **packages/graphql:** make all instances accessible ([169c379](https://github.com/uzh-bf/klicker-uzh/commit/169c379e92f430e69f9955b60f266ce78b47959c))
+
 ### [1.8.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0...v1.8.1) (2022-08-02)
 
 
