@@ -280,13 +280,15 @@ model ParticipantAccount {
 
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
+
+  @@unique([ssoType, ssoId])
 }
 
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  pseudonym String
-  email     String
+  pseudonym String @unique
+  email     String @unique
   password  String
 
   accounts       ParticipantAccount[]
