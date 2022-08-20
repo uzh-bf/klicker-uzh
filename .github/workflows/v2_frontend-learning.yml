@@ -24,23 +24,23 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Prepare Next.js cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.npm
-            ${{ github.workspace }}/${{ env.APP_PATH }}/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-
+      # - name: Prepare Next.js cache
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/.npm
+      #       ${{ github.workspace }}/${{ env.APP_PATH }}/.next/cache
+      #     key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-
 
-      - name: 'Resolve Project Dependencies Using Npm'
-        shell: bash
-        run: |
-          rm package.json package-lock.json
-          pushd './${{ env.APP_PATH }}'
-          npm install --package-lock=false
-          npm run build --if-present
+      # - name: 'Resolve Project Dependencies Using Npm'
+      #   shell: bash
+      #   run: |
+      #     rm package.json package-lock.json
+      #     pushd './${{ env.APP_PATH }}'
+      #     npm install --package-lock=false
+      #     npm run build --if-present
 
       - uses: amondnet/vercel-action@v20 #deploy
         with:
@@ -49,4 +49,4 @@ jobs:
           vercel-args: '--prod' #Optional
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID}}  #Required
           vercel-project-id: ${{ secrets.VERCEL_FRONTEND_LEARNING_ID}} #Required
-          working-directory: .
+          working-directory: './${{ env.APP_PATH }}' #Optional
