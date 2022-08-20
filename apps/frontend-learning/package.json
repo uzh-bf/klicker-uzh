@@ -14,7 +14,7 @@
     "@klicker-uzh/lti": "^2.0.0-alpha.7",
     "@uzh-bf/design-system": "0.0.25",
     "deepmerge": "4.2.2",
-    "graphql": "16.5.0",
+    "graphql": "16.6.0",
     "next": "12.2.4",
     "nookies": "2.5.2",
     "ramda": "0.28.0",
@@ -31,7 +31,7 @@
     "autoprefixer": "10.4.8",
     "eslint": "8.20.0",
     "eslint-config-next": "12.2.4",
-    "postcss": "8.4.14",
+    "postcss": "8.4.16",
     "prettier": "2.7.1",
     "prettier-plugin-organize-imports": "3.0.3",
     "tailwindcss": "3.1.8",
@@ -41,6 +41,6 @@
     "extends": "../../package.json"
   },
   "engines": {
-    "node": ">=16"
+    "node": "=16"
   }
 }
