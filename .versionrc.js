@@ -7,6 +7,7 @@ module.exports = {
   ],
   bumpFiles: [
     '',
+    'docs/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
     'apps/frontend-manage/',
