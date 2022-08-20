@@ -1,4 +1,4 @@
-name: Build and deploy frontend-learning to Vercel
+name: Build and deploy frontend-manage to Vercel
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  APP_PATH: 'apps/frontend-learning'
+  APP_PATH: 'apps/frontend-manage'
   NODE_VERSION: '16.x'
 
 jobs:
