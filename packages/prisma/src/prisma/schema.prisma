@@ -16,14 +16,20 @@ datasource db {
 }
 
 enum UserRole {
+  PARTICIPANT
   USER
   ADMIN
+}
+
+enum SSOType {
+  Shibboleth
+  LTI
 }
 
 model Account {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoType String
+  ssoType SSOType
   ssoId   String
 
   user   User   @relation(fields: [userId], references: [id])
@@ -39,7 +45,6 @@ model User {
   email               String    @unique
   shortname           String    @unique
   password            String
-  salt                String
   description         String?
   lastLoginAt         DateTime?
   deletionToken       String?
@@ -270,20 +275,21 @@ model ConfusionTimestep {
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoType String
+  ssoType SSOType
   ssoId   String
 
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
+
+  @@unique([ssoType, ssoId])
 }
 
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  pseudonym String
-  email     String
+  pseudonym String @unique
+  email     String @unique
   password  String
-  salt      String
 
   accounts       ParticipantAccount[]
   participations Participation[]

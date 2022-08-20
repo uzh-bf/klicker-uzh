@@ -9,10 +9,10 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "npm-run-all build:ts build:copy",
-    "build:ts": "NODE_ENV=production tsup",
+    "build:all": "npm-run-all generate build build:copy",
+    "build": "NODE_ENV=production tsup",
     "build:copy": "node src/copy.js",
-    "dev": "NODE_ENV=development tsup --watch",
+    "build:watch": "NODE_ENV=development tsup --watch",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
