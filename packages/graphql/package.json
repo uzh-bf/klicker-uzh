@@ -59,7 +59,7 @@
     "bcrypt": "5.0.1",
     "dotenv": "16.0.1",
     "generate-password": "1.7.0",
-    "graphql": "16.5.0",
+    "graphql": "16.6.0",
     "graphql-scalars": "1.18.0",
     "nexus": "1.3.0",
     "validator": "13.7.0"
