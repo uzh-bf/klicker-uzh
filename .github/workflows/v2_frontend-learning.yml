@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - v2
+    paths:
+      - "apps/frontend-learning/**"
   workflow_dispatch:
 
 env:
