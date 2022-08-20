@@ -24,16 +24,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: 'Resolve Project Dependencies Using Npm'
-        shell: bash
-        run: |
-          rm package.json package-lock.json
-          pushd './${{ env.APP_PATH }}'
-          npm install --package-lock=false
-          npm run build --if-present
-          npm prune --omit=dev
-          popd
-
       - uses: amondnet/vercel-action@v20 #deploy
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
