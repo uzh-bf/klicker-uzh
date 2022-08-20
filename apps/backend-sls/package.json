@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@klicker-uzh/backend-sls",
   "version": "2.0.0-alpha.11",
   "license": "AGPL-3.0",
