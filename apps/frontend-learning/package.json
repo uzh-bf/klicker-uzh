@@ -16,6 +16,7 @@
     "deepmerge": "4.2.2",
     "graphql": "16.5.0",
     "next": "12.2.4",
+    "nookies": "2.5.2",
     "ramda": "0.28.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
