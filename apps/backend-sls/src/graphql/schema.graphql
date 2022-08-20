@@ -25,7 +25,22 @@ type LearningElement {
 
 type Mutation {
   login(email: String!, password: String!): ID!
-  registerParticipantFromLTI(participantEmail: ID!, participantId: ID!): ID
+  registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
+}
+
+type Participant {
+  id: ID
+}
+
+type ParticipantLearningData {
+  course: Course
+  participant: Participant!
+  participantToken: String!
+  participation: Participation
+}
+
+type Participation {
+  id: ID
 }
 
 type Query {

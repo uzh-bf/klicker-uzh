@@ -12,7 +12,7 @@ function CourseOverview({ context }: any) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { req, res } = ctx
+  const { req, res, query } = ctx
   const cookies = nookies.get(ctx)
 
   // if the user already has a participant token, skip registration
@@ -37,6 +37,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const result = await apolloClient.mutate({
     mutation: RegisterParticipantFromLtiDocument,
     variables: {
+      courseId: query.id as string,
       participantId: request.body.lis_person_sourcedid,
       participantEmail: request.body.lis_person_contact_email_primary,
     },
@@ -44,10 +45,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   // if a JWT was received from the API, set a cookie in the participant browser
   if (result.data?.registerParticipantFromLTI) {
+    console.warn(result.data.registerParticipantFromLTI)
     nookies.set(
       ctx,
       'participant_token',
-      result.data?.registerParticipantFromLTI,
+      result.data?.registerParticipantFromLTI.participantToken,
       {
         domain: serverRuntimeConfig.COOKIE_DOMAIN,
         path: '/',

@@ -45,6 +45,39 @@ export const LearningElement = objectType({
   },
 })
 
+export const Participant = objectType({
+  name: 'Participant',
+  definition(t) {
+    t.id('id')
+  },
+})
+
+export const Participation = objectType({
+  name: 'Participation',
+  definition(t) {
+    t.id('id')
+  },
+})
+
+export const ParticipantLearningData = objectType({
+  name: 'ParticipantLearningData',
+  definition(t) {
+    t.nonNull.string('participantToken')
+
+    t.nonNull.field('participant', {
+      type: Participant,
+    })
+
+    t.field('participation', {
+      type: Participation,
+    })
+
+    t.field('course', {
+      type: Course,
+    })
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -75,8 +108,9 @@ export const Mutation = objectType({
     })
 
     t.field('registerParticipantFromLTI', {
-      type: 'ID',
+      type: ParticipantLearningData,
       args: {
+        courseId: nonNull(idArg()),
         participantId: nonNull(idArg()),
         participantEmail: nonNull(idArg()),
       },

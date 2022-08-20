@@ -7,14 +7,15 @@ import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
 interface RegisterParticipantFromLTIArgs {
+  courseId: string
   participantId: string
   participantEmail: string
 }
 
 export async function registerParticipantFromLTI(
-  { participantId, participantEmail }: RegisterParticipantFromLTIArgs,
+  { courseId, participantId, participantEmail }: RegisterParticipantFromLTIArgs,
   ctx: Context
-): Promise<string | null> {
+) {
   let participant = await ctx.prisma.participantAccount.findFirst({
     where: {
       ssoType: SSOType.LTI,
@@ -24,6 +25,8 @@ export async function registerParticipantFromLTI(
       participant: true,
     },
   })
+
+  let participation = null
 
   // if there is no participant matching the SSO id from LTI
   // create a new participant and participant account
@@ -69,6 +72,16 @@ export async function registerParticipantFromLTI(
         participant: true,
       },
     })
+  } else {
+    participation = await ctx.prisma.participation.findFirst({
+      where: {
+        courseId,
+        participantId: participant.participantId,
+      },
+      include: {
+        course: true,
+      },
+    })
   }
 
   const jwt = JWT.sign(
@@ -84,5 +97,10 @@ export async function registerParticipantFromLTI(
     }
   )
 
-  return jwt
+  return {
+    participantToken: jwt,
+    participant: participant.participant,
+    participation,
+    course: participation?.course,
+  }
 }

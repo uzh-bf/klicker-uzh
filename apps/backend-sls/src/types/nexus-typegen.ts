@@ -62,6 +62,18 @@ export interface NexusGenObjects {
     instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: {};
+  Participant: { // root type
+    id?: string | null; // ID
+  }
+  ParticipantLearningData: { // root type
+    course?: NexusGenRootTypes['Course'] | null; // Course
+    participant: NexusGenRootTypes['Participant']; // Participant!
+    participantToken: string; // String!
+    participation?: NexusGenRootTypes['Participation'] | null; // Participation
+  }
+  Participation: { // root type
+    id?: string | null; // ID
+  }
   Query: {};
   QuestionInstance: { // root type
     id?: string | null; // ID
@@ -91,7 +103,19 @@ export interface NexusGenFieldTypes {
   }
   Mutation: { // field return type
     login: string; // ID!
-    registerParticipantFromLTI: string | null; // ID
+    registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+  }
+  Participant: { // field return type
+    id: string | null; // ID
+  }
+  ParticipantLearningData: { // field return type
+    course: NexusGenRootTypes['Course'] | null; // Course
+    participant: NexusGenRootTypes['Participant']; // Participant!
+    participantToken: string; // String!
+    participation: NexusGenRootTypes['Participation'] | null; // Participation
+  }
+  Participation: { // field return type
+    id: string | null; // ID
   }
   Query: { // field return type
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
@@ -114,7 +138,19 @@ export interface NexusGenFieldTypeNames {
   }
   Mutation: { // field return type name
     login: 'ID'
-    registerParticipantFromLTI: 'ID'
+    registerParticipantFromLTI: 'ParticipantLearningData'
+  }
+  Participant: { // field return type name
+    id: 'ID'
+  }
+  ParticipantLearningData: { // field return type name
+    course: 'Course'
+    participant: 'Participant'
+    participantToken: 'String'
+    participation: 'Participation'
+  }
+  Participation: { // field return type name
+    id: 'ID'
   }
   Query: { // field return type name
     learningElement: 'LearningElement'
@@ -132,6 +168,7 @@ export interface NexusGenArgTypes {
       password: string; // String!
     }
     registerParticipantFromLTI: { // args
+      courseId: string; // ID!
       participantEmail: string; // ID!
       participantId: string; // ID!
     }
