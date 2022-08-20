@@ -1,14 +1,11 @@
 {
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0-alpha.9",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
-  "engines": {
-    "node": ">=14"
-  },
   "license": "AGPL-3.0",
   "repository": {
     "type": "git",
@@ -52,5 +49,8 @@
   "volta": {
     "node": "16.17.0"
   },
-  "packageManager": "npm@8.15.0"
+  "packageManager": "npm@8.15.0",
+  "engines": {
+    "node": "16"
+  }
 }

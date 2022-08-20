@@ -10,18 +10,6 @@ export async function login(
   { email, password }: LoginArgs,
   ctx: Context
 ): Promise<string> {
-  const jwt = JWT.sign(
-    {
-      sub: '1',
-      email,
-    },
-    'abcd',
-    {
-      algorithm: 'HS256',
-      expiresIn: '1w',
-    }
-  )
-
   const user = await ctx.prisma.user.findFirst({
     where: {
       email,
@@ -31,15 +19,28 @@ export async function login(
 
   if (!user) throw new Error('LOGIN_FAILED')
 
-  ctx.res.cookie('jwt', jwt, {
-    domain: process.env.API_DOMAIN ?? 'localhost',
-    path: '/api/graphql',
+  const jwt = JWT.sign(
+    {
+      sub: user.id,
+      role: user.role,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '1w',
+    }
+  )
+
+  ctx.res.cookie('user_token', jwt, {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 7,
-    // secure: !isDev && APP_CFG.https,
+    secure: process.env.NODE_ENV === 'production',
   })
 
-  return '1'
+  return user.id
   // if (!isEmail(email)) {
   //   throw new UserInputError(Errors.INVALID_EMAIL)
   // }
