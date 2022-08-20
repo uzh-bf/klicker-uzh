@@ -1,29 +1,47 @@
-import { useMemo } from 'react'
-import { ApolloClient, HttpLink, InMemoryCache, from } from '@apollo/client'
+import {
+  ApolloClient,
+  from,
+  HttpLink,
+  InMemoryCache,
+  NormalizedCacheObject,
+} from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
 import { concatPagination } from '@apollo/client/utilities'
 import merge from 'deepmerge'
 import getConfig from 'next/config'
 import { equals } from 'ramda'
+import { useMemo } from 'react'
+import util from 'util'
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: any
 
-const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
+const { publicRuntimeConfig } = getConfig()
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
-    graphQLErrors.forEach(({ message, locations, path }) =>
-      console.log(
-        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
-      )
+    graphQLErrors.forEach(
+      ({ message, locations, path, extensions, originalError }) =>
+        console.log(
+          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+            locations,
+            false,
+            null,
+            true
+          )}, Path: ${path}, Extensions: ${util.inspect(
+            extensions,
+            false,
+            null,
+            true
+          )}, Original: ${originalError}`
+        )
     )
   if (networkError) console.log(`[Network error]: ${networkError}`)
 })
 
 const httpLink = new HttpLink({
-  uri: publicRuntimeConfig.apiURL || 'http://localhost:7071/api/graphql',
+  uri: publicRuntimeConfig.API_URL,
   credentials: 'same-origin',
 })
 
@@ -43,7 +61,9 @@ function createApolloClient() {
   })
 }
 
-export function initializeApollo(initialState = null) {
+export function initializeApollo(
+  initialState = null
+): ApolloClient<NormalizedCacheObject> {
   const _apolloClient = apolloClient ?? createApolloClient()
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
