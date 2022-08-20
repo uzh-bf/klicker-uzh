@@ -39,4 +39,4 @@ jobs:
           vercel-args: '--prod' #Optional
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID}}  #Required
           vercel-project-id: ${{ secrets.VERCEL_FRONTEND_PWA_ID}} #Required
-          working-directory: ./apps/frontend-pwa
+          working-directory: ${{ env.APP_PATH }}
