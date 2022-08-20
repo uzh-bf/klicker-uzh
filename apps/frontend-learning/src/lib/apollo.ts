@@ -41,7 +41,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 })
 
 const httpLink = new HttpLink({
-  uri: publicRuntimeConfig.apiURL,
+  uri: publicRuntimeConfig.API_URL,
   credentials: 'same-origin',
 })
 
