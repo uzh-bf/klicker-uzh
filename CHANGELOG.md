@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.10...v2.0.0-alpha.11) (2022-08-20)
+
+
+### Build and CI
+
+* add sonarcloud workflow ([8f55d37](https://github.com/uzh-bf/klicker-uzh/commit/8f55d376318ff80f75b246059f3fd8c1d1f50f51))
+* **frontend-learning:** add github actions workflow for dev vercel deployment ([719639d](https://github.com/uzh-bf/klicker-uzh/commit/719639d483a2e8ae74e5efc0b28f29c38a112b9d))
+* **frontend-learning:** remove top-level package definitions for action to work ([e6ec876](https://github.com/uzh-bf/klicker-uzh/commit/e6ec87656e93f1d780e9779eb6233761a709ce59))
+* **frontend-manage:** add vercel deployment with github actions ([b14cf06](https://github.com/uzh-bf/klicker-uzh/commit/b14cf06e33ca45673a9f3520e07c981ea2761316))
+* **frontend-pwa:** add github action for frontend-pwa deploy ([daa79d8](https://github.com/uzh-bf/klicker-uzh/commit/daa79d8ff7f663fd523aa1c2c2ee6dfe4fed8a47))
+* move sources config to sonar-project.properties ([c5c9b4d](https://github.com/uzh-bf/klicker-uzh/commit/c5c9b4d0df378e423f38bc54080b9c7d9a61f97b))
+* remove azure static web app deploy and fix frontend-learning deploy ([0381837](https://github.com/uzh-bf/klicker-uzh/commit/0381837c5be973b919849f37dda5c351429984d4))
+
+
+### Other
+
+* add docs/ to versionrc ([0e6926c](https://github.com/uzh-bf/klicker-uzh/commit/0e6926c2f6df6ef988c7abc3f4a570ed6dd2a015))
+* **backend-sls:** downgrade node [@types](https://github.com/types) to match v16 ([d87ec45](https://github.com/uzh-bf/klicker-uzh/commit/d87ec450ad11594164935e0a77cd9e1992719165))
+* **deps-dev:** bump @types/passport from 1.0.9 to 1.0.10 in /apps/backend-sls ([#2751](https://github.com/uzh-bf/klicker-uzh/issues/2751)) ([92ec18c](https://github.com/uzh-bf/klicker-uzh/commit/92ec18c4d71415badfb6d1dd1ca8ba213306bcc1))
+* **deps-dev:** bump @types/react from 18.0.15 to 18.0.17 in /apps/frontend-manage ([#2744](https://github.com/uzh-bf/klicker-uzh/issues/2744)) ([b724a78](https://github.com/uzh-bf/klicker-uzh/commit/b724a78f597a558a22f437a1f9c587bf0250a112))
+* **deps-dev:** bump @types/react from 18.0.15 to 18.0.17 in /apps/frontend-pwa ([#2747](https://github.com/uzh-bf/klicker-uzh/issues/2747)) ([09aa4db](https://github.com/uzh-bf/klicker-uzh/commit/09aa4db70698145d734e2b3b3ede813cc184ca1e))
+* **deps-dev:** bump eslint from 8.20.0 to 8.22.0 in /apps/frontend-manage ([#2757](https://github.com/uzh-bf/klicker-uzh/issues/2757)) ([e35adaf](https://github.com/uzh-bf/klicker-uzh/commit/e35adaffd03a5c31c0e6a3a0a700396c2ef6d781))
+* **deps-dev:** bump postcss from 8.4.14 to 8.4.16 in /apps/frontend-learning ([#2756](https://github.com/uzh-bf/klicker-uzh/issues/2756)) ([98dd568](https://github.com/uzh-bf/klicker-uzh/commit/98dd568f17f45e356609d272fea7a5b3d7105f35))
+* **deps-dev:** bump postcss from 8.4.14 to 8.4.16 in /apps/frontend-manage ([#2753](https://github.com/uzh-bf/klicker-uzh/issues/2753)) ([50aabd1](https://github.com/uzh-bf/klicker-uzh/commit/50aabd1463aca8fe4a27ca48cb6ff7f9a735cfb9))
+* **deps-dev:** bump postcss from 8.4.14 to 8.4.16 in /apps/frontend-pwa ([#2750](https://github.com/uzh-bf/klicker-uzh/issues/2750)) ([70aad47](https://github.com/uzh-bf/klicker-uzh/commit/70aad47a9889c1f8adfa93234d944da63eded617))
+* **deps-dev:** bump prettier-plugin-organize-imports from 3.0.3 to 3.1.0 in /packages/graphql ([#2764](https://github.com/uzh-bf/klicker-uzh/issues/2764)) ([043b6c0](https://github.com/uzh-bf/klicker-uzh/commit/043b6c03d7ca5522af4bfe74803c38fc8a8ac345))
+* **deps-dev:** bump prisma-erd-generator from 1.0.2 to 1.1.0 in /packages/prisma ([#2743](https://github.com/uzh-bf/klicker-uzh/issues/2743)) ([611a375](https://github.com/uzh-bf/klicker-uzh/commit/611a37531a1b0a8b80af235e413f0a857f594acc))
+* **deps-dev:** bump size-limit from 8.0.0 to 8.0.1 in /apps/backend-sls ([#2759](https://github.com/uzh-bf/klicker-uzh/issues/2759)) ([8975b4e](https://github.com/uzh-bf/klicker-uzh/commit/8975b4e6f1e3a0dee53303a40ab2970fb10867b0))
+* **deps:** bump @graphql-yoga/node from 2.13.6 to 2.13.8 in /apps/backend-sls ([#2763](https://github.com/uzh-bf/klicker-uzh/issues/2763)) ([b0c0e04](https://github.com/uzh-bf/klicker-uzh/commit/b0c0e04d6d1521e55009ab1e52b34d08327015e8))
+* **deps:** bump graphql from 16.5.0 to 16.6.0 in /apps/backend-sls ([#2765](https://github.com/uzh-bf/klicker-uzh/issues/2765)) ([5db0ef6](https://github.com/uzh-bf/klicker-uzh/commit/5db0ef6298dc95f42806b42027b0c7fdcc7b38e4))
+* **deps:** bump graphql from 16.5.0 to 16.6.0 in /apps/frontend-learning ([#2761](https://github.com/uzh-bf/klicker-uzh/issues/2761)) ([e6eaaa3](https://github.com/uzh-bf/klicker-uzh/commit/e6eaaa35d5f37e34d637fb4dc9d8fa93b4333ba4))
+* **deps:** bump graphql from 16.5.0 to 16.6.0 in /apps/frontend-pwa ([#2758](https://github.com/uzh-bf/klicker-uzh/issues/2758)) ([e8f040a](https://github.com/uzh-bf/klicker-uzh/commit/e8f040aa995d504efd126f2cba27dc16ffe986ca))
+* **deps:** bump graphql from 16.5.0 to 16.6.0 in /packages/graphql ([#2755](https://github.com/uzh-bf/klicker-uzh/issues/2755)) ([c981b5a](https://github.com/uzh-bf/klicker-uzh/commit/c981b5a04c69fc29765f97e44d55b72a0fa85809))
+* **docs:** move docs from legacy to top-level ([7928e17](https://github.com/uzh-bf/klicker-uzh/commit/7928e1770b33ab6971f6a545058c83924eb89b36))
+* **frontend-*:** ensure consistency in apollo setup ([31b3d09](https://github.com/uzh-bf/klicker-uzh/commit/31b3d09c33697415252da43149d489535e8b7441))
+* lockfile maintenance ([d8c8919](https://github.com/uzh-bf/klicker-uzh/commit/d8c89199197dd7f17ef0730e8f294b0a00bb027d))
+* lockfile maintenance ([8ece2dc](https://github.com/uzh-bf/klicker-uzh/commit/8ece2dc794d0daf404975647544c3e852dadbfdb))
+* move shibboleth and functions to legacy dir ([146df07](https://github.com/uzh-bf/klicker-uzh/commit/146df072b2b08991b27a37fd5e140210fb034d99))
+* update dependabot config for new repo structure ([b6177d8](https://github.com/uzh-bf/klicker-uzh/commit/b6177d883920c8687732812816b973746fa460e4))
+
 ## [2.0.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.1...v2.0.0-alpha.10) (2022-08-20)
 
 
