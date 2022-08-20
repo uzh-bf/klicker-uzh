@@ -1,6 +1,14 @@
 {
   "version": "2.0",
   "logging": {
+    "fileLoggingMode": "always",
+    "logLevel": {
+      "default": "Information",
+      "Host.Results": "Warning",
+      "Function": "Information",
+      "Function.GraphQL": "Information",
+      "Host.Aggregator": "Warning"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,

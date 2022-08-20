@@ -13,10 +13,11 @@ passport.use(
   new JWTStrategy(
     {
       jwtFromRequest(req) {
-        if (req && req.cookies) return req.cookies['jwt']
+        if (req && req.cookies)
+          return req.cookies['user_token'] || req.cookies['participant_token']
         return null
       },
-      secretOrKey: 'abcd',
+      secretOrKey: process.env.APP_SECRET,
       // issuer: 'abcd',
       // audience: 'localhost',
     },

@@ -91,6 +91,7 @@ export interface NexusGenFieldTypes {
   }
   Mutation: { // field return type
     login: string; // ID!
+    registerParticipantFromLTI: string | null; // ID
   }
   Query: { // field return type
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
@@ -113,6 +114,7 @@ export interface NexusGenFieldTypeNames {
   }
   Mutation: { // field return type name
     login: 'ID'
+    registerParticipantFromLTI: 'ID'
   }
   Query: { // field return type name
     learningElement: 'LearningElement'
@@ -128,6 +130,10 @@ export interface NexusGenArgTypes {
     login: { // args
       email: string; // String!
       password: string; // String!
+    }
+    registerParticipantFromLTI: { // args
+      participantEmail: string; // ID!
+      participantId: string; // ID!
     }
   }
   Query: {
