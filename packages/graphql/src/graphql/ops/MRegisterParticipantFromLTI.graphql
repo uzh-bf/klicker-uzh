@@ -1,0 +1,9 @@
+mutation RegisterParticipantFromLTI(
+  $participantId: ID!
+  $participantEmail: ID!
+) {
+  registerParticipantFromLTI(
+    participantId: $participantId
+    participantEmail: $participantEmail
+  )
+}

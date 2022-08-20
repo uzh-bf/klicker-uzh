@@ -74,9 +74,12 @@ export const Mutation = objectType({
       },
     })
 
-    t.nonNull.field('registerParticipantFromLTI', {
+    t.field('registerParticipantFromLTI', {
       type: 'ID',
-      args: {},
+      args: {
+        participantId: nonNull(idArg()),
+        participantEmail: nonNull(idArg()),
+      },
       resolve(_, args, ctx: Context) {
         return ParticipantService.registerParticipantFromLTI(args, ctx)
       },

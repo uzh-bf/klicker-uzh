@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { makeSchema } from 'nexus'
 import path from 'path'
 import * as types from './nexus'

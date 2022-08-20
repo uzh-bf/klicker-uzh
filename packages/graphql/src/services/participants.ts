@@ -2,7 +2,8 @@ import { SSOType, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcrypt'
 import generatePassword from 'generate-password'
 import JWT from 'jsonwebtoken'
-import { normalizeEmail } from 'validator'
+import isEmail from 'validator/lib/isEmail'
+import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
 interface RegisterParticipantFromLTIArgs {
@@ -13,7 +14,7 @@ interface RegisterParticipantFromLTIArgs {
 export async function registerParticipantFromLTI(
   { participantId, participantEmail }: RegisterParticipantFromLTIArgs,
   ctx: Context
-): Promise<string> {
+): Promise<string | null> {
   let participant = await ctx.prisma.participantAccount.findFirst({
     where: {
       ssoType: SSOType.LTI,
@@ -45,12 +46,16 @@ export async function registerParticipantFromLTI(
 
     const hash = bcrypt.hashSync(password, 12)
 
+    if (!isEmail(participantEmail)) {
+      return null
+    }
+
     // normalize the email address to remove any ambiguity
-    const normalizedEmail = normalizeEmail(participantEmail)
+    const normalizedEmail = normalizeEmail(participantEmail) as string
 
     participant = await ctx.prisma.participantAccount.create({
       data: {
-        ssoType: 'LTI',
+        ssoType: SSOType.LTI,
         ssoId: participantId,
         participant: {
           create: {
@@ -71,20 +76,13 @@ export async function registerParticipantFromLTI(
       sub: participant?.participant.id,
       role: UserRole.PARTICIPANT,
     },
-    'abcd',
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
       expiresIn: '1w',
     }
   )
 
-  ctx.res.cookie('participant_token', jwt, {
-    domain: process.env.API_DOMAIN ?? 'localhost',
-    path: '/api/graphql',
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 7,
-    // secure: !isDev && APP_CFG.https,
-  })
-
-  return participant.id
+  return jwt
 }
