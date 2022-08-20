@@ -1,8 +1,11 @@
 import { RegisterParticipantFromLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
 import { GetServerSideProps } from 'next'
+import getConfig from 'next/config'
 import nookies from 'nookies'
 import { addApolloState, initializeApollo } from '../../lib/apollo'
+
+const { serverRuntimeConfig } = getConfig()
 
 function CourseOverview({ context }: any) {
   return <div className="flex flex-row p-4"></div>
@@ -46,7 +49,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       'participant_token',
       result.data?.registerParticipantFromLTI,
       {
-        domain: process.env.API_DOMAIN ?? 'localhost',
+        domain: serverRuntimeConfig.COOKIE_DOMAIN,
         path: '/',
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 7,
