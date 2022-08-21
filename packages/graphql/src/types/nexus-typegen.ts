@@ -53,8 +53,10 @@ export interface NexusGenScalars {
 
 export interface NexusGenObjects {
   Course: { // root type
+    displayName?: string | null; // String
     id?: string | null; // ID
     learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
+    name: string; // String!
   }
   LearningElement: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
@@ -63,20 +65,23 @@ export interface NexusGenObjects {
   }
   Mutation: {};
   Participant: { // root type
+    avatar?: string | null; // String
     id?: string | null; // ID
+    pseudonym?: string | null; // String
   }
   ParticipantLearningData: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
-    participant: NexusGenRootTypes['Participant']; // Participant!
-    participantToken: string; // String!
+    participant?: NexusGenRootTypes['Participant'] | null; // Participant
+    participantToken?: string | null; // String
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
     id?: string | null; // ID
+    points?: number | null; // Int
   }
   Query: {};
   QuestionInstance: { // root type
-    id?: string | null; // ID
+    id: string; // ID!
     questionData?: NexusGenScalars['JSONObject'] | null; // JSONObject
   }
 }
@@ -93,8 +98,10 @@ export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
   Course: { // field return type
+    displayName: string | null; // String
     id: string | null; // ID
     learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
+    name: string; // String!
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
@@ -106,30 +113,36 @@ export interface NexusGenFieldTypes {
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
   }
   Participant: { // field return type
+    avatar: string | null; // String
     id: string | null; // ID
+    pseudonym: string | null; // String
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
-    participant: NexusGenRootTypes['Participant']; // Participant!
-    participantToken: string; // String!
+    participant: NexusGenRootTypes['Participant'] | null; // Participant
+    participantToken: string | null; // String
     participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
     id: string | null; // ID
+    points: number | null; // Int
   }
   Query: { // field return type
+    getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
   QuestionInstance: { // field return type
-    id: string | null; // ID
+    id: string; // ID!
     questionData: NexusGenScalars['JSONObject'] | null; // JSONObject
   }
 }
 
 export interface NexusGenFieldTypeNames {
   Course: { // field return type name
+    displayName: 'String'
     id: 'ID'
     learningElements: 'LearningElement'
+    name: 'String'
   }
   LearningElement: { // field return type name
     course: 'Course'
@@ -141,7 +154,9 @@ export interface NexusGenFieldTypeNames {
     registerParticipantFromLTI: 'ParticipantLearningData'
   }
   Participant: { // field return type name
+    avatar: 'String'
     id: 'ID'
+    pseudonym: 'String'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
@@ -151,8 +166,10 @@ export interface NexusGenFieldTypeNames {
   }
   Participation: { // field return type name
     id: 'ID'
+    points: 'Int'
   }
   Query: { // field return type name
+    getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
   }
   QuestionInstance: { // field return type name
@@ -174,6 +191,9 @@ export interface NexusGenArgTypes {
     }
   }
   Query: {
+    getCourseOverviewData: { // args
+      courseId: string; // ID!
+    }
     learningElement: { // args
       id: string; // ID!
     }

@@ -11,7 +11,7 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
     t.field('questionData', {
       type: 'JSONObject',
@@ -23,6 +23,9 @@ export const Course = objectType({
   name: 'Course',
   definition(t) {
     t.id('id')
+
+    t.nonNull.string('name')
+    t.string('displayName')
 
     t.list.field('learningElements', {
       type: LearningElement,
@@ -49,6 +52,9 @@ export const Participant = objectType({
   name: 'Participant',
   definition(t) {
     t.id('id')
+
+    t.string('avatar')
+    t.string('pseudonym')
   },
 })
 
@@ -56,15 +62,17 @@ export const Participation = objectType({
   name: 'Participation',
   definition(t) {
     t.id('id')
+
+    t.int('points')
   },
 })
 
 export const ParticipantLearningData = objectType({
   name: 'ParticipantLearningData',
   definition(t) {
-    t.nonNull.string('participantToken')
+    t.string('participantToken')
 
-    t.nonNull.field('participant', {
+    t.field('participant', {
       type: Participant,
     })
 
@@ -88,6 +96,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: Context) {
         return LearningElementService.getLearningElementData(args, ctx)
+      },
+    })
+
+    t.field('getCourseOverviewData', {
+      type: ParticipantLearningData,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return ParticipantService.getCourseOverviewData(args, ctx)
       },
     })
   },

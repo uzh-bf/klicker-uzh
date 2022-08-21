@@ -6,6 +6,53 @@ import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
+interface GetCourseOverviewDataArgs {
+  courseId: string
+}
+
+export async function getCourseOverviewData(
+  { courseId }: GetCourseOverviewDataArgs,
+  ctx: Context
+) {
+  if (ctx.user.sub) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      include: {
+        course: true,
+        participant: true,
+      },
+    })
+
+    if (participation) {
+      return participation
+    }
+  }
+
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+  })
+
+  if (!course) return null
+
+  let participant = null
+  if (ctx.user.sub) {
+    participant = await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
+  }
+
+  return {
+    participation: null,
+    course,
+    participant,
+  }
+}
+
 interface RegisterParticipantFromLTIArgs {
   courseId: string
   participantId: string
@@ -16,6 +63,10 @@ export async function registerParticipantFromLTI(
   { courseId, participantId, participantEmail }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
+  const course = await ctx.prisma.course.findUnique({ where: { id: courseId } })
+
+  if (!course) return null
+
   let participant = await ctx.prisma.participantAccount.findFirst({
     where: {
       ssoType: SSOType.LTI,
@@ -78,9 +129,6 @@ export async function registerParticipantFromLTI(
         courseId,
         participantId: participant.participantId,
       },
-      include: {
-        course: true,
-      },
     })
   }
 
@@ -101,6 +149,6 @@ export async function registerParticipantFromLTI(
     participantToken: jwt,
     participant: participant.participant,
     participation,
-    course: participation?.course,
+    course,
   }
 }
