@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.12...v2.0.0-alpha.13) (2022-08-21)
+
+
+### Features
+
+* add basic possibility to join and leave a course (participation) ([#2767](https://github.com/uzh-bf/klicker-uzh/issues/2767)) ([30356af](https://github.com/uzh-bf/klicker-uzh/commit/30356af7b8e58b30346610e4ac459a26c39f6004))
+
 ## [2.0.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.11...v2.0.0-alpha.12) (2022-08-21)
 
 
