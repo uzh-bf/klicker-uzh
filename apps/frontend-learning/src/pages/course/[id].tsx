@@ -1,67 +1,105 @@
-import { RegisterParticipantFromLtiDocument } from '@klicker-uzh/graphql/dist/ops'
-import bodyParser from 'body-parser'
 import { GetServerSideProps } from 'next'
-import getConfig from 'next/config'
-import nookies from 'nookies'
-import { addApolloState, initializeApollo } from '../../lib/apollo'
+import Image from 'next/image'
+import { PropsWithChildren } from 'react'
+import { twMerge } from 'tailwind-merge'
 
-const { serverRuntimeConfig } = getConfig()
+import PlaceholderIMG from '../../../public/avatars/placeholder.png'
+import { addApolloState } from '../../lib/apollo'
+import { getParticipantToken } from '../../lib/token'
 
-function CourseOverview({ context }: any) {
-  return <div className="flex flex-row p-4"></div>
+interface ParticipantProps {
+  avatar?: string
+  pseudonym: string
+  points?: number
+  isHighlighted?: boolean
+}
+
+function Participant({
+  avatar,
+  pseudonym,
+  isHighlighted,
+  children,
+}: PropsWithChildren<ParticipantProps>) {
+  return (
+    <div
+      className={twMerge(
+        'flex flex-row items-center gap-4 p-1 border rounded',
+        isHighlighted && 'bg-uzh-grey-20'
+      )}
+    >
+      <div className="relative w-auto h-6 border rounded-full aspect-square">
+        <Image
+          className="rounded-full"
+          src={avatar || PlaceholderIMG}
+          alt="Participant Avatar"
+          layout="fill"
+        />
+      </div>
+      <div>{pseudonym}</div>
+      <div>{children}</div>
+    </div>
+  )
+}
+
+function ParticipantOther(props: ParticipantProps) {
+  return (
+    <Participant {...props}>
+      <div>{props.points}</div>
+    </Participant>
+  )
+}
+
+function ParticipantSelf(props: ParticipantProps) {
+  return (
+    <Participant isHighlighted {...props}>
+      <div>{props.points ? props.points : 'Not participating. Join?'}</div>
+    </Participant>
+  )
+}
+
+function CourseOverview({ course, participation, participant }: any) {
+  return (
+    <div className="">
+      <div className="flex flex-row items-center justify-between px-4 py-2 text-white bg-uzh-blue-100">
+        <div className="">{course.name}</div>
+        <div className="relative w-auto h-8 aspect-square">
+          <Image
+            className="rounded-full"
+            src={participant.avatar || PlaceholderIMG}
+            alt="Participant Avatar"
+            layout="fill"
+          />
+        </div>
+      </div>
+
+      <div className="p-4 space-y-1">
+        <ParticipantOther
+          pseudonym={participant.pseudonym}
+          avatar={participant.avatar}
+          points={participation?.points}
+        />
+        <ParticipantSelf
+          pseudonym={participant.pseudonym}
+          avatar={participant.avatar}
+          points={participation?.points}
+        />
+        <ParticipantOther
+          pseudonym={participant.pseudonym}
+          avatar={participant.avatar}
+          points={participation?.points}
+        />
+      </div>
+    </div>
+  )
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { req, res, query } = ctx
-  const cookies = nookies.get(ctx)
+  const withNewParticipantToken = await getParticipantToken(ctx)
 
-  // if the user already has a participant token, skip registration
-  if (cookies['participant_token']) {
-    return {
-      props: {},
-    }
-  }
-
-  // extract the body from the LTI request
-  // TODO: verify that there is an LTI body and that it is valid
-  const { request, response } = await new Promise((resolve) => {
-    bodyParser.urlencoded({ extended: true })(req, res, () => {
-      bodyParser.json()(req, res, () => {
-        resolve({ request: req, response: res })
-      })
-    })
-  })
-
-  const apolloClient = initializeApollo()
-
-  const result = await apolloClient.mutate({
-    mutation: RegisterParticipantFromLtiDocument,
-    variables: {
-      courseId: query.id as string,
-      participantId: request.body.lis_person_sourcedid,
-      participantEmail: request.body.lis_person_contact_email_primary,
+  return addApolloState(withNewParticipantToken.apolloClient, {
+    props: {
+      ...withNewParticipantToken.result,
     },
-  })
-
-  // if a JWT was received from the API, set a cookie in the participant browser
-  if (result.data?.registerParticipantFromLTI) {
-    console.warn(result.data.registerParticipantFromLTI)
-    nookies.set(
-      ctx,
-      'participant_token',
-      result.data?.registerParticipantFromLTI.participantToken,
-      {
-        domain: serverRuntimeConfig.COOKIE_DOMAIN,
-        path: '/',
-        httpOnly: true,
-        maxAge: 60 * 60 * 24 * 7,
-        secure: process.env.NODE_ENV === 'production',
-      }
-    )
-  }
-
-  return addApolloState(apolloClient, {
-    props: {},
   })
 }
 
