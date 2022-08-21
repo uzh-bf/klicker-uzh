@@ -34,6 +34,8 @@ model Account {
 
   user   User   @relation(fields: [userId], references: [id])
   userId String @db.Uuid
+
+  createdAt DateTime @default(now())
 }
 
 model User {
@@ -61,6 +63,9 @@ model User {
   sessions          Session[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ----- QUESTION MANAGEMENT -----
@@ -69,13 +74,15 @@ enum AttachmentType {
   PNG
   JPEG
   GIF
+  LINK // embed videos, H5P, or similar
 }
 
 model Attachment {
   id String @id @default(uuid()) @db.Uuid
 
+  href         String  @unique
   name         String
-  originalName String
+  originalName String?
   description  String?
 
   type AttachmentType
@@ -84,6 +91,9 @@ model Attachment {
   questionId String?   @db.Uuid
   owner      User      @relation(fields: [ownerId], references: [id])
   ownerId    String    @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum QuestionType {
@@ -112,6 +122,9 @@ model Question {
 
   owner   User   @relation(fields: [ownerId], references: [id])
   ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Tag {
@@ -121,6 +134,9 @@ model Tag {
 
   owner   User   @relation(fields: [ownerId], references: [id])
   ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model QuestionInstance {
@@ -128,6 +144,7 @@ model QuestionInstance {
 
   questionData Json
   results      Json
+  responses    QuestionResponse[]
 
   sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id])
   sessionBlockId    Int?
@@ -140,6 +157,9 @@ model QuestionInstance {
   questionId String   @db.Uuid
   owner      User     @relation(fields: [ownerId], references: [id])
   ownerId    String   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ----- INTERACTIONS -----
@@ -163,6 +183,9 @@ model Course {
   ownerId String @db.Uuid
 
   participations Participation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum SessionStatus {
@@ -184,7 +207,7 @@ model Session {
   execution   Int      @default(0)
   name        String
   displayName String
-  settings    Json
+  settings    Json // TODO: move to properties?
   startedAt   DateTime
   finishedAt  DateTime
 
@@ -197,6 +220,9 @@ model Session {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SessionBlock {
@@ -210,6 +236,9 @@ model SessionBlock {
 
   session   Session @relation(fields: [sessionId], references: [id])
   sessionId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model LearningElement {
@@ -221,6 +250,9 @@ model LearningElement {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MicroSession {
@@ -235,6 +267,9 @@ model MicroSession {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Feedback {
@@ -250,6 +285,12 @@ model Feedback {
   responses FeedbackResponse[]
 
   resolvedAt DateTime?
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId String?      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FeedbackResponse {
@@ -261,6 +302,9 @@ model FeedbackResponse {
 
   feedback   Feedback? @relation(fields: [feedbackId], references: [id])
   feedbackId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ConfusionTimestep {
@@ -268,6 +312,11 @@ model ConfusionTimestep {
 
   difficulty Int
   speed      Int
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId String?      @db.Uuid
+
+  createdAt DateTime @default(now())
 }
 
 // ----- PARTICIPANTS -----
@@ -281,6 +330,8 @@ model ParticipantAccount {
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
 
+  createdAt DateTime @default(now())
+
   @@unique([ssoType, ssoId])
 }
 
@@ -290,19 +341,53 @@ model Participant {
   pseudonym String @unique
   email     String @unique
   password  String
+  avatar    String @default("placeholder.png")
 
-  accounts       ParticipantAccount[]
-  participations Participation[]
+  accounts           ParticipantAccount[]
+  participations     Participation[]
+  questionResponses  QuestionResponse[]
+  feedbacks          Feedback[]
+  confusionTimesteps ConfusionTimestep[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Participation {
   id String @id @default(uuid()) @db.Uuid
 
-  points Int @default(0)
+  // enable participants to disable their participation
+  // keeps the collected points but removes them from all views
+  isActive Boolean @default(true)
+  points   Int     @default(0)
 
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
 
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, participantId])
+}
+
+model QuestionResponse {
+  id Int @id @default(autoincrement())
+
+  trialsCount Int @default(0)
+
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+
+  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id])
+  questionInstanceId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, questionInstanceId])
 }
