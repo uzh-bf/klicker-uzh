@@ -26,6 +26,8 @@ type LearningElement {
 }
 
 type Mutation {
+  joinCourse(courseId: ID!): Participation
+  leaveCourse(courseId: ID!): Participation
   login(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
 }
@@ -38,6 +40,7 @@ type Participant {
 
 type ParticipantLearningData {
   course: Course
+  id: ID
   participant: Participant
   participantToken: String
   participation: Participation
@@ -45,6 +48,7 @@ type ParticipantLearningData {
 
 type Participation {
   id: ID
+  isActive: Boolean
   points: Int
 }
 
