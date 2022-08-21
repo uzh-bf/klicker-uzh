@@ -47,7 +47,7 @@ export async function registerParticipantFromLTI(
       numbers: true,
     })
 
-    const hash = bcrypt.hashSync(password, 12)
+    const hash = await bcrypt.hash(password, 12)
 
     if (!isEmail(participantEmail)) {
       return null

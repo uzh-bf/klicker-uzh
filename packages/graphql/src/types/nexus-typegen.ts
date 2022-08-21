@@ -102,7 +102,7 @@ export interface NexusGenFieldTypes {
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: { // field return type
-    login: string; // ID!
+    login: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
   }
   Participant: { // field return type

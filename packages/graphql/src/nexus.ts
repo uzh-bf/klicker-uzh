@@ -96,7 +96,7 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
-    t.nonNull.field('login', {
+    t.field('login', {
       type: 'ID',
       args: {
         email: nonNull(stringArg()),
