@@ -8,15 +8,22 @@ mutation RegisterParticipantFromLTI(
     participantId: $participantId
     participantEmail: $participantEmail
   ) {
+    id
     participantToken
     participant {
       id
+      avatar
+      pseudonym
     }
     participation {
       id
+      isActive
+      points
     }
     course {
       id
+      name
+      displayName
     }
   }
 }

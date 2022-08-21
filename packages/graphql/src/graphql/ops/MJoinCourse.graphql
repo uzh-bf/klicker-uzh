@@ -1,0 +1,7 @@
+mutation JoinCourse($courseId: ID!) {
+  joinCourse(courseId: $courseId) {
+    id
+    isActive
+    points
+  }
+}

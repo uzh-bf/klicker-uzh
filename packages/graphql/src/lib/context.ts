@@ -1,14 +1,27 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
   res: Response
-  user?: any
 }
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
+}
+
+export interface ContextWithOptionalUser extends Context {
+  user?: {
+    sub: string
+    role: UserRole
+  }
+}
+
+export interface ContextWithUser extends Context {
+  user: {
+    sub: string
+    role: UserRole
+  }
 }
 
 const prisma = new PrismaClient()

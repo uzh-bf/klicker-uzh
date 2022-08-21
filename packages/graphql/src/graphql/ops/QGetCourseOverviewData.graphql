@@ -1,5 +1,6 @@
 query GetCourseOverviewData($courseId: ID!) {
   getCourseOverviewData(courseId: $courseId) {
+    id
     participant {
       id
       avatar
@@ -7,6 +8,7 @@ query GetCourseOverviewData($courseId: ID!) {
     }
     participation {
       id
+      isActive
       points
     }
     course {
