@@ -3,8 +3,10 @@
 
 
 type Course {
+  displayName: String
   id: ID
   learningElements: [LearningElement]
+  name: String!
 }
 
 """
@@ -24,15 +26,34 @@ type LearningElement {
 }
 
 type Mutation {
-  login(email: String!, password: String!): ID!
-  registerParticipantFromLTI(participantEmail: ID!, participantId: ID!): ID
+  login(email: String!, password: String!): ID
+  registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
+}
+
+type Participant {
+  avatar: String
+  id: ID
+  pseudonym: String
+}
+
+type ParticipantLearningData {
+  course: Course
+  participant: Participant
+  participantToken: String
+  participation: Participation
+}
+
+type Participation {
+  id: ID
+  points: Int
 }
 
 type Query {
+  getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
 }
 
 type QuestionInstance {
-  id: ID
+  id: ID!
   questionData: JSONObject
 }

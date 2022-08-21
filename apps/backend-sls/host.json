@@ -4,7 +4,7 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "default": "Information",
+      "default": "Warning",
       "Host.Results": "Warning",
       "Function": "Information",
       "Function.GraphQL": "Information",

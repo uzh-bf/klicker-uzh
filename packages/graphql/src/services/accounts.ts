@@ -1,4 +1,7 @@
+import bcrypt from 'bcrypt'
 import JWT from 'jsonwebtoken'
+import isEmail from 'validator/lib/isEmail'
+import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
 interface LoginArgs {
@@ -6,18 +9,26 @@ interface LoginArgs {
   password: string
 }
 
-export async function login(
-  { email, password }: LoginArgs,
-  ctx: Context
-): Promise<string> {
-  const user = await ctx.prisma.user.findFirst({
-    where: {
-      email,
-      password,
-    },
+export async function login({ email, password }: LoginArgs, ctx: Context) {
+  if (!isEmail(email)) return null
+
+  const normalizedEmail = normalizeEmail(email) as string
+
+  const user = await ctx.prisma.user.findUnique({
+    where: { email: normalizedEmail },
   })
 
-  if (!user) throw new Error('LOGIN_FAILED')
+  if (!user) return null
+  if (!user.isActive) return null
+
+  const isLoginValid = await bcrypt.compare(password, user.password)
+
+  if (!isLoginValid) return null
+
+  ctx.prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  })
 
   const jwt = JWT.sign(
     {
@@ -41,46 +52,4 @@ export async function login(
   })
 
   return user.id
-  // if (!isEmail(email)) {
-  //   throw new UserInputError(Errors.INVALID_EMAIL)
-  // }
-  // normalize the email address
-  // const normalizedEmail = normalizeEmail(email)
-  // // look for a single user with the given email
-  // const user = await UserModel.findOne({
-  //   email: normalizedEmail,
-  // })
-  // const invalidLogin = () => {
-  //   sendSlackNotification('accounts', `Login failed for ${email}`)
-  //   throw new AuthenticationError(Errors.INVALID_LOGIN)
-  // }
-  // // check whether the user exists
-  // if (!user) {
-  //   invalidLogin()
-  // }
-  // // check whether the account is already active
-  // if (!user.isActive) {
-  //   throw new AuthenticationError(Errors.ACCOUNT_NOT_ACTIVATED)
-  // }
-  // // check if hashed passwords match
-  // if (!bcrypt.compareSync(password, user.password)) {
-  //   invalidLogin()
-  // }
-  // // generate a JWT for future authentication
-  // // TODO: add more necessary properties for the JWT
-  // const jwt = JWT.sign(generateJwtSettings(user), APP_CFG.secret, {
-  //   algorithm: 'HS256',
-  //   expiresIn: '1w',
-  // })
-  // // set a cookie with the generated JWT
-  // if (res && res.cookie) {
-  //   res.cookie('jwt', jwt, AUTH_COOKIE_SETTINGS)
-  // }
-  // // update the last login date
-  // await UserModel.findOneAndUpdate(
-  //   { email: normalizedEmail },
-  //   { $currentDate: { lastLoginAt: true } }
-  // )
-  // // resolve with data about the user
-  // return user.id
 }

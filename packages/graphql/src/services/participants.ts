@@ -6,15 +6,67 @@ import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
+interface GetCourseOverviewDataArgs {
+  courseId: string
+}
+
+export async function getCourseOverviewData(
+  { courseId }: GetCourseOverviewDataArgs,
+  ctx: Context
+) {
+  if (ctx.user.sub) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      include: {
+        course: true,
+        participant: true,
+      },
+    })
+
+    if (participation) {
+      return participation
+    }
+  }
+
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+  })
+
+  if (!course) return null
+
+  let participant = null
+  if (ctx.user.sub) {
+    participant = await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
+  }
+
+  return {
+    participation: null,
+    course,
+    participant,
+  }
+}
+
 interface RegisterParticipantFromLTIArgs {
+  courseId: string
   participantId: string
   participantEmail: string
 }
 
 export async function registerParticipantFromLTI(
-  { participantId, participantEmail }: RegisterParticipantFromLTIArgs,
+  { courseId, participantId, participantEmail }: RegisterParticipantFromLTIArgs,
   ctx: Context
-): Promise<string | null> {
+) {
+  const course = await ctx.prisma.course.findUnique({ where: { id: courseId } })
+
+  if (!course) return null
+
   let participant = await ctx.prisma.participantAccount.findFirst({
     where: {
       ssoType: SSOType.LTI,
@@ -24,6 +76,8 @@ export async function registerParticipantFromLTI(
       participant: true,
     },
   })
+
+  let participation = null
 
   // if there is no participant matching the SSO id from LTI
   // create a new participant and participant account
@@ -44,7 +98,7 @@ export async function registerParticipantFromLTI(
       numbers: true,
     })
 
-    const hash = bcrypt.hashSync(password, 12)
+    const hash = await bcrypt.hash(password, 12)
 
     if (!isEmail(participantEmail)) {
       return null
@@ -69,6 +123,13 @@ export async function registerParticipantFromLTI(
         participant: true,
       },
     })
+  } else {
+    participation = await ctx.prisma.participation.findFirst({
+      where: {
+        courseId,
+        participantId: participant.participantId,
+      },
+    })
   }
 
   const jwt = JWT.sign(
@@ -84,5 +145,10 @@ export async function registerParticipantFromLTI(
     }
   )
 
-  return jwt
+  return {
+    participantToken: jwt,
+    participant: participant.participant,
+    participation,
+    course,
+  }
 }

@@ -3,5 +3,11 @@
   "include": ["GraphQL"],
   "compilerOptions": {
     "module": "ESNext"
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "moduleTypes": {
+      "prisma/seed.ts": "esm"
+    }
   }
 }
