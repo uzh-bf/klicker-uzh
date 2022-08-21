@@ -30,5 +30,6 @@ export const AuthSchema = {
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
+    getCourseOverviewData: { __authz: { rules: ['Allow'] } },
   },
 }
