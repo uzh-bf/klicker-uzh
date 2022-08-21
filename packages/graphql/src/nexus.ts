@@ -1,6 +1,10 @@
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
-import { Context } from './lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from './lib/context'
 import * as AccountService from './services/accounts'
 import * as LearningElementService from './services/learningElements'
 import * as ParticipantService from './services/participants'
@@ -63,6 +67,7 @@ export const Participation = objectType({
   definition(t) {
     t.id('id')
 
+    t.boolean('isActive')
     t.int('points')
   },
 })
@@ -70,6 +75,8 @@ export const Participation = objectType({
 export const ParticipantLearningData = objectType({
   name: 'ParticipantLearningData',
   definition(t) {
+    t.id('id')
+
     t.string('participantToken')
 
     t.field('participant', {
@@ -94,7 +101,7 @@ export const Query = objectType({
       args: {
         id: nonNull(idArg()),
       },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithOptionalUser) {
         return LearningElementService.getLearningElementData(args, ctx)
       },
     })
@@ -104,7 +111,7 @@ export const Query = objectType({
       args: {
         courseId: nonNull(idArg()),
       },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithOptionalUser) {
         return ParticipantService.getCourseOverviewData(args, ctx)
       },
     })
@@ -134,6 +141,26 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: Context) {
         return ParticipantService.registerParticipantFromLTI(args, ctx)
+      },
+    })
+
+    t.field('joinCourse', {
+      type: Participation,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.joinCourse(args, ctx)
+      },
+    })
+
+    t.field('leaveCourse', {
+      type: Participation,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.leaveCourse(args, ctx)
       },
     })
   },

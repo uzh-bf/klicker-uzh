@@ -4,17 +4,64 @@ import generatePassword from 'generate-password'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 
-interface GetCourseOverviewDataArgs {
-  courseId: string
+export async function joinCourse(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.upsert({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    create: {
+      isActive: true,
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    update: {
+      isActive: true,
+    },
+  })
+}
+
+export async function leaveCourse(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    data: {
+      isActive: false,
+    },
+  })
 }
 
 export async function getCourseOverviewData(
-  { courseId }: GetCourseOverviewDataArgs,
-  ctx: Context
+  { courseId }: { courseId: string },
+  ctx: ContextWithOptionalUser
 ) {
-  if (ctx.user.sub) {
+  if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -29,7 +76,12 @@ export async function getCourseOverviewData(
     })
 
     if (participation) {
-      return participation
+      return {
+        id: `${courseId}-${participation.participant.id}`,
+        course: participation.course,
+        participant: participation.participant,
+        participation,
+      }
     }
   }
 
@@ -40,16 +92,17 @@ export async function getCourseOverviewData(
   if (!course) return null
 
   let participant = null
-  if (ctx.user.sub) {
+  if (ctx.user?.sub) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
     })
   }
 
   return {
-    participation: null,
+    id: `${courseId}-${participant?.id}`,
     course,
     participant,
+    participation: null,
   }
 }
 
@@ -146,6 +199,7 @@ export async function registerParticipantFromLTI(
   )
 
   return {
+    id: `${courseId}-${participant?.participant.id}`,
     participantToken: jwt,
     participant: participant.participant,
     participation,

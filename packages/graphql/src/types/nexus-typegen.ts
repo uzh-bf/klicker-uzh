@@ -71,12 +71,14 @@ export interface NexusGenObjects {
   }
   ParticipantLearningData: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
+    id?: string | null; // ID
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken?: string | null; // String
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
     id?: string | null; // ID
+    isActive?: boolean | null; // Boolean
     points?: number | null; // Int
   }
   Query: {};
@@ -109,6 +111,8 @@ export interface NexusGenFieldTypes {
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: { // field return type
+    joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
+    leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     login: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
   }
@@ -119,12 +123,14 @@ export interface NexusGenFieldTypes {
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
+    id: string | null; // ID
     participant: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken: string | null; // String
     participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
     id: string | null; // ID
+    isActive: boolean | null; // Boolean
     points: number | null; // Int
   }
   Query: { // field return type
@@ -150,6 +156,8 @@ export interface NexusGenFieldTypeNames {
     instances: 'QuestionInstance'
   }
   Mutation: { // field return type name
+    joinCourse: 'Participation'
+    leaveCourse: 'Participation'
     login: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
   }
@@ -160,12 +168,14 @@ export interface NexusGenFieldTypeNames {
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
+    id: 'ID'
     participant: 'Participant'
     participantToken: 'String'
     participation: 'Participation'
   }
   Participation: { // field return type name
     id: 'ID'
+    isActive: 'Boolean'
     points: 'Int'
   }
   Query: { // field return type name
@@ -180,6 +190,12 @@ export interface NexusGenFieldTypeNames {
 
 export interface NexusGenArgTypes {
   Mutation: {
+    joinCourse: { // args
+      courseId: string; // ID!
+    }
+    leaveCourse: { // args
+      courseId: string; // ID!
+    }
     login: { // args
       email: string; // String!
       password: string; // String!
