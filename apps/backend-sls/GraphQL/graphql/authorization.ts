@@ -19,6 +19,9 @@ const IsAdmin = preExecRule()((ctx: any) => {
 
 export const Rules = {
   IsAuthenticated,
+  IsParticipant,
+  IsUser,
+  IsAdmin,
 }
 
 export const AuthSchema = {
@@ -26,6 +29,8 @@ export const AuthSchema = {
     '*': { __authz: { rules: ['Reject'] } },
     login: { __authz: { rules: ['Allow'] } },
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
+    joinCourse: { __authz: { rules: ['IsParticipant'] } },
+    leaveCourse: { __authz: { rules: ['IsParticipant'] } },
   },
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
