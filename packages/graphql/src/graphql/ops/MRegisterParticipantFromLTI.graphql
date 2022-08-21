@@ -1,9 +1,22 @@
 mutation RegisterParticipantFromLTI(
+  $courseId: ID!
   $participantId: ID!
   $participantEmail: ID!
 ) {
   registerParticipantFromLTI(
+    courseId: $courseId
     participantId: $participantId
     participantEmail: $participantEmail
-  )
+  ) {
+    participantToken
+    participant {
+      id
+    }
+    participation {
+      id
+    }
+    course {
+      id
+    }
+  }
 }

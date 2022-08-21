@@ -21,8 +21,10 @@ export type Scalars = {
 
 export type Course = {
   __typename?: 'Course';
+  displayName?: Maybe<Scalars['String']>;
   id?: Maybe<Scalars['ID']>;
   learningElements?: Maybe<Array<Maybe<LearningElement>>>;
+  name: Scalars['String'];
 };
 
 export type LearningElement = {
@@ -34,8 +36,8 @@ export type LearningElement = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  login: Scalars['ID'];
-  registerParticipantFromLTI?: Maybe<Scalars['ID']>;
+  login?: Maybe<Scalars['ID']>;
+  registerParticipantFromLTI?: Maybe<ParticipantLearningData>;
 };
 
 
@@ -46,13 +48,41 @@ export type MutationLoginArgs = {
 
 
 export type MutationRegisterParticipantFromLtiArgs = {
+  courseId: Scalars['ID'];
   participantEmail: Scalars['ID'];
   participantId: Scalars['ID'];
 };
 
+export type Participant = {
+  __typename?: 'Participant';
+  avatar?: Maybe<Scalars['String']>;
+  id?: Maybe<Scalars['ID']>;
+  pseudonym?: Maybe<Scalars['String']>;
+};
+
+export type ParticipantLearningData = {
+  __typename?: 'ParticipantLearningData';
+  course?: Maybe<Course>;
+  participant?: Maybe<Participant>;
+  participantToken?: Maybe<Scalars['String']>;
+  participation?: Maybe<Participation>;
+};
+
+export type Participation = {
+  __typename?: 'Participation';
+  id?: Maybe<Scalars['ID']>;
+  points?: Maybe<Scalars['Int']>;
+};
+
 export type Query = {
   __typename?: 'Query';
+  getCourseOverviewData?: Maybe<ParticipantLearningData>;
   learningElement?: Maybe<LearningElement>;
+};
+
+
+export type QueryGetCourseOverviewDataArgs = {
+  courseId: Scalars['ID'];
 };
 
 
@@ -62,24 +92,32 @@ export type QueryLearningElementArgs = {
 
 export type QuestionInstance = {
   __typename?: 'QuestionInstance';
-  id?: Maybe<Scalars['ID']>;
+  id: Scalars['ID'];
   questionData?: Maybe<Scalars['JSONObject']>;
 };
 
 export type RegisterParticipantFromLtiMutationVariables = Exact<{
+  courseId: Scalars['ID'];
   participantId: Scalars['ID'];
   participantEmail: Scalars['ID'];
 }>;
 
 
-export type RegisterParticipantFromLtiMutation = { __typename?: 'Mutation', registerParticipantFromLTI?: string | null };
+export type RegisterParticipantFromLtiMutation = { __typename?: 'Mutation', registerParticipantFromLTI?: { __typename?: 'ParticipantLearningData', participantToken?: string | null, participant?: { __typename?: 'Participant', id?: string | null } | null, participation?: { __typename?: 'Participation', id?: string | null } | null, course?: { __typename?: 'Course', id?: string | null } | null } | null };
+
+export type GetCourseOverviewDataQueryVariables = Exact<{
+  courseId: Scalars['ID'];
+}>;
+
+
+export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', participant?: { __typename?: 'Participant', id?: string | null, avatar?: string | null, pseudonym?: string | null } | null, participation?: { __typename?: 'Participation', id?: string | null, points?: number | null } | null, course?: { __typename?: 'Course', id?: string | null, name: string, displayName?: string | null } | null } | null };
 
 export type GetLearningElementQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, questionData?: any | null } | null> | null } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id: string, questionData?: any | null } | null> | null } | null };
 
 
 
@@ -154,9 +192,13 @@ export type ResolversTypes = {
   Course: ResolverTypeWrapper<Course>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
+  Int: ResolverTypeWrapper<Scalars['Int']>;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']>;
   LearningElement: ResolverTypeWrapper<LearningElement>;
   Mutation: ResolverTypeWrapper<{}>;
+  Participant: ResolverTypeWrapper<Participant>;
+  ParticipantLearningData: ResolverTypeWrapper<ParticipantLearningData>;
+  Participation: ResolverTypeWrapper<Participation>;
   Query: ResolverTypeWrapper<{}>;
   QuestionInstance: ResolverTypeWrapper<QuestionInstance>;
   String: ResolverTypeWrapper<Scalars['String']>;
@@ -168,17 +210,23 @@ export type ResolversParentTypes = {
   Course: Course;
   DateTime: Scalars['DateTime'];
   ID: Scalars['ID'];
+  Int: Scalars['Int'];
   JSONObject: Scalars['JSONObject'];
   LearningElement: LearningElement;
   Mutation: {};
+  Participant: Participant;
+  ParticipantLearningData: ParticipantLearningData;
+  Participation: Participation;
   Query: {};
   QuestionInstance: QuestionInstance;
   String: Scalars['String'];
 };
 
 export type CourseResolvers<ContextType = any, ParentType extends ResolversParentTypes['Course'] = ResolversParentTypes['Course']> = {
+  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   learningElements?: Resolver<Maybe<Array<Maybe<ResolversTypes['LearningElement']>>>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -198,16 +246,38 @@ export type LearningElementResolvers<ContextType = any, ParentType extends Resol
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
-  login?: Resolver<ResolversTypes['ID'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'email' | 'password'>>;
-  registerParticipantFromLTI?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationRegisterParticipantFromLtiArgs, 'participantEmail' | 'participantId'>>;
+  login?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationLoginArgs, 'email' | 'password'>>;
+  registerParticipantFromLTI?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationRegisterParticipantFromLtiArgs, 'courseId' | 'participantEmail' | 'participantId'>>;
+};
+
+export type ParticipantResolvers<ContextType = any, ParentType extends ResolversParentTypes['Participant'] = ResolversParentTypes['Participant']> = {
+  avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  pseudonym?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ParticipantLearningDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['ParticipantLearningData'] = ResolversParentTypes['ParticipantLearningData']> = {
+  course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
+  participant?: Resolver<Maybe<ResolversTypes['Participant']>, ParentType, ContextType>;
+  participantToken?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  participation?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ParticipationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Participation'] = ResolversParentTypes['Participation']> = {
+  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  points?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  getCourseOverviewData?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<QueryGetCourseOverviewDataArgs, 'courseId'>>;
   learningElement?: Resolver<Maybe<ResolversTypes['LearningElement']>, ParentType, ContextType, RequireFields<QueryLearningElementArgs, 'id'>>;
 };
 
 export type QuestionInstanceResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionInstance'] = ResolversParentTypes['QuestionInstance']> = {
-  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   questionData?: Resolver<Maybe<ResolversTypes['JSONObject']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -218,13 +288,17 @@ export type Resolvers<ContextType = any> = {
   JSONObject?: GraphQLScalarType;
   LearningElement?: LearningElementResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  Participant?: ParticipantResolvers<ContextType>;
+  ParticipantLearningData?: ParticipantLearningDataResolvers<ContextType>;
+  Participation?: ParticipationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   QuestionInstance?: QuestionInstanceResolvers<ContextType>;
 };
 
 
 
-export const RegisterParticipantFromLtiDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RegisterParticipantFromLTI"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"participantId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"participantEmail"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"registerParticipantFromLTI"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"participantId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"participantId"}}},{"kind":"Argument","name":{"kind":"Name","value":"participantEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"participantEmail"}}}]}]}}]} as unknown as DocumentNode<RegisterParticipantFromLtiMutation, RegisterParticipantFromLtiMutationVariables>;
+export const RegisterParticipantFromLtiDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RegisterParticipantFromLTI"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"participantId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"participantEmail"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"registerParticipantFromLTI"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"participantId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"participantId"}}},{"kind":"Argument","name":{"kind":"Name","value":"participantEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"participantEmail"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participantToken"}},{"kind":"Field","name":{"kind":"Name","value":"participant"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"participation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]}}]} as unknown as DocumentNode<RegisterParticipantFromLtiMutation, RegisterParticipantFromLtiMutationVariables>;
+export const GetCourseOverviewDataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCourseOverviewData"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getCourseOverviewData"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participant"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"pseudonym"}}]}},{"kind":"Field","name":{"kind":"Name","value":"participation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"points"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]}}]} as unknown as DocumentNode<GetCourseOverviewDataQuery, GetCourseOverviewDataQueryVariables>;
 export const GetLearningElementDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetLearningElement"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"learningElement"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"}}]}}]}}]}}]} as unknown as DocumentNode<GetLearningElementQuery, GetLearningElementQueryVariables>;
 
       export interface PossibleTypesResultData {

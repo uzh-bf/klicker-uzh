@@ -13,7 +13,9 @@ passport.use(
   new JWTStrategy(
     {
       jwtFromRequest(req) {
-        if (req && req.cookies)
+        if (req.headers?.['authorization'])
+          return req.headers['authorization']?.replace('Bearer ', '')
+        if (req.cookies)
           return req.cookies['user_token'] || req.cookies['participant_token']
         return null
       },

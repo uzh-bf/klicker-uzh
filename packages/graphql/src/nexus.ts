@@ -11,7 +11,7 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
     t.field('questionData', {
       type: 'JSONObject',
@@ -23,6 +23,9 @@ export const Course = objectType({
   name: 'Course',
   definition(t) {
     t.id('id')
+
+    t.nonNull.string('name')
+    t.string('displayName')
 
     t.list.field('learningElements', {
       type: LearningElement,
@@ -45,6 +48,44 @@ export const LearningElement = objectType({
   },
 })
 
+export const Participant = objectType({
+  name: 'Participant',
+  definition(t) {
+    t.id('id')
+
+    t.string('avatar')
+    t.string('pseudonym')
+  },
+})
+
+export const Participation = objectType({
+  name: 'Participation',
+  definition(t) {
+    t.id('id')
+
+    t.int('points')
+  },
+})
+
+export const ParticipantLearningData = objectType({
+  name: 'ParticipantLearningData',
+  definition(t) {
+    t.string('participantToken')
+
+    t.field('participant', {
+      type: Participant,
+    })
+
+    t.field('participation', {
+      type: Participation,
+    })
+
+    t.field('course', {
+      type: Course,
+    })
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -57,13 +98,23 @@ export const Query = objectType({
         return LearningElementService.getLearningElementData(args, ctx)
       },
     })
+
+    t.field('getCourseOverviewData', {
+      type: ParticipantLearningData,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return ParticipantService.getCourseOverviewData(args, ctx)
+      },
+    })
   },
 })
 
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
-    t.nonNull.field('login', {
+    t.field('login', {
       type: 'ID',
       args: {
         email: nonNull(stringArg()),
@@ -75,8 +126,9 @@ export const Mutation = objectType({
     })
 
     t.field('registerParticipantFromLTI', {
-      type: 'ID',
+      type: ParticipantLearningData,
       args: {
+        courseId: nonNull(idArg()),
         participantId: nonNull(idArg()),
         participantEmail: nonNull(idArg()),
       },

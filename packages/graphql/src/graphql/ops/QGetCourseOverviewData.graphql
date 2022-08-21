@@ -1,0 +1,18 @@
+query GetCourseOverviewData($courseId: ID!) {
+  getCourseOverviewData(courseId: $courseId) {
+    participant {
+      id
+      avatar
+      pseudonym
+    }
+    participation {
+      id
+      points
+    }
+    course {
+      id
+      name
+      displayName
+    }
+  }
+}
