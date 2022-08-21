@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.11...v2.0.0-alpha.12) (2022-08-21)
+
+
+### Features
+
+* display course and participant details on the learning embed page ([#2766](https://github.com/uzh-bf/klicker-uzh/issues/2766)) ([ec168e6](https://github.com/uzh-bf/klicker-uzh/commit/ec168e64c46075f361a43c4fa5d4112f021f39c6))
+
+
+### Build and CI
+
+* ensure that actions run only if anything in the relevant app was changed ([6042186](https://github.com/uzh-bf/klicker-uzh/commit/60421868178eb3326426547a42f1bd47d3f62e63))
+* **frontend-learning:** add caching for Next.js to the GH action ([9e8b8f5](https://github.com/uzh-bf/klicker-uzh/commit/9e8b8f5e67cdc31842fe065a858b6e8266746029))
+* **frontend-learning:** use vercel to build the project ([684ad70](https://github.com/uzh-bf/klicker-uzh/commit/684ad7006460a9f5380236859f180f7388392f2c))
+* **frontend-manage:** ensure we deploy manage frontend to the correct vercel project ([c7de996](https://github.com/uzh-bf/klicker-uzh/commit/c7de99697b0f92a24dcb4c014ee2c04b11fc1139))
+* move all next.js builds to the vercel platform ([92f3350](https://github.com/uzh-bf/klicker-uzh/commit/92f3350135e642acf54691aa6b25b3bb7e08cf8f))
+* **packages/prisma:** add initial GH workflow for NPM publish ([7f01c8a](https://github.com/uzh-bf/klicker-uzh/commit/7f01c8af04900f138e714c8770c220f72caec7e6))
+* **packages/prisma:** move actions workflow to drafts ([2073f8e](https://github.com/uzh-bf/klicker-uzh/commit/2073f8e50a90ae087d9fa0dd9b529b56b726a797))
+* remove builds property from vercel.json files ([5e81be0](https://github.com/uzh-bf/klicker-uzh/commit/5e81be07acd85c8250c093aa9f2a37310fb11f52))
+
+
+### Other
+
+* add publish command to turbo and ensure apps/ and docs/ will not be published ([90a164a](https://github.com/uzh-bf/klicker-uzh/commit/90a164a79272569048e800faf562555cc785c6f7))
+* add turbo publish command ([be60bb4](https://github.com/uzh-bf/klicker-uzh/commit/be60bb4d42090bfaf776e14cc030f81e020d177d))
+* **docs:** use npm start instead of dev ([69f1d5d](https://github.com/uzh-bf/klicker-uzh/commit/69f1d5d9acc6ef6183484e3a96a42859ff6e1b09))
+* **frontend-learning:** add stub index page ([2e05fe8](https://github.com/uzh-bf/klicker-uzh/commit/2e05fe88f48bfc18cccc5eec5c8a1c4219d07992))
+* lockfile maintenance ([3d3d283](https://github.com/uzh-bf/klicker-uzh/commit/3d3d28334787a4afa78bba9cab1f28a6a8c5af88))
+
 ## [2.0.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.10...v2.0.0-alpha.11) (2022-08-20)
 
 
