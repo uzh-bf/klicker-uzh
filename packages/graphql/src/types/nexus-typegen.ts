@@ -36,6 +36,10 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  ResponseInput: { // input type
+    choices?: Array<number | null> | null; // [Int]
+    value?: string | null; // String
+  }
 }
 
 export interface NexusGenEnums {
@@ -101,6 +105,7 @@ export interface NexusGenObjects {
   }
   Query: {};
   QuestionInstance: { // root type
+    evaluation?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id?: string | null; // ID
     questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
@@ -152,6 +157,7 @@ export interface NexusGenFieldTypes {
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     login: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -175,6 +181,7 @@ export interface NexusGenFieldTypes {
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
   QuestionInstance: { // field return type
+    evaluation: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string | null; // ID
     questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
@@ -224,6 +231,7 @@ export interface NexusGenFieldTypeNames {
     leaveCourse: 'Participation'
     login: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
+    respondToQuestionInstance: 'QuestionInstance'
   }
   Participant: { // field return type name
     avatar: 'String'
@@ -247,6 +255,7 @@ export interface NexusGenFieldTypeNames {
     learningElement: 'LearningElement'
   }
   QuestionInstance: { // field return type name
+    evaluation: 'JSONObject'
     id: 'ID'
     questionData: 'QuestionData'
   }
@@ -278,6 +287,10 @@ export interface NexusGenArgTypes {
       participantEmail: string; // ID!
       participantId: string; // ID!
     }
+    respondToQuestionInstance: { // args
+      id: string; // ID!
+      response: NexusGenInputs['ResponseInput']; // ResponseInput!
+    }
   }
   Query: {
     getCourseOverviewData: { // args
@@ -299,7 +312,7 @@ export interface NexusGenTypeInterfaces {
 
 export type NexusGenObjectNames = keyof NexusGenObjects;
 
-export type NexusGenInputNames = never;
+export type NexusGenInputNames = keyof NexusGenInputs;
 
 export type NexusGenEnumNames = never;
 

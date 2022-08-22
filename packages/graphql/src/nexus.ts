@@ -1,8 +1,10 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
+  arg,
   asNexusMethod,
   idArg,
+  inputObjectType,
   interfaceType,
   nonNull,
   objectType,
@@ -19,6 +21,14 @@ import * as ParticipantService from './services/participants'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
+
+export const ResponseInput = inputObjectType({
+  name: 'ResponseInput',
+  definition(t) {
+    t.list.int('choices')
+    t.string('value')
+  },
+})
 
 export const QuestionData = interfaceType({
   name: 'QuestionData',
@@ -77,6 +87,10 @@ export const QuestionInstance = objectType({
 
     t.field('questionData', {
       type: QuestionData,
+    })
+
+    t.field('evaluation', {
+      type: 'JSONObject',
     })
   },
 })
@@ -219,6 +233,21 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.leaveCourse(args, ctx)
+      },
+    })
+
+    t.field('respondToQuestionInstance', {
+      type: QuestionInstance,
+      args: {
+        id: nonNull(idArg()),
+        response: nonNull(
+          arg({
+            type: ResponseInput,
+          })
+        ),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return LearningElementService.respondToQuestionInstance(args, ctx)
       },
     })
   },

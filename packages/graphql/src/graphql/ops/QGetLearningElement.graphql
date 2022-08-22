@@ -1,3 +1,5 @@
+#import "./FQuestionData.graphql"
+
 query GetLearningElement($id: ID!) {
   learningElement(id: $id) {
     id
@@ -6,24 +8,8 @@ query GetLearningElement($id: ID!) {
     }
     instances {
       id
-      questionData {
-        id
-
-        name
-        type
-        content
-        contentPlain
-
-        ... on ChoicesQuestionData {
-          options {
-            choices {
-              correct
-              feedback
-              value
-            }
-          }
-        }
-      }
+      ...QuestionData
+      evaluation
     }
   }
 }

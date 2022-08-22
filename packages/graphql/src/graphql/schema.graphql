@@ -51,6 +51,7 @@ type Mutation {
   leaveCourse(courseId: ID!): Participation
   login(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
+  respondToQuestionInstance(id: ID!, response: ResponseInput!): QuestionInstance
 }
 
 type Participant {
@@ -89,6 +90,12 @@ interface QuestionData {
 }
 
 type QuestionInstance {
+  evaluation: JSONObject
   id: ID
   questionData: QuestionData
+}
+
+input ResponseInput {
+  choices: [Int]
+  value: String
 }

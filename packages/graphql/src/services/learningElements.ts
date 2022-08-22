@@ -1,6 +1,41 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
-import { Context } from '../lib/context'
+import { ContextWithUser } from '../lib/context'
+
+interface RespondToQuestionInstanceArgs {
+  id: string
+  response: {
+    choices?: number[]
+    value?: string
+  }
+}
+
+export async function respondToQuestionInstance(
+  { id, response }: RespondToQuestionInstanceArgs,
+  ctx: ContextWithUser
+) {
+  // TODO: compare the solution with the answer
+  // TODO: award points to the user when correctly responded
+  // TODO: return the result, evaluation, and feedback and correctness
+  const instance = await ctx.prisma.questionInstance.findUnique({
+    where: { id },
+  })
+
+  console.warn(id, instance, response)
+
+  return {
+    ...instance,
+    evaluation: {
+      choices: {
+        0: 50,
+        1: 5,
+        2: 2,
+        3: 15,
+        4: 28,
+      },
+    },
+  }
+}
 
 interface GetLearningElementDataArgs {
   id: string
@@ -8,8 +43,10 @@ interface GetLearningElementDataArgs {
 
 export async function getLearningElementData(
   { id }: GetLearningElementDataArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
+  // TODO: get previous responses of the participant
+
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
     include: {
