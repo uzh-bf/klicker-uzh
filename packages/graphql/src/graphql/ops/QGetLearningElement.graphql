@@ -6,7 +6,24 @@ query GetLearningElement($id: ID!) {
     }
     instances {
       id
-      questionData
+      questionData {
+        id
+
+        name
+        type
+        content
+        contentPlain
+
+        ... on ChoicesQuestionData {
+          options {
+            choices {
+              correct
+              feedback
+              value
+            }
+          }
+        }
+      }
     }
   }
 }

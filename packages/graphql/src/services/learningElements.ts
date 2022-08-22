@@ -1,3 +1,5 @@
+import { QuestionType } from '@klicker-uzh/prisma'
+import { pick } from 'ramda'
 import { Context } from '../lib/context'
 
 interface GetLearningElementDataArgs {
@@ -11,11 +13,47 @@ export async function getLearningElementData(
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
     include: {
+      course: true,
       instances: true,
     },
   })
 
+  const instancesWithoutSolution = element?.instances.map((instance) => {
+    const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
+    if (
+      !questionData ||
+      typeof questionData !== 'object' ||
+      Array.isArray(questionData)
+    )
+      return instance
+
+    switch (questionData.type) {
+      case QuestionType.SC:
+      case QuestionType.MC:
+        return {
+          ...instance,
+          questionData: {
+            ...questionData,
+            options: {
+              ...questionData.options,
+              choices: questionData.options.choices.map(pick(['value'])),
+            },
+          },
+        }
+
+      case QuestionType.FREE_TEXT:
+        return instance
+
+      case QuestionType.NUMERICAL:
+        return instance
+
+      default:
+        return instance
+    }
+  })
+
   return {
     ...element,
+    instances: instancesWithoutSolution,
   }
 }

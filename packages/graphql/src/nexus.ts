@@ -1,5 +1,13 @@
+import { QuestionType } from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
-import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
+import {
+  asNexusMethod,
+  idArg,
+  interfaceType,
+  nonNull,
+  objectType,
+  stringArg,
+} from 'nexus'
 import {
   Context,
   ContextWithOptionalUser,
@@ -12,13 +20,63 @@ import * as ParticipantService from './services/participants'
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 
+export const QuestionData = interfaceType({
+  name: 'QuestionData',
+  definition(t) {
+    t.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+    t.nonNull.string('contentPlain')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+  },
+  resolveType: (item) => {
+    if (item.type === QuestionType.SC || item.type === QuestionType.MC) {
+      return 'ChoicesQuestionData'
+    }
+    return null
+  },
+})
+
+export const Choice = objectType({
+  name: 'Choice',
+  definition(t) {
+    t.nonNull.string('value')
+    t.boolean('correct')
+    t.string('feedback')
+  },
+})
+
+export const ChoicesQuestionOptions = objectType({
+  name: 'ChoicesQuestionOptions',
+  definition(t) {
+    t.list.field('choices', {
+      type: Choice,
+    })
+  },
+})
+
+export const ChoicesQuestionData = objectType({
+  name: 'ChoicesQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: ChoicesQuestionOptions,
+    })
+  },
+})
+
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.nonNull.id('id')
+    t.id('id')
 
     t.field('questionData', {
-      type: 'JSONObject',
+      type: QuestionData,
     })
   },
 })

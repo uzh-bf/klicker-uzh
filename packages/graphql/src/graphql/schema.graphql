@@ -2,6 +2,27 @@
 ### Do not make changes to this file directly
 
 
+type Choice {
+  correct: Boolean
+  feedback: String
+  value: String!
+}
+
+type ChoicesQuestionData implements QuestionData {
+  content: String!
+  contentPlain: String!
+  id: ID
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: ChoicesQuestionOptions!
+  type: String!
+}
+
+type ChoicesQuestionOptions {
+  choices: [Choice]
+}
+
 type Course {
   displayName: String
   id: ID
@@ -57,7 +78,17 @@ type Query {
   learningElement(id: ID!): LearningElement
 }
 
+interface QuestionData {
+  content: String!
+  contentPlain: String!
+  id: ID
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  type: String!
+}
+
 type QuestionInstance {
-  id: ID!
-  questionData: JSONObject
+  id: ID
+  questionData: QuestionData
 }
