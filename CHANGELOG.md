@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.15...v2.0.0-alpha.16) (2022-08-23)
+
+
+### Features
+
+* persist learning element responses ([6b78c04](https://github.com/uzh-bf/klicker-uzh/commit/6b78c0438691fc82b5fa39a3adcf56310f4089fe))
+
+
+### Bug Fixes
+
+* **frontend-learning:** fix type errors ([d99188f](https://github.com/uzh-bf/klicker-uzh/commit/d99188ff976f6da40e81649ef5262bde2f918544))
+
+
+### Build and CI
+
+* add --force to vercel deployments ([f9e8a36](https://github.com/uzh-bf/klicker-uzh/commit/f9e8a3602cbd9fe39a65b100a697176d096cde01))
+
+
+### Enhancements
+
+* **frontend-learning:** ensure next question is displayed after change ([8d10bc8](https://github.com/uzh-bf/klicker-uzh/commit/8d10bc89bb31c929f8cb865166486c9e55dbf7f9))
+
+
+### Other
+
+* **frontend-learning:** small change to trigger workflow ([bc51ce2](https://github.com/uzh-bf/klicker-uzh/commit/bc51ce2b9e577c0e4ed68cad4cc0bda83d05fb6f))
+* **frontend-learning:** update routing structure so courseId is in the URL ([d756652](https://github.com/uzh-bf/klicker-uzh/commit/d7566521b8308a3b4e2c39eea51c7cf1a3298896))
+* lockfile maintenance ([3cb3b46](https://github.com/uzh-bf/klicker-uzh/commit/3cb3b4676dc95b0ce5ac4bdd2525f139db4080b7))
+
 ## [2.0.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.14...v2.0.0-alpha.15) (2022-08-23)
 
 
