@@ -203,13 +203,10 @@ enum AccessMode {
 model Session {
   id String @id @default(uuid()) @db.Uuid
 
-  namespace   String   @default(uuid()) @db.Uuid
-  execution   Int      @default(0)
-  name        String
-  displayName String
-  settings    Json // TODO: move to properties?
-  startedAt   DateTime
-  finishedAt  DateTime
+  isAudienceInteractionActive Boolean @default(false)
+  isFeedbackChannelPublic     Boolean @default(false)
+
+  finishedAt DateTime?
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus
