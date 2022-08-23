@@ -1,178 +1,18 @@
 import { useMutation, useQuery } from '@apollo/client'
+import EvaluationDisplay from '@components/EvaluationDisplay'
+import OptionsDisplay from '@components/OptionsDisplay'
 import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
-import { Button, Progress, Prose } from '@uzh-bf/design-system'
+import { Progress, Prose } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
-
-interface Props {
-  questionType: string
-  options: any
-  response: any
-  onChangeResponse: any
-  onSubmitResponse: any
-  isEvaluation?: boolean
-}
-
-function OptionsDisplay({
-  isEvaluation,
-  response,
-  onChangeResponse,
-  onSubmitResponse,
-  questionType,
-  options,
-}: Props) {
-  useEffect(() => {
-    if (questionType === QuestionType.SC || questionType === QuestionType.MC) {
-      onChangeResponse([])
-    } else if (questionType === QuestionType.FREE_TEXT) {
-    } else if (questionType === QuestionType.NUMERICAL) {
-    }
-  }, [questionType, onChangeResponse])
-
-  switch (questionType) {
-    case QuestionType.SC:
-      return (
-        <div className="flex flex-col">
-          <div className="space-y-2">
-            {options.choices?.map((choice: any, ix: number) => (
-              <div key={choice.value} className="w-full">
-                <Button
-                  disabled={isEvaluation}
-                  active={response?.includes(ix)}
-                  className={twMerge(
-                    'px-4 py-2 text-sm',
-                    response?.includes(ix) && 'border-uzh-red-100',
-                    isEvaluation && 'text-gray-700',
-                    choice.correct && 'bg-green-300 border-green-600'
-                  )}
-                  fluid
-                  onClick={() => onChangeResponse([ix])}
-                >
-                  {choice.value}
-                </Button>
-              </div>
-            ))}
-          </div>
-          <div className="self-end mt-4">
-            <Button
-              disabled={!isEvaluation && response?.length === 0}
-              onClick={onSubmitResponse}
-            >
-              {isEvaluation ? 'Next Question' : 'Submit'}
-            </Button>
-          </div>
-        </div>
-      )
-
-    case QuestionType.MC:
-      return (
-        <div className="flex flex-col">
-          <div className="space-y-2">
-            {options.choices?.map((choice: any, ix: number) => (
-              <div key={choice.value} className="w-full">
-                <Button
-                  active={response?.includes(ix)}
-                  className={twMerge(
-                    'px-4 py-2 text-sm',
-                    response?.includes(ix) && 'border-uzh-red-100',
-                    isEvaluation && 'text-gray-700',
-                    choice.correct && 'bg-green-300 border-green-600'
-                  )}
-                  fluid
-                  onClick={() =>
-                    onChangeResponse((prev: any) => {
-                      if (prev.includes(ix)) {
-                        return prev.filter((c: any) => c !== ix)
-                      } else {
-                        return [...prev, ix]
-                      }
-                    })
-                  }
-                >
-                  {choice.value}
-                </Button>
-              </div>
-            ))}
-          </div>
-          <div className="self-end mt-4">
-            <Button
-              disabled={!isEvaluation && response?.length === 0}
-              onClick={onSubmitResponse}
-            >
-              {isEvaluation ? 'Next Question' : 'Submit'}
-            </Button>
-          </div>
-        </div>
-      )
-
-    case QuestionType.FREE_TEXT:
-      return <div></div>
-
-    case QuestionType.NUMERICAL:
-      return <div></div>
-
-    default:
-      return <div></div>
-  }
-}
-
-function EvaluationDisplay({
-  questionType,
-  response,
-  options,
-  evaluation,
-}: any) {
-  switch (questionType) {
-    case QuestionType.SC: {
-      return (
-        <div className="flex flex-col">
-          <div>
-            {evaluation.feedbacks.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
-
-          {Object.entries(evaluation.choices).map(([ix, value]) => (
-            <div key={value as string}>{value as string}</div>
-          ))}
-        </div>
-      )
-    }
-
-    case QuestionType.MC:
-      return (
-        <div className="flex flex-col">
-          <div>
-            {evaluation.feedbacks.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
-
-          {Object.entries(evaluation.choices).map(([ix, value]) => (
-            <div key={value as string}>{value as string}</div>
-          ))}
-        </div>
-      )
-
-    case QuestionType.FREE_TEXT:
-      return <div></div>
-
-    case QuestionType.NUMERICAL:
-      return <div></div>
-
-    default:
-      return <div></div>
-  }
-}
 
 function LearningElement() {
   const [response, setResponse] = useState<number[] | string | null>(null)
@@ -237,6 +77,7 @@ function LearningElement() {
           />
         </div>
       </div>
+
       <div className="p-4">
         {questionData && (
           <div className="flex flex-row gap-4">
@@ -259,8 +100,6 @@ function LearningElement() {
               {currentInstance.evaluation && (
                 <EvaluationDisplay
                   questionType={questionData.type}
-                  repsonse={response}
-                  options={questionData.options}
                   evaluation={currentInstance.evaluation}
                 />
               )}
