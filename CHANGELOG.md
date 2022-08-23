@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.16...v2.0.0-alpha.17) (2022-08-23)
+
+
+### Refactors
+
+* **frontend-learning:** move evaluation and options display to separate files ([1f62539](https://github.com/uzh-bf/klicker-uzh/commit/1f6253979ca3e5aa4d76138020775b123ae5a4d4))
+
+
+### Enhancements
+
+* add MC visualization for questions ([de3b67d](https://github.com/uzh-bf/klicker-uzh/commit/de3b67d1b4067ad0c7f61b86064579ad20190347))
+* **frontend-learning:** display the answer distribution and correct option ([abb0715](https://github.com/uzh-bf/klicker-uzh/commit/abb0715f8b252e181ea396d1a753da9987203fc8))
+
 ## [2.0.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.15...v2.0.0-alpha.16) (2022-08-23)
 
 
