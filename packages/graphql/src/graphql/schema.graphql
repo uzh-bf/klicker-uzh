@@ -56,7 +56,7 @@ type Mutation {
   leaveCourse(courseId: ID!): Participation
   login(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
-  respondToQuestionInstance(id: ID!, response: ResponseInput!): QuestionInstance
+  respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
 }
 
 type Participant {

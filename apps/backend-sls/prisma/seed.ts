@@ -144,11 +144,29 @@ async function main(prisma: Prisma.PrismaClient) {
         createdAt: null,
         updatedAt: null,
       },
-      results: {},
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
       questionId: question.id,
       ownerId: user.id,
     },
-    update: {},
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
   })
 
   const instance2 = await prisma.questionInstance.upsert({
@@ -162,11 +180,29 @@ async function main(prisma: Prisma.PrismaClient) {
         createdAt: null,
         updatedAt: null,
       },
-      results: {},
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
       questionId: question2.id,
       ownerId: user.id,
     },
-    update: {},
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
   })
 
   const learningElement = await prisma.learningElement.upsert({
