@@ -70,6 +70,7 @@ function OptionsDisplay({
             {options.choices?.map((choice: any, ix: number) => (
               <div key={choice.value} className="w-full">
                 <Button
+                  disabled={isEvaluation}
                   active={response?.includes(ix)}
                   className={twMerge(
                     'px-4 py-2 text-sm',
