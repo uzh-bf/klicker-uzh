@@ -1,8 +1,11 @@
 import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
+import bcrypt from 'bcrypt'
 
 async function main(prisma: Prisma.PrismaClient) {
+  const hash = await bcrypt.hash('abcd', 12)
+
   const user = await prisma.user.upsert({
     where: {
       id: '6f45065c-447f-4259-818c-c6f6b477eb48',
@@ -10,10 +13,14 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: '6f45065c-447f-4259-818c-c6f6b477eb48',
       email: 'roland.schlaefli@bf.uzh.ch',
-      password: 'abcd',
+      password: hash,
       shortname: 'rschlaefli',
+      isActive: true,
     },
-    update: {},
+    update: {
+      password: hash,
+      isActive: true,
+    },
   })
 
   const course = await prisma.course.upsert({

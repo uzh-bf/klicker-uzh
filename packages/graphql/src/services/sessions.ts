@@ -1,6 +1,49 @@
+import { SessionStatus } from '@klicker-uzh/prisma'
 import { ContextWithUser } from '@lib/context'
 
 export async function startSession(
   { id }: { id: string },
   ctx: ContextWithUser
-) {}
+) {
+  console.log(ctx.user)
+
+  const session = await ctx.prisma.session.findFirst({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  console.warn(session)
+
+  // if there is no session matching the current user and session id, exit early
+  if (!session) {
+    return null
+  }
+
+  // if the session was alreadt completed, exit early
+  if (session.status === SessionStatus.COMPLETED) {
+    return null
+  }
+
+  // if the session is already running, return it
+  if (session.status === SessionStatus.RUNNING) {
+    return session
+  }
+
+  // generate a unique pin code
+  const pinCode = 100000 + Math.floor(Math.random() * 900000)
+
+  // TODO: if the session is paused, reinitialize and restart
+
+  return ctx.prisma.session.update({
+    where: {
+      id,
+    },
+    data: {
+      status: SessionStatus.RUNNING,
+      startedAt: new Date(),
+      pinCode,
+    },
+  })
+}
