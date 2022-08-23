@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.14...v2.0.0-alpha.15) (2022-08-23)
+
+
+### Bug Fixes
+
+* **frontend-learning:** ensure linting does not break the build ([da62875](https://github.com/uzh-bf/klicker-uzh/commit/da6287520aec19a3681aa52386e8a06f63ea74b2))
+* **frontend-learning:** fix missing any ([a59bca7](https://github.com/uzh-bf/klicker-uzh/commit/a59bca7a5d189c54fe3419fc59eebcbcfed7fb32))
+
+
+### Other
+
+* **backend-sls:** add second question to the learning element in seed ([b059d44](https://github.com/uzh-bf/klicker-uzh/commit/b059d44489dd6bce98ecaaa5198b768d524d624d))
+* lockfile maintenance ([0434cfa](https://github.com/uzh-bf/klicker-uzh/commit/0434cfa1cd999fb368f107e70922667ca1471d18))
+
 ## [2.0.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.12...v2.0.0-alpha.14) (2022-08-23)
 
 
