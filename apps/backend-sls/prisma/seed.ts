@@ -133,6 +133,148 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const question3 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33c',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33c',
+      name: 'Stakeholder',
+      content:
+        'Welche der folgenden Personen/Gruppen sind **keine** Stakeholder?',
+      contentPlain:
+        'Welche der folgenden Personen/Gruppen sind keine Stakeholder?',
+      type: 'SC',
+      options: {
+        choices: [
+          {
+            feedback:
+              'Falsch! Beim Staat handelt es sich um einen Stakeholder.',
+            correct: false,
+            value: 'Staat',
+          },
+          {
+            feedback:
+              'Falsch! Bei den Arbeitnehmern handelt es sich um Stakeholder.',
+            correct: false,
+            value: 'Arbeitnehmer',
+          },
+          {
+            feedback:
+              'Falsch! Bei den Fremdkapitalgebern handelt es sich um Stakeholder.',
+            correct: false,
+            value: 'Fremdkapitalgeber',
+          },
+          {
+            feedback: 'Kunden',
+            correct: false,
+            value: 'Falsch! Bei den Kunden handelt es sich um Stakeholder.',
+          },
+          {
+            feedback:
+              'Korrekt! Alle genannten Personen/Gruppen sind Stakeholder.',
+            correct: true,
+            value:
+              'Es handelt sich bei allen oben genannten Personen/Gruppen um Stakeholder.',
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const question4 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33d',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33d',
+      name: 'Bilanz',
+      content:
+        'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
+      contentPlain:
+        'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
+      type: 'MC',
+      options: {
+        choices: [
+          {
+            feedback:
+              'Diese Aussage ist nicht korrekt! Die Aktivseite zeigt die Mittelverwendung auf.',
+            correct: false,
+            value: 'Die Aktivseite zeigt die Mittelherkunft auf.',
+          },
+          {
+            feedback:
+              'Diese Aussage ist nicht korrekt! Die Passivseite zeigt die Mittelherkunft auf.',
+            correct: false,
+            value: 'Die Passivseite der Bilanz zeigt die Mittelverwendung auf.',
+          },
+          {
+            feedback:
+              'Diese Aussage ist nicht korrekt! Das EK zeigt zwar die Mittelherkunft auf, diese wird aber auf der Passivseite der Bilanz abgebildet.',
+            correct: false,
+            value:
+              'Das EK zeigt die Mittelherkunft auf und steht somit auf der Aktivseite der Bilanz.',
+          },
+          {
+            feedback: 'Diese Aussage ist korrekt!',
+            correct: true,
+            value:
+              'Das Konto Flüssige Mittel zeigt die Mittelverwendung auf und steht somit auf der Aktivseite der Bilanz.',
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const question5 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33e',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33e',
+      name: 'Grundfunktionen des Fremdkapitals',
+      content:
+        'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
+      contentPlain:
+        'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
+      type: 'MC',
+      options: {
+        choices: [
+          {
+            feedback:
+              'Diese Aussage ist korrekt! Dritte stellen für eine bestimmte Zeitdauer Fremdkapital zur Verfügung.',
+            correct: true,
+            value: 'Gläubigerkapital',
+          },
+          {
+            feedback:
+              'Diese Aussage ist nicht korrekt! Dies ist eine Grundfunktion des Eigenkapitals.',
+            correct: false,
+            value: 'Liquiditätssicherungsfunktion',
+          },
+          {
+            feedback:
+              'Diese Aussage ist korrekt! Fremdkapitalgeber haben in der Regel Anspruch auf Verzinsung und Rückzahlung des Kapitals zu einem vereinbarten Termin.',
+            correct: true,
+            value: 'Gewinnunabhängiges Kapitalentgelt',
+          },
+          {
+            feedback:
+              'Diese Aussage ist korrekt! Es gehört zur Außenfinanzierung bzw. Fremdfinazierung.',
+            correct: true,
+            value: 'Finanzierungsfunktion',
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
   const instance = await prisma.questionInstance.upsert({
     where: {
       id: '6a44d3a8-c24f-4f48-90e6-acf81a73781e',
@@ -205,6 +347,110 @@ async function main(prisma: Prisma.PrismaClient) {
     },
   })
 
+  const instance3 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782a',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782a',
+      questionData: {
+        ...question3,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question3.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const instance4 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782b',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782b',
+      questionData: {
+        ...question4,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question4.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
+  const instance5 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782c',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782c',
+      questionData: {
+        ...question5,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
   const learningElement = await prisma.learningElement.upsert({
     where: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
@@ -220,6 +466,15 @@ async function main(prisma: Prisma.PrismaClient) {
           {
             id: instance2.id,
           },
+          {
+            id: instance3.id,
+          },
+          {
+            id: instance4.id,
+          },
+          {
+            id: instance5.id,
+          },
         ],
       },
     },
@@ -231,6 +486,15 @@ async function main(prisma: Prisma.PrismaClient) {
           },
           {
             id: instance2.id,
+          },
+          {
+            id: instance3.id,
+          },
+          {
+            id: instance4.id,
+          },
+          {
+            id: instance5.id,
           },
         ],
       },
