@@ -6,7 +6,7 @@ const nextConfig = {
         {
           protocol: 'https',
           hostname: 'sos-ch-dk-2.exo.io',
-          port: '',
+          port: '443',
           pathname: '/klicker-uzh-dev/**',
         },
       ],

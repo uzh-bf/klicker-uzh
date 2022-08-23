@@ -37,8 +37,6 @@ function LearningElement() {
   const currentInstance = data.learningElement?.instances?.[currentIx]
   const questionData = currentInstance?.questionData
 
-  console.log(currentInstance)
-
   const isEvaluation = !!currentInstance?.evaluation
 
   const handleSubmitResponse = () => {
@@ -78,7 +76,7 @@ function LearningElement() {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 border-l border-r">
         {questionData && (
           <div className="flex flex-row gap-4">
             <div className="flex-1">
@@ -96,9 +94,10 @@ function LearningElement() {
                 options={questionData.options}
               />
             </div>
-            <div className="flex-1 p-4 bg-gray-100 rounded">
+            <div className="flex-1 p-4 border rounded bg-gray-50">
               {currentInstance.evaluation && (
                 <EvaluationDisplay
+                  options={questionData.options}
                   questionType={questionData.type}
                   evaluation={currentInstance.evaluation}
                 />
