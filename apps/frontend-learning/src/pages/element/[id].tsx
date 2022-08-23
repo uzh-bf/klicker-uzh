@@ -38,8 +38,6 @@ function OptionsDisplay({
     }
   }, [questionType, onChangeResponse])
 
-  if (!response) return null
-
   switch (questionType) {
     case QuestionType.SC:
       return (
@@ -49,10 +47,10 @@ function OptionsDisplay({
               <div key={choice.value} className="w-full">
                 <Button
                   disabled={isEvaluation}
-                  active={response.includes(ix)}
+                  active={response?.includes(ix)}
                   className={twMerge(
                     'px-4 py-2 text-sm',
-                    response.includes(ix) && 'border-uzh-red-100',
+                    response?.includes(ix) && 'border-uzh-red-100',
                     isEvaluation && 'text-gray-700',
                     choice.correct && 'bg-green-300 border-green-600'
                   )}
@@ -66,7 +64,7 @@ function OptionsDisplay({
           </div>
           <div className="self-end mt-4">
             <Button
-              disabled={!isEvaluation && response.length === 0}
+              disabled={!isEvaluation && response?.length === 0}
               onClick={onSubmitResponse}
             >
               {isEvaluation ? 'Next Question' : 'Submit'}
@@ -82,10 +80,10 @@ function OptionsDisplay({
             {options.choices?.map((choice: any, ix: number) => (
               <div key={choice.value} className="w-full">
                 <Button
-                  active={response.includes(ix)}
+                  active={response?.includes(ix)}
                   className={twMerge(
                     'px-4 py-2 text-sm',
-                    response.includes(ix) && 'border-uzh-red-100',
+                    response?.includes(ix) && 'border-uzh-red-100',
                     isEvaluation && 'text-gray-700',
                     choice.correct && 'bg-green-300 border-green-600'
                   )}
@@ -107,7 +105,7 @@ function OptionsDisplay({
           </div>
           <div className="self-end mt-4">
             <Button
-              disabled={!isEvaluation && response.length === 0}
+              disabled={!isEvaluation && response?.length === 0}
               onClick={onSubmitResponse}
             >
               {isEvaluation ? 'Next Question' : 'Submit'}
@@ -198,6 +196,8 @@ function LearningElement() {
 
   const currentInstance = data.learningElement?.instances?.[currentIx]
   const questionData = currentInstance?.questionData
+
+  console.log(currentInstance)
 
   const isEvaluation = !!currentInstance?.evaluation
 
