@@ -31,7 +31,7 @@ export async function getParticipantToken(ctx: any) {
     const result = await apolloClient.query({
       query: GetCourseOverviewDataDocument,
       variables: {
-        courseId: query.id as string,
+        courseId: query.courseId as string,
       },
       context: cookies['participant_token']
         ? {
@@ -51,7 +51,7 @@ export async function getParticipantToken(ctx: any) {
   const result = await apolloClient.mutate({
     mutation: RegisterParticipantFromLtiDocument,
     variables: {
-      courseId: query.id as string,
+      courseId: query.courseId as string,
       participantId: request.body.lis_person_sourcedid,
       participantEmail: request.body.lis_person_contact_email_primary,
     },
