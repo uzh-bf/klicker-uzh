@@ -4,6 +4,14 @@ mutation ResponseToQuestionInstance($id: ID!, $response: ResponseInput!) {
   respondToQuestionInstance(id: $id, response: $response) {
     id
     ...QuestionData
-    evaluation
+    evaluation {
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      choices
+    }
   }
 }

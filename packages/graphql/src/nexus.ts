@@ -80,6 +80,28 @@ export const ChoicesQuestionData = objectType({
   },
 })
 
+export const QuestionFeedback = objectType({
+  name: 'QuestionFeedback',
+  definition(t) {
+    t.int('ix')
+    t.string('feedback')
+    t.boolean('correct')
+    t.string('value')
+  },
+})
+
+export const InstanceEvaluation = objectType({
+  name: 'InstanceEvaluation',
+  definition(t) {
+    t.list.field('feedbacks', {
+      type: QuestionFeedback,
+    })
+    t.field('choices', {
+      type: 'JSONObject',
+    })
+  },
+})
+
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
@@ -90,7 +112,7 @@ export const QuestionInstance = objectType({
     })
 
     t.field('evaluation', {
-      type: 'JSONObject',
+      type: InstanceEvaluation,
     })
   },
 })

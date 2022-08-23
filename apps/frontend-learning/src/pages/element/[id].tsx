@@ -135,9 +135,18 @@ function EvaluationDisplay({
 }: any) {
   switch (questionType) {
     case QuestionType.SC: {
-      const responses = options.choices.filter((_, ix) => response.includes(ix))
+      const responses = options.choices.filter((_, ix) =>
+        response?.includes(ix)
+      )
+
       return (
         <div className="flex flex-col">
+          <div>
+            {evaluation.feedbacks.map((fb) => (
+              <div key={fb.feedback}>{fb.feedback}</div>
+            ))}
+          </div>
+
           {Object.entries(evaluation.choices).map(([ix, value]) => (
             <div>{value}</div>
           ))}
@@ -148,6 +157,12 @@ function EvaluationDisplay({
     case QuestionType.MC:
       return (
         <div className="flex flex-col">
+          <div>
+            {evaluation.feedbacks.map((fb) => (
+              <div key={fb.feedback}>{fb.feedback}</div>
+            ))}
+          </div>
+
           {Object.entries(evaluation.choices).map(([ix, value]) => (
             <div>{value}</div>
           ))}

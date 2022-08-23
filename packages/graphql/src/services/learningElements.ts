@@ -2,12 +2,46 @@ import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithUser } from '../lib/context'
 
+type QuestionResponse = {
+  choices?: number[]
+  value?: string
+}
+
+function gradeQuestionResponse(
+  questionData: AllQuestionTypeData,
+  response: QuestionResponse
+) {
+  switch (questionData.type) {
+    case QuestionType.SC:
+    case QuestionType.MC: {
+      const feedbacks = questionData.options.choices
+        .map((choice, ix) => ({ ...choice, ix }))
+        .filter((choice) => response.choices?.includes(choice.ix))
+
+      return {
+        evaluation: {
+          feedbacks,
+          choices: {
+            0: 50,
+            1: 5,
+            2: 2,
+            3: 15,
+            4: 28,
+          },
+        },
+      }
+    }
+
+    default:
+      return {
+        evaluation: null,
+      }
+  }
+}
+
 interface RespondToQuestionInstanceArgs {
   id: string
-  response: {
-    choices?: number[]
-    value?: string
-  }
+  response: QuestionResponse
 }
 
 export async function respondToQuestionInstance(
@@ -21,19 +55,15 @@ export async function respondToQuestionInstance(
     where: { id },
   })
 
-  console.warn(id, instance, response)
+  if (!instance) return null
+
+  const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
+
+  const { evaluation } = gradeQuestionResponse(questionData, response)
 
   return {
     ...instance,
-    evaluation: {
-      choices: {
-        0: 50,
-        1: 5,
-        2: 2,
-        3: 15,
-        4: 28,
-      },
-    },
+    evaluation,
   }
 }
 

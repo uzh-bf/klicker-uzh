@@ -35,6 +35,11 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type InstanceEvaluation {
+  choices: JSONObject
+  feedbacks: [QuestionFeedback]
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -89,8 +94,15 @@ interface QuestionData {
   type: String!
 }
 
+type QuestionFeedback {
+  correct: Boolean
+  feedback: String
+  ix: Int
+  value: String
+}
+
 type QuestionInstance {
-  evaluation: JSONObject
+  evaluation: InstanceEvaluation
   id: ID
   questionData: QuestionData
 }

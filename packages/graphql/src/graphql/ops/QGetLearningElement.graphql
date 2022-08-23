@@ -9,7 +9,15 @@ query GetLearningElement($id: ID!) {
     instances {
       id
       ...QuestionData
-      evaluation
+      evaluation {
+        feedbacks {
+          ix
+          feedback
+          correct
+          value
+        }
+        choices
+      }
     }
   }
 }

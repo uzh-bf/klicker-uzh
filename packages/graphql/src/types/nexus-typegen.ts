@@ -80,6 +80,10 @@ export interface NexusGenObjects {
     learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
   }
+  InstanceEvaluation: { // root type
+    choices?: NexusGenScalars['JSONObject'] | null; // JSONObject
+    feedbacks?: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
+  }
   LearningElement: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
     id?: string | null; // ID
@@ -104,8 +108,14 @@ export interface NexusGenObjects {
     points?: number | null; // Int
   }
   Query: {};
+  QuestionFeedback: { // root type
+    correct?: boolean | null; // Boolean
+    feedback?: string | null; // String
+    ix?: number | null; // Int
+    value?: string | null; // String
+  }
   QuestionInstance: { // root type
-    evaluation?: NexusGenScalars['JSONObject'] | null; // JSONObject
+    evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id?: string | null; // ID
     questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
@@ -147,6 +157,10 @@ export interface NexusGenFieldTypes {
     learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
   }
+  InstanceEvaluation: { // field return type
+    choices: NexusGenScalars['JSONObject'] | null; // JSONObject
+    feedbacks: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
+  }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
     id: string | null; // ID
@@ -180,8 +194,14 @@ export interface NexusGenFieldTypes {
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
+  QuestionFeedback: { // field return type
+    correct: boolean | null; // Boolean
+    feedback: string | null; // String
+    ix: number | null; // Int
+    value: string | null; // String
+  }
   QuestionInstance: { // field return type
-    evaluation: NexusGenScalars['JSONObject'] | null; // JSONObject
+    evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: string | null; // ID
     questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
@@ -221,6 +241,10 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     name: 'String'
   }
+  InstanceEvaluation: { // field return type name
+    choices: 'JSONObject'
+    feedbacks: 'QuestionFeedback'
+  }
   LearningElement: { // field return type name
     course: 'Course'
     id: 'ID'
@@ -254,8 +278,14 @@ export interface NexusGenFieldTypeNames {
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
   }
+  QuestionFeedback: { // field return type name
+    correct: 'Boolean'
+    feedback: 'String'
+    ix: 'Int'
+    value: 'String'
+  }
   QuestionInstance: { // field return type name
-    evaluation: 'JSONObject'
+    evaluation: 'InstanceEvaluation'
     id: 'ID'
     questionData: 'QuestionData'
   }
