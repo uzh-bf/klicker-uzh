@@ -93,7 +93,7 @@ function OptionsDisplay({
                   onClick={() =>
                     onChangeResponse((prev: any) => {
                       if (prev.includes(ix)) {
-                        return prev.filter((c) => c !== ix)
+                        return prev.filter((c: any) => c !== ix)
                       } else {
                         return [...prev, ix]
                       }
