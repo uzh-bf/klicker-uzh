@@ -11,7 +11,7 @@
     "analyze": "size-limit --why",
     "build:all": "npm-run-all generate build",
     "build": "NODE_ENV=production tsup --dts",
-    "build:watch": "NODE_ENV=development tsup --watch --dts",
+    "dev": "NODE_ENV=development tsup --watch --dts",
     "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",

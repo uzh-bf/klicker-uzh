@@ -7,8 +7,9 @@ type QuestionResponse = {
   value?: string
 }
 
-function gradeQuestionResponse(
+function evaluateQuestionResponse(
   questionData: AllQuestionTypeData,
+  results: any,
   response: QuestionResponse
 ) {
   switch (questionData.type) {
@@ -21,13 +22,7 @@ function gradeQuestionResponse(
       return {
         evaluation: {
           feedbacks,
-          choices: {
-            0: 50,
-            1: 5,
-            2: 2,
-            3: 15,
-            4: 28,
-          },
+          choices: results.choices,
         },
       }
     }
@@ -40,29 +35,91 @@ function gradeQuestionResponse(
 }
 
 interface RespondToQuestionInstanceArgs {
+  courseId: string
   id: string
   response: QuestionResponse
 }
 
 export async function respondToQuestionInstance(
-  { id, response }: RespondToQuestionInstanceArgs,
+  { courseId, id, response }: RespondToQuestionInstanceArgs,
   ctx: ContextWithUser
 ) {
-  // TODO: compare the solution with the answer
-  // TODO: award points to the user when correctly responded
-  // TODO: return the result, evaluation, and feedback and correctness
-  const instance = await ctx.prisma.questionInstance.findUnique({
-    where: { id },
+  // TODO: if logged in and participating again, decrement the previous choice and increment the new one?
+  const updatedInstance = await ctx.prisma.$transaction(async (prisma) => {
+    // TODO: award points to the user when correctly responded
+    const instance = await prisma.questionInstance.findUnique({
+      where: { id },
+    })
+
+    if (!instance) return null
+
+    const results = instance.results?.valueOf() as AllQuestionResults
+
+    const choices = response.choices?.reduce(
+      (acc, ix) => ({
+        ...acc,
+        [ix]: acc[ix] + 1,
+      }),
+      results.choices
+    )
+
+    prisma.questionResponse.upsert({
+      where: {
+        participantId_questionInstanceId: {
+          participantId: ctx.user.sub,
+          questionInstanceId: id,
+        },
+      },
+      create: {
+        response,
+        participant: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+        questionInstance: {
+          connect: {
+            id,
+          },
+        },
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+        trialsCount: 1,
+      },
+      update: {
+        response,
+        trialsCount: {
+          increment: 1,
+        },
+      },
+    })
+
+    return prisma.questionInstance.update({
+      where: {
+        id,
+      },
+      data: {
+        results: {
+          choices,
+        },
+      },
+    })
   })
 
-  if (!instance) return null
-
-  const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
-
-  const { evaluation } = gradeQuestionResponse(questionData, response)
+  const { evaluation } = evaluateQuestionResponse(
+    updatedInstance?.questionData?.valueOf() as AllQuestionTypeData,
+    updatedInstance?.results?.valueOf() as AllQuestionResults,
+    response
+  )
 
   return {
-    ...instance,
+    ...updatedInstance,
     evaluation,
   }
 }

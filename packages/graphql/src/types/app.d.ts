@@ -47,3 +47,9 @@ type AllQuestionTypeData =
   | ChoicesQuestionData
   | FreeTextQuestionData
   | NumericalQuestionData
+
+interface ChoicesQuestionResults {
+  choices: Record<string, number>
+}
+
+type AllQuestionResults = ChoicesQuestionResults

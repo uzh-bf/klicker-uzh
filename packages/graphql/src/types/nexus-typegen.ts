@@ -318,6 +318,7 @@ export interface NexusGenArgTypes {
       participantId: string; // ID!
     }
     respondToQuestionInstance: { // args
+      courseId: string; // ID!
       id: string; // ID!
       response: NexusGenInputs['ResponseInput']; // ResponseInput!
     }

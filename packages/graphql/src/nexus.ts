@@ -261,6 +261,7 @@ export const Mutation = objectType({
     t.field('respondToQuestionInstance', {
       type: QuestionInstance,
       args: {
+        courseId: nonNull(idArg()),
         id: nonNull(idArg()),
         response: nonNull(
           arg({
