@@ -91,7 +91,7 @@ function OptionsDisplay({
                   )}
                   fluid
                   onClick={() =>
-                    onChangeResponse((prev) => {
+                    onChangeResponse((prev: any) => {
                       if (prev.includes(ix)) {
                         return prev.filter((c) => c !== ix)
                       } else {
@@ -135,10 +135,6 @@ function EvaluationDisplay({
 }: any) {
   switch (questionType) {
     case QuestionType.SC: {
-      const responses = options.choices.filter((_, ix) =>
-        response?.includes(ix)
-      )
-
       return (
         <div className="flex flex-col">
           <div>
@@ -148,7 +144,7 @@ function EvaluationDisplay({
           </div>
 
           {Object.entries(evaluation.choices).map(([ix, value]) => (
-            <div>{value}</div>
+            <div key={value as string}>{value as string}</div>
           ))}
         </div>
       )
@@ -164,7 +160,7 @@ function EvaluationDisplay({
           </div>
 
           {Object.entries(evaluation.choices).map(([ix, value]) => (
-            <div>{value}</div>
+            <div key={value as string}>{value as string}</div>
           ))}
         </div>
       )
