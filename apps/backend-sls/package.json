@@ -23,7 +23,7 @@
   "dependencies": {
     "@graphql-authz/core": "1.2.1",
     "@graphql-authz/envelop-plugin": "1.0.3",
-    "@graphql-yoga/node": "2.13.8",
+    "@graphql-yoga/node": "2.13.9",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/prisma": "^2.0.0-alpha.9",
     "@vendia/serverless-express": "4.10.1",
