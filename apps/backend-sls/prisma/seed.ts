@@ -83,6 +83,56 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const question2 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33b',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33b',
+      name: 'Organisation des Finanzwesens',
+      content: 'Welche der folgenden Aussagen ist **falsch**?',
+      contentPlain: 'Welche der folgenden Aussagen ist falsch?',
+      type: 'SC',
+      options: {
+        choices: [
+          {
+            feedback: 'Diese Aussage ist nicht korrekt!',
+            correct: false,
+            value:
+              'Die zentralen Tätigkeiten einer Finanzabteilung lassen sich in Finanzplanung, Finanzdisposition (d.h. die Realisierung der Finanzplanung) und Finanzcontrolling einteilen.',
+          },
+          {
+            feedback: 'Diese Aussage ist nicht korrekt!',
+            correct: false,
+            value:
+              'Beim Controlling geht es grundsätzlich um die Überwachung des finanziellen Geschehens. Dies wird mit Hilfe eines Soll/Ist-Vergleichs der Finanzplanung gemacht.',
+          },
+          {
+            feedback: 'Diese Aussage ist nicht korrekt!',
+            correct: false,
+            value:
+              'In grossen Firmen gibt es normalerweise neben dem CFO jeweils einen Controller und einen Treasurer.',
+          },
+          {
+            feedback:
+              'Diese Aussage ist korrekt! Die Kapitalbeschaffung ist Aufgabe des Treasurers.',
+            correct: true,
+            value:
+              'Der Controller ist unter anderem für die Regelung der Ausgabe von Wertpapieren verantwortlich.',
+          },
+          {
+            feedback: 'Diese Aussage ist nicht korrekt!',
+            correct: false,
+            value:
+              'Der Treasurer kümmert sich um das ganze Cash- und Credit-Management.',
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
   const instance = await prisma.questionInstance.upsert({
     where: {
       id: '6a44d3a8-c24f-4f48-90e6-acf81a73781e',
@@ -101,6 +151,24 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const instance2 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781f',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781f',
+      questionData: {
+        ...question2,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {},
+      questionId: question2.id,
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
   const learningElement = await prisma.learningElement.upsert({
     where: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
@@ -113,10 +181,24 @@ async function main(prisma: Prisma.PrismaClient) {
           {
             id: instance.id,
           },
+          {
+            id: instance2.id,
+          },
         ],
       },
     },
-    update: {},
+    update: {
+      instances: {
+        connect: [
+          {
+            id: instance.id,
+          },
+          {
+            id: instance2.id,
+          },
+        ],
+      },
+    },
   })
 }
 
