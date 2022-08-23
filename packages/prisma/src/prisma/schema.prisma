@@ -367,6 +367,8 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
 
+  responses QuestionResponse[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -382,6 +384,9 @@ model QuestionResponse {
 
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id])
+  participationId String        @db.Uuid
 
   questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id])
   questionInstanceId String           @db.Uuid
