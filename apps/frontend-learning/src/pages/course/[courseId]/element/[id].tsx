@@ -3,12 +3,12 @@ import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { QuestionType } from '@type/app'
 import { Button, Progress, Prose } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { QuestionType } from '../../types/app'
 
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
