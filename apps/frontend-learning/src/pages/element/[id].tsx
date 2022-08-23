@@ -138,7 +138,7 @@ function EvaluationDisplay({
       return (
         <div className="flex flex-col">
           <div>
-            {evaluation.feedbacks.map((fb) => (
+            {evaluation.feedbacks.map((fb: any) => (
               <div key={fb.feedback}>{fb.feedback}</div>
             ))}
           </div>
@@ -154,7 +154,7 @@ function EvaluationDisplay({
       return (
         <div className="flex flex-col">
           <div>
-            {evaluation.feedbacks.map((fb) => (
+            {evaluation.feedbacks.map((fb: any) => (
               <div key={fb.feedback}>{fb.feedback}</div>
             ))}
           </div>
