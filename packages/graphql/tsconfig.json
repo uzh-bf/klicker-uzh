@@ -2,6 +2,13 @@
   "extends": "@tsconfig/node16/tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
-    "module": "ESNext"
+    "module": "ESNext",
+    "baseUrl": ".",
+    "paths": {
+      "@graphql/*": ["src/components/*"],
+      "@lib/*": ["src/lib/*"],
+      "@services/*": ["src/pages/*"],
+      "@type/*": ["src/types/*"]
+    }
   }
 }

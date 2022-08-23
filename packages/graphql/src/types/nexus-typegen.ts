@@ -43,6 +43,8 @@ export interface NexusGenInputs {
 }
 
 export interface NexusGenEnums {
+  SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
+  SessionStatus: "COMPLETED" | "PLANNED" | "RUNNING" | "SCHEDULED"
 }
 
 export interface NexusGenScalars {
@@ -119,6 +121,23 @@ export interface NexusGenObjects {
     id?: string | null; // ID
     questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
+  Session: { // root type
+    activeBlock: number; // Int!
+    blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
+    displayName: string; // String!
+    execution: number; // Int!
+    id?: string | null; // ID
+    isAudienceInteractionActive: boolean; // Boolean!
+    isFeedbackChannelPublic: boolean; // Boolean!
+    name: string; // String!
+    namespace: string; // String!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
+  }
+  SessionBlock: { // root type
+    id?: string | null; // ID
+    instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+  }
 }
 
 export interface NexusGenInterfaces {
@@ -130,7 +149,7 @@ export interface NexusGenUnions {
 
 export type NexusGenRootTypes = NexusGenInterfaces & NexusGenObjects
 
-export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
+export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars & NexusGenEnums
 
 export interface NexusGenFieldTypes {
   Choice: { // field return type
@@ -172,6 +191,7 @@ export interface NexusGenFieldTypes {
     login: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
+    startSession: NexusGenRootTypes['Session'] | null; // Session
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -204,6 +224,23 @@ export interface NexusGenFieldTypes {
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: string | null; // ID
     questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
+  }
+  Session: { // field return type
+    activeBlock: number; // Int!
+    blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
+    displayName: string; // String!
+    execution: number; // Int!
+    id: string | null; // ID
+    isAudienceInteractionActive: boolean; // Boolean!
+    isFeedbackChannelPublic: boolean; // Boolean!
+    name: string; // String!
+    namespace: string; // String!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
+  }
+  SessionBlock: { // field return type
+    id: string | null; // ID
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
   QuestionData: { // field return type
     content: string; // String!
@@ -256,6 +293,7 @@ export interface NexusGenFieldTypeNames {
     login: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
     respondToQuestionInstance: 'QuestionInstance'
+    startSession: 'Session'
   }
   Participant: { // field return type name
     avatar: 'String'
@@ -288,6 +326,23 @@ export interface NexusGenFieldTypeNames {
     evaluation: 'InstanceEvaluation'
     id: 'ID'
     questionData: 'QuestionData'
+  }
+  Session: { // field return type name
+    activeBlock: 'Int'
+    blocks: 'SessionBlock'
+    displayName: 'String'
+    execution: 'Int'
+    id: 'ID'
+    isAudienceInteractionActive: 'Boolean'
+    isFeedbackChannelPublic: 'Boolean'
+    name: 'String'
+    namespace: 'String'
+    status: 'SessionStatus'
+  }
+  SessionBlock: { // field return type name
+    id: 'ID'
+    instances: 'QuestionInstance'
+    status: 'SessionBlockStatus'
   }
   QuestionData: { // field return type name
     content: 'String'
@@ -322,6 +377,9 @@ export interface NexusGenArgTypes {
       id: string; // ID!
       response: NexusGenInputs['ResponseInput']; // ResponseInput!
     }
+    startSession: { // args
+      id: string; // ID!
+    }
   }
   Query: {
     getCourseOverviewData: { // args
@@ -345,7 +403,7 @@ export type NexusGenObjectNames = keyof NexusGenObjects;
 
 export type NexusGenInputNames = keyof NexusGenInputs;
 
-export type NexusGenEnumNames = never;
+export type NexusGenEnumNames = keyof NexusGenEnums;
 
 export type NexusGenInterfaceNames = keyof NexusGenInterfaces;
 

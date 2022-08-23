@@ -57,6 +57,7 @@ type Mutation {
   login(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
   respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
+  startSession(id: ID!): Session
 }
 
 type Participant {
@@ -110,4 +111,36 @@ type QuestionInstance {
 input ResponseInput {
   choices: [Int]
   value: String
+}
+
+type Session {
+  activeBlock: Int!
+  blocks: [SessionBlock]
+  displayName: String!
+  execution: Int!
+  id: ID
+  isAudienceInteractionActive: Boolean!
+  isFeedbackChannelPublic: Boolean!
+  name: String!
+  namespace: String!
+  status: SessionStatus!
+}
+
+type SessionBlock {
+  id: ID
+  instances: [QuestionInstance]
+  status: SessionBlockStatus!
+}
+
+enum SessionBlockStatus {
+  ACTIVE
+  EXECUTED
+  SCHEDULED
+}
+
+enum SessionStatus {
+  COMPLETED
+  PLANNED
+  RUNNING
+  SCHEDULED
 }
