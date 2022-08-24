@@ -1,20 +1,22 @@
 import { SessionStatus } from '@klicker-uzh/prisma'
 import { ContextWithUser } from '@lib/context'
+import { getRedis } from '../lib/redis'
 
 export async function startSession(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  console.log(ctx.user)
+  const redis = getRedis()
 
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,
       ownerId: ctx.user.sub,
     },
+    include: {
+      blocks: true,
+    },
   })
-
-  console.warn(session)
 
   // if there is no session matching the current user and session id, exit early
   if (!session) {

@@ -4,9 +4,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@graphql/*": ["src/components/*"],
+      "@graphql/*": ["src/graphql/*"],
       "@lib/*": ["src/lib/*"],
-      "@services/*": ["src/pages/*"],
+      "@services/*": ["src/services/*"],
       "@type/*": ["src/types/*"]
     }
   }
