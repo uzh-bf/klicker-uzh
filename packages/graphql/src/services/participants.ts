@@ -10,6 +10,20 @@ import {
   ContextWithUser,
 } from '../lib/context'
 
+export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
+  const participation = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+      isActive: true,
+    },
+    include: {
+      course: true,
+    },
+  })
+  // TODO: return participations instead of courses (course, points)
+  return participation.map((p) => p.course)
+}
+
 export async function joinCourse(
   { courseId }: { courseId: string },
   ctx: ContextWithUser

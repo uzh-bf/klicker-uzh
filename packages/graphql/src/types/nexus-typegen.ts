@@ -113,7 +113,8 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
-    login: string | null; // ID
+    loginParticipant: string | null; // ID
+    loginUser: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
   }
   Participant: { // field return type
@@ -135,6 +136,7 @@ export interface NexusGenFieldTypes {
   }
   Query: { // field return type
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    getParticipantCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
   QuestionInstance: { // field return type
@@ -158,7 +160,8 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     joinCourse: 'Participation'
     leaveCourse: 'Participation'
-    login: 'ID'
+    loginParticipant: 'ID'
+    loginUser: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
   }
   Participant: { // field return type name
@@ -180,6 +183,7 @@ export interface NexusGenFieldTypeNames {
   }
   Query: { // field return type name
     getCourseOverviewData: 'ParticipantLearningData'
+    getParticipantCourses: 'Course'
     learningElement: 'LearningElement'
   }
   QuestionInstance: { // field return type name
@@ -196,7 +200,11 @@ export interface NexusGenArgTypes {
     leaveCourse: { // args
       courseId: string; // ID!
     }
-    login: { // args
+    loginParticipant: { // args
+      password: string; // String!
+      username: string; // String!
+    }
+    loginUser: { // args
       email: string; // String!
       password: string; // String!
     }
