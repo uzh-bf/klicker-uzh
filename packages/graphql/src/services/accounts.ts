@@ -47,7 +47,7 @@ export async function login({ email, password }: LoginArgs, ctx: Context) {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 24 * 6,
     secure: process.env.NODE_ENV === 'production',
   })
 
