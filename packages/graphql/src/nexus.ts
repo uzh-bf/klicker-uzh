@@ -1,5 +1,15 @@
+import { QuestionType } from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
-import { asNexusMethod, idArg, nonNull, objectType, stringArg } from 'nexus'
+import {
+  arg,
+  asNexusMethod,
+  idArg,
+  inputObjectType,
+  interfaceType,
+  nonNull,
+  objectType,
+  stringArg,
+} from 'nexus'
 import {
   Context,
   ContextWithOptionalUser,
@@ -12,13 +22,97 @@ import * as ParticipantService from './services/participants'
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 
+export const ResponseInput = inputObjectType({
+  name: 'ResponseInput',
+  definition(t) {
+    t.list.int('choices')
+    t.string('value')
+  },
+})
+
+export const QuestionData = interfaceType({
+  name: 'QuestionData',
+  definition(t) {
+    t.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+    t.nonNull.string('contentPlain')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+  },
+  resolveType: (item) => {
+    if (item.type === QuestionType.SC || item.type === QuestionType.MC) {
+      return 'ChoicesQuestionData'
+    }
+    return null
+  },
+})
+
+export const Choice = objectType({
+  name: 'Choice',
+  definition(t) {
+    t.nonNull.string('value')
+    t.boolean('correct')
+    t.string('feedback')
+  },
+})
+
+export const ChoicesQuestionOptions = objectType({
+  name: 'ChoicesQuestionOptions',
+  definition(t) {
+    t.list.field('choices', {
+      type: Choice,
+    })
+  },
+})
+
+export const ChoicesQuestionData = objectType({
+  name: 'ChoicesQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: ChoicesQuestionOptions,
+    })
+  },
+})
+
+export const QuestionFeedback = objectType({
+  name: 'QuestionFeedback',
+  definition(t) {
+    t.int('ix')
+    t.string('feedback')
+    t.boolean('correct')
+    t.string('value')
+  },
+})
+
+export const InstanceEvaluation = objectType({
+  name: 'InstanceEvaluation',
+  definition(t) {
+    t.list.field('feedbacks', {
+      type: QuestionFeedback,
+    })
+    t.field('choices', {
+      type: 'JSONObject',
+    })
+  },
+})
+
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.nonNull.id('id')
+    t.id('id')
 
     t.field('questionData', {
-      type: 'JSONObject',
+      type: QuestionData,
+    })
+
+    t.field('evaluation', {
+      type: InstanceEvaluation,
     })
   },
 })
@@ -179,6 +273,22 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.leaveCourse(args, ctx)
+      },
+    })
+
+    t.field('respondToQuestionInstance', {
+      type: QuestionInstance,
+      args: {
+        courseId: nonNull(idArg()),
+        id: nonNull(idArg()),
+        response: nonNull(
+          arg({
+            type: ResponseInput,
+          })
+        ),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return LearningElementService.respondToQuestionInstance(args, ctx)
       },
     })
   },

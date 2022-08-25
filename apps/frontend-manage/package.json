@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "2.0.0-alpha.13",
+  "version": "2.0.0-alpha.17",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3002",
@@ -12,7 +12,7 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
-    "@uzh-bf/design-system": "0.0.25",
+    "@uzh-bf/design-system": "0.0.26",
     "deepmerge": "4.2.2",
     "graphql": "16.6.0",
     "next": "12.2.5",

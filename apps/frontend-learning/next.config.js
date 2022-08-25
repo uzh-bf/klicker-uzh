@@ -6,7 +6,7 @@ const nextConfig = {
         {
           protocol: 'https',
           hostname: 'sos-ch-dk-2.exo.io',
-          port: '',
+          port: '443',
           pathname: '/klicker-uzh-dev/**',
         },
       ],
@@ -15,7 +15,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['https://sos-ch-dk-2.exo.io'],
+    domains: ['sos-ch-dk-2.exo.io'],
   },
   publicRuntimeConfig: {
     API_URL:

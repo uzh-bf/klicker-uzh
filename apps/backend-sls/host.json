@@ -4,11 +4,11 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "default": "Warning",
-      "Host.Results": "Warning",
+      "default": "Information",
+      "Host.Results": "Information",
       "Function": "Information",
       "Function.GraphQL": "Information",
-      "Host.Aggregator": "Warning"
+      "Host.Aggregator": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {

@@ -2,6 +2,76 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.16...v2.0.0-alpha.17) (2022-08-23)
+
+
+### Refactors
+
+* **frontend-learning:** move evaluation and options display to separate files ([1f62539](https://github.com/uzh-bf/klicker-uzh/commit/1f6253979ca3e5aa4d76138020775b123ae5a4d4))
+
+
+### Enhancements
+
+* add MC visualization for questions ([de3b67d](https://github.com/uzh-bf/klicker-uzh/commit/de3b67d1b4067ad0c7f61b86064579ad20190347))
+* **frontend-learning:** display the answer distribution and correct option ([abb0715](https://github.com/uzh-bf/klicker-uzh/commit/abb0715f8b252e181ea396d1a753da9987203fc8))
+
+## [2.0.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.15...v2.0.0-alpha.16) (2022-08-23)
+
+
+### Features
+
+* persist learning element responses ([6b78c04](https://github.com/uzh-bf/klicker-uzh/commit/6b78c0438691fc82b5fa39a3adcf56310f4089fe))
+
+
+### Bug Fixes
+
+* **frontend-learning:** fix type errors ([d99188f](https://github.com/uzh-bf/klicker-uzh/commit/d99188ff976f6da40e81649ef5262bde2f918544))
+
+
+### Build and CI
+
+* add --force to vercel deployments ([f9e8a36](https://github.com/uzh-bf/klicker-uzh/commit/f9e8a3602cbd9fe39a65b100a697176d096cde01))
+
+
+### Enhancements
+
+* **frontend-learning:** ensure next question is displayed after change ([8d10bc8](https://github.com/uzh-bf/klicker-uzh/commit/8d10bc89bb31c929f8cb865166486c9e55dbf7f9))
+
+
+### Other
+
+* **frontend-learning:** small change to trigger workflow ([bc51ce2](https://github.com/uzh-bf/klicker-uzh/commit/bc51ce2b9e577c0e4ed68cad4cc0bda83d05fb6f))
+* **frontend-learning:** update routing structure so courseId is in the URL ([d756652](https://github.com/uzh-bf/klicker-uzh/commit/d7566521b8308a3b4e2c39eea51c7cf1a3298896))
+* lockfile maintenance ([3cb3b46](https://github.com/uzh-bf/klicker-uzh/commit/3cb3b4676dc95b0ce5ac4bdd2525f139db4080b7))
+
+## [2.0.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.14...v2.0.0-alpha.15) (2022-08-23)
+
+
+### Bug Fixes
+
+* **frontend-learning:** ensure linting does not break the build ([da62875](https://github.com/uzh-bf/klicker-uzh/commit/da6287520aec19a3681aa52386e8a06f63ea74b2))
+* **frontend-learning:** fix missing any ([a59bca7](https://github.com/uzh-bf/klicker-uzh/commit/a59bca7a5d189c54fe3419fc59eebcbcfed7fb32))
+
+
+### Other
+
+* **backend-sls:** add second question to the learning element in seed ([b059d44](https://github.com/uzh-bf/klicker-uzh/commit/b059d44489dd6bce98ecaaa5198b768d524d624d))
+* lockfile maintenance ([0434cfa](https://github.com/uzh-bf/klicker-uzh/commit/0434cfa1cd999fb368f107e70922667ca1471d18))
+
+## [2.0.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.12...v2.0.0-alpha.14) (2022-08-23)
+
+
+### Features
+
+* add basic possibility to join and leave a course (participation) ([#2767](https://github.com/uzh-bf/klicker-uzh/issues/2767)) ([30356af](https://github.com/uzh-bf/klicker-uzh/commit/30356af7b8e58b30346610e4ac459a26c39f6004))
+* enhance learning element display ([#2773](https://github.com/uzh-bf/klicker-uzh/issues/2773)) ([765011f](https://github.com/uzh-bf/klicker-uzh/commit/765011f28b7a3754e03485925466273e1fae8d45))
+
+
+### Other
+
+* lockfile maintenance ([867953d](https://github.com/uzh-bf/klicker-uzh/commit/867953d737c5bcf09b0e8a7671a3767942315bb7))
+* **release:** 2.0.0-alpha.13 ([4f841be](https://github.com/uzh-bf/klicker-uzh/commit/4f841be9c866a932e9733085fe542791cb415358))
+
 ## [2.0.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.12...v2.0.0-alpha.13) (2022-08-21)
 
 

@@ -9,8 +9,8 @@ import Image from 'next/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { addApolloState } from '../../lib/apollo'
-import { getParticipantToken } from '../../lib/token'
+import { addApolloState } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'

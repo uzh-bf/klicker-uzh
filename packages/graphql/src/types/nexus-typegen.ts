@@ -36,6 +36,10 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  ResponseInput: { // input type
+    choices?: Array<number | null> | null; // [Int]
+    value?: string | null; // String
+  }
 }
 
 export interface NexusGenEnums {
@@ -52,11 +56,33 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
+  Choice: { // root type
+    correct?: boolean | null; // Boolean
+    feedback?: string | null; // String
+    value: string; // String!
+  }
+  ChoicesQuestionData: { // root type
+    content: string; // String!
+    contentPlain: string; // String!
+    id?: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    type: string; // String!
+  }
+  ChoicesQuestionOptions: { // root type
+    choices?: Array<NexusGenRootTypes['Choice'] | null> | null; // [Choice]
+  }
   Course: { // root type
     displayName?: string | null; // String
     id?: string | null; // ID
     learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
+  }
+  InstanceEvaluation: { // root type
+    choices?: NexusGenScalars['JSONObject'] | null; // JSONObject
+    feedbacks?: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
   }
   LearningElement: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
@@ -82,28 +108,58 @@ export interface NexusGenObjects {
     points?: number | null; // Int
   }
   Query: {};
+  QuestionFeedback: { // root type
+    correct?: boolean | null; // Boolean
+    feedback?: string | null; // String
+    ix?: number | null; // Int
+    value?: string | null; // String
+  }
   QuestionInstance: { // root type
-    id: string; // ID!
-    questionData?: NexusGenScalars['JSONObject'] | null; // JSONObject
+    evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
+    id?: string | null; // ID
+    questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
 }
 
 export interface NexusGenInterfaces {
+  QuestionData: NexusGenRootTypes['ChoicesQuestionData'];
 }
 
 export interface NexusGenUnions {
 }
 
-export type NexusGenRootTypes = NexusGenObjects
+export type NexusGenRootTypes = NexusGenInterfaces & NexusGenObjects
 
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 
 export interface NexusGenFieldTypes {
+  Choice: { // field return type
+    correct: boolean | null; // Boolean
+    feedback: string | null; // String
+    value: string; // String!
+  }
+  ChoicesQuestionData: { // field return type
+    content: string; // String!
+    contentPlain: string; // String!
+    id: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    type: string; // String!
+  }
+  ChoicesQuestionOptions: { // field return type
+    choices: Array<NexusGenRootTypes['Choice'] | null> | null; // [Choice]
+  }
   Course: { // field return type
     displayName: string | null; // String
     id: string | null; // ID
     learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
+  }
+  InstanceEvaluation: { // field return type
+    choices: NexusGenScalars['JSONObject'] | null; // JSONObject
+    feedbacks: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
@@ -116,6 +172,7 @@ export interface NexusGenFieldTypes {
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -139,18 +196,56 @@ export interface NexusGenFieldTypes {
     getParticipantCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
+  QuestionFeedback: { // field return type
+    correct: boolean | null; // Boolean
+    feedback: string | null; // String
+    ix: number | null; // Int
+    value: string | null; // String
+  }
   QuestionInstance: { // field return type
-    id: string; // ID!
-    questionData: NexusGenScalars['JSONObject'] | null; // JSONObject
+    evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
+    id: string | null; // ID
+    questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
+  }
+  QuestionData: { // field return type
+    content: string; // String!
+    contentPlain: string; // String!
+    id: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    type: string; // String!
   }
 }
 
 export interface NexusGenFieldTypeNames {
+  Choice: { // field return type name
+    correct: 'Boolean'
+    feedback: 'String'
+    value: 'String'
+  }
+  ChoicesQuestionData: { // field return type name
+    content: 'String'
+    contentPlain: 'String'
+    id: 'ID'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'ChoicesQuestionOptions'
+    type: 'String'
+  }
+  ChoicesQuestionOptions: { // field return type name
+    choices: 'Choice'
+  }
   Course: { // field return type name
     displayName: 'String'
     id: 'ID'
     learningElements: 'LearningElement'
     name: 'String'
+  }
+  InstanceEvaluation: { // field return type name
+    choices: 'JSONObject'
+    feedbacks: 'QuestionFeedback'
   }
   LearningElement: { // field return type name
     course: 'Course'
@@ -163,6 +258,7 @@ export interface NexusGenFieldTypeNames {
     loginParticipant: 'ID'
     loginUser: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
+    respondToQuestionInstance: 'QuestionInstance'
   }
   Participant: { // field return type name
     avatar: 'String'
@@ -186,9 +282,25 @@ export interface NexusGenFieldTypeNames {
     getParticipantCourses: 'Course'
     learningElement: 'LearningElement'
   }
+  QuestionFeedback: { // field return type name
+    correct: 'Boolean'
+    feedback: 'String'
+    ix: 'Int'
+    value: 'String'
+  }
   QuestionInstance: { // field return type name
+    evaluation: 'InstanceEvaluation'
     id: 'ID'
-    questionData: 'JSONObject'
+    questionData: 'QuestionData'
+  }
+  QuestionData: { // field return type name
+    content: 'String'
+    contentPlain: 'String'
+    id: 'ID'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    type: 'String'
   }
 }
 
@@ -213,6 +325,11 @@ export interface NexusGenArgTypes {
       participantEmail: string; // ID!
       participantId: string; // ID!
     }
+    respondToQuestionInstance: { // args
+      courseId: string; // ID!
+      id: string; // ID!
+      response: NexusGenInputs['ResponseInput']; // ResponseInput!
+    }
   }
   Query: {
     getCourseOverviewData: { // args
@@ -225,18 +342,20 @@ export interface NexusGenArgTypes {
 }
 
 export interface NexusGenAbstractTypeMembers {
+  QuestionData: "ChoicesQuestionData"
 }
 
 export interface NexusGenTypeInterfaces {
+  ChoicesQuestionData: "QuestionData"
 }
 
 export type NexusGenObjectNames = keyof NexusGenObjects;
 
-export type NexusGenInputNames = never;
+export type NexusGenInputNames = keyof NexusGenInputs;
 
 export type NexusGenEnumNames = never;
 
-export type NexusGenInterfaceNames = never;
+export type NexusGenInterfaceNames = keyof NexusGenInterfaces;
 
 export type NexusGenScalarNames = keyof NexusGenScalars;
 
@@ -244,7 +363,7 @@ export type NexusGenUnionNames = never;
 
 export type NexusGenObjectsUsingAbstractStrategyIsTypeOf = never;
 
-export type NexusGenAbstractsUsingStrategyResolveType = never;
+export type NexusGenAbstractsUsingStrategyResolveType = "QuestionData";
 
 export type NexusGenFeaturesConfig = {
   abstractTypeStrategies: {
@@ -287,6 +406,12 @@ declare global {
   interface NexusGenPluginInputTypeConfig<TypeName extends string> {
   }
   interface NexusGenPluginFieldConfig<TypeName extends string, FieldName extends string> {
+    /**
+     * The nullability guard can be helpful, but is also a potentially expensive operation for lists.
+     * We need to iterate the entire list to check for null items to guard against. Set this to true
+     * to skip the null guard on a specific field if you know there's no potential for unsafe types.
+     */
+    skipNullGuard?: boolean
   }
   interface NexusGenPluginInputFieldConfig<TypeName extends string, FieldName extends string> {
   }

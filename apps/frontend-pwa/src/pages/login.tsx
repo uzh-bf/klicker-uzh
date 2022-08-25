@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRightToBracket } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
@@ -84,10 +82,7 @@ function LoginForm() {
 
               <div className="flex justify-center mt-7">
                 <Button active type="submit" disabled={isSubmitting}>
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faArrowRightToBracket} />
-                  </Button.Icon>
-                  <Button.Label>Submit</Button.Label>
+                  Submit
                 </Button>
               </div>
             </Form>
