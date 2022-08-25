@@ -1,6 +1,6 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 type QuestionResponse = {
   choices?: number[]
@@ -130,7 +130,7 @@ interface GetLearningElementDataArgs {
 
 export async function getLearningElementData(
   { id }: GetLearningElementDataArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithOptionalUser
 ) {
   // TODO: get previous responses of the participant
 
