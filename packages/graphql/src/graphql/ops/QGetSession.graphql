@@ -4,8 +4,35 @@ query GetSession($sessionId: ID!) {
     isAudienceInteractionActive
     isFeedbackChannelPublic
     namespace
-    execution
     name
+    activeBlock
+    execution
     displayName
+    status
+    blocks {
+      id
+      status
+      instances {
+        id
+        questionData {
+          content
+          contentPlain
+          id
+          isArchived
+          isDeleted
+          name
+          type
+        }
+        # evaluation {
+        #   feedbacks {
+        #     ix
+        #     feedback
+        #     correct
+        #     value
+        #   }
+        #   choices
+        # }
+      }
+    }
   }
 }
