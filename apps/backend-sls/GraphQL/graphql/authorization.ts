@@ -43,5 +43,6 @@ export const AuthSchema = {
     learningElement: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     getParticipantCourses: { __authz: { rules: ['IsParticipant'] } },
+    getSession: { __authz: { rules: ['Allow'] } },
   },
 }

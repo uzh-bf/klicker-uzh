@@ -1,0 +1,11 @@
+query GetSession($sessionId: ID!) {
+  getSession(id: $sessionId) {
+    id
+    isAudienceInteractionActive
+    isFeedbackChannelPublic
+    namespace
+    execution
+    name
+    displayName
+  }
+}

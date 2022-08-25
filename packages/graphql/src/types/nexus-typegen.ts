@@ -214,6 +214,7 @@ export interface NexusGenFieldTypes {
   Query: { // field return type
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     getParticipantCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
+    getSession: NexusGenRootTypes['Session'] | null; // Session
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
   }
   QuestionFeedback: { // field return type
@@ -318,6 +319,7 @@ export interface NexusGenFieldTypeNames {
   Query: { // field return type name
     getCourseOverviewData: 'ParticipantLearningData'
     getParticipantCourses: 'Course'
+    getSession: 'Session'
     learningElement: 'LearningElement'
   }
   QuestionFeedback: { // field return type name
@@ -392,6 +394,9 @@ export interface NexusGenArgTypes {
   Query: {
     getCourseOverviewData: { // args
       courseId: string; // ID!
+    }
+    getSession: { // args
+      id: string; // ID!
     }
     learningElement: { // args
       id: string; // ID!

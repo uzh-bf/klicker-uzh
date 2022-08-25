@@ -267,6 +267,16 @@ export const Query = objectType({
         return ParticipantService.getParticipantCourses(args, ctx)
       },
     })
+
+    t.field('getSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getSession(args, ctx)
+      },
+    })
   },
 })
 
