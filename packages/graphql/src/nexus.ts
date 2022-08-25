@@ -58,7 +58,7 @@ export const Participant = objectType({
     t.id('id')
 
     t.string('avatar')
-    t.string('pseudonym')
+    t.string('username')
   },
 })
 

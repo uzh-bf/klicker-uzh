@@ -67,7 +67,7 @@ export interface NexusGenObjects {
   Participant: { // root type
     avatar?: string | null; // String
     id?: string | null; // ID
-    pseudonym?: string | null; // String
+    username?: string | null; // String
   }
   ParticipantLearningData: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
@@ -120,7 +120,7 @@ export interface NexusGenFieldTypes {
   Participant: { // field return type
     avatar: string | null; // String
     id: string | null; // ID
-    pseudonym: string | null; // String
+    username: string | null; // String
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
@@ -167,7 +167,7 @@ export interface NexusGenFieldTypeNames {
   Participant: { // field return type name
     avatar: 'String'
     id: 'ID'
-    pseudonym: 'String'
+    username: 'String'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'

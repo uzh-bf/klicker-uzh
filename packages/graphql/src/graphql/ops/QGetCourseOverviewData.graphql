@@ -4,7 +4,7 @@ query GetCourseOverviewData($courseId: ID!) {
     participant {
       id
       avatar
-      pseudonym
+      username
     }
     participation {
       id

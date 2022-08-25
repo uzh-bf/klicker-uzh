@@ -426,7 +426,7 @@
             "deprecationReason": null
           },
           {
-            "name": "pseudonym",
+            "name": "username",
             "description": null,
             "args": [],
             "type": {

@@ -10,11 +10,6 @@ interface LoginUserArgs {
   password: string
 }
 
-interface LoginParticipantArgs {
-  username: string
-  password: string
-}
-
 export async function loginUser(
   { email, password }: LoginUserArgs,
   ctx: Context
@@ -63,12 +58,17 @@ export async function loginUser(
   return user.id
 }
 
+interface LoginParticipantArgs {
+  username: string
+  password: string
+}
+
 export async function loginParticipant(
   { username, password }: LoginParticipantArgs,
   ctx: Context
 ) {
   const participant = await ctx.prisma.participant.findUnique({
-    where: { pseudonym: username },
+    where: { username: username },
   })
 
   if (!participant) return null
@@ -92,11 +92,11 @@ export async function loginParticipant(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '6d',
+      expiresIn: '7d',
     }
   )
 
-  ctx.res.cookie('user_token', jwt, {
+  ctx.res.cookie('participant_token', jwt, {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
@@ -104,5 +104,6 @@ export async function loginParticipant(
     secure: process.env.NODE_ENV === 'production',
   })
 
+  // TODO: return more data (e.g. Avatar etc.)
   return participant.id
 }

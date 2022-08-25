@@ -36,7 +36,7 @@ type Mutation {
 type Participant {
   avatar: String
   id: ID
-  pseudonym: String
+  username: String
 }
 
 type ParticipantLearningData {
