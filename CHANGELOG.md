@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.17...v2.0.0-alpha.18) (2022-08-25)
+
+
+### Features
+
+* add participant login in PWA ([4e78442](https://github.com/uzh-bf/klicker-uzh/commit/4e78442c4b1e647d29dec73a818a84adf5868d7d))
+
 ## [2.0.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.16...v2.0.0-alpha.17) (2022-08-23)
 
 

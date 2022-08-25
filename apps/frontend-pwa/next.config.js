@@ -1,15 +1,14 @@
 /** @type {import('next').NextConfig} */
 
-const withPWA = require('next-pwa')
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  skipWaiting: true,
+  // disable: process.env.NODE_ENV === 'development',
+})
 
 const nextConfig = withPWA({
   reactStrictMode: true,
   swcMinify: true,
-  pwa: {
-    dest: 'public',
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === 'development',
-  },
   publicRuntimeConfig: {
     API_URL:
       process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:7071/api/graphql',

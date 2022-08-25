@@ -154,7 +154,7 @@ export const Participant = objectType({
     t.id('id')
 
     t.string('avatar')
-    t.string('pseudonym')
+    t.string('username')
   },
 })
 
@@ -260,20 +260,38 @@ export const Query = objectType({
         return ParticipantService.getCourseOverviewData(args, ctx)
       },
     })
+
+    t.list.field('getParticipantCourses', {
+      type: Course,
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.getParticipantCourses(args, ctx)
+      },
+    })
   },
 })
 
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
-    t.field('login', {
+    t.field('loginUser', {
       type: 'ID',
       args: {
         email: nonNull(stringArg()),
         password: nonNull(stringArg()),
       },
       resolve(_, args, ctx: Context) {
-        return AccountService.login(args, ctx)
+        return AccountService.loginUser(args, ctx)
+      },
+    })
+
+    t.field('loginParticipant', {
+      type: 'ID',
+      args: {
+        username: nonNull(stringArg()),
+        password: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.loginParticipant(args, ctx)
       },
     })
 
