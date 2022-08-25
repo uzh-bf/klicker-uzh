@@ -40,7 +40,7 @@
     "@tsconfig/recommended": "1.0.1",
     "@types/cookie-parser": "1.4.3",
     "@types/express": "4.17.13",
-    "@types/node": "16.11.51",
+    "@types/node": "18.7.13",
     "@types/passport": "1.0.10",
     "@types/passport-jwt": "3.0.6",
     "dts-cli": "1.6.0",
