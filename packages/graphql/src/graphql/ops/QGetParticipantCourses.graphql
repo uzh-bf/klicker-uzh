@@ -1,0 +1,6 @@
+query GetParticipantCourses {
+  getParticipantCourses {
+    id
+    name
+  }
+}

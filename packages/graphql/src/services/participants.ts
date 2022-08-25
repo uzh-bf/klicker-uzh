@@ -10,6 +10,20 @@ import {
   ContextWithUser,
 } from '../lib/context'
 
+export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
+  const participation = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+      isActive: true,
+    },
+    include: {
+      course: true,
+    },
+  })
+  // TODO: return participations instead of courses (course, points)
+  return participation.map((p) => p.course)
+}
+
 export async function joinCourse(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
@@ -135,8 +149,8 @@ export async function registerParticipantFromLTI(
   // if there is no participant matching the SSO id from LTI
   // create a new participant and participant account
   if (!participant) {
-    // generate a random pseudonym/username that can be changed later on
-    const pseudonym = generatePassword.generate({
+    // generate a random username that can be changed later on
+    const username = generatePassword.generate({
       length: 8,
       uppercase: true,
       symbols: false,
@@ -168,7 +182,7 @@ export async function registerParticipantFromLTI(
           create: {
             email: normalizedEmail,
             password: hash,
-            pseudonym,
+            username,
           },
         },
       },
