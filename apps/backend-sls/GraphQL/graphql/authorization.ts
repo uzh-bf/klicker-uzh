@@ -27,7 +27,8 @@ export const Rules = {
 export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Reject'] } },
-    login: { __authz: { rules: ['Allow'] } },
+    loginUser: { __authz: { rules: ['Allow'] } },
+    loginParticipant: { __authz: { rules: ['Allow'] } },
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
     leaveCourse: { __authz: { rules: ['IsParticipant'] } },
@@ -36,5 +37,6 @@ export const AuthSchema = {
     '*': { __authz: { rules: ['Reject'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
+    getParticipantCourses: { __authz: { rules: ['IsParticipant'] } },
   },
 }

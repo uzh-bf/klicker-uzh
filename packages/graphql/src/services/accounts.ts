@@ -1,15 +1,19 @@
+import { UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcrypt'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context } from '../lib/context'
 
-interface LoginArgs {
+interface LoginUserArgs {
   email: string
   password: string
 }
 
-export async function login({ email, password }: LoginArgs, ctx: Context) {
+export async function loginUser(
+  { email, password }: LoginUserArgs,
+  ctx: Context
+) {
   if (!isEmail(email)) return null
 
   const normalizedEmail = normalizeEmail(email) as string
@@ -52,4 +56,54 @@ export async function login({ email, password }: LoginArgs, ctx: Context) {
   })
 
   return user.id
+}
+
+interface LoginParticipantArgs {
+  username: string
+  password: string
+}
+
+export async function loginParticipant(
+  { username, password }: LoginParticipantArgs,
+  ctx: Context
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { username: username },
+  })
+
+  if (!participant) return null
+
+  const isLoginValid = await bcrypt.compare(password, participant.password)
+
+  if (!isLoginValid) return null
+
+  // TODO: Add back once DB table is updated
+  // ctx.prisma.participant.update({
+  //   where: { id: participant.id },
+  //   data: { lastLoginAt: new Date() },
+  // })
+
+  const jwt = JWT.sign(
+    {
+      sub: participant.id,
+      role: UserRole.PARTICIPANT,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '7d',
+    }
+  )
+
+  ctx.res.cookie('participant_token', jwt, {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 6,
+    secure: process.env.NODE_ENV === 'production',
+  })
+
+  // TODO: return more data (e.g. Avatar etc.)
+  return participant.id
 }

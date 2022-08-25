@@ -54,7 +54,8 @@ type LearningElement {
 type Mutation {
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
-  login(email: String!, password: String!): ID
+  loginParticipant(password: String!, username: String!): ID
+  loginUser(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
   respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
 }
@@ -62,7 +63,7 @@ type Mutation {
 type Participant {
   avatar: String
   id: ID
-  pseudonym: String
+  username: String
 }
 
 type ParticipantLearningData {
@@ -81,6 +82,7 @@ type Participation {
 
 type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
+  getParticipantCourses: [Course]
   learningElement(id: ID!): LearningElement
 }
 
