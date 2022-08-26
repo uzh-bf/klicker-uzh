@@ -1,4 +1,4 @@
-import { preExecRule } from '@graphql-authz/core'
+import { or, preExecRule } from '@graphql-authz/core'
 import { UserRole } from '@klicker-uzh/prisma'
 
 const IsAuthenticated = preExecRule()((ctx: any) => {
@@ -17,11 +17,14 @@ const IsAdmin = preExecRule()((ctx: any) => {
   return ctx.user && ctx.user.role === UserRole.ADMIN
 })
 
+const IsUserOrAdmin = or(IsUser, IsAdmin)
+
 export const Rules = {
   IsAuthenticated,
   IsParticipant,
   IsUser,
   IsAdmin,
+  IsUserOrAdmin,
 }
 
 export const AuthSchema = {
@@ -32,11 +35,14 @@ export const AuthSchema = {
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
     leaveCourse: { __authz: { rules: ['IsParticipant'] } },
+    startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
+
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     getParticipantCourses: { __authz: { rules: ['IsParticipant'] } },
+    getSession: { __authz: { rules: ['Allow'] } },
   },
 }

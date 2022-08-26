@@ -11,7 +11,7 @@
     "analyze": "size-limit --why",
     "build:all": "npm-run-all generate build",
     "build": "NODE_ENV=production tsup --dts",
-    "dev": "NODE_ENV=development tsup --watch --dts",
+    "build:watch": "NODE_ENV=development tsup --watch --dts",
     "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
@@ -61,6 +61,7 @@
     "generate-password": "1.7.0",
     "graphql": "16.6.0",
     "graphql-scalars": "1.18.0",
+    "ioredis": "5.2.3",
     "nexus": "1.3.0",
     "validator": "13.7.0"
   },

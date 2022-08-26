@@ -1,8 +1,11 @@
 import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
+import bcrypt from 'bcrypt'
 
 async function main(prisma: Prisma.PrismaClient) {
+  const hash = await bcrypt.hash('abcd', 12)
+
   const user = await prisma.user.upsert({
     where: {
       id: '6f45065c-447f-4259-818c-c6f6b477eb48',
@@ -10,10 +13,14 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: '6f45065c-447f-4259-818c-c6f6b477eb48',
       email: 'roland.schlaefli@bf.uzh.ch',
-      password: 'abcd',
+      password: hash,
       shortname: 'rschlaefli',
+      isActive: true,
     },
-    update: {},
+    update: {
+      password: hash,
+      isActive: true,
+    },
   })
 
   const course = await prisma.course.upsert({
@@ -499,6 +506,116 @@ async function main(prisma: Prisma.PrismaClient) {
         ],
       },
     },
+  })
+
+  const instance6 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751a',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751a',
+      questionData: {
+        ...question,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const instance7 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751b',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751b',
+      questionData: {
+        ...question2,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question2.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const session = await prisma.session.upsert({
+    where: {
+      id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
+    },
+    create: {
+      name: 'BF1 VL1',
+      displayName: 'Banking und Finance I - VL1',
+      status: 'PLANNED',
+      blocks: {
+        create: [
+          {
+            instances: {
+              connect: [
+                {
+                  id: instance6.id,
+                },
+                {
+                  id: instance7.id,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      course: {
+        connect: {
+          id: course.id,
+        },
+      },
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
   })
 }
 
