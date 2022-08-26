@@ -1,4 +1,13 @@
 {
   "extends": "@tsconfig/node16/tsconfig.json",
-  "include": ["src"]
+  "include": ["src"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@graphql/*": ["src/graphql/*"],
+      "@lib/*": ["src/lib/*"],
+      "@services/*": ["src/services/*"],
+      "@type/*": ["src/types/*"]
+    }
+  }
 }

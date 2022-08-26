@@ -188,6 +188,30 @@ model Course {
   updatedAt DateTime @updatedAt
 }
 
+enum SessionBlockStatus {
+  SCHEDULED
+  ACTIVE
+  EXECUTED
+}
+
+model SessionBlock {
+  id Int @id @default(autoincrement())
+
+  status SessionBlockStatus @default(SCHEDULED)
+
+  expiresAt       DateTime?
+  timeLimit       Int?
+  randomSelection Int?
+
+  instances QuestionInstance[]
+
+  session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum SessionStatus {
   PLANNED
   SCHEDULED
@@ -203,39 +227,28 @@ enum AccessMode {
 model Session {
   id String @id @default(uuid()) @db.Uuid
 
-  namespace   String   @default(uuid()) @db.Uuid
-  execution   Int      @default(0)
+  isAudienceInteractionActive Boolean @default(false)
+  isFeedbackChannelPublic     Boolean @default(false)
+
+  namespace   String    @default(uuid()) @db.Uuid
+  execution   Int       @default(0)
+  pinCode     Int?
   name        String
   displayName String
-  settings    Json // TODO: move to properties?
-  startedAt   DateTime
-  finishedAt  DateTime
+  startedAt   DateTime?
+  finishedAt  DateTime?
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus
 
-  blocks SessionBlock[]
+  activeBlock Int            @default(-1)
+  blocks      SessionBlock[]
 
-  owner    User   @relation(fields: [ownerId], references: [id])
-  ownerId  String @db.Uuid
-  course   Course @relation(fields: [courseId], references: [id])
-  courseId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String @db.Uuid
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model SessionBlock {
-  id Int @id @default(autoincrement())
-
-  expiresAt       DateTime?
-  timeLimit       Int?
-  randomSelection Int?
-
-  instances QuestionInstance[]
-
-  session   Session @relation(fields: [sessionId], references: [id])
-  sessionId String  @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

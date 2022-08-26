@@ -1,8 +1,9 @@
-import { QuestionType } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
   arg,
   asNexusMethod,
+  enumType,
   idArg,
   inputObjectType,
   interfaceType,
@@ -18,6 +19,7 @@ import {
 import * as AccountService from './services/accounts'
 import * as LearningElementService from './services/learningElements'
 import * as ParticipantService from './services/participants'
+import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
@@ -44,7 +46,7 @@ export const QuestionData = interfaceType({
     t.nonNull.boolean('isDeleted')
   },
   resolveType: (item) => {
-    if (item.type === QuestionType.SC || item.type === QuestionType.MC) {
+    if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
       return 'ChoicesQuestionData'
     }
     return null
@@ -187,6 +189,55 @@ export const ParticipantLearningData = objectType({
   },
 })
 
+export const SessionBlockStatus = enumType({
+  name: 'SessionBlockStatus',
+  members: DB.SessionBlockStatus,
+})
+
+export const SessionBlock = objectType({
+  name: 'SessionBlock',
+  definition(t) {
+    t.id('id')
+
+    t.nonNull.field('status', {
+      type: SessionBlockStatus,
+    })
+
+    t.list.field('instances', {
+      type: QuestionInstance,
+    })
+  },
+})
+
+export const SessionStatus = enumType({
+  name: 'SessionStatus',
+  members: DB.SessionStatus,
+})
+
+export const Session = objectType({
+  name: 'Session',
+  definition(t) {
+    t.id('id')
+
+    t.nonNull.boolean('isAudienceInteractionActive')
+    t.nonNull.boolean('isFeedbackChannelPublic')
+
+    t.nonNull.string('namespace')
+    t.nonNull.int('execution')
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+
+    t.nonNull.field('status', {
+      type: SessionStatus,
+    })
+
+    t.nonNull.int('activeBlock')
+    t.list.field('blocks', {
+      type: SessionBlock,
+    })
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -214,6 +265,16 @@ export const Query = objectType({
       type: Course,
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.getParticipantCourses(args, ctx)
+      },
+    })
+
+    t.field('getSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getSession(args, ctx)
       },
     })
   },
@@ -289,6 +350,16 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return LearningElementService.respondToQuestionInstance(args, ctx)
+      },
+    })
+
+    t.field('startSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.startSession(args, ctx)
       },
     })
   },
