@@ -54,7 +54,11 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {
-      blocks: true,
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
     },
   })
 

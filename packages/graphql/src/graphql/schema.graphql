@@ -84,8 +84,8 @@ type Participation {
 type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   getParticipantCourses: [Course]
-  getSession(id: ID!): Session
   learningElement(id: ID!): LearningElement
+  session(id: ID!): Session
 }
 
 interface QuestionData {

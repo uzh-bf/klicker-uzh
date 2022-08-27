@@ -268,7 +268,7 @@ export const Query = objectType({
       },
     })
 
-    t.field('getSession', {
+    t.field('session', {
       type: Session,
       args: {
         id: nonNull(idArg()),
