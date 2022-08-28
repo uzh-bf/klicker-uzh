@@ -50,10 +50,10 @@
     "yaml": "2.1.1"
   },
   "volta": {
-    "node": "16.17.0"
+    "node": "18.8.0"
   },
   "packageManager": "npm@8.15.0",
   "engines": {
-    "node": "16"
+    "node": "=18"
   }
 }

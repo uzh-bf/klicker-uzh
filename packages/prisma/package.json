@@ -22,7 +22,7 @@
     "size": "size-limit"
   },
   "engines": {
-    "node": "=16"
+    "node": "=18"
   },
   "size-limit": [
     {
