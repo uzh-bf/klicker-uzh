@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.17...v2.0.0-alpha.19) (2022-08-28)
+
+
+### Features
+
+* add participant login in PWA ([4e78442](https://github.com/uzh-bf/klicker-uzh/commit/4e78442c4b1e647d29dec73a818a84adf5868d7d))
+* session start and getSession query ([#2774](https://github.com/uzh-bf/klicker-uzh/issues/2774)) ([a4cf7ca](https://github.com/uzh-bf/klicker-uzh/commit/a4cf7ca5a549394cc1ff7ab65a0d9bbc7332e49b))
+
+
+### Other
+
+* add config for graphql inspector ([a521f82](https://github.com/uzh-bf/klicker-uzh/commit/a521f82dd6ed422feadc309c2962c03673aa6389))
+* **release:** 2.0.0-alpha.18 ([3bb28ba](https://github.com/uzh-bf/klicker-uzh/commit/3bb28baa949065e2cddafc936cd6140b092e01c6))
+* upgrade to node 18 ([89e28e4](https://github.com/uzh-bf/klicker-uzh/commit/89e28e40ffbfc50059553066027564d365b061df))
+
+
+### Enhancements
+
+* add envelop plugins for performance and monitoring, upgrade deps and nodejs ([#2801](https://github.com/uzh-bf/klicker-uzh/issues/2801)) ([0b3ab2e](https://github.com/uzh-bf/klicker-uzh/commit/0b3ab2e82a7208c196c234ba6c9660c512cde7f1))
+
 ## [2.0.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.17...v2.0.0-alpha.18) (2022-08-25)
 
 
