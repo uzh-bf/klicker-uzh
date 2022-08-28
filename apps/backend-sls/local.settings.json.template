@@ -11,6 +11,11 @@
     "REDIS_HOST": "",
     "REDIS_PASS": "",
     "REDIS_PORT": 6379,
-    "REDIS_TLS": true
+    "REDIS_TLS": true,
+    "REDIS_CACHE_HOST": "",
+    "REDIS_CACHE_PASS": "",
+    "REDIS_CACHE_PORT": 6379,
+    "REDIS_CACHE_TLS": true,
+    "HIVE_TOKEN": ""
   }
 }
