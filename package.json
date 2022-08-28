@@ -4,7 +4,6 @@
   "description": "KlickerUZH instant-class-response system.",
   "version": "2.0.0-alpha.18",
   "workspaces": [
-    "docs",
     "apps/*",
     "packages/*"
   ],
