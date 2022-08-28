@@ -1,7 +1,6 @@
-import { SSOType, UserRole } from '@klicker-uzh/prisma'
+import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcrypt'
 import generatePassword from 'generate-password'
-import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import {
@@ -9,6 +8,23 @@ import {
   ContextWithOptionalUser,
   ContextWithUser,
 } from '../lib/context'
+import { createParticipantToken } from './accounts'
+
+interface GetParticipantProfileArgs {
+  id: string
+}
+
+export async function getParticipantProfile(
+  { id }: GetParticipantProfileArgs,
+  ctx: ContextWithOptionalUser
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id },
+    select: { avatar: true, username: true },
+  })
+
+  return participant
+}
 
 export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
   const participation = await ctx.prisma.participation.findMany({
@@ -199,21 +215,10 @@ export async function registerParticipantFromLTI(
     })
   }
 
-  const jwt = JWT.sign(
-    {
-      sub: participant?.participant.id,
-      role: UserRole.PARTICIPANT,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '1w',
-    }
-  )
+  const jwt = createParticipantToken(participant.participant.id)
 
   return {
-    id: `${courseId}-${participant?.participant.id}`,
+    id: `${courseId}-${participant.participant.id}`,
     participantToken: jwt,
     participant: participant.participant,
     participation,

@@ -3,6 +3,7 @@ import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import Router from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -18,8 +19,7 @@ function LoginForm() {
     await loginParticipant({
       variables: { username: values.username, password: values.password },
     })
-    setSubmitting(false)
-    resetForm()
+    Router.push('/')
   }
   return (
     <Formik

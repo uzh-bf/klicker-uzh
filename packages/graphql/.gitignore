@@ -3,3 +3,4 @@
 node_modules
 src/prisma/client
 dist
+hive.json
