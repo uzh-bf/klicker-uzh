@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { useParserCache } from '@envelop/parser-cache'
 import { useResponseCache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import { useHive } from '@graphql-hive/client'
 import { createServer, Plugin } from '@graphql-yoga/node'
@@ -10,8 +12,6 @@ import express from 'express'
 import Redis from 'ioredis'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
-import { useParserCache } from '../../../node_modules/@envelop/parser-cache/typings/index'
-import { useValidationCache } from '../../../node_modules/@envelop/validation-cache/typings/index'
 import { AuthSchema, Rules } from './graphql/authorization'
 
 let cache = undefined
