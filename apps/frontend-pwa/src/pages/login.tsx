@@ -1,8 +1,11 @@
-import { useMutation } from '@apollo/client'
+import { FetchResult, useMutation } from '@apollo/client'
+import { faArrowRightToBracket } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -13,13 +16,31 @@ const loginSchema = Yup.object().shape({
 
 function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
+  const [error, setError] = useState('')
 
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
-    await loginParticipant({
-      variables: { username: values.username, password: values.password },
-    })
-    setSubmitting(false)
-    resetForm()
+    setError('')
+    try {
+      const result: FetchResult = await loginParticipant({
+        variables: { username: values.username, password: values.password },
+      })
+      const userID: string | null = result.data!.loginParticipant
+      if (!userID) {
+        setError('Wrong username or password')
+        setSubmitting(false)
+        resetForm()
+      } else {
+        console.log('Login successful!', userID)
+        // TODO: redirect
+      }
+    } catch (e) {
+      console.error(e)
+      setError(
+        'A problem occurred while signing you in. Please try again later.'
+      )
+      setSubmitting(false)
+      resetForm()
+    }
   }
   return (
     <Formik
@@ -80,9 +101,13 @@ function LoginForm() {
                 className="text-sm text-red-400"
               />
 
+              <div className="mt-2 text-sm text-red-400">{error}</div>
               <div className="flex justify-center mt-7">
                 <Button active type="submit" disabled={isSubmitting}>
-                  Submit
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faArrowRightToBracket} />
+                  </Button.Icon>
+                  <Button.Label>Submit</Button.Label>
                 </Button>
               </div>
             </Form>
