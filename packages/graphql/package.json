@@ -41,7 +41,7 @@
     "@graphql-codegen/typescript-react-apollo": "3.3.3",
     "@graphql-codegen/typescript-resolvers": "2.7.3",
     "@size-limit/preset-small-lib": "8.0.1",
-    "@tsconfig/node16": "1.0.3",
+    "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
     "@types/bcrypt": "^5.0.0",
     "@types/express": "^4.17.13",

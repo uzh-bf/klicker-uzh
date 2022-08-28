@@ -10,6 +10,8 @@ import express from 'express'
 import Redis from 'ioredis'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
+import { useParserCache } from '../../../node_modules/@envelop/parser-cache/typings/index'
+import { useValidationCache } from '../../../node_modules/@envelop/validation-cache/typings/index'
 import { AuthSchema, Rules } from './graphql/authorization'
 
 let cache = undefined
