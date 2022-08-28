@@ -5,6 +5,7 @@ import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -17,6 +18,8 @@ const loginSchema = Yup.object().shape({
 function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState('')
+
+  const router = useRouter()
 
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setError('')
@@ -31,7 +34,7 @@ function LoginForm() {
         resetForm()
       } else {
         console.log('Login successful!', userID)
-        // TODO: redirect
+        router.replace('/welcome')
       }
     } catch (e) {
       console.error(e)
