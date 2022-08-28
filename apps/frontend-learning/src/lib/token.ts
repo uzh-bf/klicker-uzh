@@ -16,7 +16,7 @@ export async function getParticipantToken(ctx: any) {
 
   // extract the body from the LTI request
   // TODO: verify that there is an LTI body and that it is valid
-  const { request } = await new Promise((resolve) => {
+  const { request }: any = await new Promise((resolve) => {
     bodyParser.urlencoded({ extended: true })(req, res, () => {
       bodyParser.json()(req, res, () => {
         resolve({ request: req })
