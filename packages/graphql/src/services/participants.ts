@@ -1,5 +1,5 @@
 import { SSOType } from '@klicker-uzh/prisma'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
