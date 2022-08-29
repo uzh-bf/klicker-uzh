@@ -96,19 +96,13 @@ const graphQLServer = createServer({
   ].filter(Boolean) as Plugin[],
   context: enhanceContext,
   logging: true,
-  // TODO: check whether handling CORS here works with the AZ function
   cors(request) {
     const requestOrigin = request.headers.get('origin') as string
     return {
       origin: requestOrigin,
       credentials: true,
-      // allowedHeaders: ['X-Custom-Header'],
-      // methods: ['POST'],
     }
   },
-  // graphiql: {
-  //   endpoint: '/api/graphql',
-  // },
 })
 
 app.use('/api/graphql', graphQLServer)

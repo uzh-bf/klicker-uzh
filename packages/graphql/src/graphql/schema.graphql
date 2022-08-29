@@ -86,6 +86,7 @@ type Query {
   getParticipantCourses: [Course]
   getSession(id: ID!): Session
   learningElement(id: ID!): LearningElement
+  self: Participant
 }
 
 interface QuestionData {

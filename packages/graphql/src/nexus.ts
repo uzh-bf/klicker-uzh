@@ -241,6 +241,16 @@ export const Session = objectType({
 export const Query = objectType({
   name: 'Query',
   definition(t) {
+    t.field('self', {
+      type: Participant,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return ParticipantService.getParticipantProfile(
+          { id: ctx.user.sub },
+          ctx
+        )
+      },
+    })
+
     t.field('learningElement', {
       type: LearningElement,
       args: {
