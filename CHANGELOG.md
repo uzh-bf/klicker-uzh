@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.20...v2.0.0-alpha.21) (2022-08-29)
+
+
+### Build and CI
+
+* remove old workflows ([d632f40](https://github.com/uzh-bf/klicker-uzh/commit/d632f40cbdd20efee83fae2ab6dd0325a72d8780))
+
+
+### Other
+
+* bump version ([c8cf4a6](https://github.com/uzh-bf/klicker-uzh/commit/c8cf4a6864d13bf15cfc43e982ffb31dd60f3667))
+* **packages/prisma:** use windows query engine ([fbba2bb](https://github.com/uzh-bf/klicker-uzh/commit/fbba2bb82a152c668487f9b5b92b843b258a57ca))
+
 ## [2.0.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.18...v2.0.0-alpha.20) (2022-08-29)
 
 
