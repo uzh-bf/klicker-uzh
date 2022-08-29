@@ -183,6 +183,7 @@ model Course {
   ownerId String @db.Uuid
 
   participations Participation[]
+  subscriptions  PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -381,7 +382,8 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
 
-  responses QuestionResponse[]
+  responses     QuestionResponse[]
+  subscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -409,4 +411,20 @@ model QuestionResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, questionInstanceId])
+}
+
+model PushSubscription {
+  id Int @id @default(autoincrement())
+
+  endpoint String
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id])
+  participationId String        @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, endpoint])
 }

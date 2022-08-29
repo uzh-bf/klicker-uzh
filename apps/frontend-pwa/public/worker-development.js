@@ -7,7 +7,7 @@ self.addEventListener('push', function (event) {
   const data = JSON.parse(event.data.text());
   event.waitUntil(registration.showNotification(data.title, {
     body: data.message,
-    icon: '/icons/android-chrome-192x192.png'
+    icon: '/manifest-icon-192.maskable.png'
   }));
 });
 self.addEventListener('notificationclick', function (event) {
@@ -30,14 +30,6 @@ self.addEventListener('notificationclick', function (event) {
 
     return clients.openWindow('/');
   }));
-}); // self.addEventListener('pushsubscriptionchange', function(event) {
-//   event.waitUntil(
-//       Promise.all([
-//           Promise.resolve(event.oldSubscription ? deleteSubscription(event.oldSubscription) : true),
-//           Promise.resolve(event.newSubscription ? event.newSubscription : subscribePush(registration))
-//               .then(function(sub) { return saveSubscription(sub) })
-//       ])
-//   )
-// })
+});
 /******/ })()
 ;

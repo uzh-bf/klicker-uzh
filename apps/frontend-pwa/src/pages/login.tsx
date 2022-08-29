@@ -9,7 +9,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import ErrorNotification from '../../components/ErrorNotification'
+import ErrorNotification from '../components/ErrorNotification'
 
 const loginSchema = Yup.object().shape({
   username: Yup.string().required('Enter your username'),

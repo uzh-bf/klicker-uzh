@@ -1,8 +1,8 @@
 import { H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import CourseElement from '../../components/CourseElement'
-import ErrorNotification from '../../components/ErrorNotification'
+import CourseElement from '../components/CourseElement'
+import ErrorNotification from '../components/ErrorNotification'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -60,6 +60,7 @@ function Welcome() {
           // TODO: updateSubscriptionOnServer(newSubscription, courseId)
           setSubscribed(true)
           setSubscription(newSubscription)
+          console.log('Subscription: ', JSON.stringify(newSubscription))
         } catch (e) {
           console.error(e)
           if (Notification.permission === 'denied') {
@@ -83,8 +84,6 @@ function Welcome() {
   // This is necessary to make sure navigator is defined
   useEffect(() => {
     determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
-      console.log('subscription:   ', sub)
-      console.log('registration:   ', reg)
       setPushDisabled(disabled)
       setUserInfo(info)
       setRegistration(reg)
