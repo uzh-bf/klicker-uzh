@@ -1,11 +1,12 @@
-import { faBellSlash } from '@fortawesome/free-regular-svg-icons'
-import { faBell } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import * as TogglePrimitive from '@radix-ui/react-toggle'
 import { H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import CourseElement from '../../components/CourseElement'
+import ErrorNotification from '../../components/ErrorNotification'
+import {
+  determineInitialSubscriptionState,
+  subscribeParticipant,
+} from '../utils/push'
 
 const courses = [
   // TODO: fetch actual courses from API
@@ -25,61 +26,70 @@ const microlearning = [
   { courseName: 'Statistik I', courseId: 'i3847dfdf-394-3d9gjk' },
 ]
 
-type courseElementProps = {
-  courseName: string
-  courseId: string
-  disabled: boolean
-}
-const CourseElement = (props: courseElementProps) => {
-  // TODO: Fetch initial subscription state from DB
-  const [subscribed, setSubscribed] = useState(false)
-
-  const computedClassName = twMerge(
-    'p-2 text-2xl rounded-full hover:bg-uzh-yellow-40',
-    subscribed
-      ? 'bg-uzh-yellow-40 text-yellow-400'
-      : 'bg-uzh-yellow-20 text-uzh-yellow-100',
-    props.disabled && 'bg-uzh-grey-20 text-uzh-grey-80'
-  )
-
-  return (
-    <div className="flex justify-between mb-4 text-lg">
-      <span>{props.courseName}</span>
-      <span>
-        <TogglePrimitive.Root
-          defaultPressed={subscribed}
-          onPressedChange={setSubscribed}
-          asChild
-        >
-          <button disabled={props.disabled}>
-            {subscribed ? (
-              <FontAwesomeIcon
-                icon={faBell}
-                fixedWidth
-                className={computedClassName}
-              />
-            ) : (
-              <FontAwesomeIcon
-                icon={faBellSlash}
-                fixedWidth
-                flip="horizontal"
-                className={computedClassName}
-              />
-            )}
-          </button>
-        </TogglePrimitive.Root>
-      </span>
-    </div>
-  )
-}
-
 function Welcome() {
-  const [pushDisabled, setPushDisabled] = useState(true)
+  const [pushDisabled, setPushDisabled] = useState<boolean>(true)
+  const [userInfo, setUserInfo] = useState<string>('')
+  const [registration, setRegistration] =
+    useState<ServiceWorkerRegistration | null>(null)
+  const [subscription, setSubscription] = useState<PushSubscription | null>(
+    null
+  )
+
+  async function onSubscribeClick(
+    subscribed: boolean,
+    setSubscribed: Dispatch<SetStateAction<boolean>>,
+    courseId: string
+  ) {
+    // Case 1: User unsubscribed
+    if (subscribed) {
+      setSubscribed(false)
+      // TODO: updateSubscriptionOnServer(subscription, courseId)
+      // Case 2: User subscribed
+    } else {
+      // Case 2a: User already has a push subscription
+      if (subscription) {
+        // TODO: updateSubscriptionOnServer(subscription, courseId)
+        setSubscribed(true)
+        // Case 2b: User has no push subscription yet
+      } else {
+        try {
+          const newSubscription = await subscribeParticipant(
+            registration!,
+            courseId
+          )
+          // TODO: updateSubscriptionOnServer(newSubscription, courseId)
+          setSubscribed(true)
+          setSubscription(newSubscription)
+        } catch (e) {
+          console.error(e)
+          if (Notification.permission === 'denied') {
+            setSubscribed(false)
+            setPushDisabled(true)
+            setUserInfo(
+              'You have disabled push notifications for this app. If you want to subscribe, enable push notifications in your browser.'
+            )
+          } else {
+            setSubscribed(false)
+            setUserInfo(
+              'An error occurred while trying to register you for push notifications. Please try again later.'
+            )
+          }
+        }
+      }
+    }
+    return subscription
+  }
 
   // This is necessary to make sure navigator is defined
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator)
-      setPushDisabled(false)
+    determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
+      console.log('subscription:   ', sub)
+      console.log('registration:   ', reg)
+      setPushDisabled(disabled)
+      setUserInfo(info)
+      setRegistration(reg)
+      setSubscription(sub)
+    })
   }, [])
 
   return (
@@ -113,9 +123,11 @@ function Welcome() {
               key={course.courseId}
               courseId={course.courseId}
               courseName={course.courseName}
+              onSubscribeClick={onSubscribeClick}
             />
           ))}
         </div>
+        {userInfo && <ErrorNotification message={userInfo} />}
       </div>
     </div>
   )

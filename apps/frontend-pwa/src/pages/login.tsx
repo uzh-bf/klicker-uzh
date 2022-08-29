@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import ErrorNotification from '../../components/ErrorNotification'
 
 const loginSchema = Yup.object().shape({
   username: Yup.string().required('Enter your username'),
@@ -17,7 +18,7 @@ const loginSchema = Yup.object().shape({
 
 function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string>('')
 
   const router = useRouter()
 
@@ -103,8 +104,7 @@ function LoginForm() {
                 component="div"
                 className="text-sm text-red-400"
               />
-
-              <div className="mt-2 text-sm text-red-400">{error}</div>
+              {error && <ErrorNotification message={error} />}
               <div className="flex justify-center mt-7">
                 <Button active type="submit" disabled={isSubmitting}>
                   <Button.Icon>
