@@ -42,7 +42,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 
 const httpLink = new HttpLink({
   uri: publicRuntimeConfig.API_URL,
-  credentials: 'same-origin',
+  credentials: 'include',
 })
 
 function createApolloClient() {

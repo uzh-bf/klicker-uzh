@@ -20,7 +20,7 @@ export async function getParticipantProfile(
 ) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
-    select: { avatar: true, username: true },
+    select: { id: true, avatar: true, username: true },
   })
 
   return participant

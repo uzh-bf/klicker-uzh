@@ -216,6 +216,7 @@ export interface NexusGenFieldTypes {
     getParticipantCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
     getSession: NexusGenRootTypes['Session'] | null; // Session
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    self: NexusGenRootTypes['Participant'] | null; // Participant
   }
   QuestionFeedback: { // field return type
     correct: boolean | null; // Boolean
@@ -321,6 +322,7 @@ export interface NexusGenFieldTypeNames {
     getParticipantCourses: 'Course'
     getSession: 'Session'
     learningElement: 'LearningElement'
+    self: 'Participant'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'

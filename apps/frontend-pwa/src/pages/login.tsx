@@ -15,17 +15,16 @@ const loginSchema = Yup.object().shape({
 function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
 
-  const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
-    await loginParticipant({
-      variables: { username: values.username, password: values.password },
-    })
-    Router.push('/')
-  }
   return (
     <Formik
       initialValues={{ username: '', password: '' }}
       validationSchema={loginSchema}
-      onSubmit={onSubmit}
+      onSubmit={async (values) => {
+        await loginParticipant({
+          variables: { username: values.username, password: values.password },
+        })
+        Router.push('/profile')
+      }}
     >
       {({ errors, touched, isSubmitting }) => {
         return (
