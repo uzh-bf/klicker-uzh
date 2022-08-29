@@ -72,11 +72,12 @@ const graphQLServer = createServer({
     useResponseCache({
       // set the TTL to 0 to disable response caching by default
       // ttl: 0,
-      // ttlPerType: {
-      //   Course: 60000,
-      //   LearningElement: 60000,
-      //   QuestionInstance: 60000,
-      // },
+      ttlPerType: {
+        Participant: 60000,
+        // Course: 60000,
+        // LearningElement: 60000,
+        // QuestionInstance: 60000,
+      },
       cache,
       session(ctx) {
         return ctx.user ? ctx.user.sub : null
