@@ -1,8 +1,26 @@
-import Layout from "../components/Layout"
-import { NextPageWithLayout } from "./_app"
+import { useQuery } from "@apollo/client"
+import { SelfDocument } from "@klicker-uzh/graphql/dist/ops"
+import Layout from "@components/Layout"
+import { NextPageWithLayout } from "@pages/_app"
+import { FidgetSpinner, ThreeDots } from "react-loader-spinner"
 
 const Profile: NextPageWithLayout = () =>  {
-  return <div className="p-4">profile...</div>
+  const { data, error, loading } = useQuery(SelfDocument)
+
+  if (loading) {
+    return <div className="grid items-center justify-center">
+      <ThreeDots
+        height="80"
+        width="80"
+        radius="9"
+        color="#4fa94d"
+        ariaLabel="three-dots-loading"
+        visible={true}
+    />
+  </div>
+  }
+
+  return <div className="p-4">{data?.self?.id}</div>
 }
 
 Profile.getLayout = function getLayout(page) {

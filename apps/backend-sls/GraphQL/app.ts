@@ -72,11 +72,12 @@ const graphQLServer = createServer({
     useResponseCache({
       // set the TTL to 0 to disable response caching by default
       // ttl: 0,
-      // ttlPerType: {
-      //   Course: 60000,
-      //   LearningElement: 60000,
-      //   QuestionInstance: 60000,
-      // },
+      ttlPerType: {
+        Participant: 60000,
+        // Course: 60000,
+        // LearningElement: 60000,
+        // QuestionInstance: 60000,
+      },
       cache,
       session(ctx) {
         return ctx.user ? ctx.user.sub : null
@@ -96,19 +97,13 @@ const graphQLServer = createServer({
   ].filter(Boolean) as Plugin[],
   context: enhanceContext,
   logging: true,
-  // TODO: check whether handling CORS here works with the AZ function
   cors(request) {
     const requestOrigin = request.headers.get('origin') as string
     return {
       origin: requestOrigin,
       credentials: true,
-      // allowedHeaders: ['X-Custom-Header'],
-      // methods: ['POST'],
     }
   },
-  // graphiql: {
-  //   endpoint: '/api/graphql',
-  // },
 })
 
 app.use('/api/graphql', graphQLServer)

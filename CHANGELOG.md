@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.20...v2.0.0-alpha.21) (2022-08-29)
+
+
+### Build and CI
+
+* remove old workflows ([d632f40](https://github.com/uzh-bf/klicker-uzh/commit/d632f40cbdd20efee83fae2ab6dd0325a72d8780))
+
+
+### Other
+
+* bump version ([c8cf4a6](https://github.com/uzh-bf/klicker-uzh/commit/c8cf4a6864d13bf15cfc43e982ffb31dd60f3667))
+* **packages/prisma:** use windows query engine ([fbba2bb](https://github.com/uzh-bf/klicker-uzh/commit/fbba2bb82a152c668487f9b5b92b843b258a57ca))
+
+## [2.0.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.18...v2.0.0-alpha.20) (2022-08-29)
+
+
+### Features
+
+* session start and getSession query ([#2774](https://github.com/uzh-bf/klicker-uzh/issues/2774)) ([a4cf7ca](https://github.com/uzh-bf/klicker-uzh/commit/a4cf7ca5a549394cc1ff7ab65a0d9bbc7332e49b))
+
+
+### Bug Fixes
+
+* **frontend-learning:** fix type issue with request in participant token ([1306667](https://github.com/uzh-bf/klicker-uzh/commit/1306667de03110d564077841f05b7fa9aa73bb38))
+* **frontend-x:** use nodejs >=16 to allow for vercel deploy ([7f0c700](https://github.com/uzh-bf/klicker-uzh/commit/7f0c7006b4c1c32c2ffb863acef11dce9e4513d9))
+
+
+### Enhancements
+
+* add envelop plugins for performance and monitoring, upgrade deps and nodejs ([#2801](https://github.com/uzh-bf/klicker-uzh/issues/2801)) ([0b3ab2e](https://github.com/uzh-bf/klicker-uzh/commit/0b3ab2e82a7208c196c234ba6c9660c512cde7f1))
+
+
+### Build and CI
+
+* ensure powershell commands work ([ca1abb0](https://github.com/uzh-bf/klicker-uzh/commit/ca1abb0f8a91562b9263bc5ee5fa1e41b2df334c))
+* update windows deploy for function ([942f2f0](https://github.com/uzh-bf/klicker-uzh/commit/942f2f0359b759d695081b75c6508b87df24197e))
+
+
+### Other
+
+* add config for graphql inspector ([a521f82](https://github.com/uzh-bf/klicker-uzh/commit/a521f82dd6ed422feadc309c2962c03673aa6389))
+* lockfile maintenance ([11528bc](https://github.com/uzh-bf/klicker-uzh/commit/11528bc9ee5d116d0024e36ca8dc306190cfb95a))
+* **release:** 2.0.0-alpha.19 ([0e0ce2d](https://github.com/uzh-bf/klicker-uzh/commit/0e0ce2da35cb1d852162bbe6e35d3e20aaa82f5c))
+* remove old workflows ([c789b62](https://github.com/uzh-bf/klicker-uzh/commit/c789b62d7a0c9e30ff5aedd71466a11ea3fbe01f))
+* replace bcrypt with bcryptjs ([7f022b9](https://github.com/uzh-bf/klicker-uzh/commit/7f022b935497e3e938d600f7caf341ba1adb912b))
+* upgrade to node 18 ([89e28e4](https://github.com/uzh-bf/klicker-uzh/commit/89e28e40ffbfc50059553066027564d365b061df))
+
 ## [2.0.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.17...v2.0.0-alpha.19) (2022-08-28)
 
 

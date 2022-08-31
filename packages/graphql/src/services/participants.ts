@@ -1,5 +1,5 @@
 import { SSOType } from '@klicker-uzh/prisma'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
@@ -20,7 +20,7 @@ export async function getParticipantProfile(
 ) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
-    select: { avatar: true, username: true },
+    select: { id: true, avatar: true, username: true },
   })
 
   return participant
