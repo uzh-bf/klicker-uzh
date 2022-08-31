@@ -989,6 +989,18 @@
             "deprecationReason": null
           },
           {
+            "name": "self",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Participant",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "session",
             "description": null,
             "args": [
@@ -1012,18 +1024,6 @@
             "type": {
               "kind": "OBJECT",
               "name": "Session",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "self",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Participant",
               "ofType": null
             },
             "isDeprecated": false,
