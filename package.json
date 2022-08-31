@@ -54,5 +54,8 @@
   "packageManager": "npm@8.15.0",
   "engines": {
     "node": "=18"
+  },
+  "dependencies": {
+    "react-nice-avatar": "^1.2.4"
   }
 }
