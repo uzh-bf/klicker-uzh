@@ -1,11 +1,33 @@
+/* eslint-disable react-hooks/rules-of-hooks */
+import { useParserCache } from '@envelop/parser-cache'
+import { useResponseCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
+import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
-import { createServer } from '@graphql-yoga/node'
+import { useHive } from '@graphql-hive/client'
+import { createServer, Plugin } from '@graphql-yoga/node'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
 import express from 'express'
+import Redis from 'ioredis'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './graphql/authorization'
+
+let cache = undefined
+try {
+  const redis = new Redis({
+    family: 4,
+    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+    password: process.env.REDIS_CACHE_PASS ?? '',
+    port: Number(process.env.REDIS_CACHE_PORT) ?? 6379,
+    tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
+  })
+
+  cache = createRedisCache({ redis })
+} catch (e) {
+  console.error(e)
+}
 
 const app = express()
 
@@ -47,12 +69,41 @@ const graphQLServer = createServer({
       rules: Rules,
       authSchema: AuthSchema,
     }),
-  ],
+    useResponseCache({
+      // set the TTL to 0 to disable response caching by default
+      // ttl: 0,
+      ttlPerType: {
+        Participant: 60000,
+        // Course: 60000,
+        // LearningElement: 60000,
+        // QuestionInstance: 60000,
+      },
+      cache,
+      session(ctx) {
+        return ctx.user ? ctx.user.sub : null
+      },
+    }),
+    useValidationCache({}),
+    useParserCache({}),
+    // useGraphQlJit(),
+    process.env.HIVE_TOKEN
+      ? useHive({
+          enabled: true,
+          debug: true,
+          token: process.env.HIVE_TOKEN,
+          usage: true,
+        })
+      : null,
+  ].filter(Boolean) as Plugin[],
   context: enhanceContext,
   logging: true,
-  // graphiql: {
-  //   endpoint: '/api/graphql',
-  // },
+  cors(request) {
+    const requestOrigin = request.headers.get('origin') as string
+    return {
+      origin: requestOrigin,
+      credentials: true,
+    }
+  },
 })
 
 app.use('/api/graphql', graphQLServer)

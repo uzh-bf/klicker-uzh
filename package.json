@@ -2,9 +2,8 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "2.0.0-alpha.18",
+  "version": "2.0.0-alpha.21",
   "workspaces": [
-    "docs",
     "apps/*",
     "packages/*"
   ],
@@ -50,10 +49,10 @@
     "yaml": "2.1.1"
   },
   "volta": {
-    "node": "16.17.0"
+    "node": "18.8.0"
   },
   "packageManager": "npm@8.15.0",
   "engines": {
-    "node": "16"
+    "node": "=18"
   }
 }

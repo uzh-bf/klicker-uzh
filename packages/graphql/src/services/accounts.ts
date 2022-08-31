@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
@@ -51,11 +51,26 @@ export async function loginUser(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 6,
     secure: process.env.NODE_ENV === 'production',
   })
 
   return user.id
+}
+
+export function createParticipantToken(participantId: string) {
+  return JWT.sign(
+    {
+      sub: participantId,
+      role: UserRole.PARTICIPANT,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '1w',
+    }
+  )
 }
 
 interface LoginParticipantArgs {
@@ -83,24 +98,13 @@ export async function loginParticipant(
   //   data: { lastLoginAt: new Date() },
   // })
 
-  const jwt = JWT.sign(
-    {
-      sub: participant.id,
-      role: UserRole.PARTICIPANT,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '7d',
-    }
-  )
+  const jwt = createParticipantToken(participant.id)
 
   ctx.res.cookie('participant_token', jwt, {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 6,
     secure: process.env.NODE_ENV === 'production',
   })
 

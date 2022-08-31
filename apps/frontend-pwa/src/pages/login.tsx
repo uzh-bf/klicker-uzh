@@ -5,7 +5,7 @@ import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -50,7 +50,12 @@ function LoginForm() {
     <Formik
       initialValues={{ username: '', password: '' }}
       validationSchema={loginSchema}
-      onSubmit={onSubmit}
+      onSubmit={async (values) => {
+        await loginParticipant({
+          variables: { username: values.username, password: values.password },
+        })
+        Router.push('/profile')
+      }}
     >
       {({ errors, touched, isSubmitting }) => {
         return (
