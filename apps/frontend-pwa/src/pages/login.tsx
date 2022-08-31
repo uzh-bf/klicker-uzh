@@ -5,7 +5,7 @@ import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import Router, { useRouter } from 'next/router'
+import Router from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -20,8 +20,6 @@ function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
 
-  const router = useRouter()
-
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setError('')
     try {
@@ -35,7 +33,7 @@ function LoginForm() {
         resetForm()
       } else {
         console.log('Login successful!', userID)
-        router.replace('/welcome')
+        Router.push('/profile')
       }
     } catch (e) {
       console.error(e)
@@ -50,12 +48,7 @@ function LoginForm() {
     <Formik
       initialValues={{ username: '', password: '' }}
       validationSchema={loginSchema}
-      onSubmit={async (values) => {
-        await loginParticipant({
-          variables: { username: values.username, password: values.password },
-        })
-        Router.push('/profile')
-      }}
+      onSubmit={onSubmit}
     >
       {({ errors, touched, isSubmitting }) => {
         return (
