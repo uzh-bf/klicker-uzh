@@ -6,16 +6,12 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
-    "DATABASE_URL": "",
+    "DATABASE_URL": "postgres://klicker:klicker@localhost:5432/main",
     "APP_SECRET": "abcd",
-    "REDIS_HOST": "",
-    "REDIS_PASS": "",
+    "REDIS_HOST": "localhost",
     "REDIS_PORT": 6379,
-    "REDIS_TLS": true,
-    "REDIS_CACHE_HOST": "",
-    "REDIS_CACHE_PASS": "",
-    "REDIS_CACHE_PORT": 6379,
-    "REDIS_CACHE_TLS": true,
-    "HIVE_TOKEN": ""
+    "REDIS_CACHE_HOST": "localhost",
+    "REDIS_CACHE_PORT": 6380,
+    "HIVE_TOKEN": "49eeb9e1941c32aeae0ab20b7648b0c6"
   }
 }
