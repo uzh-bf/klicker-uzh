@@ -3,7 +3,6 @@ import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { FormattedMessage } from 'react-intl'
 import { twMerge } from 'tailwind-merge'
 
 import { IFeedback } from '../../../@types/feedbacks'
@@ -42,18 +41,19 @@ function PublicFeedback({
             <p className="mb-0 prose-sm prose">{content}</p>
             <div className="flex flex-row items-end mt-1 text-gray-500">
               <div className="text-xs text-gray-500">
-                {resolved ? (
-                  <FormattedMessage defaultMessage="Resolved on" id="joinSession.feedbackArea.resolvedAt" />
-                ) : (
-                  <FormattedMessage defaultMessage="Posted on" id="joinSession.feedbackArea.postedAt" />
-                )}{' '}
-                {dayjs(resolved ? resolvedAt : createdAt).format('DD.MM.YYYY HH:mm')}
+                {resolved ? 'Resolved on' : 'Posted on'}{' '}
+                {dayjs(resolved ? resolvedAt : createdAt).format(
+                  'DD.MM.YYYY HH:mm'
+                )}
               </div>
             </div>
           </div>
           <div className="flex-initial mt-1 mr-1">
             <Button
-              className={twMerge('text-lg h-8 w-8 justify-center', upvoted && 'bg-uzh-blue-60 text-white')}
+              className={twMerge(
+                'text-lg h-8 w-8 justify-center',
+                upvoted && 'bg-uzh-blue-60 text-white'
+              )}
               disabled={resolved}
               onClick={onUpvoteFeedback}
             >
@@ -73,7 +73,9 @@ function PublicFeedback({
             >
               <div className="flex-1">
                 <p className="mb-0 prose-sm prose">{response.content}</p>
-                <div className="mt-1 text-xs text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
+                </div>
               </div>
               <div className="flex-initial">
                 <Button

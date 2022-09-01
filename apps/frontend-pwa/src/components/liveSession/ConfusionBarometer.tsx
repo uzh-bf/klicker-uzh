@@ -3,41 +3,9 @@ import { push } from '@socialgouv/matomo-next'
 import localForage from 'localforage'
 import _debounce from 'lodash/debounce'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 import AddConfusionTSMutation from '../../../graphql/mutations/AddConfusionTSMutation.graphql'
 import ConfusionDialog from '../../interaction/confusion/ConfusionDialog'
-
-const messages = defineMessages({
-  feedbackPlaceholder: {
-    id: 'joinSession.feedbackArea.feedbackPlaceholder',
-    defaultMessage: 'Post a question or feedback...',
-  },
-  difficultyRangeMin: {
-    defaultMessage: 'easy',
-    id: 'runningSession.confusion.difficulty.RangeMin',
-  },
-  difficultyRangeMid: {
-    defaultMessage: 'optimal',
-    id: 'runningSession.confusion.difficulty.RangeMid',
-  },
-  difficultyRangeMax: {
-    defaultMessage: 'difficult',
-    id: 'runningSession.confusion.difficulty.RangeMax',
-  },
-  speedRangeMin: {
-    defaultMessage: 'slow',
-    id: 'runningSession.confusion.speed.RangeMin',
-  },
-  speedRangeMid: {
-    defaultMessage: 'optimal',
-    id: 'runningSession.confusion.speed.RangeMid',
-  },
-  speedRangeMax: {
-    defaultMessage: 'fast',
-    id: 'runningSession.confusion.speed.RangeMax',
-  },
-})
 
 interface Props {
   shortname: string
@@ -45,8 +13,6 @@ interface Props {
 }
 
 function ConfusionBarometer({ shortname, sessionId }: Props) {
-  const intl = useIntl()
-
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
   const [isConfusionEnabled, setConfusionEnabled] = useState(true)
@@ -56,7 +22,9 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
   useEffect((): void => {
     const exec = async () => {
       try {
-        const confusion: any = await localForage.getItem(`${shortname}-${sessionId}-confusion`)
+        const confusion: any = await localForage.getItem(
+          `${shortname}-${sessionId}-confusion`
+        )
         if (confusion) {
           setConfusionSpeed(confusion.prevSpeed)
           setConfusionDifficulty(confusion.prevDifficulty)
@@ -69,7 +37,10 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
   }, [])
 
   // handle creation of a new confusion timestep with debounce for aggregation
-  const handleNewConfusionTS = async ({ speed = 0, difficulty = 0 }): Promise<void> => {
+  const handleNewConfusionTS = async ({
+    speed = 0,
+    difficulty = 0,
+  }): Promise<void> => {
     try {
       newConfusionTS({
         variables: {
@@ -83,7 +54,12 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
         prevSpeed: speed,
         prevDifficulty: difficulty,
       })
-      push(['trackEvent', 'Join Session', 'Confusion Interacted', `speed=${speed},difficulty=${difficulty}`])
+      push([
+        'trackEvent',
+        'Join Session',
+        'Confusion Interacted',
+        `speed=${speed},difficulty=${difficulty}`,
+      ])
     } catch ({ message }) {
       console.error(message)
     } finally {
@@ -91,11 +67,18 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
       if (confusionButtonTimeout.current) {
         clearTimeout(confusionButtonTimeout.current)
       }
-      confusionButtonTimeout.current = setTimeout(setConfusionEnabled, 60000, true)
+      confusionButtonTimeout.current = setTimeout(
+        setConfusionEnabled,
+        60000,
+        true
+      )
     }
   }
 
-  const debouncedHandleNewConfusionTS = useCallback(_debounce(handleNewConfusionTS, 4000, { trailing: true }), [])
+  const debouncedHandleNewConfusionTS = useCallback(
+    _debounce(handleNewConfusionTS, 4000, { trailing: true }),
+    []
+  )
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
@@ -115,34 +98,38 @@ function ConfusionBarometer({ shortname, sessionId }: Props) {
     <div className="flex flex-col gap-6">
       <ConfusionDialog
         disabled={!isConfusionEnabled}
-        handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'speed')}
+        handleChange={(newValue: any): Promise<void> =>
+          onNewConfusionTS(newValue, 'speed')
+        }
         icons={{
           min: '🐌',
           mid: '😀',
           max: '🦘',
         }}
         labels={{
-          min: intl.formatMessage(messages.speedRangeMin),
-          mid: intl.formatMessage(messages.speedRangeMid),
-          max: intl.formatMessage(messages.speedRangeMax),
+          min: 'slow',
+          mid: 'optimal',
+          max: 'fast',
         }}
-        title={<FormattedMessage defaultMessage="Speed" id="common.string.speed" />}
+        title="Speed"
         value={confusionSpeed}
       />
       <ConfusionDialog
         disabled={!isConfusionEnabled}
-        handleChange={(newValue: any): Promise<void> => onNewConfusionTS(newValue, 'difficulty')}
+        handleChange={(newValue: any): Promise<void> =>
+          onNewConfusionTS(newValue, 'difficulty')
+        }
         icons={{
           min: '😴',
           mid: '😀',
           max: '🤯',
         }}
         labels={{
-          min: intl.formatMessage(messages.difficultyRangeMin),
-          mid: intl.formatMessage(messages.difficultyRangeMid),
-          max: intl.formatMessage(messages.difficultyRangeMax),
+          min: 'easy',
+          mid: 'optimal',
+          max: 'difficult',
         }}
-        title={<FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />}
+        title="Difficulty"
         value={confusionDifficulty}
       />
     </div>

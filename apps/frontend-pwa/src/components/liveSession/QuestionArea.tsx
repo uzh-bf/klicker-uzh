@@ -5,13 +5,15 @@ import _get from 'lodash/get'
 import _without from 'lodash/without'
 import getConfig from 'next/config'
 import React, { useEffect, useState } from 'react'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { twMerge } from 'tailwind-merge'
 import v8n from 'v8n'
 
 import { Icon, Message } from 'semantic-ui-react'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
-import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
+import {
+  createNotification,
+  requestNotificationPermissions,
+} from '../../../lib/utils/notifications'
 import ActionMenu from '../../common/ActionMenu'
 import FREEAnswerOptions from '../../questionTypes/FREE/FREEAnswerOptions'
 import QuestionDescription from '../../questionTypes/QuestionDescription'
@@ -21,41 +23,16 @@ import QuestionFiles from './QuestionFiles'
 const { publicRuntimeConfig } = getConfig()
 
 const messages = {
-  [QUESTION_TYPES.SC]: (
-    <p>
-      <FormattedMessage defaultMessage="Please choose a single option below:" id="joinSession.questionArea.info.SC" />
-    </p>
-  ),
+  [QUESTION_TYPES.SC]: <p>Please choose a single option below:</p>,
   [QUESTION_TYPES.MC]: (
-    <p>
-      <FormattedMessage
-        defaultMessage="Please choose one or multiple of the options below:"
-        id="joinSession.questionArea.info.MC"
-      />
-    </p>
+    <p>Please choose one or multiple of the options below:</p>
   ),
-  [QUESTION_TYPES.FREE]: (
-    <p>
-      <FormattedMessage defaultMessage="Please enter your response below:" id="joinSession.questionArea.info.FREE" />
-    </p>
-  ),
+  [QUESTION_TYPES.FREE]: <p>Please enter your response below:</p>,
 
   [QUESTION_TYPES.FREE_RANGE]: (
-    <p>
-      <FormattedMessage
-        defaultMessage="Please choose a number from the given range below:"
-        id="joinSession.questionArea.info.FREE_RANGE"
-      />
-    </p>
+    <p>Please choose a number from the given range below:</p>
   ),
 }
-
-const intlMessages = defineMessages({
-  newQuestionNotification: {
-    defaultMessage: 'A new Klicker question is available',
-    id: 'joinSession.string.questionNotification',
-  },
-})
 
 interface Props {
   message?: string
@@ -92,14 +69,14 @@ function QuestionArea({
 }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
-  const [activeQuestion, setActiveQuestion] = useState((): any => remainingQuestions[0])
+  const [activeQuestion, setActiveQuestion] = useState(
+    (): any => remainingQuestions[0]
+  )
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
     inputValid: false,
     inputValue: undefined,
   })
-
-  const intl = useIntl()
 
   useEffect(() => {
     requestNotificationPermissions()
@@ -109,7 +86,10 @@ function QuestionArea({
     if (!isStaticPreview) {
       if (!sessionStorage?.getItem(`notification ${questions[0].id}`)) {
         if (questions.length > 0) {
-          createNotification(intl.formatMessage(intlMessages.newQuestionNotification), questions[0].description)
+          createNotification(
+            'A new Klicker question is available',
+            questions[0].description
+          )
         }
         sessionStorage?.setItem(`notification ${questions[0].id}`, 'sent')
       }
@@ -120,7 +100,9 @@ function QuestionArea({
     if (!isStaticPreview) {
       const exec = async () => {
         try {
-          let storedResponses: any = (await localForage.getItem(`${shortname}-${sessionId}-responses`)) || {
+          let storedResponses: any = (await localForage.getItem(
+            `${shortname}-${sessionId}-responses`
+          )) || {
             responses: [],
           }
 
@@ -128,13 +110,16 @@ function QuestionArea({
             storedResponses = JSON.parse(storedResponses)
           }
 
-          const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
-            if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
-              return indices
-            }
+          const remaining = questions.reduce(
+            (indices, { id, execution }, index): any[] => {
+              if (storedResponses?.responses?.includes(`${id}-${execution}`)) {
+                return indices
+              }
 
-            return [...indices, index]
-          }, [])
+              return [...indices, index]
+            },
+            []
+          )
 
           setActiveQuestion(remaining[0])
           setRemainingQuestions(remaining)
@@ -205,8 +190,10 @@ function QuestionArea({
       }
 
       return setInputState({
-        inputEmpty: newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
-        inputValid: validator.test(newInputValue) || validator.test(+newInputValue),
+        inputEmpty:
+          newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
+        inputValid:
+          validator.test(newInputValue) || validator.test(+newInputValue),
         inputValue: newInputValue,
       })
     }
@@ -220,7 +207,10 @@ function QuestionArea({
         if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
           handleNewResponse({ instanceId, response: { choices: inputValue } })
         } else if (QUESTION_GROUPS.FREE.includes(type)) {
-          handleNewResponse({ instanceId, response: { value: String(inputValue) } })
+          handleNewResponse({
+            instanceId,
+            response: { value: String(inputValue) },
+          })
         }
       } else {
         push(['trackEvent', 'Join Session', 'Question Skipped'])
@@ -229,16 +219,27 @@ function QuestionArea({
       // update the stored responses
       if (typeof window !== 'undefined') {
         try {
-          const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
+          const prevResponses: any = await localForage.getItem(
+            `${shortname}-${sessionId}-responses`
+          )
           const stringified = JSON.stringify(
             prevResponses
               ? {
-                  responses: [...JSON.parse(prevResponses).responses, `${instanceId}-${execution}`],
+                  responses: [
+                    ...JSON.parse(prevResponses).responses,
+                    `${instanceId}-${execution}`,
+                  ],
                   timestamp: dayjs().unix(),
                 }
-              : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
+              : {
+                  responses: [`${instanceId}-${execution}`],
+                  timestamp: dayjs().unix(),
+                }
           )
-          await localForage.setItem(`${shortname}-${sessionId}-responses`, stringified)
+          await localForage.setItem(
+            `${shortname}-${sessionId}-responses`,
+            stringified
+          )
         } catch (e) {
           console.error(e)
         }
@@ -277,12 +278,10 @@ function QuestionArea({
       {!isStaticPreview ? (
         <h1 className="hidden mb-2 md:block md:!text-lg">
           {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
-          <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
+          Question
         </h1>
       ) : (
-        <div className="mb-4 text-xl font-bold">
-          <FormattedMessage defaultMessage="Question Preview" id="previewQuestion.title" />
-        </div>
+        <div className="mb-4 text-xl font-bold">Question Preview</div>
       )}
 
       {((): React.ReactElement => {
@@ -290,15 +289,18 @@ function QuestionArea({
           return (
             <div>
               {message && <Message warning>{message}</Message>}
-              <FormattedMessage
-                defaultMessage="You have already answered all active questions."
-                id="joinSession.questionArea.alreadyAnswered"
-              />
+              You have already answered all active questions.
             </div>
           )
         }
 
-        const { content, description, options, type, files = [] } = currentQuestion
+        const {
+          content,
+          description,
+          options,
+          type,
+          files = [],
+        } = currentQuestion
 
         return (
           <div className="flex flex-col w-full gap-2">
@@ -307,7 +309,10 @@ function QuestionArea({
                 activeIndex={questions.length - remainingQuestions.length}
                 expiresAt={expiresAt}
                 isSkipModeActive={inputEmpty}
-                isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
+                isSubmitDisabled={
+                  remainingQuestions.length === 0 ||
+                  (!inputEmpty && !inputValid)
+                }
                 numItems={questions.length}
                 timeLimit={timeLimit}
                 onSubmit={onSubmit}
@@ -315,7 +320,10 @@ function QuestionArea({
             </div>
 
             <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-primary border border-solid rounded">
-              <QuestionDescription content={content} description={description} />
+              <QuestionDescription
+                content={content}
+                description={description}
+              />
             </div>
 
             {publicRuntimeConfig.s3root && files.length > 0 && (

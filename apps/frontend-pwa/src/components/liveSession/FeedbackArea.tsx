@@ -2,7 +2,6 @@ import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { partition, sortBy } from 'ramda'
 import React, { useEffect, useState } from 'react'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Form, Message, TextArea } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -15,37 +14,6 @@ import PublicFeedbackRemovedSubscription from '../../../graphql/subscriptions/Pu
 import useStickyState from '../../../lib/hooks/useStickyState'
 import ConfusionBarometer from './ConfusionBarometer'
 import PublicFeedback from './PublicFeedback'
-
-const messages = defineMessages({
-  feedbackPlaceholder: {
-    id: 'joinSession.feedbackArea.feedbackPlaceholder',
-    defaultMessage: 'Post a question or feedback...',
-  },
-  difficultyRangeMin: {
-    defaultMessage: 'easy',
-    id: 'runningSession.confusion.difficulty.RangeMin',
-  },
-  difficultyRangeMid: {
-    defaultMessage: 'optimal',
-    id: 'runningSession.confusion.difficulty.RangeMid',
-  },
-  difficultyRangeMax: {
-    defaultMessage: 'difficult',
-    id: 'runningSession.confusion.difficulty.RangeMax',
-  },
-  speedRangeMin: {
-    defaultMessage: 'slow',
-    id: 'runningSession.confusion.speed.RangeMin',
-  },
-  speedRangeMid: {
-    defaultMessage: 'optimal',
-    id: 'runningSession.confusion.speed.RangeMid',
-  },
-  speedRangeMax: {
-    defaultMessage: 'fast',
-    id: 'runningSession.confusion.speed.RangeMax',
-  },
-})
 
 interface Props {
   active: boolean
@@ -87,12 +55,11 @@ function FeedbackArea({
   subscribeToMore,
   data,
 }: Props): React.ReactElement {
-  const intl = useIntl()
-
-  const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
-    true,
-    'qa-survey-student-visible'
-  )
+  const [
+    isSurveyBannerVisible,
+    setIsSurveyBannerVisible,
+    hasSurveyBannerInitialized,
+  ] = useStickyState(true, 'qa-survey-student-visible')
 
   useEffect(() => {
     const publicFeedbackAdded = subscribeToMore({
@@ -113,7 +80,10 @@ function FeedbackArea({
         if (!subscriptionData.data) return prev
         return {
           ...prev,
-          joinQA: prev.joinQA.filter((feedback) => feedback.id !== subscriptionData.data.publicFeedbackRemoved),
+          joinQA: prev.joinQA.filter(
+            (feedback) =>
+              feedback.id !== subscriptionData.data.publicFeedbackRemoved
+          ),
         }
       },
     })
@@ -123,7 +93,12 @@ function FeedbackArea({
       variables: { sessionId },
       updateQuery: (prev, { subscriptionData }) => {
         if (!subscriptionData.data) return prev
-        return { ...prev, joinQA: prev.joinQA.filter((item) => item.id !== subscriptionData.data.feedbackDeleted) }
+        return {
+          ...prev,
+          joinQA: prev.joinQA.filter(
+            (item) => item.id !== subscriptionData.data.feedbackDeleted
+          ),
+        }
       },
     })
 
@@ -156,10 +131,15 @@ function FeedbackArea({
         return {
           ...prev,
           joinQA: prev.joinQA.map((item) => {
-            if (item.id === subscriptionData.data.feedbackResponseAdded.feedbackId) {
+            if (
+              item.id === subscriptionData.data.feedbackResponseAdded.feedbackId
+            ) {
               return {
                 ...item,
-                responses: [...item.responses, subscriptionData.data.feedbackResponseAdded],
+                responses: [
+                  ...item.responses,
+                  subscriptionData.data.feedbackResponseAdded,
+                ],
                 resolved: true,
                 resolvedAt: new Date(),
               }
@@ -178,11 +158,16 @@ function FeedbackArea({
         return {
           ...prev,
           joinQA: prev.joinQA.map((feedback) => {
-            if (feedback.id === subscriptionData.data.feedbackResponseDeleted.feedbackId) {
+            if (
+              feedback.id ===
+              subscriptionData.data.feedbackResponseDeleted.feedbackId
+            ) {
               return {
                 ...feedback,
                 responses: feedback.responses.filter(
-                  (response) => response.id !== subscriptionData.data.feedbackResponseDeleted.id
+                  (response) =>
+                    response.id !==
+                    subscriptionData.data.feedbackResponseDeleted.id
                 ),
               }
             }
@@ -210,8 +195,14 @@ function FeedbackArea({
 
   useEffect(() => {
     if (data?.joinQA) {
-      const [resolved, open] = partition((feedback: any) => feedback.resolved, data.joinQA)
-      const resolvedSorted = sortBy((o: any) => -dayjs(o.resolvedAt).unix(), resolved)
+      const [resolved, open] = partition(
+        (feedback: any) => feedback.resolved,
+        data.joinQA
+      )
+      const resolvedSorted = sortBy(
+        (o: any) => -dayjs(o.resolvedAt).unix(),
+        resolved
+      )
       const openSorted = sortBy((o: any) => -dayjs(o.createdAt).unix(), open)
       setProcessedFeedbacks({
         resolved: resolvedSorted,
@@ -249,7 +240,9 @@ function FeedbackArea({
       .map((feedback: any) => feedback.id)
       .concat(processedFeedbacks.resolved.map((feedback: any) => feedback.id))
     const responseIds = processedFeedbacks.open
-      .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
+      .filter(
+        (feedback) => feedback.responses && !(feedback.responses.length === 0)
+      )
       .map((feedback) =>
         feedback.responses.map((response: any) => {
           return response.id
@@ -257,7 +250,10 @@ function FeedbackArea({
       )
       .concat(
         processedFeedbacks.resolved
-          .filter((feedback) => feedback.responses && !(feedback.responses.length === 0))
+          .filter(
+            (feedback) =>
+              feedback.responses && !(feedback.responses.length === 0)
+          )
           .map((feedback) =>
             feedback.responses.map((response: any) => {
               return response.id
@@ -274,15 +270,34 @@ function FeedbackArea({
   }
 
   const onUpvoteFeedback = async (feedbackId: string) => {
-    await handleUpvoteFeedback({ feedbackId, undo: upvotedFeedbacks && !!upvotedFeedbacks[feedbackId] })
-    setUpvotedFeedbacks((prev) => ({ ...(prev || {}), [feedbackId]: prev?.[feedbackId] ? !prev[feedbackId] : true }))
+    await handleUpvoteFeedback({
+      feedbackId,
+      undo: upvotedFeedbacks && !!upvotedFeedbacks[feedbackId],
+    })
+    setUpvotedFeedbacks((prev) => ({
+      ...(prev || {}),
+      [feedbackId]: prev?.[feedbackId] ? !prev[feedbackId] : true,
+    }))
   }
 
-  const handlePositiveResponseReaction = async (responseId: string, feedbackId: string) => {
+  const handlePositiveResponseReaction = async (
+    responseId: string,
+    feedbackId: string
+  ) => {
     if (reactions?.[responseId] < 0) {
-      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: -1 })
+      await handleReactToFeedbackResponse({
+        feedbackId,
+        responseId,
+        positive: 1,
+        negative: -1,
+      })
     } else {
-      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: 0 })
+      await handleReactToFeedbackResponse({
+        feedbackId,
+        responseId,
+        positive: 1,
+        negative: 0,
+      })
     }
     setReactions((prev) => {
       return {
@@ -292,11 +307,24 @@ function FeedbackArea({
     })
   }
 
-  const handleNegativeResponseReaction = async (responseId: string, feedbackId: string) => {
+  const handleNegativeResponseReaction = async (
+    responseId: string,
+    feedbackId: string
+  ) => {
     if (reactions?.[responseId] > 0) {
-      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: -1, negative: 1 })
+      await handleReactToFeedbackResponse({
+        feedbackId,
+        responseId,
+        positive: -1,
+        negative: 1,
+      })
     } else {
-      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 0, negative: 1 })
+      await handleReactToFeedbackResponse({
+        feedbackId,
+        responseId,
+        positive: 0,
+        negative: 1,
+      })
     }
     setReactions((prev) => {
       return {
@@ -308,7 +336,10 @@ function FeedbackArea({
 
   return (
     <div
-      className={twMerge('bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex', active ? 'flex' : 'hidden')}
+      className={twMerge(
+        'bg-white p-4 flex-col md:shadow md:rounded-xl flex-1 md:flex',
+        active ? 'flex' : 'hidden'
+      )}
     >
       <h1 className="!mb-2 hidden md:block md:!text-lg">Feedback-Channel</h1>
 
@@ -317,9 +348,12 @@ function FeedbackArea({
           <Form className="flex flex-col">
             <Form.Field className="!mb-2 flex-1">
               <TextArea
-                className={twMerge('h-11 !text-sm focus:h-24', feedbackInputValue?.length > 0 && '!h-24')}
+                className={twMerge(
+                  'h-11 !text-sm focus:h-24',
+                  feedbackInputValue?.length > 0 && '!h-24'
+                )}
                 name="feedbackInput"
-                placeholder={intl.formatMessage(messages.feedbackPlaceholder)}
+                placeholder="Post a question or feedback..."
                 rows={4}
                 value={feedbackInputValue}
                 onChange={(e): void => setFeedbackInputValue(e.target.value)}
@@ -332,9 +366,7 @@ function FeedbackArea({
               type="submit"
               onClick={onNewFeedback}
             >
-              <Button.Label>
-                <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-              </Button.Label>
+              <Button.Label>Submit</Button.Label>
             </Button>
           </Form>
         </div>
@@ -349,12 +381,17 @@ function FeedbackArea({
         <>
           {processedFeedbacks.open.length > 0 && (
             <div className="mt-6">
-              <h2 className="!mb-1 !text-base text-gray-600">
-                <FormattedMessage defaultMessage="Open Questions" id="joinSession.feedbackArea.open" />
-              </h2>
+              <h2 className="!mb-1 !text-base text-gray-600">Open Questions</h2>
               <div className="flex flex-col h-auto gap-2 overflow-x-auto">
                 {processedFeedbacks.open.map(
-                  ({ id, content, responses, createdAt, resolved, upvoted }): React.ReactElement => (
+                  ({
+                    id,
+                    content,
+                    responses,
+                    createdAt,
+                    resolved,
+                    upvoted,
+                  }): React.ReactElement => (
                     <div key={id}>
                       <PublicFeedback
                         content={content}
@@ -380,11 +417,19 @@ function FeedbackArea({
           {processedFeedbacks.resolved.length > 0 && (
             <div className="mt-6">
               <h2 className="!mb-1 !text-base text-gray-600">
-                <FormattedMessage defaultMessage="Resolved Questions" id="joinSession.feedbackArea.resolved" />
+                Resolved Questions
               </h2>
               <div className="flex flex-col gap-2">
                 {processedFeedbacks.resolved.map(
-                  ({ id, content, responses, createdAt, resolvedAt, resolved, upvoted }): React.ReactElement => (
+                  ({
+                    id,
+                    content,
+                    responses,
+                    createdAt,
+                    resolvedAt,
+                    resolved,
+                    upvoted,
+                  }): React.ReactElement => (
                     <div key={id}>
                       <PublicFeedback
                         content={content}
@@ -415,17 +460,17 @@ function FeedbackArea({
             warning
             className="!rounded-none"
             content={
-              <FormattedMessage
-                defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                id="joinSession.feedbackArea.survey"
-                values={{
-                  link: (
-                    <a href="https://hi.switchy.io/6Igb" rel="noreferrer" target="_blank">
-                      link
-                    </a>
-                  ),
-                }}
-              />
+              <div>
+                If you have used our feedback-channel (Q&A) functionality,
+                please consider participating in our 2-minute survey under this{' '}
+                <a
+                  href="https://hi.switchy.io/6Igb"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  link
+                </a>
+              </div>
             }
             icon="bullhorn"
             size="large"

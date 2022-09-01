@@ -2,7 +2,6 @@ import { faArrowsRotate, faBars } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import React, { useEffect, useState } from 'react'
-import { FormattedMessage } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 // TODO: move NotificationBadge to design system?
@@ -127,10 +126,7 @@ function Layout({
                 name="activeQuestion"
                 unseenItems={unseenQuestions}
               >
-                <FormattedMessage
-                  defaultMessage="Active Question"
-                  id="joinSession.sidebar.activeQuestion"
-                />
+                Active Question
               </SidebarItem>,
               isInteractionEnabled && (
                 <SidebarItem
@@ -143,10 +139,7 @@ function Layout({
                   name="feedbackChannel"
                   unseenItems={unseenFeedbacks}
                 >
-                  <FormattedMessage
-                    defaultMessage="Feedback-Channel"
-                    id="joinSession.sidebar.feedbackChannel"
-                  />
+                  Feedback-Channel
                 </SidebarItem>
               ),
             ].filter(Boolean)}

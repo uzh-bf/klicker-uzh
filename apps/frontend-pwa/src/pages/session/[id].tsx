@@ -2,16 +2,14 @@
 
 import { GetSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 
-
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 // import { faRotate } from '@fortawesome/free-solid-svg-icons'
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // import { push } from '@socialgouv/matomo-next'
 // import { Button } from '@uzh-bf/design-system'
 // import getConfig from 'next/config'
 import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import React from 'react'
 // import { Message } from 'semantic-ui-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -32,26 +30,6 @@ import UpdatedSessionSubscription from '../../graphql/subscriptions/UpdateSessio
 interface LiveSessionProps {
   shortname: string
 }
-
-const messages = defineMessages({
-  activeQuestionTitle: {
-    defaultMessage: 'Active Question',
-    id: 'joinSession.activeQuestion.title',
-  },
-  feedbackChannelTitle: {
-    defaultMessage: 'Feedback-Channel',
-    id: 'joinSession.feedbackChannel.title',
-  },
-  ignoredSecondResponse: {
-    defaultMessage:
-      'As you are only allowed to respond once, we did not count your latest response.',
-    id: 'joinSession.string.responseIgnored',
-  },
-  joinForbidden: {
-    defaultMessage: 'You are not permitted to join this session',
-    id: 'joinSession.string.joinForbidden',
-  },
-})
 
 function LiveSession({ shortname }: LiveSessionProps): React.ReactElement {
   const router = useRouter()
@@ -118,10 +96,7 @@ function LiveSession({ shortname }: LiveSessionProps): React.ReactElement {
               sidebarActiveItem !== 'activeQuestion' && 'hidden'
             )}
           >
-            <FormattedMessage
-              defaultMessage="No question active."
-              id="joinSession.noQuestionActive"
-            />
+            No question active.
           </div>
         )}
 
