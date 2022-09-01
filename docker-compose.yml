@@ -1,66 +1,19 @@
-version: '3.9'
-
 services:
-  frontend:
-    profiles:
-      - full
-    build:
-      dockerfile: Dockerfile.frontend
-    ports:
-      - 3000:3000
+  # main database
+  postgres:
+    image: postgres:14.3
     environment:
-      API_ENDPOINT: http://localhost:4000/graphql
-      API_ENDPOINT_WS: ws://localhost:4000/graphql
-      API_ENDPOINT_SSR: http://backend:4000/graphql
-      APP_BASE_URL: http://localhost:3000
-      APP_JOIN_URL: localhost:3000/join
-      APP_SUPPORT_EMAIL: klicker.support@uzh.ch
-      CACHE_REDIS_ENABLED: 'true'
-      CACHE_REDIS_HOST: redis_cache
-      S3_ROOT_DOMAIN: localhost:9000
-      S3_ROOT_URL: http://localhost:9000/images
-      SENTRY_DSN: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
-      SENTRY_ENV: dev
-      SENTRY_SAMPLE_RATE: 1.0
-      SENTRY_DEBUG: 'true'
-
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: main
+    ports:
+      - 5432:5432
     networks:
       - klicker-dev
 
-  backend:
-    profiles:
-      - full
-    build:
-      dockerfile: Dockerfile.backend
-    ports:
-      - 4000:4000
-    environment:
-      APP_DOMAIN: localhost
-      APP_HTTPS:
-      APP_SECRET: abcdabcd
-      CACHE_REDIS_HOST: redis_cache
-      CACHE_REDIS_PORT: 6379
-      EXEC_REDIS_HOST: redis_exec
-      EXEC_REDIS_PORT: 6379
-      EMAIL_FROM: klicker.support@uzh.ch
-      EMAIL_HOST: sendria
-      EMAIL_PORT: 1025
-      EMAIL_USER:
-      EMAIL_PASSWORD:
-      MONGO_URL: mongodb:27017/klicker?authSource=admin
-      MONGO_USER: klicker
-      MONGO_PASSWORD: klicker
-      S3_ENABLED: 'true'
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin
-      S3_ENDPOINT: http://minio:9000
-      S3_BUCKET: images
-    networks:
-      - klicker-dev
-
-  # redis instance to support session execution
+    # redis instance to support session execution
   redis_exec:
-    image: redis:5.0.9
+    image: redis:6
     ports:
       - 6379:6379
     networks:
@@ -70,59 +23,9 @@ services:
 
   # redis instance for page caching and rate limiting
   redis_cache:
-    image: redis:5.0.9
+    image: redis:6
     ports:
       - 6380:6379
-    networks:
-      - klicker-dev
-
-  mongodb:
-    image: mongo:4.0
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: klicker
-      MONGO_INITDB_ROOT_PASSWORD: klicker
-    ports:
-      - 27017:27017
-    networks:
-      - klicker-dev
-    volumes:
-      - /data/db
-
-  # TODO: document having to create an images bucket and setting it to public
-  minio:
-    image: quay.io/minio/minio:RELEASE.2021-09-15T04-54-25Z
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000
-    ports:
-      - 9000:9000
-      - 9001:9001
-    volumes:
-      - /data
-    command: server /data --console-address ":9001"
-
-  create_minio_buckets:
-    image: minio/mc:RELEASE.2021-10-07T04-19-58Z
-    depends_on:
-      - minio
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    entrypoint: >
-      /bin/sh -c '
-      sleep 5;
-      /usr/bin/mc config host add s3 http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} --api S3v4;
-      [[ ! -z "`/usr/bin/mc ls s3 | grep images`" ]] || /usr/bin/mc mb s3/images;
-      /usr/bin/mc policy set public s3/images;
-      exit 0;
-      '
-
-  sendria:
-    image: msztolcman/sendria:v2.2.2.0
-    ports:
-      - 1025:1025
-      - 1080:1080
     networks:
       - klicker-dev
 
