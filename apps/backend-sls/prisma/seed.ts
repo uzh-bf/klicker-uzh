@@ -1,7 +1,7 @@
 import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 async function main(prisma: Prisma.PrismaClient) {
   const hash = await bcrypt.hash('abcd', 12)
