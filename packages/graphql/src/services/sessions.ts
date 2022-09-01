@@ -23,6 +23,21 @@ export async function startSession(
     return null
   }
 
+  try {
+    const results = await redis
+      .multi()
+      .hmset(`session:${session.id}:meta`, {
+        id: session.id,
+        namespace: session.namespace,
+        execution: session.execution,
+      })
+      .hset(`session:${session.id}:lb`, { participants: 0 })
+      .exec()
+    console.log(results)
+  } catch (e) {
+    console.error(e)
+  }
+
   // if the session was alreadt completed, exit early
   if (session.status === SessionStatus.COMPLETED) {
     return null
