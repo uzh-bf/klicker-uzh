@@ -6,7 +6,9 @@ import {
   enumType,
   idArg,
   inputObjectType,
+  intArg,
   interfaceType,
+  list,
   nonNull,
   objectType,
   stringArg,
@@ -23,6 +25,15 @@ import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
+
+export const BlockInput = inputObjectType({
+  name: 'BlockInput',
+  definition(t) {
+    t.list.nonNull.string('questionIds')
+    t.int('randomSelection')
+    t.int('timeLimit')
+  },
+})
 
 export const ResponseInput = inputObjectType({
   name: 'ResponseInput',
@@ -363,6 +374,18 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createSession', {
+      type: Session,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+        blocks: list(BlockInput),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.createSession(args, ctx)
+      },
+    })
+
     t.field('startSession', {
       type: Session,
       args: {
@@ -370,6 +393,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.startSession(args, ctx)
+      },
+    })
+
+    t.field('activateSessionBlock', {
+      type: Session,
+      args: {
+        sessionId: nonNull(idArg()),
+        sessionBlockId: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.activateSessionBlock(args, ctx)
       },
     })
   },

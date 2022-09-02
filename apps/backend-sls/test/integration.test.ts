@@ -28,9 +28,9 @@ describe('API', () => {
     })
   })
 
-  afterAll(() => {
-    redisCache.disconnect()
-    redisExec.disconnect()
+  afterAll(async () => {
+    await redisCache.quit()
+    await redisExec.quit()
   })
 
   beforeEach(() => {
@@ -60,6 +60,49 @@ describe('API', () => {
     `)
   })
 
+  it('allows the user to create a session', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            createSession(name: "Test Session", blocks: [{ questionIds: ["996f208b-d567-4f1e-8c57-6f555866c33a", "996f208b-d567-4f1e-8c57-6f555866c33b"] }, { questionIds: ["996f208b-d567-4f1e-8c57-6f555866c33c"] }]) {
+                id
+                status
+                activeBlock
+                blocks {
+                    id
+                    status
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createSession": null,
+        },
+        "errors": Array [
+          Object {
+            "locations": Array [
+              Object {
+                "column": 13,
+                "line": 3,
+              },
+            ],
+            "message": "Unexpected error.",
+            "path": Array [
+              "createSession",
+            ],
+          },
+        ],
+      }
+    `)
+  })
+
   it('allows the user to start a session', async () => {
     const response = await request(app)
       .post('/api/graphql')
@@ -84,11 +127,50 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "activeBlock": -1,
+            "activeBlock": 0,
             "blocks": Array [
               Object {
                 "id": "1",
-                "status": "SCHEDULED",
+                "status": "ACTIVE",
+              },
+            ],
+            "id": "e0154d2a-314e-4a28-af9e-9ebf826a9b65",
+            "status": "RUNNING",
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the user to activate a session block', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            activateSessionBlock(sessionId: "e0154d2a-314e-4a28-af9e-9ebf826a9b65", sessionBlockId: 1) {
+                id
+                status
+                activeBlock
+                blocks {
+                    id
+                    status
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "activateSessionBlock": Object {
+            "activeBlock": 0,
+            "blocks": Array [
+              Object {
+                "id": "1",
+                "status": "ACTIVE",
               },
             ],
             "id": "e0154d2a-314e-4a28-af9e-9ebf826a9b65",

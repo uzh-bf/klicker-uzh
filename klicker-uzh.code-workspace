@@ -1,7 +1,25 @@
 {
   "folders": [
     {
-      "path": "."
+      "path": "./apps/backend-sls"
+    },
+    {
+      "path": "./apps/frontend-learning"
+    },
+    {
+      "path": "./apps/frontend-manage"
+    },
+    {
+      "path": "./apps/frontend-pwa"
+    },
+    {
+      "path": "./packages/graphql"
+    },
+    {
+      "path": "./packages/lti"
+    },
+    {
+      "path": "./packages/prisma"
     },
     {
       "path": "../design-system"

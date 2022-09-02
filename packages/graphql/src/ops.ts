@@ -19,6 +19,12 @@ export type Scalars = {
   JSONObject: any;
 };
 
+export type BlockInput = {
+  questionIds?: InputMaybe<Array<Scalars['String']>>;
+  randomSelection?: InputMaybe<Scalars['Int']>;
+  timeLimit?: InputMaybe<Scalars['Int']>;
+};
+
 export type Choice = {
   __typename?: 'Choice';
   correct?: Maybe<Scalars['Boolean']>;
@@ -66,6 +72,8 @@ export type LearningElement = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  activateSessionBlock?: Maybe<Session>;
+  createSession?: Maybe<Session>;
   joinCourse?: Maybe<Participation>;
   leaveCourse?: Maybe<Participation>;
   loginParticipant?: Maybe<Scalars['ID']>;
@@ -73,6 +81,19 @@ export type Mutation = {
   registerParticipantFromLTI?: Maybe<ParticipantLearningData>;
   respondToQuestionInstance?: Maybe<QuestionInstance>;
   startSession?: Maybe<Session>;
+};
+
+
+export type MutationActivateSessionBlockArgs = {
+  sessionBlockId: Scalars['Int'];
+  sessionId: Scalars['ID'];
+};
+
+
+export type MutationCreateSessionArgs = {
+  blocks?: InputMaybe<Array<InputMaybe<BlockInput>>>;
+  displayName?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
 };
 
 
@@ -369,6 +390,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  BlockInput: BlockInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Choice: ResolverTypeWrapper<Choice>;
   ChoicesQuestionData: ResolverTypeWrapper<ChoicesQuestionData>;
@@ -398,6 +420,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  BlockInput: BlockInput;
   Boolean: Scalars['Boolean'];
   Choice: Choice;
   ChoicesQuestionData: ChoicesQuestionData;
@@ -477,6 +500,8 @@ export type LearningElementResolvers<ContextType = any, ParentType extends Resol
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  activateSessionBlock?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationActivateSessionBlockArgs, 'sessionBlockId' | 'sessionId'>>;
+  createSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'name'>>;
   joinCourse?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType, RequireFields<MutationJoinCourseArgs, 'courseId'>>;
   leaveCourse?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType, RequireFields<MutationLeaveCourseArgs, 'courseId'>>;
   loginParticipant?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationLoginParticipantArgs, 'password' | 'username'>>;

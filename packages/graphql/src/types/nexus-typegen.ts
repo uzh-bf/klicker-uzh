@@ -36,6 +36,11 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  BlockInput: { // input type
+    questionIds?: string[] | null; // [String!]
+    randomSelection?: number | null; // Int
+    timeLimit?: number | null; // Int
+  }
   ResponseInput: { // input type
     choices?: Array<number | null> | null; // [Int]
     value?: string | null; // String
@@ -186,6 +191,8 @@ export interface NexusGenFieldTypes {
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: { // field return type
+    activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
+    createSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     loginParticipant: string | null; // ID
@@ -292,6 +299,8 @@ export interface NexusGenFieldTypeNames {
     instances: 'QuestionInstance'
   }
   Mutation: { // field return type name
+    activateSessionBlock: 'Session'
+    createSession: 'Session'
     joinCourse: 'Participation'
     leaveCourse: 'Participation'
     loginParticipant: 'ID'
@@ -365,6 +374,15 @@ export interface NexusGenFieldTypeNames {
 
 export interface NexusGenArgTypes {
   Mutation: {
+    activateSessionBlock: { // args
+      sessionBlockId: number; // Int!
+      sessionId: string; // ID!
+    }
+    createSession: { // args
+      blocks?: Array<NexusGenInputs['BlockInput'] | null> | null; // [BlockInput]
+      displayName?: string | null; // String
+      name: string; // String!
+    }
     joinCourse: { // args
       courseId: string; // ID!
     }

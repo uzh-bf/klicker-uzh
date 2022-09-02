@@ -89,7 +89,7 @@ function prepareApp({ redisCache, redisExec }: any) {
           })
         : null,
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext,
+    context: enhanceContext({ redisExec }),
     logging: true,
     cors(request) {
       const requestOrigin = request.headers.get('origin') as string
