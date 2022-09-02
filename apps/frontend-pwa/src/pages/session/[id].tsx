@@ -9,9 +9,13 @@ import FeedbackArea from '@components/liveSession/FeedbackArea'
 import QuestionArea from '@components/liveSession/QuestionArea'
 import { initializeApollo } from '@lib/apollo'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 
 function Index({ session }: any) {
+  const router = useRouter()
+  const sessionId = router.query.id as string
+
   // TODO: Remove / Keep code snipped to reuse for Feedback fetching
   // const { loading, error, data } = useQuery(GetSessionDocument, {
   //   variables: {
@@ -25,8 +29,13 @@ function Index({ session }: any) {
   console.log(session)
 
   // TODO: remove hardcoded parameters and replace them by their corresponding values from DB
+  // TODO: directly destructure session into its components to simplify notation
   const isFeedbackChannelActive = true // session.feedbackChannelActive
   const activeBlock = session.activeBlock + 1 // session.activeBlock
+  const timeLimit = 20 // session.blocks[activeBlock].timeLimit
+
+  // TODO: implement response handling for user response to question
+  const handleNewResponse = () => {}
 
   // TODO: Layout similar to old version for desktop and app with bottom menu for mobile
   return (
@@ -51,7 +60,13 @@ function Index({ session }: any) {
         {activeBlock === -1 || activeBlock === session.blocks.length ? (
           'Keine Frage aktiv.'
         ) : (
-          <QuestionArea instances={[]} />
+          <QuestionArea
+            expiresAt={session.blocks[activeBlock].expiresAt}
+            questions={session.blocks[activeBlock].instances.map((question: any) => question.questionData)}
+            handleNewResponse={handleNewResponse}
+            sessionId={sessionId}
+            timeLimit={timeLimit}
+          />
         )}
       </div>
 
