@@ -213,7 +213,7 @@ model SessionBlock {
 }
 
 enum SessionStatus {
-  PLANNED
+  PREPARED
   SCHEDULED
   RUNNING
   COMPLETED
@@ -239,7 +239,7 @@ model Session {
   finishedAt  DateTime?
 
   accessMode AccessMode    @default(PUBLIC)
-  status     SessionStatus
+  status     SessionStatus @default(PREPARED)
 
   activeBlock Int            @default(-1)
   blocks      SessionBlock[]

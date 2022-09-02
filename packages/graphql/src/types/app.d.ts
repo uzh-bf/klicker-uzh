@@ -7,8 +7,8 @@ interface QuestionData<Type, Options> {
   ownerId: string
   isDeleted: boolean
   isArchived: boolean
-  createdAt: string
-  updatedAt: string
+  createdAt: string | Date
+  updatedAt: string | Date
 
   options: Options
 }

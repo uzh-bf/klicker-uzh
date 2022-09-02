@@ -18,7 +18,7 @@
     "dev:dts": "dts watch --entry GraphQL/index.ts",
     "dev:func": "func start",
     "seed": "ts-node --esm prisma/seed.ts",
-    "test": "dts test"
+    "test": "NODE_ENV=development dts test"
   },
   "dependencies": {
     "@envelop/parser-cache": "4.6.0",

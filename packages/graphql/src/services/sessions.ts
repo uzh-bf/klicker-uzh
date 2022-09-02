@@ -1,15 +1,51 @@
-import { SessionBlockStatus, SessionStatus } from '@klicker-uzh/prisma'
+import {
+  Question,
+  QuestionType,
+  SessionBlockStatus,
+  SessionStatus,
+} from '@klicker-uzh/prisma'
 import { ContextWithUser } from '@lib/context'
-import { getRedis } from '../lib/redis'
+
+function processQuestionData(question: Question): AllQuestionTypeData {
+  switch (question.type) {
+    case QuestionType.SC:
+    case QuestionType.MC: {
+      return {
+        ...question,
+        options: question.options!.valueOf(),
+      } as ChoicesQuestionData
+    }
+
+    default:
+      return question
+  }
+}
+
+function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
+  switch (questionData.type) {
+    case QuestionType.SC:
+    case QuestionType.MC: {
+      const choices = questionData.options.choices.reduce(
+        (acc, _, ix) => ({ ...acc, [ix]: 0 }),
+        {}
+      )
+      return { choices }
+    }
+
+    default:
+      return {}
+  }
+}
 
 interface BlockArgs {
   questionIds: string[]
   randomSelection?: number
   timeLimit?: number
 }
+
 interface CreateSessionArgs {
   name: string
-  displayName?: string
+  displayName?: string | null
   blocks: BlockArgs[]
 }
 
@@ -21,50 +57,57 @@ export async function createSession(
     (acc, block) => [...acc, ...block.questionIds],
     []
   )
+
   const questions = await ctx.prisma.question.findMany({
     where: {
       id: {
         in: allQuestionsIds,
       },
     },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      content: true,
-      contentPlain: true,
-      options: true,
+    include: {
       attachments: true,
     },
   })
 
-  const newSession = await ctx.prisma.session.create({
+  return ctx.prisma.session.create({
     data: {
-      status: SessionStatus.SCHEDULED,
       name,
       displayName: displayName ?? name,
       blocks: {
-        create: blocks.map(({ questionIds, randomSelection, timeLimit }) => ({
-          randomSelection,
-          timeLimit,
-          instances: questionIds.map((questionId) => {
-            const questionData = questions.find((q) => q.id === questionId)
+        create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
+          const newInstances = questionIds.map((questionId) => {
+            const questionData = questions.find(
+              (q) => q.id === questionId
+            ) as Question
+            const processedQuestionData = processQuestionData(questionData)
             return {
-              questionData,
-              results: {},
-              question: {
-                connect: {
-                  id: questionId,
+              data: {
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: {
+                    id: questionId,
+                  },
                 },
-              },
-              owner: {
-                connect: {
-                  id: ctx.user.sub,
+                owner: {
+                  connect: {
+                    id: ctx.user.sub,
+                  },
                 },
               },
             }
-          }),
-        })),
+          })
+
+          return {
+            data: {
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
+              },
+            },
+          }
+        }),
       },
       owner: {
         connect: {
@@ -73,8 +116,6 @@ export async function createSession(
       },
     },
   })
-
-  return newSession
 }
 
 interface StartSessionArgs {
@@ -85,8 +126,6 @@ export async function startSession(
   { id }: StartSessionArgs,
   ctx: ContextWithUser
 ) {
-  const redis = getRedis()
-
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,
@@ -103,7 +142,7 @@ export async function startSession(
   }
 
   try {
-    const results = await redis
+    const results = await ctx.redisExec
       .multi()
       .hmset(`session:${session.id}:meta`, {
         id: session.id,
@@ -112,7 +151,6 @@ export async function startSession(
       })
       .hset(`session:${session.id}:lb`, { participants: 0 })
       .exec()
-    console.log(results)
   } catch (e) {
     console.error(e)
   }

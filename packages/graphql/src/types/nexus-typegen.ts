@@ -49,7 +49,7 @@ export interface NexusGenInputs {
 
 export interface NexusGenEnums {
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
-  SessionStatus: "COMPLETED" | "PLANNED" | "RUNNING" | "SCHEDULED"
+  SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
 }
 
 export interface NexusGenScalars {
@@ -379,7 +379,7 @@ export interface NexusGenArgTypes {
       sessionId: string; // ID!
     }
     createSession: { // args
-      blocks?: Array<NexusGenInputs['BlockInput'] | null> | null; // [BlockInput]
+      blocks: Array<NexusGenInputs['BlockInput'] | null>; // [BlockInput]!
       displayName?: string | null; // String
       name: string; // String!
     }

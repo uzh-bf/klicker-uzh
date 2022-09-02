@@ -91,7 +91,7 @@ export type MutationActivateSessionBlockArgs = {
 
 
 export type MutationCreateSessionArgs = {
-  blocks?: InputMaybe<Array<InputMaybe<BlockInput>>>;
+  blocks: Array<InputMaybe<BlockInput>>;
   displayName?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
 };
@@ -243,7 +243,7 @@ export enum SessionBlockStatus {
 
 export enum SessionStatus {
   Completed = 'COMPLETED',
-  Planned = 'PLANNED',
+  Prepared = 'PREPARED',
   Running = 'RUNNING',
   Scheduled = 'SCHEDULED'
 }
@@ -501,7 +501,7 @@ export type LearningElementResolvers<ContextType = any, ParentType extends Resol
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   activateSessionBlock?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationActivateSessionBlockArgs, 'sessionBlockId' | 'sessionId'>>;
-  createSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'name'>>;
+  createSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'blocks' | 'name'>>;
   joinCourse?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType, RequireFields<MutationJoinCourseArgs, 'courseId'>>;
   leaveCourse?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType, RequireFields<MutationLeaveCourseArgs, 'courseId'>>;
   loginParticipant?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationLoginParticipantArgs, 'password' | 'username'>>;

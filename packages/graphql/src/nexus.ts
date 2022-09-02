@@ -379,7 +379,11 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
-        blocks: list(BlockInput),
+        blocks: nonNull(
+          arg({
+            type: nonNull(list(BlockInput)),
+          })
+        ),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createSession(args, ctx)
