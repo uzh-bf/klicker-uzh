@@ -580,6 +580,142 @@ async function main(prisma: Prisma.PrismaClient) {
     },
   })
 
+  const instance8 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782d',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782d',
+      questionData: {
+        ...question2,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
+  const instance9 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782e',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782e',
+      questionData: {
+        ...question3,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
+  const instance10 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782f',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782f',
+      questionData: {
+        ...question4,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
+  const instance11 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783a',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783a',
+      questionData: {
+        ...question5,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
   const session = await prisma.session.upsert({
     where: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
@@ -601,6 +737,61 @@ async function main(prisma: Prisma.PrismaClient) {
                 },
               ],
             },
+          },
+        ],
+      },
+      course: {
+        connect: {
+          id: course.id,
+        },
+      },
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const session2 = await prisma.session.upsert({
+    where: {
+      id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
+    },
+    create: {
+      name: 'BF1 VL2',
+      displayName: 'Banking und Finance I - VL1',
+      status: 'RUNNING',
+      activeBlock: 0,
+      blocks: {
+        create: [
+          {
+            instances: {
+              connect: [
+                {
+                  id: instance8.id,
+                },
+              ],
+            },
+            expiresAt: new Date('2022-12-31T23:59:59.999Z'),
+            timeLimit: 20,
+          },
+          {
+            instances: {
+              connect: [
+                {
+                  id: instance9.id,
+                },
+                {
+                  id: instance10.id,
+                },
+                {
+                  id: instance11.id,
+                },
+              ],
+            },
+            expiresAt: new Date('2022-12-31T23:59:59.999Z'),
+            timeLimit: 30,
           },
         ],
       },
