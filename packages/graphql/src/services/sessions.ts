@@ -81,30 +81,26 @@ export async function createSession(
             ) as Question
             const processedQuestionData = processQuestionData(questionData)
             return {
-              data: {
-                questionData: processedQuestionData,
-                results: prepareInitialInstanceResults(processedQuestionData),
-                question: {
-                  connect: {
-                    id: questionId,
-                  },
+              questionData: processedQuestionData,
+              results: prepareInitialInstanceResults(processedQuestionData),
+              question: {
+                connect: {
+                  id: questionId,
                 },
-                owner: {
-                  connect: {
-                    id: ctx.user.sub,
-                  },
+              },
+              owner: {
+                connect: {
+                  id: ctx.user.sub,
                 },
               },
             }
           })
 
           return {
-            data: {
-              randomSelection,
-              timeLimit,
-              instances: {
-                create: newInstances,
-              },
+            randomSelection,
+            timeLimit,
+            instances: {
+              create: newInstances,
             },
           }
         }),
@@ -114,6 +110,9 @@ export async function createSession(
           id: ctx.user.sub,
         },
       },
+    },
+    include: {
+      blocks: true,
     },
   })
 }

@@ -83,22 +83,22 @@ describe('API', () => {
     expect(response.body).toMatchInlineSnapshot(`
       Object {
         "data": Object {
-          "createSession": null,
-        },
-        "errors": Array [
-          Object {
-            "locations": Array [
+          "createSession": Object {
+            "activeBlock": -1,
+            "blocks": Array [
               Object {
-                "column": 13,
-                "line": 3,
+                "id": "24",
+                "status": "SCHEDULED",
+              },
+              Object {
+                "id": "25",
+                "status": "SCHEDULED",
               },
             ],
-            "message": "Unexpected error.",
-            "path": Array [
-              "createSession",
-            ],
+            "id": "75a23781-f1f2-4ae2-be01-b6fe7ec4e746",
+            "status": "PREPARED",
           },
-        ],
+        },
       }
     `)
   })
