@@ -3,10 +3,11 @@ import localForage from 'localforage'
 import React, { useEffect, useState } from 'react'
 
 import { QUESTION_TYPES } from '../../constants'
+import QuestionDescription from '../common/QuestionDescription'
 import SessionProgress from './SessionProgress'
 
 // TODO: notifications
-// TODO: timer
+
 interface QuestionAreaProps {
   expiresAt?: Date
   questions: any[] // TODO: correct typing
@@ -215,23 +216,18 @@ function QuestionArea({
             onExpire={onExpire}
           />
 
-          <div>QUESTIONDESCRIPTION</div>
-          <div>QUESTIONFILES</div>
+          <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded">
+            <QuestionDescription
+              content={currentQuestion.content}
+              description={currentQuestion.description}
+            />
+          </div>
 
+          {/* // TODO? */}
+          <div>QUESTIONFILES</div>
           <div className="mb-2 font-bold">{messages[currentQuestion.type]}</div>
           <div>ANSWEROPTIONS</div>
-
           {/* 
-
-        <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-primary border border-solid rounded">
-          <QuestionDescription content={content} description={description} />
-        </div>
-
-        {publicRuntimeConfig.s3root && files.length > 0 && (
-          <div className="flex-initial">
-            <QuestionFiles files={files} />
-          </div>
-        )}
 
         <div className="flex-1 mt-4">
           <div className="mb-2 font-bold">{messages[type]}</div>

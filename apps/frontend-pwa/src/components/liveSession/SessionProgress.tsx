@@ -1,6 +1,6 @@
 import { Button, Countdown, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
 interface SessionProgressProps {
   activeIndex: number
@@ -34,14 +34,8 @@ function SessionProgress({
     ? dayjs(expiresAt).diff(dayjs(), 'second')
     : 1000
 
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    activeIndex === 0 ? setProgress(0) : setProgress(activeIndex / numItems)
-  }, [activeIndex, numItems])
-
   return (
-    <div className="flex flex-row gap-2">
+    <div className="flex flex-row gap-2 mb-1">
       {expiresAt && timeLimit && (
         <div className="flex-initial">
           <Countdown
@@ -54,7 +48,7 @@ function SessionProgress({
       )}
 
       <Progress
-        className="w-full h-10 my-auto bg-gray-100 border border-solid border-uzh-blue-80"
+        className="w-full h-10 my-auto bg-gray-100"
         indicatorClassName="h-[2.375rem]"
         value={activeIndex}
         max={numItems}
@@ -64,7 +58,7 @@ function SessionProgress({
       <div className="my-auto">
         <Button
           fluid
-          className="!mr-0 h-10 border border-solid border-uzh-blue-80"
+          className="!mr-0 h-10"
           disabled={isSubmitDisabled}
           onClick={onSubmit}
         >
