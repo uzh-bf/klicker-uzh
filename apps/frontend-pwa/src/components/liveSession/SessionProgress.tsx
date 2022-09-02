@@ -1,8 +1,6 @@
-import * as Progress from '@radix-ui/react-progress'
-import { Button, H4 } from '@uzh-bf/design-system'
+import { Button, Countdown, Progress } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
-
-import Countdown from './Countdown'
 
 interface SessionProgressProps {
   activeIndex: number
@@ -32,6 +30,10 @@ function SessionProgress({
   onSubmit,
   onExpire,
 }: SessionProgressProps): React.ReactElement {
+  const untilExpiration = expiresAt
+    ? dayjs(expiresAt).diff(dayjs(), 'second')
+    : 1000
+
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
@@ -43,31 +45,22 @@ function SessionProgress({
       {expiresAt && timeLimit && (
         <div className="flex-initial">
           <Countdown
-            countdownDuration={timeLimit}
-            expiresAt={expiresAt}
-            countdownStepSize={1000}
+            countdownDuration={
+              untilExpiration > timeLimit ? timeLimit : untilExpiration
+            }
             onExpire={onExpire}
           />
         </div>
       )}
 
-      <Progress.Root
-        className="relative w-full h-10 my-auto overflow-hidden bg-white border border-solid rounded-md border-uzh-blue-80"
+      <Progress
+        className="w-full h-10 my-auto bg-gray-100 border border-solid border-uzh-blue-80"
+        indicatorClassName="h-[2.375rem]"
         value={activeIndex}
         max={numItems}
-      >
-        <div>
-          <H4 className="absolute z-10 flex h-full ml-2 font-bold">
-            <div className="self-center">
-              {activeIndex}/{numItems}
-            </div>
-          </H4>
-          <Progress.Indicator
-            className="absolute z-0 w-full h-full transition-transform bg-green-400"
-            style={{ transform: `translateX(-${100 - progress}%)` }}
-          ></Progress.Indicator>
-        </div>
-      </Progress.Root>
+        formatter={(val) => (val <= 0 ? '0%' : `${(val / numItems) * 100}\%`)}
+      />
+
       <div className="my-auto">
         <Button
           fluid
