@@ -10,6 +10,7 @@ describe('API', () => {
   let redisExec: Redis
   let app: Express.Application
   let userCookie: string = ''
+  let session: any
 
   beforeAll(() => {
     redisCache = new Redis({
@@ -87,20 +88,22 @@ describe('API', () => {
             "activeBlock": -1,
             "blocks": Array [
               Object {
-                "id": "24",
+                "id": "54",
                 "status": "SCHEDULED",
               },
               Object {
-                "id": "25",
+                "id": "55",
                 "status": "SCHEDULED",
               },
             ],
-            "id": "75a23781-f1f2-4ae2-be01-b6fe7ec4e746",
+            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
             "status": "PREPARED",
           },
         },
       }
     `)
+
+    session = response.body.data.createSession
   })
 
   it('allows the user to start a session', async () => {
@@ -110,7 +113,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            startSession(id: "e0154d2a-314e-4a28-af9e-9ebf826a9b65") {
+            startSession(id: "${session.id}") {
                 id
                 status
                 activeBlock
@@ -127,14 +130,9 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "activeBlock": 0,
-            "blocks": Array [
-              Object {
-                "id": "1",
-                "status": "ACTIVE",
-              },
-            ],
-            "id": "e0154d2a-314e-4a28-af9e-9ebf826a9b65",
+            "activeBlock": -1,
+            "blocks": null,
+            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
             "status": "RUNNING",
           },
         },
@@ -149,7 +147,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            activateSessionBlock(sessionId: "e0154d2a-314e-4a28-af9e-9ebf826a9b65", sessionBlockId: 1) {
+            activateSessionBlock(sessionId: "${session.id}", sessionBlockId: ${session.blocks[0].id}) {
                 id
                 status
                 activeBlock
@@ -169,11 +167,15 @@ describe('API', () => {
             "activeBlock": 0,
             "blocks": Array [
               Object {
-                "id": "1",
+                "id": "55",
+                "status": "SCHEDULED",
+              },
+              Object {
+                "id": "54",
                 "status": "ACTIVE",
               },
             ],
-            "id": "e0154d2a-314e-4a28-af9e-9ebf826a9b65",
+            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
             "status": "RUNNING",
           },
         },

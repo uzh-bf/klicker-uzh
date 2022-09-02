@@ -252,11 +252,38 @@ export async function activateSessionBlock(
     },
   })
 
-  newActiveBlock!.instances.map((instance) => {
-    console.warn(instance)
+  // initialize the cache for the new active block
+  const redisMulti = ctx.redisExec.multi()
+
+  newActiveBlock!.instances.forEach((instance) => {
+    const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
+
+    redisMulti.hmset(`instance:${instance.id}:info`, {
+      type: questionData.type,
+      namespace: session.namespace,
+    })
+
+    switch (questionData.type) {
+      case QuestionType.SC:
+      case QuestionType.MC: {
+        redisMulti.hmset(`instance:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results!.valueOf() as ChoicesQuestionResults).choices,
+        })
+        break
+      }
+
+      case QuestionType.NUMERICAL:
+      case QuestionType.FREE_TEXT: {
+        redisMulti.hmset(`instance:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
+    }
   })
-  // // initialize the cache for the new active block
-  // const redisMulti = ctx.redisExec.multi().
+
+  redisMulti.exec()
 
   // TODO: if it has been executed already, rehydrate the cache
   // TODO: persist the data of the previously active block to db (async)
