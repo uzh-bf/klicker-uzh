@@ -202,6 +202,9 @@ export const SessionBlock = objectType({
     t.nonNull.field('status', {
       type: SessionBlockStatus,
     })
+    t.date('expiresAt')
+    t.int('timeLimit')
+    t.boolean('randomSelection')
 
     t.list.field('instances', {
       type: QuestionInstance,

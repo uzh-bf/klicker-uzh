@@ -131,9 +131,12 @@ type Session {
 }
 
 type SessionBlock {
+  expiresAt: DateTime
   id: ID
   instances: [QuestionInstance]
+  randomSelection: Boolean
   status: SessionBlockStatus!
+  timeLimit: Int
 }
 
 enum SessionBlockStatus {

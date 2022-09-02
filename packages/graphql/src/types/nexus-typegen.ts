@@ -134,9 +134,12 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // root type
+    expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id?: string | null; // ID
     instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+    timeLimit?: number | null; // Int
   }
 }
 
@@ -242,9 +245,12 @@ export interface NexusGenFieldTypes {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // field return type
+    expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: string | null; // ID
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+    timeLimit: number | null; // Int
   }
   QuestionData: { // field return type
     content: string; // String!
@@ -348,9 +354,12 @@ export interface NexusGenFieldTypeNames {
     status: 'SessionStatus'
   }
   SessionBlock: { // field return type name
+    expiresAt: 'DateTime'
     id: 'ID'
     instances: 'QuestionInstance'
+    randomSelection: 'Boolean'
     status: 'SessionBlockStatus'
+    timeLimit: 'Int'
   }
   QuestionData: { // field return type name
     content: 'String'

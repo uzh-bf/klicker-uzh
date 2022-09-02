@@ -14,6 +14,9 @@ query GetSession($id: ID!) {
     blocks {
       id
       status
+      expiresAt
+      timeLimit
+      randomSelection
       instances {
         id
         ...QuestionData

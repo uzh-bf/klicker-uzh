@@ -26,13 +26,12 @@ function Index({ session }: any) {
   // if (error) return <p>Oh no... {error.message}</p>
   // console.log(data)
 
-  console.log(session)
+  // console.log(session)
 
   // TODO: remove hardcoded parameters and replace them by their corresponding values from DB
   // TODO: directly destructure session into its components to simplify notation
-  const isFeedbackChannelActive = true // session.feedbackChannelActive
-  const activeBlock = session.activeBlock + 1 // session.activeBlock
-  const timeLimit = 20 // session.blocks[activeBlock].timeLimit
+  const isFeedbackChannelActive = false // session.feedbackChannelActive
+  const activeBlock = session.activeBlock // session.activeBlock
 
   // TODO: implement response handling for user response to question
   const handleNewResponse = () => {}
@@ -51,7 +50,7 @@ function Index({ session }: any) {
 
       <div
         className={twMerge(
-          'p-3 rounded-lg border-2 border-solid border-uzh-blue-40 w-full bg-white',
+          'p-4 rounded-lg border-2 border-solid border-uzh-blue-40 w-full bg-white',
           (isFeedbackChannelActive || session.isAudienceInteractionActive) &&
             'md:w-1/2'
         )}
@@ -65,13 +64,13 @@ function Index({ session }: any) {
             questions={session.blocks[activeBlock].instances.map((question: any) => question.questionData)}
             handleNewResponse={handleNewResponse}
             sessionId={sessionId}
-            timeLimit={timeLimit}
+            timeLimit={session.blocks[activeBlock].timeLimit}
           />
         )}
       </div>
 
       {(isFeedbackChannelActive || session.isAudienceInteractionActive) && (
-        <div className="p-3 rounded-lg border-2 border-solid border-uzh-blue-40 w-1/2 bg-white">
+        <div className="w-1/2 p-4 bg-white border-2 border-solid rounded-lg border-uzh-blue-40">
           <FeedbackArea feedbacks={[]} />
         </div>
       )}
