@@ -599,7 +599,7 @@ async function main(prisma: Prisma.PrismaClient) {
           3: 0,
         },
       },
-      questionId: question5.id,
+      questionId: question2.id,
       ownerId: user.id,
     },
     update: {
@@ -633,7 +633,7 @@ async function main(prisma: Prisma.PrismaClient) {
           3: 0,
         },
       },
-      questionId: question5.id,
+      questionId: question3.id,
       ownerId: user.id,
     },
     update: {
@@ -667,7 +667,7 @@ async function main(prisma: Prisma.PrismaClient) {
           3: 0,
         },
       },
-      questionId: question5.id,
+      questionId: question4.id,
       ownerId: user.id,
     },
     update: {

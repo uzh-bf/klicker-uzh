@@ -49,7 +49,7 @@ function SessionProgress({
 
       <Progress
         className="w-full h-10 my-auto bg-gray-100"
-        indicatorClassName="h-[2.375rem]"
+        indicatorClassName="h-10"
         value={activeIndex}
         max={numItems}
         formatter={(val) => (val <= 0 ? '0%' : `${(val / numItems) * 100}\%`)}

@@ -26,8 +26,6 @@ function Index({ session }: any) {
   // if (error) return <p>Oh no... {error.message}</p>
   // console.log(data)
 
-  // console.log(session)
-
   // TODO: remove hardcoded parameters and replace them by their corresponding values from DB
   // TODO: directly destructure session into its components to simplify notation
   const isFeedbackChannelActive = false // session.feedbackChannelActive
@@ -55,13 +53,15 @@ function Index({ session }: any) {
             'md:w-1/2'
         )}
       >
-        {/* replace check through activeInstances.length > 0 */}
+        {/* // TODO replace check through activeInstances.length > 0 */}
         {activeBlock === -1 || activeBlock === session.blocks.length ? (
           'Keine Frage aktiv.'
         ) : (
           <QuestionArea
             expiresAt={session.blocks[activeBlock].expiresAt}
-            questions={session.blocks[activeBlock].instances.map((question: any) => question.questionData)}
+            questions={session.blocks[activeBlock].instances.map(
+              (question: any) => question.questionData
+            )}
             handleNewResponse={handleNewResponse}
             sessionId={sessionId}
             timeLimit={session.blocks[activeBlock].timeLimit}

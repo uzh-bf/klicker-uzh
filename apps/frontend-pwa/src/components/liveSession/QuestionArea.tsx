@@ -1,16 +1,22 @@
 import { H1 } from '@uzh-bf/design-system'
 import localForage from 'localforage'
+// import _get from 'lodash/get'
+import _without from 'lodash/without'
 import React, { useEffect, useState } from 'react'
+// import v8n from 'v8n'
+import { push } from '@socialgouv/matomo-next'
+import dayjs from 'dayjs'
 
-import { QUESTION_TYPES } from '../../constants'
-import QuestionDescription from '../common/QuestionDescription'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import QuestionDescription from '../questions/QuestionDescription'
+import SCAnswerOptions from '../questions/SCAnswerOptions'
 import SessionProgress from './SessionProgress'
 
 // TODO: notifications
 
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: any[] // TODO: correct typing
+  questions: any[] // { content: string, contentPlain: string, id: string, name: string, type: string, options: any }[]
   handleNewResponse: any // TODO: correct typing
   sessionId: string
   timeLimit?: number
@@ -33,14 +39,20 @@ function QuestionArea({
   sessionId,
   timeLimit,
 }: QuestionAreaProps): React.ReactElement {
-  const [remainingQuestions, setRemainingQuestions] = useState([])
+  const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
     (): any => remainingQuestions[0]
   )
+  const currentQuestion = questions[activeQuestion]
+
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
     inputValid: false,
-    inputValue: undefined,
+    inputValue: QUESTION_GROUPS.CHOICES.includes(
+      questions[remainingQuestions[0]]?.type
+    )
+      ? new Array(questions[remainingQuestions[0]]?.options.length, false)
+      : undefined,
   })
 
   useEffect((): void => {
@@ -73,45 +85,45 @@ function QuestionArea({
     exec()
   }, [sessionId, questions])
 
-  // const onActiveChoicesChange =
-  //   (type): any =>
-  //   (choice): any =>
-  //   (): void => {
-  //     const validateChoices = (newValue): boolean =>
-  //       type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
+  const onActiveChoicesChange =
+    (type: string): any =>
+    (choice: any): any =>
+    (): void => {
+      const validateChoices = (newValue: any): boolean =>
+        type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
 
-  //     if (inputValue && type === QUESTION_TYPES.MC) {
-  //       // if the choice is already active, remove it
-  //       if (inputValue.includes(choice)) {
-  //         const newInputValue = _without(inputValue, choice)
+      if (inputValue && type === QUESTION_TYPES.MC) {
+        // if the choice is already active, remove it
+        if (inputValue.includes(choice)) {
+          const newInputValue = _without(inputValue, choice)
 
-  //         return setInputState({
-  //           inputEmpty: newInputValue.length === 0,
-  //           inputValid: validateChoices(newInputValue),
-  //           inputValue: newInputValue,
-  //         })
-  //       }
+          return setInputState({
+            inputEmpty: newInputValue.length === 0,
+            inputValid: validateChoices(newInputValue),
+            inputValue: newInputValue,
+          })
+        }
 
-  //       // else add it to the active choices
-  //       const newInputValue = [...inputValue, choice]
-  //       return setInputState({
-  //         inputEmpty: false,
-  //         inputValid: validateChoices(newInputValue),
-  //         inputValue: newInputValue,
-  //       })
-  //     }
+        // else add it to the active choices
+        const newInputValue = [...inputValue, choice]
+        return setInputState({
+          inputEmpty: false,
+          inputValid: validateChoices(newInputValue),
+          inputValue: newInputValue,
+        })
+      }
 
-  //     // initialize the value with the first choice
-  //     return setInputState({
-  //       inputEmpty: false,
-  //       inputValid: true,
-  //       inputValue: [choice],
-  //     })
-  //   }
+      // initialize the value with the first choice
+      return setInputState({
+        inputEmpty: false,
+        inputValid: true,
+        inputValue: [choice],
+      })
+    }
 
   // const onFreeValueChange =
-  //   (type, options): any =>
-  //   (newInputValue): void => {
+  //   (type: string, options: any): any =>
+  //   (newInputValue: any): void => {
   //     let validator = v8n()
 
   //     if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -129,71 +141,68 @@ function QuestionArea({
   //     }
 
   //     return setInputState({
-  //       inputEmpty: newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
-  //       inputValid: validator.test(newInputValue) || validator.test(+newInputValue),
+  //       inputEmpty:
+  //         newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
+  //       inputValid:
+  //         validator.test(newInputValue) || validator.test(+newInputValue),
   //       inputValue: newInputValue,
   //     })
   //   }
 
-  // const onSubmit = async (): Promise<void> => {
-  //   if (!isStaticPreview) {
-  //     const { id: instanceId, execution, type } = questions[activeQuestion]
+  const onSubmit = async (): Promise<void> => {
+    const { id: instanceId, execution, type } = questions[activeQuestion]
 
-  //     // if the question has been answered, add a response
-  //     if (typeof inputValue !== 'undefined') {
-  //       if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
-  //         handleNewResponse({ instanceId, response: { choices: inputValue } })
-  //       } else if (QUESTION_GROUPS.FREE.includes(type)) {
-  //         handleNewResponse({ instanceId, response: { value: String(inputValue) } })
-  //       }
-  //     } else {
-  //       push(['trackEvent', 'Join Session', 'Question Skipped'])
-  //     }
+    // if the question has been answered, add a response
+    if (typeof inputValue !== 'undefined') {
+      if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
+        handleNewResponse({ instanceId, response: { choices: inputValue } })
+      } else if (QUESTION_GROUPS.FREE.includes(type)) {
+        handleNewResponse({
+          instanceId,
+          response: { value: String(inputValue) },
+        })
+      }
+    } else {
+      push(['trackEvent', 'Join Session', 'Question Skipped'])
+    }
 
-  //     // update the stored responses
-  //     if (typeof window !== 'undefined') {
-  //       try {
-  //         const prevResponses: any = await localForage.getItem(`${shortname}-${sessionId}-responses`)
-  //         const stringified = JSON.stringify(
-  //           prevResponses
-  //             ? {
-  //                 responses: [...JSON.parse(prevResponses).responses, `${instanceId}-${execution}`],
-  //                 timestamp: dayjs().unix(),
-  //               }
-  //             : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-  //         )
-  //         await localForage.setItem(`${shortname}-${sessionId}-responses`, stringified)
-  //       } catch (e) {
-  //         console.error(e)
-  //       }
-  //     }
+    // update the stored responses
+    if (typeof window !== 'undefined') {
+      try {
+        const prevResponses: any = await localForage.getItem(
+          `${sessionId}-responses`
+        )
+        const stringified = JSON.stringify(
+          prevResponses
+            ? {
+                responses: [
+                  ...JSON.parse(prevResponses).responses,
+                  `${instanceId}-${execution}`,
+                ],
+                timestamp: dayjs().unix(),
+              }
+            : {
+                responses: [`${instanceId}-${execution}`],
+                timestamp: dayjs().unix(),
+              }
+        )
+        await localForage.setItem(`${sessionId}-responses`, stringified)
+      } catch (e) {
+        console.error(e)
+      }
+    }
 
-  //     // calculate the new indices of remaining questions
-  //     const newRemaining = _without(remainingQuestions, activeQuestion)
+    // calculate the new indices of remaining questions
+    const newRemaining = _without(remainingQuestions, activeQuestion)
 
-  //     setActiveQuestion(newRemaining[0] || 0)
-  //     setInputState({
-  //       inputEmpty: true,
-  //       inputValid: false,
-  //       inputValue: undefined,
-  //     })
-  //     setRemainingQuestions(newRemaining)
-  //   } else {
-  //     setInputState({
-  //       inputEmpty: true,
-  //       inputValid: false,
-  //       inputValue: undefined,
-  //     })
-  //   }
-  // }
-
-  // TODO: replace by working functions
-  const onSubmit = () => null
-  const onFreeValueChange = () => null
-  const onActiveChoicesChange = () => null
-  const onExpire = () => null
-
-  const currentQuestion = questions[activeQuestion]
+    setActiveQuestion(newRemaining[0] || 0)
+    setInputState({
+      inputEmpty: true,
+      inputValid: false,
+      inputValue: undefined,
+    })
+    setRemainingQuestions(newRemaining)
+  }
 
   return (
     <div className="w-full h-full">
@@ -213,7 +222,7 @@ function QuestionArea({
               remainingQuestions.length === 0 || (!inputEmpty && !inputValid)
             }
             onSubmit={onSubmit}
-            onExpire={onExpire}
+            onExpire={onSubmit}
           />
 
           <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded">
@@ -223,28 +232,27 @@ function QuestionArea({
             />
           </div>
 
-          {/* // TODO? */}
+          {/* // TODO */}
           <div>QUESTIONFILES</div>
-          <div className="mb-2 font-bold">{messages[currentQuestion.type]}</div>
-          <div>ANSWEROPTIONS</div>
-          {/* 
 
-        <div className="flex-1 mt-4">
-          <div className="mb-2 font-bold">{messages[type]}</div>
+          <div className="flex-1 mt-4">
+            <div className="mb-2 font-bold">
+              {messages[currentQuestion.type]}
+            </div>
 
-          {((): React.ReactElement => {
-            if (QUESTION_GROUPS.CHOICES.includes(type)) {
-              return (
-                <SCAnswerOptions
-                  disabled={!remainingQuestions.includes(activeQuestion)}
-                  options={options[type].choices}
-                  value={inputValue}
-                  onChange={onActiveChoicesChange(type)}
-                />
-              )
-            }
+            {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (
+              <SCAnswerOptions
+                choices={currentQuestion.options.choices}
+                value={inputValue}
+                onChange={onActiveChoicesChange(currentQuestion.type)}
+              />
+            )}
 
-            if (QUESTION_GROUPS.FREE.includes(type)) {
+            {QUESTION_GROUPS.FREE.includes(currentQuestion.type) && (
+              <div>FREE ANSWER OPTIONS</div>
+            )}
+
+            {/*  if (QUESTION_GROUPS.FREE.includes(type)) {
               return (
                 <FREEAnswerOptions
                   disabled={!remainingQuestions.includes(activeQuestion)}
@@ -254,10 +262,8 @@ function QuestionArea({
                   onChange={onFreeValueChange(type, options[type])}
                 />
               )
-            }
-
-            return null
-          })()} */}
+            } */}
+          </div>
         </div>
       )}
     </div>
