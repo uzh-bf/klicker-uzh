@@ -88,15 +88,15 @@ describe('API', () => {
             "activeBlock": -1,
             "blocks": Array [
               Object {
-                "id": "54",
+                "id": "2",
                 "status": "SCHEDULED",
               },
               Object {
-                "id": "55",
+                "id": "3",
                 "status": "SCHEDULED",
               },
             ],
-            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
+            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
             "status": "PREPARED",
           },
         },
@@ -132,7 +132,7 @@ describe('API', () => {
           "startSession": Object {
             "activeBlock": -1,
             "blocks": null,
-            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
+            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
             "status": "RUNNING",
           },
         },
@@ -167,15 +167,15 @@ describe('API', () => {
             "activeBlock": 0,
             "blocks": Array [
               Object {
-                "id": "55",
+                "id": "3",
                 "status": "SCHEDULED",
               },
               Object {
-                "id": "54",
+                "id": "2",
                 "status": "ACTIVE",
               },
             ],
-            "id": "90aff805-f54c-41a8-ac73-25579fe66f0a",
+            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
             "status": "RUNNING",
           },
         },

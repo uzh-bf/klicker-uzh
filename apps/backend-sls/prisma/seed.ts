@@ -587,7 +587,7 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       name: 'BF1 VL1',
       displayName: 'Banking und Finance I - VL1',
-      status: 'PLANNED',
+      status: Prisma.SessionStatus.PREPARED,
       blocks: {
         create: [
           {
