@@ -57,4 +57,15 @@ interface ChoicesQuestionResults {
   choices: Record<string, number>
 }
 
-type AllQuestionResults = ChoicesQuestionResults
+interface NumericalQuestionResults {
+  [x: string]: number
+}
+
+interface FreeTextQuestionResults {
+  [x: string]: number
+}
+
+type AllQuestionResults =
+  | ChoicesQuestionResults
+  | FreeTextQuestionResults
+  | NumericalQuestionResults

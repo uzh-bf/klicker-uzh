@@ -16,8 +16,17 @@ function processQuestionData(question: Question): AllQuestionTypeData {
       } as ChoicesQuestionData
     }
 
-    default:
-      return question
+    case QuestionType.NUMERICAL: {
+      return {
+        ...question,
+      } as NumericalQuestionData
+    }
+
+    case QuestionType.FREE_TEXT: {
+      return {
+        ...question,
+      } as FreeTextQuestionData
+    }
   }
 }
 
@@ -29,11 +38,16 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
       )
-      return { choices }
+      return { choices } as ChoicesQuestionResults
     }
 
-    default:
-      return {}
+    case QuestionType.NUMERICAL: {
+      return {} as NumericalQuestionResults
+    }
+
+    case QuestionType.FREE_TEXT: {
+      return {} as FreeTextQuestionResults
+    }
   }
 }
 
@@ -140,45 +154,47 @@ export async function startSession(
     return null
   }
 
-  try {
-    const results = await ctx.redisExec
-      .multi()
-      .hmset(`s:${session.id}:meta`, {
-        id: session.id,
-        namespace: session.namespace,
-        execution: session.execution,
+  switch (session.status) {
+    case SessionStatus.COMPLETED:
+      return null
+
+    case SessionStatus.RUNNING:
+      return session
+
+    case SessionStatus.PREPARED:
+    case SessionStatus.SCHEDULED: {
+      try {
+        const results = await ctx.redisExec
+          .multi()
+          .hmset(`s:${session.id}:meta`, {
+            id: session.id,
+            // TODO: remove the namespace entirely, as the session id is also a uuid
+            namespace: session.namespace,
+            execution: session.execution,
+          })
+          .hset(`s:${session.id}:lb`, { participants: 0 })
+          .exec()
+      } catch (e) {
+        console.error(e)
+      }
+
+      // generate a unique pin code
+      const pinCode = 100000 + Math.floor(Math.random() * 900000)
+
+      // TODO: if the session is paused, reinitialize and restart
+
+      return ctx.prisma.session.update({
+        where: {
+          id,
+        },
+        data: {
+          status: SessionStatus.RUNNING,
+          startedAt: new Date(),
+          pinCode,
+        },
       })
-      .hset(`s:${session.id}:lb`, { participants: 0 })
-      .exec()
-  } catch (e) {
-    console.error(e)
+    }
   }
-
-  // if the session was alreadt completed, exit early
-  if (session.status === SessionStatus.COMPLETED) {
-    return null
-  }
-
-  // if the session is already running, return it
-  if (session.status === SessionStatus.RUNNING) {
-    return session
-  }
-
-  // generate a unique pin code
-  const pinCode = 100000 + Math.floor(Math.random() * 900000)
-
-  // TODO: if the session is paused, reinitialize and restart
-
-  return ctx.prisma.session.update({
-    where: {
-      id,
-    },
-    data: {
-      status: SessionStatus.RUNNING,
-      startedAt: new Date(),
-      pinCode,
-    },
-  })
 }
 
 interface ActivateSessionBlockArgs {
@@ -217,7 +233,7 @@ export async function activateSessionBlock(
     data: {
       activeBlock: newBlockIndex,
       blocks: {
-        updateMany: [
+        update: [
           session.activeBlock > -1
             ? {
                 where: {
