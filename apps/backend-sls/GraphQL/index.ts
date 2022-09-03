@@ -1,7 +1,10 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
 import serverlessExpress from '@vendia/serverless-express'
 import Redis from 'ioredis'
 
 import prepareApp from './app'
+
+const prisma = new PrismaClient()
 
 const redisCache = new Redis({
   family: 4,
@@ -19,10 +22,12 @@ const redisExec = new Redis({
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
-const app = prepareApp({ redisCache, redisExec })
+const app = prepareApp({ prisma, redisCache, redisExec })
 
 const cachedServerlessExpress = serverlessExpress({ app })
 
-export default async function (context: any, req: any) {
+async function handler(context: any, req: any) {
   return cachedServerlessExpress(context, req, () => {})
 }
+
+export default handler

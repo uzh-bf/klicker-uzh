@@ -37,7 +37,7 @@ declare global {
 
 export interface NexusGenInputs {
   BlockInput: { // input type
-    questionIds?: string[] | null; // [String!]
+    questionIds?: number[] | null; // [Int!]
     randomSelection?: number | null; // Int
     timeLimit?: number | null; // Int
   }
@@ -71,7 +71,7 @@ export interface NexusGenObjects {
   ChoicesQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
-    id?: string | null; // ID
+    id?: number | null; // Int
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -110,7 +110,7 @@ export interface NexusGenObjects {
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
-    id?: string | null; // ID
+    id?: number | null; // Int
     isActive?: boolean | null; // Boolean
     points?: number | null; // Int
   }
@@ -123,7 +123,7 @@ export interface NexusGenObjects {
   }
   QuestionInstance: { // root type
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
-    id?: string | null; // ID
+    id?: number | null; // Int
     questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
   Session: { // root type
@@ -139,7 +139,7 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // root type
-    id?: string | null; // ID
+    id?: number | null; // Int
     instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
@@ -165,7 +165,7 @@ export interface NexusGenFieldTypes {
   ChoicesQuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: string | null; // ID
+    id: number | null; // Int
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -214,7 +214,7 @@ export interface NexusGenFieldTypes {
     participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
-    id: string | null; // ID
+    id: number | null; // Int
     isActive: boolean | null; // Boolean
     points: number | null; // Int
   }
@@ -233,7 +233,7 @@ export interface NexusGenFieldTypes {
   }
   QuestionInstance: { // field return type
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
-    id: string | null; // ID
+    id: number | null; // Int
     questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
   Session: { // field return type
@@ -249,14 +249,14 @@ export interface NexusGenFieldTypes {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // field return type
-    id: string | null; // ID
+    id: number | null; // Int
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
   QuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: string | null; // ID
+    id: number | null; // Int
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -273,7 +273,7 @@ export interface NexusGenFieldTypeNames {
   ChoicesQuestionData: { // field return type name
     content: 'String'
     contentPlain: 'String'
-    id: 'ID'
+    id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
     name: 'String'
@@ -322,7 +322,7 @@ export interface NexusGenFieldTypeNames {
     participation: 'Participation'
   }
   Participation: { // field return type name
-    id: 'ID'
+    id: 'Int'
     isActive: 'Boolean'
     points: 'Int'
   }
@@ -341,7 +341,7 @@ export interface NexusGenFieldTypeNames {
   }
   QuestionInstance: { // field return type name
     evaluation: 'InstanceEvaluation'
-    id: 'ID'
+    id: 'Int'
     questionData: 'QuestionData'
   }
   Session: { // field return type name
@@ -357,14 +357,14 @@ export interface NexusGenFieldTypeNames {
     status: 'SessionStatus'
   }
   SessionBlock: { // field return type name
-    id: 'ID'
+    id: 'Int'
     instances: 'QuestionInstance'
     status: 'SessionBlockStatus'
   }
   QuestionData: { // field return type name
     content: 'String'
     contentPlain: 'String'
-    id: 'ID'
+    id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
     name: 'String'
@@ -379,7 +379,7 @@ export interface NexusGenArgTypes {
       sessionId: string; // ID!
     }
     createSession: { // args
-      blocks: Array<NexusGenInputs['BlockInput'] | null>; // [BlockInput]!
+      blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
       displayName?: string | null; // String
       name: string; // String!
     }
@@ -399,12 +399,12 @@ export interface NexusGenArgTypes {
     }
     registerParticipantFromLTI: { // args
       courseId: string; // ID!
-      participantEmail: string; // ID!
+      participantEmail: string; // String!
       participantId: string; // ID!
     }
     respondToQuestionInstance: { // args
       courseId: string; // ID!
-      id: string; // ID!
+      id: number; // Int!
       response: NexusGenInputs['ResponseInput']; // ResponseInput!
     }
     startSession: { // args

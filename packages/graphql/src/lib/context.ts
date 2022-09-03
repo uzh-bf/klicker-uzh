@@ -26,12 +26,9 @@ export interface ContextWithUser extends Context {
   }
 }
 
-const prisma = new PrismaClient()
-
 function enhanceContext(args = {}) {
   return ({ req }: BaseContext) => ({
     ...args,
-    prisma,
     user: req.locals?.user,
   })
 }

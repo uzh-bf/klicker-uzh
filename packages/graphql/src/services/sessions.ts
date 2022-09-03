@@ -38,7 +38,7 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
 }
 
 interface BlockArgs {
-  questionIds: string[]
+  questionIds: number[]
   randomSelection?: number
   timeLimit?: number
 }
@@ -53,7 +53,7 @@ export async function createSession(
   { name, displayName, blocks }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
-  const allQuestionsIds = blocks.reduce<string[]>(
+  const allQuestionsIds = blocks.reduce<number[]>(
     (acc, block) => [...acc, ...block.questionIds],
     []
   )
@@ -69,7 +69,7 @@ export async function createSession(
     },
   })
 
-  return ctx.prisma.session.create({
+  const data = {
     data: {
       name,
       displayName: displayName ?? name,
@@ -114,7 +114,9 @@ export async function createSession(
     include: {
       blocks: true,
     },
-  })
+  }
+
+  return ctx.prisma.session.create(data)
 }
 
 interface StartSessionArgs {
@@ -143,12 +145,12 @@ export async function startSession(
   try {
     const results = await ctx.redisExec
       .multi()
-      .hmset(`session:${session.id}:meta`, {
+      .hmset(`s:${session.id}:meta`, {
         id: session.id,
         namespace: session.namespace,
         execution: session.execution,
       })
-      .hset(`session:${session.id}:lb`, { participants: 0 })
+      .hset(`s:${session.id}:lb`, { participants: 0 })
       .exec()
   } catch (e) {
     console.error(e)
@@ -258,7 +260,7 @@ export async function activateSessionBlock(
   newActiveBlock!.instances.forEach((instance) => {
     const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
 
-    redisMulti.hmset(`instance:${instance.id}:info`, {
+    redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
       type: questionData.type,
       namespace: session.namespace,
     })
@@ -266,7 +268,7 @@ export async function activateSessionBlock(
     switch (questionData.type) {
       case QuestionType.SC:
       case QuestionType.MC: {
-        redisMulti.hmset(`instance:${instance.id}:results`, {
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
           ...(instance.results!.valueOf() as ChoicesQuestionResults).choices,
         })
@@ -275,7 +277,7 @@ export async function activateSessionBlock(
 
       case QuestionType.NUMERICAL:
       case QuestionType.FREE_TEXT: {
-        redisMulti.hmset(`instance:${instance.id}:results`, {
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
         })
         break

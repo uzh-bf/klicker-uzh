@@ -88,7 +88,7 @@ model Attachment {
   type AttachmentType
 
   question   Question? @relation(fields: [questionId], references: [id])
-  questionId String?   @db.Uuid
+  questionId Int?
   owner      User      @relation(fields: [ownerId], references: [id])
   ownerId    String    @db.Uuid
 
@@ -104,7 +104,7 @@ enum QuestionType {
 }
 
 model Question {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
@@ -140,7 +140,7 @@ model Tag {
 }
 
 model QuestionInstance {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   questionData Json
   results      Json
@@ -154,7 +154,7 @@ model QuestionInstance {
   microSessionId    String?          @db.Uuid
 
   question   Question @relation(fields: [questionId], references: [id])
-  questionId String   @db.Uuid
+  questionId Int
   owner      User     @relation(fields: [ownerId], references: [id])
   ownerId    String   @db.Uuid
 
@@ -368,7 +368,7 @@ model Participant {
 }
 
 model Participation {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
@@ -400,10 +400,10 @@ model QuestionResponse {
   participantId String      @db.Uuid
 
   participation   Participation @relation(fields: [participationId], references: [id])
-  participationId String        @db.Uuid
+  participationId Int
 
   questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id])
-  questionInstanceId String           @db.Uuid
+  questionInstanceId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

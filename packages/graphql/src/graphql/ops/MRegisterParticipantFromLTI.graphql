@@ -1,7 +1,7 @@
 mutation RegisterParticipantFromLTI(
   $courseId: ID!
   $participantId: ID!
-  $participantEmail: ID!
+  $participantEmail: String!
 ) {
   registerParticipantFromLTI(
     courseId: $courseId

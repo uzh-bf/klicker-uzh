@@ -1,5 +1,5 @@
 interface QuestionData<Type, Options> {
-  id: string
+  id: number
   name: string
   type: Type
   content: string

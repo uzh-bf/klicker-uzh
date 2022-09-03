@@ -29,7 +29,7 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
   definition(t) {
-    t.list.nonNull.string('questionIds')
+    t.list.nonNull.int('questionIds')
     t.int('randomSelection')
     t.int('timeLimit')
   },
@@ -46,7 +46,7 @@ export const ResponseInput = inputObjectType({
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.nonNull.string('name')
     t.nonNull.string('type')
@@ -118,7 +118,7 @@ export const InstanceEvaluation = objectType({
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.field('questionData', {
       type: QuestionData,
@@ -172,7 +172,7 @@ export const Participant = objectType({
 export const Participation = objectType({
   name: 'Participation',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.boolean('isActive')
     t.int('points')
@@ -208,7 +208,7 @@ export const SessionBlockStatus = enumType({
 export const SessionBlock = objectType({
   name: 'SessionBlock',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.nonNull.field('status', {
       type: SessionBlockStatus,
@@ -331,7 +331,7 @@ export const Mutation = objectType({
       args: {
         courseId: nonNull(idArg()),
         participantId: nonNull(idArg()),
-        participantEmail: nonNull(idArg()),
+        participantEmail: nonNull(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return ParticipantService.registerParticipantFromLTI(args, ctx)
@@ -362,7 +362,7 @@ export const Mutation = objectType({
       type: QuestionInstance,
       args: {
         courseId: nonNull(idArg()),
-        id: nonNull(idArg()),
+        id: nonNull(intArg()),
         response: nonNull(
           arg({
             type: ResponseInput,
@@ -380,9 +380,11 @@ export const Mutation = objectType({
         name: nonNull(stringArg()),
         displayName: stringArg(),
         blocks: nonNull(
-          arg({
-            type: nonNull(list(BlockInput)),
-          })
+          list(
+            arg({
+              type: nonNull(BlockInput),
+            })
+          )
         ),
       },
       resolve(_, args, ctx: ContextWithUser) {

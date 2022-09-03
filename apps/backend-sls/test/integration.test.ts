@@ -1,3 +1,4 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
 import Redis from 'ioredis'
 import request from 'supertest'
 import prepareApp from '../GraphQL/app'
@@ -5,7 +6,10 @@ import prepareApp from '../GraphQL/app'
 // TODO: switch to ioredis-mock
 // jest.mock('ioredis', () => Redis)
 
+process.env.NODE_ENV = 'development'
+
 describe('API', () => {
+  let prisma: PrismaClient
   let redisCache: Redis
   let redisExec: Redis
   let app: Express.Application
@@ -13,6 +17,7 @@ describe('API', () => {
   let session: any
 
   beforeAll(() => {
+    prisma = new PrismaClient()
     redisCache = new Redis({
       family: 4,
       host: process.env.REDIS_CACHE_HOST ?? 'localhost',
@@ -35,7 +40,7 @@ describe('API', () => {
   })
 
   beforeEach(() => {
-    app = prepareApp({ redisCache, redisExec })
+    app = prepareApp({ prisma, redisCache, redisExec })
   })
 
   it('allows logging in a user', async () => {
@@ -57,6 +62,11 @@ describe('API', () => {
         "data": Object {
           "loginUser": "6f45065c-447f-4259-818c-c6f6b477eb48",
         },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [],
+          },
+        },
       }
     `)
   })
@@ -68,7 +78,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createSession(name: "Test Session", blocks: [{ questionIds: ["996f208b-d567-4f1e-8c57-6f555866c33a", "996f208b-d567-4f1e-8c57-6f555866c33b"] }, { questionIds: ["996f208b-d567-4f1e-8c57-6f555866c33c"] }]) {
+            createSession(name: "Test Session", blocks: [{ questionIds: [0, 1] }, { questionIds: [2] }]) {
                 id
                 status
                 activeBlock
@@ -88,16 +98,34 @@ describe('API', () => {
             "activeBlock": -1,
             "blocks": Array [
               Object {
-                "id": "2",
+                "id": 4,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": "3",
+                "id": 5,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
+            "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
             "status": "PREPARED",
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
+                "typename": "Session",
+              },
+              Object {
+                "id": 4,
+                "typename": "SessionBlock",
+              },
+              Object {
+                "id": 5,
+                "typename": "SessionBlock",
+              },
+            ],
           },
         },
       }
@@ -132,8 +160,18 @@ describe('API', () => {
           "startSession": Object {
             "activeBlock": -1,
             "blocks": null,
-            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
+            "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
             "status": "RUNNING",
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
+                "typename": "Session",
+              },
+            ],
           },
         },
       }
@@ -167,16 +205,34 @@ describe('API', () => {
             "activeBlock": 0,
             "blocks": Array [
               Object {
-                "id": "3",
+                "id": 5,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": "2",
+                "id": 4,
                 "status": "ACTIVE",
               },
             ],
-            "id": "918fd8f1-503e-430d-b861-df82a50fd020",
+            "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
             "status": "RUNNING",
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "b9fcdfad-f58d-4a44-8dae-a2a5dfe778f8",
+                "typename": "Session",
+              },
+              Object {
+                "id": 5,
+                "typename": "SessionBlock",
+              },
+              Object {
+                "id": 4,
+                "typename": "SessionBlock",
+              },
+            ],
           },
         },
       }

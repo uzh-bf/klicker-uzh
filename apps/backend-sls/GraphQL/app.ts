@@ -13,7 +13,7 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './graphql/authorization'
 
-function prepareApp({ redisCache, redisExec }: any) {
+function prepareApp({ prisma, redisCache, redisExec }: any) {
   let cache = undefined
   if (redisCache) {
     try {
@@ -77,8 +77,8 @@ function prepareApp({ redisCache, redisExec }: any) {
           return ctx.user ? ctx.user.sub : null
         },
       }),
-      useValidationCache({}),
-      useParserCache({}),
+      useValidationCache(),
+      useParserCache(),
       // useGraphQlJit(),
       process.env.HIVE_TOKEN
         ? useHive({
@@ -89,7 +89,7 @@ function prepareApp({ redisCache, redisExec }: any) {
           })
         : null,
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ redisExec }),
+    context: enhanceContext({ prisma, redisExec }),
     logging: true,
     cors(request) {
       const requestOrigin = request.headers.get('origin') as string
