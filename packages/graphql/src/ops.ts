@@ -57,6 +57,29 @@ export type Course = {
   name: Scalars['String'];
 };
 
+export type FreeTextQuestionData = QuestionData & {
+  __typename?: 'FreeTextQuestionData';
+  content: Scalars['String'];
+  contentPlain: Scalars['String'];
+  id?: Maybe<Scalars['Int']>;
+  isArchived: Scalars['Boolean'];
+  isDeleted: Scalars['Boolean'];
+  name: Scalars['String'];
+  options: FreeTextQuestionOptions;
+  type: Scalars['String'];
+};
+
+export type FreeTextQuestionOptions = {
+  __typename?: 'FreeTextQuestionOptions';
+  restrictions?: Maybe<FreeTextRestrictions>;
+  solutions?: Maybe<Array<Maybe<Scalars['String']>>>;
+};
+
+export type FreeTextRestrictions = {
+  __typename?: 'FreeTextRestrictions';
+  maxLength?: Maybe<Scalars['Int']>;
+};
+
 export type InstanceEvaluation = {
   __typename?: 'InstanceEvaluation';
   choices?: Maybe<Scalars['JSONObject']>;
@@ -135,6 +158,36 @@ export type MutationRespondToQuestionInstanceArgs = {
 
 export type MutationStartSessionArgs = {
   id: Scalars['ID'];
+};
+
+export type NumericalQuestionData = QuestionData & {
+  __typename?: 'NumericalQuestionData';
+  content: Scalars['String'];
+  contentPlain: Scalars['String'];
+  id?: Maybe<Scalars['Int']>;
+  isArchived: Scalars['Boolean'];
+  isDeleted: Scalars['Boolean'];
+  name: Scalars['String'];
+  options: NumericalQuestionOptions;
+  type: Scalars['String'];
+};
+
+export type NumericalQuestionOptions = {
+  __typename?: 'NumericalQuestionOptions';
+  restrictions?: Maybe<NumericalRestrictions>;
+  solutionRanges?: Maybe<Array<Maybe<NumericalSolutionRange>>>;
+};
+
+export type NumericalRestrictions = {
+  __typename?: 'NumericalRestrictions';
+  max?: Maybe<Scalars['Int']>;
+  min?: Maybe<Scalars['Int']>;
+};
+
+export type NumericalSolutionRange = {
+  __typename?: 'NumericalSolutionRange';
+  max?: Maybe<Scalars['Int']>;
+  min: Scalars['Int'];
 };
 
 export type Participant = {
@@ -248,7 +301,7 @@ export enum SessionStatus {
   Scheduled = 'SCHEDULED'
 }
 
-export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | null };
+export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | { __typename?: 'FreeTextQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | { __typename?: 'NumericalQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | null };
 
 export type JoinCourseMutationVariables = Exact<{
   courseId: Scalars['ID'];
@@ -288,7 +341,7 @@ export type ResponseToQuestionInstanceMutationVariables = Exact<{
 }>;
 
 
-export type ResponseToQuestionInstanceMutation = { __typename?: 'Mutation', respondToQuestionInstance?: { __typename?: 'QuestionInstance', id?: number | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | null } | null };
+export type ResponseToQuestionInstanceMutation = { __typename?: 'Mutation', respondToQuestionInstance?: { __typename?: 'QuestionInstance', id?: number | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | { __typename?: 'FreeTextQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | { __typename?: 'NumericalQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | null } | null };
 
 export type GetCourseOverviewDataQueryVariables = Exact<{
   courseId: Scalars['ID'];
@@ -302,7 +355,7 @@ export type GetLearningElementQueryVariables = Exact<{
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: number | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | null } | null> | null } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: number | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } } | { __typename?: 'FreeTextQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | { __typename?: 'NumericalQuestionData', id?: number | null, name: string, type: string, content: string, contentPlain: string } | null } | null> | null } | null };
 
 export type GetParticipantCoursesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -314,7 +367,7 @@ export type GetSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionQuery = { __typename?: 'Query', getSession?: { __typename?: 'Session', id?: string | null, isAudienceInteractionActive: boolean, isFeedbackChannelPublic: boolean, namespace: string, name: string, activeBlock: number, execution: number, displayName: string, status: SessionStatus, blocks?: Array<{ __typename?: 'SessionBlock', id?: number | null, status: SessionBlockStatus, instances?: Array<{ __typename?: 'QuestionInstance', id?: number | null, questionData?: { __typename?: 'ChoicesQuestionData', content: string, contentPlain: string, id?: number | null, isArchived: boolean, isDeleted: boolean, name: string, type: string } | null } | null> | null } | null> | null } | null };
+export type GetSessionQuery = { __typename?: 'Query', getSession?: { __typename?: 'Session', id?: string | null, isAudienceInteractionActive: boolean, isFeedbackChannelPublic: boolean, namespace: string, name: string, activeBlock: number, execution: number, displayName: string, status: SessionStatus, blocks?: Array<{ __typename?: 'SessionBlock', id?: number | null, status: SessionBlockStatus, instances?: Array<{ __typename?: 'QuestionInstance', id?: number | null, questionData?: { __typename?: 'ChoicesQuestionData', content: string, contentPlain: string, id?: number | null, isArchived: boolean, isDeleted: boolean, name: string, type: string } | { __typename?: 'FreeTextQuestionData', content: string, contentPlain: string, id?: number | null, isArchived: boolean, isDeleted: boolean, name: string, type: string } | { __typename?: 'NumericalQuestionData', content: string, contentPlain: string, id?: number | null, isArchived: boolean, isDeleted: boolean, name: string, type: string } | null } | null> | null } | null> | null } | null };
 
 export type SelfQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -397,17 +450,24 @@ export type ResolversTypes = {
   ChoicesQuestionOptions: ResolverTypeWrapper<ChoicesQuestionOptions>;
   Course: ResolverTypeWrapper<Course>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
+  FreeTextQuestionData: ResolverTypeWrapper<FreeTextQuestionData>;
+  FreeTextQuestionOptions: ResolverTypeWrapper<FreeTextQuestionOptions>;
+  FreeTextRestrictions: ResolverTypeWrapper<FreeTextRestrictions>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   InstanceEvaluation: ResolverTypeWrapper<InstanceEvaluation>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']>;
   LearningElement: ResolverTypeWrapper<LearningElement>;
   Mutation: ResolverTypeWrapper<{}>;
+  NumericalQuestionData: ResolverTypeWrapper<NumericalQuestionData>;
+  NumericalQuestionOptions: ResolverTypeWrapper<NumericalQuestionOptions>;
+  NumericalRestrictions: ResolverTypeWrapper<NumericalRestrictions>;
+  NumericalSolutionRange: ResolverTypeWrapper<NumericalSolutionRange>;
   Participant: ResolverTypeWrapper<Participant>;
   ParticipantLearningData: ResolverTypeWrapper<ParticipantLearningData>;
   Participation: ResolverTypeWrapper<Participation>;
   Query: ResolverTypeWrapper<{}>;
-  QuestionData: ResolversTypes['ChoicesQuestionData'];
+  QuestionData: ResolversTypes['ChoicesQuestionData'] | ResolversTypes['FreeTextQuestionData'] | ResolversTypes['NumericalQuestionData'];
   QuestionFeedback: ResolverTypeWrapper<QuestionFeedback>;
   QuestionInstance: ResolverTypeWrapper<QuestionInstance>;
   ResponseInput: ResponseInput;
@@ -427,17 +487,24 @@ export type ResolversParentTypes = {
   ChoicesQuestionOptions: ChoicesQuestionOptions;
   Course: Course;
   DateTime: Scalars['DateTime'];
+  FreeTextQuestionData: FreeTextQuestionData;
+  FreeTextQuestionOptions: FreeTextQuestionOptions;
+  FreeTextRestrictions: FreeTextRestrictions;
   ID: Scalars['ID'];
   InstanceEvaluation: InstanceEvaluation;
   Int: Scalars['Int'];
   JSONObject: Scalars['JSONObject'];
   LearningElement: LearningElement;
   Mutation: {};
+  NumericalQuestionData: NumericalQuestionData;
+  NumericalQuestionOptions: NumericalQuestionOptions;
+  NumericalRestrictions: NumericalRestrictions;
+  NumericalSolutionRange: NumericalSolutionRange;
   Participant: Participant;
   ParticipantLearningData: ParticipantLearningData;
   Participation: Participation;
   Query: {};
-  QuestionData: ResolversParentTypes['ChoicesQuestionData'];
+  QuestionData: ResolversParentTypes['ChoicesQuestionData'] | ResolversParentTypes['FreeTextQuestionData'] | ResolversParentTypes['NumericalQuestionData'];
   QuestionFeedback: QuestionFeedback;
   QuestionInstance: QuestionInstance;
   ResponseInput: ResponseInput;
@@ -482,6 +549,29 @@ export interface DateTimeScalarConfig extends GraphQLScalarTypeConfig<ResolversT
   name: 'DateTime';
 }
 
+export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionData'] = ResolversParentTypes['FreeTextQuestionData']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  isArchived?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  options?: Resolver<ResolversTypes['FreeTextQuestionOptions'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FreeTextQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionOptions'] = ResolversParentTypes['FreeTextQuestionOptions']> = {
+  restrictions?: Resolver<Maybe<ResolversTypes['FreeTextRestrictions']>, ParentType, ContextType>;
+  solutions?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FreeTextRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextRestrictions'] = ResolversParentTypes['FreeTextRestrictions']> = {
+  maxLength?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type InstanceEvaluationResolvers<ContextType = any, ParentType extends ResolversParentTypes['InstanceEvaluation'] = ResolversParentTypes['InstanceEvaluation']> = {
   choices?: Resolver<Maybe<ResolversTypes['JSONObject']>, ParentType, ContextType>;
   feedbacks?: Resolver<Maybe<Array<Maybe<ResolversTypes['QuestionFeedback']>>>, ParentType, ContextType>;
@@ -509,6 +599,36 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   registerParticipantFromLTI?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationRegisterParticipantFromLtiArgs, 'courseId' | 'participantEmail' | 'participantId'>>;
   respondToQuestionInstance?: Resolver<Maybe<ResolversTypes['QuestionInstance']>, ParentType, ContextType, RequireFields<MutationRespondToQuestionInstanceArgs, 'courseId' | 'id' | 'response'>>;
   startSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationStartSessionArgs, 'id'>>;
+};
+
+export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionData'] = ResolversParentTypes['NumericalQuestionData']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  isArchived?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  options?: Resolver<ResolversTypes['NumericalQuestionOptions'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionOptions'] = ResolversParentTypes['NumericalQuestionOptions']> = {
+  restrictions?: Resolver<Maybe<ResolversTypes['NumericalRestrictions']>, ParentType, ContextType>;
+  solutionRanges?: Resolver<Maybe<Array<Maybe<ResolversTypes['NumericalSolutionRange']>>>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalRestrictions'] = ResolversParentTypes['NumericalRestrictions']> = {
+  max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  min?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalSolutionRangeResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalSolutionRange'] = ResolversParentTypes['NumericalSolutionRange']> = {
+  max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  min?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ParticipantResolvers<ContextType = any, ParentType extends ResolversParentTypes['Participant'] = ResolversParentTypes['Participant']> = {
@@ -543,7 +663,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 };
 
 export type QuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionData'] = ResolversParentTypes['QuestionData']> = {
-  __resolveType: TypeResolveFn<'ChoicesQuestionData', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ChoicesQuestionData' | 'FreeTextQuestionData' | 'NumericalQuestionData', ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
@@ -595,10 +715,17 @@ export type Resolvers<ContextType = any> = {
   ChoicesQuestionOptions?: ChoicesQuestionOptionsResolvers<ContextType>;
   Course?: CourseResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
+  FreeTextQuestionData?: FreeTextQuestionDataResolvers<ContextType>;
+  FreeTextQuestionOptions?: FreeTextQuestionOptionsResolvers<ContextType>;
+  FreeTextRestrictions?: FreeTextRestrictionsResolvers<ContextType>;
   InstanceEvaluation?: InstanceEvaluationResolvers<ContextType>;
   JSONObject?: GraphQLScalarType;
   LearningElement?: LearningElementResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  NumericalQuestionData?: NumericalQuestionDataResolvers<ContextType>;
+  NumericalQuestionOptions?: NumericalQuestionOptionsResolvers<ContextType>;
+  NumericalRestrictions?: NumericalRestrictionsResolvers<ContextType>;
+  NumericalSolutionRange?: NumericalSolutionRangeResolvers<ContextType>;
   Participant?: ParticipantResolvers<ContextType>;
   ParticipantLearningData?: ParticipantLearningDataResolvers<ContextType>;
   Participation?: ParticipationResolvers<ContextType>;
@@ -631,7 +758,9 @@ export const SelfDocument = {"kind":"Document","definitions":[{"kind":"Operation
       const result: PossibleTypesResultData = {
   "possibleTypes": {
     "QuestionData": [
-      "ChoicesQuestionData"
+      "ChoicesQuestionData",
+      "FreeTextQuestionData",
+      "NumericalQuestionData"
     ]
   }
 };

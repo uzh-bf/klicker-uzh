@@ -69,7 +69,7 @@ export async function createSession(
     },
   })
 
-  const data = {
+  return ctx.prisma.session.create({
     data: {
       name,
       displayName: displayName ?? name,
@@ -114,9 +114,7 @@ export async function createSession(
     include: {
       blocks: true,
     },
-  }
-
-  return ctx.prisma.session.create(data)
+  })
 }
 
 interface StartSessionArgs {

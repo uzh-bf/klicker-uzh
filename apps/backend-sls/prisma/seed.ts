@@ -282,6 +282,56 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const question6 = await prisma.question.upsert({
+    where: {
+      id: 5,
+    },
+    create: {
+      id: 5,
+      name: 'Numerische Testfrage',
+      content: 'Was ist richtig?',
+      contentPlain: 'Was ist richtig?',
+      type: 'NUMERICAL',
+      options: {
+        restrictions: {
+          min: 0,
+        },
+        solutionRanges: [
+          {
+            min: 0.5,
+            max: 0.6,
+          },
+          {
+            min: 2,
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const question7 = await prisma.question.upsert({
+    where: {
+      id: 6,
+    },
+    create: {
+      id: 6,
+      name: 'Freitext Testfrage',
+      content: 'Was ist richtig?',
+      contentPlain: 'Was ist richtig?',
+      type: Prisma.QuestionType.FREE_TEXT,
+      options: {
+        restrictions: {
+          maxLength: 200,
+        },
+        solutions: ['Schweiz', 'CH'],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
   const instance = await prisma.questionInstance.upsert({
     where: {
       id: 0,
@@ -620,7 +670,7 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 5`
+  await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 7`
   await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 7`
 }
 

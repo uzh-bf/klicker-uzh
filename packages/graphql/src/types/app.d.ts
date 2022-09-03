@@ -31,6 +31,7 @@ type FreeTextQuestionData = QuestionData<
     restrictions?: {
       maxLength?: number
     }
+    solutions?: string[]
   }
 >
 type NumericalQuestionData = QuestionData<
@@ -40,6 +41,10 @@ type NumericalQuestionData = QuestionData<
       min?: number
       max?: number
     }
+    solutionRanges?: {
+      min: number
+      max?: number
+    }[]
   }
 >
 

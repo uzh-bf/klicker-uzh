@@ -60,6 +60,12 @@ export const QuestionData = interfaceType({
     if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
       return 'ChoicesQuestionData'
     }
+    if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalQuestionData'
+    }
+    if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeQuestionData'
+    }
     return null
   },
 })
@@ -89,6 +95,73 @@ export const ChoicesQuestionData = objectType({
 
     t.nonNull.field('options', {
       type: ChoicesQuestionOptions,
+    })
+  },
+})
+
+export const NumericalRestrictions = objectType({
+  name: 'NumericalRestrictions',
+  definition(t) {
+    t.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalSolutionRange = objectType({
+  name: 'NumericalSolutionRange',
+  definition(t) {
+    t.nonNull.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalQuestionOptions = objectType({
+  name: 'NumericalQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: NumericalRestrictions,
+    })
+    t.list.field('solutionRanges', {
+      type: NumericalSolutionRange,
+    })
+  },
+})
+
+export const NumericalQuestionData = objectType({
+  name: 'NumericalQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: NumericalQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextRestrictions = objectType({
+  name: 'FreeTextRestrictions',
+  definition(t) {
+    t.int('maxLength')
+  },
+})
+
+export const FreeTextQuestionOptions = objectType({
+  name: 'FreeTextQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: FreeTextRestrictions,
+    })
+    t.list.string('solutions')
+  },
+})
+
+export const FreeTextQuestionData = objectType({
+  name: 'FreeTextQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: FreeTextQuestionOptions,
     })
   },
 })
