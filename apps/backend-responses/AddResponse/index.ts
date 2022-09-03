@@ -10,6 +10,10 @@ const redisExec = new Redis({
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
+// TODO: verify the participant cookie (if available)
+// TODO: add the participant response to redis (aggregated and separately)
+// TODO: award points based on the timing and correctness of the response
+
 const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
