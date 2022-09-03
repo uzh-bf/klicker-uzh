@@ -282,6 +282,50 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const question6 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33f',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c33f',
+      name: 'RDWachstum',
+      content:
+        'Wie hoch schätzt du das durchschnittliche Wachstum der Forschung- und Entwicklungskosten in den nächsten fünf Jahren?',
+      contentPlain:
+        'Wie hoch schätzt du das durchschnittliche Wachstum der Forschung- und Entwicklungskosten in den nächsten fünf Jahren?',
+      type: 'NUMERICAL',
+      options: {
+        restrictions: {
+          min: 0,
+          max: 100,
+        },
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const question7 = await prisma.question.upsert({
+    where: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c341',
+    },
+    create: {
+      id: '996f208b-d567-4f1e-8c57-6f555866c341',
+      name: 'Soziale Marktwirtschaft',
+      content: 'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
+      contentPlain:
+        'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
+      type: 'FREE_TEXT',
+      options: {
+        restrictions: {
+          maxLength: 100,
+        },
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
   const instance = await prisma.questionInstance.upsert({
     where: {
       id: '6a44d3a8-c24f-4f48-90e6-acf81a73781e',
@@ -716,6 +760,54 @@ async function main(prisma: Prisma.PrismaClient) {
     },
   })
 
+  const instance12 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783b',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783b',
+      questionData: {
+        ...question6,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        answers: [],
+      },
+      questionId: question6.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        answers: [],
+      },
+    },
+  })
+
+  const instance13 = await prisma.questionInstance.upsert({
+    where: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783c',
+    },
+    create: {
+      id: '6a44d3a8-c24f-4f48-90e6-acf81a73783c',
+      questionData: {
+        ...question7,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        answers: [],
+      },
+      questionId: question7.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        answers: [],
+      },
+    },
+  })
+
   const session = await prisma.session.upsert({
     where: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
@@ -762,7 +854,7 @@ async function main(prisma: Prisma.PrismaClient) {
       name: 'BF1 VL2',
       displayName: 'Banking und Finance I - VL1',
       status: 'RUNNING',
-      activeBlock: 0,
+      activeBlock: 1,
       blocks: {
         create: [
           {
@@ -792,6 +884,45 @@ async function main(prisma: Prisma.PrismaClient) {
             },
             expiresAt: new Date('2022-12-31T23:59:59.999Z'),
             timeLimit: 30,
+          },
+        ],
+      },
+      course: {
+        connect: {
+          id: course.id,
+        },
+      },
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const session3 = await prisma.session.upsert({
+    where: {
+      id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c0a',
+    },
+    create: {
+      name: 'BF1 VL3',
+      displayName: 'Banking und Finance I - VL3',
+      status: 'RUNNING',
+      activeBlock: 0,
+      blocks: {
+        create: [
+          {
+            instances: {
+              connect: [
+                {
+                  id: instance12.id,
+                },
+                {
+                  id: instance13.id,
+                },
+              ],
+            },
           },
         ],
       },

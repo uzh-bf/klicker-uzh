@@ -35,6 +35,25 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type FreeTextQuestionData implements QuestionData {
+  content: String!
+  contentPlain: String!
+  id: ID
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: FreeTextQuestionOptions
+  type: String!
+}
+
+type FreeTextQuestionOptions {
+  restrictions: FreeTextQuestionRestrictions
+}
+
+type FreeTextQuestionRestrictions {
+  maxLength: Int
+}
+
 type InstanceEvaluation {
   choices: JSONObject
   feedbacks: [QuestionFeedback]
@@ -59,6 +78,26 @@ type Mutation {
   registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
   respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+}
+
+type NumericalQuestionData implements QuestionData {
+  content: String!
+  contentPlain: String!
+  id: ID
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: NumericalQuestionOptions
+  type: String!
+}
+
+type NumericalQuestionOptions {
+  restrictions: NumericalQuestionRestrictions
+}
+
+type NumericalQuestionRestrictions {
+  max: Int
+  min: Int
 }
 
 type Participant {

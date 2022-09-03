@@ -1,6 +1,7 @@
 import { Button, Countdown, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface SessionProgressProps {
   activeIndex: number
@@ -58,7 +59,10 @@ function SessionProgress({
       <div className="my-auto">
         <Button
           fluid
-          className="!mr-0 h-10"
+          className={twMerge(
+            '!mr-0 h-10 w-32',
+            !isSkipModeActive && 'bg-uzh-blue-80 text-white font-bold'
+          )}
           disabled={isSubmitDisabled}
           onClick={onSubmit}
         >

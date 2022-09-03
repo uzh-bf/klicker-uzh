@@ -1,7 +1,6 @@
 fragment QuestionData on QuestionInstance {
   questionData {
     id
-
     name
     type
     content
@@ -16,5 +15,22 @@ fragment QuestionData on QuestionInstance {
         }
       }
     }
+
+    # ... on NumericalQuestionData {
+    #   options {
+    #     restrictions {
+    #       min
+    #       max
+    #     }
+    #   }
+    # }
+
+    # ... on FreeTextQuestionData {
+    #   options {
+    #     restrictions {
+    #       maxLength
+    #     }
+    #   }
+    # }
   }
 }

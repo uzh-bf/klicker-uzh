@@ -9,7 +9,6 @@ interface QuestionData<Type, Options> {
   isArchived: boolean
   createdAt: string
   updatedAt: string
-
   options: Options
 }
 

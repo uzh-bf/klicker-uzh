@@ -39,6 +39,8 @@ function QuestionArea({
   sessionId,
   timeLimit,
 }: QuestionAreaProps): React.ReactElement {
+  console.log(questions)
+
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
     (): any => remainingQuestions[0]

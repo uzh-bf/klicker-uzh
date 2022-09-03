@@ -82,6 +82,22 @@ export interface NexusGenObjects {
     learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
   }
+  FreeTextQuestionData: { // root type
+    content: string; // String!
+    contentPlain: string; // String!
+    id?: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options?: NexusGenRootTypes['FreeTextQuestionOptions'] | null; // FreeTextQuestionOptions
+    type: string; // String!
+  }
+  FreeTextQuestionOptions: { // root type
+    restrictions?: NexusGenRootTypes['FreeTextQuestionRestrictions'] | null; // FreeTextQuestionRestrictions
+  }
+  FreeTextQuestionRestrictions: { // root type
+    maxLength?: number | null; // Int
+  }
   InstanceEvaluation: { // root type
     choices?: NexusGenScalars['JSONObject'] | null; // JSONObject
     feedbacks?: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
@@ -92,6 +108,23 @@ export interface NexusGenObjects {
     instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
   }
   Mutation: {};
+  NumericalQuestionData: { // root type
+    content: string; // String!
+    contentPlain: string; // String!
+    id?: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options?: NexusGenRootTypes['NumericalQuestionOptions'] | null; // NumericalQuestionOptions
+    type: string; // String!
+  }
+  NumericalQuestionOptions: { // root type
+    restrictions?: NexusGenRootTypes['NumericalQuestionRestrictions'] | null; // NumericalQuestionRestrictions
+  }
+  NumericalQuestionRestrictions: { // root type
+    max?: number | null; // Int
+    min?: number | null; // Int
+  }
   Participant: { // root type
     avatar?: string | null; // String
     id?: string | null; // ID
@@ -144,7 +177,7 @@ export interface NexusGenObjects {
 }
 
 export interface NexusGenInterfaces {
-  QuestionData: NexusGenRootTypes['ChoicesQuestionData'];
+  QuestionData: NexusGenRootTypes['ChoicesQuestionData'] | NexusGenRootTypes['FreeTextQuestionData'] | NexusGenRootTypes['NumericalQuestionData'];
 }
 
 export interface NexusGenUnions {
@@ -179,6 +212,22 @@ export interface NexusGenFieldTypes {
     learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
     name: string; // String!
   }
+  FreeTextQuestionData: { // field return type
+    content: string; // String!
+    contentPlain: string; // String!
+    id: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['FreeTextQuestionOptions'] | null; // FreeTextQuestionOptions
+    type: string; // String!
+  }
+  FreeTextQuestionOptions: { // field return type
+    restrictions: NexusGenRootTypes['FreeTextQuestionRestrictions'] | null; // FreeTextQuestionRestrictions
+  }
+  FreeTextQuestionRestrictions: { // field return type
+    maxLength: number | null; // Int
+  }
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject'] | null; // JSONObject
     feedbacks: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
@@ -196,6 +245,23 @@ export interface NexusGenFieldTypes {
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
+  }
+  NumericalQuestionData: { // field return type
+    content: string; // String!
+    contentPlain: string; // String!
+    id: string | null; // ID
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['NumericalQuestionOptions'] | null; // NumericalQuestionOptions
+    type: string; // String!
+  }
+  NumericalQuestionOptions: { // field return type
+    restrictions: NexusGenRootTypes['NumericalQuestionRestrictions'] | null; // NumericalQuestionRestrictions
+  }
+  NumericalQuestionRestrictions: { // field return type
+    max: number | null; // Int
+    min: number | null; // Int
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -288,6 +354,22 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     name: 'String'
   }
+  FreeTextQuestionData: { // field return type name
+    content: 'String'
+    contentPlain: 'String'
+    id: 'ID'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'FreeTextQuestionOptions'
+    type: 'String'
+  }
+  FreeTextQuestionOptions: { // field return type name
+    restrictions: 'FreeTextQuestionRestrictions'
+  }
+  FreeTextQuestionRestrictions: { // field return type name
+    maxLength: 'Int'
+  }
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
@@ -305,6 +387,23 @@ export interface NexusGenFieldTypeNames {
     registerParticipantFromLTI: 'ParticipantLearningData'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
+  }
+  NumericalQuestionData: { // field return type name
+    content: 'String'
+    contentPlain: 'String'
+    id: 'ID'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'NumericalQuestionOptions'
+    type: 'String'
+  }
+  NumericalQuestionOptions: { // field return type name
+    restrictions: 'NumericalQuestionRestrictions'
+  }
+  NumericalQuestionRestrictions: { // field return type name
+    max: 'Int'
+    min: 'Int'
   }
   Participant: { // field return type name
     avatar: 'String'
@@ -416,11 +515,13 @@ export interface NexusGenArgTypes {
 }
 
 export interface NexusGenAbstractTypeMembers {
-  QuestionData: "ChoicesQuestionData"
+  QuestionData: "ChoicesQuestionData" | "FreeTextQuestionData" | "NumericalQuestionData"
 }
 
 export interface NexusGenTypeInterfaces {
   ChoicesQuestionData: "QuestionData"
+  FreeTextQuestionData: "QuestionData"
+  NumericalQuestionData: "QuestionData"
 }
 
 export type NexusGenObjectNames = keyof NexusGenObjects;

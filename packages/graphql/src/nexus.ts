@@ -48,6 +48,10 @@ export const QuestionData = interfaceType({
   resolveType: (item) => {
     if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
       return 'ChoicesQuestionData'
+    } else if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalQuestionData'
+    } else if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeTextQuestionData'
     }
     return null
   },
@@ -71,6 +75,39 @@ export const ChoicesQuestionOptions = objectType({
   },
 })
 
+export const NumericalQuestionOptions = objectType({
+  name: 'NumericalQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: NumericalQuestionRestrictions,
+    })
+  },
+})
+
+export const FreeTextQuestionOptions = objectType({
+  name: 'FreeTextQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: FreeTextQuestionRestrictions,
+    })
+  },
+})
+
+export const NumericalQuestionRestrictions = objectType({
+  name: 'NumericalQuestionRestrictions',
+  definition(t) {
+    t.int('min')
+    t.int('max')
+  },
+})
+
+export const FreeTextQuestionRestrictions = objectType({
+  name: 'FreeTextQuestionRestrictions',
+  definition(t) {
+    t.int('maxLength')
+  },
+})
+
 export const ChoicesQuestionData = objectType({
   name: 'ChoicesQuestionData',
   definition(t) {
@@ -78,6 +115,28 @@ export const ChoicesQuestionData = objectType({
 
     t.nonNull.field('options', {
       type: ChoicesQuestionOptions,
+    })
+  },
+})
+
+export const NumericalQuestionData = objectType({
+  name: 'NumericalQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.field('options', {
+      type: NumericalQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextQuestionData = objectType({
+  name: 'FreeTextQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.field('options', {
+      type: FreeTextQuestionOptions,
     })
   },
 })
