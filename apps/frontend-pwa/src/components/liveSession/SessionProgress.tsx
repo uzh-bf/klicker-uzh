@@ -60,7 +60,7 @@ function SessionProgress({
         <Button
           fluid
           className={twMerge(
-            '!mr-0 h-10 w-32',
+            '!mr-0 h-10 w-32 disabled:opacity-50',
             !isSkipModeActive && 'bg-uzh-blue-80 text-white font-bold'
           )}
           disabled={isSubmitDisabled}

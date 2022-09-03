@@ -1,13 +1,14 @@
+import { push } from '@socialgouv/matomo-next'
 import { H1 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import localForage from 'localforage'
-// import _get from 'lodash/get'
 import _without from 'lodash/without'
 import React, { useEffect, useState } from 'react'
-// import v8n from 'v8n'
-import { push } from '@socialgouv/matomo-next'
-import dayjs from 'dayjs'
+import v8n from 'v8n'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import FREETextAnswerOptions from '../questions/FREETextAnswerOptions'
+import NUMERICALAnswerOptions from '../questions/NUMERICALAnswerOptions'
 import QuestionDescription from '../questions/QuestionDescription'
 import SCAnswerOptions from '../questions/SCAnswerOptions'
 import SessionProgress from './SessionProgress'
@@ -26,8 +27,8 @@ interface QuestionAreaProps {
 const messages = {
   [QUESTION_TYPES.SC]: <p>Bitte eine einzige Option auswählen:</p>,
   [QUESTION_TYPES.MC]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
-  [QUESTION_TYPES.FREE]: <p>Bitte eine Antwort eingeben:</p>,
-  [QUESTION_TYPES.FREE_RANGE]: (
+  [QUESTION_TYPES.FREE_TEXT]: <p>Bitte eine Antwort eingeben:</p>,
+  [QUESTION_TYPES.NUMERICAL]: (
     <p>Bitte eine Antwort aus dem vorgegebenen Bereich auswählen:</p>
   ),
 }
@@ -39,8 +40,6 @@ function QuestionArea({
   sessionId,
   timeLimit,
 }: QuestionAreaProps): React.ReactElement {
-  console.log(questions)
-
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
     (): any => remainingQuestions[0]
@@ -57,6 +56,7 @@ function QuestionArea({
       : undefined,
   })
 
+  // TODO: fix response storage, currently multiple replays are possible - maybe automatically resolved with handleNewResponse implementation
   useEffect((): void => {
     const exec = async () => {
       try {
@@ -123,12 +123,49 @@ function QuestionArea({
       })
     }
 
+  const onFreeTextValueChange = (inputValue: any): void => {
+    let validator = v8n()
+    validator = validator.string()
+
+    return setInputState({
+      inputEmpty: !inputValue || inputValue.length === 0,
+      inputValid: validator.test(inputValue) || validator.test(+inputValue),
+      inputValue: inputValue,
+    })
+  }
+
+  const onNumericalValueChange = (inputValue: any): void => {
+    let validator = v8n()
+    validator = validator.number(false)
+
+    if (currentQuestion.options?.restrictions?.max) {
+      validator = validator.lessThanOrEqual(
+        currentQuestion.options?.restrictions?.max
+      )
+    }
+
+    if (currentQuestion.options?.restrictions?.min) {
+      validator = validator.greaterThanOrEqual(
+        currentQuestion.options?.restrictions?.min
+      )
+    }
+
+    // ! issue: component returns empty string if the entered thing is not a number
+    console.log(inputValue)
+
+    return setInputState({
+      inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+      inputValid: validator.test(inputValue) || validator.test(+inputValue),
+      inputValue: inputValue,
+    })
+  }
+
   // const onFreeValueChange =
   //   (type: string, options: any): any =>
   //   (newInputValue: any): void => {
   //     let validator = v8n()
 
-  //     if (type === QUESTION_TYPES.FREE_RANGE) {
+  //     if (type === QUESTION_TYPES.NUMERICAL) {
   //       validator = validator.number(false)
 
   //       if (_get(options, 'restrictions.max')) {
@@ -250,21 +287,20 @@ function QuestionArea({
               />
             )}
 
-            {QUESTION_GROUPS.FREE.includes(currentQuestion.type) && (
-              <div>FREE ANSWER OPTIONS</div>
+            {QUESTION_GROUPS.FREE_TEXT.includes(currentQuestion.type) && (
+              <FREETextAnswerOptions
+                onChange={onFreeTextValueChange}
+                maxLength={currentQuestion.options?.restrictions?.maxLength}
+              />
             )}
 
-            {/*  if (QUESTION_GROUPS.FREE.includes(type)) {
-              return (
-                <FREEAnswerOptions
-                  disabled={!remainingQuestions.includes(activeQuestion)}
-                  options={options[type]}
-                  questionType={type}
-                  value={inputValue}
-                  onChange={onFreeValueChange(type, options[type])}
-                />
-              )
-            } */}
+            {QUESTION_GROUPS.NUMERICAL.includes(currentQuestion.type) && (
+              <NUMERICALAnswerOptions
+                valid={inputValid || inputEmpty}
+                value={inputValue}
+                onChange={onNumericalValueChange}
+              />
+            )}
           </div>
         </div>
       )}
