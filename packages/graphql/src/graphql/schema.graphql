@@ -15,7 +15,7 @@ type ChoicesQuestionData implements QuestionData {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
-  options: ChoicesQuestionOptions!
+  options: ChoicesQuestionOptions
   type: String!
 }
 

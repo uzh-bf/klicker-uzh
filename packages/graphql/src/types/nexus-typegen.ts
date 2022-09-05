@@ -70,7 +70,7 @@ export interface NexusGenObjects {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    options?: NexusGenRootTypes['ChoicesQuestionOptions'] | null; // ChoicesQuestionOptions
     type: string; // String!
   }
   ChoicesQuestionOptions: { // root type
@@ -200,7 +200,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    options: NexusGenRootTypes['ChoicesQuestionOptions'] | null; // ChoicesQuestionOptions
     type: string; // String!
   }
   ChoicesQuestionOptions: { // field return type

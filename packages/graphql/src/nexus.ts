@@ -113,7 +113,7 @@ export const ChoicesQuestionData = objectType({
   definition(t) {
     t.implements(QuestionData)
 
-    t.nonNull.field('options', {
+    t.field('options', {
       type: ChoicesQuestionOptions,
     })
   },

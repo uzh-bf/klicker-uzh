@@ -171,13 +171,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "ChoicesQuestionOptions",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "ChoicesQuestionOptions",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
