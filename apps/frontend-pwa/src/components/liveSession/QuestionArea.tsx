@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import localForage from 'localforage'
 import _without from 'lodash/without'
 import React, { useEffect, useState } from 'react'
-import v8n from 'v8n'
+import * as Yup from 'yup'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import FREETextAnswerOptions from '../questions/FREETextAnswerOptions'
@@ -124,69 +124,60 @@ function QuestionArea({
     }
 
   const onFreeTextValueChange = (inputValue: any): void => {
-    let validator = v8n()
-    validator = validator.string()
+    const inputEmpty = !inputValue || inputValue.length === 0
 
-    return setInputState({
-      inputEmpty: !inputValue || inputValue.length === 0,
-      inputValid: validator.test(inputValue) || validator.test(+inputValue),
-      inputValue: inputValue,
+    const schema = Yup.object().shape({
+      input: Yup.string()
+        .max(currentQuestion.options?.restrictions?.maxLength)
+        .required(),
     })
+
+    try {
+      const isValid = schema.validateSync({ input: inputValue })
+      if (isValid) {
+        return setInputState({
+          inputEmpty: inputEmpty,
+          inputValid: true,
+          inputValue: inputValue,
+        })
+      }
+    } catch (error: any) {
+      return setInputState({
+        inputEmpty: inputEmpty,
+        inputValid: false,
+        inputValue: inputValue,
+      })
+    }
   }
 
   const onNumericalValueChange = (inputValue: any): void => {
-    let validator = v8n()
-    validator = validator.number(false)
+    const inputEmpty =
+      inputValue !== 0 && (!inputValue || inputValue.length === 0)
 
-    if (currentQuestion.options?.restrictions?.max) {
-      validator = validator.lessThanOrEqual(
-        currentQuestion.options?.restrictions?.max
-      )
-    }
-
-    if (currentQuestion.options?.restrictions?.min) {
-      validator = validator.greaterThanOrEqual(
-        currentQuestion.options?.restrictions?.min
-      )
-    }
-
-    // ! issue: component returns empty string if the entered thing is not a number
-    console.log(inputValue)
-
-    return setInputState({
-      inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
-      inputValid: validator.test(inputValue) || validator.test(+inputValue),
-      inputValue: inputValue,
+    const schema = Yup.object().shape({
+      input: Yup.number()
+        .min(currentQuestion.options?.restrictions?.min)
+        .max(currentQuestion.options?.restrictions?.max)
+        .required(),
     })
+
+    try {
+      const isValid = schema.validateSync({ input: inputValue })
+      if (isValid) {
+        return setInputState({
+          inputEmpty: inputEmpty,
+          inputValid: true,
+          inputValue: inputValue,
+        })
+      }
+    } catch (error: any) {
+      return setInputState({
+        inputEmpty: inputEmpty,
+        inputValid: false,
+        inputValue: inputValue,
+      })
+    }
   }
-
-  // const onFreeValueChange =
-  //   (type: string, options: any): any =>
-  //   (newInputValue: any): void => {
-  //     let validator = v8n()
-
-  //     if (type === QUESTION_TYPES.NUMERICAL) {
-  //       validator = validator.number(false)
-
-  //       if (_get(options, 'restrictions.max')) {
-  //         validator = validator.lessThanOrEqual(options.restrictions.max)
-  //       }
-
-  //       if (_get(options, 'restrictions.min')) {
-  //         validator = validator.greaterThanOrEqual(options.restrictions.min)
-  //       }
-  //     } else {
-  //       validator = validator.string()
-  //     }
-
-  //     return setInputState({
-  //       inputEmpty:
-  //         newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
-  //       inputValid:
-  //         validator.test(newInputValue) || validator.test(+newInputValue),
-  //       inputValue: newInputValue,
-  //     })
-  //   }
 
   const onSubmit = async (): Promise<void> => {
     const { id: instanceId, execution, type } = questions[activeQuestion]
@@ -256,9 +247,10 @@ function QuestionArea({
             numItems={questions.length}
             expiresAt={expiresAt}
             timeLimit={timeLimit}
-            isSkipModeActive={inputEmpty}
             isSubmitDisabled={
-              remainingQuestions.length === 0 || (!inputEmpty && !inputValid)
+              remainingQuestions.length === 0 ||
+              (!inputEmpty && !inputValid) ||
+              inputEmpty
             }
             onSubmit={onSubmit}
             onExpire={onSubmit}

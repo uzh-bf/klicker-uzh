@@ -16,8 +16,8 @@ function NUMERICALAnswerOptions({
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   return (
     <div className="flex flex-col gap-2">
-      <textarea
-        rows={1}
+      <input
+        type="text"
         value={value}
         className={twMerge(
           'rounded focus:border focus:border-solid focus:border-uzh-blue-80',

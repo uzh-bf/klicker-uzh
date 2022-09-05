@@ -1,11 +1,9 @@
 import { Button, Countdown, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface SessionProgressProps {
   activeIndex: number
-  isSkipModeActive?: boolean
   isSubmitDisabled?: boolean
   numItems: number
   expiresAt?: Date
@@ -15,7 +13,6 @@ interface SessionProgressProps {
 }
 
 const defaultProps = {
-  isSkipModeActive: true,
   isSubmitDisabled: false,
   expiresAt: undefined,
   timeLimit: undefined,
@@ -23,7 +20,6 @@ const defaultProps = {
 
 function SessionProgress({
   activeIndex,
-  isSkipModeActive,
   isSubmitDisabled,
   numItems,
   expiresAt,
@@ -59,18 +55,13 @@ function SessionProgress({
       <div className="my-auto">
         <Button
           fluid
-          className={twMerge(
-            '!mr-0 h-10 w-32 disabled:opacity-50',
-            !isSkipModeActive && 'bg-uzh-blue-80 text-white font-bold'
-          )}
+          className={
+            '!mr-0 h-10 w-32 disabled:opacity-50 bg-uzh-blue-80 text-white font-bold'
+          }
           disabled={isSubmitDisabled}
           onClick={onSubmit}
         >
-          {isSkipModeActive ? (
-            <Button.Label>Überspringen</Button.Label>
-          ) : (
-            <Button.Label>Absenden</Button.Label>
-          )}
+          <Button.Label>Absenden</Button.Label>
         </Button>
       </div>
     </div>
