@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@envelop/parser-cache": "4.6.0",
-    "@envelop/response-cache": "3.1.0",
+    "@envelop/response-cache": "3.2.0",
     "@envelop/response-cache-redis": "1.1.0",
     "@envelop/validation-cache": "4.6.0",
     "@graphql-authz/core": "1.2.1",
