@@ -40,8 +40,12 @@ export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
   return participation.map((p) => p.course)
 }
 
+interface JoinCourseArgs {
+  courseId: string
+}
+
 export async function joinCourse(
-  { courseId }: { courseId: string },
+  { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.upsert({
@@ -70,8 +74,12 @@ export async function joinCourse(
   })
 }
 
+interface LeaveCourseArgs {
+  courseId: string
+}
+
 export async function leaveCourse(
-  { courseId }: { courseId: string },
+  { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
@@ -87,8 +95,12 @@ export async function leaveCourse(
   })
 }
 
+interface GetCourseOverviewDataArgs {
+  courseId: string
+}
+
 export async function getCourseOverviewData(
-  { courseId }: { courseId: string },
+  { courseId }: GetCourseOverviewDataArgs,
   ctx: ContextWithOptionalUser
 ) {
   if (ctx.user?.sub) {

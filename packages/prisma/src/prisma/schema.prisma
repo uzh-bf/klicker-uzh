@@ -32,7 +32,7 @@ model Account {
   ssoType SSOType
   ssoId   String
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -87,9 +87,9 @@ model Attachment {
 
   type AttachmentType
 
-  question   Question? @relation(fields: [questionId], references: [id])
-  questionId String?   @db.Uuid
-  owner      User      @relation(fields: [ownerId], references: [id])
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  questionId Int?
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId    String    @db.Uuid
 
   createdAt DateTime @default(now())
@@ -104,7 +104,7 @@ enum QuestionType {
 }
 
 model Question {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
@@ -120,7 +120,7 @@ model Question {
   tags        Tag[]
   instances   QuestionInstance[]
 
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -140,23 +140,23 @@ model Tag {
 }
 
 model QuestionInstance {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   questionData Json
   results      Json
   responses    QuestionResponse[]
 
-  sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id])
+  sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId    Int?
-  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id])
+  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   learningElementId String?          @db.Uuid
-  microSession      MicroSession?    @relation(fields: [microSessionId], references: [id])
+  microSession      MicroSession?    @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   microSessionId    String?          @db.Uuid
 
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId String   @db.Uuid
-  owner      User     @relation(fields: [ownerId], references: [id])
-  ownerId    String   @db.Uuid
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  questionId Int?
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    String    @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,7 +179,7 @@ model Course {
   learningElements LearningElement[]
   microSessions    MicroSession[]
 
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   participations Participation[]
@@ -205,7 +205,7 @@ model SessionBlock {
 
   instances QuestionInstance[]
 
-  session   Session @relation(fields: [sessionId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String  @db.Uuid
 
   createdAt DateTime @default(now())
@@ -213,7 +213,7 @@ model SessionBlock {
 }
 
 enum SessionStatus {
-  PLANNED
+  PREPARED
   SCHEDULED
   RUNNING
   COMPLETED
@@ -239,15 +239,15 @@ model Session {
   finishedAt  DateTime?
 
   accessMode AccessMode    @default(PUBLIC)
-  status     SessionStatus
+  status     SessionStatus @default(PREPARED)
 
   activeBlock Int            @default(-1)
   blocks      SessionBlock[]
 
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
-  course   Course? @relation(fields: [courseId], references: [id])
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 
   createdAt DateTime @default(now())
@@ -259,9 +259,9 @@ model LearningElement {
 
   instances QuestionInstance[]
 
-  owner    User   @relation(fields: [ownerId], references: [id])
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -276,9 +276,9 @@ model MicroSession {
 
   instances QuestionInstance[]
 
-  owner    User   @relation(fields: [ownerId], references: [id])
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -299,7 +299,7 @@ model Feedback {
 
   resolvedAt DateTime?
 
-  participant   Participant? @relation(fields: [participantId], references: [id])
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
 
   createdAt DateTime @default(now())
@@ -313,7 +313,7 @@ model FeedbackResponse {
   positiveReactions Int
   negativeReactions Int
 
-  feedback   Feedback? @relation(fields: [feedbackId], references: [id])
+  feedback   Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   feedbackId Int?
 
   createdAt DateTime @default(now())
@@ -326,7 +326,7 @@ model ConfusionTimestep {
   difficulty Int
   speed      Int
 
-  participant   Participant? @relation(fields: [participantId], references: [id])
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
 
   createdAt DateTime @default(now())
@@ -340,7 +340,7 @@ model ParticipantAccount {
   ssoType SSOType
   ssoId   String
 
-  participant   Participant @relation(fields: [participantId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
@@ -368,17 +368,17 @@ model Participant {
 }
 
 model Participation {
-  id String @id @default(uuid()) @db.Uuid
+  id Int @id @default(autoincrement())
 
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
   isActive Boolean @default(true)
   points   Int     @default(0)
 
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
-  participant   Participant @relation(fields: [participantId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   responses QuestionResponse[]
@@ -396,14 +396,14 @@ model QuestionResponse {
 
   response Json
 
-  participant   Participant @relation(fields: [participantId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  participation   Participation @relation(fields: [participationId], references: [id])
-  participationId String        @db.Uuid
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
 
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id])
-  questionInstanceId String           @db.Uuid
+  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

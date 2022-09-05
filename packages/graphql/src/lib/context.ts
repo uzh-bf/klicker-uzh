@@ -1,5 +1,6 @@
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
+import type Redis from 'ioredis'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -8,6 +9,7 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
+  redisExec: Redis
 }
 
 export interface ContextWithOptionalUser extends Context {
@@ -24,13 +26,11 @@ export interface ContextWithUser extends Context {
   }
 }
 
-const prisma = new PrismaClient()
-
-function enhanceContext({ req }: BaseContext) {
-  return {
-    prisma,
+function enhanceContext(args = {}) {
+  return ({ req }: BaseContext) => ({
+    ...args,
     user: req.locals?.user,
-  }
+  })
 }
 
 export default enhanceContext

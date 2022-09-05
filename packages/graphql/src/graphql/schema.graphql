@@ -2,6 +2,12 @@
 ### Do not make changes to this file directly
 
 
+input BlockInput {
+  questionIds: [Int!]
+  randomSelection: Int
+  timeLimit: Int
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -11,7 +17,7 @@ type Choice {
 type ChoicesQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -35,6 +41,26 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type FreeTextQuestionData implements QuestionData {
+  content: String!
+  contentPlain: String!
+  id: Int
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: FreeTextQuestionOptions!
+  type: String!
+}
+
+type FreeTextQuestionOptions {
+  restrictions: FreeTextRestrictions
+  solutions: [String]
+}
+
+type FreeTextRestrictions {
+  maxLength: Int
+}
+
 type InstanceEvaluation {
   choices: JSONObject
   feedbacks: [QuestionFeedback]
@@ -52,13 +78,41 @@ type LearningElement {
 }
 
 type Mutation {
+  activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  createSession(blocks: [BlockInput!]!, displayName: String, name: String!): Session
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
-  registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
-  respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
+  registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+}
+
+type NumericalQuestionData implements QuestionData {
+  content: String!
+  contentPlain: String!
+  id: Int
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: NumericalQuestionOptions!
+  type: String!
+}
+
+type NumericalQuestionOptions {
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange]
+}
+
+type NumericalRestrictions {
+  max: Int
+  min: Int
+}
+
+type NumericalSolutionRange {
+  max: Int
+  min: Int!
 }
 
 type Participant {
@@ -76,7 +130,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
-  id: ID
+  id: Int
   isActive: Boolean
   points: Int
 }
@@ -92,7 +146,7 @@ type Query {
 interface QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -108,7 +162,7 @@ type QuestionFeedback {
 
 type QuestionInstance {
   evaluation: InstanceEvaluation
-  id: ID
+  id: Int
   questionData: QuestionData
 }
 
@@ -131,7 +185,7 @@ type Session {
 }
 
 type SessionBlock {
-  id: ID
+  id: Int
   instances: [QuestionInstance]
   status: SessionBlockStatus!
 }
@@ -144,7 +198,7 @@ enum SessionBlockStatus {
 
 enum SessionStatus {
   COMPLETED
-  PLANNED
+  PREPARED
   RUNNING
   SCHEDULED
 }

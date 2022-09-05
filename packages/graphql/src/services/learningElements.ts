@@ -36,7 +36,7 @@ function evaluateQuestionResponse(
 
 interface RespondToQuestionInstanceArgs {
   courseId: string
-  id: string
+  id: number
   response: QuestionResponse
 }
 
