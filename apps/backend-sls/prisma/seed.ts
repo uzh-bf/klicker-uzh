@@ -38,10 +38,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const question = await prisma.question.upsert({
     where: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33a',
+      id: 0,
     },
     create: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33a',
+      id: 0,
       name: 'Zieldreieck',
       content: 'Welche der folgenden Aussagen ist **falsch**?',
       contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -92,10 +92,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const question2 = await prisma.question.upsert({
     where: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33b',
+      id: 1,
     },
     create: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33b',
+      id: 1,
       name: 'Organisation des Finanzwesens',
       content: 'Welche der folgenden Aussagen ist **falsch**?',
       contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -142,10 +142,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const question3 = await prisma.question.upsert({
     where: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33c',
+      id: 2,
     },
     create: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33c',
+      id: 2,
       name: 'Stakeholder',
       content:
         'Welche der folgenden Personen/Gruppen sind **keine** Stakeholder?',
@@ -193,10 +193,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const question4 = await prisma.question.upsert({
     where: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33d',
+      id: 3,
     },
     create: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33d',
+      id: 3,
       name: 'Bilanz',
       content:
         'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
@@ -239,10 +239,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const question5 = await prisma.question.upsert({
     where: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33e',
+      id: 4,
     },
     create: {
-      id: '996f208b-d567-4f1e-8c57-6f555866c33e',
+      id: 4,
       name: 'Grundfunktionen des Fremdkapitals',
       content:
         'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
@@ -282,12 +282,62 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const instance = await prisma.questionInstance.upsert({
+  const question6 = await prisma.question.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781e',
+      id: 5,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781e',
+      id: 5,
+      name: 'Numerische Testfrage',
+      content: 'Was ist richtig?',
+      contentPlain: 'Was ist richtig?',
+      type: 'NUMERICAL',
+      options: {
+        restrictions: {
+          min: 0,
+        },
+        solutionRanges: [
+          {
+            min: 0.5,
+            max: 0.6,
+          },
+          {
+            min: 2,
+          },
+        ],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const question7 = await prisma.question.upsert({
+    where: {
+      id: 6,
+    },
+    create: {
+      id: 6,
+      name: 'Freitext Testfrage',
+      content: 'Was ist richtig?',
+      contentPlain: 'Was ist richtig?',
+      type: Prisma.QuestionType.FREE_TEXT,
+      options: {
+        restrictions: {
+          maxLength: 200,
+        },
+        solutions: ['Schweiz', 'CH'],
+      },
+      ownerId: user.id,
+    },
+    update: {},
+  })
+
+  const instance = await prisma.questionInstance.upsert({
+    where: {
+      id: 0,
+    },
+    create: {
+      id: 0,
       questionData: {
         ...question,
         createdAt: null,
@@ -320,10 +370,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance2 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781f',
+      id: 1,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73781f',
+      id: 1,
       questionData: {
         ...question2,
         createdAt: null,
@@ -356,10 +406,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance3 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782a',
+      id: 2,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782a',
+      id: 2,
       questionData: {
         ...question3,
         createdAt: null,
@@ -392,10 +442,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance4 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782b',
+      id: 3,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782b',
+      id: 3,
       questionData: {
         ...question4,
         createdAt: null,
@@ -426,10 +476,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance5 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782c',
+      id: 4,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73782c',
+      id: 4,
       questionData: {
         ...question5,
         createdAt: null,
@@ -463,6 +513,7 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     },
     create: {
+      id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
       courseId: course.id,
       ownerId: user.id,
       instances: {
@@ -510,10 +561,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance6 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751a',
+      id: 5,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751a',
+      id: 5,
       questionData: {
         ...question,
         createdAt: null,
@@ -546,10 +597,10 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const instance7 = await prisma.questionInstance.upsert({
     where: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751b',
+      id: 6,
     },
     create: {
-      id: '6a44d3a8-c24f-4f48-90e6-acf81a73751b',
+      id: 6,
       questionData: {
         ...question2,
         createdAt: null,
@@ -585,9 +636,10 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     },
     create: {
+      id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
       name: 'BF1 VL1',
       displayName: 'Banking und Finance I - VL1',
-      status: 'PLANNED',
+      status: Prisma.SessionStatus.PREPARED,
       blocks: {
         create: [
           {
@@ -617,6 +669,9 @@ async function main(prisma: Prisma.PrismaClient) {
     },
     update: {},
   })
+
+  await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 7`
+  await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 7`
 }
 
 const prismaClient = new Prisma.PrismaClient()

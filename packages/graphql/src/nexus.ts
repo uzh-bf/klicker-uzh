@@ -6,7 +6,9 @@ import {
   enumType,
   idArg,
   inputObjectType,
+  intArg,
   interfaceType,
+  list,
   nonNull,
   objectType,
   stringArg,
@@ -24,6 +26,15 @@ import * as SessionService from './services/sessions'
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 
+export const BlockInput = inputObjectType({
+  name: 'BlockInput',
+  definition(t) {
+    t.list.nonNull.int('questionIds')
+    t.int('randomSelection')
+    t.int('timeLimit')
+  },
+})
+
 export const ResponseInput = inputObjectType({
   name: 'ResponseInput',
   definition(t) {
@@ -35,7 +46,7 @@ export const ResponseInput = inputObjectType({
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.nonNull.string('name')
     t.nonNull.string('type')
@@ -48,6 +59,12 @@ export const QuestionData = interfaceType({
   resolveType: (item) => {
     if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
       return 'ChoicesQuestionData'
+    }
+    if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalQuestionData'
+    }
+    if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeQuestionData'
     }
     return null
   },
@@ -82,6 +99,73 @@ export const ChoicesQuestionData = objectType({
   },
 })
 
+export const NumericalRestrictions = objectType({
+  name: 'NumericalRestrictions',
+  definition(t) {
+    t.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalSolutionRange = objectType({
+  name: 'NumericalSolutionRange',
+  definition(t) {
+    t.nonNull.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalQuestionOptions = objectType({
+  name: 'NumericalQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: NumericalRestrictions,
+    })
+    t.list.field('solutionRanges', {
+      type: NumericalSolutionRange,
+    })
+  },
+})
+
+export const NumericalQuestionData = objectType({
+  name: 'NumericalQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: NumericalQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextRestrictions = objectType({
+  name: 'FreeTextRestrictions',
+  definition(t) {
+    t.int('maxLength')
+  },
+})
+
+export const FreeTextQuestionOptions = objectType({
+  name: 'FreeTextQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: FreeTextRestrictions,
+    })
+    t.list.string('solutions')
+  },
+})
+
+export const FreeTextQuestionData = objectType({
+  name: 'FreeTextQuestionData',
+  definition(t) {
+    t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: FreeTextQuestionOptions,
+    })
+  },
+})
+
 export const QuestionFeedback = objectType({
   name: 'QuestionFeedback',
   definition(t) {
@@ -107,7 +191,7 @@ export const InstanceEvaluation = objectType({
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.field('questionData', {
       type: QuestionData,
@@ -161,7 +245,7 @@ export const Participant = objectType({
 export const Participation = objectType({
   name: 'Participation',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.boolean('isActive')
     t.int('points')
@@ -197,7 +281,7 @@ export const SessionBlockStatus = enumType({
 export const SessionBlock = objectType({
   name: 'SessionBlock',
   definition(t) {
-    t.id('id')
+    t.int('id')
 
     t.nonNull.field('status', {
       type: SessionBlockStatus,
@@ -320,7 +404,7 @@ export const Mutation = objectType({
       args: {
         courseId: nonNull(idArg()),
         participantId: nonNull(idArg()),
-        participantEmail: nonNull(idArg()),
+        participantEmail: nonNull(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return ParticipantService.registerParticipantFromLTI(args, ctx)
@@ -351,7 +435,7 @@ export const Mutation = objectType({
       type: QuestionInstance,
       args: {
         courseId: nonNull(idArg()),
-        id: nonNull(idArg()),
+        id: nonNull(intArg()),
         response: nonNull(
           arg({
             type: ResponseInput,
@@ -363,6 +447,24 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createSession', {
+      type: Session,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+        blocks: nonNull(
+          list(
+            arg({
+              type: nonNull(BlockInput),
+            })
+          )
+        ),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.createSession(args, ctx)
+      },
+    })
+
     t.field('startSession', {
       type: Session,
       args: {
@@ -370,6 +472,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.startSession(args, ctx)
+      },
+    })
+
+    t.field('activateSessionBlock', {
+      type: Session,
+      args: {
+        sessionId: nonNull(idArg()),
+        sessionBlockId: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.activateSessionBlock(args, ctx)
       },
     })
   },

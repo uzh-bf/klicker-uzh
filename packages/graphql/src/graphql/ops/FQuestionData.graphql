@@ -16,5 +16,27 @@ fragment QuestionData on QuestionInstance {
         }
       }
     }
+
+    ... on NumericalQuestionData {
+      options {
+        restrictions {
+          max
+          min
+        }
+        solutionRanges {
+          max
+          min
+        }
+      }
+    }
+
+    ... on FreeTextQuestionData {
+      options {
+        restrictions {
+          maxLength
+        }
+        solutions
+      }
+    }
   }
 }
