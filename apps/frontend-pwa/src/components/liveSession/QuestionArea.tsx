@@ -2,6 +2,7 @@ import { push } from '@socialgouv/matomo-next'
 import { H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
+import Image from 'next/image'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
@@ -245,7 +246,11 @@ function QuestionArea({
     push(['trackEvent', 'Live Session', 'Time expired'])
   }
 
-  const answerQuestion = (value: any, type: string, instanceId: string): void => {
+  const answerQuestion = (
+    value: any,
+    type: string,
+    instanceId: string
+  ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse({ instanceId, response: { choices: value } })
     } else if (QUESTION_GROUPS.FREE.includes(type)) {
@@ -257,7 +262,7 @@ function QuestionArea({
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full min-h-content">
       <H1 className="hidden mb-2 md:block md:!text-lg">Frage</H1>
 
       {remainingQuestions.length === 0 ? (
