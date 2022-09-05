@@ -40,7 +40,6 @@
     "remark-rehype": "10.1.0",
     "tailwind-merge": "1.6.0",
     "unified": "10.1.2",
-    "v8n": "1.5.1",
     "yup": "0.32.11"
   },
   "devDependencies": {
