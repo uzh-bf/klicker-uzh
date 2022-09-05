@@ -12,6 +12,6 @@
     "REDIS_PORT": 6379,
     "REDIS_CACHE_HOST": "localhost",
     "REDIS_CACHE_PORT": 6380,
-    "HIVE_TOKEN": "49eeb9e1941c32aeae0ab20b7648b0c6"
+    "HIVE_TOKEN": ""
   }
 }
