@@ -184,16 +184,9 @@ function QuestionArea({
 
     // if the question has been answered, add a response
     if (typeof inputValue !== 'undefined') {
-      if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
-        handleNewResponse({ instanceId, response: { choices: inputValue } })
-      } else if (QUESTION_GROUPS.FREE.includes(type)) {
-        handleNewResponse({
-          instanceId,
-          response: { value: String(inputValue) },
-        })
-      }
+      answerQuestion(inputValue, type, instanceId)
     } else {
-      push(['trackEvent', 'Join Session', 'Question Skipped'])
+      push(['trackEvent', 'Live Session', 'Question Skipped'])
     }
 
     // update the stored responses
@@ -234,6 +227,35 @@ function QuestionArea({
     setRemainingQuestions(newRemaining)
   }
 
+  const onExpire = async (): Promise<void> => {
+    const { id: instanceId, type } = questions[activeQuestion]
+
+    // save the response, if one was given before the time expired
+    if (typeof inputValue !== 'undefined') {
+      answerQuestion(inputValue, type, instanceId)
+    }
+
+    // automatically skip all possibly remaining questions
+    setInputState({
+      inputEmpty: true,
+      inputValid: false,
+      inputValue: undefined,
+    })
+    setRemainingQuestions([])
+    push(['trackEvent', 'Live Session', 'Time expired'])
+  }
+
+  const answerQuestion = (value: any, type: string, instanceId: string): void => {
+    if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
+      handleNewResponse({ instanceId, response: { choices: value } })
+    } else if (QUESTION_GROUPS.FREE.includes(type)) {
+      handleNewResponse({
+        instanceId,
+        response: { value: String(value) },
+      })
+    }
+  }
+
   return (
     <div className="w-full h-full">
       <H1 className="hidden mb-2 md:block md:!text-lg">Frage</H1>
@@ -253,7 +275,7 @@ function QuestionArea({
               inputEmpty
             }
             onSubmit={onSubmit}
-            onExpire={onSubmit}
+            onExpire={onExpire}
           />
 
           <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded">
