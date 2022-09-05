@@ -75,39 +75,6 @@ export const ChoicesQuestionOptions = objectType({
   },
 })
 
-export const NumericalQuestionOptions = objectType({
-  name: 'NumericalQuestionOptions',
-  definition(t) {
-    t.field('restrictions', {
-      type: NumericalQuestionRestrictions,
-    })
-  },
-})
-
-export const FreeTextQuestionOptions = objectType({
-  name: 'FreeTextQuestionOptions',
-  definition(t) {
-    t.field('restrictions', {
-      type: FreeTextQuestionRestrictions,
-    })
-  },
-})
-
-export const NumericalQuestionRestrictions = objectType({
-  name: 'NumericalQuestionRestrictions',
-  definition(t) {
-    t.int('min')
-    t.int('max')
-  },
-})
-
-export const FreeTextQuestionRestrictions = objectType({
-  name: 'FreeTextQuestionRestrictions',
-  definition(t) {
-    t.int('maxLength')
-  },
-})
-
 export const ChoicesQuestionData = objectType({
   name: 'ChoicesQuestionData',
   definition(t) {
@@ -119,6 +86,34 @@ export const ChoicesQuestionData = objectType({
   },
 })
 
+export const NumericalRestrictions = objectType({
+  name: 'NumericalRestrictions',
+  definition(t) {
+    t.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalSolutionRange = objectType({
+  name: 'NumericalSolutionRange',
+  definition(t) {
+    t.int('min')
+    t.int('max')
+  },
+})
+
+export const NumericalQuestionOptions = objectType({
+  name: 'NumericalQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: NumericalRestrictions,
+    })
+    t.list.field('solutionRanges', {
+      type: NumericalSolutionRange,
+    })
+  },
+})
+
 export const NumericalQuestionData = objectType({
   name: 'NumericalQuestionData',
   definition(t) {
@@ -126,6 +121,22 @@ export const NumericalQuestionData = objectType({
 
     t.field('options', {
       type: NumericalQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextRestrictions = objectType({
+  name: 'FreeTextRestrictions',
+  definition(t) {
+    t.int('maxLength')
+  },
+})
+
+export const FreeTextQuestionOptions = objectType({
+  name: 'FreeTextQuestionOptions',
+  definition(t) {
+    t.field('restrictions', {
+      type: FreeTextRestrictions,
     })
   },
 })

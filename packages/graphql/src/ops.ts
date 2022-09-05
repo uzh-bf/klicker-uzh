@@ -65,11 +65,11 @@ export type FreeTextQuestionData = QuestionData & {
 
 export type FreeTextQuestionOptions = {
   __typename?: 'FreeTextQuestionOptions';
-  restrictions?: Maybe<FreeTextQuestionRestrictions>;
+  restrictions?: Maybe<FreeTextRestrictions>;
 };
 
-export type FreeTextQuestionRestrictions = {
-  __typename?: 'FreeTextQuestionRestrictions';
+export type FreeTextRestrictions = {
+  __typename?: 'FreeTextRestrictions';
   maxLength?: Maybe<Scalars['Int']>;
 };
 
@@ -152,11 +152,18 @@ export type NumericalQuestionData = QuestionData & {
 
 export type NumericalQuestionOptions = {
   __typename?: 'NumericalQuestionOptions';
-  restrictions?: Maybe<NumericalQuestionRestrictions>;
+  restrictions?: Maybe<NumericalRestrictions>;
+  solutionRanges?: Maybe<Array<Maybe<NumericalSolutionRange>>>;
 };
 
-export type NumericalQuestionRestrictions = {
-  __typename?: 'NumericalQuestionRestrictions';
+export type NumericalRestrictions = {
+  __typename?: 'NumericalRestrictions';
+  max?: Maybe<Scalars['Int']>;
+  min?: Maybe<Scalars['Int']>;
+};
+
+export type NumericalSolutionRange = {
+  __typename?: 'NumericalSolutionRange';
   max?: Maybe<Scalars['Int']>;
   min?: Maybe<Scalars['Int']>;
 };
@@ -275,7 +282,7 @@ export enum SessionStatus {
   Scheduled = 'SCHEDULED'
 }
 
-export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextQuestionRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalQuestionRestrictions', min?: number | null, max?: number | null } | null } | null } | null };
+export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null } | null> | null } | null } | null };
 
 export type JoinCourseMutationVariables = Exact<{
   courseId: Scalars['ID'];
@@ -315,7 +322,7 @@ export type ResponseToQuestionInstanceMutationVariables = Exact<{
 }>;
 
 
-export type ResponseToQuestionInstanceMutation = { __typename?: 'Mutation', respondToQuestionInstance?: { __typename?: 'QuestionInstance', id?: string | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextQuestionRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalQuestionRestrictions', min?: number | null, max?: number | null } | null } | null } | null } | null };
+export type ResponseToQuestionInstanceMutation = { __typename?: 'Mutation', respondToQuestionInstance?: { __typename?: 'QuestionInstance', id?: string | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null } | null> | null } | null } | null } | null };
 
 export type GetCourseOverviewDataQueryVariables = Exact<{
   courseId: Scalars['ID'];
@@ -329,7 +336,7 @@ export type GetLearningElementQueryVariables = Exact<{
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextQuestionRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalQuestionRestrictions', min?: number | null, max?: number | null } | null } | null } | null } | null> | null } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id?: string | null, course?: { __typename?: 'Course', id?: string | null } | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix?: number | null, feedback?: string | null, correct?: boolean | null, value?: string | null } | null> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null } | null> | null } | null } | null } | null> | null } | null };
 
 export type GetParticipantCoursesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -341,7 +348,7 @@ export type GetSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id?: string | null, isAudienceInteractionActive: boolean, isFeedbackChannelPublic: boolean, namespace: string, name: string, activeBlock: number, execution: number, displayName: string, status: SessionStatus, blocks?: Array<{ __typename?: 'SessionBlock', id?: string | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: boolean | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextQuestionRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalQuestionRestrictions', min?: number | null, max?: number | null } | null } | null } | null } | null> | null } | null> | null } | null };
+export type GetSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id?: string | null, isAudienceInteractionActive: boolean, isFeedbackChannelPublic: boolean, namespace: string, name: string, activeBlock: number, execution: number, displayName: string, status: SessionStatus, blocks?: Array<{ __typename?: 'SessionBlock', id?: string | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: boolean | null, instances?: Array<{ __typename?: 'QuestionInstance', id?: string | null, questionData?: { __typename?: 'ChoicesQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'ChoicesQuestionOptions', choices?: Array<{ __typename?: 'Choice', correct?: boolean | null, feedback?: string | null, value: string } | null> | null } | null } | { __typename?: 'FreeTextQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } | null } | { __typename?: 'NumericalQuestionData', id?: string | null, name: string, type: string, content: string, contentPlain: string, options?: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null } | null> | null } | null } | null } | null> | null } | null> | null } | null };
 
 export type SelfQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -425,7 +432,7 @@ export type ResolversTypes = {
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
   FreeTextQuestionData: ResolverTypeWrapper<FreeTextQuestionData>;
   FreeTextQuestionOptions: ResolverTypeWrapper<FreeTextQuestionOptions>;
-  FreeTextQuestionRestrictions: ResolverTypeWrapper<FreeTextQuestionRestrictions>;
+  FreeTextRestrictions: ResolverTypeWrapper<FreeTextRestrictions>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   InstanceEvaluation: ResolverTypeWrapper<InstanceEvaluation>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
@@ -434,7 +441,8 @@ export type ResolversTypes = {
   Mutation: ResolverTypeWrapper<{}>;
   NumericalQuestionData: ResolverTypeWrapper<NumericalQuestionData>;
   NumericalQuestionOptions: ResolverTypeWrapper<NumericalQuestionOptions>;
-  NumericalQuestionRestrictions: ResolverTypeWrapper<NumericalQuestionRestrictions>;
+  NumericalRestrictions: ResolverTypeWrapper<NumericalRestrictions>;
+  NumericalSolutionRange: ResolverTypeWrapper<NumericalSolutionRange>;
   Participant: ResolverTypeWrapper<Participant>;
   ParticipantLearningData: ResolverTypeWrapper<ParticipantLearningData>;
   Participation: ResolverTypeWrapper<Participation>;
@@ -460,7 +468,7 @@ export type ResolversParentTypes = {
   DateTime: Scalars['DateTime'];
   FreeTextQuestionData: FreeTextQuestionData;
   FreeTextQuestionOptions: FreeTextQuestionOptions;
-  FreeTextQuestionRestrictions: FreeTextQuestionRestrictions;
+  FreeTextRestrictions: FreeTextRestrictions;
   ID: Scalars['ID'];
   InstanceEvaluation: InstanceEvaluation;
   Int: Scalars['Int'];
@@ -469,7 +477,8 @@ export type ResolversParentTypes = {
   Mutation: {};
   NumericalQuestionData: NumericalQuestionData;
   NumericalQuestionOptions: NumericalQuestionOptions;
-  NumericalQuestionRestrictions: NumericalQuestionRestrictions;
+  NumericalRestrictions: NumericalRestrictions;
+  NumericalSolutionRange: NumericalSolutionRange;
   Participant: Participant;
   ParticipantLearningData: ParticipantLearningData;
   Participation: Participation;
@@ -532,11 +541,11 @@ export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends 
 };
 
 export type FreeTextQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionOptions'] = ResolversParentTypes['FreeTextQuestionOptions']> = {
-  restrictions?: Resolver<Maybe<ResolversTypes['FreeTextQuestionRestrictions']>, ParentType, ContextType>;
+  restrictions?: Resolver<Maybe<ResolversTypes['FreeTextRestrictions']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type FreeTextQuestionRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionRestrictions'] = ResolversParentTypes['FreeTextQuestionRestrictions']> = {
+export type FreeTextRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextRestrictions'] = ResolversParentTypes['FreeTextRestrictions']> = {
   maxLength?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -581,11 +590,18 @@ export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends
 };
 
 export type NumericalQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionOptions'] = ResolversParentTypes['NumericalQuestionOptions']> = {
-  restrictions?: Resolver<Maybe<ResolversTypes['NumericalQuestionRestrictions']>, ParentType, ContextType>;
+  restrictions?: Resolver<Maybe<ResolversTypes['NumericalRestrictions']>, ParentType, ContextType>;
+  solutionRanges?: Resolver<Maybe<Array<Maybe<ResolversTypes['NumericalSolutionRange']>>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type NumericalQuestionRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionRestrictions'] = ResolversParentTypes['NumericalQuestionRestrictions']> = {
+export type NumericalRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalRestrictions'] = ResolversParentTypes['NumericalRestrictions']> = {
+  max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  min?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalSolutionRangeResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalSolutionRange'] = ResolversParentTypes['NumericalSolutionRange']> = {
   max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   min?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -680,14 +696,15 @@ export type Resolvers<ContextType = any> = {
   DateTime?: GraphQLScalarType;
   FreeTextQuestionData?: FreeTextQuestionDataResolvers<ContextType>;
   FreeTextQuestionOptions?: FreeTextQuestionOptionsResolvers<ContextType>;
-  FreeTextQuestionRestrictions?: FreeTextQuestionRestrictionsResolvers<ContextType>;
+  FreeTextRestrictions?: FreeTextRestrictionsResolvers<ContextType>;
   InstanceEvaluation?: InstanceEvaluationResolvers<ContextType>;
   JSONObject?: GraphQLScalarType;
   LearningElement?: LearningElementResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   NumericalQuestionData?: NumericalQuestionDataResolvers<ContextType>;
   NumericalQuestionOptions?: NumericalQuestionOptionsResolvers<ContextType>;
-  NumericalQuestionRestrictions?: NumericalQuestionRestrictionsResolvers<ContextType>;
+  NumericalRestrictions?: NumericalRestrictionsResolvers<ContextType>;
+  NumericalSolutionRange?: NumericalSolutionRangeResolvers<ContextType>;
   Participant?: ParticipantResolvers<ContextType>;
   ParticipantLearningData?: ParticipantLearningDataResolvers<ContextType>;
   Participation?: ParticipationResolvers<ContextType>;
@@ -700,7 +717,7 @@ export type Resolvers<ContextType = any> = {
 };
 
 
-export const QuestionDataFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"QuestionData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"QuestionInstance"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"contentPlain"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<QuestionDataFragment, unknown>;
+export const QuestionDataFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"QuestionData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"QuestionInstance"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"contentPlain"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<QuestionDataFragment, unknown>;
 export const JoinCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"JoinCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"joinCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"points"}}]}}]}}]} as unknown as DocumentNode<JoinCourseMutation, JoinCourseMutationVariables>;
 export const LeaveCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LeaveCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"leaveCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"points"}}]}}]}}]} as unknown as DocumentNode<LeaveCourseMutation, LeaveCourseMutationVariables>;
 export const LoginParticipantDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LoginParticipant"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"password"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"loginParticipant"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}},{"kind":"Argument","name":{"kind":"Name","value":"password"},"value":{"kind":"Variable","name":{"kind":"Name","value":"password"}}}]}]}}]} as unknown as DocumentNode<LoginParticipantMutation, LoginParticipantMutationVariables>;

@@ -47,10 +47,10 @@ type FreeTextQuestionData implements QuestionData {
 }
 
 type FreeTextQuestionOptions {
-  restrictions: FreeTextQuestionRestrictions
+  restrictions: FreeTextRestrictions
 }
 
-type FreeTextQuestionRestrictions {
+type FreeTextRestrictions {
   maxLength: Int
 }
 
@@ -92,10 +92,16 @@ type NumericalQuestionData implements QuestionData {
 }
 
 type NumericalQuestionOptions {
-  restrictions: NumericalQuestionRestrictions
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange]
 }
 
-type NumericalQuestionRestrictions {
+type NumericalRestrictions {
+  max: Int
+  min: Int
+}
+
+type NumericalSolutionRange {
   max: Int
   min: Int
 }

@@ -299,6 +299,16 @@ async function main(prisma: Prisma.PrismaClient) {
           min: 0,
           max: 100,
         },
+        solutionRanges: [
+          {
+            min: 0,
+            max: 5,
+          },
+          {
+            min: 95,
+            max: 100,
+          },
+        ],
       },
       ownerId: user.id,
     },

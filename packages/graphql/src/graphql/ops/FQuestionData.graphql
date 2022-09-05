@@ -22,6 +22,10 @@ fragment QuestionData on QuestionInstance {
           min
           max
         }
+        solutionRanges {
+          min
+          max
+        }
       }
     }
 

@@ -458,7 +458,7 @@
             "args": [],
             "type": {
               "kind": "OBJECT",
-              "name": "FreeTextQuestionRestrictions",
+              "name": "FreeTextRestrictions",
               "ofType": null
             },
             "isDeprecated": false,
@@ -472,7 +472,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "FreeTextQuestionRestrictions",
+        "name": "FreeTextRestrictions",
         "description": null,
         "fields": [
           {
@@ -1071,7 +1071,58 @@
             "args": [],
             "type": {
               "kind": "OBJECT",
-              "name": "NumericalQuestionRestrictions",
+              "name": "NumericalRestrictions",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "solutionRanges",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "NumericalSolutionRange",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "NumericalRestrictions",
+        "description": null,
+        "fields": [
+          {
+            "name": "max",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "min",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1085,7 +1136,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "NumericalQuestionRestrictions",
+        "name": "NumericalSolutionRange",
         "description": null,
         "fields": [
           {

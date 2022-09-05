@@ -93,9 +93,9 @@ export interface NexusGenObjects {
     type: string; // String!
   }
   FreeTextQuestionOptions: { // root type
-    restrictions?: NexusGenRootTypes['FreeTextQuestionRestrictions'] | null; // FreeTextQuestionRestrictions
+    restrictions?: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
   }
-  FreeTextQuestionRestrictions: { // root type
+  FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
   InstanceEvaluation: { // root type
@@ -119,9 +119,14 @@ export interface NexusGenObjects {
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
-    restrictions?: NexusGenRootTypes['NumericalQuestionRestrictions'] | null; // NumericalQuestionRestrictions
+    restrictions?: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
+    solutionRanges?: Array<NexusGenRootTypes['NumericalSolutionRange'] | null> | null; // [NumericalSolutionRange]
   }
-  NumericalQuestionRestrictions: { // root type
+  NumericalRestrictions: { // root type
+    max?: number | null; // Int
+    min?: number | null; // Int
+  }
+  NumericalSolutionRange: { // root type
     max?: number | null; // Int
     min?: number | null; // Int
   }
@@ -223,9 +228,9 @@ export interface NexusGenFieldTypes {
     type: string; // String!
   }
   FreeTextQuestionOptions: { // field return type
-    restrictions: NexusGenRootTypes['FreeTextQuestionRestrictions'] | null; // FreeTextQuestionRestrictions
+    restrictions: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
   }
-  FreeTextQuestionRestrictions: { // field return type
+  FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
   InstanceEvaluation: { // field return type
@@ -257,9 +262,14 @@ export interface NexusGenFieldTypes {
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
-    restrictions: NexusGenRootTypes['NumericalQuestionRestrictions'] | null; // NumericalQuestionRestrictions
+    restrictions: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
+    solutionRanges: Array<NexusGenRootTypes['NumericalSolutionRange'] | null> | null; // [NumericalSolutionRange]
   }
-  NumericalQuestionRestrictions: { // field return type
+  NumericalRestrictions: { // field return type
+    max: number | null; // Int
+    min: number | null; // Int
+  }
+  NumericalSolutionRange: { // field return type
     max: number | null; // Int
     min: number | null; // Int
   }
@@ -365,9 +375,9 @@ export interface NexusGenFieldTypeNames {
     type: 'String'
   }
   FreeTextQuestionOptions: { // field return type name
-    restrictions: 'FreeTextQuestionRestrictions'
+    restrictions: 'FreeTextRestrictions'
   }
-  FreeTextQuestionRestrictions: { // field return type name
+  FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
   }
   InstanceEvaluation: { // field return type name
@@ -399,9 +409,14 @@ export interface NexusGenFieldTypeNames {
     type: 'String'
   }
   NumericalQuestionOptions: { // field return type name
-    restrictions: 'NumericalQuestionRestrictions'
+    restrictions: 'NumericalRestrictions'
+    solutionRanges: 'NumericalSolutionRange'
   }
-  NumericalQuestionRestrictions: { // field return type name
+  NumericalRestrictions: { // field return type name
+    max: 'Int'
+    min: 'Int'
+  }
+  NumericalSolutionRange: { // field return type name
     max: 'Int'
     min: 'Int'
   }
