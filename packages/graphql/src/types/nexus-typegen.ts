@@ -70,7 +70,7 @@ export interface NexusGenObjects {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options?: NexusGenRootTypes['ChoicesQuestionOptions'] | null; // ChoicesQuestionOptions
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
     type: string; // String!
   }
   ChoicesQuestionOptions: { // root type
@@ -89,7 +89,7 @@ export interface NexusGenObjects {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options?: NexusGenRootTypes['FreeTextQuestionOptions'] | null; // FreeTextQuestionOptions
+    options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
     type: string; // String!
   }
   FreeTextQuestionOptions: { // root type
@@ -115,7 +115,7 @@ export interface NexusGenObjects {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options?: NexusGenRootTypes['NumericalQuestionOptions'] | null; // NumericalQuestionOptions
+    options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -127,8 +127,8 @@ export interface NexusGenObjects {
     min?: number | null; // Int
   }
   NumericalSolutionRange: { // root type
-    max?: number | null; // Int
-    min?: number | null; // Int
+    max: number; // Int!
+    min: number; // Int!
   }
   Participant: { // root type
     avatar?: string | null; // String
@@ -205,7 +205,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options: NexusGenRootTypes['ChoicesQuestionOptions'] | null; // ChoicesQuestionOptions
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
     type: string; // String!
   }
   ChoicesQuestionOptions: { // field return type
@@ -224,7 +224,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options: NexusGenRootTypes['FreeTextQuestionOptions'] | null; // FreeTextQuestionOptions
+    options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
     type: string; // String!
   }
   FreeTextQuestionOptions: { // field return type
@@ -258,7 +258,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    options: NexusGenRootTypes['NumericalQuestionOptions'] | null; // NumericalQuestionOptions
+    options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
@@ -270,8 +270,8 @@ export interface NexusGenFieldTypes {
     min: number | null; // Int
   }
   NumericalSolutionRange: { // field return type
-    max: number | null; // Int
-    min: number | null; // Int
+    max: number; // Int!
+    min: number; // Int!
   }
   Participant: { // field return type
     avatar: string | null; // String

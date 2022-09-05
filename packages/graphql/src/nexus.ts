@@ -80,7 +80,7 @@ export const ChoicesQuestionData = objectType({
   definition(t) {
     t.implements(QuestionData)
 
-    t.field('options', {
+    t.nonNull.field('options', {
       type: ChoicesQuestionOptions,
     })
   },
@@ -97,8 +97,8 @@ export const NumericalRestrictions = objectType({
 export const NumericalSolutionRange = objectType({
   name: 'NumericalSolutionRange',
   definition(t) {
-    t.int('min')
-    t.int('max')
+    t.nonNull.int('min')
+    t.nonNull.int('max')
   },
 })
 
@@ -119,7 +119,7 @@ export const NumericalQuestionData = objectType({
   definition(t) {
     t.implements(QuestionData)
 
-    t.field('options', {
+    t.nonNull.field('options', {
       type: NumericalQuestionOptions,
     })
   },
@@ -146,7 +146,7 @@ export const FreeTextQuestionData = objectType({
   definition(t) {
     t.implements(QuestionData)
 
-    t.field('options', {
+    t.nonNull.field('options', {
       type: FreeTextQuestionOptions,
     })
   },

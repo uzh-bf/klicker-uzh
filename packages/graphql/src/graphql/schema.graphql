@@ -15,7 +15,7 @@ type ChoicesQuestionData implements QuestionData {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
-  options: ChoicesQuestionOptions
+  options: ChoicesQuestionOptions!
   type: String!
 }
 
@@ -42,7 +42,7 @@ type FreeTextQuestionData implements QuestionData {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
-  options: FreeTextQuestionOptions
+  options: FreeTextQuestionOptions!
   type: String!
 }
 
@@ -87,7 +87,7 @@ type NumericalQuestionData implements QuestionData {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
-  options: NumericalQuestionOptions
+  options: NumericalQuestionOptions!
   type: String!
 }
 
@@ -102,8 +102,8 @@ type NumericalRestrictions {
 }
 
 type NumericalSolutionRange {
-  max: Int
-  min: Int
+  max: Int!
+  min: Int!
 }
 
 type Participant {
