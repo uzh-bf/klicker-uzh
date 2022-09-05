@@ -2,7 +2,7 @@ import { push } from '@socialgouv/matomo-next'
 import { H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
-import _without from 'lodash/without'
+import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 
@@ -97,7 +97,7 @@ function QuestionArea({
       if (inputValue && type === QUESTION_TYPES.MC) {
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
-          const newInputValue = _without(inputValue, choice)
+          const newInputValue = without([choice], inputValue)
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
@@ -223,7 +223,7 @@ function QuestionArea({
     }
 
     // calculate the new indices of remaining questions
-    const newRemaining = _without(remainingQuestions, activeQuestion)
+    const newRemaining = without([activeQuestion], remainingQuestions)
 
     setActiveQuestion(newRemaining[0] || 0)
     setInputState({
