@@ -24,7 +24,7 @@
     "@envelop/parser-cache": "4.6.0",
     "@envelop/response-cache": "3.1.0",
     "@envelop/response-cache-redis": "1.1.0",
-    "@envelop/validation-cache": "4.6.0",
+    "@envelop/validation-cache": "4.7.0",
     "@graphql-authz/core": "1.2.1",
     "@graphql-authz/envelop-plugin": "1.0.3",
     "@graphql-hive/client": "0.18.3",
