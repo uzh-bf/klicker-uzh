@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
+// import Markdown from '@klicker-uzh/markdown'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import FREETextAnswerOptions from '../questions/FREETextAnswerOptions'
@@ -288,6 +289,7 @@ function QuestionArea({
               content={currentQuestion.content}
               description={currentQuestion.description}
             />
+            {/* <Markdown content={currentQuestion.content} description={currentQuestion.description} /> */}
           </div>
 
           {/* // TODO */}
