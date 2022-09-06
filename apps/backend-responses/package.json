@@ -15,7 +15,7 @@
     "size": "size-limit",
     "dev": "NODE_ENV=development npm-run-all --parallel dev:dts dev:func",
     "dev:dts": "dts watch --entry AddResponse/index.ts",
-    "dev:func": "func start",
+    "dev:func": "func start -p 7072",
     "test": "dts test"
   },
   "dependencies": {

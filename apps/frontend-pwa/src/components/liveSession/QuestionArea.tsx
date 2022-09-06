@@ -6,12 +6,11 @@ import Image from 'next/image'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-// import Markdown from '@klicker-uzh/markdown'
+import Markdown from '@klicker-uzh/markdown'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import FREETextAnswerOptions from '../questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from '../questions/NUMERICALAnswerOptions'
-import QuestionDescription from '../questions/QuestionDescription'
 import SCAnswerOptions from '../questions/SCAnswerOptions'
 import SessionProgress from './SessionProgress'
 
@@ -285,11 +284,7 @@ function QuestionArea({
           />
 
           <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded">
-            <QuestionDescription
-              content={currentQuestion.content}
-              description={currentQuestion.description}
-            />
-            {/* <Markdown content={currentQuestion.content} description={currentQuestion.description} /> */}
+            <Markdown content={currentQuestion.content} description={currentQuestion.description} />
           </div>
 
           {/* // TODO */}
