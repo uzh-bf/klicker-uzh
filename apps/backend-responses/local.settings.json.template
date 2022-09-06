@@ -6,12 +6,10 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
-    "DATABASE_URL": "postgres://klicker:klicker@localhost:5432/main",
     "APP_SECRET": "abcd",
     "REDIS_HOST": "localhost",
     "REDIS_PORT": 6379,
     "REDIS_CACHE_HOST": "localhost",
     "REDIS_CACHE_PORT": 6380,
-    "HIVE_TOKEN": ""
   }
 }

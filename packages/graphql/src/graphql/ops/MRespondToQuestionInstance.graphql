@@ -2,7 +2,7 @@
 
 mutation ResponseToQuestionInstance(
   $courseId: ID!
-  $id: ID!
+  $id: Int!
   $response: ResponseInput!
 ) {
   respondToQuestionInstance(courseId: $courseId, id: $id, response: $response) {

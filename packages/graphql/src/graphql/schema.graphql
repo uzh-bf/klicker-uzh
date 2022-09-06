@@ -2,6 +2,12 @@
 ### Do not make changes to this file directly
 
 
+input BlockInput {
+  questionIds: [Int!]
+  randomSelection: Int
+  timeLimit: Int
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -11,7 +17,7 @@ type Choice {
 type ChoicesQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -38,7 +44,7 @@ scalar DateTime
 type FreeTextQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -72,19 +78,21 @@ type LearningElement {
 }
 
 type Mutation {
+  activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  createSession(blocks: [BlockInput!]!, displayName: String, name: String!): Session
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
-  registerParticipantFromLTI(courseId: ID!, participantEmail: ID!, participantId: ID!): ParticipantLearningData
-  respondToQuestionInstance(courseId: ID!, id: ID!, response: ResponseInput!): QuestionInstance
+  registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
 }
 
 type NumericalQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -122,7 +130,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
-  id: ID
+  id: Int
   isActive: Boolean
   points: Int
 }
@@ -138,7 +146,7 @@ type Query {
 interface QuestionData {
   content: String!
   contentPlain: String!
-  id: ID
+  id: Int
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
@@ -154,7 +162,7 @@ type QuestionFeedback {
 
 type QuestionInstance {
   evaluation: InstanceEvaluation
-  id: ID
+  id: Int
   questionData: QuestionData
 }
 
@@ -178,7 +186,7 @@ type Session {
 
 type SessionBlock {
   expiresAt: DateTime
-  id: ID
+  id: Int
   instances: [QuestionInstance]
   randomSelection: Boolean
   status: SessionBlockStatus!
@@ -193,7 +201,7 @@ enum SessionBlockStatus {
 
 enum SessionStatus {
   COMPLETED
-  PLANNED
+  PREPARED
   RUNNING
   SCHEDULED
 }
