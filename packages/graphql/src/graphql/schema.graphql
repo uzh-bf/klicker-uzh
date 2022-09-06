@@ -111,7 +111,7 @@ type NumericalRestrictions {
 }
 
 type NumericalSolutionRange {
-  max: Int
+  max: Int!
   min: Int!
 }
 
@@ -138,9 +138,9 @@ type Participation {
 type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   getParticipantCourses: [Course]
-  getSession(id: ID!): Session
   learningElement(id: ID!): LearningElement
   self: Participant
+  session(id: ID!): Session
 }
 
 interface QuestionData {
@@ -185,9 +185,12 @@ type Session {
 }
 
 type SessionBlock {
+  expiresAt: DateTime
   id: Int
   instances: [QuestionInstance]
+  randomSelection: Boolean
   status: SessionBlockStatus!
+  timeLimit: Int
 }
 
 enum SessionBlockStatus {
