@@ -98,15 +98,15 @@ describe('API', () => {
             "activeBlock": -1,
             "blocks": Array [
               Object {
-                "id": 20,
+                "id": 2,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 21,
+                "id": 3,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+            "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
             "status": "PREPARED",
           },
         },
@@ -114,15 +114,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+                "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
                 "typename": "Session",
               },
               Object {
-                "id": 20,
+                "id": 2,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 21,
+                "id": 3,
                 "typename": "SessionBlock",
               },
             ],
@@ -160,7 +160,7 @@ describe('API', () => {
           "startSession": Object {
             "activeBlock": -1,
             "blocks": null,
-            "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+            "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
             "status": "RUNNING",
           },
         },
@@ -168,7 +168,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+                "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
                 "typename": "Session",
               },
             ],
@@ -205,15 +205,15 @@ describe('API', () => {
             "activeBlock": 0,
             "blocks": Array [
               Object {
-                "id": 21,
+                "id": 3,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 20,
+                "id": 2,
                 "status": "ACTIVE",
               },
             ],
-            "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+            "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
             "status": "RUNNING",
           },
         },
@@ -221,15 +221,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "577ea4f8-7581-4da0-8fe6-00bfba750635",
+                "id": "b1c77d57-c29a-45f8-84c9-3f74a1f7cdd3",
                 "typename": "Session",
               },
               Object {
-                "id": 21,
+                "id": 3,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 20,
+                "id": 2,
                 "typename": "SessionBlock",
               },
             ],

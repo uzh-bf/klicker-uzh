@@ -19,7 +19,7 @@
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/markdown": "^2.0.0-alpha.8",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.0.32",
+    "@uzh-bf/design-system": "^0.0.33",
     "dayjs": "1.11.5",
     "deepmerge": "4.2.2",
     "formik": "2.2.9",
