@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "route": "AddResponse",
-      "methods": ["get", "post", "options"]
+      "methods": ["post", "options"]
     },
     {
       "type": "http",

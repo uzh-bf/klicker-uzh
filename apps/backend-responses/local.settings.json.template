@@ -8,8 +8,6 @@
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
     "APP_SECRET": "abcd",
     "REDIS_HOST": "localhost",
-    "REDIS_PORT": 6379,
-    "REDIS_CACHE_HOST": "localhost",
-    "REDIS_CACHE_PORT": 6380,
+    "REDIS_PORT": 6379
   }
 }
