@@ -94,6 +94,7 @@ export interface NexusGenObjects {
   }
   FreeTextQuestionOptions: { // root type
     restrictions?: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
+    solutions?: Array<string | null> | null; // [String]
   }
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
@@ -229,6 +230,7 @@ export interface NexusGenFieldTypes {
   }
   FreeTextQuestionOptions: { // field return type
     restrictions: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
+    solutions: Array<string | null> | null; // [String]
   }
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
@@ -376,6 +378,7 @@ export interface NexusGenFieldTypeNames {
   }
   FreeTextQuestionOptions: { // field return type name
     restrictions: 'FreeTextRestrictions'
+    solutions: 'String'
   }
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'

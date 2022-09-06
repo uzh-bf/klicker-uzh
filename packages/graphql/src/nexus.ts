@@ -138,6 +138,7 @@ export const FreeTextQuestionOptions = objectType({
     t.field('restrictions', {
       type: FreeTextRestrictions,
     })
+    t.list.string('solutions')
   },
 })
 

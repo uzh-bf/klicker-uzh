@@ -48,6 +48,7 @@ type FreeTextQuestionData implements QuestionData {
 
 type FreeTextQuestionOptions {
   restrictions: FreeTextRestrictions
+  solutions: [String]
 }
 
 type FreeTextRestrictions {
