@@ -59,6 +59,10 @@ export const QuestionData = interfaceType({
   resolveType: (item) => {
     if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
       return 'ChoicesQuestionData'
+    } else if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalQuestionData'
+    } else if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeTextQuestionData'
     }
     if (item.type === DB.QuestionType.NUMERICAL) {
       return 'NumericalQuestionData'
@@ -111,7 +115,7 @@ export const NumericalSolutionRange = objectType({
   name: 'NumericalSolutionRange',
   definition(t) {
     t.nonNull.int('min')
-    t.int('max')
+    t.nonNull.int('max')
   },
 })
 
@@ -286,6 +290,9 @@ export const SessionBlock = objectType({
     t.nonNull.field('status', {
       type: SessionBlockStatus,
     })
+    t.date('expiresAt')
+    t.int('timeLimit')
+    t.boolean('randomSelection')
 
     t.list.field('instances', {
       type: QuestionInstance,
@@ -362,7 +369,7 @@ export const Query = objectType({
       },
     })
 
-    t.field('getSession', {
+    t.field('session', {
       type: Session,
       args: {
         id: nonNull(idArg()),

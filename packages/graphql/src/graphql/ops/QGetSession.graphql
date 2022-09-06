@@ -1,5 +1,7 @@
-query GetSession($sessionId: ID!) {
-  getSession(id: $sessionId) {
+# import "./FQuestionData.graphql"
+
+query GetSession($id: ID!) {
+  session(id: $id) {
     id
     isAudienceInteractionActive
     isFeedbackChannelPublic
@@ -12,26 +14,12 @@ query GetSession($sessionId: ID!) {
     blocks {
       id
       status
+      expiresAt
+      timeLimit
+      randomSelection
       instances {
         id
-        questionData {
-          content
-          contentPlain
-          id
-          isArchived
-          isDeleted
-          name
-          type
-        }
-        # evaluation {
-        #   feedbacks {
-        #     ix
-        #     feedback
-        #     correct
-        #     value
-        #   }
-        #   choices
-        # }
+        ...QuestionData
       }
     }
   }
