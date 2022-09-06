@@ -49,7 +49,9 @@ function SessionProgress({
         indicatorClassName="h-10"
         value={activeIndex}
         max={numItems}
-        formatter={(val) => (val <= 0 ? '0%' : `${(val / numItems) * 100 >> 0}\%`)}
+        formatter={(val) =>
+          val <= 0 ? '0%' : `${((val / numItems) * 100) >> 0}\%`
+        }
       />
 
       <div className="my-auto">
