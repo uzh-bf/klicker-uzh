@@ -4,7 +4,7 @@
   "version": "2.0.0-alpha.21",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/backend-responses.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
@@ -21,14 +21,18 @@
   "dependencies": {
     "@upstash/redis": "1.13.1",
     "ioredis": "5.2.3",
-    "jsonwebtoken": "8.5.1"
+    "jsonwebtoken": "8.5.1",
+    "md5": "2.3.0",
+    "ramda": "0.28.0"
   },
   "devDependencies": {
     "@azure/functions": "3.2.0",
     "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
     "@types/jest": "^29.0.0",
+    "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
+    "@types/ramda": "0.28.15",
     "@types/supertest": "^2.0.12",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",

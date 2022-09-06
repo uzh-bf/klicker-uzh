@@ -274,14 +274,19 @@ export async function activateSessionBlock(
   newActiveBlock!.instances.forEach((instance) => {
     const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
 
-    redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
-      type: questionData.type,
-      namespace: session.namespace,
-    })
-
     switch (questionData.type) {
       case QuestionType.SC:
       case QuestionType.MC: {
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          type: questionData.type,
+          namespace: session.namespace,
+          solutions: JSON.stringify(
+            questionData.options.choices
+              .map((choice, ix) => ({ ix, correct: choice.correct }))
+              .filter((choice) => choice.correct)
+              .map((choice) => choice.ix)
+          ),
+        })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
           ...(instance.results!.valueOf() as ChoicesQuestionResults).choices,
@@ -289,8 +294,24 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.NUMERICAL:
+      case QuestionType.NUMERICAL: {
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          type: questionData.type,
+          namespace: session.namespace,
+          solutions: JSON.stringify(questionData.options.solutionRanges),
+        })
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
+
       case QuestionType.FREE_TEXT: {
+        redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          type: questionData.type,
+          namespace: session.namespace,
+          solutions: JSON.stringify(questionData.options.solutions),
+        })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
         })
