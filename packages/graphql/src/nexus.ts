@@ -354,6 +354,7 @@ export const Query = objectType({
 
     t.field('getCourseOverviewData', {
       type: ParticipantLearningData,
+
       args: {
         courseId: nonNull(idArg()),
       },
