@@ -1,8 +1,7 @@
 // TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
-// TODO: move layout around questions and feedback to separte component for reusability
 
-import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
@@ -17,26 +16,18 @@ import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import MobileMenuBar from '../../components/liveSession/MobileMenuBar'
 import QuestionArea from '../../components/liveSession/QuestionArea'
 
+// TODO: typing of session on input
 function Index({ session }: any) {
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  // TODO: Remove / Keep code snipped to reuse for Feedback fetching
-  // const { loading, error, data } = useQuery(GetSessionDocument, {
-  //   variables: {
-  //     id: router.query.id as string,
-  //   },
-  // })
-  // if (loading || !data) return <p>Loading...</p>
-  // if (error) return <p>Oh no... {error.message}</p>
-  // console.log(data)
-
   // TODO: remove hardcoded parameters and replace them by their corresponding values from DB
-  // TODO: directly destructure session into its components to simplify notation
-
   const isFeedbackChannelActive = true // session.feedbackChannelActive
   const isSessionGamified = true
+
+  // TODO: directly destructure session into its components to simplify notation
+  // const { id, isAudienceInteractionActive, isFeedbackChannelActive, execution, name, status, activeBlock, blocks } = session
 
   // TODO: implement response handling for user response to question
   const handleNewResponse = () => {}
@@ -45,35 +36,17 @@ function Index({ session }: any) {
     {
       value: 'questions',
       label: 'Questions',
-      icon: (
-        <FontAwesomeIcon
-          icon={faQuestion}
-          className=""
-          size='lg'
-        />
-      ),
+      icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
     },
     {
       value: 'feedbacks',
       label: 'Feedback',
-      icon: (
-        <FontAwesomeIcon
-          icon={faCommentDots}
-          className=""
-          size='lg'
-        />
-      ),
+      icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     },
     {
       value: 'leaderboard',
       label: 'Leaderboard',
-      icon: (
-        <FontAwesomeIcon
-          icon={faRankingStar}
-          className=""
-          size='lg'
-        />
-      ),
+      icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
     },
   ]
 
