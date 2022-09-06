@@ -9,15 +9,25 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-// import { useQuery } from '@apollo/client'
 
 import { addApolloState } from '@lib/apollo'
+import { getSessionData } from '@lib/joinData'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import MobileMenuBar from '../../components/liveSession/MobileMenuBar'
 import QuestionArea from '../../components/liveSession/QuestionArea'
-import { getSessionData } from '@lib/joinData'
 
-function Index({ activeBlock, blocks, displayName, execution, id, isAudienceInteractionActive, isFeedbackChannelPublic, name, namespace, status }: Session) {
+function Index({
+  activeBlock,
+  blocks,
+  displayName,
+  execution,
+  id,
+  isAudienceInteractionActive,
+  isFeedbackChannelPublic,
+  name,
+  namespace,
+  status,
+}: Session) {
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
@@ -67,9 +77,9 @@ function Index({ activeBlock, blocks, displayName, execution, id, isAudienceInte
             activeMobilePage === 'questions' && 'block'
           )}
         >
-          {/* // TODO replace check through activeInstances.length > 0 */}
           {activeBlock === -1 ||
-          activeBlock === blocks?.length ? (
+          activeBlock === blocks?.length ||
+          blocks?.length === 0 ? (
             'Keine Frage aktiv.'
           ) : (
             <QuestionArea

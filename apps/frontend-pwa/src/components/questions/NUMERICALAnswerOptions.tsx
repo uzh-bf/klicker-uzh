@@ -6,16 +6,22 @@ import { twMerge } from 'tailwind-merge'
 interface NUMERICALAnswerOptionsProps {
   valid: boolean
   value: any
+  min: number
+  max: number
   onChange: (value: any) => any
 }
 
 function NUMERICALAnswerOptions({
   valid,
   value,
+  min,
+  max,
   onChange,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   return (
     <div className="flex flex-col gap-2">
+      {min && <div>Min: {min}</div>}
+      {max && <div>Max: {max}</div>}
       <input
         type="text"
         value={value}
