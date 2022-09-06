@@ -3,7 +3,7 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -11,13 +11,13 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 // import { useQuery } from '@apollo/client'
 
-import { initializeApollo } from '@lib/apollo'
+import { addApolloState } from '@lib/apollo'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import MobileMenuBar from '../../components/liveSession/MobileMenuBar'
 import QuestionArea from '../../components/liveSession/QuestionArea'
+import { getSessionData } from '@lib/joinData'
 
-// TODO: typing of session on input
-function Index({ session }: any) {
+function Index({ activeBlock, blocks, displayName, execution, id, isAudienceInteractionActive, isFeedbackChannelPublic, name, namespace, status }: Session) {
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
@@ -25,9 +25,6 @@ function Index({ session }: any) {
   // TODO: remove hardcoded parameters and replace them by their corresponding values from DB
   const isFeedbackChannelActive = true // session.feedbackChannelActive
   const isSessionGamified = true
-
-  // TODO: directly destructure session into its components to simplify notation
-  // const { id, isAudienceInteractionActive, isFeedbackChannelActive, execution, name, status, activeBlock, blocks } = session
 
   // TODO: implement response handling for user response to question
   const handleNewResponse = () => {}
@@ -56,7 +53,7 @@ function Index({ session }: any) {
         <title>Live Session</title>
         <meta
           name="description"
-          content={'Live Session ' + session.displayName}
+          content={'Live Session ' + displayName}
           charSet="utf-8"
         ></meta>
       </Head>
@@ -65,24 +62,24 @@ function Index({ session }: any) {
         <div
           className={twMerge(
             'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block min-h-full',
-            (isFeedbackChannelActive || session.isAudienceInteractionActive) &&
+            (isFeedbackChannelActive || isAudienceInteractionActive) &&
               'md:w-1/2',
             activeMobilePage === 'questions' && 'block'
           )}
         >
           {/* // TODO replace check through activeInstances.length > 0 */}
-          {session.activeBlock === -1 ||
-          session.activeBlock === session.blocks.length ? (
+          {activeBlock === -1 ||
+          activeBlock === blocks?.length ? (
             'Keine Frage aktiv.'
           ) : (
             <QuestionArea
-              expiresAt={session.blocks[session.activeBlock].expiresAt}
-              questions={session.blocks[session.activeBlock].instances.map(
+              expiresAt={blocks[activeBlock].expiresAt}
+              questions={blocks[activeBlock].instances.map(
                 (question: any) => question.questionData
               )}
               handleNewResponse={handleNewResponse}
               sessionId={sessionId}
-              timeLimit={session.blocks[session.activeBlock].timeLimit}
+              timeLimit={blocks[activeBlock].timeLimit as number}
             />
           )}
         </div>
@@ -98,7 +95,7 @@ function Index({ session }: any) {
           </div>
         )}
 
-        {(isFeedbackChannelActive || session.isAudienceInteractionActive) && (
+        {(isFeedbackChannelActive || isAudienceInteractionActive) && (
           <div
             className={twMerge(
               'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
@@ -121,17 +118,13 @@ function Index({ session }: any) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const apolloClient = initializeApollo()
+  const withNewSessionData = await getSessionData(ctx)
 
-  // TODO: implement polling, to be replaced by more efficient solution like subscriptions
-  const result = await apolloClient.query({
-    query: GetSessionDocument,
-    variables: {
-      id: ctx.query?.id as string,
+  return addApolloState(withNewSessionData.apolloClient, {
+    props: {
+      ...withNewSessionData.result,
     },
   })
-
-  return { props: { session: result.data?.session } }
 }
 
 export default Index
