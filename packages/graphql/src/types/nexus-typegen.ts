@@ -133,8 +133,8 @@ export interface NexusGenObjects {
     min?: number | null; // Int
   }
   NumericalSolutionRange: { // root type
-    max: number; // Int!
-    min: number; // Int!
+    max?: number | null; // Float
+    min?: number | null; // Float
   }
   Participant: { // root type
     avatar?: string | null; // String
@@ -279,8 +279,8 @@ export interface NexusGenFieldTypes {
     min: number | null; // Int
   }
   NumericalSolutionRange: { // field return type
-    max: number; // Int!
-    min: number; // Int!
+    max: number | null; // Float
+    min: number | null; // Float
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -429,8 +429,8 @@ export interface NexusGenFieldTypeNames {
     min: 'Int'
   }
   NumericalSolutionRange: { // field return type name
-    max: 'Int'
-    min: 'Int'
+    max: 'Float'
+    min: 'Float'
   }
   Participant: { // field return type name
     avatar: 'String'

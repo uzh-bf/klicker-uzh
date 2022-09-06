@@ -114,8 +114,8 @@ export const NumericalRestrictions = objectType({
 export const NumericalSolutionRange = objectType({
   name: 'NumericalSolutionRange',
   definition(t) {
-    t.nonNull.int('min')
-    t.nonNull.int('max')
+    t.float('min')
+    t.float('max')
   },
 })
 

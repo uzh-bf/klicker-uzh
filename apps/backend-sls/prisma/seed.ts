@@ -295,6 +295,7 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         restrictions: {
           min: 0,
+          max: 10,
         },
         solutionRanges: [
           {
@@ -303,6 +304,15 @@ async function main(prisma: Prisma.PrismaClient) {
           },
           {
             min: 2,
+          },
+          {
+            max: 4,
+          },
+          {
+            min: 5,
+          },
+          {
+            max: 5,
           },
         ],
       },
