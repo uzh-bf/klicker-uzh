@@ -322,7 +322,9 @@ export const Session = objectType({
       type: SessionStatus,
     })
 
-    t.nonNull.int('activeBlock')
+    t.field('activeBlock', {
+      type: SessionBlock,
+    })
     t.list.field('blocks', {
       type: SessionBlock,
     })
@@ -491,6 +493,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.activateSessionBlock(args, ctx)
+      },
+    })
+
+    t.field('deactivateSessionBlock', {
+      type: Session,
+      args: {
+        sessionId: nonNull(idArg()),
+        sessionBlockId: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.deactivateSessionBlock(args, ctx)
       },
     })
   },

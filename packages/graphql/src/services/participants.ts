@@ -177,21 +177,27 @@ export async function registerParticipantFromLTI(
   // if there is no participant matching the SSO id from LTI
   // create a new participant and participant account
   if (!participant) {
-    // generate a random username that can be changed later on
-    const username = generatePassword.generate({
-      length: 8,
-      uppercase: true,
-      symbols: false,
-      numbers: true,
-    })
-
-    // generate a random password that can be changed later on
-    const password = generatePassword.generate({
-      length: 16,
-      uppercase: true,
-      symbols: true,
-      numbers: true,
-    })
+    let username
+    let password
+    if (process.env.NODE_ENV === 'development') {
+      username = 'tester'
+      password = 'abcd'
+    } else {
+      // generate a random username that can be changed later on
+      username = generatePassword.generate({
+        length: 8,
+        uppercase: true,
+        symbols: false,
+        numbers: true,
+      })
+      // generate a random password that can be changed later on
+      password = generatePassword.generate({
+        length: 16,
+        uppercase: true,
+        symbols: true,
+        numbers: true,
+      })
+    }
 
     const hash = await bcrypt.hash(password, 12)
 
