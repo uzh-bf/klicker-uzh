@@ -47,8 +47,16 @@ const httpTrigger: AzureFunction = async function (
     }
   }
 
-  const { id, type, solutions, startedAt, firstResponseReceivedAt } =
-    await redisExec.hgetall(`${instanceKey}:info`)
+  const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+
+  // if the instance metadata is not available, it has been closed and purged already
+  if (!instanceInfo) {
+    return {
+      status: 400,
+    }
+  }
+
+  const { type, solutions, startedAt, firstResponseReceivedAt } = instanceInfo
 
   // TODO: ensure that the following code can handle missing solutions
   let parsedSolutions
