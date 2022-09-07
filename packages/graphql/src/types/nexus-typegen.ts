@@ -169,7 +169,6 @@ export interface NexusGenObjects {
     activeBlock: number; // Int!
     blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
-    execution: number; // Int!
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
@@ -179,6 +178,7 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // root type
+    execution: number; // Int!
     expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id?: number | null; // Int
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
@@ -322,7 +322,6 @@ export interface NexusGenFieldTypes {
     activeBlock: number; // Int!
     blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
-    execution: number; // Int!
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
@@ -332,6 +331,7 @@ export interface NexusGenFieldTypes {
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // field return type
+    execution: number; // Int!
     expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: number | null; // Int
     instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
@@ -473,7 +473,6 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'Int'
     blocks: 'SessionBlock'
     displayName: 'String'
-    execution: 'Int'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isFeedbackChannelPublic: 'Boolean'
@@ -483,6 +482,7 @@ export interface NexusGenFieldTypeNames {
     status: 'SessionStatus'
   }
   SessionBlock: { // field return type name
+    execution: 'Int'
     expiresAt: 'DateTime'
     id: 'Int'
     instances: 'QuestionInstance'

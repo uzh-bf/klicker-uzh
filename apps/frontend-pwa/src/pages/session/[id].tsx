@@ -38,7 +38,6 @@ function Index({
   activeBlock,
   blocks,
   displayName,
-  execution,
   id,
   isAudienceInteractionActive,
   isFeedbackChannelPublic,
@@ -76,17 +75,21 @@ function Index({
         >
           {activeBlock === -1 ||
           activeBlock === blocks?.length ||
-          blocks?.length === 0 || !blocks ? (
+          blocks?.length === 0 ||
+          !blocks ? (
             'Keine Frage aktiv.'
           ) : (
             <QuestionArea
               expiresAt={blocks[activeBlock]?.expiresAt}
-              questions={blocks[activeBlock]?.instances.map(
-                (question: any) => question.questionData
-              ) || []}
+              questions={
+                blocks[activeBlock]?.instances.map((question: any) => {
+                  return { ...question.questionData, instanceId: question.id }
+                }) || []
+              }
               handleNewResponse={handleNewResponse}
               sessionId={sessionId}
               timeLimit={blocks[activeBlock]?.timeLimit as number}
+              execution={blocks[activeBlock]?.execution || 0}
             />
           )}
         </div>

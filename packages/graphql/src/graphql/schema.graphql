@@ -175,7 +175,6 @@ type Session {
   activeBlock: Int!
   blocks: [SessionBlock]
   displayName: String!
-  execution: Int!
   id: ID!
   isAudienceInteractionActive: Boolean!
   isFeedbackChannelPublic: Boolean!
@@ -186,6 +185,7 @@ type Session {
 }
 
 type SessionBlock {
+  execution: Int!
   expiresAt: DateTime
   id: Int
   instances: [QuestionInstance]!

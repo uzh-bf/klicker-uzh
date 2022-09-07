@@ -895,6 +895,7 @@ async function main(prisma: Prisma.PrismaClient) {
       blocks: {
         create: [
           {
+            execution: 0,
             instances: {
               connect: [
                 {
@@ -938,6 +939,7 @@ async function main(prisma: Prisma.PrismaClient) {
       blocks: {
         create: [
           {
+            execution: 0,
             instances: {
               connect: [
                 {
@@ -949,6 +951,7 @@ async function main(prisma: Prisma.PrismaClient) {
             timeLimit: 20,
           },
           {
+            execution: 0,
             instances: {
               connect: [
                 {
@@ -997,6 +1000,7 @@ async function main(prisma: Prisma.PrismaClient) {
       blocks: {
         create: [
           {
+            execution: 0,
             instances: {
               connect: [
                 {
@@ -1024,8 +1028,8 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 7`
-  await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 7`
+  await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
+  await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`
 }
 
 const prismaClient = new Prisma.PrismaClient()

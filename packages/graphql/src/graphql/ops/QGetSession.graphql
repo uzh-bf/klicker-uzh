@@ -9,7 +9,6 @@ query GetSession($id: ID!) {
     namespace
     name
     activeBlock
-    execution
     displayName
     status
     blocks {
@@ -18,6 +17,7 @@ query GetSession($id: ID!) {
       expiresAt
       timeLimit
       randomSelection
+      execution
       instances {
         id
         ...QuestionData

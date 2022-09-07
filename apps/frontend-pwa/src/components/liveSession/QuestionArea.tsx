@@ -17,9 +17,18 @@ import SessionProgress from './SessionProgress'
 
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: any[] // TODO typing { content: string, contentPlain: string, id: string, name: string, type: string, options: any }[]
+  questions: {
+    content: string
+    contentPlain: string
+    id: string
+    name: string
+    type: string
+    options: any
+    instanceId: number
+  }[]
   handleNewResponse: any // TODO: correct typing
   sessionId: string
+  execution: number
   timeLimit?: number
   isStaticPreview?: boolean
 }
@@ -39,6 +48,7 @@ function QuestionArea({
   handleNewResponse,
   sessionId,
   timeLimit,
+  execution,
 }: QuestionAreaProps): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
@@ -56,7 +66,6 @@ function QuestionArea({
       : undefined,
   })
 
-  // TODO: fix response storage, currently multiple replays are possible - maybe automatically resolved with handleNewResponse implementation
   useEffect((): void => {
     const exec = async () => {
       try {
@@ -70,13 +79,17 @@ function QuestionArea({
           storedResponses = JSON.parse(storedResponses)
         }
 
-        const remaining = questions.reduce((indices, { id }, index): any[] => {
-          if (storedResponses?.responses?.includes(id)) {
-            return indices
-          }
+        const remaining = questions
+          .map((question: any) => question.instanceId)
+          .reduce((indices, instanceId, index): any[] => {
+            if (
+              storedResponses?.responses?.includes(`${instanceId}-${execution}`)
+            ) {
+              return indices
+            }
 
-          return [...indices, index]
-        }, [])
+            return [...indices, index]
+          }, [])
 
         setActiveQuestion(remaining[0])
         setRemainingQuestions(remaining)
@@ -85,7 +98,7 @@ function QuestionArea({
       }
     }
     exec()
-  }, [sessionId, questions])
+  }, [sessionId, questions, execution])
 
   const onActiveChoicesChange =
     (type: string): any =>
@@ -180,7 +193,7 @@ function QuestionArea({
   }
 
   const onSubmit = async (): Promise<void> => {
-    const { id: instanceId, execution, type } = questions[activeQuestion]
+    const { instanceId, type } = questions[activeQuestion]
 
     // if the question has been answered, add a response
     if (typeof inputValue !== 'undefined') {
@@ -190,30 +203,7 @@ function QuestionArea({
     }
 
     // update the stored responses
-    if (typeof window !== 'undefined') {
-      try {
-        const prevResponses: any = await localForage.getItem(
-          `${sessionId}-responses`
-        )
-        const stringified = JSON.stringify(
-          prevResponses
-            ? {
-                responses: [
-                  ...JSON.parse(prevResponses).responses,
-                  `${instanceId}-${execution}`,
-                ],
-                timestamp: dayjs().unix(),
-              }
-            : {
-                responses: [`${instanceId}-${execution}`],
-                timestamp: dayjs().unix(),
-              }
-        )
-        await localForage.setItem(`${sessionId}-responses`, stringified)
-      } catch (e) {
-        console.error(e)
-      }
-    }
+    await updateStoredResponses(instanceId, sessionId, execution)
 
     // calculate the new indices of remaining questions
     const newRemaining = without([activeQuestion], remainingQuestions)
@@ -228,12 +218,17 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
-    const { id: instanceId, type } = questions[activeQuestion]
+    const { instanceId, type } = questions[activeQuestion]
 
     // save the response, if one was given before the time expired
     if (typeof inputValue !== 'undefined') {
       answerQuestion(inputValue, type, instanceId)
     }
+
+    const remainingQuestionIds = remainingQuestions.map(
+      (index: number) => questions[index].instanceId
+    )
+    await updateStoredResponses(remainingQuestionIds, sessionId, execution)
 
     // automatically skip all possibly remaining questions
     setInputState({
@@ -245,10 +240,11 @@ function QuestionArea({
     push(['trackEvent', 'Live Session', 'Time expired'])
   }
 
+  // use the handleNewResponse function to add a response to the question instance
   const answerQuestion = (
     value: any,
     type: string,
-    instanceId: string
+    instanceId: number
   ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse({ instanceId, response: { choices: value } })
@@ -257,6 +253,46 @@ function QuestionArea({
         instanceId,
         response: { value: String(value) },
       })
+    }
+  }
+
+  const updateStoredResponses = async (
+    instanceId: number | number[],
+    sessionId: string,
+    execution: number
+  ) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const prevResponses: any = await localForage.getItem(
+          `${sessionId}-responses`
+        )
+        let newResponses: string[] = []
+
+        if (Array.isArray(instanceId)) {
+          newResponses = instanceId.map(
+            (instanceId: number) => `${instanceId}-${execution}`
+          )
+        } else {
+          newResponses = [`${instanceId}-${execution}`]
+        }
+        const stringified = JSON.stringify(
+          prevResponses
+            ? {
+                responses: [
+                  ...JSON.parse(prevResponses).responses,
+                  ...newResponses,
+                ],
+                timestamp: dayjs().unix(),
+              }
+            : {
+                responses: newResponses,
+                timestamp: dayjs().unix(),
+              }
+        )
+        await localForage.setItem(`${sessionId}-responses`, stringified)
+      } catch (e) {
+        console.error(e)
+      }
     }
   }
 
@@ -285,7 +321,7 @@ function QuestionArea({
           <div className="flex-initial min-h-[6rem] p-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded">
             <Markdown
               content={currentQuestion.content}
-              description={currentQuestion.description}
+              description={currentQuestion.contentPlain}
             />
           </div>
 

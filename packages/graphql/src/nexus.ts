@@ -293,6 +293,7 @@ export const SessionBlock = objectType({
     t.date('expiresAt')
     t.int('timeLimit')
     t.boolean('randomSelection')
+    t.nonNull.int('execution')
 
     t.nonNull.list.field('instances', {
       type: QuestionInstance,
@@ -315,7 +316,6 @@ export const Session = objectType({
     t.nonNull.boolean('isGamificationEnabled')
 
     t.nonNull.string('namespace')
-    t.nonNull.int('execution')
     t.nonNull.string('name')
     t.nonNull.string('displayName')
 

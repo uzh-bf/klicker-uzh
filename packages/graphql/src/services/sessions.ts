@@ -170,7 +170,7 @@ export async function startSession(
             id: session.id,
             // TODO: remove the namespace entirely, as the session id is also a uuid
             namespace: session.namespace,
-            execution: session.execution,
+            // execution: session.execution,
           })
           .hset(`s:${session.id}:lb`, { participants: 0 })
           .exec()
