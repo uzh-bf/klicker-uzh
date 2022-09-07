@@ -274,12 +274,17 @@ export async function activateSessionBlock(
   newActiveBlock!.instances.forEach((instance) => {
     const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
 
+    const commonInfo = {
+      namespace: session.namespace,
+      startedAt: Number(new Date()),
+    }
+
     switch (questionData.type) {
       case QuestionType.SC:
       case QuestionType.MC: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(
             questionData.options.choices
               .map((choice, ix) => ({ ix, correct: choice.correct }))
@@ -296,8 +301,8 @@ export async function activateSessionBlock(
 
       case QuestionType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(questionData.options.solutionRanges),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
@@ -308,8 +313,8 @@ export async function activateSessionBlock(
 
       case QuestionType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(questionData.options.solutions),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {

@@ -2,7 +2,7 @@ import Redis from 'ioredis'
 import JWT from 'jsonwebtoken'
 import md5 from 'md5'
 
-import { any, equals } from 'ramda'
+import { any, equals, toLower, trim } from 'ramda'
 
 import { AzureFunction, Context, HttpRequest } from '@azure/functions'
 
@@ -15,7 +15,7 @@ const redisExec = new Redis({
 })
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
-// TODO: award points based on the timing and correctness of the response
+// TODO: ensure that the response meets the restrictions specified in the question options
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
@@ -23,6 +23,14 @@ const httpTrigger: AzureFunction = async function (
 ) {
   const sessionKey = `s:${req.body.sessionId}`
   const instanceKey = `${sessionKey}:i:${req.body.instanceId}`
+  const responseTimestamp = Number(new Date())
+  const response = req.body.response
+
+  if (!response) {
+    return {
+      status: 400,
+    }
+  }
 
   let participantData: { sub: string } | null = null
   if (req.headers?.cookie) {
@@ -39,7 +47,8 @@ const httpTrigger: AzureFunction = async function (
     }
   }
 
-  const { id, type, solutions } = await redisExec.hgetall(`${instanceKey}:info`)
+  const { id, type, solutions, startedAt, firstResponseReceivedAt } =
+    await redisExec.hgetall(`${instanceKey}:info`)
 
   // TODO: ensure that the following code can handle missing solutions
   let parsedSolutions
@@ -49,9 +58,23 @@ const httpTrigger: AzureFunction = async function (
     console.error(e)
   }
 
-  const redisMulti = redisExec.multi()
+  const redisMulti = redisExec.pipeline()
 
-  const response = req.body.response
+  // if we are processing a first response, set the timestamp on the instance
+  // this will allow us to award points for response timing
+  // TODO: do this on the first correct response only
+  if (!firstResponseReceivedAt) {
+    redisMulti.hset(
+      `${instanceKey}:info`,
+      'firstResponseReceivedAt',
+      responseTimestamp
+    )
+  }
+
+  // compute the timing of the response based on the first response received for the instance
+  const responseTiming =
+    responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp) + 1
+  let pointsAwarded: number | string = 1000 / responseTiming
 
   switch (type) {
     // TODO: handle points for partial correct answers in MC (like KPRIM?)
@@ -63,14 +86,24 @@ const httpTrigger: AzureFunction = async function (
       redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
       if (participantData) {
-        context.log(new Set(response.choices), new Set(parsedSolutions))
         if (parsedSolutions && equals(response.choices, parsedSolutions)) {
-          context.log('right!')
+          pointsAwarded += 100
+          pointsAwarded = pointsAwarded.toFixed(2)
+        } else {
+          pointsAwarded = 0
         }
+
         redisMulti.hset(
           `${instanceKey}:responses`,
           participantData.sub,
           response.choices
+        )
+
+        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hincrby(
+          `${sessionKey}:lb`,
+          participantData.sub,
+          pointsAwarded
         )
       }
 
@@ -96,9 +129,11 @@ const httpTrigger: AzureFunction = async function (
             return true
           })
 
-          context.log(withinRanges)
           if (any(Boolean, withinRanges)) {
-            context.log('right!')
+            pointsAwarded += 100
+            pointsAwarded = pointsAwarded.toFixed(2)
+          } else {
+            pointsAwarded = 0
           }
         }
 
@@ -107,35 +142,52 @@ const httpTrigger: AzureFunction = async function (
           participantData.sub,
           response.value
         )
+
+        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hincrby(
+          `${sessionKey}:lb`,
+          participantData.sub,
+          pointsAwarded
+        )
       }
 
       break
     }
 
-    // TODO: what about points?
-    // TODO: trim and lowercase the response and solution
     // TODO: future -> distance in embedding space?
     case 'FREE_TEXT': {
-      const responseHash = md5(response.value)
+      const cleanResponseValue = toLower(trim(response.value))
+      const responseHash = md5(cleanResponseValue)
       redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
       redisMulti.hset(
         `${instanceKey}:responseHashes`,
         responseHash,
-        response.value
+        cleanResponseValue
       )
       redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
       if (participantData) {
-        if (parsedSolutions?.length > 0) {
-          if (parsedSolutions.includes(response.value)) {
-            context.log('right!')
-          }
+        if (
+          parsedSolutions?.length > 0 &&
+          parsedSolutions.includes(cleanResponseValue)
+        ) {
+          pointsAwarded += 100
+          pointsAwarded = pointsAwarded.toFixed(2)
+        } else {
+          pointsAwarded = 0
         }
 
         redisMulti.hset(
           `${instanceKey}:responses`,
           participantData.sub,
-          response.value
+          cleanResponseValue
+        )
+
+        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hincrby(
+          `${sessionKey}:lb`,
+          participantData.sub,
+          pointsAwarded
         )
       }
 
