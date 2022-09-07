@@ -1,6 +1,10 @@
+import { faCircleLeft } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
+import Router from 'next/router'
 import React from 'react'
 
 interface MobileHeaderProps {
@@ -8,11 +12,16 @@ interface MobileHeaderProps {
 }
 
 function MobileHeader({ participant }: MobileHeaderProps): React.ReactElement {
-  console.log(participant)
-
   return (
     <div className="flex flex-row justify-between w-full h-full gap-1 bg-uzh-grey-60">
-      <div>KlickerUZH</div>
+      <Button
+        className="flex flex-row my-auto border-0 shadow-none h-14 bg-uzh-grey-60"
+        onClick={() => Router.back()}
+      >
+        <FontAwesomeIcon icon={faCircleLeft} className="my-auto mr-1 h-7" />
+        <div className="my-auto">Zurück</div>
+      </Button>
+
       {participant ? (
         <Link href="/profile">
           <a className="mt-1 mr-2">
@@ -21,7 +30,7 @@ function MobileHeader({ participant }: MobileHeaderProps): React.ReactElement {
               alt="logo"
               width="50"
               height="50"
-              className='rounded-full'
+              className="rounded-full"
             />
           </a>
         </Link>
@@ -34,16 +43,6 @@ function MobileHeader({ participant }: MobileHeaderProps): React.ReactElement {
       )}
     </div>
   )
-}
-
-{
-  /* <Image
-       src="/logo.svg"
-       alt="logo"
-       width="97"
-       height="40"
-       css={s.logo}
-     /> */
 }
 
 export default MobileHeader

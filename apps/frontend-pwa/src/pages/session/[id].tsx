@@ -33,7 +33,6 @@ function Index({
     error: errorParticipant,
     data: dataParticipant,
   } = useQuery(SelfDocument)
-  console.log(dataParticipant)
 
   const router = useRouter()
   const sessionId = router.query.id as string

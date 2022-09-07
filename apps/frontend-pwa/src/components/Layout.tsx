@@ -41,7 +41,7 @@ function Layout({
         className={twMerge(
           'absolute flex flex-row top-0 left-0 right-0 botom-0 md:p-1.5 overflow-auto gap-1.5',
           'bg-white md:bg-uzh-grey-60 md:overflow-scroll min-h-screen h-max',
-          mobileMenuItems && 'bottom-16 md:bottom-0 pt-15',
+          mobileMenuItems && 'bottom-16 md:bottom-0 pt-14',
           className
         )}
       >
