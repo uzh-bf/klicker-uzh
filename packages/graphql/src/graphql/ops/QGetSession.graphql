@@ -7,11 +7,7 @@ query GetSession($id: ID!) {
     isFeedbackChannelPublic
     namespace
     name
-    activeBlock
-    execution
-    displayName
-    status
-    blocks {
+    activeBlock {
       id
       status
       expiresAt
@@ -22,5 +18,9 @@ query GetSession($id: ID!) {
         ...QuestionData
       }
     }
+    execution
+    displayName
+    status
+
   }
 }
