@@ -292,6 +292,7 @@ function QuestionArea({
         await localForage.setItem(`${sessionId}-responses`, stringified)
       } catch (e) {
         console.error(e)
+        // TODO: maybe delete possible responses that were already saved in case of failure
       }
     }
   }

@@ -18,7 +18,6 @@ import QuestionArea from '../../components/liveSession/QuestionArea'
 
 function Index({
   activeBlock,
-  blocks,
   displayName,
   id,
   isAudienceInteractionActive,
@@ -28,6 +27,9 @@ function Index({
   namespace,
   status,
 }: Session) {
+  console.log(displayName)
+  console.log(activeBlock)
+
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
@@ -72,10 +74,7 @@ function Index({
           activeMobilePage === 'questions' && 'block'
         )}
       >
-        {activeBlock === -1 ||
-        activeBlock === blocks?.length ||
-        blocks?.length === 0 ||
-        !blocks ? (
+        {!activeBlock ? (
           isGamificationEnabled ? (
             <div
               className={twMerge('w-full bg-white hidden md:block min-h-full')}
@@ -87,16 +86,16 @@ function Index({
           )
         ) : (
           <QuestionArea
-            expiresAt={blocks[activeBlock]?.expiresAt}
+            expiresAt={activeBlock?.expiresAt}
             questions={
-              blocks[activeBlock]?.instances.map((question: any) => {
+              activeBlock?.instances.map((question: any) => {
                 return { ...question.questionData, instanceId: question.id }
               }) || []
             }
             handleNewResponse={handleNewResponse}
             sessionId={sessionId}
-            timeLimit={blocks[activeBlock]?.timeLimit as number}
-            execution={blocks[activeBlock]?.execution || 0}
+            timeLimit={activeBlock?.timeLimit as number}
+            execution={activeBlock?.execution || 0}
           />
         )}
       </div>
