@@ -170,9 +170,10 @@ export interface NexusGenObjects {
     blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
     execution: number; // Int!
-    id?: string | null; // ID
+    id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -180,7 +181,7 @@ export interface NexusGenObjects {
   SessionBlock: { // root type
     expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id?: number | null; // Int
-    instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
     randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
@@ -322,9 +323,10 @@ export interface NexusGenFieldTypes {
     blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
     execution: number; // Int!
-    id: string | null; // ID
+    id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -332,7 +334,7 @@ export interface NexusGenFieldTypes {
   SessionBlock: { // field return type
     expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: number | null; // Int
-    instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
@@ -475,6 +477,7 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isFeedbackChannelPublic: 'Boolean'
+    isGamificationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
     status: 'SessionStatus'

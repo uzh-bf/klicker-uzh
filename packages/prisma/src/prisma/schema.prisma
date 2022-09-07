@@ -229,6 +229,7 @@ model Session {
 
   isAudienceInteractionActive Boolean @default(false)
   isFeedbackChannelPublic     Boolean @default(false)
+  isGamificationEnabled        Boolean @default(false)
 
   namespace   String    @default(uuid()) @db.Uuid
   execution   Int       @default(0)

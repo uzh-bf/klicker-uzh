@@ -294,7 +294,7 @@ export const SessionBlock = objectType({
     t.int('timeLimit')
     t.boolean('randomSelection')
 
-    t.list.field('instances', {
+    t.nonNull.list.field('instances', {
       type: QuestionInstance,
     })
   },
@@ -308,10 +308,11 @@ export const SessionStatus = enumType({
 export const Session = objectType({
   name: 'Session',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
     t.nonNull.boolean('isAudienceInteractionActive')
     t.nonNull.boolean('isFeedbackChannelPublic')
+    t.nonNull.boolean('isGamificationEnabled')
 
     t.nonNull.string('namespace')
     t.nonNull.int('execution')

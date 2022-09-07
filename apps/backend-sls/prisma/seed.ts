@@ -930,6 +930,9 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
       name: 'BF1 VL2',
       displayName: 'Banking und Finance I - VL1',
+      isFeedbackChannelPublic: true,
+      isAudienceInteractionActive: true,
+      isGamificationEnabled: true,
       status: Prisma.SessionStatus.RUNNING,
       activeBlock: 1,
       blocks: {
@@ -986,6 +989,9 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c0a',
       name: 'BF1 VL3',
       displayName: 'Banking und Finance I - VL3',
+      isFeedbackChannelPublic: true,
+      isAudienceInteractionActive: true,
+      isGamificationEnabled: true,
       status: Prisma.SessionStatus.RUNNING,
       activeBlock: 0,
       blocks: {

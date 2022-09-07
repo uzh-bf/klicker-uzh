@@ -5,6 +5,7 @@ query GetSession($id: ID!) {
     id
     isAudienceInteractionActive
     isFeedbackChannelPublic
+    isGamificationEnabled
     namespace
     name
     activeBlock

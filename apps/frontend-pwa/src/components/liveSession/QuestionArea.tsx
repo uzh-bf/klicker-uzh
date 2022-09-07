@@ -17,7 +17,7 @@ import SessionProgress from './SessionProgress'
 
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: any[] // { content: string, contentPlain: string, id: string, name: string, type: string, options: any }[]
+  questions: any[] // TODO typing { content: string, contentPlain: string, id: string, name: string, type: string, options: any }[]
   handleNewResponse: any // TODO: correct typing
   sessionId: string
   timeLimit?: number

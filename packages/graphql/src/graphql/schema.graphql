@@ -176,9 +176,10 @@ type Session {
   blocks: [SessionBlock]
   displayName: String!
   execution: Int!
-  id: ID
+  id: ID!
   isAudienceInteractionActive: Boolean!
   isFeedbackChannelPublic: Boolean!
+  isGamificationEnabled: Boolean!
   name: String!
   namespace: String!
   status: SessionStatus!
@@ -187,7 +188,7 @@ type Session {
 type SessionBlock {
   expiresAt: DateTime
   id: Int
-  instances: [QuestionInstance]
+  instances: [QuestionInstance]!
   randomSelection: Boolean
   status: SessionBlockStatus!
   timeLimit: Int
