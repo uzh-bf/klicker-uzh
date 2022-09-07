@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 
 async function main(prisma: Prisma.PrismaClient) {
   const hash = await bcrypt.hash('abcd', 12)
+  const hash2 = await bcrypt.hash('testing', 10)
 
   const user = await prisma.user.upsert({
     where: {
@@ -34,6 +35,30 @@ async function main(prisma: Prisma.PrismaClient) {
       ownerId: user.id,
     },
     update: {},
+  })
+
+  const participant = await prisma.participant.upsert({
+    where: {
+      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
+    },
+    create: {
+      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
+      email: 'testuser@bf.uzh.ch',
+      password: hash2,
+      username: 'rschlaefli',
+      participations: {
+        create: {
+          course: {
+            connect: {
+              id: course.id,
+            },
+          },
+        },
+      },
+    },
+    update: {
+      password: hash2,
+    },
   })
 
   const question = await prisma.question.upsert({

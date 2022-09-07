@@ -1,3 +1,5 @@
+import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
 import Head from 'next/head'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -26,6 +28,9 @@ function Layout({
   setActiveMobilePage,
   className,
 }: LayoutProps) {
+  // const { loading, error, data } = useQuery(SelfDocument)
+  // console.log(data)
+
   return (
     <div className="w-full h-full md:p-1.5 bg-uzh-grey-60">
       <Head>
