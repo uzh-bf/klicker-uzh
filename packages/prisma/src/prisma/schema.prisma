@@ -207,6 +207,8 @@ model SessionBlock {
 
   instances QuestionInstance[]
 
+  activeInSession Session[] @relation(name: "ActiveSessionBlock")
+
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String  @db.Uuid
 
@@ -243,8 +245,10 @@ model Session {
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus @default(PREPARED)
 
-  activeBlock Int            @default(-1)
-  blocks      SessionBlock[]
+  activeBlock   SessionBlock? @relation(name: "ActiveSessionBlock", fields: [activeBlockId], references: [id])
+  activeBlockId Int?
+
+  blocks SessionBlock[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid

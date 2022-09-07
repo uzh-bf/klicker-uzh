@@ -166,7 +166,7 @@ export interface NexusGenObjects {
     questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
   Session: { // root type
-    activeBlock: number; // Int!
+    activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
     id: string; // ID!
@@ -253,6 +253,7 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     createSession: NexusGenRootTypes['Session'] | null; // Session
+    deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     loginParticipant: string | null; // ID
@@ -319,7 +320,7 @@ export interface NexusGenFieldTypes {
     questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
   }
   Session: { // field return type
-    activeBlock: number; // Int!
+    activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
     id: string; // ID!
@@ -404,6 +405,7 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
     createSession: 'Session'
+    deactivateSessionBlock: 'Session'
     joinCourse: 'Participation'
     leaveCourse: 'Participation'
     loginParticipant: 'ID'
@@ -470,7 +472,7 @@ export interface NexusGenFieldTypeNames {
     questionData: 'QuestionData'
   }
   Session: { // field return type name
-    activeBlock: 'Int'
+    activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     displayName: 'String'
     id: 'ID'
@@ -511,6 +513,10 @@ export interface NexusGenArgTypes {
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
       displayName?: string | null; // String
       name: string; // String!
+    }
+    deactivateSessionBlock: { // args
+      sessionBlockId: number; // Int!
+      sessionId: string; // ID!
     }
     joinCourse: { // args
       courseId: string; // ID!

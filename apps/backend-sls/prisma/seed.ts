@@ -959,8 +959,7 @@ async function main(prisma: Prisma.PrismaClient) {
       isFeedbackChannelPublic: true,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,
-      status: Prisma.SessionStatus.RUNNING,
-      activeBlock: 1,
+      status: Prisma.SessionStatus.PREPARED,
       blocks: {
         create: [
           {
@@ -1020,8 +1019,7 @@ async function main(prisma: Prisma.PrismaClient) {
       isFeedbackChannelPublic: true,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,
-      status: Prisma.SessionStatus.RUNNING,
-      activeBlock: 0,
+      status: Prisma.SessionStatus.PREPARED,
       blocks: {
         create: [
           {

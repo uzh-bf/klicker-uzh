@@ -8,10 +8,9 @@ query GetSession($id: ID!) {
     isGamificationEnabled
     namespace
     name
-    activeBlock
     displayName
     status
-    blocks {
+    activeBlock {
       id
       status
       expiresAt

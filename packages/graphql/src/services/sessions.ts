@@ -165,14 +165,13 @@ export async function startSession(
     case SessionStatus.SCHEDULED: {
       try {
         const results = await ctx.redisExec
-          .multi()
+          .pipeline()
           .hmset(`s:${session.id}:meta`, {
-            id: session.id,
             // TODO: remove the namespace entirely, as the session id is also a uuid
             namespace: session.namespace,
             // execution: session.execution,
+            startedAt: Number(new Date()),
           })
-          .hset(`s:${session.id}:lb`, { participants: 0 })
           .exec()
       } catch (e) {
         console.error(e)
@@ -223,7 +222,7 @@ export async function activateSessionBlock(
   if (newBlockIndex === -1) return session
 
   // if the block is already active, return early
-  if (session.activeBlock === newBlockIndex) return session
+  if (session.activeBlockId === sessionBlockId) return session
 
   // set the new block to active
   const updatedSession = await ctx.prisma.session.update({
@@ -231,55 +230,49 @@ export async function activateSessionBlock(
       id: sessionId,
     },
     data: {
-      activeBlock: newBlockIndex,
+      activeBlock: {
+        connect: {
+          id: sessionBlockId,
+        },
+      },
       blocks: {
-        update: [
-          session.activeBlock > -1
-            ? {
-                where: {
-                  id: session.blocks[session.activeBlock].id,
-                },
-                data: {
-                  status: SessionBlockStatus.EXECUTED,
-                },
-              }
-            : undefined,
-          {
-            where: {
-              id: sessionBlockId,
-            },
-            data: {
-              status: SessionBlockStatus.ACTIVE,
-            },
+        update: {
+          where: {
+            id: sessionBlockId,
           },
-        ].filter(Boolean) as any[],
+          data: {
+            status: SessionBlockStatus.ACTIVE,
+          },
+        },
       },
     },
-    include: { blocks: true },
-  })
-
-  // get the details and instances of the newly activated session block
-  const newActiveBlock = await ctx.prisma.sessionBlock.findUnique({
-    where: {
-      id: sessionBlockId,
-    },
     include: {
-      instances: true,
+      activeBlock: {
+        include: {
+          instances: true,
+        },
+      },
+      blocks: true,
     },
   })
 
   // initialize the cache for the new active block
-  const redisMulti = ctx.redisExec.multi()
+  const redisMulti = ctx.redisExec.pipeline()
 
-  newActiveBlock!.instances.forEach((instance) => {
+  updatedSession.activeBlock!.instances.forEach((instance) => {
     const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
+
+    const commonInfo = {
+      namespace: session.namespace,
+      startedAt: Number(new Date()),
+    }
 
     switch (questionData.type) {
       case QuestionType.SC:
       case QuestionType.MC: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(
             questionData.options.choices
               .map((choice, ix) => ({ ix, correct: choice.correct }))
@@ -296,8 +289,8 @@ export async function activateSessionBlock(
 
       case QuestionType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(questionData.options.solutionRanges),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
@@ -308,8 +301,8 @@ export async function activateSessionBlock(
 
       case QuestionType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
+          ...commonInfo,
           type: questionData.type,
-          namespace: session.namespace,
           solutions: JSON.stringify(questionData.options.solutions),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
@@ -323,9 +316,67 @@ export async function activateSessionBlock(
   redisMulti.exec()
 
   // TODO: if it has been executed already, rehydrate the cache
-  // TODO: persist the data of the previously active block to db (async)
 
   return updatedSession
+}
+
+export async function deactivateSessionBlock(
+  { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: { activeBlock: { include: { instances: true } } },
+  })
+
+  if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
+    return null
+
+  // if the block is not the active one, return early
+  if (session.activeBlockId !== sessionBlockId) return session
+
+  const activeInstanceIds = session.activeBlock.instances.map(
+    (instance) => instance.id
+  )
+
+  const redisMulti = ctx.redisExec.multi()
+  activeInstanceIds.forEach((instanceId) => {
+    redisMulti.hgetall(`s${sessionId}:i:${instanceId}:results`)
+  })
+  const allInstanceResults = await redisMulti.exec()
+
+  console.warn(allInstanceResults)
+
+  return session
+
+  // TODO: what if session gamified and results are reset? are points taken away?
+  const updatedBlock = await ctx.prisma.session.update({
+    where: {
+      id: sessionId,
+    },
+    data: {
+      activeBlock: {
+        disconnect: true,
+      },
+      blocks: {
+        update: {
+          where: {
+            id: sessionBlockId,
+          },
+          data: {
+            status: SessionBlockStatus.EXECUTED,
+            instances: {
+              update: [],
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return session
 }
 
 export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
