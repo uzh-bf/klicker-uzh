@@ -1,5 +1,8 @@
 // TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
 
+import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
@@ -32,14 +35,34 @@ function Index({
   // TODO: implement response handling for user response to question
   const handleNewResponse = () => {}
 
+  const mobileMenuItems = [
+    {
+      value: 'questions',
+      label: 'Questions',
+      icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+    },
+  ]
+
+  if (isFeedbackChannelPublic || isAudienceInteractionActive) {
+    mobileMenuItems.push({
+      value: 'feedbacks',
+      label: 'Feedback',
+      icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+    })
+  }
+  if (isGamificationEnabled) {
+    mobileMenuItems.push({
+      value: 'leaderboard',
+      label: 'Leaderboard',
+      icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
+    })
+  }
+
   return (
     <Layout
-      displayName={displayName}
+      displayName={`Live Session - ${displayName}`}
+      mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
-      isFeedbackAreaVisible={
-        isFeedbackChannelPublic || isAudienceInteractionActive
-      }
-      isGamificationEnabled={isGamificationEnabled}
     >
       <div
         className={twMerge(
@@ -103,20 +126,16 @@ function Index({
   )
 }
 
+// TODO: handle Apollo error that occurs when the session does not exist / is not running
+// --> show alternative page with error message but without Apollo error
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const withNewSessionData = await getSessionData(ctx)
 
-  console.log(withNewSessionData)
-
-  if (withNewSessionData) {
-    return addApolloState(withNewSessionData.apolloClient, {
-      props: {
-        ...withNewSessionData.result,
-      },
-    })
-  } else {
-    return {}
-  }
+  return addApolloState(withNewSessionData.apolloClient, {
+    props: {
+      ...withNewSessionData.result,
+    },
+  })
 }
 
 export default Index
