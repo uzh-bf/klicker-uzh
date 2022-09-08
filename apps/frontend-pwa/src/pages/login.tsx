@@ -23,7 +23,7 @@ function LoginForm() {
         await loginParticipant({
           variables: { username: values.username, password: values.password },
         })
-        Router.push('/profile')
+        Router.push('/')
       }}
     >
       {({ errors, touched, isSubmitting }) => {

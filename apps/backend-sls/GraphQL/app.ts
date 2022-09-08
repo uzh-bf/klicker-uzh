@@ -65,7 +65,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useResponseCache({
         // set the TTL to 0 to disable response caching by default
-        // ttl: 0,
+        ttl: process.env.NODE_ENV === 'development' ? 0 : undefined,
         ttlPerType: {
           Participant: 60000,
           // Course: 60000,

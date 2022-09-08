@@ -87,7 +87,8 @@ type MicroSession {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
-  createSession(blocks: [BlockInput!]!, displayName: String, name: String!): Session
+  createCourse(displayName: String, name: String!): Course
+  createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
