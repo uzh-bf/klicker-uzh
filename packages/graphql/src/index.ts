@@ -16,7 +16,7 @@ const guardPlugin = nullabilityGuardPlugin({
     String: () => '',
     ID: ({ info }) => `${info.parentType.name}:N/A`,
     Boolean: () => false,
-    // Float: () => 0,
+    Float: () => 0,
     DateTime: () => new Date(),
     JSONObject: () => ({}),
   },
