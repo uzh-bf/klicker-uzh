@@ -10,7 +10,7 @@ const Index = function () {
   const { courses, activeSessions, activeMicrolearning } = useMemo(() => {
     const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
     if (!data?.participations) return obj
-    return data.participations?.reduce((acc, participation) => {
+    return data.participations?.reduce((acc: any, participation) => {
       return {
         courses: [
           ...acc.courses,
@@ -41,7 +41,7 @@ const Index = function () {
         <H1>Aktive Sessions</H1>
         <div>
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
-          {activeSessions.map((session) => (
+          {activeSessions.map((session: any) => (
             <div key={session.id}>{session.displayName}</div>
           ))}
         </div>
@@ -51,14 +51,14 @@ const Index = function () {
           {activeMicrolearning.length === 0 && (
             <div>Kein aktives Microlearning.</div>
           )}
-          {activeMicrolearning.map((micro) => (
+          {activeMicrolearning.map((micro: any) => (
             <div key={micro.id}>{micro.displayName}</div>
           ))}
         </div>
 
         <H1>Kurse</H1>
         <div>
-          {courses.map((course) => (
+          {courses.map((course: any) => (
             <div key={course.id}>{course.displayName}</div>
           ))}
         </div>
