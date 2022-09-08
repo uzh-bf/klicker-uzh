@@ -1,11 +1,10 @@
 import { useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { NextPageWithLayout } from '@pages/_app'
 import { H1 } from '@uzh-bf/design-system'
 import { useMemo } from 'react'
 
-const Index: NextPageWithLayout = function () {
+const Index = function () {
   const { data, loading, error } = useQuery(ParticipationsDocument)
 
   const { courses, activeSessions, activeMicrolearning } = useMemo(() => {
@@ -37,8 +36,8 @@ const Index: NextPageWithLayout = function () {
   }
 
   return (
-    <div className="p-4 mt-20">
-      <div>
+    <Layout>
+      <div className="p-4 mt-20">
         <H1>Aktive Sessions</H1>
         <div>
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
@@ -64,12 +63,8 @@ const Index: NextPageWithLayout = function () {
           ))}
         </div>
       </div>
-    </div>
+    </Layout>
   )
-}
-
-Index.getLayout = function getLayout(page) {
-  return <Layout>{page}</Layout>
 }
 
 export default Index
