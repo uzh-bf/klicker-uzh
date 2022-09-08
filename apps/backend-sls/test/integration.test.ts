@@ -17,7 +17,9 @@ describe('API', () => {
   let redisExec: Redis
   let app: Express.Application
   let userCookie: string = ''
+  let participantCookie: string = ''
   let session: any
+  let course: any
   let instances: any[]
 
   beforeAll(() => {
@@ -75,6 +77,43 @@ describe('API', () => {
     `)
   })
 
+  it('allows the user to create a course', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            createCourse(name: "Test Course") {
+                id
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createCourse": Object {
+            "id": "2c23cf3f-9c69-47b2-b31e-11fd946d4fb7",
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "2c23cf3f-9c69-47b2-b31e-11fd946d4fb7",
+                "typename": "Course",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    course = response.body.data.createCourse
+  })
+
   it('allows the user to create a session', async () => {
     const response = await request(app)
       .post('/api/graphql')
@@ -104,15 +143,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 30,
+                "id": 33,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 31,
+                "id": 34,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+            "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
             "status": "PREPARED",
           },
         },
@@ -120,15 +159,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+                "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
                 "typename": "Session",
               },
               Object {
-                "id": 30,
+                "id": 33,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 31,
+                "id": 34,
                 "typename": "SessionBlock",
               },
             ],
@@ -150,13 +189,6 @@ describe('API', () => {
             startSession(id: "${session.id}") {
                 id
                 status
-                activeBlock {
-                  id
-                }
-                blocks {
-                    id
-                    status
-                }
             }
         }
       `,
@@ -166,9 +198,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "activeBlock": null,
-            "blocks": null,
-            "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+            "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
             "status": "RUNNING",
           },
         },
@@ -176,7 +206,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+                "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
                 "typename": "Session",
               },
             ],
@@ -215,29 +245,29 @@ describe('API', () => {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 30,
+              "id": 33,
               "instances": Array [
                 Object {
-                  "id": 63,
-                  "questionData": Object {
-                    "type": "FREE_TEXT",
-                  },
-                },
-                Object {
-                  "id": 64,
+                  "id": 70,
                   "questionData": Object {
                     "type": "NUMERICAL",
                   },
                 },
                 Object {
-                  "id": 65,
+                  "id": 69,
+                  "questionData": Object {
+                    "type": "FREE_TEXT",
+                  },
+                },
+                Object {
+                  "id": 71,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+            "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
             "status": "RUNNING",
           },
         },
@@ -245,26 +275,23 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3e743ea5-b770-4590-9137-5881c0df4396",
+                "id": "644dc1fb-daf8-4c28-9b92-36a8b52a6faa",
                 "typename": "Session",
               },
               Object {
-                "id": 30,
+                "id": 33,
                 "typename": "SessionBlock",
-        },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
+              },
               Object {
-                "id": 63,
+                "id": 70,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 64,
+                "id": 69,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 65,
+                "id": 71,
                 "typename": "QuestionInstance",
               },
             ],
@@ -283,6 +310,69 @@ describe('API', () => {
         },
         {}
       )
+  })
+
+  it('allows logging in a participant', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+          loginParticipant(username: "rschlaefli", password: "testing")
+        }
+      `,
+      })
+
+    expect(response.headers['set-cookie']).toBeDefined()
+    participantCookie = response.headers['set-cookie'][0]
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "loginParticipant": "6f45065c-667f-4259-818c-c6f6b477eb48",
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows participants to join a course', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookie])
+      .send({
+        query: `
+        mutation {
+          joinCourse(courseId: "${course.id}") {
+            id
+          }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "joinCourse": Object {
+            "id": 7,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 7,
+                "typename": "Participation",
+              },
+            ],
+          },
+        },
+      }
+    `)
   })
 
   it('allows participants to add some responses', async () => {

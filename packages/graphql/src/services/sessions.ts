@@ -51,6 +51,26 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
   }
 }
 
+interface CreateCourseArgs {
+  name: string
+  displayName?: string
+}
+
+export async function createCourse(
+  { name, displayName }: CreateCourseArgs,
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.course.create({
+    data: {
+      name,
+      displayName: displayName ?? name,
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+    },
+  })
+}
+
 interface BlockArgs {
   questionIds: number[]
   randomSelection?: number
@@ -61,10 +81,11 @@ interface CreateSessionArgs {
   name: string
   displayName?: string | null
   blocks: BlockArgs[]
+  courseId?: string
 }
 
 export async function createSession(
-  { name, displayName, blocks }: CreateSessionArgs,
+  { name, displayName, blocks, courseId }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
   const allQuestionsIds = blocks.reduce<number[]>(
@@ -98,14 +119,10 @@ export async function createSession(
               questionData: processedQuestionData,
               results: prepareInitialInstanceResults(processedQuestionData),
               question: {
-                connect: {
-                  id: questionId,
-                },
+                connect: { id: questionId },
               },
               owner: {
-                connect: {
-                  id: ctx.user.sub,
-                },
+                connect: { id: ctx.user.sub },
               },
             }
           })
@@ -120,10 +137,13 @@ export async function createSession(
         }),
       },
       owner: {
-        connect: {
-          id: ctx.user.sub,
-        },
+        connect: { id: ctx.user.sub },
       },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       blocks: true,
