@@ -203,7 +203,7 @@ model SessionBlock {
   timeLimit       Int?
   randomSelection Int?
 
-  execution       Int   @default(0)
+  execution Int @default(0)
 
   instances QuestionInstance[]
 
@@ -233,7 +233,7 @@ model Session {
 
   isAudienceInteractionActive Boolean @default(false)
   isFeedbackChannelPublic     Boolean @default(false)
-  isGamificationEnabled        Boolean @default(false)
+  isGamificationEnabled       Boolean @default(false)
 
   namespace   String    @default(uuid()) @db.Uuid
   pinCode     Int?
@@ -276,6 +276,9 @@ model LearningElement {
 
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime

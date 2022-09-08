@@ -26,18 +26,46 @@ export async function getParticipantProfile(
   return participant
 }
 
-export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
-  const participation = await ctx.prisma.participation.findMany({
-    where: {
-      participantId: ctx.user.sub,
-      isActive: true,
-    },
+export async function getParticipations(_: any, ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
     include: {
-      course: true,
+      participations: {
+        where: { isActive: true },
+        include: {
+          course: {
+            include: {
+              microSessions: {
+                where: {
+                  scheduledStartAt: {
+                    lt: new Date(),
+                  },
+                  scheduledEndAt: {
+                    gt: new Date(),
+                  },
+                },
+                select: {
+                  id: true,
+                  displayName: true,
+                },
+              },
+              sessions: {
+                where: { status: 'RUNNING' },
+                select: {
+                  id: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   })
-  // TODO: return participations instead of courses (course, points)
-  return participation.map((p) => p.course)
+
+  if (!participant) return []
+
+  return participant.participations
 }
 
 interface JoinCourseArgs {

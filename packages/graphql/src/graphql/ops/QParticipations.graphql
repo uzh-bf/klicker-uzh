@@ -1,0 +1,19 @@
+query Participations {
+  participations {
+    id
+    points
+    course {
+      id
+      displayName
+      microSessions {
+        id
+        displayName
+      }
+      sessions {
+        id
+        displayName
+      }
+    }
+
+  }
+}
