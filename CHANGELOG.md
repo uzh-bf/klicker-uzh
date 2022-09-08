@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.21...v2.0.0-alpha.22) (2022-09-08)
+
+
+### Features
+
+* basic index page in PWA ([#2843](https://github.com/uzh-bf/klicker-uzh/issues/2843)) ([02783ff](https://github.com/uzh-bf/klicker-uzh/commit/02783ff6ecdfd05c7697d142ea3e835486eefdd1))
+* initial session creation and start ([#2819](https://github.com/uzh-bf/klicker-uzh/issues/2819)) ([deed5c8](https://github.com/uzh-bf/klicker-uzh/commit/deed5c87a1f6854f462fcb5a6768c128330aadea))
+* processing responses ([#2840](https://github.com/uzh-bf/klicker-uzh/issues/2840)) ([3e7c62d](https://github.com/uzh-bf/klicker-uzh/commit/3e7c62d8c0012afd7c81127f40eba3f63ce77c4b))
+* rebuild join page ([#2800](https://github.com/uzh-bf/klicker-uzh/issues/2800)) ([3fa059c](https://github.com/uzh-bf/klicker-uzh/commit/3fa059c934bcd389fc3863e6f217e678e926eb94))
+
+
+### Enhancements
+
+* add simple self query for profile page ([b4ba1bc](https://github.com/uzh-bf/klicker-uzh/commit/b4ba1bc788b9d5be44a34872d74bad837a628111))
+* **frontend-pwa:** add react-loader-spinner ([1c2ec17](https://github.com/uzh-bf/klicker-uzh/commit/1c2ec17e0a45ecc20add40523ec32f554608d4b6))
+* initial add response procedure ([fe11d25](https://github.com/uzh-bf/klicker-uzh/commit/fe11d25b5efe1ccdc89ca7deb83151f97552c62d))
+* mobile layout framework and logic for local response storage ([#2841](https://github.com/uzh-bf/klicker-uzh/issues/2841)) ([56e80f5](https://github.com/uzh-bf/klicker-uzh/commit/56e80f51fee9b9eff2583ea6ffc0867efc643c16))
+
+
+### Other
+
+* local development with docker-based redis and postgres ([237ba16](https://github.com/uzh-bf/klicker-uzh/commit/237ba16bb6afee0062048c594998c69c6544b6c6))
+* lockfile maintenance ([70115fb](https://github.com/uzh-bf/klicker-uzh/commit/70115fb9f260fb18edbb21c88a7209eeeaea964a))
+* one more upgrade of design system ([24e95d0](https://github.com/uzh-bf/klicker-uzh/commit/24e95d0fb7c150b695465f1a290b7116e568923e))
+* update design system and run prettier across packages ([71ed011](https://github.com/uzh-bf/klicker-uzh/commit/71ed0113458320e64962f27484a32775efbde71f))
+* update versioning ([c0f8a50](https://github.com/uzh-bf/klicker-uzh/commit/c0f8a506f42ed76bcf39819b574b8d693d8e3f0f))
+* version bump ([fb69b1e](https://github.com/uzh-bf/klicker-uzh/commit/fb69b1e399f263aeef627ce8c2f5193e90da4fb1))
+
 ## [2.0.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.20...v2.0.0-alpha.21) (2022-08-29)
 
 
