@@ -5,22 +5,22 @@ query GetSession($id: ID!) {
     id
     isAudienceInteractionActive
     isFeedbackChannelPublic
+    isGamificationEnabled
     namespace
     name
+    displayName
+    status
     activeBlock {
       id
       status
       expiresAt
       timeLimit
       randomSelection
+      execution
       instances {
         id
         ...QuestionData
       }
     }
-    execution
-    displayName
-    status
-
   }
 }

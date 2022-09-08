@@ -112,8 +112,8 @@ type NumericalRestrictions {
 }
 
 type NumericalSolutionRange {
-  max: Int!
-  min: Int!
+  max: Float
+  min: Float
 }
 
 type Participant {
@@ -176,19 +176,20 @@ type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock]
   displayName: String!
-  execution: Int!
-  id: ID
+  id: ID!
   isAudienceInteractionActive: Boolean!
   isFeedbackChannelPublic: Boolean!
+  isGamificationEnabled: Boolean!
   name: String!
   namespace: String!
   status: SessionStatus!
 }
 
 type SessionBlock {
+  execution: Int!
   expiresAt: DateTime
   id: Int
-  instances: [QuestionInstance]
+  instances: [QuestionInstance]!
   randomSelection: Boolean
   status: SessionBlockStatus!
   timeLimit: Int

@@ -14,11 +14,7 @@ function Index() {
   if (loading || !data) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
 
-  return (
-    <div className="p-4">
-
-    </div>
-  )
+  return <div className="p-4"></div>
 }
 
 export default Index
