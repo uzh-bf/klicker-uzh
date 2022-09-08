@@ -169,7 +169,7 @@ export async function startSession(
           .hmset(`s:${session.id}:meta`, {
             // TODO: remove the namespace entirely, as the session id is also a uuid
             namespace: session.namespace,
-            execution: session.execution,
+            // execution: session.execution,
             startedAt: Number(new Date()),
           })
           .exec()
@@ -383,7 +383,7 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {
-      blocks: {
+      activeBlock: {
         include: {
           instances: true,
         },

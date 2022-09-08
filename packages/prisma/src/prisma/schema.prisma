@@ -203,6 +203,8 @@ model SessionBlock {
   timeLimit       Int?
   randomSelection Int?
 
+  execution       Int   @default(0)
+
   instances QuestionInstance[]
 
   activeInSession Session[] @relation(name: "ActiveSessionBlock")
@@ -231,9 +233,9 @@ model Session {
 
   isAudienceInteractionActive Boolean @default(false)
   isFeedbackChannelPublic     Boolean @default(false)
+  isGamificationEnabled        Boolean @default(false)
 
   namespace   String    @default(uuid()) @db.Uuid
-  execution   Int       @default(0)
   pinCode     Int?
   name        String
   displayName String

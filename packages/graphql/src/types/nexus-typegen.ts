@@ -133,8 +133,8 @@ export interface NexusGenObjects {
     min?: number | null; // Int
   }
   NumericalSolutionRange: { // root type
-    max: number; // Int!
-    min: number; // Int!
+    max?: number | null; // Float
+    min?: number | null; // Float
   }
   Participant: { // root type
     avatar?: string | null; // String
@@ -169,18 +169,19 @@ export interface NexusGenObjects {
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
-    execution: number; // Int!
-    id?: string | null; // ID
+    id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // root type
+    execution: number; // Int!
     expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id?: number | null; // Int
-    instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
     randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
@@ -280,8 +281,8 @@ export interface NexusGenFieldTypes {
     min: number | null; // Int
   }
   NumericalSolutionRange: { // field return type
-    max: number; // Int!
-    min: number; // Int!
+    max: number | null; // Float
+    min: number | null; // Float
   }
   Participant: { // field return type
     avatar: string | null; // String
@@ -322,18 +323,19 @@ export interface NexusGenFieldTypes {
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
     displayName: string; // String!
-    execution: number; // Int!
-    id: string | null; // ID
+    id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // field return type
+    execution: number; // Int!
     expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: number | null; // Int
-    instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
@@ -431,8 +433,8 @@ export interface NexusGenFieldTypeNames {
     min: 'Int'
   }
   NumericalSolutionRange: { // field return type name
-    max: 'Int'
-    min: 'Int'
+    max: 'Float'
+    min: 'Float'
   }
   Participant: { // field return type name
     avatar: 'String'
@@ -473,15 +475,16 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     displayName: 'String'
-    execution: 'Int'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isFeedbackChannelPublic: 'Boolean'
+    isGamificationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
     status: 'SessionStatus'
   }
   SessionBlock: { // field return type name
+    execution: 'Int'
     expiresAt: 'DateTime'
     id: 'Int'
     instances: 'QuestionInstance'

@@ -251,7 +251,10 @@ describe('API', () => {
               Object {
                 "id": 30,
                 "typename": "SessionBlock",
-              },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
               Object {
                 "id": 63,
                 "typename": "QuestionInstance",

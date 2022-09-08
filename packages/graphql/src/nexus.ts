@@ -114,8 +114,8 @@ export const NumericalRestrictions = objectType({
 export const NumericalSolutionRange = objectType({
   name: 'NumericalSolutionRange',
   definition(t) {
-    t.nonNull.int('min')
-    t.nonNull.int('max')
+    t.float('min')
+    t.float('max')
   },
 })
 
@@ -293,8 +293,9 @@ export const SessionBlock = objectType({
     t.date('expiresAt')
     t.int('timeLimit')
     t.boolean('randomSelection')
+    t.nonNull.int('execution')
 
-    t.list.field('instances', {
+    t.nonNull.list.field('instances', {
       type: QuestionInstance,
     })
   },
@@ -308,13 +309,13 @@ export const SessionStatus = enumType({
 export const Session = objectType({
   name: 'Session',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
     t.nonNull.boolean('isAudienceInteractionActive')
     t.nonNull.boolean('isFeedbackChannelPublic')
+    t.nonNull.boolean('isGamificationEnabled')
 
     t.nonNull.string('namespace')
-    t.nonNull.int('execution')
     t.nonNull.string('name')
     t.nonNull.string('displayName')
 
