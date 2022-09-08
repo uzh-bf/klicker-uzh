@@ -29,7 +29,7 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
   definition(t) {
-    t.list.nonNull.int('questionIds')
+    t.nonNull.list.nonNull.int('questionIds')
     t.int('randomSelection')
     t.int('timeLimit')
   },
@@ -38,7 +38,7 @@ export const BlockInput = inputObjectType({
 export const ResponseInput = inputObjectType({
   name: 'ResponseInput',
   definition(t) {
-    t.list.int('choices')
+    t.list.nonNull.int('choices')
     t.string('value')
   },
 })
@@ -46,7 +46,7 @@ export const ResponseInput = inputObjectType({
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
-    t.int('id')
+    t.nonNull.int('id')
 
     t.nonNull.string('name')
     t.nonNull.string('type')
@@ -64,12 +64,6 @@ export const QuestionData = interfaceType({
     } else if (item.type === DB.QuestionType.FREE_TEXT) {
       return 'FreeTextQuestionData'
     }
-    if (item.type === DB.QuestionType.NUMERICAL) {
-      return 'NumericalQuestionData'
-    }
-    if (item.type === DB.QuestionType.FREE_TEXT) {
-      return 'FreeQuestionData'
-    }
     return null
   },
 })
@@ -86,7 +80,7 @@ export const Choice = objectType({
 export const ChoicesQuestionOptions = objectType({
   name: 'ChoicesQuestionOptions',
   definition(t) {
-    t.list.field('choices', {
+    t.nonNull.list.nonNull.field('choices', {
       type: Choice,
     })
   },
@@ -125,7 +119,7 @@ export const NumericalQuestionOptions = objectType({
     t.field('restrictions', {
       type: NumericalRestrictions,
     })
-    t.list.field('solutionRanges', {
+    t.list.nonNull.field('solutionRanges', {
       type: NumericalSolutionRange,
     })
   },
@@ -155,7 +149,7 @@ export const FreeTextQuestionOptions = objectType({
     t.field('restrictions', {
       type: FreeTextRestrictions,
     })
-    t.list.string('solutions')
+    t.list.nonNull.string('solutions')
   },
 })
 
@@ -173,20 +167,20 @@ export const FreeTextQuestionData = objectType({
 export const QuestionFeedback = objectType({
   name: 'QuestionFeedback',
   definition(t) {
-    t.int('ix')
-    t.string('feedback')
-    t.boolean('correct')
-    t.string('value')
+    t.nonNull.int('ix')
+    t.nonNull.string('feedback')
+    t.nonNull.boolean('correct')
+    t.nonNull.string('value')
   },
 })
 
 export const InstanceEvaluation = objectType({
   name: 'InstanceEvaluation',
   definition(t) {
-    t.list.field('feedbacks', {
+    t.list.nonNull.field('feedbacks', {
       type: QuestionFeedback,
     })
-    t.field('choices', {
+    t.nonNull.field('choices', {
       type: 'JSONObject',
     })
   },
@@ -195,9 +189,9 @@ export const InstanceEvaluation = objectType({
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
-    t.int('id')
+    t.nonNull.int('id')
 
-    t.field('questionData', {
+    t.nonNull.field('questionData', {
       type: QuestionData,
     })
 
@@ -207,16 +201,34 @@ export const QuestionInstance = objectType({
   },
 })
 
+export const MicroSession = objectType({
+  name: 'MicroSession',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+  },
+})
+
 export const Course = objectType({
   name: 'Course',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
     t.nonNull.string('name')
-    t.string('displayName')
+    t.nonNull.string('displayName')
 
-    t.list.field('learningElements', {
+    t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
+    })
+
+    t.nonNull.list.nonNull.field('microSessions', {
+      type: MicroSession,
+    })
+
+    t.nonNull.list.nonNull.field('sessions', {
+      type: Session,
     })
   },
 })
@@ -224,13 +236,13 @@ export const Course = objectType({
 export const LearningElement = objectType({
   name: 'LearningElement',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
-    t.list.field('instances', {
+    t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
 
-    t.field('course', {
+    t.nonNull.field('course', {
       type: Course,
     })
   },
@@ -239,39 +251,43 @@ export const LearningElement = objectType({
 export const Participant = objectType({
   name: 'Participant',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
-    t.string('avatar')
-    t.string('username')
+    t.nonNull.string('avatar')
+    t.nonNull.string('username')
   },
 })
 
 export const Participation = objectType({
   name: 'Participation',
   definition(t) {
-    t.int('id')
+    t.nonNull.int('id')
 
-    t.boolean('isActive')
-    t.int('points')
+    t.nonNull.boolean('isActive')
+    t.nonNull.int('points')
+
+    t.nonNull.field('course', {
+      type: Course,
+    })
   },
 })
 
 export const ParticipantLearningData = objectType({
   name: 'ParticipantLearningData',
   definition(t) {
-    t.id('id')
+    t.nonNull.id('id')
 
-    t.string('participantToken')
+    t.nonNull.string('participantToken')
 
-    t.field('participant', {
+    t.nonNull.field('participant', {
       type: Participant,
     })
 
-    t.field('participation', {
+    t.nonNull.field('participation', {
       type: Participation,
     })
 
-    t.field('course', {
+    t.nonNull.field('course', {
       type: Course,
     })
   },
@@ -285,7 +301,7 @@ export const SessionBlockStatus = enumType({
 export const SessionBlock = objectType({
   name: 'SessionBlock',
   definition(t) {
-    t.int('id')
+    t.nonNull.int('id')
 
     t.nonNull.field('status', {
       type: SessionBlockStatus,
@@ -295,7 +311,7 @@ export const SessionBlock = objectType({
     t.boolean('randomSelection')
     t.nonNull.int('execution')
 
-    t.nonNull.list.field('instances', {
+    t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
   },
@@ -326,7 +342,7 @@ export const Session = objectType({
     t.field('activeBlock', {
       type: SessionBlock,
     })
-    t.list.field('blocks', {
+    t.nonNull.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
   },
@@ -357,7 +373,6 @@ export const Query = objectType({
 
     t.field('getCourseOverviewData', {
       type: ParticipantLearningData,
-
       args: {
         courseId: nonNull(idArg()),
       },
@@ -366,10 +381,10 @@ export const Query = objectType({
       },
     })
 
-    t.list.field('getParticipantCourses', {
-      type: Course,
+    t.list.nonNull.field('participations', {
+      type: Participation,
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.getParticipantCourses(args, ctx)
+        return ParticipantService.getParticipations(args, ctx)
       },
     })
 

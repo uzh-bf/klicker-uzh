@@ -37,12 +37,12 @@ declare global {
 
 export interface NexusGenInputs {
   BlockInput: { // input type
-    questionIds?: number[] | null; // [Int!]
+    questionIds: number[]; // [Int!]!
     randomSelection?: number | null; // Int
     timeLimit?: number | null; // Int
   }
   ResponseInput: { // input type
-    choices?: Array<number | null> | null; // [Int]
+    choices?: number[] | null; // [Int!]
     value?: string | null; // String
   }
 }
@@ -71,7 +71,7 @@ export interface NexusGenObjects {
   ChoicesQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
-    id?: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -79,18 +79,20 @@ export interface NexusGenObjects {
     type: string; // String!
   }
   ChoicesQuestionOptions: { // root type
-    choices?: Array<NexusGenRootTypes['Choice'] | null> | null; // [Choice]
+    choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // root type
-    displayName?: string | null; // String
-    id?: string | null; // ID
-    learningElements?: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
+    displayName: string; // String!
+    id: string; // ID!
+    learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
+    microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   FreeTextQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
-    id?: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -99,25 +101,30 @@ export interface NexusGenObjects {
   }
   FreeTextQuestionOptions: { // root type
     restrictions?: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
-    solutions?: Array<string | null> | null; // [String]
+    solutions?: string[] | null; // [String!]
   }
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
   InstanceEvaluation: { // root type
-    choices?: NexusGenScalars['JSONObject'] | null; // JSONObject
-    feedbacks?: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
+    choices: NexusGenScalars['JSONObject']; // JSONObject!
+    feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
   LearningElement: { // root type
-    course?: NexusGenRootTypes['Course'] | null; // Course
-    id?: string | null; // ID
-    instances?: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+  }
+  MicroSession: { // root type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
   }
   Mutation: {};
   NumericalQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
-    id?: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -126,7 +133,7 @@ export interface NexusGenObjects {
   }
   NumericalQuestionOptions: { // root type
     restrictions?: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
-    solutionRanges?: Array<NexusGenRootTypes['NumericalSolutionRange'] | null> | null; // [NumericalSolutionRange]
+    solutionRanges?: NexusGenRootTypes['NumericalSolutionRange'][] | null; // [NumericalSolutionRange!]
   }
   NumericalRestrictions: { // root type
     max?: number | null; // Int
@@ -137,37 +144,38 @@ export interface NexusGenObjects {
     min?: number | null; // Float
   }
   Participant: { // root type
-    avatar?: string | null; // String
-    id?: string | null; // ID
-    username?: string | null; // String
+    avatar: string; // String!
+    id: string; // ID!
+    username: string; // String!
   }
   ParticipantLearningData: { // root type
-    course?: NexusGenRootTypes['Course'] | null; // Course
-    id?: string | null; // ID
-    participant?: NexusGenRootTypes['Participant'] | null; // Participant
-    participantToken?: string | null; // String
-    participation?: NexusGenRootTypes['Participation'] | null; // Participation
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    participant: NexusGenRootTypes['Participant']; // Participant!
+    participantToken: string; // String!
+    participation: NexusGenRootTypes['Participation']; // Participation!
   }
   Participation: { // root type
-    id?: number | null; // Int
-    isActive?: boolean | null; // Boolean
-    points?: number | null; // Int
+    course: NexusGenRootTypes['Course']; // Course!
+    id: number; // Int!
+    isActive: boolean; // Boolean!
+    points: number; // Int!
   }
   Query: {};
   QuestionFeedback: { // root type
-    correct?: boolean | null; // Boolean
-    feedback?: string | null; // String
-    ix?: number | null; // Int
-    value?: string | null; // String
+    correct: boolean; // Boolean!
+    feedback: string; // String!
+    ix: number; // Int!
+    value: string; // String!
   }
   QuestionInstance: { // root type
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
-    id?: number | null; // Int
-    questionData?: NexusGenRootTypes['QuestionData'] | null; // QuestionData
+    id: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // root type
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
-    blocks?: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
+    blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
@@ -180,8 +188,8 @@ export interface NexusGenObjects {
   SessionBlock: { // root type
     execution: number; // Int!
     expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
-    id?: number | null; // Int
-    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
+    id: number; // Int!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
@@ -208,7 +216,7 @@ export interface NexusGenFieldTypes {
   ChoicesQuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -216,18 +224,20 @@ export interface NexusGenFieldTypes {
     type: string; // String!
   }
   ChoicesQuestionOptions: { // field return type
-    choices: Array<NexusGenRootTypes['Choice'] | null> | null; // [Choice]
+    choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // field return type
-    displayName: string | null; // String
-    id: string | null; // ID
-    learningElements: Array<NexusGenRootTypes['LearningElement'] | null> | null; // [LearningElement]
+    displayName: string; // String!
+    id: string; // ID!
+    learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
+    microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   FreeTextQuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -236,19 +246,24 @@ export interface NexusGenFieldTypes {
   }
   FreeTextQuestionOptions: { // field return type
     restrictions: NexusGenRootTypes['FreeTextRestrictions'] | null; // FreeTextRestrictions
-    solutions: Array<string | null> | null; // [String]
+    solutions: string[] | null; // [String!]
   }
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
   InstanceEvaluation: { // field return type
-    choices: NexusGenScalars['JSONObject'] | null; // JSONObject
-    feedbacks: Array<NexusGenRootTypes['QuestionFeedback'] | null> | null; // [QuestionFeedback]
+    choices: NexusGenScalars['JSONObject']; // JSONObject!
+    feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
   LearningElement: { // field return type
-    course: NexusGenRootTypes['Course'] | null; // Course
-    id: string | null; // ID
-    instances: Array<NexusGenRootTypes['QuestionInstance'] | null> | null; // [QuestionInstance]
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+  }
+  MicroSession: { // field return type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
   }
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
@@ -265,7 +280,7 @@ export interface NexusGenFieldTypes {
   NumericalQuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -274,7 +289,7 @@ export interface NexusGenFieldTypes {
   }
   NumericalQuestionOptions: { // field return type
     restrictions: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
-    solutionRanges: Array<NexusGenRootTypes['NumericalSolutionRange'] | null> | null; // [NumericalSolutionRange]
+    solutionRanges: NexusGenRootTypes['NumericalSolutionRange'][] | null; // [NumericalSolutionRange!]
   }
   NumericalRestrictions: { // field return type
     max: number | null; // Int
@@ -285,43 +300,44 @@ export interface NexusGenFieldTypes {
     min: number | null; // Float
   }
   Participant: { // field return type
-    avatar: string | null; // String
-    id: string | null; // ID
-    username: string | null; // String
+    avatar: string; // String!
+    id: string; // ID!
+    username: string; // String!
   }
   ParticipantLearningData: { // field return type
-    course: NexusGenRootTypes['Course'] | null; // Course
-    id: string | null; // ID
-    participant: NexusGenRootTypes['Participant'] | null; // Participant
-    participantToken: string | null; // String
-    participation: NexusGenRootTypes['Participation'] | null; // Participation
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    participant: NexusGenRootTypes['Participant']; // Participant!
+    participantToken: string; // String!
+    participation: NexusGenRootTypes['Participation']; // Participation!
   }
   Participation: { // field return type
-    id: number | null; // Int
-    isActive: boolean | null; // Boolean
-    points: number | null; // Int
+    course: NexusGenRootTypes['Course']; // Course!
+    id: number; // Int!
+    isActive: boolean; // Boolean!
+    points: number; // Int!
   }
   Query: { // field return type
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
-    getParticipantCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
   }
   QuestionFeedback: { // field return type
-    correct: boolean | null; // Boolean
-    feedback: string | null; // String
-    ix: number | null; // Int
-    value: string | null; // String
+    correct: boolean; // Boolean!
+    feedback: string; // String!
+    ix: number; // Int!
+    value: string; // String!
   }
   QuestionInstance: { // field return type
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
-    id: number | null; // Int
-    questionData: NexusGenRootTypes['QuestionData'] | null; // QuestionData
+    id: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // field return type
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
-    blocks: Array<NexusGenRootTypes['SessionBlock'] | null> | null; // [SessionBlock]
+    blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
@@ -334,8 +350,8 @@ export interface NexusGenFieldTypes {
   SessionBlock: { // field return type
     execution: number; // Int!
     expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
-    id: number | null; // Int
-    instances: Array<NexusGenRootTypes['QuestionInstance'] | null>; // [QuestionInstance]!
+    id: number; // Int!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
@@ -343,7 +359,7 @@ export interface NexusGenFieldTypes {
   QuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
-    id: number | null; // Int
+    id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
@@ -374,7 +390,9 @@ export interface NexusGenFieldTypeNames {
     displayName: 'String'
     id: 'ID'
     learningElements: 'LearningElement'
+    microSessions: 'MicroSession'
     name: 'String'
+    sessions: 'Session'
   }
   FreeTextQuestionData: { // field return type name
     content: 'String'
@@ -401,6 +419,11 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     id: 'ID'
     instances: 'QuestionInstance'
+  }
+  MicroSession: { // field return type name
+    displayName: 'String'
+    id: 'ID'
+    name: 'String'
   }
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
@@ -449,14 +472,15 @@ export interface NexusGenFieldTypeNames {
     participation: 'Participation'
   }
   Participation: { // field return type name
+    course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
     points: 'Int'
   }
   Query: { // field return type name
     getCourseOverviewData: 'ParticipantLearningData'
-    getParticipantCourses: 'Course'
     learningElement: 'LearningElement'
+    participations: 'Participation'
     self: 'Participant'
     session: 'Session'
   }
