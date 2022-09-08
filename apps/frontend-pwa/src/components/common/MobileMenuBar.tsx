@@ -3,9 +3,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import Router from 'next/router'
 import React from 'react'
+import NotificationBadgeWrapper from './NotificationBadgeWrapper'
 
 interface MobileMenuBarProps {
-  menuItems?: { icon: React.ReactElement; label: string; value: string }[]
+  menuItems?: {
+    icon: React.ReactElement
+    label: string
+    value: string
+    unseenItems?: number
+    showBadge?: boolean
+  }[]
   onClick?: (value: string) => void
 }
 
@@ -13,30 +20,41 @@ function MobileMenuBar({
   menuItems,
   onClick,
 }: MobileMenuBarProps): React.ReactElement {
+  const homeMenuItem = {
+    label: 'Home',
+    icon: <FontAwesomeIcon icon={faHome} size="lg" />,
+    value: 'home',
+    unseenItems: 2,
+    onClick: () => Router.push('/'),
+  }
+  const items = menuItems ? [homeMenuItem, ...menuItems] : [homeMenuItem]
+
   return (
     <div className="flex flex-row justify-between w-full h-full gap-1 bg-uzh-grey-60">
-      <Button
-        className="flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none"
-        key={'home'}
-        onClick={() => Router.push('/')}
-      >
-        <div>
-          <FontAwesomeIcon icon={faHome} size="lg" />
-        </div>
-        <div className="text-xs">Home</div>
-      </Button>
-      {onClick &&
-        menuItems &&
-        menuItems.map((item: any) => (
+      {items.map((item: any) => (
+        <NotificationBadgeWrapper
+          count={item.unseenItems}
+          withoutCount={item.showBadge}
+          className="flex flex-1"
+          key={item.value}
+          size="md"
+        >
           <Button
             className="flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none"
             key={item.value}
-            onClick={() => onClick(item.value)}
+            onClick={() => {
+              if (item.onClick) {
+                item.onClick()
+              } else if (onClick) {
+                onClick(item.value)
+              }
+            }}
           >
             <div>{item.icon}</div>
             <div className="text-xs">{item.label}</div>
           </Button>
-        ))}
+        </NotificationBadgeWrapper>
+      ))}
     </div>
   )
 }

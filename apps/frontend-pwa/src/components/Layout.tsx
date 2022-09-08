@@ -10,7 +10,13 @@ import MobileMenuBar from './common/MobileMenuBar'
 interface LayoutProps {
   children: React.ReactNode
   displayName?: string
-  mobileMenuItems?: { icon: React.ReactElement; label: string; value: string }[]
+  mobileMenuItems?: {
+    icon: React.ReactElement
+    label: string
+    value: string
+    unseenItems?: number
+    showBadge?: boolean
+  }[]
   setActiveMobilePage?: (value: string) => void
   className?: string
 }

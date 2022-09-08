@@ -34,19 +34,27 @@ function Index({
   // TODO: implement response handling for user response to question
   const handleNewResponse = () => {}
 
-  const mobileMenuItems = [
+  const mobileMenuItems: {
+    value: string
+    label: string
+    icon: React.ReactElement
+    unseenItems?: number
+    showBadge?: boolean
+  }[] = [
     {
       value: 'questions',
       label: 'Questions',
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+      unseenItems: 10,
     },
   ]
 
   if (isFeedbackChannelPublic || isAudienceInteractionActive) {
     mobileMenuItems.push({
       value: 'feedbacks',
-      label: 'Feedback',
+      label: 'Feedbacks',
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+      showBadge: true,
     })
   }
   if (isGamificationEnabled) {
