@@ -1,14 +1,14 @@
 // TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
 
-import { useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument, Session } from '@klicker-uzh/graphql/dist/ops'
+import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { QUESTION_GROUPS } from '../../constants'
 
 import { addApolloState } from '@lib/apollo'
 import { getSessionData } from '@lib/joinData'
@@ -28,32 +28,70 @@ function Index({
   namespace,
   status,
 }: Session) {
-  const {
-    loading: loadingParticipant,
-    error: errorParticipant,
-    data: dataParticipant,
-  } = useQuery(SelfDocument)
-
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   // TODO: implement response handling for user response to question
-  const handleNewResponse = () => {}
+  const handleNewResponse = async (
+    type: string,
+    instanceId: number,
+    answer: any
+  ) => {
+    let requestOptions = {}
+    if (QUESTION_GROUPS.CHOICES.includes(type)) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { choices: answer },
+        }),
+      }
+    } else if (
+      QUESTION_GROUPS.NUMERICAL.includes(type) ||
+      QUESTION_GROUPS.FREE_TEXT.includes(type)
+    ) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { value: answer },
+        }),
+      }
+    } else {
+      return null
+    }
+    console.log('request options', requestOptions)
+    const response = await fetch(
+      'http://localhost:7072/api/AddResponse',
+      requestOptions
+    ).then((response) => response.json())
+    console.log(response)
+  }
 
-  const mobileMenuItems = [
+  const mobileMenuItems: {
+    value: string
+    label: string
+    icon: React.ReactElement
+    unseenItems?: number
+    showBadge?: boolean
+  }[] = [
     {
       value: 'questions',
       label: 'Questions',
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+      unseenItems: 10,
     },
   ]
 
   if (isFeedbackChannelPublic || isAudienceInteractionActive) {
     mobileMenuItems.push({
       value: 'feedbacks',
-      label: 'Feedback',
+      label: 'Feedbacks',
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+      showBadge: true,
     })
   }
   if (isGamificationEnabled) {
@@ -69,7 +107,6 @@ function Index({
       displayName={`Live Session - ${displayName}`}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
-      participant={dataParticipant?.self || undefined}
     >
       <div
         className={twMerge(
@@ -81,13 +118,12 @@ function Index({
       >
         {!activeBlock ? (
           isGamificationEnabled ? (
-            <div
-              className={twMerge('w-full bg-white hidden md:block min-h-full')}
-            >
-              <Leaderboard />
+            <div className={twMerge('w-full bg-white min-h-full')}>
+              <Leaderboard className="hidden md:block" />
+              <div className="md:hidden">Keine Frage aktiv.</div>
             </div>
           ) : (
-            'Keine Frage aktiv.'
+            <div>Keine Frage aktiv.</div>
           )
         ) : (
           <QuestionArea
