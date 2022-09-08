@@ -41,7 +41,7 @@ function Layout({
         className={twMerge(
           'absolute flex flex-row top-0 left-0 right-0 botom-0 md:p-1.5 overflow-auto gap-1.5',
           'bg-white md:bg-uzh-grey-60 md:overflow-scroll min-h-screen h-max',
-          mobileMenuItems && 'bottom-16 md:bottom-0 pt-14',
+          mobileMenuItems && 'bottom-14 md:bottom-0 pt-14',
           className
         )}
       >
@@ -49,14 +49,12 @@ function Layout({
           <MobileHeader participant={participant} />
         </div>
         {children}
-        {mobileMenuItems && setActiveMobilePage && (
-          <div className="absolute bottom-0 w-full h-16 md:hidden">
-            <MobileMenuBar
-              menuItems={mobileMenuItems}
-              onClick={setActiveMobilePage}
-            />
-          </div>
-        )}
+        <div className="absolute bottom-0 w-full h-14 md:hidden">
+          <MobileMenuBar
+            menuItems={mobileMenuItems}
+            onClick={setActiveMobilePage}
+          />
+        </div>
       </div>
     </div>
   )
