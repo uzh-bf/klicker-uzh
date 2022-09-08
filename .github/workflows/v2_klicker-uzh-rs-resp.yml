@@ -6,7 +6,7 @@ name: Build and deploy backend-sls to Azure Function App - klicker-uzh-rs-resp
 on:
   push:
     branches:
-      - RunningSessionBackend
+      - v2
   workflow_dispatch:
 
 env:
