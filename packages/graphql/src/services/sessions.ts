@@ -5,6 +5,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { ContextWithUser } from '@lib/context'
+import { find, sort, take } from 'ramda'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -412,4 +413,51 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
   })
 
   return session
+}
+
+interface GetLeaderboardArgs {
+  sessionId: string
+}
+
+export async function getLeaderboard(
+  { sessionId }: GetLeaderboardArgs,
+  ctx: ContextWithUser
+) {
+  // TODO: what if self in top 5?
+  // TODO: fetch the people the participant is following?
+  // TODO: fetch the immediate neighbor?
+
+  const lbEntries = await ctx.redisExec.hgetall(`s:${sessionId}:lb`)
+  const sortedEntries = sort((a, b) => +a[1] - +b[1], Object.entries(lbEntries))
+  const top5 = take(5, sortedEntries)
+  const self = find(([id]) => id === ctx.user.sub, sortedEntries)
+  const selfItem = self ? [self] : []
+
+  return Promise.all(
+    [...top5, ...selfItem].flatMap(async ([id, points]: any) => {
+      try {
+        // const participant = await ctx.prisma.participant.findUnique({
+        //   where: { id },
+        // })
+
+        // if (!participant) return []
+        if (!id) return []
+
+        const item = {
+          id,
+          // TODO: fetch the real username
+          // username: participant.username,
+          username: id,
+          points,
+        }
+
+        console.warn(item)
+
+        return [item]
+      } catch (e) {
+        console.error(e)
+        return []
+      }
+    })
+  )
 }

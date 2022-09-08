@@ -9,5 +9,10 @@
     "APP_SECRET": "abcd",
     "REDIS_HOST": "localhost",
     "REDIS_PORT": 6379
+  },
+  ,
+  "Host": {
+    "CORS": "http://localhost:3001",
+    "CORSCredentials": true
   }
 }

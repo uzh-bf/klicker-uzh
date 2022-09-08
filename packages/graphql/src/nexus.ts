@@ -293,6 +293,18 @@ export const ParticipantLearningData = objectType({
   },
 })
 
+export const LeaderboardEntry = objectType({
+  name: 'LeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('username')
+    t.nonNull.string('avatar')
+
+    t.nonNull.float('points')
+  },
+})
+
 export const SessionBlockStatus = enumType({
   name: 'SessionBlockStatus',
   members: DB.SessionBlockStatus,
@@ -395,6 +407,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.getSession(args, ctx)
+      },
+    })
+
+    t.list.nonNull.field('sessionLeaderboard', {
+      type: LeaderboardEntry,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getLeaderboard(args, ctx)
       },
     })
   },

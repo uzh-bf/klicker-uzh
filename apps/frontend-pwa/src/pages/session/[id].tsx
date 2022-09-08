@@ -119,7 +119,7 @@ function Index({
         {!activeBlock ? (
           isGamificationEnabled ? (
             <div className={twMerge('w-full bg-white min-h-full')}>
-              <Leaderboard className="hidden md:block" />
+              <Leaderboard sessionId={sessionId} className="hidden md:block" />
               <div className="md:hidden">Keine Frage aktiv.</div>
             </div>
           ) : (
@@ -148,7 +148,7 @@ function Index({
             activeMobilePage === 'leaderboard' && 'block md:hidden'
           )}
         >
-          <Leaderboard />
+          <Leaderboard sessionId={sessionId} />
         </div>
       )}
 
