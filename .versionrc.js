@@ -8,6 +8,7 @@ module.exports = {
   bumpFiles: [
     '',
     'docs/',
+    'apps/backend-responses/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
     'apps/frontend-manage/',
@@ -15,6 +16,7 @@ module.exports = {
     'packages/graphql/',
     'packages/lti/',
     'packages/prisma/',
+    'packages/markdown/',
   ].reduce(
     (acc, path) => {
       return acc.concat({
