@@ -26,7 +26,7 @@ interface QuestionAreaProps {
     options: any
     instanceId: number
   }[]
-  handleNewResponse: any // TODO: correct typing
+  handleNewResponse: ( type: string, instanceId: number, answer: any ) => void // TODO: correct typing of answer
   sessionId: string
   execution: number
   timeLimit?: number
@@ -247,12 +247,9 @@ function QuestionArea({
     instanceId: number
   ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
-      handleNewResponse({ instanceId, response: { choices: value } })
+      handleNewResponse(type, instanceId, value)
     } else if (QUESTION_GROUPS.FREE.includes(type)) {
-      handleNewResponse({
-        instanceId,
-        response: { value: String(value) },
-      })
+      handleNewResponse(type, instanceId, value)
     }
   }
 

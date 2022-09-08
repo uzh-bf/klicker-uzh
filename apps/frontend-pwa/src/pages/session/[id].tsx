@@ -8,6 +8,7 @@ import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { QUESTION_GROUPS } from '../../constants'
 
 import { addApolloState } from '@lib/apollo'
 import { getSessionData } from '@lib/joinData'
@@ -32,7 +33,43 @@ function Index({
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   // TODO: implement response handling for user response to question
-  const handleNewResponse = () => {}
+  const handleNewResponse = async (
+    type: string,
+    instanceId: number,
+    answer: any
+  ) => {
+    let requestOptions = {}
+    if (QUESTION_GROUPS.CHOICES.includes(type)) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { choices: answer },
+        }),
+      }
+    } else if (
+      QUESTION_GROUPS.NUMERICAL.includes(type) ||
+      QUESTION_GROUPS.FREE_TEXT.includes(type)
+    ) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { value: answer },
+        }),
+      }
+    } else {
+      return null
+    }
+    console.log('request options', requestOptions)
+    const response = await fetch(
+      'http://localhost:7072/api/AddResponse',
+      requestOptions
+    ).then((response) => response.json())
+    console.log(response)
+  }
 
   const mobileMenuItems: {
     value: string
