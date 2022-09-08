@@ -267,6 +267,7 @@ export interface NexusGenFieldTypes {
   }
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
+    createCourse: NexusGenRootTypes['Course'] | null; // Course
     createSession: NexusGenRootTypes['Session'] | null; // Session
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
@@ -427,6 +428,7 @@ export interface NexusGenFieldTypeNames {
   }
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
+    createCourse: 'Course'
     createSession: 'Session'
     deactivateSessionBlock: 'Session'
     joinCourse: 'Participation'
@@ -533,8 +535,13 @@ export interface NexusGenArgTypes {
       sessionBlockId: number; // Int!
       sessionId: string; // ID!
     }
+    createCourse: { // args
+      displayName?: string | null; // String
+      name: string; // String!
+    }
     createSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
+      courseId?: string | null; // String
       displayName?: string | null; // String
       name: string; // String!
     }

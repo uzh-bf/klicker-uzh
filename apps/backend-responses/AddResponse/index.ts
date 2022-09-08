@@ -96,7 +96,6 @@ const httpTrigger: AzureFunction = async function (
       if (participantData) {
         if (parsedSolutions && equals(response.choices, parsedSolutions)) {
           pointsAwarded += 100
-          pointsAwarded = pointsAwarded.toFixed(2)
         } else {
           pointsAwarded = 0
         }
@@ -107,7 +106,11 @@ const httpTrigger: AzureFunction = async function (
           response.choices
         )
 
-        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hset(
+          `${instanceKey}:lb`,
+          participantData.sub,
+          pointsAwarded.toFixed(2)
+        )
         redisMulti.hincrby(
           `${sessionKey}:lb`,
           participantData.sub,
@@ -139,7 +142,6 @@ const httpTrigger: AzureFunction = async function (
 
           if (any(Boolean, withinRanges)) {
             pointsAwarded += 100
-            pointsAwarded = pointsAwarded.toFixed(2)
           } else {
             pointsAwarded = 0
           }
@@ -151,7 +153,11 @@ const httpTrigger: AzureFunction = async function (
           response.value
         )
 
-        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hset(
+          `${instanceKey}:lb`,
+          participantData.sub,
+          pointsAwarded.toFixed(2)
+        )
         redisMulti.hincrby(
           `${sessionKey}:lb`,
           participantData.sub,
@@ -180,7 +186,6 @@ const httpTrigger: AzureFunction = async function (
           parsedSolutions.includes(cleanResponseValue)
         ) {
           pointsAwarded += 100
-          pointsAwarded = pointsAwarded.toFixed(2)
         } else {
           pointsAwarded = 0
         }
@@ -191,7 +196,11 @@ const httpTrigger: AzureFunction = async function (
           cleanResponseValue
         )
 
-        redisMulti.hset(`${instanceKey}:lb`, participantData.sub, pointsAwarded)
+        redisMulti.hset(
+          `${instanceKey}:lb`,
+          participantData.sub,
+          pointsAwarded.toFixed(2)
+        )
         redisMulti.hincrby(
           `${sessionKey}:lb`,
           participantData.sub,

@@ -473,6 +473,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createCourse', {
+      type: Course,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.createCourse(args, ctx)
+      },
+    })
+
     t.field('createSession', {
       type: Session,
       args: {
@@ -485,6 +496,7 @@ export const Mutation = objectType({
             })
           )
         ),
+        courseId: stringArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createSession(args, ctx)
