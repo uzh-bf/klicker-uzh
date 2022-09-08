@@ -1,4 +1,5 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -10,7 +11,6 @@ interface LayoutProps {
   children: React.ReactNode
   displayName?: string
   mobileMenuItems?: { icon: React.ReactElement; label: string; value: string }[]
-  participant?: Participant
   setActiveMobilePage?: (value: string) => void
   className?: string
 }
@@ -18,7 +18,6 @@ interface LayoutProps {
 const defaultProps = {
   displayName: 'KlickerUZH',
   mobileMenuItems: undefined,
-  participant: undefined,
   className: '',
 }
 
@@ -26,10 +25,15 @@ function Layout({
   children,
   displayName,
   mobileMenuItems,
-  participant,
   setActiveMobilePage,
   className,
 }: LayoutProps) {
+  const {
+    loading: loadingParticipant,
+    error: errorParticipant,
+    data: dataParticipant,
+  } = useQuery(SelfDocument)
+
   return (
     <div className="w-full h-full md:p-1.5 bg-uzh-grey-60">
       <Head>
@@ -46,7 +50,7 @@ function Layout({
         )}
       >
         <div className="absolute top-0 w-full h-15 md:hidden">
-          <MobileHeader participant={participant} />
+          <MobileHeader participant={dataParticipant?.self || undefined} />
         </div>
         {children}
         <div className="absolute bottom-0 w-full h-14 md:hidden">

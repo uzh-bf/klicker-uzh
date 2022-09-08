@@ -1,10 +1,9 @@
 // TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
 
-import { useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument, Session } from '@klicker-uzh/graphql/dist/ops'
+import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -28,12 +27,6 @@ function Index({
   namespace,
   status,
 }: Session) {
-  const {
-    loading: loadingParticipant,
-    error: errorParticipant,
-    data: dataParticipant,
-  } = useQuery(SelfDocument)
-
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
@@ -69,7 +62,6 @@ function Index({
       displayName={`Live Session - ${displayName}`}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
-      participant={dataParticipant?.self || undefined}
     >
       <div
         className={twMerge(
@@ -81,11 +73,9 @@ function Index({
       >
         {!activeBlock ? (
           isGamificationEnabled ? (
-            <div
-              className={twMerge('w-full bg-white min-h-full')}
-            >
-              <Leaderboard className='hidden md:block' />
-              <div className='md:hidden'>Keine Frage aktiv.</div>
+            <div className={twMerge('w-full bg-white min-h-full')}>
+              <Leaderboard className="hidden md:block" />
+              <div className="md:hidden">Keine Frage aktiv.</div>
             </div>
           ) : (
             <div>Keine Frage aktiv.</div>
