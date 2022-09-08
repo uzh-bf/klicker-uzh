@@ -45,7 +45,7 @@ function LearningElement() {
     respondToQuestionInstance({
       variables: {
         courseId: router.query.courseId as string,
-        id: currentInstance?.id as string,
+        id: currentInstance?.id as number,
         response:
           questionData?.type === QuestionType.SC ||
           questionData?.type === QuestionType.MC
