@@ -12,7 +12,7 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
-    "@uzh-bf/design-system": "0.0.34",
+    "@uzh-bf/design-system": "0.0.35",
     "deepmerge": "4.2.2",
     "graphql": "16.6.0",
     "next": "12.2.5",
