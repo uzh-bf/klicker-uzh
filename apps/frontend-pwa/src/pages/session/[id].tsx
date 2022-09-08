@@ -82,12 +82,13 @@ function Index({
         {!activeBlock ? (
           isGamificationEnabled ? (
             <div
-              className={twMerge('w-full bg-white hidden md:block min-h-full')}
+              className={twMerge('w-full bg-white min-h-full')}
             >
-              <Leaderboard />
+              <Leaderboard className='hidden md:block' />
+              <div className='md:hidden'>Keine Frage aktiv.</div>
             </div>
           ) : (
-            'Keine Frage aktiv.'
+            <div>Keine Frage aktiv.</div>
           )
         ) : (
           <QuestionArea

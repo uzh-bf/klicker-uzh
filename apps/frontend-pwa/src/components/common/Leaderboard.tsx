@@ -1,9 +1,10 @@
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
-interface LeaderboardProps {}
+interface LeaderboardProps {className?: string}
 
-function Leaderboard({}: LeaderboardProps): React.ReactElement {
-  return <div className="">Leaderboard</div>
+function Leaderboard({className}: LeaderboardProps): React.ReactElement {
+  return <div className={twMerge(className, "")}>Leaderboard</div>
 }
 
 export default Leaderboard
