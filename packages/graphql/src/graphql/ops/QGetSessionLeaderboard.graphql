@@ -1,0 +1,8 @@
+query GetSessionLeaderboard($sessionId: ID!) {
+  sessionLeaderboard(sessionId: $sessionId) {
+    id
+    username
+    avatar
+    score
+  }
+}

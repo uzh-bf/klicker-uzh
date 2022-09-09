@@ -110,6 +110,12 @@ export interface NexusGenObjects {
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
+  LeaderboardEntry: { // root type
+    avatar: string; // String!
+    id: string; // ID!
+    score: number; // Float!
+    username: string; // String!
+  }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
@@ -255,6 +261,12 @@ export interface NexusGenFieldTypes {
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
+  LeaderboardEntry: { // field return type
+    avatar: string; // String!
+    id: string; // ID!
+    score: number; // Float!
+    username: string; // String!
+  }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
@@ -324,6 +336,7 @@ export interface NexusGenFieldTypes {
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
+    sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -416,6 +429,12 @@ export interface NexusGenFieldTypeNames {
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
   }
+  LeaderboardEntry: { // field return type name
+    avatar: 'String'
+    id: 'ID'
+    score: 'Float'
+    username: 'String'
+  }
   LearningElement: { // field return type name
     course: 'Course'
     id: 'ID'
@@ -485,6 +504,7 @@ export interface NexusGenFieldTypeNames {
     participations: 'Participation'
     self: 'Participant'
     session: 'Session'
+    sessionLeaderboard: 'LeaderboardEntry'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -586,6 +606,9 @@ export interface NexusGenArgTypes {
     }
     session: { // args
       id: string; // ID!
+    }
+    sessionLeaderboard: { // args
+      sessionId: string; // ID!
     }
   }
 }
