@@ -28,8 +28,16 @@ function FeedbackArea({
   }
 
   // TODO: mutation that allows to increment and decrement both upvote and downvote of feedback response at the same time
-  const onReactToFeedbackResponse = (upvoteChange: number, downvoteChange: number) => {
-    console.log('upvote change response', upvoteChange, 'downvote change response', downvoteChange)
+  const onReactToFeedbackResponse = (
+    upvoteChange: number,
+    downvoteChange: number
+  ) => {
+    console.log(
+      'upvote change response',
+      upvoteChange,
+      'downvote change response',
+      downvoteChange
+    )
   }
 
   if (loading || !feedbacks) {
