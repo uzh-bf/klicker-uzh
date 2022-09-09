@@ -218,6 +218,7 @@ export const Course = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('color')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -500,6 +501,7 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
+        color: stringArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createCourse(args, ctx)

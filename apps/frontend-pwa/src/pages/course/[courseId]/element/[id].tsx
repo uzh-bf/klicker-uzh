@@ -67,7 +67,7 @@ function LearningElement() {
     <div className="flex flex-col max-w-6xl m-auto">
       <div
         className="flex flex-row items-center justify-between order-1 px-4 py-2 font-bold text-white border-b-8 bg-slate-800"
-        style={{ borderColor: 'green' }}
+        style={{ borderColor: data.learningElement.course.color ?? 'green' }}
       >
         <div className="">{data.learningElement.course.displayName}</div>
         <div className="relative w-auto h-8 aspect-square">

@@ -6,6 +6,7 @@ query GetLearningElement($id: ID!) {
     course {
       id
       displayName
+      color
     }
     instances {
       id
