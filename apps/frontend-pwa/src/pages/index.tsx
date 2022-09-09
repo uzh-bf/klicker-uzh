@@ -1,16 +1,29 @@
 import { useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
-import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  MicroSession,
+  ParticipationsDocument,
+  Session,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useMemo } from 'react'
 
 const Index = function () {
   const { data, loading, error } = useQuery(ParticipationsDocument)
 
-  const { courses, activeSessions, activeMicrolearning } = useMemo(() => {
+  const {
+    courses,
+    activeSessions,
+    activeMicrolearning,
+  }: {
+    courses: { id: string; displayName: string }[]
+    activeSessions: Session[]
+    activeMicrolearning: MicroSession[]
+  } = useMemo(() => {
     const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
     if (!data?.participations) return obj
-    return data.participations?.reduce((acc: any, participation) => {
+    return data.participations.reduce((acc, participation) => {
       return {
         courses: [
           ...acc.courses,
@@ -24,7 +37,7 @@ const Index = function () {
           ...participation.course?.sessions,
         ],
         activeMicrolearning: [
-          ...acc.activeSessions,
+          ...acc.activeMicrolearning,
           ...participation.course?.microSessions,
         ],
       }
@@ -37,12 +50,14 @@ const Index = function () {
 
   return (
     <Layout>
-      <div className="p-4 mt-20">
+      <div className="p-4">
         <H1>Aktive Sessions</H1>
         <div>
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
-          {activeSessions.map((session: any) => (
-            <div key={session.id}>{session.displayName}</div>
+          {activeSessions.map((session) => (
+            <div key={session.id}>
+              <Link href={`/session/${session.id}`}>{session.displayName}</Link>
+            </div>
           ))}
         </div>
 

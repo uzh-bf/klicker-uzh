@@ -100,14 +100,14 @@ describe('API', () => {
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "bf43f709-425c-464f-bc67-1481addc9ac2",
+            "id": "ba0b50d7-cc45-44ed-a730-c3e4a30e68ec",
           },
         },
         "extensions": Object {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "bf43f709-425c-464f-bc67-1481addc9ac2",
+                "id": "ba0b50d7-cc45-44ed-a730-c3e4a30e68ec",
                 "typename": "Course",
               },
             ],
@@ -148,15 +148,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 21,
+                "id": 29,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 22,
+                "id": 30,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+            "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
             "status": "PREPARED",
           },
         },
@@ -164,15 +164,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+                "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
                 "typename": "Session",
               },
               Object {
-                "id": 21,
+                "id": 29,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 22,
+                "id": 30,
                 "typename": "SessionBlock",
               },
             ],
@@ -203,7 +203,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+            "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
             "status": "RUNNING",
           },
         },
@@ -211,7 +211,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+                "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
                 "typename": "Session",
               },
             ],
@@ -250,29 +250,29 @@ describe('API', () => {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 21,
+              "id": 29,
               "instances": Array [
                 Object {
-                  "id": 45,
+                  "id": 61,
                   "questionData": Object {
                     "type": "FREE_TEXT",
                   },
                 },
                 Object {
-                  "id": 46,
+                  "id": 62,
                   "questionData": Object {
                     "type": "NUMERICAL",
                   },
                 },
                 Object {
-                  "id": 47,
+                  "id": 63,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+            "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
             "status": "RUNNING",
           },
         },
@@ -280,23 +280,23 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+                "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
                 "typename": "Session",
               },
               Object {
-                "id": 21,
+                "id": 29,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 45,
+                "id": 61,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 46,
+                "id": 62,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 47,
+                "id": 63,
                 "typename": "QuestionInstance",
               },
             ],
@@ -470,14 +470,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 91,
+              "id": 121,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 91,
+                  "id": 121,
                   "typename": "Participation",
                 },
               ],
@@ -487,14 +487,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 92,
+              "id": 122,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 92,
+                  "id": 122,
                   "typename": "Participation",
                 },
               ],
@@ -504,14 +504,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 95,
+              "id": 125,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 95,
+                  "id": 125,
                   "typename": "Participation",
                 },
               ],
@@ -521,14 +521,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 94,
+              "id": 123,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 94,
+                  "id": 123,
                   "typename": "Participation",
                 },
               ],
@@ -538,14 +538,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 93,
+              "id": 124,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 93,
+                  "id": 124,
                   "typename": "Participation",
                 },
               ],
@@ -555,14 +555,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 99,
+              "id": 129,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 99,
+                  "id": 129,
                   "typename": "Participation",
                 },
               ],
@@ -572,14 +572,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 96,
+              "id": 128,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 96,
+                  "id": 128,
                   "typename": "Participation",
                 },
               ],
@@ -589,14 +589,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 98,
+              "id": 127,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 98,
+                  "id": 127,
                   "typename": "Participation",
                 },
               ],
@@ -606,14 +606,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 97,
+              "id": 126,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 97,
+                  "id": 126,
                   "typename": "Participation",
                 },
               ],
@@ -623,14 +623,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 100,
+              "id": 130,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 100,
+                  "id": 130,
                   "typename": "Participation",
                 },
               ],
@@ -731,15 +731,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 22,
+                "id": 30,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 21,
+                "id": 29,
                 "status": "EXECUTED",
               },
             ],
-            "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+            "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
             "status": "RUNNING",
           },
         },
@@ -747,16 +747,81 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "3bf26ee5-ccdd-44ee-9dea-9daa96290fbb",
+                "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
                 "typename": "Session",
               },
               Object {
-                "id": 22,
+                "id": 30,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 21,
+                "id": 29,
                 "typename": "SessionBlock",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the user to activate a session block', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            activateSessionBlock(sessionId: "${session.id}", sessionBlockId: ${session.blocks[1].id}) {
+                id
+                status
+                activeBlock {
+                  id
+                  instances {
+                    id
+                    questionData {
+                      type
+                    }
+                  }
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "activateSessionBlock": Object {
+            "activeBlock": Object {
+              "id": 30,
+              "instances": Array [
+                Object {
+                  "id": 64,
+                  "questionData": Object {
+                    "type": "SC",
+                  },
+                },
+              ],
+            },
+            "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
+            "status": "RUNNING",
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "90f4d4bc-700f-47e4-b81f-d40e3cbc31ed",
+                "typename": "Session",
+              },
+              Object {
+                "id": 30,
+                "typename": "SessionBlock",
+              },
+              Object {
+                "id": 64,
+                "typename": "QuestionInstance",
               },
             ],
           },
