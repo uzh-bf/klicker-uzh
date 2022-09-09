@@ -24,7 +24,6 @@ function MobileMenuBar({
     label: 'Home',
     icon: <FontAwesomeIcon icon={faHome} size="lg" />,
     value: 'home',
-    unseenItems: 2,
     onClick: () => Router.push('/'),
   }
   const items = menuItems ? [homeMenuItem, ...menuItems] : [homeMenuItem]

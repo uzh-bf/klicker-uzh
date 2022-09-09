@@ -16,6 +16,9 @@ import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
+import getConfig from 'next/config'
+
+const { publicRuntimeConfig } = getConfig()
 
 function Index({
   activeBlock,
@@ -32,7 +35,7 @@ function Index({
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  // TODO: implement response handling for user response to question
+
   const handleNewResponse = async (
     type: string,
     instanceId: number,
@@ -64,11 +67,14 @@ function Index({
       return null
     }
     console.log('request options', requestOptions)
-    const response = await fetch(
-      'http://localhost:7072/api/AddResponse',
-      requestOptions
-    ).then((response) => response.json())
-    console.log(response)
+    try {
+      const response = await fetch(
+        publicRuntimeConfig.ADDRESPONSE_URL,
+        requestOptions
+      )
+    } catch(e) {
+      console.log('error', e)
+    }
   }
 
   const mobileMenuItems: {
@@ -82,7 +88,7 @@ function Index({
       value: 'questions',
       label: 'Questions',
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
-      unseenItems: 10,
+      unseenItems: activeBlock?.instances?.length,
     },
   ]
 
@@ -91,7 +97,6 @@ function Index({
       value: 'feedbacks',
       label: 'Feedbacks',
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
-      showBadge: true,
     })
   }
   if (isGamificationEnabled) {

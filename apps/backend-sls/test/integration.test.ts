@@ -26,14 +26,14 @@ describe('API', () => {
     prisma = new PrismaClient()
     redisCache = new Redis({
       family: 4,
-      host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+      host: process.env.REDIS_CACHE_HOST ?? '127.0.0.1',
       password: process.env.REDIS_CACHE_PASS ?? '',
       port: Number(process.env.REDIS_CACHE_PORT) ?? 6379,
       tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
     })
     redisExec = new Redis({
       family: 4,
-      host: process.env.REDIS_HOST ?? 'localhost',
+      host: process.env.REDIS_HOST ?? '127.0.0.1',
       password: process.env.REDIS_PASS ?? '',
       port: Number(process.env.REDIS_PORT) ?? 6380,
       tls: process.env.REDIS_TLS ? {} : undefined,
@@ -387,7 +387,7 @@ describe('API', () => {
       )
 
       axios.post(
-        'http://localhost:7072/api/AddResponse',
+        'http://127.0.0.1:7072/api/AddResponse',
         {
           instanceId: instances['SC' as any],
           sessionId: session.id,
@@ -402,7 +402,7 @@ describe('API', () => {
         }
       )
       axios.post(
-        'http://localhost:7072/api/AddResponse',
+        'http://127.0.0.1:7072/api/AddResponse',
         {
           instanceId: instances['NUMERICAL' as any],
           sessionId: session.id,
@@ -417,7 +417,7 @@ describe('API', () => {
         }
       )
       axios.post(
-        'http://localhost:7072/api/AddResponse',
+        'http://127.0.0.1:7072/api/AddResponse',
         {
           instanceId: instances['FREE_TEXT' as any],
           sessionId: session.id,
