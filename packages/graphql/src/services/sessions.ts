@@ -521,7 +521,16 @@ export async function deactivateSessionBlock(
     },
   })
 
-  // TODO: unlink everything regarding the block in redis
+  // unlink everything regarding the block in redis
+  const unlinkMulti = ctx.redisExec.pipeline()
+  unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
+  activeInstanceIds.forEach((instanceId) => {
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:results`)
+  })
+  unlinkMulti.exec()
 
   return updatedSession
 }
