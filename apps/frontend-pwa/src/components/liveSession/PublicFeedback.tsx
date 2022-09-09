@@ -77,7 +77,10 @@ function PublicFeedback({
     previousValue: number,
     responseId: number
   ) => {
-    const newUpvotes = { ...upvotes, [responseId]: previousValue === 1 ? 0 : 1 }
+    const newUpvotes = {
+      ...upvotes,
+      [responseId as unknown as string]: previousValue === 1 ? 0 : 1,
+    }
     setUpvotes(newUpvotes)
     await localForage.setItem(
       `${feedbackId}-upvotes`,
@@ -100,7 +103,7 @@ function PublicFeedback({
   ) => {
     const newUpvotes = {
       ...upvotes,
-      [responseId]: previousValue === -1 ? 0 : -1,
+      [responseId as unknown as string]: previousValue === -1 ? 0 : -1,
     }
     setUpvotes(newUpvotes)
     await localForage.setItem(
@@ -138,10 +141,7 @@ function PublicFeedback({
                 {response.content}
                 <Button
                   onClick={() =>
-                    onResponseUpvote(
-                      upvotes[response.id],
-                      response.id
-                    )
+                    onResponseUpvote(upvotes[response.id], response.id)
                   }
                   active={upvotes[response.id] === 1}
                 >
@@ -149,10 +149,7 @@ function PublicFeedback({
                 </Button>
                 <Button
                   onClick={() =>
-                    onResponseDownvote(
-                      upvotes[response.id],
-                      response.id
-                    )
+                    onResponseDownvote(upvotes[response.id], response.id)
                   }
                   active={upvotes[response.id] === -1}
                 >
