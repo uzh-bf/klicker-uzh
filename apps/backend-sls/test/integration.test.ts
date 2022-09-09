@@ -4,6 +4,7 @@ import Redis from 'ioredis'
 import JWT from 'jsonwebtoken'
 import request from 'supertest'
 import prepareApp from '../GraphQL/app'
+import { PARTICIPANT_IDS } from '../prisma/constants'
 
 // TODO: switch to ioredis-mock
 // jest.mock('ioredis', () => Redis)
@@ -11,15 +12,19 @@ import prepareApp from '../GraphQL/app'
 process.env.NODE_ENV = 'development'
 process.env.APP_SECRET = 'abcd'
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 describe('API', () => {
   let prisma: PrismaClient
   let redisCache: Redis
   let redisExec: Redis
   let app: Express.Application
   let userCookie: string = ''
-  let participantCookie: string = ''
+  let participantCookies: string[] = []
   let session: any
-  let course: any
+  let courseId: any
   let instances: any[]
 
   beforeAll(() => {
@@ -95,14 +100,14 @@ describe('API', () => {
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "d594834d-f60f-4624-87af-616d7525f16c",
+            "id": "757af60e-f751-4a3d-becf-f07c6f9c619f",
           },
         },
         "extensions": Object {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "d594834d-f60f-4624-87af-616d7525f16c",
+                "id": "757af60e-f751-4a3d-becf-f07c6f9c619f",
                 "typename": "Course",
               },
             ],
@@ -111,7 +116,7 @@ describe('API', () => {
       }
     `)
 
-    course = response.body.data.createCourse
+    courseId = response.body.data.createCourse.id
   })
 
   it('allows the user to create a session', async () => {
@@ -121,7 +126,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createSession(name: "Test Session", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2] }]) {
+            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2] }]) {
                 id
                 status
                 activeBlock {
@@ -143,15 +148,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 7,
+                "id": 11,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 8,
+                "id": 12,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+            "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
             "status": "PREPARED",
           },
         },
@@ -159,15 +164,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+                "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
                 "typename": "Session",
               },
               Object {
-                "id": 7,
+                "id": 11,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 8,
+                "id": 12,
                 "typename": "SessionBlock",
               },
             ],
@@ -198,7 +203,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+            "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
             "status": "RUNNING",
           },
         },
@@ -206,7 +211,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+                "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
                 "typename": "Session",
               },
             ],
@@ -245,29 +250,29 @@ describe('API', () => {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 7,
+              "id": 11,
               "instances": Array [
                 Object {
-                  "id": 17,
+                  "id": 25,
                   "questionData": Object {
                     "type": "FREE_TEXT",
                   },
                 },
                 Object {
-                  "id": 18,
+                  "id": 26,
                   "questionData": Object {
                     "type": "NUMERICAL",
                   },
                 },
                 Object {
-                  "id": 19,
+                  "id": 27,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+            "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
             "status": "RUNNING",
           },
         },
@@ -275,23 +280,23 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "20f66723-6300-4d39-9ae1-d46b1cee638e",
+                "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
                 "typename": "Session",
               },
               Object {
-                "id": 7,
+                "id": 11,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 17,
+                "id": 25,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 18,
+                "id": 26,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 19,
+                "id": 27,
                 "typename": "QuestionInstance",
               },
             ],
@@ -312,73 +317,336 @@ describe('API', () => {
       )
   })
 
-  it('allows logging in a participant', async () => {
-    const response = await request(app)
-      .post('/api/graphql')
-      .send({
-        query: `
+  it('allows logging in participants', async () => {
+    const responses = await Promise.all(
+      PARTICIPANT_IDS.map(async (_, ix) => {
+        const response = await request(app)
+          .post('/api/graphql')
+          .send({
+            query: `
         mutation {
-          loginParticipant(username: "rschlaefli", password: "testing")
+          loginParticipant(username: "testuser${ix + 1}", password: "testing")
         }
       `,
+          })
+
+        expect(response.headers['set-cookie']).toBeDefined()
+        participantCookies = [
+          ...participantCookies,
+          response.headers['set-cookie'][0],
+        ]
+
+        return response.body
       })
+    )
 
-    expect(response.headers['set-cookie']).toBeDefined()
-    participantCookie = response.headers['set-cookie'][0]
-
-    expect(response.body).toMatchInlineSnapshot(`
-      Object {
-        "data": Object {
-          "loginParticipant": "6f45065c-667f-4259-818c-c6f6b477eb48",
-        },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [],
+    expect(responses).toMatchInlineSnapshot(`
+      Array [
+        Object {
+          "data": Object {
+            "loginParticipant": "6f45065c-667f-4259-818c-c6f6b477eb48",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
           },
         },
-      }
+        Object {
+          "data": Object {
+            "loginParticipant": "0b7c946c-cfc9-4b82-ac97-b058bf48924b",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "52c20f0f-f5d4-4354-a5d6-a0c103f2b9ea",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "16c39a69-03b4-4ce4-a695-e7b93d535598",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "c48f624e-7de9-4e1b-a16d-82d22e64828f",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "7cf9a94a-31a6-4c53-85d7-608dfa904e30",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "f53e6a95-689b-48c0-bfab-6625c04f39ed",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "46407010-0e7c-4903-9a66-2c8d9d6909b0",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "84b0ba5d-34bc-45cd-8253-f3e8c340e5ff",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "loginParticipant": "05a933a0-b2bc-4551-b7e1-6975140d996d",
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [],
+            },
+          },
+        },
+      ]
     `)
   })
 
   it('allows participants to join a course', async () => {
-    const response = await request(app)
-      .post('/api/graphql')
-      .set('Cookie', [participantCookie])
-      .send({
-        query: `
+    const responses = await Promise.all(
+      PARTICIPANT_IDS.map(async (_, ix) => {
+        const response = await request(app)
+          .post('/api/graphql')
+          .set('Cookie', [participantCookies[ix]])
+          .send({
+            query: `
         mutation {
-          joinCourse(courseId: "${course.id}") {
+          joinCourse(courseId: "${courseId}") {
             id
           }
         }
       `,
+          })
+        return response.body
       })
+    )
 
-    expect(response.body).toMatchInlineSnapshot(`
-      Object {
-        "data": Object {
-          "joinCourse": Object {
-            "id": 3,
+    expect(responses).toMatchInlineSnapshot(`
+      Array [
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 41,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 41,
+                  "typename": "Participation",
+                },
+              ],
+            },
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": 3,
-                "typename": "Participation",
-              },
-            ],
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 42,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 42,
+                  "typename": "Participation",
+                },
+              ],
+            },
           },
         },
-      }
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 45,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 45,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 43,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 43,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 44,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 44,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 49,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 49,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 48,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 48,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 46,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 46,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 47,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 47,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 50,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 50,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+      ]
     `)
   })
 
   it('allows participants to add some responses', async () => {
     for (let i = 0; i < 10; i++) {
+      await sleep(100 * i)
+
       const jwt = JWT.sign(
-        { sub: `testparticipant-${i}`, role: 'PARTICIPANT' },
+        { sub: PARTICIPANT_IDS[i], role: 'PARTICIPANT' },
         process.env.APP_SECRET as string,
         {
           algorithm: 'HS256',
@@ -434,7 +702,7 @@ describe('API', () => {
     }
   })
 
-  it.skip('allows the user to deactivate a session block', async () => {
+  it('allows the user to deactivate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -460,11 +728,18 @@ describe('API', () => {
       Object {
         "data": Object {
           "deactivateSessionBlock": Object {
-            "activeBlock": Object {
-              "id": 18,
-            },
-            "blocks": null,
-            "id": "b7e908e6-4e86-45a8-9e89-f9e65402bf44",
+            "activeBlock": null,
+            "blocks": Array [
+              Object {
+                "id": 12,
+                "status": "SCHEDULED",
+              },
+              Object {
+                "id": 11,
+                "status": "EXECUTED",
+              },
+            ],
+            "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
             "status": "RUNNING",
           },
         },
@@ -472,11 +747,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "b7e908e6-4e86-45a8-9e89-f9e65402bf44",
+                "id": "86e47ed9-84e8-43cf-8426-ba8b4bff1279",
                 "typename": "Session",
               },
               Object {
-                "id": 18,
+                "id": 12,
+                "typename": "SessionBlock",
+              },
+              Object {
+                "id": 11,
                 "typename": "SessionBlock",
               },
             ],

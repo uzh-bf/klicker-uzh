@@ -113,7 +113,7 @@ export interface NexusGenObjects {
   LeaderboardEntry: { // root type
     avatar: string; // String!
     id: string; // ID!
-    points: number; // Float!
+    score: number; // Float!
     username: string; // String!
   }
   LearningElement: { // root type
@@ -264,7 +264,7 @@ export interface NexusGenFieldTypes {
   LeaderboardEntry: { // field return type
     avatar: string; // String!
     id: string; // ID!
-    points: number; // Float!
+    score: number; // Float!
     username: string; // String!
   }
   LearningElement: { // field return type
@@ -432,7 +432,7 @@ export interface NexusGenFieldTypeNames {
   LeaderboardEntry: { // field return type name
     avatar: 'String'
     id: 'ID'
-    points: 'Float'
+    score: 'Float'
     username: 'String'
   }
   LearningElement: { // field return type name

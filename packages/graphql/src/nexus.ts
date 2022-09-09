@@ -301,7 +301,7 @@ export const LeaderboardEntry = objectType({
     t.nonNull.string('username')
     t.nonNull.string('avatar')
 
-    t.nonNull.float('points')
+    t.nonNull.float('score')
   },
 })
 

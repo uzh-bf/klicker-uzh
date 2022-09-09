@@ -785,7 +785,7 @@
             "deprecationReason": null
           },
           {
-            "name": "points",
+            "name": "score",
             "description": null,
             "args": [],
             "type": {

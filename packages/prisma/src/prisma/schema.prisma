@@ -178,6 +178,7 @@ model Course {
   sessions         Session[]
   learningElements LearningElement[]
   microSessions    MicroSession[]
+  leaderboard      LeaderboardEntry[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -186,6 +187,38 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum LeaderboardType {
+  SESSION_BLOCK
+  SESSION
+  COURSE
+}
+
+model LeaderboardEntry {
+  id Int @id @default(autoincrement())
+
+  type LeaderboardType
+
+  avatar   String?
+  username String
+  score    Float
+
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+
+  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id])
+  sessionBlockId Int?
+
+  session   Session? @relation(fields: [sessionId], references: [id])
+  sessionId String?  @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
+  @@unique([type, participantId, sessionBlockId])
+  @@unique([type, participantId, sessionId])
+  @@unique([type, participantId, courseId])
 }
 
 enum SessionBlockStatus {
@@ -205,7 +238,8 @@ model SessionBlock {
 
   execution Int @default(0)
 
-  instances QuestionInstance[]
+  instances   QuestionInstance[]
+  leaderboard LeaderboardEntry[]
 
   activeInSession Session[] @relation(name: "ActiveSessionBlock")
 
@@ -248,7 +282,8 @@ model Session {
   activeBlock   SessionBlock? @relation(name: "ActiveSessionBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
 
-  blocks SessionBlock[]
+  blocks      SessionBlock[]
+  leaderboard LeaderboardEntry[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -371,6 +406,7 @@ model Participant {
   questionResponses  QuestionResponse[]
   feedbacks          Feedback[]
   confusionTimesteps ConfusionTimestep[]
+  leaderboards       LeaderboardEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

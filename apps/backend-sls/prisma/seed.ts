@@ -2,6 +2,7 @@ import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
+import { PARTICIPANT_IDS } from './constants.js'
 
 async function main(prisma: Prisma.PrismaClient) {
   const hash = await bcrypt.hash('abcd', 12)
@@ -37,30 +38,34 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const participant = await prisma.participant.upsert({
-    where: {
-      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
-    },
-    create: {
-      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
-      email: 'testuser@bf.uzh.ch',
-      password: hash2,
-      username: 'rschlaefli',
-      avatar: 'apple-icon-180.png',
-      participations: {
+  const participants = await Promise.all(
+    PARTICIPANT_IDS.map((id, ix) => {
+      return prisma.participant.upsert({
+        where: {
+          id,
+        },
         create: {
-          course: {
-            connect: {
-              id: course.id,
+          id,
+          email: `testuser${ix + 1}@bf.uzh.ch`,
+          password: hash2,
+          username: `testuser${ix + 1}`,
+          avatar: 'apple-icon-180.png',
+          participations: {
+            create: {
+              course: {
+                connect: {
+                  id: course.id,
+                },
+              },
             },
           },
         },
-      },
-    },
-    update: {
-      password: hash2,
-    },
-  })
+        update: {
+          password: hash2,
+        },
+      })
+    })
+  )
 
   const question = await prisma.question.upsert({
     where: {

@@ -76,7 +76,7 @@ scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publicati
 type LeaderboardEntry {
   avatar: String!
   id: ID!
-  points: Float!
+  score: Float!
   username: String!
 }
 
