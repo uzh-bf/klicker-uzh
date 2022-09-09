@@ -82,6 +82,7 @@ export interface NexusGenObjects {
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // root type
+    color?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
@@ -233,6 +234,7 @@ export interface NexusGenFieldTypes {
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // field return type
+    color: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
@@ -401,6 +403,7 @@ export interface NexusGenFieldTypeNames {
     choices: 'Choice'
   }
   Course: { // field return type name
+    color: 'String'
     displayName: 'String'
     id: 'ID'
     learningElements: 'LearningElement'
@@ -556,6 +559,7 @@ export interface NexusGenArgTypes {
       sessionId: string; // ID!
     }
     createCourse: { // args
+      color?: string | null; // String
       displayName?: string | null; // String
       name: string; // String!
     }

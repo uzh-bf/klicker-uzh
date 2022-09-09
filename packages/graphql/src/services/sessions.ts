@@ -56,10 +56,11 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
 interface CreateCourseArgs {
   name: string
   displayName?: string
+  color?: string
 }
 
 export async function createCourse(
-  { name, displayName }: CreateCourseArgs,
+  { name, displayName, color }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.course.create({

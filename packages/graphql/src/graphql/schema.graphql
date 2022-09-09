@@ -30,6 +30,7 @@ type ChoicesQuestionOptions {
 }
 
 type Course {
+  color: String
   displayName: String!
   id: ID!
   learningElements: [LearningElement!]!
@@ -94,7 +95,7 @@ type MicroSession {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
-  createCourse(displayName: String, name: String!): Course
+  createCourse(color: String, displayName: String, name: String!): Course
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   joinCourse(courseId: ID!): Participation
