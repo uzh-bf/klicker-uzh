@@ -13,7 +13,8 @@ const nextConfig = withPWA({
     API_URL:
       process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:7071/api/graphql',
     ADDRESPONSE_URL:
-      process.env.NEXT_PUBLIC_ADDRESPONSE_URL ?? 'http://127.0.0.1:7072/api/AddResponse',
+      process.env.NEXT_PUBLIC_ADDRESPONSE_URL ??
+      'http://127.0.0.1:7072/api/AddResponse',
   },
   serverRuntimeConfig: {
     APP_DOMAIN: process.env.APP_DOMAIN ?? '127.0.0.1',

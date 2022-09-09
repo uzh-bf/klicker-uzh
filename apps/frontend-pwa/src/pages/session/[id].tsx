@@ -12,11 +12,11 @@ import { QUESTION_GROUPS } from '../../constants'
 
 import { addApolloState } from '@lib/apollo'
 import { getSessionData } from '@lib/joinData'
+import getConfig from 'next/config'
 import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
-import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -34,7 +34,6 @@ function Index({
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
-
 
   const handleNewResponse = async (
     type: string,
@@ -72,7 +71,7 @@ function Index({
         publicRuntimeConfig.ADDRESPONSE_URL,
         requestOptions
       )
-    } catch(e) {
+    } catch (e) {
       console.log('error', e)
     }
   }

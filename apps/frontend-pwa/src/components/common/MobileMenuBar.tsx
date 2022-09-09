@@ -1,9 +1,8 @@
 import { faHome } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, NotificationBadgeWrapper } from '@uzh-bf/design-system'
 import Router from 'next/router'
 import React from 'react'
-import { NotificationBadgeWrapper } from '@uzh-bf/design-system'
 
 interface MobileMenuBarProps {
   menuItems?: {

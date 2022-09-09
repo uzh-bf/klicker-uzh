@@ -26,7 +26,7 @@ interface QuestionAreaProps {
     options: any
     instanceId: number
   }[]
-  handleNewResponse: ( type: string, instanceId: number, answer: any ) => void // TODO: correct typing of answer
+  handleNewResponse: (type: string, instanceId: number, answer: any) => void // TODO: correct typing of answer
   sessionId: string
   execution: number
   timeLimit?: number
@@ -323,7 +323,7 @@ function QuestionArea({
             />
           </div>
 
-          {/* // TODO */}
+          {/* // TODO - first attachements need to be copied from question to instance on session creation, then parsed here with next/image */}
           <div>QUESTIONFILES</div>
 
           <div className="flex-1 mt-4">
