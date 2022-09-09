@@ -165,6 +165,7 @@ type Participation {
 }
 
 type Query {
+  feedbacks(id: ID!): [Feedback]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   participations: [Participation!]

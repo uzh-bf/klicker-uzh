@@ -1,0 +1,17 @@
+query GetFeedbacks($sessionId: ID!) {
+  feedbacks(id: $sessionId) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+    resolvedAt
+    responses {
+      id
+      content
+      positiveReactions
+      negativeReactions
+    }
+  }
+}

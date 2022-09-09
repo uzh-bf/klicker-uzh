@@ -430,6 +430,16 @@ export const Query = objectType({
         return SessionService.getSession(args, ctx)
       },
     })
+
+    t.list.field('feedbacks', {
+      type: Feedback,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getFeedbacks(args, ctx)
+      },
+    })
   },
 })
 

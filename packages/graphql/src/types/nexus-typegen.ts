@@ -352,6 +352,7 @@ export interface NexusGenFieldTypes {
     points: number; // Int!
   }
   Query: { // field return type
+    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
@@ -530,6 +531,7 @@ export interface NexusGenFieldTypeNames {
     points: 'Int'
   }
   Query: { // field return type name
+    feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
     participations: 'Participation'
@@ -629,6 +631,9 @@ export interface NexusGenArgTypes {
     }
   }
   Query: {
+    feedbacks: { // args
+      id: string; // ID!
+    }
     getCourseOverviewData: { // args
       courseId: string; // ID!
     }

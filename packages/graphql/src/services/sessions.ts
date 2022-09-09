@@ -413,3 +413,16 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
 
   return session
 }
+
+export async function getFeedbacks(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const feedbacks = await ctx.prisma.session
+    .findUnique({
+      where: { id },
+    })
+    .feedbacks({ where: { isPublished: true }, include: { responses: true } })
+
+  return feedbacks
+}

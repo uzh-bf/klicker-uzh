@@ -3,7 +3,7 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { GetFeedbacksDocument, Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -17,6 +17,7 @@ import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
+import { useQuery } from '@apollo/client'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -34,6 +35,13 @@ function Index({
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
+
+  const { loading: feedbacksLoading, error: feedbacksError, data: feedbacksData } = useQuery(GetFeedbacksDocument, {
+    variables: {
+      sessionId: router.query.id as string,
+    },
+  })
+  console.log(feedbacksData)
 
   const handleNewResponse = async (
     type: string,
