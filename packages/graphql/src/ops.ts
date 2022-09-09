@@ -90,7 +90,7 @@ export type InstanceEvaluation = {
 
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
-  avatar: Scalars['String'];
+  avatar?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   score: Scalars['Float'];
   username: Scalars['String'];
@@ -412,7 +412,7 @@ export type GetSessionLeaderboardQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, username: string, avatar: string, score: number }> | null };
+export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, username: string, avatar?: string | null, score: number }> | null };
 
 export type ParticipationsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -641,7 +641,7 @@ export interface JsonObjectScalarConfig extends GraphQLScalarTypeConfig<Resolver
 }
 
 export type LeaderboardEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['LeaderboardEntry'] = ResolversParentTypes['LeaderboardEntry']> = {
-  avatar?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
