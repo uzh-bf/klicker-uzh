@@ -1,12 +1,13 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["GraphQL"],
+  "include": ["prisma", "GraphQL"],
   "compilerOptions": {
     "module": "ESNext"
   },
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
+      "prisma/constants.ts": "esm",
       "prisma/seed.ts": "esm"
     }
   }

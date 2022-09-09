@@ -6,7 +6,7 @@
       "direction": "in",
       "name": "req",
       "route": "graphql",
-      "methods": ["get", "post", "options"]
+      "methods": ["post", "options"]
     },
     {
       "type": "http",
