@@ -45,12 +45,14 @@ scalar DateTime
 
 type Feedback {
   content: String!
+  createdAt: DateTime
   id: Int!
   isPinned: Boolean!
   isPublished: Boolean!
   isResolved: Boolean!
   resolvedAt: DateTime
   responses: [FeedbackResponse]
+  updatedAt: DateTime
   votes: Int!
 }
 

@@ -34,7 +34,6 @@ function FeedbackArea({
     upvoteFeedback({ variables: { feedbackId: id, increment: change } })
   }
 
-  // TODO: mutation that allows to increment and decrement both upvote and downvote of feedback response at the same time
   const onReactToFeedbackResponse = (
     id: number,
     upvoteChange: number,
@@ -71,7 +70,7 @@ function FeedbackArea({
       {isFeedbackChannelPublic && feedbacks.length > 0 && (
         <div>
           {openFeedbacks.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-8">
               <H3>Open Questions</H3>
               {openFeedbacks.map((feedback) => (
                 <PublicFeedback

@@ -91,12 +91,14 @@ export interface NexusGenObjects {
   }
   Feedback: { // root type
     content: string; // String!
+    createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id: number; // Int!
     isPinned: boolean; // Boolean!
     isPublished: boolean; // Boolean!
     isResolved: boolean; // Boolean!
     resolvedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     responses?: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     votes: number; // Int!
   }
   FeedbackResponse: { // root type
@@ -253,12 +255,14 @@ export interface NexusGenFieldTypes {
   }
   Feedback: { // field return type
     content: string; // String!
+    createdAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: number; // Int!
     isPinned: boolean; // Boolean!
     isPublished: boolean; // Boolean!
     isResolved: boolean; // Boolean!
     resolvedAt: NexusGenScalars['DateTime'] | null; // DateTime
     responses: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
     votes: number; // Int!
   }
   FeedbackResponse: { // field return type
@@ -434,12 +438,14 @@ export interface NexusGenFieldTypeNames {
   }
   Feedback: { // field return type name
     content: 'String'
+    createdAt: 'DateTime'
     id: 'Int'
     isPinned: 'Boolean'
     isPublished: 'Boolean'
     isResolved: 'Boolean'
     resolvedAt: 'DateTime'
     responses: 'FeedbackResponse'
+    updatedAt: 'DateTime'
     votes: 'Int'
   }
   FeedbackResponse: { // field return type name

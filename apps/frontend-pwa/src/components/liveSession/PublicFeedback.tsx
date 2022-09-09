@@ -1,5 +1,9 @@
+import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import localForage from 'localforage'
 import React, { useEffect, useState } from 'react'
 
@@ -122,14 +126,28 @@ function PublicFeedback({
   }
 
   return (
-    <div className="w-full mb-2 bg-red-400">
-      <div>
-        {feedback.content}
+    <div className="w-full mb-3">
+      <div className="flex flex-row w-full p-1.5 text-sm border border-solid rounded-md border-uzh-blue-40 bg-uzh-blue-20 bg-opacity-30 mb-1">
+        <div className="flex flex-col flex-1">
+          <div className="mb-0.5">{feedback.content}</div>
+          <div className="text-xs italic text-gray-600">
+            {feedback.resolvedAt
+              ? `Gelöst am ${dayjs(feedback.resolvedAt).format(
+                  'DD.MM.YYYY HH:mm'
+                )}`
+              : `Geposted am ${dayjs(feedback.createdAt).format(
+                  'DD.MM.YYYY HH:mm'
+                )}`}
+          </div>
+        </div>
         <Button
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
+          className="w-10 h-10"
         >
-          <Button.Icon>IC</Button.Icon>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faThumbsUp} size="lg" />
+          </Button.Icon>
         </Button>
       </div>
       {feedback.responses &&
@@ -137,24 +155,35 @@ function PublicFeedback({
         feedback.responses.map(
           (response) =>
             response && (
-              <div key={response.content}>
-                {response.content}
-                <Button
-                  onClick={() =>
-                    onResponseUpvote(upvotes[response.id], response.id)
-                  }
-                  active={upvotes[response.id] === 1}
-                >
-                  <Button.Icon>UP</Button.Icon>
-                </Button>
-                <Button
-                  onClick={() =>
-                    onResponseDownvote(upvotes[response.id], response.id)
-                  }
-                  active={upvotes[response.id] === -1}
-                >
-                  <Button.Icon>DN</Button.Icon>
-                </Button>
+              <div
+                key={response.content}
+                className="ml-8 flex flex-row flex-1 p-1.5 text-sm border-2 border-solid rounded-md border-uzh-grey-60 bg-uzh-grey-20 mb-1"
+              >
+                <div className="flex flex-col flex-1">{response.content}</div>
+                <div>
+                  <Button
+                    onClick={() =>
+                      onResponseUpvote(upvotes[response.id], response.id)
+                    }
+                    active={upvotes[response.id] === 1}
+                    className="mr-1 w-9 h-9"
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faThumbsUp} size="lg" />
+                    </Button.Icon>
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      onResponseDownvote(upvotes[response.id], response.id)
+                    }
+                    active={upvotes[response.id] === -1}
+                    className="w-9 h-9"
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faQuestion} size="lg" />
+                    </Button.Icon>
+                  </Button>
+                </div>
               </div>
             )
         )}

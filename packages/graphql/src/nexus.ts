@@ -309,6 +309,8 @@ export const Feedback = objectType({
     t.list.field('responses', { type: FeedbackResponse })
 
     t.date('resolvedAt')
+    t.date('createdAt')
+    t.date('updatedAt')
   },
 })
 
