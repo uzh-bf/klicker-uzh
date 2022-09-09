@@ -1048,9 +1048,88 @@ async function main(prisma: Prisma.PrismaClient) {
           id: user.id,
         },
       },
+      feedbacks: {
+        create: [
+          {
+            content:
+              'Feedback with 4 upvotes, no responses, published, pinned, not resolved',
+            isPublished: true,
+            isPinned: true,
+            votes: 4,
+          },
+          {
+            content:
+              'Feedback with 2 upvotes, no responses, published, pinned, resolved',
+            isPublished: true,
+            isPinned: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:59:59.999Z'),
+            votes: 2,
+          },
+          {
+            content:
+              'Feedback with 3 upvotes, 1 response, published, not pinned, resolved',
+            isPublished: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:59:59.999Z'),
+            votes: 2,
+            responses: {
+              create: [
+                {
+                  content: 'Response to feedback with 2 upvotes, 3 downvotes',
+                  positiveReactions: 2,
+                  negativeReactions: 3,
+                },
+              ],
+            },
+          },
+          {
+            content:
+              'Feedback with 6 upvotes, 2 responses, published, not pinned, resolved',
+            isPublished: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:59:59.999Z'),
+            votes: 6,
+            responses: {
+              create: [
+                {
+                  content: 'Response to feedback with 2 upvotes, 3 downvotes',
+                  positiveReactions: 2,
+                  negativeReactions: 3,
+                },
+                {
+                  content: 'Response to feedback with 5 upvotes, 0 downvotes',
+                  positiveReactions: 5,
+                  negativeReactions: 0,
+                },
+              ],
+            },
+          },
+        ],
+      },
     },
     update: {},
   })
+
+  // const feedback1 = await prisma.feedback.upsert({
+  //   where: {
+  //     id: 1,
+  //   },
+  //   create: {
+  //     id: 1,
+  //     content:
+  //       'Feedback with 4 upvotes, no responses, published, pinned, not resolved',
+  //     isPublished: true,
+  //     isPinned: true,
+  //     votes: 4,
+  //     session: {
+  //       connect: {
+  //         id: session3.id,
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
 
   await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
   await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`

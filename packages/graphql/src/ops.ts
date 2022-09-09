@@ -59,6 +59,26 @@ export type Course = {
   sessions: Array<Session>;
 };
 
+export type Feedback = {
+  __typename?: 'Feedback';
+  content: Scalars['String'];
+  id: Scalars['Int'];
+  isPinned: Scalars['Boolean'];
+  isPublished: Scalars['Boolean'];
+  isResolved: Scalars['Boolean'];
+  resolvedAt?: Maybe<Scalars['DateTime']>;
+  responses?: Maybe<Array<Maybe<FeedbackResponse>>>;
+  votes: Scalars['Int'];
+};
+
+export type FeedbackResponse = {
+  __typename?: 'FeedbackResponse';
+  content: Scalars['String'];
+  id: Scalars['Int'];
+  negativeReactions: Scalars['Int'];
+  positiveReactions: Scalars['Int'];
+};
+
 export type FreeTextQuestionData = QuestionData & {
   __typename?: 'FreeTextQuestionData';
   content: Scalars['String'];
@@ -297,6 +317,7 @@ export type Session = {
   activeBlock?: Maybe<SessionBlock>;
   blocks: Array<SessionBlock>;
   displayName: Scalars['String'];
+  feedbacks?: Maybe<Array<Maybe<Feedback>>>;
   id: Scalars['ID'];
   isAudienceInteractionActive: Scalars['Boolean'];
   isFeedbackChannelPublic: Scalars['Boolean'];
@@ -479,6 +500,8 @@ export type ResolversTypes = {
   ChoicesQuestionOptions: ResolverTypeWrapper<ChoicesQuestionOptions>;
   Course: ResolverTypeWrapper<Course>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
+  Feedback: ResolverTypeWrapper<Feedback>;
+  FeedbackResponse: ResolverTypeWrapper<FeedbackResponse>;
   Float: ResolverTypeWrapper<Scalars['Float']>;
   FreeTextQuestionData: ResolverTypeWrapper<FreeTextQuestionData>;
   FreeTextQuestionOptions: ResolverTypeWrapper<FreeTextQuestionOptions>;
@@ -518,6 +541,8 @@ export type ResolversParentTypes = {
   ChoicesQuestionOptions: ChoicesQuestionOptions;
   Course: Course;
   DateTime: Scalars['DateTime'];
+  Feedback: Feedback;
+  FeedbackResponse: FeedbackResponse;
   Float: Scalars['Float'];
   FreeTextQuestionData: FreeTextQuestionData;
   FreeTextQuestionOptions: FreeTextQuestionOptions;
@@ -583,6 +608,26 @@ export type CourseResolvers<ContextType = any, ParentType extends ResolversParen
 export interface DateTimeScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['DateTime'], any> {
   name: 'DateTime';
 }
+
+export type FeedbackResolvers<ContextType = any, ParentType extends ResolversParentTypes['Feedback'] = ResolversParentTypes['Feedback']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  isPinned?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isPublished?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isResolved?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  resolvedAt?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  responses?: Resolver<Maybe<Array<Maybe<ResolversTypes['FeedbackResponse']>>>, ParentType, ContextType>;
+  votes?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FeedbackResponseResolvers<ContextType = any, ParentType extends ResolversParentTypes['FeedbackResponse'] = ResolversParentTypes['FeedbackResponse']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  negativeReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  positiveReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionData'] = ResolversParentTypes['FreeTextQuestionData']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -737,6 +782,7 @@ export type SessionResolvers<ContextType = any, ParentType extends ResolversPare
   activeBlock?: Resolver<Maybe<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
   blocks?: Resolver<Array<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
   displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  feedbacks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Feedback']>>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isAudienceInteractionActive?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isFeedbackChannelPublic?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -764,6 +810,8 @@ export type Resolvers<ContextType = any> = {
   ChoicesQuestionOptions?: ChoicesQuestionOptionsResolvers<ContextType>;
   Course?: CourseResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
+  Feedback?: FeedbackResolvers<ContextType>;
+  FeedbackResponse?: FeedbackResponseResolvers<ContextType>;
   FreeTextQuestionData?: FreeTextQuestionDataResolvers<ContextType>;
   FreeTextQuestionOptions?: FreeTextQuestionOptionsResolvers<ContextType>;
   FreeTextRestrictions?: FreeTextRestrictionsResolvers<ContextType>;

@@ -43,6 +43,24 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+type Feedback {
+  content: String!
+  id: Int!
+  isPinned: Boolean!
+  isPublished: Boolean!
+  isResolved: Boolean!
+  resolvedAt: DateTime
+  responses: [FeedbackResponse]
+  votes: Int!
+}
+
+type FeedbackResponse {
+  content: String!
+  id: Int!
+  negativeReactions: Int!
+  positiveReactions: Int!
+}
+
 type FreeTextQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
@@ -186,6 +204,7 @@ type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock!]!
   displayName: String!
+  feedbacks: [Feedback]
   id: ID!
   isAudienceInteractionActive: Boolean!
   isFeedbackChannelPublic: Boolean!

@@ -293,6 +293,37 @@ export const ParticipantLearningData = objectType({
   },
 })
 
+export const Feedback = objectType({
+  name: 'Feedback',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.boolean('isPublished')
+    t.nonNull.boolean('isPinned')
+    t.nonNull.boolean('isResolved')
+
+    t.nonNull.string('content')
+
+    t.nonNull.int('votes')
+
+    t.list.field('responses', { type: FeedbackResponse })
+
+    t.date('resolvedAt')
+  },
+})
+
+export const FeedbackResponse = objectType({
+  name: 'FeedbackResponse',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('content')
+
+    t.nonNull.int('positiveReactions')
+    t.nonNull.int('negativeReactions')
+  },
+})
+
 export const SessionBlockStatus = enumType({
   name: 'SessionBlockStatus',
   members: DB.SessionBlockStatus,
@@ -345,6 +376,8 @@ export const Session = objectType({
     t.nonNull.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
+
+    t.list.field('feedbacks', { type: Feedback })
   },
 })
 

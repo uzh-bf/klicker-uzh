@@ -89,6 +89,22 @@ export interface NexusGenObjects {
     name: string; // String!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
+  Feedback: { // root type
+    content: string; // String!
+    id: number; // Int!
+    isPinned: boolean; // Boolean!
+    isPublished: boolean; // Boolean!
+    isResolved: boolean; // Boolean!
+    resolvedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    responses?: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    votes: number; // Int!
+  }
+  FeedbackResponse: { // root type
+    content: string; // String!
+    id: number; // Int!
+    negativeReactions: number; // Int!
+    positiveReactions: number; // Int!
+  }
   FreeTextQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
@@ -177,6 +193,7 @@ export interface NexusGenObjects {
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
+    feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
@@ -233,6 +250,22 @@ export interface NexusGenFieldTypes {
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
+  }
+  Feedback: { // field return type
+    content: string; // String!
+    id: number; // Int!
+    isPinned: boolean; // Boolean!
+    isPublished: boolean; // Boolean!
+    isResolved: boolean; // Boolean!
+    resolvedAt: NexusGenScalars['DateTime'] | null; // DateTime
+    responses: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    votes: number; // Int!
+  }
+  FeedbackResponse: { // field return type
+    content: string; // String!
+    id: number; // Int!
+    negativeReactions: number; // Int!
+    positiveReactions: number; // Int!
   }
   FreeTextQuestionData: { // field return type
     content: string; // String!
@@ -340,6 +373,7 @@ export interface NexusGenFieldTypes {
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
+    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isFeedbackChannelPublic: boolean; // Boolean!
@@ -394,6 +428,22 @@ export interface NexusGenFieldTypeNames {
     microSessions: 'MicroSession'
     name: 'String'
     sessions: 'Session'
+  }
+  Feedback: { // field return type name
+    content: 'String'
+    id: 'Int'
+    isPinned: 'Boolean'
+    isPublished: 'Boolean'
+    isResolved: 'Boolean'
+    resolvedAt: 'DateTime'
+    responses: 'FeedbackResponse'
+    votes: 'Int'
+  }
+  FeedbackResponse: { // field return type name
+    content: 'String'
+    id: 'Int'
+    negativeReactions: 'Int'
+    positiveReactions: 'Int'
   }
   FreeTextQuestionData: { // field return type name
     content: 'String'
@@ -501,6 +551,7 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     displayName: 'String'
+    feedbacks: 'Feedback'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isFeedbackChannelPublic: 'Boolean'
