@@ -311,6 +311,7 @@ export interface NexusGenFieldTypes {
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
   }
   NumericalQuestionData: { // field return type
     content: string; // String!
@@ -491,6 +492,7 @@ export interface NexusGenFieldTypeNames {
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     upvoteFeedback: 'Feedback'
+    voteFeedbackResponse: 'FeedbackResponse'
   }
   NumericalQuestionData: { // field return type name
     content: 'String'
@@ -634,6 +636,11 @@ export interface NexusGenArgTypes {
     upvoteFeedback: { // args
       feedbackId: number; // Int!
       increment: number; // Int!
+    }
+    voteFeedbackResponse: { // args
+      id: number; // Int!
+      incrementDownvote: number; // Int!
+      incrementUpvote: number; // Int!
     }
   }
   Query: {

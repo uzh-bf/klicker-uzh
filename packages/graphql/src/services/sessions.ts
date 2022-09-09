@@ -440,3 +440,22 @@ export async function upvoteFeedback(
     },
   })
 }
+
+export async function voteFeedbackResponse(
+  {
+    id,
+    incrementUpvote,
+    incrementDownvote,
+  }: { id: number; incrementUpvote: number; incrementDownvote: number },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedbackResponse.update({
+    where: {
+      id: id,
+    },
+    data: {
+      positiveReactions: { increment: incrementUpvote },
+      negativeReactions: { increment: incrementDownvote },
+    },
+  })
+}

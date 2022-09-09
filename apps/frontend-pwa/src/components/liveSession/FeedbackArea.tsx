@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { Feedback, UpvoteFeedbackDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Feedback,
+  UpvoteFeedbackDocument,
+  VoteFeedbackResponseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H1, H3 } from '@uzh-bf/design-system'
 import React from 'react'
 import PublicFeedback from './PublicFeedback'
@@ -24,9 +28,9 @@ function FeedbackArea({
   isFeedbackChannelPublic,
 }: FeedbackAreaProps): React.ReactElement {
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
+  const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
 
   const onUpvoteFeedback = (id: number, change: number) => {
-    console.log('upvote change feedback', change)
     upvoteFeedback({ variables: { feedbackId: id, increment: change } })
   }
 
@@ -36,12 +40,13 @@ function FeedbackArea({
     upvoteChange: number,
     downvoteChange: number
   ) => {
-    console.log(
-      'upvote change response',
-      upvoteChange,
-      'downvote change response',
-      downvoteChange
-    )
+    voteFeedbackResponse({
+      variables: {
+        id: id,
+        incrementUpvote: upvoteChange,
+        incrementDownvote: downvoteChange,
+      },
+    })
   }
 
   if (loading || !feedbacks) {

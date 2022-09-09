@@ -75,7 +75,7 @@ function PublicFeedback({
 
   const onResponseUpvote = async (
     previousValue: number,
-    responseId: string
+    responseId: number
   ) => {
     const newUpvotes = { ...upvotes, [responseId]: previousValue === 1 ? 0 : 1 }
     setUpvotes(newUpvotes)
@@ -86,17 +86,17 @@ function PublicFeedback({
 
     // send upvote change to parent component
     if (previousValue === 1) {
-      onReactToFeedbackResponse(feedbackId, -1, 0)
+      onReactToFeedbackResponse(responseId, -1, 0)
     } else if (previousValue === 0) {
-      onReactToFeedbackResponse(feedbackId, 1, 0)
+      onReactToFeedbackResponse(responseId, 1, 0)
     } else {
-      onReactToFeedbackResponse(feedbackId, 1, -1)
+      onReactToFeedbackResponse(responseId, 1, -1)
     }
   }
 
   const onResponseDownvote = async (
     previousValue: number,
-    responseId: string
+    responseId: number
   ) => {
     const newUpvotes = {
       ...upvotes,
@@ -110,11 +110,11 @@ function PublicFeedback({
 
     // send upvote change to parent component
     if (previousValue === -1) {
-      onReactToFeedbackResponse(feedbackId, 0, -1)
+      onReactToFeedbackResponse(responseId, 0, -1)
     } else if (previousValue === 0) {
-      onReactToFeedbackResponse(feedbackId, 0, 1)
+      onReactToFeedbackResponse(responseId, 0, 1)
     } else {
-      onReactToFeedbackResponse(feedbackId, -1, 1)
+      onReactToFeedbackResponse(responseId, -1, 1)
     }
   }
 
@@ -140,7 +140,7 @@ function PublicFeedback({
                   onClick={() =>
                     onResponseUpvote(
                       upvotes[response.id],
-                      response.id as unknown as string
+                      response.id
                     )
                   }
                   active={upvotes[response.id] === 1}
@@ -151,7 +151,7 @@ function PublicFeedback({
                   onClick={() =>
                     onResponseDownvote(
                       upvotes[response.id],
-                      response.id as unknown as string
+                      response.id
                     )
                   }
                   active={upvotes[response.id] === -1}

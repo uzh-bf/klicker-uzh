@@ -116,6 +116,7 @@ type Mutation {
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
 type NumericalQuestionData implements QuestionData {

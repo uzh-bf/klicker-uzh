@@ -511,6 +511,18 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('voteFeedbackResponse', {
+      type: FeedbackResponse,
+      args: {
+        id: nonNull(intArg()),
+        incrementUpvote: nonNull(intArg()),
+        incrementDownvote: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.voteFeedbackResponse(args, ctx)
+      },
+    })
+
     t.field('respondToQuestionInstance', {
       type: QuestionInstance,
       args: {
