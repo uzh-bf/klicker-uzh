@@ -426,3 +426,17 @@ export async function getFeedbacks(
 
   return feedbacks
 }
+
+export async function upvoteFeedback(
+  { feedbackId, increment }: { feedbackId: number; increment: number },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id: feedbackId,
+    },
+    data: {
+      votes: { increment: increment },
+    },
+  })
+}

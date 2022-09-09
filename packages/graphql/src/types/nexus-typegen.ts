@@ -310,6 +310,7 @@ export interface NexusGenFieldTypes {
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
+    upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
   }
   NumericalQuestionData: { // field return type
     content: string; // String!
@@ -489,6 +490,7 @@ export interface NexusGenFieldTypeNames {
     registerParticipantFromLTI: 'ParticipantLearningData'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
+    upvoteFeedback: 'Feedback'
   }
   NumericalQuestionData: { // field return type name
     content: 'String'
@@ -628,6 +630,10 @@ export interface NexusGenArgTypes {
     }
     startSession: { // args
       id: string; // ID!
+    }
+    upvoteFeedback: { // args
+      feedbackId: number; // Int!
+      increment: number; // Int!
     }
   }
   Query: {

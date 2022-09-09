@@ -1,4 +1,5 @@
-import { Feedback } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import { Feedback, UpvoteFeedbackDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, H3 } from '@uzh-bf/design-system'
 import React from 'react'
 import PublicFeedback from './PublicFeedback'
@@ -22,13 +23,16 @@ function FeedbackArea({
   isAudienceInteractionActive,
   isFeedbackChannelPublic,
 }: FeedbackAreaProps): React.ReactElement {
-  // TODO: mutation that signals if upvote of feedback is added or removed
-  const onUpvoteFeedback = (change: number) => {
+  const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
+
+  const onUpvoteFeedback = (id: number, change: number) => {
     console.log('upvote change feedback', change)
+    upvoteFeedback({ variables: { feedbackId: id, increment: change } })
   }
 
   // TODO: mutation that allows to increment and decrement both upvote and downvote of feedback response at the same time
   const onReactToFeedbackResponse = (
+    id: number,
     upvoteChange: number,
     downvoteChange: number
   ) => {

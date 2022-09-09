@@ -115,6 +115,7 @@ type Mutation {
   registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+  upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
 }
 
 type NumericalQuestionData implements QuestionData {
