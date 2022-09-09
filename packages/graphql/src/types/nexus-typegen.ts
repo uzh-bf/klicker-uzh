@@ -111,7 +111,7 @@ export interface NexusGenObjects {
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
   LeaderboardEntry: { // root type
-    avatar: string; // String!
+    avatar?: string | null; // String
     id: string; // ID!
     score: number; // Float!
     username: string; // String!
@@ -262,7 +262,7 @@ export interface NexusGenFieldTypes {
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
   LeaderboardEntry: { // field return type
-    avatar: string; // String!
+    avatar: string | null; // String
     id: string; // ID!
     score: number; // Float!
     username: string; // String!
