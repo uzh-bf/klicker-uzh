@@ -1,21 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'sos-ch-dk-2.exo.io',
-          port: '443',
-          pathname: '/klicker-uzh-dev/**',
-        },
-      ],
-    },
-  },
   reactStrictMode: true,
   swcMinify: true,
   images: {
     domains: ['sos-ch-dk-2.exo.io'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'sos-ch-dk-2.exo.io',
+        port: '443',
+        pathname: '/klicker-uzh-dev/**',
+      },
+    ],
   },
   publicRuntimeConfig: {
     API_URL:
