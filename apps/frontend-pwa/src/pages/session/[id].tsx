@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
+import { useQuery } from '@apollo/client'
 import { addApolloState } from '@lib/apollo'
 import { getSessionData } from '@lib/joinData'
 import getConfig from 'next/config'
@@ -17,7 +18,6 @@ import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
-import { useQuery } from '@apollo/client'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -36,12 +36,17 @@ function Index({
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { loading: feedbacksLoading, error: feedbacksError, data: feedbacksData } = useQuery(GetFeedbacksDocument, {
+  // TODO: implement subscription on changing feedbacks
+  const {
+    loading: feedbacksLoading,
+    error: feedbacksError,
+    data: feedbacksData,
+  } = useQuery(GetFeedbacksDocument, {
     variables: {
       sessionId: router.query.id as string,
     },
+    pollInterval: 10000,
   })
-  console.log(feedbacksData)
 
   const handleNewResponse = async (
     type: string,
@@ -73,7 +78,6 @@ function Index({
     } else {
       return null
     }
-    console.log('request options', requestOptions)
     try {
       const response = await fetch(
         publicRuntimeConfig.ADDRESPONSE_URL,
@@ -171,7 +175,12 @@ function Index({
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
-          <FeedbackArea feedbacks={[]} />
+          <FeedbackArea
+            feedbacks={feedbacksData?.feedbacks}
+            loading={feedbacksLoading}
+            isAudienceInteractionActive={isAudienceInteractionActive}
+            isFeedbackChannelPublic={isFeedbackChannelPublic}
+          />
         </div>
       )}
     </Layout>
