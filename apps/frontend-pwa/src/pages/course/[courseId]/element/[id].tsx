@@ -5,8 +5,9 @@ import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
-import { Progress, Prose } from '@uzh-bf/design-system'
+import { Progress } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -31,7 +32,7 @@ function LearningElement() {
     ResponseToQuestionInstanceDocument
   )
 
-  if (loading || !data) return <p>Loading...</p>
+  if (loading || !data?.learningElement) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
 
   const currentInstance = data.learningElement?.instances?.[currentIx]
@@ -64,8 +65,11 @@ function LearningElement() {
 
   return (
     <div className="flex flex-col max-w-6xl m-auto">
-      <div className="flex flex-row items-center justify-between px-4 py-2 font-bold text-white bg-uzh-blue-100">
-        <div className="">Banking and Finance I</div>
+      <div
+        className="flex flex-row items-center justify-between order-1 px-4 py-2 font-bold text-white border-b-8 bg-slate-800"
+        style={{ borderColor: data.learningElement.course.color ?? 'green' }}
+      >
+        <div className="">{data.learningElement.course.displayName}</div>
         <div className="relative w-auto h-8 aspect-square">
           <Image
             className="rounded-full"
@@ -76,13 +80,14 @@ function LearningElement() {
         </div>
       </div>
 
-      <div className="p-4 border-l border-r">
+      <div className="order-3 p-4 pt-0 border-l border-r md:pt-4 md:order-2">
         {questionData && (
-          <div className="flex flex-row gap-4">
+          <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
-              <Prose className="px-2 py-1 mb-4 border rounded">
-                {questionData.content}
-              </Prose>
+              <div className="pb-2">
+                <Markdown content={questionData.content} />
+              </div>
+
               <OptionsDisplay
                 isEvaluation={isEvaluation}
                 response={response}
@@ -94,20 +99,21 @@ function LearningElement() {
                 options={questionData.options}
               />
             </div>
-            <div className="flex-1 p-4 border rounded bg-gray-50">
-              {currentInstance.evaluation && (
+
+            {currentInstance.evaluation && (
+              <div className="flex-1 p-4 border rounded bg-gray-50">
                 <EvaluationDisplay
                   options={questionData.options}
                   questionType={questionData.type}
                   evaluation={currentInstance.evaluation}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <div>
+      <div className="order-2 p-4 md:order-3">
         <Progress
           formatter={(v) => v}
           value={currentIx}
