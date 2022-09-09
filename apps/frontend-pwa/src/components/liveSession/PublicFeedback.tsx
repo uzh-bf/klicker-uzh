@@ -17,7 +17,7 @@ function PublicFeedback({
   onUpvoteFeedback,
   onReactToFeedbackResponse,
 }: FeedbackProps): React.ReactElement {
-  // structure for upvotes element: { upvote: true/false, responseId1: 1 0 or -1, responseId2: 1 0 or -1, ...}
+  // structure for upvotes element: { upvote: true/false, responseId1: 1, 0 or -1, responseId2: 1, 0 or -1, ...}
   // upvote true meaning feadback is upvoted, responseId value for upvote, no vote or downvote
   const [upvotes, setUpvotes] = useState({
     upvote: false,
@@ -40,7 +40,6 @@ function PublicFeedback({
             storedUpvotes = JSON.parse(storedUpvotes)
           }
           setUpvotes(storedUpvotes)
-          console.log('found stored upvotes')
         } else {
           await localForage.setItem(
             `${feedback.id}-upvotes`,
@@ -53,7 +52,6 @@ function PublicFeedback({
                 }, {}),
             })
           )
-          console.log('initialized upvotes')
         }
       } catch (e) {
         console.error(e)
@@ -62,8 +60,6 @@ function PublicFeedback({
     exec()
   }, [feedback])
 
-  console.log('upvotes', upvotes)
-
   const onUpvote = async (previousValue: boolean) => {
     const newUpvotes = { ...upvotes, upvote: !previousValue }
     setUpvotes(newUpvotes)
@@ -71,36 +67,49 @@ function PublicFeedback({
       `${feedback.id}-upvotes`,
       JSON.stringify(newUpvotes)
     )
-    // TODO: send upvote to server
+    onUpvoteFeedback(previousValue ? -1 : 1)
   }
 
-  // TODO: implement
   const onResponseUpvote = async (
-    previousValue: boolean,
+    previousValue: number,
     responseId: string
   ) => {
-    console.log('previous value', previousValue, responseId)
-    const newUpvotes = { ...upvotes, [responseId]: previousValue ? 0 : 1 }
+    const newUpvotes = { ...upvotes, [responseId]: previousValue === 1 ? 0 : 1 }
     setUpvotes(newUpvotes)
     await localForage.setItem(
       `${feedback.id}-upvotes`,
       JSON.stringify(newUpvotes)
     )
-    // TODO: send upvote to server
+
+    // send upvote change to parent component
+    if (previousValue === 1) {
+      onReactToFeedbackResponse(-1, 0)
+    } else if (previousValue === 0) {
+      onReactToFeedbackResponse(1, 0)
+    } else {
+      onReactToFeedbackResponse(1, -1)
+    }
   }
 
   const onResponseDownvote = async (
-    previousValue: boolean,
+    previousValue: number,
     responseId: string
   ) => {
-    console.log('previous value', previousValue, responseId)
-    const newUpvotes = { ...upvotes, [responseId]: previousValue ? 0 : -1 }
+    const newUpvotes = { ...upvotes, [responseId]: previousValue === -1 ? 0 : -1 }
     setUpvotes(newUpvotes)
     await localForage.setItem(
       `${feedback.id}-upvotes`,
       JSON.stringify(newUpvotes)
     )
-    // TODO: send upvote to server
+    
+    // send upvote change to parent component
+    if (previousValue === -1) {
+      onReactToFeedbackResponse(0, -1)
+    } else if (previousValue === 0) {
+      onReactToFeedbackResponse(0, 1)
+    } else {
+      onReactToFeedbackResponse(-1, 1)
+    }
   }
 
   return (
@@ -124,7 +133,7 @@ function PublicFeedback({
                 <Button
                   onClick={() =>
                     onResponseUpvote(
-                      upvotes[response.id] === 1,
+                      upvotes[response.id],
                       response.id as unknown as string
                     )
                   }
@@ -135,7 +144,7 @@ function PublicFeedback({
                 <Button
                   onClick={() =>
                     onResponseDownvote(
-                      upvotes[response.id] === -1,
+                      upvotes[response.id],
                       response.id as unknown as string
                     )
                   }
