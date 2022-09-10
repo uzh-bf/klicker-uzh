@@ -153,6 +153,7 @@ function FeedbackArea({
     } catch ({ message }) {
       console.error(message)
     } finally {
+      // disable confusion voting for 1 minute
       setConfusionEnabled(false)
       if (confusionButtonTimeout.current) {
         clearTimeout(confusionButtonTimeout.current)
@@ -250,7 +251,9 @@ function FeedbackArea({
         </Formik>
       </div>
 
-      {/* // TODO: styling of confusion barometer (borders, etc); move component to design system if possible  */}
+      {/* // TODO: styling of confusion barometer (borders, etc) */}
+      {/* // TODO: move component to design system if possible */}
+      {/* // TODO: implement sliders as generic as possible with flexible ranges and maybe also modified coloring scheme for more flexibility */}
       <div className="mb-8 text-sm">
         <H3 className="-mb-4">Speed</H3>
         <div className="w-full mb-6">
