@@ -677,6 +677,8 @@ export async function createFeedback(
 
 // TODO: addResponseToFeedback - add response to feedback (will be used in frontend manage - graphql query missing)
 
+// TODO: resolveFeedback - set status of feedback to resolved without actually responding to it
+
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
 interface SessionSettingArgs {
   id: string
