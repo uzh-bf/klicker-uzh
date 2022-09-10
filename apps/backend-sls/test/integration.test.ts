@@ -221,6 +221,47 @@ describe('API', () => {
     `)
   })
 
+  it('allows the user to change important session parameters', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            changeSessionSettings(id: "${session.id}", isAudienceInteractionActive: true, isModerationEnabled: false, isGamificationEnabled: true) {
+                id
+                isAudienceInteractionActive
+                isModerationEnabled
+                isGamificationEnabled
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "changeSessionSettings": Object {
+            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "isAudienceInteractionActive": true,
+            "isModerationEnabled": false,
+            "isGamificationEnabled": true,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "typename": "Session",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
   it('allows the user to activate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')

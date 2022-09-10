@@ -116,6 +116,7 @@ type MicroSession {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session

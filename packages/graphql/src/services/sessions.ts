@@ -674,3 +674,40 @@ export async function createFeedback(
     })
   }
 }
+
+// TODO: addResponseToFeedback - add response to feedback (will be used in frontend manage - graphql query missing)
+
+// modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
+interface SessionSettingArgs {
+  sessionId: string
+  isAudienceInteractionActive?: boolean
+  isModerationEnabled?: boolean
+  isGamificationEnabled?: boolean
+}
+
+export async function changeSessionSettings(
+  {
+    sessionId,
+    isAudienceInteractionActive,
+    isModerationEnabled,
+    isGamificationEnabled,
+  }: SessionSettingArgs,
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.update({
+    where: { id: sessionId },
+    data: {
+      isAudienceInteractionActive:
+        typeof isAudienceInteractionActive === 'undefined'
+          ? false
+          : isAudienceInteractionActive,
+      isModerationEnabled:
+        typeof isModerationEnabled === 'undefined' ? true : isModerationEnabled,
+      isGamificationEnabled:
+        typeof isGamificationEnabled === 'undefined'
+          ? false
+          : isGamificationEnabled,
+    },
+  })
+  return session
+}

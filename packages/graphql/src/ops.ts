@@ -137,6 +137,7 @@ export type MicroSession = {
 export type Mutation = {
   __typename?: 'Mutation';
   activateSessionBlock?: Maybe<Session>;
+  changeSessionSettings?: Maybe<Session>;
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
   createSession?: Maybe<Session>;
@@ -156,6 +157,14 @@ export type Mutation = {
 export type MutationActivateSessionBlockArgs = {
   sessionBlockId: Scalars['Int'];
   sessionId: Scalars['ID'];
+};
+
+
+export type MutationChangeSessionSettingsArgs = {
+  id: Scalars['ID'];
+  isAudienceInteractionActive?: InputMaybe<Scalars['Boolean']>;
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
+  isModerationEnabled?: InputMaybe<Scalars['Boolean']>;
 };
 
 
@@ -780,6 +789,7 @@ export type MicroSessionResolvers<ContextType = any, ParentType extends Resolver
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   activateSessionBlock?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationActivateSessionBlockArgs, 'sessionBlockId' | 'sessionId'>>;
+  changeSessionSettings?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationChangeSessionSettingsArgs, 'id'>>;
   createCourse?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType, RequireFields<MutationCreateCourseArgs, 'name'>>;
   createFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationCreateFeedbackArgs, 'content' | 'isPublished' | 'sessionId'>>;
   createSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'blocks' | 'name'>>;

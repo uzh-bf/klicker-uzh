@@ -619,6 +619,19 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('changeSessionSettings', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+        isAudienceInteractionActive: booleanArg(),
+        isModerationEnabled: booleanArg(),
+        isGamificationEnabled: booleanArg(),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.changeSessionSettings(args, ctx)
+      },
+    })
+
     t.field('activateSessionBlock', {
       type: Session,
       args: {

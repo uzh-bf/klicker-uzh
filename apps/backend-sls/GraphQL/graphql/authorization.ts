@@ -30,6 +30,7 @@ export const Rules = {
 export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Reject'] } },
+    changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
