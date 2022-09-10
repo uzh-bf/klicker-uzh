@@ -573,6 +573,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('respondToFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        responseContent: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.respondToFeedback(args, ctx)
+      },
+    })
+
     t.field('respondToQuestionInstance', {
       type: QuestionInstance,
       args: {

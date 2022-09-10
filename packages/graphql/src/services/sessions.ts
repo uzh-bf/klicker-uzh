@@ -675,7 +675,29 @@ export async function createFeedback(
   }
 }
 
-// TODO: addResponseToFeedback - add response to feedback (will be used in frontend manage - graphql query missing)
+// add response to an existing feedback
+export async function respondToFeedback(
+  { id, responseContent }: { id: number; responseContent: string },
+  ctx: ContextWithOptionalUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: true,
+      resolvedAt: new Date(),
+      responses: {
+        create: {
+          content: responseContent,
+        },
+      },
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  return feedback
+}
 
 // change value of isResolved property of feedback
 export async function resolveFeedback(
