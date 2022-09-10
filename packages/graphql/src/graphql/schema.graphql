@@ -30,6 +30,13 @@ type ChoicesQuestionOptions {
   choices: [Choice!]!
 }
 
+type ConfusionTimestep {
+  createdAt: DateTime!
+  difficulty: Int!
+  id: Int!
+  speed: Int!
+}
+
 type Course {
   color: String
   displayName: String!
@@ -222,6 +229,7 @@ input ResponseInput {
 type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock!]!
+  confusionFeedbacks: [ConfusionTimestep]
   displayName: String!
   feedbacks: [Feedback]
   id: ID!

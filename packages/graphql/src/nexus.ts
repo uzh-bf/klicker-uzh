@@ -341,6 +341,18 @@ export const FeedbackResponse = objectType({
   },
 })
 
+export const ConfusionTimestep = objectType({
+  name: 'ConfusionTimestep',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.int('difficulty')
+    t.nonNull.int('speed')
+
+    t.nonNull.date('createdAt')
+  },
+})
+
 export const SessionBlockStatus = enumType({
   name: 'SessionBlockStatus',
   members: DB.SessionBlockStatus,
@@ -395,6 +407,8 @@ export const Session = objectType({
     })
 
     t.list.field('feedbacks', { type: Feedback })
+
+    t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
   },
 })
 

@@ -50,6 +50,14 @@ export type ChoicesQuestionOptions = {
   choices: Array<Choice>;
 };
 
+export type ConfusionTimestep = {
+  __typename?: 'ConfusionTimestep';
+  createdAt: Scalars['DateTime'];
+  difficulty: Scalars['Int'];
+  id: Scalars['Int'];
+  speed: Scalars['Int'];
+};
+
 export type Course = {
   __typename?: 'Course';
   color?: Maybe<Scalars['String']>;
@@ -387,6 +395,7 @@ export type Session = {
   __typename?: 'Session';
   activeBlock?: Maybe<SessionBlock>;
   blocks: Array<SessionBlock>;
+  confusionFeedbacks?: Maybe<Array<Maybe<ConfusionTimestep>>>;
   displayName: Scalars['String'];
   feedbacks?: Maybe<Array<Maybe<Feedback>>>;
   id: Scalars['ID'];
@@ -609,6 +618,7 @@ export type ResolversTypes = {
   Choice: ResolverTypeWrapper<Choice>;
   ChoicesQuestionData: ResolverTypeWrapper<ChoicesQuestionData>;
   ChoicesQuestionOptions: ResolverTypeWrapper<ChoicesQuestionOptions>;
+  ConfusionTimestep: ResolverTypeWrapper<ConfusionTimestep>;
   Course: ResolverTypeWrapper<Course>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']>;
   Feedback: ResolverTypeWrapper<Feedback>;
@@ -651,6 +661,7 @@ export type ResolversParentTypes = {
   Choice: Choice;
   ChoicesQuestionData: ChoicesQuestionData;
   ChoicesQuestionOptions: ChoicesQuestionOptions;
+  ConfusionTimestep: ConfusionTimestep;
   Course: Course;
   DateTime: Scalars['DateTime'];
   Feedback: Feedback;
@@ -706,6 +717,14 @@ export type ChoicesQuestionDataResolvers<ContextType = any, ParentType extends R
 
 export type ChoicesQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['ChoicesQuestionOptions'] = ResolversParentTypes['ChoicesQuestionOptions']> = {
   choices?: Resolver<Array<ResolversTypes['Choice']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ConfusionTimestepResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConfusionTimestep'] = ResolversParentTypes['ConfusionTimestep']> = {
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  difficulty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  speed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -914,6 +933,7 @@ export type QuestionInstanceResolvers<ContextType = any, ParentType extends Reso
 export type SessionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Session'] = ResolversParentTypes['Session']> = {
   activeBlock?: Resolver<Maybe<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
   blocks?: Resolver<Array<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
+  confusionFeedbacks?: Resolver<Maybe<Array<Maybe<ResolversTypes['ConfusionTimestep']>>>, ParentType, ContextType>;
   displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   feedbacks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Feedback']>>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -941,6 +961,7 @@ export type Resolvers<ContextType = any> = {
   Choice?: ChoiceResolvers<ContextType>;
   ChoicesQuestionData?: ChoicesQuestionDataResolvers<ContextType>;
   ChoicesQuestionOptions?: ChoicesQuestionOptionsResolvers<ContextType>;
+  ConfusionTimestep?: ConfusionTimestepResolvers<ContextType>;
   Course?: CourseResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Feedback?: FeedbackResolvers<ContextType>;

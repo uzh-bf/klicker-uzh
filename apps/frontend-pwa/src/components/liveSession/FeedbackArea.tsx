@@ -5,7 +5,7 @@ import {
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { Button, H2, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
 import { useRouter } from 'next/router'
@@ -84,7 +84,7 @@ function FeedbackArea({
 
   return (
     <div className="w-full h-full">
-      <H1>Feedback-Kanal</H1>
+      <H2>Feedback-Kanal</H2>
 
       <div className="mb-8">
         <Formik
