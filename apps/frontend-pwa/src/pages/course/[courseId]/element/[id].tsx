@@ -80,7 +80,7 @@ function LearningElement() {
         </div>
       </div>
 
-      <div className="order-3 p-4 pt-0 border-l border-r md:pt-4 md:order-2">
+      <div className="order-3 p-4 pt-0 md:border-l md:border-r md:pt-4 md:order-2">
         {questionData && (
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
@@ -90,6 +90,7 @@ function LearningElement() {
 
               <OptionsDisplay
                 isEvaluation={isEvaluation}
+                evaluation={currentInstance.evaluation}
                 response={response}
                 onChangeResponse={setResponse}
                 onSubmitResponse={
@@ -113,7 +114,7 @@ function LearningElement() {
         )}
       </div>
 
-      <div className="order-2 p-4 md:order-3">
+      <div className="order-2 p-4 border-0 md:border md:border-t-0 md:order-3">
         <Progress
           formatter={(v) => v}
           value={currentIx}

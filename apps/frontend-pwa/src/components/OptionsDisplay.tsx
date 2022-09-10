@@ -4,10 +4,13 @@ import { QuestionType } from '@type/app'
 import { Button } from '@uzh-bf/design-system'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { indexBy } from 'ramda'
+import Markdown from '@klicker-uzh/markdown'
 
 interface ChoiceOptionsProps {
   choices: Choice[]
   isEvaluation?: boolean
+  feedbacks: any
   response?: number[]
   onChange: (ix: number) => void
 }
@@ -15,6 +18,7 @@ function ChoiceOptions({
   choices,
   onChange,
   isEvaluation,
+  feedbacks,
   response,
 }: ChoiceOptionsProps) {
   const shuffledChoices: Choice[] = useMemo(() => shuffle(choices), [choices])
@@ -35,8 +39,9 @@ function ChoiceOptions({
             fluid
             onClick={() => onChange(choice.ix)}
           >
-            <Button.Label>{choice.value}</Button.Label>
+            <Button.Label><Markdown content={choice.value}/></Button.Label>
           </Button>
+          {feedbacks?.[choice.ix] && <div className="p-1 text-sm">{feedbacks[choice.ix].feedback}</div>}
         </div>
       ))}
     </div>
@@ -47,6 +52,8 @@ interface OptionsProps {
   options: any
   questionType: QuestionType
   isEvaluation?: boolean
+  evaluation: any
+  feedbacks: any
   response: any
   onChangeResponse: (value: any) => void
 }
@@ -55,37 +62,51 @@ function Options({
   options,
   questionType,
   isEvaluation,
+  evaluation,
+  feedbacks,
   response,
   onChangeResponse,
 }: OptionsProps) {
   switch (questionType) {
     case QuestionType.SC:
       return (
-        <ChoiceOptions
-          choices={options.choices}
-          isEvaluation={isEvaluation}
-          response={response}
-          onChange={(ix) => onChangeResponse([ix])}
-        />
+        <div>
+          <div className="mb-2 italic">Wähle eine der folgenden Optionen.</div>
+          <ChoiceOptions
+            choices={options.choices}
+            isEvaluation={isEvaluation}
+            evaluation={evaluation}
+            feedbacks={feedbacks}
+            response={response}
+            onChange={(ix) => onChangeResponse([ix])}
+          />
+        </div>
       )
 
     case QuestionType.MC:
       return (
-        <ChoiceOptions
-          choices={options.choices}
-          isEvaluation={isEvaluation}
-          response={response}
-          onChange={(ix) =>
-            onChangeResponse((prev: any) => {
-              if (!prev) return [ix]
-              if (prev.includes(ix)) {
-                return prev.filter((c: any) => c !== ix)
-              } else {
-                return [...prev, ix]
-              }
-            })
-          }
-        />
+        <div>
+          <div className="mb-2 italic">
+            Wähle eine oder mehrere der folgenden Optionen.
+          </div>
+          <ChoiceOptions
+            choices={options.choices}
+            isEvaluation={isEvaluation}
+            evaluation={evaluation}
+            feedbacks={feedbacks}
+            response={response}
+            onChange={(ix) =>
+              onChangeResponse((prev: any) => {
+                if (!prev) return [ix]
+                if (prev.includes(ix)) {
+                  return prev.filter((c: any) => c !== ix)
+                } else {
+                  return [...prev, ix]
+                }
+              })
+            }
+          />
+        </div>
       )
 
     default:
@@ -95,6 +116,7 @@ function Options({
 
 interface OptionsDisplayProps {
   questionType: QuestionType
+  evaluation: any
   options: any
   response: any
   onChangeResponse: any
@@ -104,6 +126,7 @@ interface OptionsDisplayProps {
 
 function OptionsDisplay({
   isEvaluation,
+  evaluation,
   response,
   onChangeResponse,
   onSubmitResponse,
@@ -118,9 +141,18 @@ function OptionsDisplay({
     }
   }, [questionType, onChangeResponse])
 
+  const feedbacks = useMemo(() => {
+    if (evaluation) {
+      return indexBy((feedback: any) => feedback.ix, evaluation.feedbacks)
+    }
+  }, [evaluation])
+
+
   return (
     <div className="flex flex-col">
       <Options
+        evaluation={evaluation}
+        feedbacks={feedbacks}
         questionType={questionType}
         response={response}
         isEvaluation={isEvaluation}

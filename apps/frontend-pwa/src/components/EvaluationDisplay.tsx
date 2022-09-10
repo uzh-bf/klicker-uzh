@@ -21,16 +21,8 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       )
 
       return (
-        <div className="space-y-4">
           <div className="space-y-2">
-            <div className="font-bold">Feedback</div>
-            {evaluation?.feedbacks?.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <div className="font-bold">Answer Distribution</div>
+            <div className="font-bold">So haben andere geantwortet</div>
             {Object.entries(evaluation.choices as Record<string, number>).map(
               ([ix, value]) => (
                 <Progress
@@ -44,7 +36,6 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
                 />
               )
             )}
-          </div>
         </div>
       )
     }
@@ -60,16 +51,9 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
         .map((choice: any) => choice.ix)
 
       return (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="font-bold">Feedback</div>
-            {evaluation?.feedbacks?.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
 
-          <div className="space-y-2">
-            <div className="font-bold">Answer Distribution</div>
+        <div className="space-y-2">
+        <div className="font-bold">So haben andere geantwortet</div>
             {Object.entries(evaluation.choices as Record<string, number>).map(
               ([ix, value]) => (
                 <Progress
@@ -84,7 +68,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
               )
             )}
           </div>
-        </div>
+
       )
     }
 
