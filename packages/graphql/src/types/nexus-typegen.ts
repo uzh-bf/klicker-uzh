@@ -330,6 +330,7 @@ export interface NexusGenFieldTypes {
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    resolveFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -524,6 +525,7 @@ export interface NexusGenFieldTypeNames {
     loginParticipant: 'ID'
     loginUser: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
+    resolveFeedback: 'Feedback'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     upvoteFeedback: 'Feedback'
@@ -672,6 +674,10 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
       participantEmail: string; // String!
       participantId: string; // ID!
+    }
+    resolveFeedback: { // args
+      id: number; // Int!
+      newValue: boolean; // Boolean!
     }
     respondToQuestionInstance: { // args
       courseId: string; // ID!

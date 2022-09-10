@@ -147,6 +147,7 @@ export type Mutation = {
   loginParticipant?: Maybe<Scalars['ID']>;
   loginUser?: Maybe<Scalars['ID']>;
   registerParticipantFromLTI?: Maybe<ParticipantLearningData>;
+  resolveFeedback?: Maybe<Feedback>;
   respondToQuestionInstance?: Maybe<QuestionInstance>;
   startSession?: Maybe<Session>;
   upvoteFeedback?: Maybe<Feedback>;
@@ -222,6 +223,12 @@ export type MutationRegisterParticipantFromLtiArgs = {
   courseId: Scalars['ID'];
   participantEmail: Scalars['String'];
   participantId: Scalars['ID'];
+};
+
+
+export type MutationResolveFeedbackArgs = {
+  id: Scalars['Int'];
+  newValue: Scalars['Boolean'];
 };
 
 
@@ -799,6 +806,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   loginParticipant?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationLoginParticipantArgs, 'password' | 'username'>>;
   loginUser?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationLoginUserArgs, 'email' | 'password'>>;
   registerParticipantFromLTI?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationRegisterParticipantFromLtiArgs, 'courseId' | 'participantEmail' | 'participantId'>>;
+  resolveFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationResolveFeedbackArgs, 'id' | 'newValue'>>;
   respondToQuestionInstance?: Resolver<Maybe<ResolversTypes['QuestionInstance']>, ParentType, ContextType, RequireFields<MutationRespondToQuestionInstanceArgs, 'courseId' | 'id' | 'response'>>;
   startSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationStartSessionArgs, 'id'>>;
   upvoteFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationUpvoteFeedbackArgs, 'feedbackId' | 'increment'>>;

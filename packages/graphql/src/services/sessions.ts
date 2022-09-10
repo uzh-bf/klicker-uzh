@@ -677,7 +677,20 @@ export async function createFeedback(
 
 // TODO: addResponseToFeedback - add response to feedback (will be used in frontend manage - graphql query missing)
 
-// TODO: resolveFeedback - set status of feedback to resolved without actually responding to it
+// change value of isResolved property of feedback
+export async function resolveFeedback(
+  { id, newValue }: { id: number; newValue: boolean },
+  ctx: ContextWithOptionalUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: newValue,
+      resolvedAt: new Date(),
+    },
+  })
+  return feedback
+}
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
 interface SessionSettingArgs {

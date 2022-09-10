@@ -126,6 +126,7 @@ type Mutation {
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  resolveFeedback(id: Int!, newValue: Boolean!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
