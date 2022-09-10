@@ -1,7 +1,7 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateFeedbackDocument,
-  Feedback,
+  GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,8 +15,6 @@ import { Oval } from 'react-loader-spinner'
 import PublicFeedback from './PublicFeedback'
 
 interface FeedbackAreaProps {
-  feedbacks: Feedback[]
-  loading?: boolean
   isModerationEnabled?: boolean
 }
 
@@ -26,14 +24,25 @@ const defaultProps = {
 }
 
 function FeedbackArea({
-  feedbacks,
-  loading,
   isModerationEnabled,
 }: FeedbackAreaProps): React.ReactElement {
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
   const [createFeedback] = useMutation(CreateFeedbackDocument)
+
+  // TODO: implement subscription on changing feedbacks
+  // TODO: fix polling
+  const {
+    loading: feedbacksLoading,
+    error: feedbacksError,
+    data: feedbacksData,
+  } = useQuery(GetFeedbacksDocument, {
+    variables: {
+      sessionId: router.query.id as string,
+    },
+    pollInterval: 10000,
+  })
 
   const onAddFeedback = (input: string) => {
     createFeedback({
@@ -63,14 +72,14 @@ function FeedbackArea({
     })
   }
 
-  if (loading || !feedbacks) {
+  if (feedbacksLoading || !feedbacksData?.feedbacks) {
     return <div>Loading...</div>
   }
-  const openFeedbacks = feedbacks.filter(
-    (feedback) => feedback.isResolved === false
+  const openFeedbacks = feedbacksData?.feedbacks.filter(
+    (feedback) => feedback?.isResolved === false
   )
-  const resolvedFeedbacks = feedbacks.filter(
-    (feedback) => feedback.isResolved === true
+  const resolvedFeedbacks = feedbacksData?.feedbacks.filter(
+    (feedback) => feedback?.isResolved === true
   )
 
   return (
@@ -131,19 +140,21 @@ function FeedbackArea({
 
       <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
 
-      {feedbacks.length > 0 && (
+      {feedbacksData?.feedbacks.length > 0 && (
         <div>
           {openFeedbacks.length > 0 && (
             <div className="mb-8">
               <H3>Open Questions</H3>
-              {openFeedbacks.map((feedback) => (
-                <PublicFeedback
-                  key={feedback.content}
-                  feedback={feedback}
-                  onUpvoteFeedback={onUpvoteFeedback}
-                  onReactToFeedbackResponse={onReactToFeedbackResponse}
-                />
-              ))}
+              {openFeedbacks.map((feedback) =>
+                feedback ? (
+                  <PublicFeedback
+                    key={feedback.content}
+                    feedback={feedback}
+                    onUpvoteFeedback={onUpvoteFeedback}
+                    onReactToFeedbackResponse={onReactToFeedbackResponse}
+                  />
+                ) : null
+              )}
             </div>
           )}
 
@@ -152,16 +163,22 @@ function FeedbackArea({
               <H3>Resolved Questions</H3>
               {resolvedFeedbacks
                 .sort((feedback1, feedback2) =>
-                  dayjs(feedback2.resolvedAt).diff(dayjs(feedback1.resolvedAt))
+                  feedback1 && feedback2
+                    ? dayjs(feedback2.resolvedAt).diff(
+                        dayjs(feedback1.resolvedAt)
+                      )
+                    : 0
                 )
-                .map((feedback) => (
-                  <PublicFeedback
-                    key={feedback.content}
-                    feedback={feedback}
-                    onUpvoteFeedback={onUpvoteFeedback}
-                    onReactToFeedbackResponse={onReactToFeedbackResponse}
-                  />
-                ))}
+                .map((feedback) =>
+                  feedback ? (
+                    <PublicFeedback
+                      key={feedback.content}
+                      feedback={feedback}
+                      onUpvoteFeedback={onUpvoteFeedback}
+                      onReactToFeedbackResponse={onReactToFeedbackResponse}
+                    />
+                  ) : null
+                )}
             </div>
           )}
         </div>

@@ -3,14 +3,13 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetFeedbacksDocument, Session } from '@klicker-uzh/graphql/dist/ops'
+import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
-import { useQuery } from '@apollo/client'
 import { addApolloState } from '@lib/apollo'
 import { getSessionData } from '@lib/joinData'
 import getConfig from 'next/config'
@@ -35,19 +34,6 @@ function Index({
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
-
-  // TODO: implement subscription on changing feedbacks
-  // TODO: fix polling
-  const {
-    loading: feedbacksLoading,
-    error: feedbacksError,
-    data: feedbacksData,
-  } = useQuery(GetFeedbacksDocument, {
-    variables: {
-      sessionId: router.query.id as string,
-    },
-    pollInterval: 10000,
-  })
 
   const handleNewResponse = async (
     type: string,
@@ -168,7 +154,7 @@ function Index({
         </div>
       )}
 
-      {isAudienceInteractionActive && feedbacksData?.feedbacks && (
+      {isAudienceInteractionActive && (
         <div
           className={twMerge(
             'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
@@ -176,8 +162,6 @@ function Index({
           )}
         >
           <FeedbackArea
-            feedbacks={feedbacksData?.feedbacks}
-            loading={feedbacksLoading}
             isModerationEnabled={isModerationEnabled}
           />
         </div>
