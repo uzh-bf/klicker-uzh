@@ -42,6 +42,7 @@ function FeedbackArea({
       sessionId: router.query.id as string,
     },
     pollInterval: 10000,
+    skip: !router.query.id,
   })
 
   const onAddFeedback = (input: string) => {
