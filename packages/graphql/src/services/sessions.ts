@@ -679,7 +679,7 @@ export async function createFeedback(
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
 interface SessionSettingArgs {
-  sessionId: string
+  id: string
   isAudienceInteractionActive?: boolean
   isModerationEnabled?: boolean
   isGamificationEnabled?: boolean
@@ -687,7 +687,7 @@ interface SessionSettingArgs {
 
 export async function changeSessionSettings(
   {
-    sessionId,
+    id,
     isAudienceInteractionActive,
     isModerationEnabled,
     isGamificationEnabled,
@@ -695,18 +695,11 @@ export async function changeSessionSettings(
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.update({
-    where: { id: sessionId },
+    where: { id },
     data: {
-      isAudienceInteractionActive:
-        typeof isAudienceInteractionActive === 'undefined'
-          ? false
-          : isAudienceInteractionActive,
-      isModerationEnabled:
-        typeof isModerationEnabled === 'undefined' ? true : isModerationEnabled,
-      isGamificationEnabled:
-        typeof isGamificationEnabled === 'undefined'
-          ? false
-          : isGamificationEnabled,
+      isAudienceInteractionActive: isAudienceInteractionActive,
+      isModerationEnabled: isModerationEnabled,
+      isGamificationEnabled: isGamificationEnabled,
     },
   })
   return session
