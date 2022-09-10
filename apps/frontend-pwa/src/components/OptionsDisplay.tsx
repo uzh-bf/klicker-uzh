@@ -41,7 +41,7 @@ function ChoiceOptions({
           >
             <Button.Label><Markdown content={choice.value}/></Button.Label>
           </Button>
-          {feedbacks?.[choice.ix] && <div className="p-1 text-sm">{feedbacks[choice.ix].feedback}</div>}
+          {feedbacks?.[choice.ix] && <div className={twMerge("p-2 text-sm border rounded", feedbacks[choice.ix].correct ? 'bg-green-100' : 'bg-red-200')}>{feedbacks[choice.ix].feedback}</div>}
         </div>
       ))}
     </div>

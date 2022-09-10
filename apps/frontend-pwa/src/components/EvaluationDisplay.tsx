@@ -55,7 +55,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
         <div className="space-y-2">
         <div className="font-bold">So haben andere geantwortet</div>
             {Object.entries(evaluation.choices as Record<string, number>).map(
-              ([ix, value]) => (
+              ([ix, value]) => (<div>
                 <Progress
                   className={twMerge(
                     correctIx.includes(+ix) && 'font-bold text-green-600'
@@ -64,7 +64,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
                   value={(value / sum) * 100}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}
-                />
+                /></div>
               )
             )}
           </div>

@@ -114,7 +114,7 @@ function LearningElement() {
         )}
       </div>
 
-      <div className="order-2 p-4 border-0 md:border md:border-t-0 md:order-3">
+      <div className="order-2 p-4 border-0 md:pt-0 md:border md:border-t-0 md:order-3">
         <Progress
           formatter={(v) => v}
           value={currentIx}
