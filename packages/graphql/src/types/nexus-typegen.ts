@@ -66,6 +66,7 @@ export interface NexusGenObjects {
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
+    ix: number; // Int!
     value: string; // String!
   }
   ChoicesQuestionData: { // root type
@@ -218,6 +219,7 @@ export interface NexusGenFieldTypes {
   Choice: { // field return type
     correct: boolean | null; // Boolean
     feedback: string | null; // String
+    ix: number; // Int!
     value: string; // String!
   }
   ChoicesQuestionData: { // field return type
@@ -387,6 +389,7 @@ export interface NexusGenFieldTypeNames {
   Choice: { // field return type name
     correct: 'Boolean'
     feedback: 'String'
+    ix: 'Int'
     value: 'String'
   }
   ChoicesQuestionData: { // field return type name

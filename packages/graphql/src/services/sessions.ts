@@ -5,8 +5,8 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { ContextWithUser } from '@lib/context'
 import { dissoc, mapObjIndexed } from 'ramda'
+import { ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -384,6 +384,7 @@ export async function deactivateSessionBlock(
       responseHashes: Record<string, string>
       responses: Record<string, string>
       results: Record<string, any>
+      participants: number
     }
   > = mappedResults.slice(2).reduce((acc: any, cacheObj: any, ix) => {
     const ixMod = ix % 3
@@ -404,10 +405,8 @@ export async function deactivateSessionBlock(
           ...acc,
           [instance.id]: {
             ...acc[instance.id],
-            results: {
-              participants: cacheObj.participants,
-              ...results,
-            },
+            participants: cacheObj.participants,
+            results,
           },
         }
       }
@@ -457,6 +456,7 @@ export async function deactivateSessionBlock(
                 where: { id: Number(id) },
                 data: {
                   results: results.results,
+                  participants: Number(results.participants),
                   // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
                   responses: {
                     create: Object.entries(results.responses).map(
