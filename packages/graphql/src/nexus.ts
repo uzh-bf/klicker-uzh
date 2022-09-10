@@ -615,6 +615,18 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('addConfusionTimestep', {
+      type: ConfusionTimestep,
+      args: {
+        sessionId: nonNull(idArg()),
+        difficulty: nonNull(intArg()),
+        speed: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return FeedbackService.addConfusionTimestep(args, ctx)
+      },
+    })
+
     t.field('createCourse', {
       type: Course,
       args: {

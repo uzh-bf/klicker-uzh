@@ -122,3 +122,42 @@ export async function resolveFeedback(
   })
   return feedback
 }
+
+// add confusion timestep to session
+interface AddConfusionTimestepArgs {
+  sessionId: string
+  difficulty: -2 | -1 | 0 | 1 | 2
+  speed: -2 | -1 | 0 | 1 | 2
+}
+
+export async function addConfusionTimestep(
+  { sessionId, difficulty, speed }: AddConfusionTimestepArgs,
+  ctx: ContextWithOptionalUser
+) {
+  if (ctx.user?.sub) {
+    return ctx.prisma.confusionTimestep.create({
+      data: {
+        difficulty,
+        speed,
+        session: {
+          connect: { id: sessionId },
+        },
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+        createdAt: new Date(),
+      },
+    })
+  } else {
+    return ctx.prisma.confusionTimestep.create({
+      data: {
+        difficulty,
+        speed,
+        session: {
+          connect: { id: sessionId },
+        },
+        createdAt: new Date(),
+      },
+    })
+  }
+}
