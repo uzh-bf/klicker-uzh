@@ -267,9 +267,9 @@ enum AccessMode {
 model Session {
   id String @id @default(uuid()) @db.Uuid
 
-  isAudienceInteractionActive Boolean @default(true)
-  isFeedbackChannelPublic     Boolean @default(false)
-  isGamificationEnabled       Boolean @default(true)
+  isAudienceInteractionActive Boolean @default(false)
+  isModerationEnabled         Boolean @default(true)
+  isGamificationEnabled       Boolean @default(false)
 
   namespace   String    @default(uuid()) @db.Uuid
   pinCode     Int?
@@ -286,6 +286,8 @@ model Session {
 
   blocks      SessionBlock[]
   leaderboard LeaderboardEntry[]
+
+  feedbacks Feedback[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -345,6 +347,9 @@ model Feedback {
 
   resolvedAt DateTime?
 
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String  @db.Uuid
+
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
 
@@ -359,8 +364,8 @@ model FeedbackResponse {
   positiveReactions Int
   negativeReactions Int
 
-  feedback   Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  feedbackId Int?
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  feedbackId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

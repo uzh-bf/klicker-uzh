@@ -323,7 +323,7 @@ function QuestionArea({
             />
           </div>
 
-          {/* // TODO */}
+          {/* // TODO - first attachements need to be copied from question to instance on session creation, then parsed here with next/image */}
           <div>QUESTIONFILES</div>
 
           <div className="flex-1 mt-4">

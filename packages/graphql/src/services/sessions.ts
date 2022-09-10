@@ -6,7 +6,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { dissoc, mapObjIndexed } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -589,4 +589,88 @@ export async function getLeaderboard(
 
   // return [...top5, self]
   return top5
+}
+
+export async function getFeedbacks(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const feedbacks = await ctx.prisma.session
+    .findUnique({
+      where: { id },
+    })
+    .feedbacks({
+      where: { isPublished: true },
+      include: { responses: { orderBy: { createdAt: 'desc' } } },
+      orderBy: { createdAt: 'desc' },
+    })
+
+  return feedbacks
+}
+
+export async function upvoteFeedback(
+  { feedbackId, increment }: { feedbackId: number; increment: number },
+  ctx: ContextWithOptionalUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id: feedbackId,
+    },
+    data: {
+      votes: { increment: increment },
+    },
+  })
+}
+
+export async function voteFeedbackResponse(
+  {
+    id,
+    incrementUpvote,
+    incrementDownvote,
+  }: { id: number; incrementUpvote: number; incrementDownvote: number },
+  ctx: ContextWithOptionalUser
+) {
+  return ctx.prisma.feedbackResponse.update({
+    where: {
+      id: id,
+    },
+    data: {
+      positiveReactions: { increment: incrementUpvote },
+      negativeReactions: { increment: incrementDownvote },
+    },
+  })
+}
+
+export async function createFeedback(
+  {
+    sessionId,
+    content,
+    isPublished,
+  }: { sessionId: string; content: string; isPublished: boolean },
+  ctx: ContextWithOptionalUser
+) {
+  if (ctx.user?.sub) {
+    return ctx.prisma.feedback.create({
+      data: {
+        content,
+        isPublished: isPublished,
+        session: {
+          connect: { id: sessionId },
+        },
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+      },
+    })
+  } else {
+    return ctx.prisma.feedback.create({
+      data: {
+        content,
+        isPublished: isPublished,
+        session: {
+          connect: { id: sessionId },
+        },
+      },
+    })
+  }
 }
