@@ -361,8 +361,8 @@ model FeedbackResponse {
   id Int @id @default(autoincrement())
 
   content           String
-  positiveReactions Int
-  negativeReactions Int
+  positiveReactions Int   @default(0)
+  negativeReactions Int   @default(0)
 
   feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   feedbackId Int

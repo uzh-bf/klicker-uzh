@@ -116,6 +116,7 @@ type MicroSession {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
@@ -125,6 +126,8 @@ type Mutation {
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  resolveFeedback(id: Int!, newValue: Boolean!): Feedback
+  respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
