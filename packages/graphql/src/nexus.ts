@@ -3,6 +3,7 @@ import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
   arg,
   asNexusMethod,
+  booleanArg,
   enumType,
   idArg,
   inputObjectType,
@@ -307,6 +308,39 @@ export const LeaderboardEntry = objectType({
   },
 })
 
+export const Feedback = objectType({
+  name: 'Feedback',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.boolean('isPublished')
+    t.nonNull.boolean('isPinned')
+    t.nonNull.boolean('isResolved')
+
+    t.nonNull.string('content')
+
+    t.nonNull.int('votes')
+
+    t.list.field('responses', { type: FeedbackResponse })
+
+    t.date('resolvedAt')
+    t.date('createdAt')
+    t.date('updatedAt')
+  },
+})
+
+export const FeedbackResponse = objectType({
+  name: 'FeedbackResponse',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('content')
+
+    t.nonNull.int('positiveReactions')
+    t.nonNull.int('negativeReactions')
+  },
+})
+
 export const SessionBlockStatus = enumType({
   name: 'SessionBlockStatus',
   members: DB.SessionBlockStatus,
@@ -342,7 +376,7 @@ export const Session = objectType({
     t.nonNull.id('id')
 
     t.nonNull.boolean('isAudienceInteractionActive')
-    t.nonNull.boolean('isFeedbackChannelPublic')
+    t.nonNull.boolean('isModerationEnabled')
     t.nonNull.boolean('isGamificationEnabled')
 
     t.nonNull.string('namespace')
@@ -359,6 +393,8 @@ export const Session = objectType({
     t.nonNull.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
+
+    t.list.field('feedbacks', { type: Feedback })
   },
 })
 
@@ -421,6 +457,16 @@ export const Query = objectType({
         return SessionService.getLeaderboard(args, ctx)
       },
     })
+
+    t.list.field('feedbacks', {
+      type: Feedback,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getFeedbacks(args, ctx)
+      },
+    })
   },
 })
 
@@ -478,6 +524,41 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.leaveCourse(args, ctx)
+      },
+    })
+
+    t.field('upvoteFeedback', {
+      type: Feedback,
+      args: {
+        feedbackId: nonNull(intArg()),
+        increment: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.upvoteFeedback(args, ctx)
+      },
+    })
+
+    t.field('voteFeedbackResponse', {
+      type: FeedbackResponse,
+      args: {
+        id: nonNull(intArg()),
+        incrementUpvote: nonNull(intArg()),
+        incrementDownvote: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.voteFeedbackResponse(args, ctx)
+      },
+    })
+
+    t.field('createFeedback', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+        content: nonNull(stringArg()),
+        isPublished: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.createFeedback(args, ctx)
       },
     })
 

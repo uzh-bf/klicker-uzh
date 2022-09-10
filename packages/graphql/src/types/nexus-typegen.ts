@@ -91,6 +91,24 @@ export interface NexusGenObjects {
     name: string; // String!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
+  Feedback: { // root type
+    content: string; // String!
+    createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    id: number; // Int!
+    isPinned: boolean; // Boolean!
+    isPublished: boolean; // Boolean!
+    isResolved: boolean; // Boolean!
+    resolvedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    responses?: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    votes: number; // Int!
+  }
+  FeedbackResponse: { // root type
+    content: string; // String!
+    id: number; // Int!
+    negativeReactions: number; // Int!
+    positiveReactions: number; // Int!
+  }
   FreeTextQuestionData: { // root type
     content: string; // String!
     contentPlain: string; // String!
@@ -185,10 +203,11 @@ export interface NexusGenObjects {
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
+    feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
-    isFeedbackChannelPublic: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -244,6 +263,24 @@ export interface NexusGenFieldTypes {
     name: string; // String!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
+  Feedback: { // field return type
+    content: string; // String!
+    createdAt: NexusGenScalars['DateTime'] | null; // DateTime
+    id: number; // Int!
+    isPinned: boolean; // Boolean!
+    isPublished: boolean; // Boolean!
+    isResolved: boolean; // Boolean!
+    resolvedAt: NexusGenScalars['DateTime'] | null; // DateTime
+    responses: Array<NexusGenRootTypes['FeedbackResponse'] | null> | null; // [FeedbackResponse]
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
+    votes: number; // Int!
+  }
+  FeedbackResponse: { // field return type
+    content: string; // String!
+    id: number; // Int!
+    negativeReactions: number; // Int!
+    positiveReactions: number; // Int!
+  }
   FreeTextQuestionData: { // field return type
     content: string; // String!
     contentPlain: string; // String!
@@ -284,6 +321,7 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
+    createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     createSession: NexusGenRootTypes['Session'] | null; // Session
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
@@ -293,6 +331,8 @@ export interface NexusGenFieldTypes {
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
+    upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
   }
   NumericalQuestionData: { // field return type
     content: string; // String!
@@ -335,6 +375,7 @@ export interface NexusGenFieldTypes {
     points: number; // Int!
   }
   Query: { // field return type
+    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
@@ -357,10 +398,11 @@ export interface NexusGenFieldTypes {
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     displayName: string; // String!
+    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
-    isFeedbackChannelPublic: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -414,6 +456,24 @@ export interface NexusGenFieldTypeNames {
     name: 'String'
     sessions: 'Session'
   }
+  Feedback: { // field return type name
+    content: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isPinned: 'Boolean'
+    isPublished: 'Boolean'
+    isResolved: 'Boolean'
+    resolvedAt: 'DateTime'
+    responses: 'FeedbackResponse'
+    updatedAt: 'DateTime'
+    votes: 'Int'
+  }
+  FeedbackResponse: { // field return type name
+    content: 'String'
+    id: 'Int'
+    negativeReactions: 'Int'
+    positiveReactions: 'Int'
+  }
   FreeTextQuestionData: { // field return type name
     content: 'String'
     contentPlain: 'String'
@@ -454,6 +514,7 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
     createCourse: 'Course'
+    createFeedback: 'Feedback'
     createSession: 'Session'
     deactivateSessionBlock: 'Session'
     joinCourse: 'Participation'
@@ -463,6 +524,8 @@ export interface NexusGenFieldTypeNames {
     registerParticipantFromLTI: 'ParticipantLearningData'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
+    upvoteFeedback: 'Feedback'
+    voteFeedbackResponse: 'FeedbackResponse'
   }
   NumericalQuestionData: { // field return type name
     content: 'String'
@@ -505,6 +568,7 @@ export interface NexusGenFieldTypeNames {
     points: 'Int'
   }
   Query: { // field return type name
+    feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
     participations: 'Participation'
@@ -527,10 +591,11 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     displayName: 'String'
+    feedbacks: 'Feedback'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
-    isFeedbackChannelPublic: 'Boolean'
     isGamificationEnabled: 'Boolean'
+    isModerationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
     status: 'SessionStatus'
@@ -565,6 +630,11 @@ export interface NexusGenArgTypes {
       color?: string | null; // String
       displayName?: string | null; // String
       name: string; // String!
+    }
+    createFeedback: { // args
+      content: string; // String!
+      isPublished: boolean; // Boolean!
+      sessionId: string; // ID!
     }
     createSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
@@ -603,8 +673,20 @@ export interface NexusGenArgTypes {
     startSession: { // args
       id: string; // ID!
     }
+    upvoteFeedback: { // args
+      feedbackId: number; // Int!
+      increment: number; // Int!
+    }
+    voteFeedbackResponse: { // args
+      id: number; // Int!
+      incrementDownvote: number; // Int!
+      incrementUpvote: number; // Int!
+    }
   }
   Query: {
+    feedbacks: { // args
+      id: string; // ID!
+    }
     getCourseOverviewData: { // args
       courseId: string; // ID!
     }

@@ -4,7 +4,7 @@ query GetSession($id: ID!) {
   session(id: $id) {
     id
     isAudienceInteractionActive
-    isFeedbackChannelPublic
+    isModerationEnabled
     isGamificationEnabled
     namespace
     name

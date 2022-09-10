@@ -25,7 +25,7 @@ function Index({
   displayName,
   id,
   isAudienceInteractionActive,
-  isFeedbackChannelPublic,
+  isModerationEnabled,
   isGamificationEnabled,
   name,
   namespace,
@@ -65,7 +65,6 @@ function Index({
     } else {
       return null
     }
-    console.log('request options', requestOptions)
     try {
       const response = await fetch(
         publicRuntimeConfig.ADDRESPONSE_URL,
@@ -91,7 +90,7 @@ function Index({
     },
   ]
 
-  if (isFeedbackChannelPublic || isAudienceInteractionActive) {
+  if (isAudienceInteractionActive) {
     mobileMenuItems.push({
       value: 'feedbacks',
       label: 'Feedbacks',
@@ -115,8 +114,7 @@ function Index({
       <div
         className={twMerge(
           'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block min-h-full',
-          (isFeedbackChannelPublic || isAudienceInteractionActive) &&
-            'md:w-1/2',
+          isAudienceInteractionActive && 'md:w-1/2',
           activeMobilePage === 'questions' && 'block'
         )}
       >
@@ -156,14 +154,16 @@ function Index({
         </div>
       )}
 
-      {(isFeedbackChannelPublic || isAudienceInteractionActive) && (
+      {isAudienceInteractionActive && (
         <div
           className={twMerge(
             'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
-          <FeedbackArea feedbacks={[]} />
+          <FeedbackArea
+            isModerationEnabled={isModerationEnabled}
+          />
         </div>
       )}
     </Layout>

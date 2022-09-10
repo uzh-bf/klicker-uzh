@@ -985,7 +985,7 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
       name: 'BF1 VL2',
       displayName: 'Banking und Finance I - VL1',
-      isFeedbackChannelPublic: true,
+      isModerationEnabled: false,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,
       status: Prisma.SessionStatus.PREPARED,
@@ -1045,7 +1045,7 @@ async function main(prisma: Prisma.PrismaClient) {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c0a',
       name: 'BF1 VL3',
       displayName: 'Banking und Finance I - VL3',
-      isFeedbackChannelPublic: true,
+      isModerationEnabled: false,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,
       status: Prisma.SessionStatus.PREPARED,
@@ -1076,9 +1076,93 @@ async function main(prisma: Prisma.PrismaClient) {
           id: user.id,
         },
       },
+      feedbacks: {
+        create: [
+          {
+            content:
+              'Feedback with 4 upvotes, no responses, published, pinned, not resolved',
+            isPublished: true,
+            isPinned: true,
+            votes: 4,
+          },
+          {
+            content:
+              'Feedback with 2 upvotes, no responses, published, pinned, resolved',
+            isPublished: true,
+            isPinned: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:30:59.999Z'),
+            votes: 2,
+          },
+          {
+            content:
+              'Feedback with 3 upvotes, 1 response, published, not pinned, resolved',
+            isPublished: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:35:59.999Z'),
+            votes: 2,
+            responses: {
+              create: [
+                {
+                  content: 'Response to feedback with 2 upvotes, 3 downvotes',
+                  positiveReactions: 2,
+                  negativeReactions: 3,
+                },
+              ],
+            },
+          },
+          {
+            content:
+              'Feedback with 6 upvotes, 2 responses, published, not pinned, resolved',
+            isPublished: true,
+            isResolved: true,
+            resolvedAt: new Date('2022-09-09T12:50:59.999Z'),
+            votes: 6,
+            responses: {
+              create: [
+                {
+                  content: 'Response to feedback with 2 upvotes, 3 downvotes',
+                  positiveReactions: 2,
+                  negativeReactions: 3,
+                  createdAt: new Date('2022-09-09T12:45:59.999Z'),
+                },
+                {
+                  content: 'Response to feedback with 5 upvotes, 0 downvotes',
+                  positiveReactions: 5,
+                  negativeReactions: 0,
+                  createdAt: new Date('2022-09-09T12:47:59.999Z'),
+                },
+              ],
+            },
+          },
+          {
+            content: 'Unpublished Feedback',
+          },
+        ],
+      },
     },
     update: {},
   })
+
+  // const feedback1 = await prisma.feedback.upsert({
+  //   where: {
+  //     id: 1,
+  //   },
+  //   create: {
+  //     id: 1,
+  //     content:
+  //       'Feedback with 4 upvotes, no responses, published, pinned, not resolved',
+  //     isPublished: true,
+  //     isPinned: true,
+  //     votes: 4,
+  //     session: {
+  //       connect: {
+  //         id: session3.id,
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
 
   await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
   await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`
