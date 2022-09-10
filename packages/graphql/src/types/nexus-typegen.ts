@@ -198,8 +198,8 @@ export interface NexusGenObjects {
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
-    isFeedbackChannelPublic: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -384,8 +384,8 @@ export interface NexusGenFieldTypes {
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
-    isFeedbackChannelPublic: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -568,8 +568,8 @@ export interface NexusGenFieldTypeNames {
     feedbacks: 'Feedback'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
-    isFeedbackChannelPublic: 'Boolean'
     isGamificationEnabled: 'Boolean'
+    isModerationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
     status: 'SessionStatus'
@@ -606,6 +606,7 @@ export interface NexusGenArgTypes {
     }
     createFeedback: { // args
       content: string; // String!
+      isPublished: boolean; // Boolean!
       sessionId: string; // ID!
     }
     createSession: { // args

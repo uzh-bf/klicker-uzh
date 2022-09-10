@@ -1219,6 +1219,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "isPublished",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "sessionId",
                 "description": null,
                 "type": {
@@ -2840,7 +2856,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isFeedbackChannelPublic",
+            "name": "isGamificationEnabled",
             "description": null,
             "args": [],
             "type": {
@@ -2856,7 +2872,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isGamificationEnabled",
+            "name": "isModerationEnabled",
             "description": null,
             "args": [],
             "type": {

@@ -3,6 +3,7 @@ import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
   arg,
   asNexusMethod,
+  booleanArg,
   enumType,
   idArg,
   inputObjectType,
@@ -361,7 +362,7 @@ export const Session = objectType({
     t.nonNull.id('id')
 
     t.nonNull.boolean('isAudienceInteractionActive')
-    t.nonNull.boolean('isFeedbackChannelPublic')
+    t.nonNull.boolean('isModerationEnabled')
     t.nonNull.boolean('isGamificationEnabled')
 
     t.nonNull.string('namespace')
@@ -530,6 +531,7 @@ export const Mutation = objectType({
       args: {
         sessionId: nonNull(idArg()),
         content: nonNull(stringArg()),
+        isPublished: nonNull(booleanArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return SessionService.createFeedback(args, ctx)

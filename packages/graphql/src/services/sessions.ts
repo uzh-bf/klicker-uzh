@@ -461,13 +461,18 @@ export async function voteFeedbackResponse(
 }
 
 export async function createFeedback(
-  { sessionId, content }: { sessionId: string; content: string },
+  {
+    sessionId,
+    content,
+    isPublished,
+  }: { sessionId: string; content: string; isPublished: boolean },
   ctx: ContextWithOptionalUser
 ) {
   if (ctx.user?.sub) {
     return ctx.prisma.feedback.create({
       data: {
         content,
+        isPublished: isPublished,
         session: {
           connect: { id: sessionId },
         },
@@ -480,6 +485,7 @@ export async function createFeedback(
     return ctx.prisma.feedback.create({
       data: {
         content,
+        isPublished: isPublished,
         session: {
           connect: { id: sessionId },
         },

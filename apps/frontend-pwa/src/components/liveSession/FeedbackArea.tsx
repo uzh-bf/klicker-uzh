@@ -16,21 +16,18 @@ import PublicFeedback from './PublicFeedback'
 interface FeedbackAreaProps {
   feedbacks: Feedback[]
   loading?: boolean
-  isAudienceInteractionActive?: boolean
-  isFeedbackChannelPublic?: boolean
+  isModerationEnabled?: boolean
 }
 
 const defaultProps = {
   loading: false,
-  isAudienceInteractionActive: false,
-  isFeedbackChannelPublic: false,
+  isModerationEnabled: true,
 }
 
 function FeedbackArea({
   feedbacks,
   loading,
-  isAudienceInteractionActive,
-  isFeedbackChannelPublic,
+  isModerationEnabled,
 }: FeedbackAreaProps): React.ReactElement {
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
@@ -41,7 +38,8 @@ function FeedbackArea({
     createFeedback({
       variables: {
         sessionId: router.query.id as string,
-        content: input
+        content: input,
+        isPublished: !isModerationEnabled,
       },
     })
   }
@@ -77,63 +75,62 @@ function FeedbackArea({
   return (
     <div className="w-full h-full">
       <H1>Feedback-Kanal</H1>
-      {isAudienceInteractionActive && (
-        <div className="mb-8">
-          <Formik
-            initialValues={{ feedbackInput: '' }}
-            onSubmit={(values, { setSubmitting }) => {
-              if (values.feedbackInput !== '') {
-                onAddFeedback(values.feedbackInput)
-                values.feedbackInput = ""
 
-                setTimeout(() => {
-                  setSubmitting(false)
-                }, 700)
-              } else {
+      <div className="mb-8">
+        <Formik
+          initialValues={{ feedbackInput: '' }}
+          onSubmit={(values, { setSubmitting }) => {
+            if (values.feedbackInput !== '') {
+              onAddFeedback(values.feedbackInput)
+              values.feedbackInput = ''
+
+              setTimeout(() => {
                 setSubmitting(false)
-              }
-            }}
-          >
-            {({ isSubmitting }) => (
-              <Form>
-                <Field
-                  className="w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm"
-                  component="textarea"
-                  rows="3"
-                  name="feedbackInput"
-                  placeholder="Feedback / Frage eingeben"
-                />
-                <Button
-                  className="float-right h-10 text-center items-center !w-30"
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Button.Label>
-                      <Oval
-                        height={20}
-                        width={20}
-                        color="#0028a5"
-                        visible={true}
-                        ariaLabel="oval-loading"
-                        secondaryColor="#99a9db"
-                        strokeWidth={5}
-                        strokeWidthSecondary={5}
-                      />
-                    </Button.Label>
-                  ) : (
-                    <Button.Label className='text-sm'>Absenden</Button.Label>
-                  )}
-                </Button>
-              </Form>
-            )}
-          </Formik>
-        </div>
-      )}
-      {isAudienceInteractionActive && (
-        <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
-      )}
-      {isFeedbackChannelPublic && feedbacks.length > 0 && (
+              }, 700)
+            } else {
+              setSubmitting(false)
+            }
+          }}
+        >
+          {({ isSubmitting }) => (
+            <Form>
+              <Field
+                className="w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm"
+                component="textarea"
+                rows="3"
+                name="feedbackInput"
+                placeholder="Feedback / Frage eingeben"
+              />
+              <Button
+                className="float-right h-10 text-center items-center !w-30"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Button.Label>
+                    <Oval
+                      height={20}
+                      width={20}
+                      color="#0028a5"
+                      visible={true}
+                      ariaLabel="oval-loading"
+                      secondaryColor="#99a9db"
+                      strokeWidth={5}
+                      strokeWidthSecondary={5}
+                    />
+                  </Button.Label>
+                ) : (
+                  <Button.Label className="text-sm">Absenden</Button.Label>
+                )}
+              </Button>
+            </Form>
+          )}
+        </Formik>
+      </div>
+
+      <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
+
+      {feedbacks.length > 0 && (
         <div>
           {openFeedbacks.length > 0 && (
             <div className="mb-8">

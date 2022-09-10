@@ -108,7 +108,7 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   createCourse(displayName: String, name: String!): Course
-  createFeedback(content: String!, sessionId: ID!): Feedback
+  createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   joinCourse(courseId: ID!): Participation
@@ -213,8 +213,8 @@ type Session {
   feedbacks: [Feedback]
   id: ID!
   isAudienceInteractionActive: Boolean!
-  isFeedbackChannelPublic: Boolean!
   isGamificationEnabled: Boolean!
+  isModerationEnabled: Boolean!
   name: String!
   namespace: String!
   status: SessionStatus!
