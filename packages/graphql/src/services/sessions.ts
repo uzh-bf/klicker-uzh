@@ -422,7 +422,11 @@ export async function getFeedbacks(
     .findUnique({
       where: { id },
     })
-    .feedbacks({ where: { isPublished: true }, include: { responses: true } })
+    .feedbacks({
+      where: { isPublished: true },
+      include: { responses: { orderBy: { createdAt: 'desc' } } },
+      orderBy: { createdAt: 'desc' },
+    })
 
   return feedbacks
 }

@@ -6,6 +6,7 @@ import {
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -149,14 +150,18 @@ function FeedbackArea({
           {resolvedFeedbacks.length > 0 && (
             <div className="mb-4">
               <H3>Resolved Questions</H3>
-              {resolvedFeedbacks.map((feedback) => (
-                <PublicFeedback
-                  key={feedback.content}
-                  feedback={feedback}
-                  onUpvoteFeedback={onUpvoteFeedback}
-                  onReactToFeedbackResponse={onReactToFeedbackResponse}
-                />
-              ))}
+              {resolvedFeedbacks
+                .sort((feedback1, feedback2) =>
+                  dayjs(feedback2.resolvedAt).diff(dayjs(feedback1.resolvedAt))
+                )
+                .map((feedback) => (
+                  <PublicFeedback
+                    key={feedback.content}
+                    feedback={feedback}
+                    onUpvoteFeedback={onUpvoteFeedback}
+                    onReactToFeedbackResponse={onReactToFeedbackResponse}
+                  />
+                ))}
             </div>
           )}
         </div>

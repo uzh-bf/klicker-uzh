@@ -37,6 +37,7 @@ function Index({
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   // TODO: implement subscription on changing feedbacks
+  // TODO: fix polling
   const {
     loading: feedbacksLoading,
     error: feedbacksError,
@@ -167,7 +168,7 @@ function Index({
         </div>
       )}
 
-      {isAudienceInteractionActive && (
+      {isAudienceInteractionActive && feedbacksData?.feedbacks && (
         <div
           className={twMerge(
             'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
