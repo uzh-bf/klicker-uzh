@@ -71,6 +71,7 @@ export const QuestionData = interfaceType({
 export const Choice = objectType({
   name: 'Choice',
   definition(t) {
+    t.nonNull.int('ix')
     t.nonNull.string('value')
     t.boolean('correct')
     t.string('feedback')

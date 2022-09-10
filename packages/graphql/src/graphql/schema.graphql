@@ -11,6 +11,7 @@ input BlockInput {
 type Choice {
   correct: Boolean
   feedback: String
+  ix: Int!
   value: String!
 }
 

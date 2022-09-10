@@ -143,6 +143,7 @@ model QuestionInstance {
   id Int @id @default(autoincrement())
 
   questionData Json
+  participants Int                @default(0)
   results      Json
   responses    QuestionResponse[]
 

@@ -26,7 +26,7 @@ interface QuestionAreaProps {
     options: any
     instanceId: number
   }[]
-  handleNewResponse: ( type: string, instanceId: number, answer: any ) => void // TODO: correct typing of answer
+  handleNewResponse: (type: string, instanceId: number, answer: any) => void // TODO: correct typing of answer
   sessionId: string
   execution: number
   timeLimit?: number

@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import { makeSchema, nullabilityGuardPlugin } from 'nexus'
 import path from 'path'
 import * as types from './nexus'
