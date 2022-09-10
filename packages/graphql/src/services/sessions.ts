@@ -67,6 +67,7 @@ export async function createCourse(
     data: {
       name,
       displayName: displayName ?? name,
+      color,
       owner: {
         connect: { id: ctx.user.sub },
       },
