@@ -42,7 +42,6 @@ function FeedbackArea({
   const [confusionSpeed, setConfusionSpeed] = useState(0)
   const [isConfusionEnabled, setConfusionEnabled] = useState(true)
   const confusionButtonTimeout = useRef<any>()
-  // const [newConfusionTS] = useMutation(AddConfusionTSMutation)
 
   const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
   const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
@@ -101,15 +100,31 @@ function FeedbackArea({
         if (confusion) {
           setConfusionSpeed(confusion.prevSpeed)
           setConfusionDifficulty(confusion.prevDifficulty)
+
+          // if the time since the last confusion is less than 1 minutes, the confusion sliders will also be disabled on page reload
+          const timeToNextVote =
+            60000 - dayjs().diff(dayjs(confusion.prevTimestamp))
+
+          // if the last vote was less than 58 seconds ago, the slider will still be disabled until the minute is completed
+          if (timeToNextVote > 2000) {
+            if (confusionButtonTimeout.current) {
+              clearTimeout(confusionButtonTimeout.current)
+            }
+            setConfusionEnabled(false)
+            confusionButtonTimeout.current = setTimeout(
+              setConfusionEnabled,
+              timeToNextVote,
+              true
+            )
+          }
         }
       } catch (e) {
         console.error(e)
       }
     }
     exec()
-  }, [])
+  }, [sessionId])
 
-  // TODO: fix localforage implementation - seems not to work at the moment
   // handle creation of a new confusion timestep with debounce for aggregation
   const handleNewConfusionTS = async ({
     speed = 0,
@@ -127,6 +142,7 @@ function FeedbackArea({
       localForage.setItem(`${sessionId}-confusion`, {
         prevSpeed: speed,
         prevDifficulty: difficulty,
+        prevTimestamp: dayjs().format(),
       })
       push([
         'trackEvent',
