@@ -19,7 +19,6 @@ interface FeedbackAreaProps {
 }
 
 const defaultProps = {
-  loading: false,
   isModerationEnabled: true,
 }
 
