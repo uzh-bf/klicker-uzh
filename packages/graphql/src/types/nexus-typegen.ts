@@ -320,6 +320,7 @@ export interface NexusGenFieldTypes {
   }
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
+    changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     createSession: NexusGenRootTypes['Session'] | null; // Session
@@ -329,6 +330,8 @@ export interface NexusGenFieldTypes {
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    resolveFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    respondToFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -513,6 +516,7 @@ export interface NexusGenFieldTypeNames {
   }
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
+    changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
     createSession: 'Session'
@@ -522,6 +526,8 @@ export interface NexusGenFieldTypeNames {
     loginParticipant: 'ID'
     loginUser: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
+    resolveFeedback: 'Feedback'
+    respondToFeedback: 'Feedback'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     upvoteFeedback: 'Feedback'
@@ -626,6 +632,12 @@ export interface NexusGenArgTypes {
       sessionBlockId: number; // Int!
       sessionId: string; // ID!
     }
+    changeSessionSettings: { // args
+      id: string; // ID!
+      isAudienceInteractionActive?: boolean | null; // Boolean
+      isGamificationEnabled?: boolean | null; // Boolean
+      isModerationEnabled?: boolean | null; // Boolean
+    }
     createCourse: { // args
       color?: string | null; // String
       displayName?: string | null; // String
@@ -664,6 +676,14 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
       participantEmail: string; // String!
       participantId: string; // ID!
+    }
+    resolveFeedback: { // args
+      id: number; // Int!
+      newValue: boolean; // Boolean!
+    }
+    respondToFeedback: { // args
+      id: number; // Int!
+      responseContent: string; // String!
     }
     respondToQuestionInstance: { // args
       courseId: string; // ID!

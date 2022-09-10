@@ -674,3 +674,70 @@ export async function createFeedback(
     })
   }
 }
+
+// add response to an existing feedback
+export async function respondToFeedback(
+  { id, responseContent }: { id: number; responseContent: string },
+  ctx: ContextWithOptionalUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: true,
+      resolvedAt: new Date(),
+      responses: {
+        create: {
+          content: responseContent,
+        },
+      },
+    },
+    include: {
+      responses: true,
+    },
+  })
+
+  return feedback
+}
+
+// change value of isResolved property of feedback
+export async function resolveFeedback(
+  { id, newValue }: { id: number; newValue: boolean },
+  ctx: ContextWithOptionalUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: newValue,
+      resolvedAt: new Date(),
+    },
+  })
+  return feedback
+}
+
+// modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
+interface SessionSettingArgs {
+  id: string
+  isAudienceInteractionActive?: boolean
+  isModerationEnabled?: boolean
+  isGamificationEnabled?: boolean
+}
+
+export async function changeSessionSettings(
+  {
+    id,
+    isAudienceInteractionActive,
+    isModerationEnabled,
+    isGamificationEnabled,
+  }: SessionSettingArgs,
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.update({
+    where: { id },
+    data: {
+      isAudienceInteractionActive: isAudienceInteractionActive,
+      isModerationEnabled: isModerationEnabled,
+      isGamificationEnabled: isGamificationEnabled,
+    },
+  })
+  return session
+}

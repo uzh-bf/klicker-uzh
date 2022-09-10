@@ -26,6 +26,8 @@ describe('API', () => {
   let session: any
   let courseId: any
   let instances: any[]
+  let feedback1: any
+  let feedback2: any
 
   beforeAll(() => {
     prisma = new PrismaClient()
@@ -100,14 +102,14 @@ describe('API', () => {
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "4cd9e708-eb25-41d0-b88b-78c422e1fe48",
+            "id": "f357e0b2-13e1-4a0e-9f50-9ab9cef7fcbe",
           },
         },
         "extensions": Object {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "4cd9e708-eb25-41d0-b88b-78c422e1fe48",
+                "id": "f357e0b2-13e1-4a0e-9f50-9ab9cef7fcbe",
                 "typename": "Course",
               },
             ],
@@ -148,15 +150,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 9,
+                "id": 5,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 10,
+                "id": 6,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
             "status": "PREPARED",
           },
         },
@@ -164,15 +166,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
                 "typename": "Session",
               },
               Object {
-                "id": 9,
+                "id": 5,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 10,
+                "id": 6,
                 "typename": "SessionBlock",
               },
             ],
@@ -203,7 +205,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
             "status": "RUNNING",
           },
         },
@@ -211,7 +213,48 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "typename": "Session",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the user to change important session parameters', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            changeSessionSettings(id: "${session.id}", isAudienceInteractionActive: true, isModerationEnabled: false, isGamificationEnabled: true) {
+                id
+                isAudienceInteractionActive
+                isModerationEnabled
+                isGamificationEnabled
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "changeSessionSettings": Object {
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "isAudienceInteractionActive": true,
+            "isGamificationEnabled": true,
+            "isModerationEnabled": false,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
                 "typename": "Session",
               },
             ],
@@ -250,29 +293,29 @@ describe('API', () => {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 9,
+              "id": 5,
               "instances": Array [
                 Object {
-                  "id": 21,
+                  "id": 13,
                   "questionData": Object {
                     "type": "FREE_TEXT",
                   },
                 },
                 Object {
-                  "id": 22,
+                  "id": 14,
                   "questionData": Object {
                     "type": "NUMERICAL",
                   },
                 },
                 Object {
-                  "id": 23,
+                  "id": 15,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
             "status": "RUNNING",
           },
         },
@@ -280,23 +323,23 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
                 "typename": "Session",
               },
               Object {
-                "id": 9,
+                "id": 5,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 21,
+                "id": 13,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 22,
+                "id": 14,
                 "typename": "QuestionInstance",
               },
               Object {
-                "id": 23,
+                "id": 15,
                 "typename": "QuestionInstance",
               },
             ],
@@ -470,14 +513,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 31,
+              "id": 12,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 31,
+                  "id": 12,
                   "typename": "Participation",
                 },
               ],
@@ -487,14 +530,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 32,
+              "id": 11,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 32,
+                  "id": 11,
                   "typename": "Participation",
                 },
               ],
@@ -504,14 +547,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 35,
+              "id": 13,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 35,
+                  "id": 13,
                   "typename": "Participation",
                 },
               ],
@@ -521,14 +564,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 34,
+              "id": 14,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 34,
+                  "id": 14,
                   "typename": "Participation",
                 },
               ],
@@ -538,14 +581,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 33,
+              "id": 15,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 33,
+                  "id": 15,
                   "typename": "Participation",
                 },
               ],
@@ -555,14 +598,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 39,
+              "id": 16,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 39,
+                  "id": 16,
                   "typename": "Participation",
                 },
               ],
@@ -572,14 +615,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 37,
+              "id": 20,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 37,
+                  "id": 20,
                   "typename": "Participation",
                 },
               ],
@@ -589,14 +632,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 36,
+              "id": 19,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 36,
+                  "id": 19,
                   "typename": "Participation",
                 },
               ],
@@ -606,14 +649,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 38,
+              "id": 18,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 38,
+                  "id": 18,
                   "typename": "Participation",
                 },
               ],
@@ -623,14 +666,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 40,
+              "id": 17,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 40,
+                  "id": 17,
                   "typename": "Participation",
                 },
               ],
@@ -731,15 +774,15 @@ describe('API', () => {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 10,
+                "id": 6,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 9,
+                "id": 5,
                 "status": "EXECUTED",
               },
             ],
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
             "status": "RUNNING",
           },
         },
@@ -747,15 +790,15 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
                 "typename": "Session",
               },
               Object {
-                "id": 10,
+                "id": 6,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 9,
+                "id": 5,
                 "typename": "SessionBlock",
               },
             ],
@@ -794,17 +837,17 @@ describe('API', () => {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 10,
+              "id": 6,
               "instances": Array [
                 Object {
-                  "id": 24,
+                  "id": 16,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
             "status": "RUNNING",
           },
         },
@@ -812,16 +855,282 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
                 "typename": "Session",
               },
               Object {
-                "id": 10,
+                "id": 6,
                 "typename": "SessionBlock",
               },
               Object {
-                "id": 24,
+                "id": 16,
                 "typename": "QuestionInstance",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the participants to add feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 1 without participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 1 without participant",
+            "id": 1,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 1,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 2 of logged in participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 2 of logged in participant",
+            "id": 2,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 2,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response3 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved without responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response3.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved without responses",
+            "id": 3,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 3,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response4 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved with responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response4.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved with responses",
+            "id": 4,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 4,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    feedback1 = response3.body.data.createFeedback
+    feedback2 = response4.body.data.createFeedback
+  })
+
+  it('allows the user to resolve a feedback', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            resolveFeedback(id: ${feedback1.id}, newValue: true) {
+                id
+                isResolved
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "resolveFeedback": Object {
+            "id": 3,
+            "isResolved": true,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 3,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the user to respond to a feedback', async () => {
+    await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 1") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 2") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "respondToFeedback": Object {
+            "id": 4,
+            "isResolved": true,
+            "responses": Array [
+              Object {
+                "content": "Response 1",
+                "id": 1,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
+              },
+              Object {
+                "content": "Response 2",
+                "id": 2,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
+              },
+            ],
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 4,
+                "typename": "Feedback",
+              },
+              Object {
+                "id": 1,
+                "typename": "FeedbackResponse",
+              },
+              Object {
+                "id": 2,
+                "typename": "FeedbackResponse",
               },
             ],
           },
