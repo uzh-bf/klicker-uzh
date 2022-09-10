@@ -102,14 +102,14 @@ describe('API', () => {
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "acfe530b-826d-46da-b7e0-c9f915cd7d35",
+            "id": "884f3c7d-efb7-47e7-a2dd-8fcef323feb6",
           },
         },
         "extensions": Object {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "acfe530b-826d-46da-b7e0-c9f915cd7d35",
+                "id": "884f3c7d-efb7-47e7-a2dd-8fcef323feb6",
                 "typename": "Course",
               },
             ],
@@ -158,7 +158,7 @@ describe('API', () => {
                 "status": "SCHEDULED",
               },
             ],
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "status": "PREPARED",
           },
         },
@@ -166,7 +166,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
               Object {
@@ -205,7 +205,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "status": "RUNNING",
           },
         },
@@ -213,7 +213,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
             ],
@@ -244,7 +244,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "changeSessionSettings": Object {
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "isAudienceInteractionActive": true,
             "isGamificationEnabled": true,
             "isModerationEnabled": false,
@@ -254,7 +254,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
             ],
@@ -315,7 +315,7 @@ describe('API', () => {
                 },
               ],
             },
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "status": "RUNNING",
           },
         },
@@ -323,7 +323,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
               Object {
@@ -513,23 +513,6 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 11,
-            },
-          },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 11,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
-        },
-        Object {
-          "data": Object {
-            "joinCourse": Object {
               "id": 13,
             },
           },
@@ -555,6 +538,23 @@ describe('API', () => {
               "invalidatedEntities": Array [
                 Object {
                   "id": 12,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 11,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 11,
                   "typename": "Participation",
                 },
               ],
@@ -598,23 +598,6 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 19,
-            },
-          },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 19,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
-        },
-        Object {
-          "data": Object {
-            "joinCourse": Object {
               "id": 17,
             },
           },
@@ -640,6 +623,23 @@ describe('API', () => {
               "invalidatedEntities": Array [
                 Object {
                   "id": 18,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 19,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 19,
                   "typename": "Participation",
                 },
               ],
@@ -782,7 +782,7 @@ describe('API', () => {
                 "status": "EXECUTED",
               },
             ],
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "status": "RUNNING",
           },
         },
@@ -790,7 +790,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
               Object {
@@ -847,7 +847,7 @@ describe('API', () => {
                 },
               ],
             },
-            "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+            "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
             "status": "RUNNING",
           },
         },
@@ -855,7 +855,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f6b145d2-294b-4b54-82f1-423fb8a65466",
+                "id": "2e9dfe18-d608-4a5c-9ed5-7cbb185709ac",
                 "typename": "Session",
               },
               Object {
@@ -1062,7 +1062,7 @@ describe('API', () => {
   })
 
   it('allows the user to respond to a feedback', async () => {
-    const response = await request(app)
+    await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
       .send({
@@ -1081,39 +1081,6 @@ describe('API', () => {
         }
       `,
       })
-
-    // expect(response.body).toMatchInlineSnapshot(`
-    //   Object {
-    //     "data": Object {
-    //       "respondToFeedback": Object {
-    //         "id": 9,
-    //         "isResolved": true,
-    //         "responses": Array [
-    //           Object {
-    //             "content": "Response 1",
-    //             "id": 4,
-    //             "negativeReactions": 0,
-    //             "positiveReactions": 0,
-    //           },
-    //         ],
-    //       },
-    //     },
-    //     "extensions": Object {
-    //       "responseCache": Object {
-    //         "invalidatedEntities": Array [
-    //           Object {
-    //             "id": 9,
-    //             "typename": "Feedback",
-    //           },
-    //           Object {
-    //             "id": 4,
-    //             "typename": "FeedbackResponse",
-    //           },
-    //         ],
-    //       },
-    //     },
-    //   }
-    // `)
 
     const response2 = await request(app)
       .post('/api/graphql')
