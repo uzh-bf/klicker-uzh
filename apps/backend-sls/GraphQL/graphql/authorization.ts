@@ -48,5 +48,6 @@ export const AuthSchema = {
     participations: { __authz: { rules: ['IsParticipant'] } },
     self: { __authz: { rules: ['IsParticipant'] } },
     session: { __authz: { rules: ['Allow'] } },
+    sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
   },
 }

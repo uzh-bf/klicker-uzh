@@ -2,6 +2,7 @@ import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
+import { PARTICIPANT_IDS } from './constants.js'
 
 async function main(prisma: Prisma.PrismaClient) {
   const hash = await bcrypt.hash('abcd', 12)
@@ -37,30 +38,34 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const participant = await prisma.participant.upsert({
-    where: {
-      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
-    },
-    create: {
-      id: '6f45065c-667f-4259-818c-c6f6b477eb48',
-      email: 'testuser@bf.uzh.ch',
-      password: hash2,
-      username: 'rschlaefli',
-      avatar: 'apple-icon-180.png',
-      participations: {
+  const participants = await Promise.all(
+    PARTICIPANT_IDS.map((id, ix) => {
+      return prisma.participant.upsert({
+        where: {
+          id,
+        },
         create: {
-          course: {
-            connect: {
-              id: course.id,
+          id,
+          email: `testuser${ix + 1}@bf.uzh.ch`,
+          password: hash2,
+          username: `testuser${ix + 1}`,
+          avatar: 'apple-icon-180.png',
+          participations: {
+            create: {
+              course: {
+                connect: {
+                  id: course.id,
+                },
+              },
             },
           },
         },
-      },
-    },
-    update: {
-      password: hash2,
-    },
-  })
+        update: {
+          password: hash2,
+        },
+      })
+    })
+  )
 
   const question = await prisma.question.upsert({
     where: {
@@ -75,6 +80,7 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         choices: [
           {
+            ix: 0,
             feedback:
               'Falsch! Zwischen den Zielsetzungen des klassischen finanziellen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
             correct: false,
@@ -82,6 +88,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Zwischen den Zielsetzungen des klassischen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
           },
           {
+            ix: 1,
             feedback:
               'Korrekt! Je höher die angestrebte Sicherheit, desto weniger Risiko wird eingegangen, was wiederum die Rentabilität senkt.',
             correct: true,
@@ -89,6 +96,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Das Ziel einer hohen Rentabilität erhöht auch die Sicherheit eines Unternehmens.',
           },
           {
+            ix: 2,
             feedback:
               'Falsch! Die Unabhängigkeit ist kein Ziel des klassischen Zieldreiecks.',
             correct: false,
@@ -96,6 +104,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Unabhängigkeit ist *kein* Ziel des klassischen Zieldreiecks.',
           },
           {
+            ix: 3,
             feedback:
               'Falsch! Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
             correct: false,
@@ -103,6 +112,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
           },
           {
+            ix: 4,
             feedback:
               'Falsch! Der Shareholder Value ist kein Ziel des klassischen Zieldreiecks.',
             correct: false,
@@ -129,24 +139,28 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         choices: [
           {
+            ix: 0,
             feedback: 'Diese Aussage ist nicht korrekt!',
             correct: false,
             value:
               'Die zentralen Tätigkeiten einer Finanzabteilung lassen sich in Finanzplanung, Finanzdisposition (d.h. die Realisierung der Finanzplanung) und Finanzcontrolling einteilen.',
           },
           {
+            ix: 1,
             feedback: 'Diese Aussage ist nicht korrekt!',
             correct: false,
             value:
               'Beim Controlling geht es grundsätzlich um die Überwachung des finanziellen Geschehens. Dies wird mit Hilfe eines Soll/Ist-Vergleichs der Finanzplanung gemacht.',
           },
           {
+            ix: 2,
             feedback: 'Diese Aussage ist nicht korrekt!',
             correct: false,
             value:
               'In grossen Firmen gibt es normalerweise neben dem CFO jeweils einen Controller und einen Treasurer.',
           },
           {
+            ix: 3,
             feedback:
               'Diese Aussage ist korrekt! Die Kapitalbeschaffung ist Aufgabe des Treasurers.',
             correct: true,
@@ -154,6 +168,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Der Controller ist unter anderem für die Regelung der Ausgabe von Wertpapieren verantwortlich.',
           },
           {
+            ix: 4,
             feedback: 'Diese Aussage ist nicht korrekt!',
             correct: false,
             value:
@@ -181,29 +196,34 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         choices: [
           {
+            ix: 0,
             feedback:
               'Falsch! Beim Staat handelt es sich um einen Stakeholder.',
             correct: false,
             value: 'Staat',
           },
           {
+            ix: 1,
             feedback:
               'Falsch! Bei den Arbeitnehmern handelt es sich um Stakeholder.',
             correct: false,
             value: 'Arbeitnehmer',
           },
           {
+            ix: 2,
             feedback:
               'Falsch! Bei den Fremdkapitalgebern handelt es sich um Stakeholder.',
             correct: false,
             value: 'Fremdkapitalgeber',
           },
           {
+            ix: 3,
             feedback: 'Kunden',
             correct: false,
             value: 'Falsch! Bei den Kunden handelt es sich um Stakeholder.',
           },
           {
+            ix: 4,
             feedback:
               'Korrekt! Alle genannten Personen/Gruppen sind Stakeholder.',
             correct: true,
@@ -232,18 +252,21 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         choices: [
           {
+            ix: 0,
             feedback:
               'Diese Aussage ist nicht korrekt! Die Aktivseite zeigt die Mittelverwendung auf.',
             correct: false,
             value: 'Die Aktivseite zeigt die Mittelherkunft auf.',
           },
           {
+            ix: 1,
             feedback:
               'Diese Aussage ist nicht korrekt! Die Passivseite zeigt die Mittelherkunft auf.',
             correct: false,
             value: 'Die Passivseite der Bilanz zeigt die Mittelverwendung auf.',
           },
           {
+            ix: 2,
             feedback:
               'Diese Aussage ist nicht korrekt! Das EK zeigt zwar die Mittelherkunft auf, diese wird aber auf der Passivseite der Bilanz abgebildet.',
             correct: false,
@@ -251,6 +274,7 @@ async function main(prisma: Prisma.PrismaClient) {
               'Das EK zeigt die Mittelherkunft auf und steht somit auf der Aktivseite der Bilanz.',
           },
           {
+            ix: 3,
             feedback: 'Diese Aussage ist korrekt!',
             correct: true,
             value:
@@ -278,24 +302,28 @@ async function main(prisma: Prisma.PrismaClient) {
       options: {
         choices: [
           {
+            ix: 0,
             feedback:
               'Diese Aussage ist korrekt! Dritte stellen für eine bestimmte Zeitdauer Fremdkapital zur Verfügung.',
             correct: true,
             value: 'Gläubigerkapital',
           },
           {
+            ix: 1,
             feedback:
               'Diese Aussage ist nicht korrekt! Dies ist eine Grundfunktion des Eigenkapitals.',
             correct: false,
             value: 'Liquiditätssicherungsfunktion',
           },
           {
+            ix: 2,
             feedback:
               'Diese Aussage ist korrekt! Fremdkapitalgeber haben in der Regel Anspruch auf Verzinsung und Rückzahlung des Kapitals zu einem vereinbarten Termin.',
             correct: true,
             value: 'Gewinnunabhängiges Kapitalentgelt',
           },
           {
+            ix: 3,
             feedback:
               'Diese Aussage ist korrekt! Es gehört zur Außenfinanzierung bzw. Fremdfinazierung.',
             correct: true,

@@ -56,7 +56,13 @@ const httpTrigger: AzureFunction = async function (
     }
   }
 
-  const { type, solutions, startedAt, firstResponseReceivedAt } = instanceInfo
+  const {
+    type,
+    solutions,
+    startedAt,
+    firstResponseReceivedAt,
+    sessionBlockId,
+  } = instanceInfo
 
   // TODO: ensure that the following code can handle missing solutions
   let parsedSolutions
@@ -68,21 +74,10 @@ const httpTrigger: AzureFunction = async function (
 
   const redisMulti = redisExec.pipeline()
 
-  // if we are processing a first response, set the timestamp on the instance
-  // this will allow us to award points for response timing
-  // TODO: do this on the first correct response only
-  if (!firstResponseReceivedAt) {
-    redisMulti.hset(
-      `${instanceKey}:info`,
-      'firstResponseReceivedAt',
-      responseTimestamp
-    )
-  }
-
   // compute the timing of the response based on the first response received for the instance
   const responseTiming =
     responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp) + 1
-  let pointsAwarded: number | string = 1000 / responseTiming
+  let pointsAwarded: number | string = 10000 / responseTiming / 1000
 
   switch (type) {
     // TODO: handle points for partial correct answers in MC (like KPRIM?)
@@ -96,6 +91,16 @@ const httpTrigger: AzureFunction = async function (
       if (participantData) {
         if (parsedSolutions && equals(response.choices, parsedSolutions)) {
           pointsAwarded += 100
+
+          // if we are processing a first response, set the timestamp on the instance
+          // this will allow us to award points for response timing
+          if (!firstResponseReceivedAt) {
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
+          }
         } else {
           pointsAwarded = 0
         }
@@ -106,10 +111,10 @@ const httpTrigger: AzureFunction = async function (
           response.choices
         )
 
-        redisMulti.hset(
-          `${instanceKey}:lb`,
+        redisMulti.hincrby(
+          `${sessionKey}:b:${sessionBlockId}:lb`,
           participantData.sub,
-          pointsAwarded.toFixed(2)
+          pointsAwarded
         )
         redisMulti.hincrby(
           `${sessionKey}:lb`,
@@ -142,6 +147,16 @@ const httpTrigger: AzureFunction = async function (
 
           if (any(Boolean, withinRanges)) {
             pointsAwarded += 100
+
+            // if we are processing a first response, set the timestamp on the instance
+            // this will allow us to award points for response timing
+            if (!firstResponseReceivedAt) {
+              redisExec.hset(
+                `${instanceKey}:info`,
+                'firstResponseReceivedAt',
+                responseTimestamp
+              )
+            }
           } else {
             pointsAwarded = 0
           }
@@ -153,10 +168,10 @@ const httpTrigger: AzureFunction = async function (
           response.value
         )
 
-        redisMulti.hset(
-          `${instanceKey}:lb`,
+        redisMulti.hincrby(
+          `${sessionKey}:b:${sessionBlockId}:lb`,
           participantData.sub,
-          pointsAwarded.toFixed(2)
+          pointsAwarded
         )
         redisMulti.hincrby(
           `${sessionKey}:lb`,
@@ -186,6 +201,16 @@ const httpTrigger: AzureFunction = async function (
           parsedSolutions.includes(cleanResponseValue)
         ) {
           pointsAwarded += 100
+
+          // if we are processing a first response, set the timestamp on the instance
+          // this will allow us to award points for response timing
+          if (!firstResponseReceivedAt) {
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
+          }
         } else {
           pointsAwarded = 0
         }
@@ -196,10 +221,10 @@ const httpTrigger: AzureFunction = async function (
           cleanResponseValue
         )
 
-        redisMulti.hset(
-          `${instanceKey}:lb`,
+        redisMulti.hincrby(
+          `${sessionKey}:b:${sessionBlockId}:lb`,
           participantData.sub,
-          pointsAwarded.toFixed(2)
+          pointsAwarded
         )
         redisMulti.hincrby(
           `${sessionKey}:lb`,

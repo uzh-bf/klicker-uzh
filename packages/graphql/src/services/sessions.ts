@@ -1,10 +1,12 @@
 import {
   Question,
+  QuestionInstance,
   QuestionType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { ContextWithOptionalUser, ContextWithUser } from '@lib/context'
+import { dissoc, mapObjIndexed } from 'ramda'
+import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -54,16 +56,18 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
 interface CreateCourseArgs {
   name: string
   displayName?: string
+  color?: string
 }
 
 export async function createCourse(
-  { name, displayName }: CreateCourseArgs,
+  { name, displayName, color }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.course.create({
     data: {
       name,
       displayName: displayName ?? name,
+      color,
       owner: {
         connect: { id: ctx.user.sub },
       },
@@ -226,9 +230,7 @@ export async function activateSessionBlock(
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.findUnique({
-    where: {
-      id: sessionId,
-    },
+    where: { id: sessionId },
     include: { blocks: true },
   })
 
@@ -246,20 +248,14 @@ export async function activateSessionBlock(
 
   // set the new block to active
   const updatedSession = await ctx.prisma.session.update({
-    where: {
-      id: sessionId,
-    },
+    where: { id: sessionId },
     data: {
       activeBlock: {
-        connect: {
-          id: sessionBlockId,
-        },
+        connect: { id: sessionBlockId },
       },
       blocks: {
         update: {
-          where: {
-            id: sessionBlockId,
-          },
+          where: { id: sessionBlockId },
           data: {
             status: SessionBlockStatus.ACTIVE,
           },
@@ -268,9 +264,7 @@ export async function activateSessionBlock(
     },
     include: {
       activeBlock: {
-        include: {
-          instances: true,
-        },
+        include: { instances: true },
       },
       blocks: true,
     },
@@ -285,6 +279,7 @@ export async function activateSessionBlock(
     const commonInfo = {
       namespace: session.namespace,
       startedAt: Number(new Date()),
+      sessionBlockId,
     }
 
     switch (questionData.type) {
@@ -348,7 +343,12 @@ export async function deactivateSessionBlock(
     where: {
       id: sessionId,
     },
-    include: { activeBlock: { include: { instances: true } } },
+    include: {
+      blocks: true,
+      activeBlock: {
+        include: { instances: true },
+      },
+    },
   })
 
   if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
@@ -362,17 +362,81 @@ export async function deactivateSessionBlock(
   )
 
   const redisMulti = ctx.redisExec.multi()
+  redisMulti.hgetall(`s:${sessionId}:lb`)
+  redisMulti.hgetall(`s:${sessionId}:b:${sessionBlockId}:lb`)
   activeInstanceIds.forEach((instanceId) => {
-    redisMulti.hgetall(`s${sessionId}:i:${instanceId}:results`)
+    redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:responseHashes`)
+    redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:responses`)
+    redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:results`)
   })
-  const allInstanceResults = await redisMulti.exec()
+  const cachedResults = await redisMulti.exec()
 
-  console.warn(allInstanceResults)
+  if (!cachedResults) return session
 
-  return session
+  const mappedResults: any[] = cachedResults.map(([_, result]) => result)
+
+  const sessionLeaderboard: Record<string, string> = mappedResults[0]
+  const blockLeaderboard: Record<string, string> = mappedResults[1]
+
+  const instanceResults: Record<
+    string,
+    {
+      responseHashes: Record<string, string>
+      responses: Record<string, string>
+      results: Record<string, any>
+      participants: number
+    }
+  > = mappedResults.slice(2).reduce((acc: any, cacheObj: any, ix) => {
+    const ixMod = ix % 3
+    const instance: QuestionInstance =
+      session.activeBlock!.instances[Math.floor((ix - ixMod) / 3)]
+    switch (ixMod) {
+      // results
+      case 2: {
+        const results = mapObjIndexed((count, responseHash) => {
+          return {
+            count,
+            value:
+              acc[instance.id]['responseHashes'][responseHash] ?? responseHash,
+          }
+        }, dissoc('participants', cacheObj))
+
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            participants: cacheObj.participants,
+            results,
+          },
+        }
+      }
+
+      // responses
+      case 1:
+        return {
+          ...acc,
+          [instance.id]: {
+            ...acc[instance.id],
+            responses: cacheObj,
+          },
+        }
+
+      // response hashes
+      case 0:
+        return {
+          ...acc,
+          [instance.id]: {
+            responseHashes: cacheObj,
+          },
+        }
+
+      default:
+        return acc
+    }
+  }, {})
 
   // TODO: what if session gamified and results are reset? are points taken away?
-  const updatedBlock = await ctx.prisma.session.update({
+  const updatedSession = await ctx.prisma.session.update({
     where: {
       id: sessionId,
     },
@@ -383,20 +447,94 @@ export async function deactivateSessionBlock(
       blocks: {
         update: {
           where: {
-            id: sessionBlockId,
+            id: Number(sessionBlockId),
           },
           data: {
             status: SessionBlockStatus.EXECUTED,
             instances: {
-              update: [],
+              update: Object.entries(instanceResults).map(([id, results]) => ({
+                where: { id: Number(id) },
+                data: {
+                  results: results.results,
+                  participants: Number(results.participants),
+                  // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
+                  responses: {
+                    create: Object.entries(results.responses).map(
+                      ([participantId, response]) => ({
+                        response,
+                        participant: {
+                          connect: { id: participantId },
+                        },
+                        participation: {
+                          connect: {
+                            courseId_participantId: {
+                              // TODO: this is not set if the session is not in a course (i.e., not gamified)
+                              courseId: session.courseId as string,
+                              participantId,
+                            },
+                          },
+                        },
+                      })
+                    ),
+                  },
+                },
+              })),
+            },
+            leaderboard: {
+              create: Object.entries(blockLeaderboard).map(([id, score]) => ({
+                score: Number(score),
+                participant: {
+                  connect: { id },
+                },
+                type: 'SESSION_BLOCK',
+                // TODO: use the real username here, or remove it
+                username: id,
+              })),
             },
           },
         },
       },
+      leaderboard: {
+        upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
+          where: {
+            type_participantId_sessionId: {
+              type: 'SESSION',
+              participantId: id,
+              sessionId,
+            },
+          },
+          create: {
+            type: 'SESSION',
+            participant: {
+              connect: { id },
+            },
+            score: Number(score),
+            // TODO: use the real username here, or remove it
+            username: id,
+          },
+          update: {
+            score: Number(score),
+          },
+        })),
+      },
+    },
+    include: {
+      blocks: true,
     },
   })
 
-  return session
+  // unlink everything regarding the block in redis
+  const unlinkMulti = ctx.redisExec.pipeline()
+  unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
+  activeInstanceIds.forEach((instanceId) => {
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:results`)
+  })
+  unlinkMulti.exec()
+
+  return updatedSession
 }
 
 export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
@@ -412,6 +550,45 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
   })
 
   return session
+}
+
+interface GetLeaderboardArgs {
+  sessionId: string
+}
+
+export async function getLeaderboard(
+  { sessionId }: GetLeaderboardArgs,
+  ctx: ContextWithUser
+) {
+  const top5 = await ctx.prisma.session
+    .findUnique({
+      where: {
+        id: sessionId,
+      },
+    })
+    .leaderboard({
+      orderBy: {
+        score: 'desc',
+      },
+      take: 5,
+    })
+
+  // TODO: extract self into separate query to allow for improved caching?
+  // const self = await ctx.prisma.leaderboardEntry.findUnique({
+  //   where: {
+  //     type_participantId_sessionId: {
+  //       type: 'SESSION',
+  //       participantId: ctx.user.sub,
+  //       sessionId,
+  //     },
+  //   },
+  // })
+
+  // if (!top5 || !self) return null
+  if (!top5) return null
+
+  // return [...top5, self]
+  return top5
 }
 
 export async function getFeedbacks(

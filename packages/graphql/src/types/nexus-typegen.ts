@@ -66,6 +66,7 @@ export interface NexusGenObjects {
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
+    ix: number; // Int!
     value: string; // String!
   }
   ChoicesQuestionData: { // root type
@@ -82,6 +83,7 @@ export interface NexusGenObjects {
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // root type
+    color?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
@@ -127,6 +129,12 @@ export interface NexusGenObjects {
   InstanceEvaluation: { // root type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
+  }
+  LeaderboardEntry: { // root type
+    avatar?: string | null; // String
+    id: string; // ID!
+    score: number; // Float!
+    username: string; // String!
   }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -230,6 +238,7 @@ export interface NexusGenFieldTypes {
   Choice: { // field return type
     correct: boolean | null; // Boolean
     feedback: string | null; // String
+    ix: number; // Int!
     value: string; // String!
   }
   ChoicesQuestionData: { // field return type
@@ -246,6 +255,7 @@ export interface NexusGenFieldTypes {
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
   Course: { // field return type
+    color: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
@@ -291,6 +301,12 @@ export interface NexusGenFieldTypes {
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
+  }
+  LeaderboardEntry: { // field return type
+    avatar: string | null; // String
+    id: string; // ID!
+    score: number; // Float!
+    username: string; // String!
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
@@ -365,6 +381,7 @@ export interface NexusGenFieldTypes {
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
+    sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -414,6 +431,7 @@ export interface NexusGenFieldTypeNames {
   Choice: { // field return type name
     correct: 'Boolean'
     feedback: 'String'
+    ix: 'Int'
     value: 'String'
   }
   ChoicesQuestionData: { // field return type name
@@ -430,6 +448,7 @@ export interface NexusGenFieldTypeNames {
     choices: 'Choice'
   }
   Course: { // field return type name
+    color: 'String'
     displayName: 'String'
     id: 'ID'
     learningElements: 'LearningElement'
@@ -475,6 +494,12 @@ export interface NexusGenFieldTypeNames {
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
+  }
+  LeaderboardEntry: { // field return type name
+    avatar: 'String'
+    id: 'ID'
+    score: 'Float'
+    username: 'String'
   }
   LearningElement: { // field return type name
     course: 'Course'
@@ -549,6 +574,7 @@ export interface NexusGenFieldTypeNames {
     participations: 'Participation'
     self: 'Participant'
     session: 'Session'
+    sessionLeaderboard: 'LeaderboardEntry'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -601,6 +627,7 @@ export interface NexusGenArgTypes {
       sessionId: string; // ID!
     }
     createCourse: { // args
+      color?: string | null; // String
       displayName?: string | null; // String
       name: string; // String!
     }
@@ -668,6 +695,9 @@ export interface NexusGenArgTypes {
     }
     session: { // args
       id: string; // ID!
+    }
+    sessionLeaderboard: { // args
+      sessionId: string; // ID!
     }
   }
 }

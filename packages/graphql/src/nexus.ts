@@ -72,6 +72,7 @@ export const QuestionData = interfaceType({
 export const Choice = objectType({
   name: 'Choice',
   definition(t) {
+    t.nonNull.int('ix')
     t.nonNull.string('value')
     t.boolean('correct')
     t.string('feedback')
@@ -219,6 +220,7 @@ export const Course = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('color')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -291,6 +293,18 @@ export const ParticipantLearningData = objectType({
     t.nonNull.field('course', {
       type: Course,
     })
+  },
+})
+
+export const LeaderboardEntry = objectType({
+  name: 'LeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('username')
+    t.string('avatar')
+
+    t.nonNull.float('score')
   },
 })
 
@@ -434,6 +448,16 @@ export const Query = objectType({
       },
     })
 
+    t.list.nonNull.field('sessionLeaderboard', {
+      type: LeaderboardEntry,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getLeaderboard(args, ctx)
+      },
+    })
+
     t.list.field('feedbacks', {
       type: Feedback,
       args: {
@@ -559,6 +583,7 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
+        color: stringArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createCourse(args, ctx)

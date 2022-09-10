@@ -1,28 +1,36 @@
 import { ApolloProvider } from '@apollo/client'
-import type { NextPage } from 'next'
+import { useApollo } from '@lib/apollo'
+import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
-import type { ReactElement, ReactNode } from 'react'
 
-import { useApollo } from '../lib/apollo'
+import { config } from '@fortawesome/fontawesome-svg-core'
+import '@fortawesome/fontawesome-svg-core/styles.css'
+config.autoAddCss = false
 
 import '../globals.css'
 
-export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
-  getLayout?: (page: ReactElement) => ReactNode
-}
-
-type AppPropsWithLayout = AppProps & {
-  Component: NextPageWithLayout
-}
-
-function App({ Component, pageProps }: AppPropsWithLayout) {
+function App({ Component, pageProps }: AppProps) {
   const apolloClient = useApollo(pageProps)
 
-  const getLayout = Component.getLayout || ((page) => page)
-
-  return getLayout(
+  return (
     <ApolloProvider client={apolloClient}>
-      <Component {...pageProps} />
+      <ThemeProvider
+        theme={{
+          primaryBg: 'bg-uzh-blue-20',
+          primaryBgDark: 'bg-uzh-blue-60',
+          primaryBgHover: 'hover:bg-uzh-blue-20',
+          primaryBgHoverNavbar: 'hover:bg-uzh-blue-40',
+          primaryBorder: 'border-uzh-blue-40',
+          primaryBorderHover: 'hover:border-uzh-blue-40',
+          primaryText: 'text-uzh-blue-100',
+          primaryTextHover: 'hover:text-uzh-blue-100',
+          primaryFill: 'fill-uzh-blue-80',
+          primaryFillHover: 'hover:fill-uzh-blue-100',
+          primaryProseHover: 'hover:text-uzh-blue-100',
+        }}
+      >
+        <Component {...pageProps} />
+      </ThemeProvider>
     </ApolloProvider>
   )
 }
