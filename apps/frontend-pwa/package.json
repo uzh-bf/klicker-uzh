@@ -18,6 +18,7 @@
     "@fortawesome/react-fontawesome": "0.2.0",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/markdown": "^2.0.0-alpha.8",
+    "@radix-ui/react-slider": "1.0.0",
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "0.0.35",
     "body-parser": "1.20.0",

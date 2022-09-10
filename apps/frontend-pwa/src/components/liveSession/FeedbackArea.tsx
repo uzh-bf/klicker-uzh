@@ -1,18 +1,25 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  AddConfusionTimestepDocument,
   CreateFeedbackDocument,
   GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { push } from '@socialgouv/matomo-next'
 import { Button, H2, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
+import localForage from 'localforage'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Oval } from 'react-loader-spinner'
 
+// TODO: replace debounce from loadaash with alternative implementation (possibly using ramda)
+import _debounce from 'lodash/debounce'
+
 import PublicFeedback from './PublicFeedback'
+import Slider from './Slider'
 
 interface FeedbackAreaProps {
   isModerationEnabled?: boolean
@@ -29,6 +36,19 @@ function FeedbackArea({
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
   const [createFeedback] = useMutation(CreateFeedbackDocument)
+  const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
+
+  const [confusionDifficulty, setConfusionDifficulty] = useState(0)
+  const [confusionSpeed, setConfusionSpeed] = useState(0)
+  const [isConfusionEnabled, setConfusionEnabled] = useState(true)
+  const confusionButtonTimeout = useRef<any>()
+  // const [newConfusionTS] = useMutation(AddConfusionTSMutation)
+
+  const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
+  const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
+  const difficultyLabels = { min: 'easy', mid: 'optimal', max: 'hard' }
+  const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
+  const sessionId = router.query.id as string
 
   // TODO: implement subscription on changing feedbacks
   // TODO: fix polling
@@ -69,6 +89,82 @@ function FeedbackArea({
         incrementUpvote: upvoteChange,
         incrementDownvote: downvoteChange,
       },
+    })
+  }
+
+  useEffect((): void => {
+    const exec = async () => {
+      try {
+        const confusion: any = await localForage.getItem(
+          `${sessionId}-confusion`
+        )
+        if (confusion) {
+          setConfusionSpeed(confusion.prevSpeed)
+          setConfusionDifficulty(confusion.prevDifficulty)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    exec()
+  }, [])
+
+  // TODO: fix localforage implementation - seems not to work at the moment
+  // handle creation of a new confusion timestep with debounce for aggregation
+  const handleNewConfusionTS = async ({
+    speed = 0,
+    difficulty = 0,
+  }): Promise<void> => {
+    try {
+      addConfusionTimestep({
+        variables: {
+          sessionId: sessionId,
+          difficulty: difficulty,
+          speed: speed,
+        },
+      })
+
+      localForage.setItem(`${sessionId}-confusion`, {
+        prevSpeed: speed,
+        prevDifficulty: difficulty,
+      })
+      push([
+        'trackEvent',
+        'Join Session',
+        'Confusion Interacted',
+        `speed=${speed}, difficulty=${difficulty}`,
+      ])
+    } catch ({ message }) {
+      console.error(message)
+    } finally {
+      setConfusionEnabled(false)
+      if (confusionButtonTimeout.current) {
+        clearTimeout(confusionButtonTimeout.current)
+      }
+      confusionButtonTimeout.current = setTimeout(
+        setConfusionEnabled,
+        60000,
+        true
+      )
+    }
+  }
+
+  const debouncedHandleNewConfusionTS = useCallback(
+    _debounce(handleNewConfusionTS, 4000, { trailing: true }),
+    []
+  )
+
+  const onNewConfusionTS = async (newValue: any, selector: string) => {
+    // send the new confusion entry to the server
+    if (selector === 'speed') {
+      setConfusionSpeed(newValue)
+    } else if (selector === 'difficulty') {
+      setConfusionDifficulty(newValue)
+    }
+
+    debouncedHandleNewConfusionTS({
+      speed: selector === 'speed' ? newValue : confusionSpeed,
+      difficulty: selector === 'difficulty' ? newValue : confusionDifficulty,
     })
   }
 
@@ -138,7 +234,34 @@ function FeedbackArea({
         </Formik>
       </div>
 
-      <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
+      {/* // TODO: styling of confusion barometer (borders, etc); move component to design system if possible  */}
+      <div className="mb-8 text-sm">
+        <H3 className="-mb-4">Speed</H3>
+        <div className="w-full mb-6">
+          <Slider
+            disabled={!isConfusionEnabled}
+            handleChange={(newValue: any): Promise<void> =>
+              onNewConfusionTS(newValue, 'speed')
+            }
+            icons={speedIcons}
+            labels={speedLabels}
+            value={confusionSpeed}
+          />
+        </div>
+
+        <H3 className="-mb-4">Difficulty</H3>
+        <div className="w-full mb-6">
+          <Slider
+            disabled={!isConfusionEnabled}
+            handleChange={(newValue: any): Promise<void> =>
+              onNewConfusionTS(newValue, 'difficulty')
+            }
+            icons={difficultyIcons}
+            labels={difficultyLabels}
+            value={confusionDifficulty}
+          />
+        </div>
+      </div>
 
       {feedbacksData?.feedbacks.length > 0 && (
         <div>

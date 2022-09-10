@@ -161,9 +161,7 @@ function Index({
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
-          <FeedbackArea
-            isModerationEnabled={isModerationEnabled}
-          />
+          <FeedbackArea isModerationEnabled={isModerationEnabled} />
         </div>
       )}
     </Layout>
