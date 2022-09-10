@@ -4,7 +4,7 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { ContextWithUser } from '@lib/context'
+import { ContextWithOptionalUser, ContextWithUser } from '@lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -429,7 +429,7 @@ export async function getFeedbacks(
 
 export async function upvoteFeedback(
   { feedbackId, increment }: { feedbackId: number; increment: number },
-  ctx: ContextWithUser
+  ctx: ContextWithOptionalUser
 ) {
   return ctx.prisma.feedback.update({
     where: {
@@ -447,7 +447,7 @@ export async function voteFeedbackResponse(
     incrementUpvote,
     incrementDownvote,
   }: { id: number; incrementUpvote: number; incrementDownvote: number },
-  ctx: ContextWithUser
+  ctx: ContextWithOptionalUser
 ) {
   return ctx.prisma.feedbackResponse.update({
     where: {
@@ -458,4 +458,32 @@ export async function voteFeedbackResponse(
       negativeReactions: { increment: incrementDownvote },
     },
   })
+}
+
+export async function createFeedback(
+  { sessionId, content }: { sessionId: string; content: string },
+  ctx: ContextWithOptionalUser
+) {
+  if (ctx.user?.sub) {
+    return ctx.prisma.feedback.create({
+      data: {
+        content,
+        session: {
+          connect: { id: sessionId },
+        },
+        participant: {
+          connect: { id: ctx.user.sub },
+        },
+      },
+    })
+  } else {
+    return ctx.prisma.feedback.create({
+      data: {
+        content,
+        session: {
+          connect: { id: sessionId },
+        },
+      },
+    })
+  }
 }

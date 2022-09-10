@@ -1,11 +1,16 @@
 import { useMutation } from '@apollo/client'
 import {
+  CreateFeedbackDocument,
   Feedback,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { Field, Form, Formik } from 'formik'
+import { useRouter } from 'next/router'
 import React from 'react'
+import { Oval } from 'react-loader-spinner'
+
 import PublicFeedback from './PublicFeedback'
 
 interface FeedbackAreaProps {
@@ -27,8 +32,19 @@ function FeedbackArea({
   isAudienceInteractionActive,
   isFeedbackChannelPublic,
 }: FeedbackAreaProps): React.ReactElement {
+  const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
+  const [createFeedback] = useMutation(CreateFeedbackDocument)
+
+  const onAddFeedback = (input: string) => {
+    createFeedback({
+      variables: {
+        sessionId: router.query.id as string,
+        content: input
+      },
+    })
+  }
 
   const onUpvoteFeedback = (id: number, change: number) => {
     upvoteFeedback({ variables: { feedbackId: id, increment: change } })
@@ -62,10 +78,60 @@ function FeedbackArea({
     <div className="w-full h-full">
       <H1>Feedback-Kanal</H1>
       {isAudienceInteractionActive && (
-        <div className="mb-8">Feedback Input // TODO</div>
+        <div className="mb-8">
+          <Formik
+            initialValues={{ feedbackInput: '' }}
+            onSubmit={(values, { setSubmitting }) => {
+              if (values.feedbackInput !== '') {
+                onAddFeedback(values.feedbackInput)
+                values.feedbackInput = ""
+
+                setTimeout(() => {
+                  setSubmitting(false)
+                }, 700)
+              } else {
+                setSubmitting(false)
+              }
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form>
+                <Field
+                  className="w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm"
+                  component="textarea"
+                  rows="3"
+                  name="feedbackInput"
+                  placeholder="Feedback / Frage eingeben"
+                />
+                <Button
+                  className="float-right h-10 text-center items-center !w-30"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Button.Label>
+                      <Oval
+                        height={20}
+                        width={20}
+                        color="#0028a5"
+                        visible={true}
+                        ariaLabel="oval-loading"
+                        secondaryColor="#99a9db"
+                        strokeWidth={5}
+                        strokeWidthSecondary={5}
+                      />
+                    </Button.Label>
+                  ) : (
+                    <Button.Label className='text-sm'>Absenden</Button.Label>
+                  )}
+                </Button>
+              </Form>
+            )}
+          </Formik>
+        </div>
       )}
       {isAudienceInteractionActive && (
-        <div className="mb-8">ConfusionArea PLACEHOLDER // TODO</div>
+        <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
       )}
       {isFeedbackChannelPublic && feedbacks.length > 0 && (
         <div>

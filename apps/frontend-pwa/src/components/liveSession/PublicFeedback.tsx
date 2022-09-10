@@ -144,6 +144,7 @@ function PublicFeedback({
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
           className="w-10 h-10"
+          disabled={feedback.resolvedAt}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faThumbsUp} size="lg" />

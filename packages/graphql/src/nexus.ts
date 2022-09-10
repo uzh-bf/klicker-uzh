@@ -508,7 +508,7 @@ export const Mutation = objectType({
         feedbackId: nonNull(intArg()),
         increment: nonNull(intArg()),
       },
-      resolve(_, args, ctx: ContextWithUser) {
+      resolve(_, args, ctx: ContextWithOptionalUser) {
         return SessionService.upvoteFeedback(args, ctx)
       },
     })
@@ -520,8 +520,19 @@ export const Mutation = objectType({
         incrementUpvote: nonNull(intArg()),
         incrementDownvote: nonNull(intArg()),
       },
-      resolve(_, args, ctx: ContextWithUser) {
+      resolve(_, args, ctx: ContextWithOptionalUser) {
         return SessionService.voteFeedbackResponse(args, ctx)
+      },
+    })
+
+    t.field('createFeedback', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+        content: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.createFeedback(args, ctx)
       },
     })
 
