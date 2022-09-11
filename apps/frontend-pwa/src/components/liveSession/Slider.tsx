@@ -5,50 +5,57 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
-  handleChange: any
   value: number
+  labels: Record<string, string>
+  handleChange: (newValue: number) => void
+  min: number
+  max: number
+  step: number
   disabled?: boolean
-  labels: any
-  icons?: any
+  icons?: Record<string, string>
+  rangeColorMap?: Record<string, string>
+  borderColorMap?: Record<string, string>
+  className?: string
 }
 
 const defaultProps = {
   disabled: false,
   icons: undefined,
-  value: undefined,
-}
-
-const RANGE_COLOR_MAP = {
-  '-2': 'bg-red-200',
-  '-1': 'bg-yellow-200',
-  '0': 'bg-green-200',
-  '1': 'bg-yellow-200',
-  '2': 'bg-red-200',
-}
-
-const BORDER_COLOR_MAP = {
-  '-2': 'border-red-300',
-  '-1': 'border-yellow-300',
-  '0': 'border-green-300',
-  '1': 'border-yellow-300',
-  '2': 'border-red-300',
+  rangeColorMap: undefined,
+  borderColorMap: undefined,
+  className: undefined,
 }
 
 function Slider({
   value,
-  disabled,
-  handleChange,
   labels,
+  handleChange,
+  min,
+  max,
+  step,
+  disabled,
   icons,
+  rangeColorMap,
+  borderColorMap,
+  className,
 }: Props): React.ReactElement {
+  const steps =
+    min < 0 && max > 0
+      ? ((max - min + 1) / step) >> 0
+      : ((max - min) / step) >> 0
+  console.log(steps)
+
   return (
     <RadixSlider.Root
-      className="relative flex items-center w-full h-24 select-none"
+      className={twMerge(
+        'relative flex items-center w-full h-24 select-none',
+        className
+      )}
       defaultValue={[0]}
       disabled={disabled}
-      max={2}
-      min={-2}
-      step={1}
+      max={max}
+      min={min}
+      step={step}
       value={[value]}
       onValueChange={([newValue]) => handleChange(newValue)}
     >
@@ -74,24 +81,26 @@ function Slider({
         <RadixSlider.Range
           className={twMerge(
             'absolute h-full rounded-full',
-            RANGE_COLOR_MAP[String(value)]
+            rangeColorMap && Object.keys(rangeColorMap).length === steps
+              ? rangeColorMap[String(value)]
+              : 'bg-gray-500'
           )}
         />
       </RadixSlider.Track>
 
       <RadixSlider.Thumb
         className={twMerge(
-          'w-12 h-12 flex flex-col items-center justify-center bg-white border-3 border-solid rounded-full shadow-lg focus:outline-none',
+          'w-12 h-12 flex flex-col items-center justify-center bg-white border-[3px] border-solid rounded-full shadow-lg focus:outline-none',
           disabled ? 'cursor-not-allowed' : 'cursor-move',
-          disabled ? 'border-gray-300' : BORDER_COLOR_MAP[String(value)]
+          disabled ||
+            !borderColorMap ||
+            Object.keys(borderColorMap).length !== steps
+            ? 'border-gray-300'
+            : borderColorMap[String(value)]
         )}
       >
         {disabled && (
-          <FontAwesomeIcon
-            icon={faLock}
-            size="lg"
-            className="text-uzh-grey-100"
-          />
+          <FontAwesomeIcon icon={faLock} size="lg" className="text-gray-500" />
         )}
       </RadixSlider.Thumb>
     </RadixSlider.Root>

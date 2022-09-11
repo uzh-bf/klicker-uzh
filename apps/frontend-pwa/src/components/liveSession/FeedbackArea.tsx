@@ -48,6 +48,20 @@ function FeedbackArea({
   const difficultyLabels = { min: 'easy', mid: 'optimal', max: 'hard' }
   const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
   const sessionId = router.query.id as string
+  const RANGE_COLOR_MAP: Record<string, string> = {
+    '-2': 'bg-red-200',
+    '-1': 'bg-yellow-200',
+    '0': 'bg-green-200',
+    '1': 'bg-yellow-200',
+    '2': 'bg-red-200',
+  }
+  const BORDER_COLOR_MAP: Record<string, string> = {
+    '-2': 'border-red-300',
+    '-1': 'border-yellow-300',
+    '0': 'border-green-300',
+    '1': 'border-yellow-300',
+    '2': 'border-red-300',
+  }
 
   // TODO: implement subscription on changing feedbacks
   // TODO: fix polling
@@ -265,6 +279,11 @@ function FeedbackArea({
             icons={speedIcons}
             labels={speedLabels}
             value={confusionSpeed}
+            rangeColorMap={RANGE_COLOR_MAP}
+            borderColorMap={BORDER_COLOR_MAP}
+            min={-2}
+            max={2}
+            step={1}
           />
         </div>
 
@@ -278,6 +297,11 @@ function FeedbackArea({
             icons={difficultyIcons}
             labels={difficultyLabels}
             value={confusionDifficulty}
+            rangeColorMap={RANGE_COLOR_MAP}
+            borderColorMap={BORDER_COLOR_MAP}
+            min={-2}
+            max={2}
+            step={1}
           />
         </div>
       </div>
