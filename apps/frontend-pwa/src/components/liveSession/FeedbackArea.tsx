@@ -7,7 +7,7 @@ import {
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { Button, H2, H3 } from '@uzh-bf/design-system'
+import { Button, H2, H3, Slider } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
 import localForage from 'localforage'
@@ -19,7 +19,6 @@ import { Oval } from 'react-loader-spinner'
 import _debounce from 'lodash/debounce'
 
 import PublicFeedback from './PublicFeedback'
-import Slider from './Slider'
 
 interface FeedbackAreaProps {
   isModerationEnabled?: boolean
@@ -265,9 +264,6 @@ function FeedbackArea({
         </Formik>
       </div>
 
-      {/* // TODO: styling of confusion barometer (borders, etc) */}
-      {/* // TODO: move component to design system if possible */}
-      {/* // TODO: implement sliders as generic as possible with flexible ranges and maybe also modified coloring scheme for more flexibility */}
       <div className="mb-8 text-sm">
         <H3 className="-mb-4">Speed</H3>
         <div className="w-full mb-6">
