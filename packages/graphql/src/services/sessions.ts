@@ -549,7 +549,11 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
     },
   })
 
-  return session
+  if (session?.status === SessionStatus.RUNNING) {
+    return session
+  }
+
+  return null
 }
 
 interface GetLeaderboardArgs {

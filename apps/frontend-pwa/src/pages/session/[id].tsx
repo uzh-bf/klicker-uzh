@@ -110,6 +110,7 @@ function Index({
       displayName={`Live Session - ${displayName}`}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
+      pageNotFound={!id}
     >
       <div
         className={twMerge(
