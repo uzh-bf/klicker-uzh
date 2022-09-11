@@ -1,0 +1,15 @@
+mutation AddConfusionTimestep(
+  $sessionId: ID!
+  $difficulty: Int!
+  $speed: Int!
+) {
+  addConfusionTimestep(
+    sessionId: $sessionId
+    difficulty: $difficulty
+    speed: $speed
+  ) {
+    id
+    difficulty
+    speed
+  }
+}

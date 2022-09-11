@@ -30,6 +30,13 @@ type ChoicesQuestionOptions {
   choices: [Choice!]!
 }
 
+type ConfusionTimestep {
+  createdAt: DateTime!
+  difficulty: Int!
+  id: Int!
+  speed: Int!
+}
+
 type Course {
   color: String
   displayName: String!
@@ -116,6 +123,7 @@ type MicroSession {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
@@ -222,6 +230,7 @@ input ResponseInput {
 type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock!]!
+  confusionFeedbacks: [ConfusionTimestep]
   displayName: String!
   feedbacks: [Feedback]
   id: ID!
