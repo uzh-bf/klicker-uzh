@@ -97,6 +97,7 @@ function Layout({
           <MobileMenuBar
             menuItems={mobileMenuItems}
             onClick={setActiveMobilePage}
+            participantMissing={!dataParticipant}
           />
         </div>
       </div>

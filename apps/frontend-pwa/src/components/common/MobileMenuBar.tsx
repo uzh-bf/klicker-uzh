@@ -13,11 +13,13 @@ interface MobileMenuBarProps {
     showBadge?: boolean
   }[]
   onClick?: (value: string) => void
+  participantMissing?: boolean
 }
 
 function MobileMenuBar({
   menuItems,
   onClick,
+  participantMissing,
 }: MobileMenuBarProps): React.ReactElement {
   const homeMenuItem = {
     label: 'Home',
@@ -25,11 +27,11 @@ function MobileMenuBar({
     value: 'home',
     onClick: () => Router.push('/'),
   }
-  const items = menuItems ? [homeMenuItem, ...menuItems] : [homeMenuItem]
+  const items = participantMissing ? (menuItems ? menuItems : undefined) : (menuItems ? [homeMenuItem, ...menuItems] : [homeMenuItem])
 
   return (
     <div className="flex flex-row justify-between w-full h-full gap-1 bg-uzh-grey-60">
-      {items.map((item: any) => (
+      {items && items.map((item: any) => (
         <NotificationBadgeWrapper
           count={item.unseenItems}
           withoutCount={item.showBadge}
