@@ -1,6 +1,6 @@
 import Markdown from '@klicker-uzh/markdown'
 import { push } from '@socialgouv/matomo-next'
-import { H1 } from '@uzh-bf/design-system'
+import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { without } from 'ramda'
@@ -296,7 +296,7 @@ function QuestionArea({
 
   return (
     <div className="w-full h-full min-h-content">
-      <H1 className="hidden mb-2 md:block md:!text-lg">Frage</H1>
+      <H2 className="hidden mb-2 md:block">Frage</H2>
 
       {remainingQuestions.length === 0 ? (
         'Sie haben bereits alle aktiven Fragen beantwortet.'

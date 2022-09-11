@@ -102,14 +102,14 @@ describe('API', () => {
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "f357e0b2-13e1-4a0e-9f50-9ab9cef7fcbe",
+            "id": "b782c2b6-ba28-4f66-a331-c17b725a46b8",
           },
         },
         "extensions": Object {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "f357e0b2-13e1-4a0e-9f50-9ab9cef7fcbe",
+                "id": "b782c2b6-ba28-4f66-a331-c17b725a46b8",
                 "typename": "Course",
               },
             ],
@@ -158,7 +158,7 @@ describe('API', () => {
                 "status": "SCHEDULED",
               },
             ],
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "status": "PREPARED",
           },
         },
@@ -166,7 +166,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
               Object {
@@ -205,7 +205,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "status": "RUNNING",
           },
         },
@@ -213,7 +213,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
             ],
@@ -244,7 +244,7 @@ describe('API', () => {
       Object {
         "data": Object {
           "changeSessionSettings": Object {
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "isAudienceInteractionActive": true,
             "isGamificationEnabled": true,
             "isModerationEnabled": false,
@@ -254,7 +254,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
             ],
@@ -315,7 +315,7 @@ describe('API', () => {
                 },
               ],
             },
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "status": "RUNNING",
           },
         },
@@ -323,7 +323,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
               Object {
@@ -513,40 +513,6 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 12,
-            },
-          },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 12,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
-        },
-        Object {
-          "data": Object {
-            "joinCourse": Object {
-              "id": 11,
-            },
-          },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 11,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
-        },
-        Object {
-          "data": Object {
-            "joinCourse": Object {
               "id": 13,
             },
           },
@@ -581,14 +547,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 15,
+              "id": 12,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 15,
+                  "id": 12,
                   "typename": "Participation",
                 },
               ],
@@ -598,14 +564,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 16,
+              "id": 11,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 16,
+                  "id": 11,
                   "typename": "Participation",
                 },
               ],
@@ -615,14 +581,14 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 20,
+              "id": 18,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 20,
+                  "id": 18,
                   "typename": "Participation",
                 },
               ],
@@ -649,14 +615,48 @@ describe('API', () => {
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 18,
+              "id": 20,
             },
           },
           "extensions": Object {
             "responseCache": Object {
               "invalidatedEntities": Array [
                 Object {
-                  "id": 18,
+                  "id": 20,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 15,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 15,
+                  "typename": "Participation",
+                },
+              ],
+            },
+          },
+        },
+        Object {
+          "data": Object {
+            "joinCourse": Object {
+              "id": 16,
+            },
+          },
+          "extensions": Object {
+            "responseCache": Object {
+              "invalidatedEntities": Array [
+                Object {
+                  "id": 16,
                   "typename": "Participation",
                 },
               ],
@@ -782,7 +782,7 @@ describe('API', () => {
                 "status": "EXECUTED",
               },
             ],
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "status": "RUNNING",
           },
         },
@@ -790,7 +790,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
               Object {
@@ -847,7 +847,7 @@ describe('API', () => {
                 },
               ],
             },
-            "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+            "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
             "status": "RUNNING",
           },
         },
@@ -855,7 +855,7 @@ describe('API', () => {
           "responseCache": Object {
             "invalidatedEntities": Array [
               Object {
-                "id": "ecfc4b67-79ae-448d-8255-5b98eed7424c",
+                "id": "b6414769-b9ae-4e33-a897-221ccba3d221",
                 "typename": "Session",
               },
               Object {
@@ -1131,6 +1131,81 @@ describe('API', () => {
               Object {
                 "id": 2,
                 "typename": "FeedbackResponse",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the participants to add confusion feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: 0, speed: 1) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": 0,
+            "id": 1,
+            "speed": 1,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 1,
+                "typename": "ConfusionTimestep",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: -2, speed: 0) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": -2,
+            "id": 2,
+            "speed": 0,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 2,
+                "typename": "ConfusionTimestep",
               },
             ],
           },

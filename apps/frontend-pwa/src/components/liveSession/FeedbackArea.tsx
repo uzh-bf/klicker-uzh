@@ -1,16 +1,22 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  AddConfusionTimestepDocument,
   CreateFeedbackDocument,
   GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { push } from '@socialgouv/matomo-next'
+import { Button, H2, H3, Slider } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
+import localForage from 'localforage'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Oval } from 'react-loader-spinner'
+
+// TODO: replace debounce from loadaash with alternative implementation (possibly using ramda)
+import _debounce from 'lodash/debounce'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -29,6 +35,32 @@ function FeedbackArea({
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
   const [createFeedback] = useMutation(CreateFeedbackDocument)
+  const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
+
+  const [confusionDifficulty, setConfusionDifficulty] = useState(0)
+  const [confusionSpeed, setConfusionSpeed] = useState(0)
+  const [isConfusionEnabled, setConfusionEnabled] = useState(true)
+  const confusionButtonTimeout = useRef<any>()
+
+  const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
+  const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
+  const difficultyLabels = { min: 'easy', mid: 'optimal', max: 'hard' }
+  const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
+  const sessionId = router.query.id as string
+  const RANGE_COLOR_MAP: Record<string, string> = {
+    '-2': 'bg-red-200',
+    '-1': 'bg-yellow-200',
+    '0': 'bg-green-200',
+    '1': 'bg-yellow-200',
+    '2': 'bg-red-200',
+  }
+  const BORDER_COLOR_MAP: Record<string, string> = {
+    '-2': 'border-red-300',
+    '-1': 'border-yellow-300',
+    '0': 'border-green-300',
+    '1': 'border-yellow-300',
+    '2': 'border-red-300',
+  }
 
   // TODO: implement subscription on changing feedbacks
   // TODO: fix polling
@@ -72,6 +104,100 @@ function FeedbackArea({
     })
   }
 
+  useEffect((): void => {
+    const exec = async () => {
+      try {
+        const confusion: any = await localForage.getItem(
+          `${sessionId}-confusion`
+        )
+        if (confusion) {
+          setConfusionSpeed(confusion.prevSpeed)
+          setConfusionDifficulty(confusion.prevDifficulty)
+
+          // if the time since the last confusion is less than 1 minutes, the confusion sliders will also be disabled on page reload
+          const timeToNextVote =
+            60000 - dayjs().diff(dayjs(confusion.prevTimestamp))
+
+          // if the last vote was less than 58 seconds ago, the slider will still be disabled until the minute is completed
+          if (timeToNextVote > 2000) {
+            if (confusionButtonTimeout.current) {
+              clearTimeout(confusionButtonTimeout.current)
+            }
+            setConfusionEnabled(false)
+            confusionButtonTimeout.current = setTimeout(
+              setConfusionEnabled,
+              timeToNextVote,
+              true
+            )
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    exec()
+  }, [sessionId])
+
+  // handle creation of a new confusion timestep with debounce for aggregation
+  const handleNewConfusionTS = async ({
+    speed = 0,
+    difficulty = 0,
+  }): Promise<void> => {
+    try {
+      addConfusionTimestep({
+        variables: {
+          sessionId: sessionId,
+          difficulty: difficulty,
+          speed: speed,
+        },
+      })
+
+      localForage.setItem(`${sessionId}-confusion`, {
+        prevSpeed: speed,
+        prevDifficulty: difficulty,
+        prevTimestamp: dayjs().format(),
+      })
+      push([
+        'trackEvent',
+        'Join Session',
+        'Confusion Interacted',
+        `speed=${speed}, difficulty=${difficulty}`,
+      ])
+    } catch ({ message }) {
+      console.error(message)
+    } finally {
+      // disable confusion voting for 1 minute
+      setConfusionEnabled(false)
+      if (confusionButtonTimeout.current) {
+        clearTimeout(confusionButtonTimeout.current)
+      }
+      confusionButtonTimeout.current = setTimeout(
+        setConfusionEnabled,
+        60000,
+        true
+      )
+    }
+  }
+
+  const debouncedHandleNewConfusionTS = useCallback(
+    _debounce(handleNewConfusionTS, 4000, { trailing: true }),
+    []
+  )
+
+  const onNewConfusionTS = async (newValue: any, selector: string) => {
+    // send the new confusion entry to the server
+    if (selector === 'speed') {
+      setConfusionSpeed(newValue)
+    } else if (selector === 'difficulty') {
+      setConfusionDifficulty(newValue)
+    }
+
+    debouncedHandleNewConfusionTS({
+      speed: selector === 'speed' ? newValue : confusionSpeed,
+      difficulty: selector === 'difficulty' ? newValue : confusionDifficulty,
+    })
+  }
+
   if (feedbacksLoading || !feedbacksData?.feedbacks) {
     return <div>Loading...</div>
   }
@@ -84,7 +210,7 @@ function FeedbackArea({
 
   return (
     <div className="w-full h-full">
-      <H1>Feedback-Kanal</H1>
+      <H2>Feedback-Kanal</H2>
 
       <div className="mb-8">
         <Formik
@@ -138,7 +264,43 @@ function FeedbackArea({
         </Formik>
       </div>
 
-      <div className="mb-8 text-sm">ConfusionArea PLACEHOLDER // TODO</div>
+      <div className="mb-8 text-sm">
+        <H3 className="-mb-4">Speed</H3>
+        <div className="w-full mb-6">
+          <Slider
+            disabled={!isConfusionEnabled}
+            handleChange={(newValue: any): Promise<void> =>
+              onNewConfusionTS(newValue, 'speed')
+            }
+            icons={speedIcons}
+            labels={speedLabels}
+            value={confusionSpeed}
+            rangeColorMap={RANGE_COLOR_MAP}
+            borderColorMap={BORDER_COLOR_MAP}
+            min={-2}
+            max={2}
+            step={1}
+          />
+        </div>
+
+        <H3 className="-mb-4">Difficulty</H3>
+        <div className="w-full mb-6">
+          <Slider
+            disabled={!isConfusionEnabled}
+            handleChange={(newValue: any): Promise<void> =>
+              onNewConfusionTS(newValue, 'difficulty')
+            }
+            icons={difficultyIcons}
+            labels={difficultyLabels}
+            value={confusionDifficulty}
+            rangeColorMap={RANGE_COLOR_MAP}
+            borderColorMap={BORDER_COLOR_MAP}
+            min={-2}
+            max={2}
+            step={1}
+          />
+        </div>
+      </div>
 
       {feedbacksData?.feedbacks.length > 0 && (
         <div>

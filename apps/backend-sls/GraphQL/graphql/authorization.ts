@@ -30,6 +30,7 @@ export const Rules = {
 export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Reject'] } },
+    addConfusionTimestep: { __authz: { rules: ['Allow'] } },
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },

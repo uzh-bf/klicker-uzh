@@ -82,6 +82,12 @@ export interface NexusGenObjects {
   ChoicesQuestionOptions: { // root type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
+  ConfusionTimestep: { // root type
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    difficulty: number; // Int!
+    id: number; // Int!
+    speed: number; // Int!
+  }
   Course: { // root type
     color?: string | null; // String
     displayName: string; // String!
@@ -202,6 +208,7 @@ export interface NexusGenObjects {
   Session: { // root type
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
+    confusionFeedbacks?: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -253,6 +260,12 @@ export interface NexusGenFieldTypes {
   }
   ChoicesQuestionOptions: { // field return type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
+  }
+  ConfusionTimestep: { // field return type
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    difficulty: number; // Int!
+    id: number; // Int!
+    speed: number; // Int!
   }
   Course: { // field return type
     color: string | null; // String
@@ -320,6 +333,7 @@ export interface NexusGenFieldTypes {
   }
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
+    addConfusionTimestep: NexusGenRootTypes['ConfusionTimestep'] | null; // ConfusionTimestep
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -400,6 +414,7 @@ export interface NexusGenFieldTypes {
   Session: { // field return type
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
+    confusionFeedbacks: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -449,6 +464,12 @@ export interface NexusGenFieldTypeNames {
   }
   ChoicesQuestionOptions: { // field return type name
     choices: 'Choice'
+  }
+  ConfusionTimestep: { // field return type name
+    createdAt: 'DateTime'
+    difficulty: 'Int'
+    id: 'Int'
+    speed: 'Int'
   }
   Course: { // field return type name
     color: 'String'
@@ -516,6 +537,7 @@ export interface NexusGenFieldTypeNames {
   }
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
+    addConfusionTimestep: 'ConfusionTimestep'
     changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
@@ -596,6 +618,7 @@ export interface NexusGenFieldTypeNames {
   Session: { // field return type name
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
+    confusionFeedbacks: 'ConfusionTimestep'
     displayName: 'String'
     feedbacks: 'Feedback'
     id: 'ID'
@@ -631,6 +654,11 @@ export interface NexusGenArgTypes {
     activateSessionBlock: { // args
       sessionBlockId: number; // Int!
       sessionId: string; // ID!
+    }
+    addConfusionTimestep: { // args
+      difficulty: number; // Int!
+      sessionId: string; // ID!
+      speed: number; // Int!
     }
     changeSessionSettings: { // args
       id: string; // ID!
