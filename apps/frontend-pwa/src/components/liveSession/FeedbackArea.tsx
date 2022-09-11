@@ -15,9 +15,6 @@ import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Oval } from 'react-loader-spinner'
 
-// TODO: replace debounce from loadaash with alternative implementation (possibly using ramda)
-import _debounce from 'lodash/debounce'
-
 import PublicFeedback from './PublicFeedback'
 
 interface FeedbackAreaProps {
@@ -41,6 +38,7 @@ function FeedbackArea({
   const [confusionSpeed, setConfusionSpeed] = useState(0)
   const [isConfusionEnabled, setConfusionEnabled] = useState(true)
   const confusionButtonTimeout = useRef<any>()
+  const confusionSubmissionTimeout = useRef<any>()
 
   const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
   const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
@@ -179,11 +177,18 @@ function FeedbackArea({
     }
   }
 
+  // custom implementation of confusion feedback debouncing
   const debouncedHandleNewConfusionTS = useCallback(
-    _debounce(handleNewConfusionTS, 4000, { trailing: true }),
+    ({ speed, difficulty }: { speed: number; difficulty: number }) => {
+      clearTimeout(confusionSubmissionTimeout.current)
+      confusionSubmissionTimeout.current = setTimeout(handleNewConfusionTS, 4000, {
+        speed,
+        difficulty,
+      })
+    },
     []
   )
-
+  
   const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
     if (selector === 'speed') {
