@@ -1069,4 +1069,345 @@ describe('API', () => {
     `
     )
   })
+
+  it('allows the participants to add feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 1 without participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 1 without participant",
+            "id": 72,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 72,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 2 of logged in participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 2 of logged in participant",
+            "id": 73,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 73,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response3 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved without responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response3.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved without responses",
+            "id": 74,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 74,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response4 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved with responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response4.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved with responses",
+            "id": 75,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 75,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    feedback1 = response3.body.data.createFeedback
+    feedback2 = response4.body.data.createFeedback
+  })
+
+  it('allows the user to resolve a feedback', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            resolveFeedback(id: ${feedback1.id}, newValue: true) {
+                id
+                isResolved
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "resolveFeedback": Object {
+            "id": 74,
+            "isResolved": true,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 74,
+                "typename": "Feedback",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the user to respond to a feedback', async () => {
+    await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 1") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 2") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "respondToFeedback": Object {
+            "id": 75,
+            "isResolved": true,
+            "responses": Array [
+              Object {
+                "content": "Response 1",
+                "id": 35,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
+              },
+              Object {
+                "content": "Response 2",
+                "id": 36,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
+              },
+            ],
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 75,
+                "typename": "Feedback",
+              },
+              Object {
+                "id": 35,
+                "typename": "FeedbackResponse",
+              },
+              Object {
+                "id": 36,
+                "typename": "FeedbackResponse",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
+
+  it('allows the participants to add confusion feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: 0, speed: 1) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": 0,
+            "id": 36,
+            "speed": 1,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 36,
+                "typename": "ConfusionTimestep",
+              },
+            ],
+          },
+        },
+      }
+    `)
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: -2, speed: 0) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(`
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": -2,
+            "id": 37,
+            "speed": 0,
+          },
+        },
+        "extensions": Object {
+          "responseCache": Object {
+            "invalidatedEntities": Array [
+              Object {
+                "id": 37,
+                "typename": "ConfusionTimestep",
+              },
+            ],
+          },
+        },
+      }
+    `)
+  })
 })
