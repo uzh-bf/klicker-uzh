@@ -43,7 +43,6 @@ function Slider({
     min < 0 && max > 0
       ? ((max - min + 1) / step) >> 0
       : ((max - min) / step) >> 0
-  console.log(steps)
 
   return (
     <RadixSlider.Root
