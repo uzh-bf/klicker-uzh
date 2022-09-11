@@ -1,13 +1,13 @@
-import { GetSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetRunningSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { initializeApollo } from './apollo'
 
-export async function getSessionData(ctx: any) {
+export async function getRunningSessionData(ctx: any) {
   const apolloClient = initializeApollo()
   let result: any
 
   try {
     result = await apolloClient.query({
-      query: GetSessionDocument,
+      query: GetRunningSessionDocument,
       variables: {
         id: ctx.query?.id as string,
       },

@@ -537,7 +537,10 @@ export async function deactivateSessionBlock(
   return updatedSession
 }
 
-export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
+export async function getRunningSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {

@@ -1,5 +1,3 @@
-// TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
-
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -11,7 +9,7 @@ import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import { addApolloState } from '@lib/apollo'
-import { getSessionData } from '@lib/joinData'
+import { getRunningSessionData } from '@lib/joinData'
 import getConfig from 'next/config'
 import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
@@ -34,8 +32,6 @@ function Index({
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
-
-  console.log(activeBlock)
 
   const handleNewResponse = async (
     type: string,
@@ -174,7 +170,7 @@ function Index({
 // TODO: handle Apollo error that occurs when the session does not exist / is not running
 // --> show alternative page with error message but without Apollo error
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const withNewSessionData = await getSessionData(ctx)
+  const withNewSessionData = await getRunningSessionData(ctx)
 
   return addApolloState(withNewSessionData.apolloClient, {
     props: {

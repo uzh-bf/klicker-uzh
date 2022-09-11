@@ -1,6 +1,6 @@
 # import "./FQuestionDataWithoutSolutions.graphql"
 
-query GetSession($id: ID!) {
+query GetRunningSession($id: ID!) {
   session(id: $id) {
     id
     isAudienceInteractionActive

@@ -459,7 +459,7 @@ export const Query = objectType({
         id: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.getSession(args, ctx)
+        return SessionService.getRunningSession(args, ctx)
       },
     })
 
