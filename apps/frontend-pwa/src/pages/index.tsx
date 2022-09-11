@@ -7,10 +7,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 
 const Index = function () {
   const { data, loading, error } = useQuery(ParticipationsDocument)
+  const router = useRouter()
 
   const {
     courses,
@@ -44,6 +46,9 @@ const Index = function () {
     }, obj)
   }, [data])
 
+  if (!loading && !data) {
+    router.push('/login')
+  }
   if (loading || !data) {
     return <div>loading</div>
   }
