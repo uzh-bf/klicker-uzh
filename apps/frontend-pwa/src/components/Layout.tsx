@@ -27,6 +27,7 @@ const defaultProps = {
   className: '',
 }
 
+// TODO: fix scroll issues on mobile and (if possible) ensure that different parts of the screen (e.g. questions and feedback area) can scroll independently
 function Layout({
   children,
   displayName,

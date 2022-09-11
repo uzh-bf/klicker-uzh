@@ -26,6 +26,8 @@ describe('API', () => {
   let session: any
   let courseId: any
   let instances: any[]
+  let feedback1: any
+  let feedback2: any
 
   beforeAll(() => {
     prisma = new PrismaClient()
@@ -68,18 +70,20 @@ describe('API', () => {
     expect(response.headers['set-cookie']).toBeDefined()
     userCookie = response.headers['set-cookie'][0]
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: { loginUser: expect.any(String) },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
-          "loginUser": "6f45065c-447f-4259-818c-c6f6b477eb48",
+          "loginUser": Any<String>,
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [],
-          },
-        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
   })
 
   it('allows the user to create a course', async () => {
@@ -96,25 +100,22 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: { createCourse: { id: expect.any(String) } },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "createCourse": Object {
-            "id": "4cd9e708-eb25-41d0-b88b-78c422e1fe48",
+            "id": Any<String>,
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": "4cd9e708-eb25-41d0-b88b-78c422e1fe48",
-                "typename": "Course",
-              },
-            ],
-          },
-        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
 
     courseId = response.body.data.createCourse.id
   })
@@ -141,45 +142,41 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          createSession: {
+            id: expect.any(String),
+            blocks: new Array(2).fill({
+              id: expect.any(Number),
+            }),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "createSession": Object {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 9,
+                "id": Any<Number>,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 10,
+                "id": Any<Number>,
                 "status": "SCHEDULED",
               },
             ],
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": Any<String>,
             "status": "PREPARED",
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
-                "typename": "Session",
-              },
-              Object {
-                "id": 9,
-                "typename": "SessionBlock",
-              },
-              Object {
-                "id": 10,
-                "typename": "SessionBlock",
-              },
-            ],
-          },
-        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
 
     session = response.body.data.createSession
   })
@@ -199,26 +196,69 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          startSession: {
+            id: expect.any(String),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "startSession": Object {
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": Any<String>,
             "status": "RUNNING",
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
-                "typename": "Session",
-              },
-            ],
+        "extensions": Any<Object>,
+      }
+    `
+    )
+  })
+
+  it('allows the user to change important session parameters', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            changeSessionSettings(id: "${session.id}", isAudienceInteractionActive: true, isModerationEnabled: false, isGamificationEnabled: true) {
+                id
+                isAudienceInteractionActive
+                isModerationEnabled
+                isGamificationEnabled
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          changeSessionSettings: {
+            id: expect.any(String),
           },
         },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "changeSessionSettings": Object {
+            "id": Any<String>,
+            "isAudienceInteractionActive": true,
+            "isGamificationEnabled": true,
+            "isModerationEnabled": false,
+          },
+        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
   })
 
   it('allows the user to activate a session block', async () => {
@@ -245,65 +285,56 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          activateSessionBlock: {
+            id: expect.any(String),
+            activeBlock: {
+              id: expect.any(Number),
+              instances: new Array(3).fill({
+                id: expect.any(Number),
+              }),
+            },
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 9,
+              "id": Any<Number>,
               "instances": Array [
                 Object {
-                  "id": 21,
+                  "id": Any<Number>,
                   "questionData": Object {
                     "type": "FREE_TEXT",
                   },
                 },
                 Object {
-                  "id": 22,
+                  "id": Any<Number>,
                   "questionData": Object {
                     "type": "NUMERICAL",
                   },
                 },
                 Object {
-                  "id": 23,
+                  "id": Any<Number>,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": Any<String>,
             "status": "RUNNING",
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
-                "typename": "Session",
-              },
-              Object {
-                "id": 9,
-                "typename": "SessionBlock",
-              },
-              Object {
-                "id": 21,
-                "typename": "QuestionInstance",
-              },
-              Object {
-                "id": 22,
-                "typename": "QuestionInstance",
-              },
-              Object {
-                "id": 23,
-                "typename": "QuestionInstance",
-              },
-            ],
-          },
-        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
 
     instances =
       response.body.data.activateSessionBlock.activeBlock.instances.reduce(
@@ -340,110 +371,76 @@ describe('API', () => {
       })
     )
 
-    expect(responses).toMatchInlineSnapshot(`
+    expect(responses).toMatchInlineSnapshot(
+      new Array(10).fill({
+        data: { loginParticipant: expect.any(String) },
+        extensions: expect.any(Object),
+      }),
+      `
       Array [
         Object {
           "data": Object {
-            "loginParticipant": "6f45065c-667f-4259-818c-c6f6b477eb48",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "0b7c946c-cfc9-4b82-ac97-b058bf48924b",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "52c20f0f-f5d4-4354-a5d6-a0c103f2b9ea",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "16c39a69-03b4-4ce4-a695-e7b93d535598",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "c48f624e-7de9-4e1b-a16d-82d22e64828f",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "7cf9a94a-31a6-4c53-85d7-608dfa904e30",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "f53e6a95-689b-48c0-bfab-6625c04f39ed",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "46407010-0e7c-4903-9a66-2c8d9d6909b0",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "84b0ba5d-34bc-45cd-8253-f3e8c340e5ff",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
-            "loginParticipant": "05a933a0-b2bc-4551-b7e1-6975140d996d",
+            "loginParticipant": Any<String>,
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [],
-            },
-          },
+          "extensions": Any<Object>,
         },
       ]
-    `)
+    `
+    )
   })
 
   it('allows participants to join a course', async () => {
@@ -465,180 +462,96 @@ describe('API', () => {
       })
     )
 
-    expect(responses).toMatchInlineSnapshot(`
+    expect(responses).toMatchInlineSnapshot(
+      new Array(10).fill({
+        data: { joinCourse: { id: expect.any(Number) } },
+        extensions: expect.any(Object),
+      }),
+      `
       Array [
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 31,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 31,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 32,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 32,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 35,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 35,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 34,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 34,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 33,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 33,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 39,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 39,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 37,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 37,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 36,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 36,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 38,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 38,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
         Object {
           "data": Object {
             "joinCourse": Object {
-              "id": 40,
+              "id": Any<Number>,
             },
           },
-          "extensions": Object {
-            "responseCache": Object {
-              "invalidatedEntities": Array [
-                Object {
-                  "id": 40,
-                  "typename": "Participation",
-                },
-              ],
-            },
-          },
+          "extensions": Any<Object>,
         },
       ]
-    `)
+    `
+    )
   })
 
   it('allows participants to add some responses', async () => {
@@ -659,14 +572,10 @@ describe('API', () => {
         {
           instanceId: instances['SC' as any],
           sessionId: session.id,
-          response: {
-            choices: [1],
-          },
+          response: { choices: [1] },
         },
         {
-          headers: {
-            cookie: `participant_token=${jwt}`,
-          },
+          headers: { cookie: `participant_token=${jwt}` },
         }
       )
       axios.post(
@@ -674,14 +583,10 @@ describe('API', () => {
         {
           instanceId: instances['NUMERICAL' as any],
           sessionId: session.id,
-          response: {
-            value: 1,
-          },
+          response: { value: 1 },
         },
         {
-          headers: {
-            cookie: `participant_token=${jwt}`,
-          },
+          headers: { cookie: `participant_token=${jwt}` },
         }
       )
       axios.post(
@@ -689,14 +594,10 @@ describe('API', () => {
         {
           instanceId: instances['FREE_TEXT' as any],
           sessionId: session.id,
-          response: {
-            value: 'hello test',
-          },
+          response: { value: 'hello test' },
         },
         {
-          headers: {
-            cookie: `participant_token=${jwt}`,
-          },
+          headers: { cookie: `participant_token=${jwt}` },
         }
       )
     }
@@ -724,45 +625,41 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          deactivateSessionBlock: {
+            id: expect.any(String),
+            blocks: new Array(2).fill({
+              id: expect.any(Number),
+            }),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "deactivateSessionBlock": Object {
             "activeBlock": null,
             "blocks": Array [
               Object {
-                "id": 10,
+                "id": Any<Number>,
                 "status": "SCHEDULED",
               },
               Object {
-                "id": 9,
+                "id": Any<Number>,
                 "status": "EXECUTED",
               },
             ],
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": Any<String>,
             "status": "RUNNING",
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
-              Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
-                "typename": "Session",
-              },
-              Object {
-                "id": 10,
-                "typename": "SessionBlock",
-              },
-              Object {
-                "id": 9,
-                "typename": "SessionBlock",
-              },
-            ],
-          },
-        },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
   })
 
   it('allows the user to activate a session block', async () => {
@@ -789,44 +686,387 @@ describe('API', () => {
       `,
       })
 
-    expect(response.body).toMatchInlineSnapshot(`
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          activateSessionBlock: {
+            id: expect.any(String),
+            activeBlock: {
+              id: expect.any(Number),
+              instances: new Array(1).fill({
+                id: expect.any(Number),
+              }),
+            },
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
       Object {
         "data": Object {
           "activateSessionBlock": Object {
             "activeBlock": Object {
-              "id": 10,
+              "id": Any<Number>,
               "instances": Array [
                 Object {
-                  "id": 24,
+                  "id": Any<Number>,
                   "questionData": Object {
                     "type": "SC",
                   },
                 },
               ],
             },
-            "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
+            "id": Any<String>,
             "status": "RUNNING",
           },
         },
-        "extensions": Object {
-          "responseCache": Object {
-            "invalidatedEntities": Array [
+        "extensions": Any<Object>,
+      }
+    `
+    )
+  })
+
+  it('allows the participants to add feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 1 without participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          createFeedback: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 1 without participant",
+            "id": Any<Number>,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 2 of logged in participant", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(
+      {
+        data: {
+          createFeedback: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Published Feedback Nr. 2 of logged in participant",
+            "id": Any<Number>,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+
+    const response3 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved without responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response3.body).toMatchInlineSnapshot(
+      {
+        data: {
+          createFeedback: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved without responses",
+            "id": Any<Number>,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+
+    const response4 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved with responses", isPublished: true) {
+                id
+                content
+            }
+        }
+      `,
+      })
+
+    expect(response4.body).toMatchInlineSnapshot(
+      {
+        data: {
+          createFeedback: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "createFeedback": Object {
+            "content": "Feedback resolved with responses",
+            "id": Any<Number>,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+
+    feedback1 = response3.body.data.createFeedback
+    feedback2 = response4.body.data.createFeedback
+  })
+
+  it('allows the user to resolve a feedback', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            resolveFeedback(id: ${feedback1.id}, newValue: true) {
+                id
+                isResolved
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          resolveFeedback: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "resolveFeedback": Object {
+            "id": Any<Number>,
+            "isResolved": true,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+  })
+
+  it('allows the user to respond to a feedback', async () => {
+    const response1 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 1") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [userCookie])
+      .send({
+        query: `
+        mutation {
+            respondToFeedback(id: ${feedback2.id}, responseContent: "Response 2") {
+                id
+                isResolved
+                responses {
+                  id
+                  content
+                  positiveReactions
+                  negativeReactions
+                }
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(
+      {
+        data: {
+          respondToFeedback: {
+            id: expect.any(Number),
+            responses: new Array(2).fill({
+              id: expect.any(Number),
+            }),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "respondToFeedback": Object {
+            "id": Any<Number>,
+            "isResolved": true,
+            "responses": Array [
               Object {
-                "id": "e25295af-1167-440f-8694-0cb7e8cbfba3",
-                "typename": "Session",
+                "content": "Response 1",
+                "id": Any<Number>,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
               },
               Object {
-                "id": 10,
-                "typename": "SessionBlock",
-              },
-              Object {
-                "id": 24,
-                "typename": "QuestionInstance",
+                "content": "Response 2",
+                "id": Any<Number>,
+                "negativeReactions": 0,
+                "positiveReactions": 0,
               },
             ],
           },
         },
+        "extensions": Any<Object>,
       }
-    `)
+    `
+    )
+  })
+
+  it('allows the participants to add confusion feedbacks with or without login', async () => {
+    const response = await request(app)
+      .post('/api/graphql')
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: 0, speed: 1) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response.body).toMatchInlineSnapshot(
+      {
+        data: {
+          addConfusionTimestep: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": 0,
+            "id": Any<Number>,
+            "speed": 1,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
+
+    const response2 = await request(app)
+      .post('/api/graphql')
+      .set('Cookie', [participantCookies[0]])
+      .send({
+        query: `
+        mutation {
+          addConfusionTimestep(sessionId: "${session.id}", difficulty: -2, speed: 0) {
+                id
+                difficulty
+                speed
+            }
+        }
+      `,
+      })
+
+    expect(response2.body).toMatchInlineSnapshot(
+      {
+        data: {
+          addConfusionTimestep: {
+            id: expect.any(Number),
+          },
+        },
+        extensions: expect.any(Object),
+      },
+      `
+      Object {
+        "data": Object {
+          "addConfusionTimestep": Object {
+            "difficulty": -2,
+            "id": Any<Number>,
+            "speed": 0,
+          },
+        },
+        "extensions": Any<Object>,
+      }
+    `
+    )
   })
 })

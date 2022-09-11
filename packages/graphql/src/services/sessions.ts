@@ -6,7 +6,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { dissoc, mapObjIndexed } from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -591,86 +591,30 @@ export async function getLeaderboard(
   return top5
 }
 
-export async function getFeedbacks(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const feedbacks = await ctx.prisma.session
-    .findUnique({
-      where: { id },
-    })
-    .feedbacks({
-      where: { isPublished: true },
-      include: { responses: { orderBy: { createdAt: 'desc' } } },
-      orderBy: { createdAt: 'desc' },
-    })
-
-  return feedbacks
+// modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
+interface SessionSettingArgs {
+  id: string
+  isAudienceInteractionActive?: boolean
+  isModerationEnabled?: boolean
+  isGamificationEnabled?: boolean
 }
 
-export async function upvoteFeedback(
-  { feedbackId, increment }: { feedbackId: number; increment: number },
-  ctx: ContextWithOptionalUser
-) {
-  return ctx.prisma.feedback.update({
-    where: {
-      id: feedbackId,
-    },
-    data: {
-      votes: { increment: increment },
-    },
-  })
-}
-
-export async function voteFeedbackResponse(
+export async function changeSessionSettings(
   {
     id,
-    incrementUpvote,
-    incrementDownvote,
-  }: { id: number; incrementUpvote: number; incrementDownvote: number },
-  ctx: ContextWithOptionalUser
+    isAudienceInteractionActive,
+    isModerationEnabled,
+    isGamificationEnabled,
+  }: SessionSettingArgs,
+  ctx: ContextWithUser
 ) {
-  return ctx.prisma.feedbackResponse.update({
-    where: {
-      id: id,
-    },
+  const session = await ctx.prisma.session.update({
+    where: { id },
     data: {
-      positiveReactions: { increment: incrementUpvote },
-      negativeReactions: { increment: incrementDownvote },
+      isAudienceInteractionActive: isAudienceInteractionActive,
+      isModerationEnabled: isModerationEnabled,
+      isGamificationEnabled: isGamificationEnabled,
     },
   })
-}
-
-export async function createFeedback(
-  {
-    sessionId,
-    content,
-    isPublished,
-  }: { sessionId: string; content: string; isPublished: boolean },
-  ctx: ContextWithOptionalUser
-) {
-  if (ctx.user?.sub) {
-    return ctx.prisma.feedback.create({
-      data: {
-        content,
-        isPublished: isPublished,
-        session: {
-          connect: { id: sessionId },
-        },
-        participant: {
-          connect: { id: ctx.user.sub },
-        },
-      },
-    })
-  } else {
-    return ctx.prisma.feedback.create({
-      data: {
-        content,
-        isPublished: isPublished,
-        session: {
-          connect: { id: sessionId },
-        },
-      },
-    })
-  }
+  return session
 }

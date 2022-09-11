@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetSessionLeaderboardDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { H2 } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -25,7 +25,7 @@ function Leaderboard({
 
   return (
     <div className={twMerge(className, '')}>
-      <H1>Leaderboard</H1>
+      <H2>Leaderboard</H2>
       <div>
         {data.sessionLeaderboard?.map((entry) => (
           <div className="flex flex-row justify-between" key={entry.id}>

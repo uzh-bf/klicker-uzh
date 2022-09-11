@@ -289,6 +289,8 @@ model Session {
 
   feedbacks Feedback[]
 
+  confusionFeedbacks ConfusionTimestep[]
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
@@ -361,8 +363,8 @@ model FeedbackResponse {
   id Int @id @default(autoincrement())
 
   content           String
-  positiveReactions Int
-  negativeReactions Int
+  positiveReactions Int   @default(0)
+  negativeReactions Int   @default(0)
 
   feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   feedbackId Int
@@ -376,6 +378,9 @@ model ConfusionTimestep {
 
   difficulty Int
   speed      Int
+
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String  @db.Uuid
 
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
