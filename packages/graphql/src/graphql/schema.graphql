@@ -2,6 +2,22 @@
 ### Do not make changes to this file directly
 
 
+type Attachment {
+  description: String
+  href: String!
+  id: String!
+  name: String!
+  originalName: String
+  type: AttachmentType!
+}
+
+enum AttachmentType {
+  GIF
+  JPEG
+  LINK
+  PNG
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
@@ -16,6 +32,7 @@ type Choice {
 }
 
 type ChoicesQuestionData implements QuestionData {
+  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -73,6 +90,7 @@ type FeedbackResponse {
 }
 
 type FreeTextQuestionData implements QuestionData {
+  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -143,6 +161,7 @@ type Mutation {
 }
 
 type NumericalQuestionData implements QuestionData {
+  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -200,6 +219,7 @@ type Query {
 }
 
 interface QuestionData {
+  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -217,6 +237,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
+  attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!

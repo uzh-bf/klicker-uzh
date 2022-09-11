@@ -67,6 +67,24 @@ async function main(prisma: Prisma.PrismaClient) {
     })
   )
 
+  const attachment = await prisma.attachment.upsert({
+    where: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+    },
+    create: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+      name: 'test.pdf',
+      type: 'JPEG',
+      href: 'https://picsum.photos/400',
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
   const question = await prisma.question.upsert({
     where: {
       id: 0,
@@ -193,6 +211,13 @@ async function main(prisma: Prisma.PrismaClient) {
       contentPlain:
         'Welche der folgenden Personen/Gruppen sind keine Stakeholder?',
       type: 'SC',
+      attachments: {
+        connect: [
+          {
+            id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+          },
+        ],
+      },
       options: {
         choices: [
           {
@@ -500,6 +525,7 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
+        attachments: [],
       },
       results: {
         choices: {
@@ -727,6 +753,7 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
+        attachments: [],
       },
       results: {
         choices: {
@@ -763,6 +790,7 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
+        attachments: [],
       },
       results: {
         choices: {

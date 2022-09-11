@@ -19,6 +19,23 @@ export type Scalars = {
   JSONObject: any;
 };
 
+export type Attachment = {
+  __typename?: 'Attachment';
+  description?: Maybe<Scalars['String']>;
+  href: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  originalName?: Maybe<Scalars['String']>;
+  type: AttachmentType;
+};
+
+export enum AttachmentType {
+  Gif = 'GIF',
+  Jpeg = 'JPEG',
+  Link = 'LINK',
+  Png = 'PNG'
+}
+
 export type BlockInput = {
   questionIds: Array<Scalars['Int']>;
   randomSelection?: InputMaybe<Scalars['Int']>;
@@ -35,6 +52,7 @@ export type Choice = {
 
 export type ChoicesQuestionData = QuestionData & {
   __typename?: 'ChoicesQuestionData';
+  attachments?: Maybe<Array<Maybe<Attachment>>>;
   content: Scalars['String'];
   contentPlain: Scalars['String'];
   id: Scalars['Int'];
@@ -93,6 +111,7 @@ export type FeedbackResponse = {
 
 export type FreeTextQuestionData = QuestionData & {
   __typename?: 'FreeTextQuestionData';
+  attachments?: Maybe<Array<Maybe<Attachment>>>;
   content: Scalars['String'];
   contentPlain: Scalars['String'];
   id: Scalars['Int'];
@@ -281,6 +300,7 @@ export type MutationVoteFeedbackResponseArgs = {
 
 export type NumericalQuestionData = QuestionData & {
   __typename?: 'NumericalQuestionData';
+  attachments?: Maybe<Array<Maybe<Attachment>>>;
   content: Scalars['String'];
   contentPlain: Scalars['String'];
   id: Scalars['Int'];
@@ -370,6 +390,7 @@ export type QuerySessionLeaderboardArgs = {
 };
 
 export type QuestionData = {
+  attachments?: Maybe<Array<Maybe<Attachment>>>;
   content: Scalars['String'];
   contentPlain: Scalars['String'];
   id: Scalars['Int'];
@@ -389,6 +410,7 @@ export type QuestionFeedback = {
 
 export type QuestionInstance = {
   __typename?: 'QuestionInstance';
+  attachments?: Maybe<Array<Maybe<Attachment>>>;
   evaluation?: Maybe<InstanceEvaluation>;
   id: Scalars['Int'];
   questionData: QuestionData;
@@ -632,6 +654,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  Attachment: ResolverTypeWrapper<Attachment>;
+  AttachmentType: AttachmentType;
   BlockInput: BlockInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Choice: ResolverTypeWrapper<Choice>;
@@ -675,6 +699,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  Attachment: Attachment;
   BlockInput: BlockInput;
   Boolean: Scalars['Boolean'];
   Choice: Choice;
@@ -714,6 +739,16 @@ export type ResolversParentTypes = {
   String: Scalars['String'];
 };
 
+export type AttachmentResolvers<ContextType = any, ParentType extends ResolversParentTypes['Attachment'] = ResolversParentTypes['Attachment']> = {
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  href?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  originalName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['AttachmentType'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ChoiceResolvers<ContextType = any, ParentType extends ResolversParentTypes['Choice'] = ResolversParentTypes['Choice']> = {
   correct?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   feedback?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -723,6 +758,7 @@ export type ChoiceResolvers<ContextType = any, ParentType extends ResolversParen
 };
 
 export type ChoicesQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['ChoicesQuestionData'] = ResolversParentTypes['ChoicesQuestionData']> = {
+  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -785,6 +821,7 @@ export type FeedbackResponseResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionData'] = ResolversParentTypes['FreeTextQuestionData']> = {
+  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -861,6 +898,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionData'] = ResolversParentTypes['NumericalQuestionData']> = {
+  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -926,6 +964,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 
 export type QuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionData'] = ResolversParentTypes['QuestionData']> = {
   __resolveType: TypeResolveFn<'ChoicesQuestionData' | 'FreeTextQuestionData' | 'NumericalQuestionData', ParentType, ContextType>;
+  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   contentPlain?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -944,6 +983,7 @@ export type QuestionFeedbackResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type QuestionInstanceResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionInstance'] = ResolversParentTypes['QuestionInstance']> = {
+  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   evaluation?: Resolver<Maybe<ResolversTypes['InstanceEvaluation']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   questionData?: Resolver<ResolversTypes['QuestionData'], ParentType, ContextType>;
@@ -978,6 +1018,7 @@ export type SessionBlockResolvers<ContextType = any, ParentType extends Resolver
 };
 
 export type Resolvers<ContextType = any> = {
+  Attachment?: AttachmentResolvers<ContextType>;
   Choice?: ChoiceResolvers<ContextType>;
   ChoicesQuestionData?: ChoicesQuestionDataResolvers<ContextType>;
   ChoicesQuestionOptions?: ChoicesQuestionOptionsResolvers<ContextType>;
