@@ -1,4 +1,4 @@
-# import "./FQuestionData.graphql"
+# import "./FQuestionDataWithoutSolutions.graphql"
 
 query GetSession($id: ID!) {
   session(id: $id) {
@@ -19,7 +19,7 @@ query GetSession($id: ID!) {
       execution
       instances {
         id
-        ...QuestionData
+        ...QuestionDataWithoutSolutions
       }
     }
   }

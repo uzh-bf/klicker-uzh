@@ -5,7 +5,7 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { dissoc, mapObjIndexed } from 'ramda'
+import { dissoc, mapObjIndexed, pick } from 'ramda'
 import { ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
@@ -549,8 +549,62 @@ export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
     },
   })
 
+  // extract solution from instances in active block
+  let sessionWithoutSolutions: any
+
+  if (session && session.activeBlock) {
+    sessionWithoutSolutions = {
+      ...session,
+      activeBlock: {
+        ...session.activeBlock,
+        instances: session.activeBlock.instances.map((instance) => {
+          const questionData =
+            instance.questionData?.valueOf() as AllQuestionTypeData
+          if (
+            !questionData ||
+            typeof questionData !== 'object' ||
+            Array.isArray(questionData)
+          )
+            return instance
+
+          switch (questionData.type) {
+            case QuestionType.SC:
+            case QuestionType.MC:
+              return {
+                ...instance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    ...questionData.options,
+                    choices: questionData.options.choices.map(
+                      pick(['ix', 'value'])
+                    ),
+                  },
+                },
+              }
+
+            case QuestionType.NUMERICAL:
+            case QuestionType.FREE_TEXT:
+              return {
+                ...instance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    restrictions: questionData.options.restrictions,
+                  },
+                },
+              }
+
+            default:
+              return instance
+          }
+        }),
+      },
+    }
+  }
+
   if (session?.status === SessionStatus.RUNNING) {
-    return session
+    return sessionWithoutSolutions || session
   }
 
   return null

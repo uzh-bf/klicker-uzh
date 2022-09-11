@@ -1,0 +1,35 @@
+fragment QuestionDataWithoutSolutions on QuestionInstance {
+  questionData {
+    id
+    name
+    type
+    content
+    contentPlain
+
+    ... on ChoicesQuestionData {
+      options {
+        choices {
+          ix
+          value
+        }
+      }
+    }
+
+    ... on NumericalQuestionData {
+      options {
+        restrictions {
+          min
+          max
+        }
+      }
+    }
+
+    ... on FreeTextQuestionData {
+      options {
+        restrictions {
+          maxLength
+        }
+      }
+    }
+  }
+}
