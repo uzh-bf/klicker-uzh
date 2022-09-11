@@ -12,7 +12,7 @@ import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
 import localForage from 'localforage'
 import { useRouter } from 'next/router'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Oval } from 'react-loader-spinner'
 
 // TODO: replace debounce from loadaash with alternative implementation (possibly using ramda)
@@ -198,15 +198,24 @@ function FeedbackArea({
     })
   }
 
+  const openFeedbacks = useMemo(
+    () =>
+      feedbacksData?.feedbacks?.filter(
+        (feedback) => feedback?.isResolved === false
+      ),
+    [feedbacksData]
+  )
+  const resolvedFeedbacks = useMemo(
+    () =>
+      feedbacksData?.feedbacks?.filter(
+        (feedback) => feedback?.isResolved === true
+      ),
+    [feedbacksData]
+  )
+
   if (feedbacksLoading || !feedbacksData?.feedbacks) {
     return <div>Loading...</div>
   }
-  const openFeedbacks = feedbacksData?.feedbacks.filter(
-    (feedback) => feedback?.isResolved === false
-  )
-  const resolvedFeedbacks = feedbacksData?.feedbacks.filter(
-    (feedback) => feedback?.isResolved === true
-  )
 
   return (
     <div className="w-full h-full">
@@ -304,7 +313,7 @@ function FeedbackArea({
 
       {feedbacksData?.feedbacks.length > 0 && (
         <div>
-          {openFeedbacks.length > 0 && (
+          {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
               <H3>Open Questions</H3>
               {openFeedbacks.map((feedback) =>
@@ -320,7 +329,7 @@ function FeedbackArea({
             </div>
           )}
 
-          {resolvedFeedbacks.length > 0 && (
+          {resolvedFeedbacks && resolvedFeedbacks.length > 0 && (
             <div className="mb-4">
               <H3>Resolved Questions</H3>
               {resolvedFeedbacks
