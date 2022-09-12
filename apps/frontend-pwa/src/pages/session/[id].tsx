@@ -33,8 +33,6 @@ function Index({
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  console.log(activeBlock)
-
   const handleNewResponse = async (
     type: string,
     instanceId: number,
@@ -133,7 +131,11 @@ function Index({
             expiresAt={activeBlock?.expiresAt}
             questions={
               activeBlock?.instances.map((question: any) => {
-                return { ...question.questionData, instanceId: question.id }
+                return {
+                  ...question.questionData,
+                  instanceId: question.id,
+                  attachments: question.attachments,
+                }
               }) || []
             }
             handleNewResponse={handleNewResponse}

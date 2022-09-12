@@ -73,6 +73,8 @@ model User {
 enum AttachmentType {
   PNG
   JPEG
+  SVG
+  WEBP
   GIF
   LINK // embed videos, H5P, or similar
 }

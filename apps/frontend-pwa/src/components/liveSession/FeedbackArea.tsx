@@ -181,14 +181,18 @@ function FeedbackArea({
   const debouncedHandleNewConfusionTS = useCallback(
     ({ speed, difficulty }: { speed: number; difficulty: number }) => {
       clearTimeout(confusionSubmissionTimeout.current)
-      confusionSubmissionTimeout.current = setTimeout(handleNewConfusionTS, 4000, {
-        speed,
-        difficulty,
-      })
+      confusionSubmissionTimeout.current = setTimeout(
+        handleNewConfusionTS,
+        4000,
+        {
+          speed,
+          difficulty,
+        }
+      )
     },
     []
   )
-  
+
   const onNewConfusionTS = async (newValue: any, selector: string) => {
     // send the new confusion entry to the server
     if (selector === 'speed') {

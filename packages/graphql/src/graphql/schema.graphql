@@ -16,6 +16,8 @@ enum AttachmentType {
   JPEG
   LINK
   PNG
+  SVG
+  WEBP
 }
 
 input BlockInput {

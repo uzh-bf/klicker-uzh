@@ -48,7 +48,7 @@ export interface NexusGenInputs {
 }
 
 export interface NexusGenEnums {
-  AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG"
+  AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
 }

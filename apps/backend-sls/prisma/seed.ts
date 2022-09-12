@@ -74,8 +74,8 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
       name: 'Test Attachment 1',
-      type: 'JPEG',
-      href: 'https://picsum.photos/400',
+      type: 'SVG',
+      href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.svg',
       owner: {
         connect: {
           id: user.id,
@@ -92,8 +92,8 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
       name: 'Test Attachment 2',
-      type: 'JPEG',
-      href: 'https://picsum.photos/500',
+      type: 'WEBP',
+      href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp',
       owner: {
         connect: {
           id: user.id,
