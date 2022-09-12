@@ -1080,18 +1080,242 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const instance14 = await prisma.questionInstance.upsert({
+    where: {
+      id: 13,
+    },
+    create: {
+      id: 13,
+      questionData: {
+        ...question,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const instance15 = await prisma.questionInstance.upsert({
+    where: {
+      id: 14,
+    },
+    create: {
+      id: 14,
+      questionData: {
+        ...question2,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question2.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const instance16 = await prisma.questionInstance.upsert({
+    where: {
+      id: 15,
+    },
+    create: {
+      id: 15,
+      questionData: {
+        ...question3,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+      questionId: question3.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+        },
+      },
+    },
+  })
+
+  const instance17 = await prisma.questionInstance.upsert({
+    where: {
+      id: 16,
+    },
+    create: {
+      id: 16,
+      questionData: {
+        ...question4,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question4.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
+  const instance18 = await prisma.questionInstance.upsert({
+    where: {
+      id: 17,
+    },
+    create: {
+      id: 17,
+      questionData: {
+        ...question5,
+        createdAt: null,
+        updatedAt: null,
+      },
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+      questionId: question5.id,
+      ownerId: user.id,
+    },
+    update: {
+      results: {
+        choices: {
+          0: 0,
+          1: 0,
+          2: 0,
+          3: 0,
+        },
+      },
+    },
+  })
+
   const microSession = await prisma.microSession.upsert({
     where: {
       id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
     },
     create: {
       id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
+      name: 'BF1 VL1',
+      displayName: 'Banking und Finance I - VL1',
+      scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
+      scheduledEndAt: new Date('2022-09-12T23:59:59.999Z'),
+      description: `
+Diese Woche lernen wir...
+
+![Alt text](https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp)
+
+Mehr bla bla...
+      `,
+      course: {
+        connect: {
+          id: course.id,
+        },
+      },
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+      instances: {
+        connect: [
+          {
+            id: 13,
+          },
+          {
+            id: 14,
+          },
+          {
+            id: 15,
+          },
+          {
+            id: 16,
+          },
+          {
+            id: 17,
+          },
+        ],
+      },
     },
-    update: {},
+    update: {
+      description: `
+Diese Woche lernen wir...
+
+![Alt text](https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp)
+
+Mehr bla bla...
+      `,
+    },
   })
 
   await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
-  await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`
+  await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 18`
 }
 
 const prismaClient = new Prisma.PrismaClient()
