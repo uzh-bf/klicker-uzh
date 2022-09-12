@@ -20,11 +20,11 @@ export const QUESTION_TYPES = {
 }
 
 export const AVATAR_OPTIONS = {
-  skinTone: ["yellow"],
-  eyes: ["normal", "happy", "content", "squint", "heart"],
-  eyebrows: ["raised"],
-  mouths: ["grin"],
-  hair: ["long"],
+  skinTone: ['yellow'],
+  eyes: ['normal', 'happy', 'content', 'squint', 'heart'],
+  eyebrows: ['raised'],
+  mouths: ['grin'],
+  hair: ['long'],
   facialHair: ['none'],
   clothing: ['shirt'],
   accessory: ['roundGlasses'],
@@ -33,7 +33,7 @@ export const AVATAR_OPTIONS = {
   body: ['chest', 'breasts'],
   hairColor: ['blonde'],
   clothingColor: ['white'],
-  lipColor: ['red']
+  lipColor: ['red'],
 }
 
 // export const ROLES = {

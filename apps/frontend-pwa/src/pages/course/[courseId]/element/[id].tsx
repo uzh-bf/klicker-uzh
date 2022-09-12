@@ -6,10 +6,10 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { initializeApollo, addApolloState } from '@lib/apollo'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
-import { GetServerSideProps } from 'next'
+import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -17,22 +17,21 @@ import { useState } from 'react'
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
 
-// TODO: ISR for the question data?
-// TODO: shuffling on the server? prevent issues with SSR and hydration
-// TODO: shuffling should be consistent for answer distribution and choices
+interface Props {
+  courseId: string
+  id: string
+}
+
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
-function LearningElement() {
+function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(0)
 
   const router = useRouter()
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    skip: !router.query.id,
+    variables: { id },
   })
 
   const [respondToQuestionInstance] = useMutation(
@@ -132,21 +131,49 @@ function LearningElement() {
   )
 }
 
-// TODO: handle Apollo error that occurs when the element does not exist / is not running
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export const getStaticProps: GetStaticProps = async (ctx) => {
+  if (
+    typeof ctx.params?.courseId !== 'string' ||
+    typeof ctx.params?.id !== 'string'
+  ) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
+
   const apolloClient = initializeApollo()
 
-  const result = await apolloClient.query({
-    query: GetLearningElementDocument,
-    variables: {
-      id: ctx.query?.id as string,
-    },
-  })
+  try {
+    await apolloClient.query({
+      query: GetLearningElementDocument,
+      variables: { id: ctx.params.id },
+    })
+  } catch (e) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
   return addApolloState(apolloClient, {
     props: {
-      ...result,
+      id: ctx.params.id,
+      courseId: ctx.params.courseId,
     },
+    revalidate: 60,
   })
 }
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
+
 export default LearningElement

@@ -1080,6 +1080,16 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  const microSession = await prisma.microSession.upsert({
+    where: {
+      id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
+    },
+    create: {
+      id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
+    },
+    update: {},
+  })
+
   await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
   await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`
 }
