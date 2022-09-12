@@ -109,8 +109,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
           height: 200
         })
         .webp({
-          nearLossless: true
-          // lossless: true,
+          lossless: true,
         })
         .toFile(`public/avatars/${hashedProps}.webp`)
 
@@ -119,8 +118,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
           height: 50
         })
         .webp({
-          nearLossless: true
-          // lossless: true,
+          lossless: true,
         })
         .toFile(`public/avatars/${hashedProps}_small.webp`)
 
