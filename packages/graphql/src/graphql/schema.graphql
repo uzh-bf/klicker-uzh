@@ -32,7 +32,6 @@ type Choice {
 }
 
 type ChoicesQuestionData implements QuestionData {
-  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -90,7 +89,6 @@ type FeedbackResponse {
 }
 
 type FreeTextQuestionData implements QuestionData {
-  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -161,7 +159,6 @@ type Mutation {
 }
 
 type NumericalQuestionData implements QuestionData {
-  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -219,7 +216,6 @@ type Query {
 }
 
 interface QuestionData {
-  attachments: [Attachment]
   content: String!
   contentPlain: String!
   id: Int!
@@ -237,6 +233,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
+  attachments: [Attachment]!
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!

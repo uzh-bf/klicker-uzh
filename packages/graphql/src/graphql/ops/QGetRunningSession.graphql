@@ -19,6 +19,14 @@ query GetRunningSession($id: ID!) {
       execution
       instances {
         id
+        attachments {
+          id
+          href
+          name
+          originalName
+          description
+          type
+        }
         ...QuestionDataWithoutSolutions
       }
     }

@@ -15,19 +15,22 @@ function processQuestionData(question: Question): AllQuestionTypeData {
     case QuestionType.MC: {
       return {
         ...question,
+        attachments: null,
         options: question.options!.valueOf(),
-      } as ChoicesQuestionData
+      } as unknown as ChoicesQuestionData
     }
 
     case QuestionType.NUMERICAL: {
       return {
         ...question,
+        attachments: null,
       } as NumericalQuestionData
     }
 
     case QuestionType.FREE_TEXT: {
       return {
         ...question,
+        attachments: null,
       } as FreeTextQuestionData
     }
   }
@@ -564,7 +567,11 @@ export async function getRunningSession(
     include: {
       activeBlock: {
         include: {
-          instances: true,
+          instances: {
+            include: {
+              attachments: true,
+            },
+          },
         },
       },
     },

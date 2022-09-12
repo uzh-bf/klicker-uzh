@@ -57,8 +57,6 @@ export const QuestionData = interfaceType({
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
-
-    t.list.field('attachments', { type: Attachment })
   },
   resolveType: (item) => {
     if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
@@ -223,6 +221,8 @@ export const QuestionInstance = objectType({
     t.field('evaluation', {
       type: InstanceEvaluation,
     })
+
+    t.nonNull.list.field('attachments', { type: Attachment })
   },
 })
 
