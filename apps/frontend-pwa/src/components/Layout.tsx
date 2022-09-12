@@ -46,7 +46,7 @@ function Layout({
   } = useQuery(SelfDocument)
 
   return (
-    <div className="w-full h-full md:p-1.5 bg-uzh-grey-60">
+    <div className="w-full h-full">
       <Head>
         <title>{displayName}</title>
         <meta name="description" content={displayName} charSet="utf-8"></meta>
@@ -54,17 +54,17 @@ function Layout({
 
       <div
         className={twMerge(
-          'absolute flex flex-row top-0 left-0 right-0 botom-0 md:p-1.5 overflow-auto gap-1.5',
-          'bg-white md:bg-uzh-grey-60 md:overflow-scroll min-h-screen h-max pt-14 bottom-14 md:bottom-0',
+          'md:flex md:flex-row md:pt-16 md:pb-1.5 md:px-1.5 md:gap-1.5 md:bg-uzh-grey-60 pt-16 pb-16 md:h-screen',
+          pageNotFound && "h-full",
           className
         )}
       >
-        <div className="absolute top-0 w-full h-15 md:hidden">
+        <div className="md:-mx-1.5 fixed top-0 z-10 w-full h-15">
           <MobileHeader participant={dataParticipant?.self || undefined} />
         </div>
         {pageNotFound ? (
-          <div className="flex-col justify-center w-full min-h-full p-4 text-center bg-white md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 md:block">
-            <div className="flex flex-col max-w-full px-8 py-3 mx-auto bg-red-200 border border-red-600 border-solid rounded-lg w-max">
+          <div className="flex flex-col justify-center w-full h-full p-4 text-center bg-white md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40">
+            <div className="max-w-full px-8 py-3 m-auto bg-red-200 border border-red-600 border-solid rounded-lg">
               <div>Error 404: There is nothing to see here</div>
               {dataParticipant ? (
                 <div>
@@ -93,7 +93,7 @@ function Layout({
         ) : (
           children
         )}
-        <div className="absolute bottom-0 w-full h-14 md:hidden">
+        <div className="fixed bottom-0 w-full h-14 md:hidden">
           <MobileMenuBar
             menuItems={mobileMenuItems}
             onClick={setActiveMobilePage}

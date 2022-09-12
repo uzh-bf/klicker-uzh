@@ -112,7 +112,7 @@ function Index({
     >
       <div
         className={twMerge(
-          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block min-h-full',
+          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block md:overflow-scroll',
           isAudienceInteractionActive && 'md:w-1/2',
           activeMobilePage === 'questions' && 'block'
         )}
@@ -160,7 +160,7 @@ function Index({
       {isAudienceInteractionActive && (
         <div
           className={twMerge(
-            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
+            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block md:overflow-scroll',
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
@@ -171,8 +171,6 @@ function Index({
   )
 }
 
-// TODO: handle Apollo error that occurs when the session does not exist / is not running
-// --> show alternative page with error message but without Apollo error
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const withNewSessionData = await getRunningSessionData(ctx)
 
