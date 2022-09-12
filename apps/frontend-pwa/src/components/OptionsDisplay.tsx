@@ -1,11 +1,10 @@
 import { Choice } from '@klicker-uzh/graphql/dist/ops'
-import { shuffle } from '@klicker-uzh/graphql/dist/util'
+import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
 import { Button } from '@uzh-bf/design-system'
+import { indexBy } from 'ramda'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { indexBy } from 'ramda'
-import Markdown from '@klicker-uzh/markdown'
 
 interface ChoiceOptionsProps {
   choices: Choice[]
@@ -21,27 +20,37 @@ function ChoiceOptions({
   feedbacks,
   response,
 }: ChoiceOptionsProps) {
-  const shuffledChoices: Choice[] = useMemo(() => shuffle(choices), [choices])
-
   return (
     <div className="space-y-2">
-      {shuffledChoices.map((choice) => (
+      {choices.map((choice) => (
         <div key={choice.value} className="w-full">
           <Button
             disabled={isEvaluation}
             active={response?.includes(choice.ix)}
             className={twMerge(
-              'px-4 py-2 text-sm border-uzh-blue-20',
-              response?.includes(choice.ix) && 'border-uzh-blue-100',
+              'px-4 py-3 text-sm border-uzh-blue-20',
               isEvaluation && 'text-gray-700',
-              choice.correct && 'bg-green-300 border-green-600'
+              choice.correct && 'bg-green-200 border-green-500',
+              response?.includes(choice.ix) && 'border-uzh-blue-100'
             )}
             fluid
             onClick={() => onChange(choice.ix)}
           >
-            <Button.Label><Markdown content={choice.value}/></Button.Label>
+            <Button.Label>
+              <Markdown content={choice.value} />
+            </Button.Label>
           </Button>
-          {feedbacks?.[choice.ix] && <div className={twMerge("p-2 text-sm border rounded", feedbacks[choice.ix].correct ? 'bg-green-100' : 'bg-red-200')}>{feedbacks[choice.ix].feedback}</div>}
+          {feedbacks?.[choice.ix] && (
+            <div
+              className={twMerge(
+                'py-1 px-4 text-sm border rounded bg-gray-50',
+                response?.includes(choice.ix) &&
+                  (feedbacks[choice.ix].correct ? 'bg-green-100' : 'bg-red-200')
+              )}
+            >
+              {feedbacks[choice.ix].feedback}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -52,7 +61,6 @@ interface OptionsProps {
   options: any
   questionType: QuestionType
   isEvaluation?: boolean
-  evaluation: any
   feedbacks: any
   response: any
   onChangeResponse: (value: any) => void
@@ -62,7 +70,6 @@ function Options({
   options,
   questionType,
   isEvaluation,
-  evaluation,
   feedbacks,
   response,
   onChangeResponse,
@@ -75,7 +82,6 @@ function Options({
           <ChoiceOptions
             choices={options.choices}
             isEvaluation={isEvaluation}
-            evaluation={evaluation}
             feedbacks={feedbacks}
             response={response}
             onChange={(ix) => onChangeResponse([ix])}
@@ -92,7 +98,6 @@ function Options({
           <ChoiceOptions
             choices={options.choices}
             isEvaluation={isEvaluation}
-            evaluation={evaluation}
             feedbacks={feedbacks}
             response={response}
             onChange={(ix) =>
@@ -147,11 +152,9 @@ function OptionsDisplay({
     }
   }, [evaluation])
 
-
   return (
     <div className="flex flex-col">
       <Options
-        evaluation={evaluation}
         feedbacks={feedbacks}
         questionType={questionType}
         response={response}

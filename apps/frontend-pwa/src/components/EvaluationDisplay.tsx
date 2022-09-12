@@ -21,21 +21,26 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       )
 
       return (
-          <div className="space-y-2">
-            <div className="font-bold">So haben andere geantwortet</div>
-            {Object.entries(evaluation.choices as Record<string, number>).map(
-              ([ix, value]) => (
-                <Progress
-                  className={twMerge(
-                    ix == correctIx && 'font-bold text-green-600'
-                  )}
-                  key={ix}
-                  value={(value / sum) * 100}
-                  max={100}
-                  formatter={(v) => v.toFixed() + '%'}
-                />
-              )
-            )}
+        <div className="space-y-2">
+          <div className="font-bold">So haben andere geantwortet</div>
+          {Object.entries(evaluation.choices as Record<string, number>).map(
+            ([ix, value]) => (
+              <Progress
+                isMaxVisible={false}
+                className={twMerge(
+                  ix == correctIx && 'font-bold text-green-600'
+                )}
+                indicatorClassName={twMerge(
+                  'h-8',
+                  ix == correctIx ? 'bg-green-600' : 'bg-gray-400'
+                )}
+                key={ix}
+                value={(value / sum) * 100}
+                max={100}
+                formatter={(v) => v.toFixed() + '%'}
+              />
+            )
+          )}
         </div>
       )
     }
@@ -50,26 +55,30 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
         .filter((choice: any) => choice.correct)
         .map((choice: any) => choice.ix)
 
-        // TODO: move randomization to the root to use it here as well
-        // TODO: persist randomization for a short while to prevent reorder on reload?
       return (
-
         <div className="space-y-2">
-        <div className="font-bold">So haben andere geantwortet</div>
-            {Object.entries(evaluation.choices as Record<string, number>).map(
-              ([ix, value]) => (<div key={ix}>
+          <div className="font-bold">So haben andere geantwortet</div>
+          {Object.entries(evaluation.choices as Record<string, number>).map(
+            ([ix, value]) => (
+              <div key={ix}>
                 <Progress
+                  isMaxVisible={false}
                   className={twMerge(
-                    correctIx.includes(+ix) && 'font-bold text-green-600'
+                    'h-8',
+                    correctIx.includes(+ix) && 'font-bold'
+                  )}
+                  indicatorClassName={twMerge(
+                    'h-8',
+                    correctIx.includes(+ix) ? 'bg-green-600' : 'bg-gray-400'
                   )}
                   value={(value / sum) * 100}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}
-                /></div>
-              )
-            )}
-          </div>
-
+                />
+              </div>
+            )
+          )}
+        </div>
       )
     }
 

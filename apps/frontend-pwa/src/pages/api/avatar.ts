@@ -1,28 +1,13 @@
-
+import fs from 'fs'
+import hash from 'object-hash'
 import React from 'react'
 import RDS from 'react-dom/server'
-import hash from 'object-hash'
-import fs from 'fs'
 import sharp from 'sharp'
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-import {
-  BigHead,
-  theme,
-  eyesMap,
-  eyebrowsMap,
-  mouthsMap,
-  hairMap,
-  facialHairMap,
-  clothingMap,
-  accessoryMap,
-  graphicsMap,
-  hatMap,
-  bodyMap,
-} from '@bigheads/core'
+import { BigHead } from '@bigheads/core'
 import { AVATAR_OPTIONS } from 'src/constants'
-
 
 function getRandomOptions(rng) {
   function selectRandomKey(options) {
@@ -83,50 +68,48 @@ type Data = {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
-    try {
-      const rng = Math.random
+  try {
+    const rng = Math.random
 
-      const mergedProps = getRandomOptions(rng) as any
+    const mergedProps = getRandomOptions(rng) as any
 
-      const hashedProps = hash(mergedProps)
+    const hashedProps = hash(mergedProps)
 
-      const avatarString = RDS.renderToString(
-        React.createElement(BigHead, mergedProps),
-      )
+    const avatarString = RDS.renderToString(
+      React.createElement(BigHead, mergedProps)
+    )
 
-      fs.writeFileSync(`public/avatars/${hashedProps}.svg`, avatarString)
+    fs.writeFileSync(`public/avatars/${hashedProps}.svg`, avatarString)
 
-      const png = await sharp(Buffer.from(avatarString))
+    const png = await sharp(Buffer.from(avatarString))
       .resize({
-        height: 200
+        height: 200,
       })
-      .png({
-      })
+      .png({})
       .toFile(`public/avatars/${hashedProps}.png`)
 
-      const webp = await sharp(Buffer.from(avatarString))
-        .resize({
-          height: 200
-        })
-        .webp({
-          lossless: true,
-        })
-        .toFile(`public/avatars/${hashedProps}.webp`)
+    const webp = await sharp(Buffer.from(avatarString))
+      .resize({
+        height: 200,
+      })
+      .webp({
+        lossless: true,
+      })
+      .toFile(`public/avatars/${hashedProps}.webp`)
 
-      const webpSmall = await sharp(Buffer.from(avatarString))
-        .resize({
-          height: 50
-        })
-        .webp({
-          lossless: true,
-        })
-        .toFile(`public/avatars/${hashedProps}_small.webp`)
+    const webpSmall = await sharp(Buffer.from(avatarString))
+      .resize({
+        height: 50,
+      })
+      .webp({
+        lossless: true,
+      })
+      .toFile(`public/avatars/${hashedProps}_small.webp`)
 
-      res.status(200).json({ img: avatarString })
+    res.status(200).json({ img: avatarString })
   } catch (err) {
     res.status(500)
   }
 }
-
 
 export default handler
