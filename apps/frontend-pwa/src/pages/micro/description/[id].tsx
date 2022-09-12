@@ -6,7 +6,6 @@ import {
   GetMicroSessionDocument,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Button, Progress } from '@uzh-bf/design-system'
@@ -14,6 +13,12 @@ import { GetStaticPaths, GetStaticProps } from 'next'
 import { default as NextImage} from 'next/future/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+
+const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
+  ssr: false,
+})
 
 interface ImageProps {
   alt: string
@@ -46,7 +51,7 @@ function MicroSessionDescription({ id }: Props) {
 
   return (
     <div className="flex flex-col max-w-6xl m-auto">
-      <Markdown content={data.microSession.description} components={{
+      <DynamicMarkdown content={data.microSession.description} components={{
         img: Image as any
       }}/>
       <div>
