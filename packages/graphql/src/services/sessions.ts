@@ -109,9 +109,6 @@ export async function createSession(
     },
   })
 
-  // TODO: improve this temporary fix that allows to copy the attachments from question to questioninstance and use the include above instead in some way
-  // !for proper testing add second attachment to question and check if it is copied correctly
-
   return ctx.prisma.session.create({
     data: {
       name,

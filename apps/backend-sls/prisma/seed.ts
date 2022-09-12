@@ -73,9 +73,27 @@ async function main(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
-      name: 'test.pdf',
+      name: 'Test Attachment 1',
       type: 'JPEG',
       href: 'https://picsum.photos/400',
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const attachment2 = await prisma.attachment.upsert({
+    where: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
+    },
+    create: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
+      name: 'Test Attachment 2',
+      type: 'JPEG',
+      href: 'https://picsum.photos/500',
       owner: {
         connect: {
           id: user.id,
@@ -214,7 +232,10 @@ async function main(prisma: Prisma.PrismaClient) {
       attachments: {
         connect: [
           {
-            id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+            id: attachment.id,
+          },
+          {
+            id: attachment2.id,
           },
         ],
       },
