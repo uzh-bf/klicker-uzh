@@ -1,3 +1,5 @@
+import { faCheck, faCross, faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Choice } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
@@ -28,10 +30,10 @@ function ChoiceOptions({
             disabled={isEvaluation}
             active={response?.includes(choice.ix)}
             className={twMerge(
-              'px-4 py-3 text-sm border-uzh-blue-20',
+              'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
               isEvaluation && 'text-gray-700',
-              choice.correct && 'bg-green-200 border-green-500',
-              response?.includes(choice.ix) && 'border-uzh-blue-100'
+              isEvaluation && response?.includes(choice.ix) && 'border-gray-400 text-gray-800'
+              // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
             )}
             fluid
             onClick={() => onChange(choice.ix)}
@@ -43,12 +45,12 @@ function ChoiceOptions({
           {feedbacks?.[choice.ix] && (
             <div
               className={twMerge(
-                'py-1 px-4 text-sm border rounded bg-gray-50',
-                response?.includes(choice.ix) &&
-                  (feedbacks[choice.ix].correct ? 'bg-green-100' : 'bg-red-200')
+                'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50',
               )}
             >
-              {feedbacks[choice.ix].feedback}
+              <div className={twMerge("self-stretch px-3 w-8 py-2 text-xs bg-gray-300 flex text-gray-600 flex-col items-center justify-center", response?.includes(choice.ix) &&
+                  (feedbacks[choice.ix].correct ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700'))}><FontAwesomeIcon icon={feedbacks[choice.ix].correct ? faCheck : faX} /></div>
+              <div className="py-2 text-gray-700">{feedbacks[choice.ix].feedback}</div>
             </div>
           )}
         </div>
