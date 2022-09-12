@@ -1,4 +1,5 @@
 import {
+  Attachment,
   Question,
   QuestionInstance,
   QuestionType,
@@ -103,19 +104,13 @@ export async function createSession(
         in: allQuestionsIds,
       },
     },
-    // include: {
-    //   attachments: true,
-    // },
+    include: {
+      attachments: true,
+    },
   })
 
   // TODO: improve this temporary fix that allows to copy the attachments from question to questioninstance and use the include above instead in some way
-  const attachments = await ctx.prisma.attachment.findMany({
-    where: {
-      questionId: {
-        in: allQuestionsIds,
-      },
-    },
-  })
+  // !for proper testing add second attachment to question and check if it is copied correctly
 
   return ctx.prisma.session.create({
     data: {
@@ -128,16 +123,21 @@ export async function createSession(
               (q) => q.id === questionId
             ) as Question
             const processedQuestionData = processQuestionData(questionData)
-            const instanceAttachments = attachments
-              .filter((a) => a.questionId === questionId)
-              ?.map((attachment) => {
+            const questionAttachments = questions.find(
+              (q) => q.id === questionId
+            )?.attachments as Attachment[]
+            const instanceAttachments = questionAttachments.map(
+              (attachment) => {
                 return {
                   id: attachment.id,
                   name: attachment.name,
                   type: attachment.type,
                   href: attachment.href,
+                  originalName: attachment.originalName,
+                  description: attachment.description,
                 }
-              })
+              }
+            )
 
             return {
               questionData: processedQuestionData,
