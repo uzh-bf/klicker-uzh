@@ -36,7 +36,7 @@ function MobileMenuBar({
     : [homeMenuItem]
 
   return (
-    <div className="flex flex-row justify-between w-full h-full gap-1 bg-uzh-grey-60">
+    <div className="flex flex-row justify-between w-full h-full gap-1 text-white bg-slate-800">
       {items &&
         items.map((item: any) => (
           <NotificationBadgeWrapper

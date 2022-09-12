@@ -4,7 +4,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import MobileHeader from './common/MobileHeader'
+import Header from './common/Header'
 
 import MobileMenuBar from './common/MobileMenuBar'
 
@@ -47,19 +47,26 @@ function Layout({
   return (
     <div className="w-full h-full">
       <Head>
-        <title>{displayName}</title>
-        <meta name="description" content={displayName} charSet="utf-8"></meta>
+        <title>{`Live Session - ${displayName}`}</title>
+        <meta
+          name="description"
+          content={`Live Session - ${displayName}`}
+          charSet="utf-8"
+        ></meta>
       </Head>
 
       <div
         className={twMerge(
           'md:flex md:flex-row md:pt-16 md:pb-1.5 md:px-1.5 md:gap-1.5 md:bg-uzh-grey-60 pt-16 pb-16 md:h-screen',
-          pageNotFound && "h-full",
+          pageNotFound && 'h-full',
           className
         )}
       >
-        <div className="md:-mx-1.5 fixed top-0 z-10 w-full h-15">
-          <MobileHeader participant={dataParticipant?.self || undefined} />
+        <div className="md:-mx-1.5 fixed top-0 z-10 w-full h-14">
+          <Header
+            participant={dataParticipant?.self || undefined}
+            title={displayName}
+          />
         </div>
         {pageNotFound ? (
           <div className="flex flex-col justify-center w-full h-full p-4 text-center bg-white md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40">

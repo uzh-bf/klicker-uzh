@@ -23,7 +23,10 @@ function QuestionAttachment({
         <Modal
           open={isOpen}
           trigger={
-            <Button onClick={() => setIsOpen(true)} className="w-full h-full border-0">
+            <Button
+              onClick={() => setIsOpen(true)}
+              className="w-full h-full border-0"
+            >
               <Image
                 src={attachment.href}
                 alt={attachment.name}

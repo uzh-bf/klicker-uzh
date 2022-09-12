@@ -105,7 +105,7 @@ function Index({
 
   return (
     <Layout
-      displayName={`Live Session - ${displayName}`}
+      displayName={displayName}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
