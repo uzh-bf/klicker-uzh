@@ -12,6 +12,8 @@
     "REDIS_PORT": 6379,
     "REDIS_CACHE_HOST": "localhost",
     "REDIS_CACHE_PORT": 6380,
-    "HIVE_TOKEN": ""
+    "HIVE_TOKEN": "",
+    "API_DOMAIN": "127.0.0.1",
+    "COOKIE_DOMAIN": "127.0.0.1"
   }
 }
