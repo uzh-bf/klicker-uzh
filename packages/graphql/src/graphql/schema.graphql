@@ -251,6 +251,7 @@ type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock!]!
   confusionFeedbacks: [ConfusionTimestep]
+  course: Course
   displayName: String!
   feedbacks: [Feedback]
   id: ID!

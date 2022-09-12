@@ -432,6 +432,8 @@ export const Session = objectType({
     t.list.field('feedbacks', { type: Feedback })
 
     t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
+
+    t.field('course', { type: Course })
   },
 })
 

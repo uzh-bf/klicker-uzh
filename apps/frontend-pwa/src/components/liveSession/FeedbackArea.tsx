@@ -274,7 +274,7 @@ function FeedbackArea({
                     />
                   </Button.Label>
                 ) : (
-                  <Button.Label className="text-sm">Absenden</Button.Label>
+                  <Button.Label>Absenden</Button.Label>
                 )}
               </Button>
             </Form>

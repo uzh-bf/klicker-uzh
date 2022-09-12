@@ -10,6 +10,9 @@ query GetRunningSession($id: ID!) {
     name
     displayName
     status
+    course {
+      displayName
+    }
     activeBlock {
       id
       status

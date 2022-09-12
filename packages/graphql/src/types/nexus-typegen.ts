@@ -219,6 +219,7 @@ export interface NexusGenObjects {
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks?: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
+    course?: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -435,6 +436,7 @@ export interface NexusGenFieldTypes {
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
+    course: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -649,6 +651,7 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     confusionFeedbacks: 'ConfusionTimestep'
+    course: 'Course'
     displayName: 'String'
     feedbacks: 'Feedback'
     id: 'ID'

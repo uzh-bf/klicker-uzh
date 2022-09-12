@@ -11,6 +11,7 @@ import MobileMenuBar from './common/MobileMenuBar'
 interface LayoutProps {
   children: React.ReactNode
   displayName?: string
+  courseName?: string
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -25,6 +26,7 @@ interface LayoutProps {
 
 const defaultProps = {
   displayName: 'KlickerUZH',
+  courseName: undefined,
   mobileMenuItems: undefined,
   className: '',
   pageNotFound: false,
@@ -33,6 +35,7 @@ const defaultProps = {
 function Layout({
   children,
   displayName,
+  courseName,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -66,6 +69,7 @@ function Layout({
           <Header
             participant={dataParticipant?.self || undefined}
             title={displayName}
+            courseName={courseName}
           />
         </div>
         {pageNotFound ? (

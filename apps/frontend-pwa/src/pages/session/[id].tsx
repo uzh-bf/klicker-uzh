@@ -28,10 +28,13 @@ function Index({
   name,
   namespace,
   status,
+  course,
 }: Session) {
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
+
+  console.log(course)
 
   const handleNewResponse = async (
     type: string,
@@ -106,6 +109,7 @@ function Index({
   return (
     <Layout
       displayName={displayName}
+      courseName={course?.displayName}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}

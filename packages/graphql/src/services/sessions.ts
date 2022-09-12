@@ -574,6 +574,7 @@ export async function getRunningSession(
           },
         },
       },
+      course: true,
     },
   })
 
