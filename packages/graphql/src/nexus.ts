@@ -189,6 +189,26 @@ export const InstanceEvaluation = objectType({
   },
 })
 
+export const AttachmentType = enumType({
+  name: 'AttachmentType',
+  members: DB.AttachmentType,
+})
+
+export const Attachment = objectType({
+  name: 'Attachment',
+  definition(t) {
+    t.nonNull.string('id')
+
+    t.nonNull.string('href')
+    t.nonNull.string('name')
+
+    t.string('originalName')
+    t.string('description')
+
+    t.nonNull.field('type', { type: AttachmentType })
+  },
+})
+
 export const QuestionInstance = objectType({
   name: 'QuestionInstance',
   definition(t) {
@@ -201,6 +221,8 @@ export const QuestionInstance = objectType({
     t.field('evaluation', {
       type: InstanceEvaluation,
     })
+
+    t.nonNull.list.field('attachments', { type: Attachment })
   },
 })
 
@@ -410,6 +432,8 @@ export const Session = objectType({
     t.list.field('feedbacks', { type: Feedback })
 
     t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
+
+    t.field('course', { type: Course })
   },
 })
 
@@ -459,7 +483,7 @@ export const Query = objectType({
         id: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.getSession(args, ctx)
+        return SessionService.getRunningSession(args, ctx)
       },
     })
 

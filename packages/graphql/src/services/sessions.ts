@@ -1,11 +1,12 @@
 import {
+  Attachment,
   Question,
   QuestionInstance,
   QuestionType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { dissoc, mapObjIndexed } from 'ramda'
+import { dissoc, mapObjIndexed, pick } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
@@ -14,19 +15,22 @@ function processQuestionData(question: Question): AllQuestionTypeData {
     case QuestionType.MC: {
       return {
         ...question,
+        attachments: null,
         options: question.options!.valueOf(),
-      } as ChoicesQuestionData
+      } as unknown as ChoicesQuestionData
     }
 
     case QuestionType.NUMERICAL: {
       return {
         ...question,
+        attachments: null,
       } as NumericalQuestionData
     }
 
     case QuestionType.FREE_TEXT: {
       return {
         ...question,
+        attachments: null,
       } as FreeTextQuestionData
     }
   }
@@ -119,6 +123,20 @@ export async function createSession(
               (q) => q.id === questionId
             ) as Question
             const processedQuestionData = processQuestionData(questionData)
+            const questionAttachments = questions.find(
+              (q) => q.id === questionId
+            )?.attachments as Attachment[]
+            const questionAttachmentInstances = questionAttachments.map(
+              (attachment) => ({
+                id: attachment.id,
+                name: attachment.name,
+                type: attachment.type,
+                href: attachment.href,
+                originalName: attachment.originalName,
+                description: attachment.description,
+              })
+            )
+
             return {
               questionData: processedQuestionData,
               results: prepareInitialInstanceResults(processedQuestionData),
@@ -127,6 +145,9 @@ export async function createSession(
               },
               owner: {
                 connect: { id: ctx.user.sub },
+              },
+              attachments: {
+                create: questionAttachmentInstances,
               },
             }
           })
@@ -537,19 +558,85 @@ export async function deactivateSessionBlock(
   return updatedSession
 }
 
-export async function getSession({ id }: { id: string }, ctx: ContextWithUser) {
+export async function getRunningSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {
       activeBlock: {
         include: {
-          instances: true,
+          instances: {
+            include: {
+              attachments: true,
+            },
+          },
         },
       },
+      course: true,
     },
   })
 
-  return session
+  // extract solution from instances in active block
+  let sessionWithoutSolutions: any
+
+  if (session && session.activeBlock) {
+    sessionWithoutSolutions = {
+      ...session,
+      activeBlock: {
+        ...session.activeBlock,
+        instances: session.activeBlock.instances.map((instance) => {
+          const questionData =
+            instance.questionData?.valueOf() as AllQuestionTypeData
+          if (
+            !questionData ||
+            typeof questionData !== 'object' ||
+            Array.isArray(questionData)
+          )
+            return instance
+
+          switch (questionData.type) {
+            case QuestionType.SC:
+            case QuestionType.MC:
+              return {
+                ...instance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    ...questionData.options,
+                    choices: questionData.options.choices.map(
+                      pick(['ix', 'value'])
+                    ),
+                  },
+                },
+              }
+
+            case QuestionType.NUMERICAL:
+            case QuestionType.FREE_TEXT:
+              return {
+                ...instance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    restrictions: questionData.options.restrictions,
+                  },
+                },
+              }
+
+            default:
+              return instance
+          }
+        }),
+      },
+    }
+  }
+
+  if (session?.status === SessionStatus.RUNNING) {
+    return sessionWithoutSolutions || session
+  }
+
+  return null
 }
 
 interface GetLeaderboardArgs {
