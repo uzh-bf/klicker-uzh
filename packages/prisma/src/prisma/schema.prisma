@@ -321,6 +321,8 @@ model MicroSession {
   name        String
   displayName String
 
+  description String?
+
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
@@ -363,8 +365,8 @@ model FeedbackResponse {
   id Int @id @default(autoincrement())
 
   content           String
-  positiveReactions Int   @default(0)
-  negativeReactions Int   @default(0)
+  positiveReactions Int    @default(0)
+  negativeReactions Int    @default(0)
 
   feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   feedbackId Int
