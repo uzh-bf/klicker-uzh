@@ -1,20 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client'
-import EvaluationDisplay from '@components/EvaluationDisplay'
-import OptionsDisplay from '@components/OptionsDisplay'
-import {
-  GetLearningElementDocument,
-  GetMicroSessionDocument,
-  ResponseToQuestionInstanceDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { QuestionType } from '@type/app'
-import { Button, Progress } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
-import { default as NextImage} from 'next/future/image'
-import { useRouter } from 'next/router'
-import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import { default as NextImage } from 'next/future/image'
+import { useRouter } from 'next/router'
 
 const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
   ssr: false,
@@ -38,12 +29,10 @@ interface Props {
 }
 
 function MicroSessionDescription({ id }: Props) {
-
-
   const router = useRouter()
 
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
-    variables: { id  },
+    variables: { id },
   })
 
   if (loading || !data?.microSession) return <p>Loading...</p>
@@ -51,9 +40,12 @@ function MicroSessionDescription({ id }: Props) {
 
   return (
     <div className="flex flex-col max-w-6xl m-auto">
-      <DynamicMarkdown content={data.microSession.description} components={{
-        img: Image as any
-      }}/>
+      <DynamicMarkdown
+        content={data.microSession.description}
+        components={{
+          img: Image as any,
+        }}
+      />
       <div>
         <Button>Start</Button>
       </div>
@@ -62,9 +54,7 @@ function MicroSessionDescription({ id }: Props) {
 }
 
 export const getStaticProps: GetStaticProps = async (ctx) => {
-  if (
-    typeof ctx.params?.id !== 'string'
-  ) {
+  if (typeof ctx.params?.id !== 'string') {
     return {
       redirect: {
         destination: '/404',

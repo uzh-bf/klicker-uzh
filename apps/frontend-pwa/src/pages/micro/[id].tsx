@@ -1,16 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import EvaluationDisplay from '@components/EvaluationDisplay'
 import OptionsDisplay from '@components/OptionsDisplay'
-import {
-  GetLearningElementDocument,
-  GetMicroSessionDocument,
-  ResponseToQuestionInstanceDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
-import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -33,7 +26,7 @@ function MicroSession({ courseId, id }: Props) {
 
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id: router.query?.id as string },
-    skip: !router.query?.id
+    skip: !router.query?.id,
   })
 
   // const [respondToQuestionInstance] = useMutation(
@@ -124,7 +117,7 @@ function MicroSession({ courseId, id }: Props) {
 
       <div className="order-2 p-4 border-0 md:pt-0 md:border md:border-t-0 md:order-3">
         <Progress
-        isMaxVisible
+          isMaxVisible
           formatter={(v) => v}
           value={currentIx}
           max={data.microSession?.instances?.length ?? 0}
