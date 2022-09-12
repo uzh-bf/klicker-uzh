@@ -6,8 +6,10 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import { initializeApollo, addApolloState } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -15,6 +17,11 @@ import { useState } from 'react'
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
 
+// TODO: ISR for the question data?
+// TODO: shuffling on the server? prevent issues with SSR and hydration
+// TODO: shuffling should be consistent for answer distribution and choices
+// TODO: leaderboard and points screen after all questions have been completed?
+// TODO: different question types (FREE and RANGE)
 function LearningElement() {
   const [response, setResponse] = useState<number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(0)
@@ -125,4 +132,21 @@ function LearningElement() {
   )
 }
 
+// TODO: handle Apollo error that occurs when the element does not exist / is not running
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const apolloClient = initializeApollo()
+
+  const result = await apolloClient.query({
+    query: GetLearningElementDocument,
+    variables: {
+      id: ctx.query?.id as string,
+    },
+  })
+
+  return addApolloState(apolloClient, {
+    props: {
+      ...result,
+    },
+  })
+}
 export default LearningElement
