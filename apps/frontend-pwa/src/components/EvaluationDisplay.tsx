@@ -28,6 +28,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
               <Progress
                 isMaxVisible={false}
                 className={twMerge(
+                  'h-8',
                   ix == correctIx && 'font-bold text-green-600'
                 )}
                 indicatorClassName={twMerge(
