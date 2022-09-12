@@ -7,7 +7,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import { dissoc, mapObjIndexed, pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -703,4 +703,31 @@ export async function changeSessionSettings(
     },
   })
   return session
+}
+
+interface GetRunningSessionsArgs {
+  shortname: string
+}
+
+export async function getRunningSessions(
+  { shortname }: GetRunningSessionsArgs,
+  ctx: ContextWithOptionalUser
+) {
+  const userWithSessions = await ctx.prisma.user.findUnique({
+    where: {
+      shortname,
+    },
+    include: {
+      sessions: {
+        where: {
+          accessMode: 'PUBLIC',
+          status: 'RUNNING',
+        },
+      },
+    },
+  })
+
+  if (!userWithSessions?.sessions) return []
+
+  return userWithSessions.sessions
 }

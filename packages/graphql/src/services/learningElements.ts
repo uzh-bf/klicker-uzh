@@ -16,9 +16,12 @@ function evaluateQuestionResponse(
   switch (questionData.type) {
     case QuestionType.SC:
     case QuestionType.MC: {
-      const feedbacks = questionData.options.choices.filter((choice) =>
-        response.choices!.includes(choice.ix)
-      )
+      // TODO: feedbacks only for selected options?
+      // const feedbacks = questionData.options.choices.filter((choice) =>
+      //   response.choices!.includes(choice.ix)
+      // )
+
+      const feedbacks = questionData.options.choices
 
       return {
         evaluation: {
@@ -164,6 +167,10 @@ export async function getLearningElementData(
             ...questionData,
             options: {
               ...questionData.options,
+              // TODO: shuffle the options and the instances?
+              // choices: shuffle(
+              //   questionData.options.choices.map(pick(['ix', 'value']))
+              // ),
               choices: questionData.options.choices.map(pick(['ix', 'value'])),
             },
           },

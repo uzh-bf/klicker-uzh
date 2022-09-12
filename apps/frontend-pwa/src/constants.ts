@@ -19,6 +19,23 @@ export const QUESTION_TYPES = {
   SC: 'SC',
 }
 
+export const AVATAR_OPTIONS = {
+  skinTone: ['yellow'],
+  eyes: ['normal', 'happy', 'content', 'squint', 'heart'],
+  eyebrows: ['raised'],
+  mouths: ['grin'],
+  hair: ['long'],
+  facialHair: ['none'],
+  clothing: ['shirt'],
+  accessory: ['roundGlasses'],
+  graphic: ['none'],
+  hat: ['none'],
+  body: ['chest', 'breasts'],
+  hairColor: ['blonde'],
+  clothingColor: ['white'],
+  lipColor: ['red'],
+}
+
 // export const ROLES = {
 //   USER: 'USER',
 //   ADMIN: 'ADMIN',

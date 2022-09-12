@@ -6,8 +6,10 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -15,17 +17,21 @@ import { useState } from 'react'
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
 
-function LearningElement() {
+interface Props {
+  courseId: string
+  id: string
+}
+
+// TODO: leaderboard and points screen after all questions have been completed?
+// TODO: different question types (FREE and RANGE)
+function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(0)
 
   const router = useRouter()
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    skip: !router.query.id,
+    variables: { id },
   })
 
   const [respondToQuestionInstance] = useMutation(
@@ -80,7 +86,7 @@ function LearningElement() {
         </div>
       </div>
 
-      <div className="order-3 p-4 pt-0 border-l border-r md:pt-4 md:order-2">
+      <div className="order-3 p-4 pt-0 md:border-l md:border-r md:pt-4 md:order-2">
         {questionData && (
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
@@ -90,6 +96,7 @@ function LearningElement() {
 
               <OptionsDisplay
                 isEvaluation={isEvaluation}
+                evaluation={currentInstance.evaluation}
                 response={response}
                 onChangeResponse={setResponse}
                 onSubmitResponse={
@@ -113,7 +120,7 @@ function LearningElement() {
         )}
       </div>
 
-      <div className="order-2 p-4 md:order-3">
+      <div className="order-2 p-4 border-0 md:pt-0 md:border md:border-t-0 md:order-3">
         <Progress
           formatter={(v) => v}
           value={currentIx}
@@ -122,6 +129,51 @@ function LearningElement() {
       </div>
     </div>
   )
+}
+
+export const getStaticProps: GetStaticProps = async (ctx) => {
+  if (
+    typeof ctx.params?.courseId !== 'string' ||
+    typeof ctx.params?.id !== 'string'
+  ) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
+
+  const apolloClient = initializeApollo()
+
+  try {
+    await apolloClient.query({
+      query: GetLearningElementDocument,
+      variables: { id: ctx.params.id },
+    })
+  } catch (e) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
+
+  return addApolloState(apolloClient, {
+    props: {
+      id: ctx.params.id,
+      courseId: ctx.params.courseId,
+    },
+    revalidate: 60,
+  })
+}
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
 }
 
 export default LearningElement
