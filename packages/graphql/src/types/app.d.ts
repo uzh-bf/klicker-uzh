@@ -21,13 +21,13 @@ interface Choice {
 }
 
 type ChoicesQuestionData = QuestionData<
-  'SC' | 'MC',
+  QuestionType.SC | QuestionType.MC,
   {
     choices: Choice[]
   }
 >
 type FreeTextQuestionData = QuestionData<
-  'FREE_TEXT',
+  QuestionType.FREE_TEXT,
   {
     restrictions?: {
       maxLength?: number
@@ -36,7 +36,7 @@ type FreeTextQuestionData = QuestionData<
   }
 >
 type NumericalQuestionData = QuestionData<
-  'NUMERICAL',
+  QuestionType.NUMERICAL,
   {
     restrictions?: {
       min?: number

@@ -1,1 +1,1 @@
-declare module 'hmac_sha1'
+declare module "hmac_sha1";
