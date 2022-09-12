@@ -190,10 +190,11 @@ type Participation {
 }
 
 type Query {
-  feedbacks(id: ID!): [Feedback]
+  feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   participations: [Participation!]
+  runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]

@@ -392,10 +392,11 @@ export interface NexusGenFieldTypes {
     points: number; // Int!
   }
   Query: { // field return type
-    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
+    runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
@@ -600,6 +601,7 @@ export interface NexusGenFieldTypeNames {
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
     participations: 'Participation'
+    runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
     sessionLeaderboard: 'LeaderboardEntry'
@@ -740,6 +742,9 @@ export interface NexusGenArgTypes {
     }
     learningElement: { // args
       id: string; // ID!
+    }
+    runningSessions: { // args
+      shortname: string; // String!
     }
     session: { // args
       id: string; // ID!
