@@ -473,13 +473,23 @@ export const Query = objectType({
       },
     })
 
-    t.list.field('feedbacks', {
+    t.list.nonNull.field('feedbacks', {
       type: Feedback,
       args: {
         id: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.getFeedbacks(args, ctx)
+      },
+    })
+
+    t.list.nonNull.field('runningSessions', {
+      type: Session,
+      args: {
+        shortname: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.getRunningSessions(args, ctx)
       },
     })
   },
