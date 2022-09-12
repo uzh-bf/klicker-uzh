@@ -213,7 +213,6 @@ export interface NexusGenObjects {
     value: string; // String!
   }
   QuestionInstance: { // root type
-    attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -431,7 +430,6 @@ export interface NexusGenFieldTypes {
     value: string; // String!
   }
   QuestionInstance: { // field return type
-    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -648,7 +646,6 @@ export interface NexusGenFieldTypeNames {
     value: 'String'
   }
   QuestionInstance: { // field return type name
-    attachments: 'Attachment'
     evaluation: 'InstanceEvaluation'
     id: 'Int'
     questionData: 'QuestionData'

@@ -237,7 +237,6 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!

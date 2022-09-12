@@ -410,7 +410,6 @@ export type QuestionFeedback = {
 
 export type QuestionInstance = {
   __typename?: 'QuestionInstance';
-  attachments?: Maybe<Array<Maybe<Attachment>>>;
   evaluation?: Maybe<InstanceEvaluation>;
   id: Scalars['Int'];
   questionData: QuestionData;
@@ -983,7 +982,6 @@ export type QuestionFeedbackResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type QuestionInstanceResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionInstance'] = ResolversParentTypes['QuestionInstance']> = {
-  attachments?: Resolver<Maybe<Array<Maybe<ResolversTypes['Attachment']>>>, ParentType, ContextType>;
   evaluation?: Resolver<Maybe<ResolversTypes['InstanceEvaluation']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   questionData?: Resolver<ResolversTypes['QuestionData'], ParentType, ContextType>;

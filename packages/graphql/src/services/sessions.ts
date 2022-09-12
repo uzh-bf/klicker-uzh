@@ -123,28 +123,28 @@ export async function createSession(
             const questionAttachments = questions.find(
               (q) => q.id === questionId
             )?.attachments as Attachment[]
-            const instanceAttachments = questionAttachments.map(
-              (attachment) => {
-                return {
-                  id: attachment.id,
-                  name: attachment.name,
-                  type: attachment.type,
-                  href: attachment.href,
-                  originalName: attachment.originalName,
-                  description: attachment.description,
-                }
-              }
+            const questionAttachmentInstances = questionAttachments.map(
+              (attachment) => ({
+                id: attachment.id,
+                name: attachment.name,
+                type: attachment.type,
+                href: attachment.href,
+                originalName: attachment.originalName,
+                description: attachment.description,
+              })
             )
 
             return {
               questionData: processedQuestionData,
               results: prepareInitialInstanceResults(processedQuestionData),
-              attachments: instanceAttachments || [],
               question: {
                 connect: { id: questionId },
               },
               owner: {
                 connect: { id: ctx.user.sub },
+              },
+              attachments: {
+                create: questionAttachmentInstances,
               },
             }
           })

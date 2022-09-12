@@ -546,7 +546,6 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
-        attachments: [],
       },
       results: {
         choices: {
@@ -774,7 +773,6 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
-        attachments: [],
       },
       results: {
         choices: {
@@ -811,7 +809,6 @@ async function main(prisma: Prisma.PrismaClient) {
         ...question2,
         createdAt: null,
         updatedAt: null,
-        attachments: [],
       },
       results: {
         choices: {

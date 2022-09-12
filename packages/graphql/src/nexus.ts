@@ -223,8 +223,6 @@ export const QuestionInstance = objectType({
     t.field('evaluation', {
       type: InstanceEvaluation,
     })
-
-    t.list.field('attachments', { type: Attachment })
   },
 })
 

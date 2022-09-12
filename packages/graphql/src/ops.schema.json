@@ -3295,22 +3295,6 @@
         "description": null,
         "fields": [
           {
-            "name": "attachments",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Attachment",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "evaluation",
             "description": null,
             "args": [],
