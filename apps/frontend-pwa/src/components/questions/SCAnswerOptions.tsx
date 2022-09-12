@@ -18,7 +18,7 @@ function SCAnswerOptions({
         return (
           <Button
             fluid
-            className="border border-solid h-11 border-uzh-blue-80"
+            className="border border-solid min-h-[2.5rem] border-uzh-blue-80"
             onClick={onChange(index)}
             key={choice.value}
             active={value?.includes(index)}
