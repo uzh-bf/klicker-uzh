@@ -116,8 +116,11 @@ type LearningElement {
 }
 
 type MicroSession {
+  course: Course!
+  description: String
   displayName: String!
   id: ID!
+  instances: [QuestionInstance!]!
   name: String!
 }
 
@@ -193,6 +196,7 @@ type Query {
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
+  microSession(id: ID!): MicroSession
   participations: [Participation!]
   runningSessions(shortname: String!): [Session!]
   self: Participant
