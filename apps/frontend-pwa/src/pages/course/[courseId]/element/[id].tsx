@@ -6,8 +6,10 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import { initializeApollo, addApolloState } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -15,6 +17,11 @@ import { useState } from 'react'
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
 
+// TODO: ISR for the question data?
+// TODO: shuffling on the server? prevent issues with SSR and hydration
+// TODO: shuffling should be consistent for answer distribution and choices
+// TODO: leaderboard and points screen after all questions have been completed?
+// TODO: different question types (FREE and RANGE)
 function LearningElement() {
   const [response, setResponse] = useState<number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(0)
@@ -80,7 +87,7 @@ function LearningElement() {
         </div>
       </div>
 
-      <div className="order-3 p-4 pt-0 border-l border-r md:pt-4 md:order-2">
+      <div className="order-3 p-4 pt-0 md:border-l md:border-r md:pt-4 md:order-2">
         {questionData && (
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
@@ -90,6 +97,7 @@ function LearningElement() {
 
               <OptionsDisplay
                 isEvaluation={isEvaluation}
+                evaluation={currentInstance.evaluation}
                 response={response}
                 onChangeResponse={setResponse}
                 onSubmitResponse={
@@ -113,7 +121,7 @@ function LearningElement() {
         )}
       </div>
 
-      <div className="order-2 p-4 md:order-3">
+      <div className="order-2 p-4 border-0 md:pt-0 md:border md:border-t-0 md:order-3">
         <Progress
           formatter={(v) => v}
           value={currentIx}
@@ -124,4 +132,21 @@ function LearningElement() {
   )
 }
 
+// TODO: handle Apollo error that occurs when the element does not exist / is not running
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const apolloClient = initializeApollo()
+
+  const result = await apolloClient.query({
+    query: GetLearningElementDocument,
+    variables: {
+      id: ctx.query?.id as string,
+    },
+  })
+
+  return addApolloState(apolloClient, {
+    props: {
+      ...result,
+    },
+  })
+}
 export default LearningElement

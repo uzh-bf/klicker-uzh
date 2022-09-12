@@ -21,16 +21,8 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       )
 
       return (
-        <div className="space-y-4">
           <div className="space-y-2">
-            <div className="font-bold">Feedback</div>
-            {evaluation?.feedbacks?.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <div className="font-bold">Answer Distribution</div>
+            <div className="font-bold">So haben andere geantwortet</div>
             {Object.entries(evaluation.choices as Record<string, number>).map(
               ([ix, value]) => (
                 <Progress
@@ -44,7 +36,6 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
                 />
               )
             )}
-          </div>
         </div>
       )
     }
@@ -59,32 +50,26 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
         .filter((choice: any) => choice.correct)
         .map((choice: any) => choice.ix)
 
+        // TODO: move randomization to the root to use it here as well
+        // TODO: persist randomization for a short while to prevent reorder on reload?
       return (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="font-bold">Feedback</div>
-            {evaluation?.feedbacks?.map((fb: any) => (
-              <div key={fb.feedback}>{fb.feedback}</div>
-            ))}
-          </div>
 
-          <div className="space-y-2">
-            <div className="font-bold">Answer Distribution</div>
+        <div className="space-y-2">
+        <div className="font-bold">So haben andere geantwortet</div>
             {Object.entries(evaluation.choices as Record<string, number>).map(
-              ([ix, value]) => (
+              ([ix, value]) => (<div key={ix}>
                 <Progress
                   className={twMerge(
                     correctIx.includes(+ix) && 'font-bold text-green-600'
                   )}
-                  key={ix}
                   value={(value / sum) * 100}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}
-                />
+                /></div>
               )
             )}
           </div>
-        </div>
+
       )
     }
 
