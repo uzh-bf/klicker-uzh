@@ -2,6 +2,24 @@
 ### Do not make changes to this file directly
 
 
+type Attachment {
+  description: String
+  href: String!
+  id: String!
+  name: String!
+  originalName: String
+  type: AttachmentType!
+}
+
+enum AttachmentType {
+  GIF
+  JPEG
+  LINK
+  PNG
+  SVG
+  WEBP
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
@@ -222,6 +240,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
+  attachments: [Attachment]!
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!
@@ -236,6 +255,7 @@ type Session {
   activeBlock: SessionBlock
   blocks: [SessionBlock!]!
   confusionFeedbacks: [ConfusionTimestep]
+  course: Course
   displayName: String!
   feedbacks: [Feedback]
   id: ID!

@@ -48,6 +48,7 @@ export interface NexusGenInputs {
 }
 
 export interface NexusGenEnums {
+  AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
 }
@@ -63,6 +64,14 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
+  Attachment: { // root type
+    description?: string | null; // String
+    href: string; // String!
+    id: string; // String!
+    name: string; // String!
+    originalName?: string | null; // String
+    type: NexusGenEnums['AttachmentType']; // AttachmentType!
+  }
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
@@ -204,6 +213,7 @@ export interface NexusGenObjects {
     value: string; // String!
   }
   QuestionInstance: { // root type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null>; // [Attachment]!
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -212,6 +222,7 @@ export interface NexusGenObjects {
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks?: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
+    course?: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -245,6 +256,14 @@ export type NexusGenRootTypes = NexusGenInterfaces & NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars & NexusGenEnums
 
 export interface NexusGenFieldTypes {
+  Attachment: { // field return type
+    description: string | null; // String
+    href: string; // String!
+    id: string; // String!
+    name: string; // String!
+    originalName: string | null; // String
+    type: NexusGenEnums['AttachmentType']; // AttachmentType!
+  }
   Choice: { // field return type
     correct: boolean | null; // Boolean
     feedback: string | null; // String
@@ -415,6 +434,7 @@ export interface NexusGenFieldTypes {
     value: string; // String!
   }
   QuestionInstance: { // field return type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null>; // [Attachment]!
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -423,6 +443,7 @@ export interface NexusGenFieldTypes {
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
+    course: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     id: string; // ID!
@@ -454,6 +475,14 @@ export interface NexusGenFieldTypes {
 }
 
 export interface NexusGenFieldTypeNames {
+  Attachment: { // field return type name
+    description: 'String'
+    href: 'String'
+    id: 'String'
+    name: 'String'
+    originalName: 'String'
+    type: 'AttachmentType'
+  }
   Choice: { // field return type name
     correct: 'Boolean'
     feedback: 'String'
@@ -624,6 +653,7 @@ export interface NexusGenFieldTypeNames {
     value: 'String'
   }
   QuestionInstance: { // field return type name
+    attachments: 'Attachment'
     evaluation: 'InstanceEvaluation'
     id: 'Int'
     questionData: 'QuestionData'
@@ -632,6 +662,7 @@ export interface NexusGenFieldTypeNames {
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     confusionFeedbacks: 'ConfusionTimestep'
+    course: 'Course'
     displayName: 'String'
     feedbacks: 'Feedback'
     id: 'ID'

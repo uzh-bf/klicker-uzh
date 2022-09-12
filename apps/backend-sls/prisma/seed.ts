@@ -67,6 +67,42 @@ async function main(prisma: Prisma.PrismaClient) {
     })
   )
 
+  const attachment = await prisma.attachment.upsert({
+    where: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+    },
+    create: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
+      name: 'Test Attachment 1',
+      type: 'SVG',
+      href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.svg',
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const attachment2 = await prisma.attachment.upsert({
+    where: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
+    },
+    create: {
+      id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
+      name: 'Test Attachment 2',
+      type: 'WEBP',
+      href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp',
+      owner: {
+        connect: {
+          id: user.id,
+        },
+      },
+    },
+    update: {},
+  })
+
   const question = await prisma.question.upsert({
     where: {
       id: 0,
@@ -193,6 +229,16 @@ async function main(prisma: Prisma.PrismaClient) {
       contentPlain:
         'Welche der folgenden Personen/Gruppen sind keine Stakeholder?',
       type: 'SC',
+      attachments: {
+        connect: [
+          {
+            id: attachment.id,
+          },
+          {
+            id: attachment2.id,
+          },
+        ],
+      },
       options: {
         choices: [
           {
@@ -1286,19 +1332,19 @@ Mehr bla bla...
       instances: {
         connect: [
           {
-            id: 13,
+            id: instance14.id,
           },
           {
-            id: 14,
+            id: instance15.id,
           },
           {
-            id: 15,
+            id: instance16.id,
           },
           {
-            id: 16,
+            id: instance17.id,
           },
           {
-            id: 17,
+            id: instance18.id,
           },
         ],
       },
