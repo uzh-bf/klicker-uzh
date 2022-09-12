@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import Layout from '@components/Layout'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button } from '@uzh-bf/design-system'
@@ -39,7 +40,13 @@ function MicroSessionDescription({ id }: Props) {
   if (error) return <p>Oh no... {error.message}</p>
 
   return (
-    <div className="flex flex-col max-w-6xl m-auto">
+    <Layout
+      displayName={'asdasd'}
+      courseName={'asdasd'}
+      mobileMenuItems={[]}
+    >
+      <div className="p-4">
+
       <DynamicMarkdown
         content={data.microSession.description}
         components={{
@@ -48,8 +55,8 @@ function MicroSessionDescription({ id }: Props) {
       />
       <div>
         <Button>Start</Button>
-      </div>
-    </div>
+      </div></div>
+    </Layout>
   )
 }
 
