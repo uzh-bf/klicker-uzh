@@ -1,6 +1,6 @@
-# import "./FQuestionData.graphql"
+# import "./FQuestionDataWithoutSolutions.graphql"
 
-query GetSession($id: ID!) {
+query GetRunningSession($id: ID!) {
   session(id: $id) {
     id
     isAudienceInteractionActive
@@ -10,6 +10,9 @@ query GetSession($id: ID!) {
     name
     displayName
     status
+    course {
+      displayName
+    }
     activeBlock {
       id
       status
@@ -19,7 +22,15 @@ query GetSession($id: ID!) {
       execution
       instances {
         id
-        ...QuestionData
+        attachments {
+          id
+          href
+          name
+          originalName
+          description
+          type
+        }
+        ...QuestionDataWithoutSolutions
       }
     }
   }

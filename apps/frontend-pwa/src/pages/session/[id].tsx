@@ -1,5 +1,3 @@
-// TODO: remove solution data in a more specialized query than getSession (only the active instances are required)
-
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -11,7 +9,7 @@ import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import { addApolloState } from '@lib/apollo'
-import { getSessionData } from '@lib/joinData'
+import { getRunningSessionData } from '@lib/joinData'
 import getConfig from 'next/config'
 import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
@@ -30,10 +28,13 @@ function Index({
   name,
   namespace,
   status,
+  course,
 }: Session) {
   const router = useRouter()
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
+
+  console.log(course)
 
   const handleNewResponse = async (
     type: string,
@@ -107,13 +108,15 @@ function Index({
 
   return (
     <Layout
-      displayName={`Live Session - ${displayName}`}
+      displayName={displayName}
+      courseName={course?.displayName}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
+      pageNotFound={!id}
     >
       <div
         className={twMerge(
-          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block min-h-full',
+          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block md:overflow-scroll',
           isAudienceInteractionActive && 'md:w-1/2',
           activeMobilePage === 'questions' && 'block'
         )}
@@ -132,7 +135,11 @@ function Index({
             expiresAt={activeBlock?.expiresAt}
             questions={
               activeBlock?.instances.map((question: any) => {
-                return { ...question.questionData, instanceId: question.id }
+                return {
+                  ...question.questionData,
+                  instanceId: question.id,
+                  attachments: question.attachments,
+                }
               }) || []
             }
             handleNewResponse={handleNewResponse}
@@ -157,7 +164,7 @@ function Index({
       {isAudienceInteractionActive && (
         <div
           className={twMerge(
-            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block min-h-full',
+            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block md:overflow-scroll',
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
@@ -168,10 +175,8 @@ function Index({
   )
 }
 
-// TODO: handle Apollo error that occurs when the session does not exist / is not running
-// --> show alternative page with error message but without Apollo error
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const withNewSessionData = await getSessionData(ctx)
+  const withNewSessionData = await getRunningSessionData(ctx)
 
   return addApolloState(withNewSessionData.apolloClient, {
     props: {

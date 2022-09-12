@@ -1,3 +1,4 @@
+import { Attachment } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
@@ -5,12 +6,14 @@ import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import FREETextAnswerOptions from '../questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from '../questions/NUMERICALAnswerOptions'
 import SCAnswerOptions from '../questions/SCAnswerOptions'
+import QuestionAttachment from './QuestionAttachment'
 import SessionProgress from './SessionProgress'
 
 // TODO: notifications
@@ -25,8 +28,9 @@ interface QuestionAreaProps {
     type: string
     options: any
     instanceId: number
+    attachments?: Attachment[]
   }[]
-  handleNewResponse: (type: string, instanceId: number, answer: any) => void // TODO: correct typing of answer
+  handleNewResponse: (type: string, instanceId: number, answer: any) => void
   sessionId: string
   execution: number
   timeLimit?: number
@@ -323,8 +327,23 @@ function QuestionArea({
             />
           </div>
 
-          {/* // TODO - first attachements need to be copied from question to instance on session creation, then parsed here with next/image */}
-          <div>QUESTIONFILES</div>
+          {currentQuestion.attachments && (
+            <div
+              className={twMerge(
+                'grid grid-cols-1',
+                currentQuestion.attachments.length > 1 && 'grid-cols-2'
+              )}
+            >
+              {currentQuestion.attachments.map((attachment: Attachment) => (
+                <div
+                  key={attachment.id}
+                  className="relative mx-auto h-28 w-36 sm:w-48 sm:h-36 md:w-40 md:h-32 lg:w-56 lg:h-44"
+                >
+                  <QuestionAttachment attachment={attachment} />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex-1 mt-4">
             <div className="mb-2 font-bold">
