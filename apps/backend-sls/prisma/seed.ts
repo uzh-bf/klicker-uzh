@@ -344,7 +344,7 @@ async function main(prisma: Prisma.PrismaClient) {
         'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
       contentPlain:
         'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
-      type: 'MC',
+      type: 'KPRIM',
       options: {
         choices: [
           {
@@ -379,7 +379,41 @@ async function main(prisma: Prisma.PrismaClient) {
       },
       ownerId: user.id,
     },
-    update: {},
+    update: {
+      type: 'KPRIM',
+      options: {
+        choices: [
+          {
+            ix: 0,
+            feedback:
+              'Diese Aussage ist korrekt! Dritte stellen für eine bestimmte Zeitdauer Fremdkapital zur Verfügung.',
+            correct: true,
+            value: 'Gläubigerkapital',
+          },
+          {
+            ix: 1,
+            feedback:
+              'Diese Aussage ist nicht korrekt! Dies ist eine Grundfunktion des Eigenkapitals.',
+            correct: false,
+            value: 'Liquiditätssicherungsfunktion',
+          },
+          {
+            ix: 2,
+            feedback:
+              'Diese Aussage ist korrekt! Fremdkapitalgeber haben in der Regel Anspruch auf Verzinsung und Rückzahlung des Kapitals zu einem vereinbarten Termin.',
+            correct: true,
+            value: 'Gewinnunabhängiges Kapitalentgelt',
+          },
+          {
+            ix: 3,
+            feedback:
+              'Diese Aussage ist korrekt! Es gehört zur Außenfinanzierung bzw. Fremdfinazierung.',
+            correct: true,
+            value: 'Finanzierungsfunktion',
+          },
+        ],
+      },
+    },
   })
 
   const question6 = await prisma.question.upsert({
@@ -1291,6 +1325,11 @@ async function main(prisma: Prisma.PrismaClient) {
       ownerId: user.id,
     },
     update: {
+      questionData: {
+        ...question5,
+        createdAt: null,
+        updatedAt: null,
+      },
       results: {
         choices: {
           0: 0,

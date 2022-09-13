@@ -5,7 +5,7 @@ import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
 import { Button } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ChoiceOptionsProps {
@@ -95,7 +95,10 @@ function Options({
     case QuestionType.SC:
       return (
         <div>
-          <div className="mb-2 italic">Wähle eine der folgenden Optionen.</div>
+          <div className="mb-4 italic">
+            Wähle <span className="font-bold">eine</span> der folgenden
+            Optionen:
+          </div>
           <ChoiceOptions
             choices={options.choices}
             isEvaluation={isEvaluation}
@@ -109,8 +112,9 @@ function Options({
     case QuestionType.MC:
       return (
         <div>
-          <div className="mb-2 italic">
-            Wähle eine oder mehrere der folgenden Optionen.
+          <div className="mb-4 italic">
+            Wähle <span className="font-bold">eine oder mehrere</span> der
+            folgenden Optionen:
           </div>
           <ChoiceOptions
             choices={options.choices}
@@ -128,6 +132,103 @@ function Options({
               })
             }
           />
+        </div>
+      )
+
+    case QuestionType.KPRIM:
+      return (
+        <div>
+          <div className="mb-4 italic">
+            Beurteile folgende Aussagen auf ihre{' '}
+            <span className="font-bold">Richtigkeit</span>:
+          </div>
+          <div className="space-y-1">
+            {options.choices.map((choice: Choice) => {
+              const correctAnswer =
+                (response?.includes(choice.ix) &&
+                  feedbacks?.[choice.ix].correct) ||
+                (!response?.includes(choice.ix) &&
+                  !feedbacks?.[choice.ix].correct)
+
+              return (
+                <div className="flex flex-col" key={choice.ix}>
+                  <div
+
+                    className="flex flex-row items-center justify-between p-2 border"
+                  >
+                    <div>
+                      <Markdown content={choice.value} />
+                    </div>
+                    <div className="flex flex-row gap-2">
+                      <Button
+                        className={
+                          feedbacks && response?.includes(choice.ix) &&
+                          (correctAnswer ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700')
+                        }
+                        disabled={isEvaluation}
+                        active={response?.includes(choice.ix)}
+                        onClick={() =>
+                          onChangeResponse((prev: any) => {
+                            if (!prev) return [choice.ix]
+                            if (!prev.includes(choice.ix)) {
+                              return [...prev, choice.ix]
+                            }
+                          })
+                        }
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faCheck} />
+                        </Button.Icon>
+                      </Button>
+                      <Button
+                        className={
+                          feedbacks && !response?.includes(choice.ix) &&
+                          (correctAnswer ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700')
+                        }
+                        disabled={isEvaluation}
+                        active={!response?.includes(choice.ix)}
+                        onClick={() =>
+                          onChangeResponse((prev: any) => {
+                            if (!prev) return [choice.ix]
+                            if (prev.includes(choice.ix)) {
+                              return prev.filter((c: any) => c !== choice.ix)
+                            }
+                          })
+                        }
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faX} />
+                        </Button.Icon>
+                      </Button>
+                    </div>
+                  </div>
+                  {feedbacks?.[choice.ix] && (
+                    <div
+                      className={twMerge(
+                        'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50'
+                      )}
+                    >
+                      {/* <div
+                          className={twMerge(
+                            'self-stretch px-3 w-8 py-2 text-xs bg-gray-300 flex text-gray-600 flex-col items-center justify-center',
+                            correctAnswer
+                              ? 'bg-green-200 text-green-700'
+                              : 'bg-red-200 text-red-700'
+                          )}
+                        >
+                          <FontAwesomeIcon
+                            icon={correctAnswer ? faCheck : faX}
+                          />
+                        </div> */}
+                      <div className="p-2 text-gray-700">
+                        {feedbacks[choice.ix].feedback}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )
 
@@ -155,14 +256,6 @@ function OptionsDisplay({
   questionType,
   options,
 }: OptionsDisplayProps) {
-  useEffect(() => {
-    if (questionType === QuestionType.SC || questionType === QuestionType.MC) {
-      onChangeResponse([])
-    } else if (questionType === QuestionType.FREE_TEXT) {
-    } else if (questionType === QuestionType.NUMERICAL) {
-    }
-  }, [questionType, onChangeResponse])
-
   const feedbacks = useMemo(() => {
     if (evaluation) {
       return indexBy((feedback: any) => feedback.ix, evaluation.feedbacks)

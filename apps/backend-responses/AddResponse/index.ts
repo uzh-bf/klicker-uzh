@@ -2,9 +2,14 @@ import Redis from 'ioredis'
 import JWT from 'jsonwebtoken'
 import md5 from 'md5'
 
-import { any, equals, toLower, trim } from 'ramda'
+import { toLower, trim } from 'ramda'
 
 import { AzureFunction, Context, HttpRequest } from '@azure/functions'
+import {
+  gradeQuestionFreeText,
+  gradeQuestionNumerical,
+  gradeQuestionSC,
+} from '@klicker-uzh/grading'
 
 const redisExec = new Redis({
   family: 4,
@@ -89,7 +94,12 @@ const httpTrigger: AzureFunction = async function (
       redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
       if (participantData) {
-        if (parsedSolutions && equals(response.choices, parsedSolutions)) {
+        if (
+          gradeQuestionSC({
+            response: response.choices,
+            solution: parsedSolutions,
+          })
+        ) {
           pointsAwarded += 100
 
           // if we are processing a first response, set the timestamp on the instance
@@ -138,28 +148,25 @@ const httpTrigger: AzureFunction = async function (
       redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
       if (participantData) {
-        if (parsedSolutions?.length > 0) {
-          const withinRanges = parsedSolutions.map(({ min, max }: any) => {
-            if (min && response.value < min) return false
-            if (max && response.value > max) return false
-            return true
+        if (
+          gradeQuestionNumerical({
+            response: response.value,
+            solutionRanges: parsedSolutions,
           })
+        ) {
+          pointsAwarded += 100
 
-          if (any(Boolean, withinRanges)) {
-            pointsAwarded += 100
-
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            if (!firstResponseReceivedAt) {
-              redisExec.hset(
-                `${instanceKey}:info`,
-                'firstResponseReceivedAt',
-                responseTimestamp
-              )
-            }
-          } else {
-            pointsAwarded = 0
+          // if we are processing a first response, set the timestamp on the instance
+          // this will allow us to award points for response timing
+          if (!firstResponseReceivedAt) {
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
           }
+        } else {
+          pointsAwarded = 0
         }
 
         redisMulti.hset(
@@ -197,8 +204,10 @@ const httpTrigger: AzureFunction = async function (
 
       if (participantData) {
         if (
-          parsedSolutions?.length > 0 &&
-          parsedSolutions.includes(cleanResponseValue)
+          gradeQuestionFreeText({
+            response: cleanResponseValue,
+            solutions: parsedSolutions,
+          })
         ) {
           pointsAwarded += 100
 

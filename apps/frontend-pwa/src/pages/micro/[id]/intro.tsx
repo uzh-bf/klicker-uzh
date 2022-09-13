@@ -6,6 +6,7 @@ import { Button } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
 import { default as NextImage } from 'next/future/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
@@ -29,7 +30,7 @@ interface Props {
   id: string
 }
 
-function MicroSessionDescription({ id }: Props) {
+function MicroSessionIntroduction({ id }: Props) {
   const router = useRouter()
 
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
@@ -41,21 +42,25 @@ function MicroSessionDescription({ id }: Props) {
 
   return (
     <Layout
-      displayName={'asdasd'}
-      courseName={'asdasd'}
+      displayName={data.microSession.displayName}
+      courseName={data.microSession.course.displayName}
       mobileMenuItems={[]}
     >
-      <div className="p-4">
-
-      <DynamicMarkdown
-        content={data.microSession.description}
-        components={{
-          img: Image as any,
-        }}
-      />
-      <div>
-        <Button>Start</Button>
-      </div></div>
+      <div className="w-full p-4 md:border md:rounded md:bg-white">
+        <DynamicMarkdown
+          content={data.microSession.description}
+          components={{
+            img: Image as any,
+          }}
+        />
+        <div>
+          <Link
+            href={`/micro/${data.microSession.id}/${data.microSession.instances[0].id}`}
+          >
+            <Button>Start</Button>
+          </Link>
+        </div>
+      </div>
     </Layout>
   )
 }
@@ -101,4 +106,4 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }
 }
 
-export default MicroSessionDescription
+export default MicroSessionIntroduction

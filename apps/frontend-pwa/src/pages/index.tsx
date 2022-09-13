@@ -72,7 +72,9 @@ const Index = function () {
             <div>Kein aktives Microlearning.</div>
           )}
           {activeMicrolearning.map((micro: any) => (
-            <div key={micro.id}>{micro.displayName}</div>
+            <div key={micro.id}>
+              <Link href={`/micro/${micro.id}/intro`}>{micro.displayName}</Link>
+            </div>
           ))}
         </div>
 
