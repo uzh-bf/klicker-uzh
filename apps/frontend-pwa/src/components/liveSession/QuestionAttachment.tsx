@@ -1,6 +1,6 @@
 import { Attachment } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
-import Image from 'next/image'
+import Image from 'next/future/image'
 import React, { useState } from 'react'
 
 interface QuestionAttachmentProps {
@@ -29,9 +29,9 @@ function QuestionAttachment({
             >
               <Image
                 src={attachment.href}
+                className="object-contain"
+                fill
                 alt={attachment.name}
-                layout="fill"
-                objectFit="contain"
               />
             </Button>
           }
@@ -40,9 +40,9 @@ function QuestionAttachment({
           <div className="relative flex flex-col justify-center w-full h-full text-center">
             <Image
               src={attachment.href}
+              className="object-contain"
+              fill
               alt={attachment.name}
-              layout="fill"
-              objectFit="contain"
             />
           </div>
         </Modal>
