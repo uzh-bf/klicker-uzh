@@ -242,6 +242,13 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
   }
+  User: { // root type
+    description?: string | null; // String
+    email: string; // String!
+    id: string; // ID!
+    isActive: boolean; // Boolean!
+    shortname: string; // String!
+  }
 }
 
 export interface NexusGenInterfaces {
@@ -426,6 +433,7 @@ export interface NexusGenFieldTypes {
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    userProfile: NexusGenRootTypes['User'] | null; // User
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -462,6 +470,13 @@ export interface NexusGenFieldTypes {
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
+  }
+  User: { // field return type
+    description: string | null; // String
+    email: string; // String!
+    id: string; // ID!
+    isActive: boolean; // Boolean!
+    shortname: string; // String!
   }
   QuestionData: { // field return type
     content: string; // String!
@@ -645,6 +660,7 @@ export interface NexusGenFieldTypeNames {
     self: 'Participant'
     session: 'Session'
     sessionLeaderboard: 'LeaderboardEntry'
+    userProfile: 'User'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -681,6 +697,13 @@ export interface NexusGenFieldTypeNames {
     randomSelection: 'Boolean'
     status: 'SessionBlockStatus'
     timeLimit: 'Int'
+  }
+  User: { // field return type name
+    description: 'String'
+    email: 'String'
+    id: 'ID'
+    isActive: 'Boolean'
+    shortname: 'String'
   }
   QuestionData: { // field return type name
     content: 'String'
