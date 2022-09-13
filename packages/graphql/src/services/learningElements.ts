@@ -1,4 +1,8 @@
-import { gradeQuestionKPRIM, gradeQuestionSC } from '@klicker-uzh/grading'
+import {
+  gradeQuestionKPRIM,
+  gradeQuestionMC,
+  gradeQuestionSC,
+} from '@klicker-uzh/grading'
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
@@ -16,7 +20,8 @@ function evaluateQuestionResponse(
 ) {
   switch (questionData.type) {
     case QuestionType.SC:
-    case QuestionType.MC: {
+    case QuestionType.MC:
+    case QuestionType.KPRIM: {
       const data = questionData as ChoicesQuestionData
 
       // TODO: feedbacks only for selected options?
@@ -30,36 +35,39 @@ function evaluateQuestionResponse(
         return acc
       }, [])
 
-      const isCorrect = gradeQuestionSC({
-        response: response.choices as number[],
-        solution,
-      })
-
-      return {
-        feedbacks,
-        choices: results.choices,
-        points: isCorrect ? 100 : 0,
-      }
-    }
-
-    case QuestionType.KPRIM: {
-      const data = questionData as ChoicesQuestionData
-
-      const feedbacks = data.options.choices
-      const solution = data.options.choices.reduce<number[]>((acc, choice) => {
-        if (choice.correct) return [...acc, choice.ix]
-        return acc
-      }, [])
-
-      const isCorrect = gradeQuestionKPRIM({
-        response: response.choices as number[],
-        solution,
-      })
-
-      return {
-        feedbacks,
-        choices: results.choices,
-        points: isCorrect ? 100 : 0,
+      if (data.type === QuestionType.SC) {
+        const pointsPercentage = gradeQuestionSC({
+          responseCount: data.options.choices.length,
+          response: response.choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          points: pointsPercentage !== null ? pointsPercentage * 200 : null,
+        }
+      } else if (data.type === QuestionType.MC) {
+        const pointsPercentage = gradeQuestionMC({
+          responseCount: data.options.choices.length,
+          response: response.choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          points: pointsPercentage !== null ? pointsPercentage * 200 : null,
+        }
+      } else {
+        const pointsPercentage = gradeQuestionKPRIM({
+          responseCount: data.options.choices.length,
+          response: response.choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          points: pointsPercentage !== null ? pointsPercentage * 200 : null,
+        }
       }
     }
 
