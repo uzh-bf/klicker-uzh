@@ -1,10 +1,10 @@
 import { useQuery } from '@apollo/client'
-import Session from '@components/sessions/Session'
-import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import {
+  GetUserSessionsDocument,
+  Session as SessionType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
-import { Session as SessionType } from '@klicker-uzh/graphql/dist/ops'
-
+import Session from '../../components/sessions/Session'
 
 import Layout from '../../components/Layout'
 
@@ -22,11 +22,17 @@ function SessionList() {
       ),
     [dataSessions]
   )
-  const preparedScheduledSessions = useMemo(
+  const scheduledSessions = useMemo(
     () =>
       dataSessions?.userSessions?.filter(
-        (session) =>
-          session?.status === 'PREPARED' || session?.status === 'SCHEDULED'
+        (session) => session?.status === 'SCHEDULED'
+      ),
+    [dataSessions]
+  )
+  const preparedSessions = useMemo(
+    () =>
+      dataSessions?.userSessions?.filter(
+        (session) => session?.status === 'PREPARED'
       ),
     [dataSessions]
   )
@@ -38,25 +44,36 @@ function SessionList() {
     [dataSessions]
   )
 
-  console.log('runningSession', runningSessions)
-  console.log('preparedScheduledSessions', preparedScheduledSessions)
-  console.log('completedSessions', completedSessions)
-
   if (!dataSessions || loadingSessions) {
     return <div>Loading...</div>
   }
 
   return (
     <Layout displayName="Sessions">
-      <div className="mx-auto bg-red-300 max-w-7xl">
+      <div className="mx-auto max-w-7xl">
         {runningSessions && runningSessions.length > 0 && (
-          <Session sessionName="Laufende Sessionen" sessionList={runningSessions as SessionType[]} />
+          <Session
+            sessionName="Laufende Sessionen"
+            sessionList={runningSessions as SessionType[]}
+          />
         )}
-        {preparedScheduledSessions && preparedScheduledSessions.length > 0 && (
-          <Session sessionName="Vorbereitete Sessionen" sessionList={preparedScheduledSessions as SessionType[]} />
+        {scheduledSessions && scheduledSessions.length > 0 && (
+          <Session
+            sessionName="Geplante Sessionen"
+            sessionList={scheduledSessions as SessionType[]}
+          />
+        )}
+        {preparedSessions && preparedSessions.length > 0 && (
+          <Session
+            sessionName="Vorbereitete Sessionen"
+            sessionList={preparedSessions as SessionType[]}
+          />
         )}
         {completedSessions && completedSessions.length > 0 && (
-          <Session sessionName="Abgeschlossene Sessionen" sessionList={completedSessions as SessionType[]} />
+          <Session
+            sessionName="Abgeschlossene Sessionen"
+            sessionList={completedSessions as SessionType[]}
+          />
         )}
       </div>
     </Layout>

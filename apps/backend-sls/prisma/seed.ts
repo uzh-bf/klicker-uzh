@@ -1030,7 +1030,7 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
       name: 'BF1 VL2',
-      displayName: 'Banking und Finance I - VL1',
+      displayName: 'Banking und Finance I - VL2',
       isModerationEnabled: false,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,

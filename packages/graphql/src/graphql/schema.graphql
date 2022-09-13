@@ -260,6 +260,7 @@ type Session {
   blocks: [SessionBlock!]!
   confusionFeedbacks: [ConfusionTimestep]
   course: Course
+  createdAt: DateTime!
   displayName: String!
   feedbacks: [Feedback]
   id: ID!

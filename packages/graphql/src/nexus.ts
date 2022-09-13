@@ -455,6 +455,8 @@ export const Session = objectType({
     t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
 
     t.field('course', { type: Course })
+
+    t.nonNull.date('createdAt')
   },
 })
 

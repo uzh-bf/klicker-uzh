@@ -758,6 +758,7 @@ export async function getUserSessions(
       displayName: session.displayName,
       accessMode: session.accessMode,
       status: session.status,
+      createdAt: session.createdAt,
       blocks: session.blocks.map((block) => {
         return {
           id: block.id,

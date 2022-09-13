@@ -5,6 +5,7 @@ query GetUserSessions {
     displayName
     accessMode
     status
+    createdAt
     blocks {
       id
       instances {
