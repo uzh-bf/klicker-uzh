@@ -1,5 +1,5 @@
 interface QuestionData<Type, Options> {
-  id: string
+  id: number
   name: string
   type: Type
   content: string
@@ -7,39 +7,45 @@ interface QuestionData<Type, Options> {
   ownerId: string
   isDeleted: boolean
   isArchived: boolean
-  createdAt: string
-  updatedAt: string
+  createdAt: string | Date
+  updatedAt: string | Date
 
   options: Options
 }
 
 interface Choice {
+  ix: number
   value: string
   correct: boolean
   feedback?: string
 }
 
 type ChoicesQuestionData = QuestionData<
-  'SC' | 'MC',
+  QuestionType.SC | QuestionType.MC,
   {
     choices: Choice[]
   }
 >
 type FreeTextQuestionData = QuestionData<
-  'FREE_TEXT',
+  QuestionType.FREE_TEXT,
   {
     restrictions?: {
       maxLength?: number
     }
+    solutions?: string[]
   }
 >
 type NumericalQuestionData = QuestionData<
-  'NUMERICAL',
+  QuestionType.NUMERICAL,
   {
     restrictions?: {
       min?: number
       max?: number
     }
+    solutionRanges?: {
+      min: number
+      max?: number
+    }[]
   }
 >
 
@@ -52,4 +58,15 @@ interface ChoicesQuestionResults {
   choices: Record<string, number>
 }
 
-type AllQuestionResults = ChoicesQuestionResults
+interface NumericalQuestionResults {
+  [x: string]: number
+}
+
+interface FreeTextQuestionResults {
+  [x: string]: number
+}
+
+type AllQuestionResults =
+  | ChoicesQuestionResults
+  | FreeTextQuestionResults
+  | NumericalQuestionResults

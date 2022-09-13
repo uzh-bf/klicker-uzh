@@ -1,0 +1,6 @@
+mutation UpvoteFeedback($feedbackId: Int!, $increment: Int!) {
+  upvoteFeedback(feedbackId: $feedbackId, increment: $increment) {
+    id
+    votes
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+.turbo/
+dist/
+/src/ops.schema.json
+/src/ops.ts
+/src/graphql/schema.graphql
+/src/types/nexus-typegen.ts

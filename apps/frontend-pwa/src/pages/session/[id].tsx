@@ -1,27 +1,188 @@
-import { useQuery } from '@apollo/client'
-import { GetSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
+import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { QUESTION_GROUPS } from '../../constants'
 
-function Index() {
+import { addApolloState } from '@lib/apollo'
+import { getRunningSessionData } from '@lib/joinData'
+import getConfig from 'next/config'
+import Leaderboard from '../../components/common/Leaderboard'
+import Layout from '../../components/Layout'
+import FeedbackArea from '../../components/liveSession/FeedbackArea'
+import QuestionArea from '../../components/liveSession/QuestionArea'
+
+const { publicRuntimeConfig } = getConfig()
+
+function Index({
+  activeBlock,
+  displayName,
+  id,
+  isAudienceInteractionActive,
+  isModerationEnabled,
+  isGamificationEnabled,
+  name,
+  namespace,
+  status,
+  course,
+}: Session) {
   const router = useRouter()
+  const sessionId = router.query.id as string
+  const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { loading, error, data } = useQuery(GetSessionDocument, {
-    variables: {
-      sessionId: router.query.id as string,
+  console.log(course)
+
+  const handleNewResponse = async (
+    type: string,
+    instanceId: number,
+    answer: any
+  ) => {
+    let requestOptions = {}
+    if (QUESTION_GROUPS.CHOICES.includes(type)) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { choices: answer },
+        }),
+      }
+    } else if (
+      QUESTION_GROUPS.NUMERICAL.includes(type) ||
+      QUESTION_GROUPS.FREE_TEXT.includes(type)
+    ) {
+      requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { value: answer },
+        }),
+      }
+    } else {
+      return null
+    }
+    try {
+      const response = await fetch(
+        publicRuntimeConfig.ADDRESPONSE_URL,
+        requestOptions
+      )
+    } catch (e) {
+      console.log('error', e)
+    }
+  }
+
+  const mobileMenuItems: {
+    value: string
+    label: string
+    icon: React.ReactElement
+    unseenItems?: number
+    showBadge?: boolean
+  }[] = [
+    {
+      value: 'questions',
+      label: 'Questions',
+      icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+      unseenItems: activeBlock?.instances?.length,
     },
-  })
+  ]
 
-
-  if (loading || !data) return <p>Loading...</p>
-  if (error) return <p>Oh no... {error.message}</p>
-
-  console.log(data)
+  if (isAudienceInteractionActive) {
+    mobileMenuItems.push({
+      value: 'feedbacks',
+      label: 'Feedbacks',
+      icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+    })
+  }
+  if (isGamificationEnabled) {
+    mobileMenuItems.push({
+      value: 'leaderboard',
+      label: 'Leaderboard',
+      icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
+    })
+  }
 
   return (
-    <div className="p-4">
-        {router.query.id}
-    </div>
+    <Layout
+      displayName={displayName}
+      courseName={course?.displayName}
+      mobileMenuItems={mobileMenuItems}
+      setActiveMobilePage={setActiveMobilePage}
+      pageNotFound={!id}
+    >
+      <div
+        className={twMerge(
+          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block md:overflow-scroll',
+          isAudienceInteractionActive && 'md:w-1/2',
+          activeMobilePage === 'questions' && 'block'
+        )}
+      >
+        {!activeBlock ? (
+          isGamificationEnabled ? (
+            <div className={twMerge('w-full bg-white min-h-full')}>
+              <Leaderboard sessionId={sessionId} className="hidden md:block" />
+              <div className="md:hidden">Keine Frage aktiv.</div>
+            </div>
+          ) : (
+            <div>Keine Frage aktiv.</div>
+          )
+        ) : (
+          <QuestionArea
+            expiresAt={activeBlock?.expiresAt}
+            questions={
+              activeBlock?.instances.map((question: any) => {
+                return {
+                  ...question.questionData,
+                  instanceId: question.id,
+                  attachments: question.attachments,
+                }
+              }) || []
+            }
+            handleNewResponse={handleNewResponse}
+            sessionId={sessionId}
+            timeLimit={activeBlock?.timeLimit as number}
+            execution={activeBlock?.execution || 0}
+          />
+        )}
+      </div>
+
+      {isGamificationEnabled && (
+        <div
+          className={twMerge(
+            'w-full p-4 bg-white hidden min-h-full',
+            activeMobilePage === 'leaderboard' && 'block md:hidden'
+          )}
+        >
+          <Leaderboard sessionId={sessionId} />
+        </div>
+      )}
+
+      {isAudienceInteractionActive && (
+        <div
+          className={twMerge(
+            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block md:overflow-scroll',
+            activeMobilePage === 'feedbacks' && 'block'
+          )}
+        >
+          <FeedbackArea isModerationEnabled={isModerationEnabled} />
+        </div>
+      )}
+    </Layout>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const withNewSessionData = await getRunningSessionData(ctx)
+
+  return addApolloState(withNewSessionData.apolloClient, {
+    props: {
+      ...withNewSessionData.result,
+    },
+  })
 }
 
 export default Index

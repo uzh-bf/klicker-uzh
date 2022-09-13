@@ -26,22 +26,54 @@ export async function getParticipantProfile(
   return participant
 }
 
-export async function getParticipantCourses(_: any, ctx: ContextWithUser) {
-  const participation = await ctx.prisma.participation.findMany({
-    where: {
-      participantId: ctx.user.sub,
-      isActive: true,
-    },
+export async function getParticipations(_: any, ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
     include: {
-      course: true,
+      participations: {
+        where: { isActive: true },
+        include: {
+          course: {
+            include: {
+              microSessions: {
+                where: {
+                  scheduledStartAt: {
+                    lt: new Date(),
+                  },
+                  scheduledEndAt: {
+                    gt: new Date(),
+                  },
+                },
+                select: {
+                  id: true,
+                  displayName: true,
+                },
+              },
+              sessions: {
+                where: { status: 'RUNNING' },
+                select: {
+                  id: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   })
-  // TODO: return participations instead of courses (course, points)
-  return participation.map((p) => p.course)
+
+  if (!participant) return []
+
+  return participant.participations
+}
+
+interface JoinCourseArgs {
+  courseId: string
 }
 
 export async function joinCourse(
-  { courseId }: { courseId: string },
+  { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.upsert({
@@ -70,8 +102,12 @@ export async function joinCourse(
   })
 }
 
+interface LeaveCourseArgs {
+  courseId: string
+}
+
 export async function leaveCourse(
-  { courseId }: { courseId: string },
+  { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
@@ -87,8 +123,12 @@ export async function leaveCourse(
   })
 }
 
+interface GetCourseOverviewDataArgs {
+  courseId: string
+}
+
 export async function getCourseOverviewData(
-  { courseId }: { courseId: string },
+  { courseId }: GetCourseOverviewDataArgs,
   ctx: ContextWithOptionalUser
 ) {
   if (ctx.user?.sub) {
@@ -165,21 +205,27 @@ export async function registerParticipantFromLTI(
   // if there is no participant matching the SSO id from LTI
   // create a new participant and participant account
   if (!participant) {
-    // generate a random username that can be changed later on
-    const username = generatePassword.generate({
-      length: 8,
-      uppercase: true,
-      symbols: false,
-      numbers: true,
-    })
-
-    // generate a random password that can be changed later on
-    const password = generatePassword.generate({
-      length: 16,
-      uppercase: true,
-      symbols: true,
-      numbers: true,
-    })
+    let username
+    let password
+    if (process.env.NODE_ENV === 'development') {
+      username = 'tester'
+      password = 'abcd'
+    } else {
+      // generate a random username that can be changed later on
+      username = generatePassword.generate({
+        length: 8,
+        uppercase: true,
+        symbols: false,
+        numbers: true,
+      })
+      // generate a random password that can be changed later on
+      password = generatePassword.generate({
+        length: 16,
+        uppercase: true,
+        symbols: true,
+        numbers: true,
+      })
+    }
 
     const hash = await bcrypt.hash(password, 12)
 

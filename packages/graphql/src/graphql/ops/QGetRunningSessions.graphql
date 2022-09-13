@@ -1,0 +1,7 @@
+query GetRunningSessions($shortname: String!) {
+  runningSessions(shortname: $shortname) {
+    id
+    name
+    displayName
+  }
+}

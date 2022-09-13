@@ -1,0 +1,15 @@
+mutation VoteFeedbackResponse(
+  $id: Int!
+  $incrementUpvote: Int!
+  $incrementDownvote: Int!
+) {
+  voteFeedbackResponse(
+    id: $id
+    incrementUpvote: $incrementUpvote
+    incrementDownvote: $incrementDownvote
+  ) {
+    id
+    positiveReactions
+    negativeReactions
+  }
+}

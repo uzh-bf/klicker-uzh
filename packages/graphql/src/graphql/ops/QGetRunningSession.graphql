@@ -1,0 +1,37 @@
+# import "./FQuestionDataWithoutSolutions.graphql"
+
+query GetRunningSession($id: ID!) {
+  session(id: $id) {
+    id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
+    namespace
+    name
+    displayName
+    status
+    course {
+      displayName
+    }
+    activeBlock {
+      id
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      instances {
+        id
+        attachments {
+          id
+          href
+          name
+          originalName
+          description
+          type
+        }
+        ...QuestionDataWithoutSolutions
+      }
+    }
+  }
+}

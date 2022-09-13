@@ -30,20 +30,28 @@ export const Rules = {
 export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Reject'] } },
+    addConfusionTimestep: { __authz: { rules: ['Allow'] } },
+    changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
+    createCourse: { __authz: { rules: ['IsUserOrAdmin'] } },
+    createSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
     leaveCourse: { __authz: { rules: ['IsParticipant'] } },
+    resolveFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
+    respondToFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
 
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
+    feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
-    getParticipantCourses: { __authz: { rules: ['IsParticipant'] } },
+    participations: { __authz: { rules: ['IsParticipant'] } },
     self: { __authz: { rules: ['IsParticipant'] } },
-    getSession: { __authz: { rules: ['Allow'] } },
+    session: { __authz: { rules: ['Allow'] } },
+    sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
   },
 }

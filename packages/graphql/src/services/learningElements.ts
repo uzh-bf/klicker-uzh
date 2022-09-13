@@ -1,6 +1,7 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { shuffle } from '../lib/util'
 
 type QuestionResponse = {
   choices?: number[]
@@ -15,9 +16,12 @@ function evaluateQuestionResponse(
   switch (questionData.type) {
     case QuestionType.SC:
     case QuestionType.MC: {
+      // TODO: feedbacks only for selected options?
+      // const feedbacks = questionData.options.choices.filter((choice) =>
+      //   response.choices!.includes(choice.ix)
+      // )
+
       const feedbacks = questionData.options.choices
-        .map((choice, ix) => ({ ...choice, ix }))
-        .filter((choice) => response.choices?.includes(choice.ix))
 
       return {
         evaluation: {
@@ -36,7 +40,7 @@ function evaluateQuestionResponse(
 
 interface RespondToQuestionInstanceArgs {
   courseId: string
-  id: string
+  id: number
   response: QuestionResponse
 }
 
@@ -45,6 +49,7 @@ export async function respondToQuestionInstance(
   ctx: ContextWithUser
 ) {
   // TODO: if logged in and participating again, decrement the previous choice and increment the new one?
+  // TODO: only count the first response in the results? for all remaining, only give feedback? better estimate of the difficulty...
   const updatedInstance = await ctx.prisma.$transaction(async (prisma) => {
     // TODO: award points to the user when correctly responded
     const instance = await prisma.questionInstance.findUnique({
@@ -55,12 +60,14 @@ export async function respondToQuestionInstance(
 
     const results = instance.results?.valueOf() as AllQuestionResults
 
+    // TODO: handle the different question types
+
     const choices = response.choices?.reduce(
       (acc, ix) => ({
         ...acc,
         [ix]: acc[ix] + 1,
       }),
-      results.choices
+      results.choices as Record<string, number>
     )
 
     prisma.questionResponse.upsert({
@@ -73,14 +80,10 @@ export async function respondToQuestionInstance(
       create: {
         response,
         participant: {
-          connect: {
-            id: ctx.user.sub,
-          },
+          connect: { id: ctx.user.sub },
         },
         questionInstance: {
-          connect: {
-            id,
-          },
+          connect: { id },
         },
         participation: {
           connect: {
@@ -101,12 +104,13 @@ export async function respondToQuestionInstance(
     })
 
     return prisma.questionInstance.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         results: {
           choices,
+        },
+        participants: {
+          increment: 1,
         },
       },
     })
@@ -132,7 +136,8 @@ export async function getLearningElementData(
   { id }: GetLearningElementDataArgs,
   ctx: ContextWithOptionalUser
 ) {
-  // TODO: get previous responses of the participant
+  // TODO: get previous responses of the participant (last three days)
+  // TODO: ensure that previously answered are marked and shuffled to the end
 
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
@@ -142,7 +147,9 @@ export async function getLearningElementData(
     },
   })
 
-  const instancesWithoutSolution = element?.instances.map((instance) => {
+  if (!element) return null
+
+  const instancesWithoutSolution = element.instances.map((instance) => {
     const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
     if (
       !questionData ||
@@ -160,7 +167,11 @@ export async function getLearningElementData(
             ...questionData,
             options: {
               ...questionData.options,
-              choices: questionData.options.choices.map(pick(['value'])),
+              // TODO: shuffle the options and the instances?
+              // choices: shuffle(
+              //   questionData.options.choices.map(pick(['ix', 'value']))
+              // ),
+              choices: questionData.options.choices.map(pick(['ix', 'value'])),
             },
           },
         }
@@ -176,8 +187,10 @@ export async function getLearningElementData(
     }
   })
 
+  const shuffledInstances = shuffle(instancesWithoutSolution)
+
   return {
     ...element,
-    instances: instancesWithoutSolution,
+    instances: shuffledInstances,
   }
 }

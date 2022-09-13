@@ -1,7 +1,6 @@
 fragment QuestionData on QuestionInstance {
   questionData {
     id
-
     name
     type
     content
@@ -10,10 +9,33 @@ fragment QuestionData on QuestionInstance {
     ... on ChoicesQuestionData {
       options {
         choices {
+          ix
           correct
           feedback
           value
         }
+      }
+    }
+
+    ... on NumericalQuestionData {
+      options {
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
+        }
+      }
+    }
+
+    ... on FreeTextQuestionData {
+      options {
+        restrictions {
+          maxLength
+        }
+        solutions
       }
     }
   }

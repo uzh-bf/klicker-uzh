@@ -1,4 +1,4 @@
-import Head from "next/head";
+import Head from 'next/head'
 
 const fallback = () => (
   <>
@@ -8,6 +8,6 @@ const fallback = () => (
     <h1>It seems that you are currently offline.</h1>
     <h2>Connect your device to the internet in order to use Klicker UZH.</h2>
   </>
-);
+)
 
-export default fallback;
+export default fallback
