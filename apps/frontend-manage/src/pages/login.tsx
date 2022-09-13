@@ -3,6 +3,7 @@ import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import Image from 'next/image'
 import Router from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -32,8 +33,9 @@ function LoginForm() {
         {({ errors, touched, isSubmitting }) => {
           return (
             <div className="">
+              <div className='w-full mb-8 text-center sm:mb-12'><Image src="/KlickerLogo.png" width={300} height={90} alt='KlickerUZH Logo' /></div>
               <H1>Login</H1>
-              <div className="">
+              <div className='mb-10'>
                 <Form className="w-72 sm:w-96">
                   <RadixLabel.Root
                     htmlFor="email"
