@@ -13,6 +13,7 @@ query GetUserSessions {
         questionData {
           id
           name
+          type
         }
       }
     }

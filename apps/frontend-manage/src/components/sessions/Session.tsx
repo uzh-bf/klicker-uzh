@@ -19,6 +19,8 @@ interface SessionProps {
 
 const defaultProps = {}
 
+const questionTypesShort: Record<string, string> = {SC: 'SC', MC: 'MC', FREE_TEXT: 'FT', NUMERICAL: 'NR', KPRIM: 'KP'}
+
 function Session({
   sessionName,
   sessionList,
@@ -44,7 +46,8 @@ function Session({
                 {session.blocks.map((block: SessionBlock) => (
                   <div className="max-h-40" key={block.id}>
                     {block.instances.map((instance: QuestionInstance) => (
-                      <div key={instance.id}>{instance.id}</div>
+                      <div key={instance.id} className="flex flex-row p-0.5 border border-solid border-uzh-grey-60 rounded-md m-0.5 text-sm w-40">
+                        <div>{instance.questionData.name} ({questionTypesShort[instance.questionData.type]})</div></div>
                     ))}
                   </div>
                 ))}
