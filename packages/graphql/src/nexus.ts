@@ -419,6 +419,11 @@ export const SessionStatus = enumType({
   members: DB.SessionStatus,
 })
 
+export const AccessMode = enumType({
+  name: 'AccessMode',
+  members: DB.AccessMode,
+})
+
 export const Session = objectType({
   name: 'Session',
   definition(t) {
@@ -442,6 +447,8 @@ export const Session = objectType({
     t.nonNull.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
+
+    t.nonNull.field('accessMode', { type: AccessMode })
 
     t.list.field('feedbacks', { type: Feedback })
 
@@ -535,6 +542,13 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return SessionService.getRunningSessions(args, ctx)
+      },
+    })
+
+    t.list.nonNull.field('userSessions', {
+      type: Session,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
       },
     })
   },

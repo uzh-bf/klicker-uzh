@@ -1,0 +1,23 @@
+query GetUserSessions {
+  userSessions {
+    id
+    name
+    displayName
+    accessMode
+    status
+    blocks {
+      id
+      instances {
+        id
+        questionData {
+          id
+          name
+        }
+      }
+    }
+    course {
+      name
+      displayName
+    }
+  }
+}

@@ -48,6 +48,7 @@ export interface NexusGenInputs {
 }
 
 export interface NexusGenEnums {
+  AccessMode: "PUBLIC" | "RESTRICTED"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
@@ -216,6 +217,7 @@ export interface NexusGenObjects {
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // root type
+    accessMode: NexusGenEnums['AccessMode']; // AccessMode!
     activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks?: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
@@ -427,6 +429,7 @@ export interface NexusGenFieldTypes {
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     userProfile: NexusGenRootTypes['User'] | null; // User
+    userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -441,6 +444,7 @@ export interface NexusGenFieldTypes {
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // field return type
+    accessMode: NexusGenEnums['AccessMode']; // AccessMode!
     activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
     blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
     confusionFeedbacks: Array<NexusGenRootTypes['ConfusionTimestep'] | null> | null; // [ConfusionTimestep]
@@ -650,6 +654,7 @@ export interface NexusGenFieldTypeNames {
     session: 'Session'
     sessionLeaderboard: 'LeaderboardEntry'
     userProfile: 'User'
+    userSessions: 'Session'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -664,6 +669,7 @@ export interface NexusGenFieldTypeNames {
     questionData: 'QuestionData'
   }
   Session: { // field return type name
+    accessMode: 'AccessMode'
     activeBlock: 'SessionBlock'
     blocks: 'SessionBlock'
     confusionFeedbacks: 'ConfusionTimestep'

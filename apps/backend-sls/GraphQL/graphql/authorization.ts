@@ -54,5 +54,6 @@ export const AuthSchema = {
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['isUserOrAdmin'] } },
+    userSessions: { __authz: { rules: ['isUserOrAdmin'] } },
   },
 }
