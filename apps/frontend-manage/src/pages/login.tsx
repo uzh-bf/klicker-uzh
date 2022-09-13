@@ -44,9 +44,7 @@ function LoginForm() {
                   'w-full px-3 py-1 text-base leading-8 text-gray-700 transition-colors',
                   'duration-200 ease-in-out bg-gray-100 bg-opacity-50 border border-gray-300',
                   'rounded outline-none focus:ring-2 focus:bg-transparent focus:ring-indigo-200 focus:border-indigo-500',
-                  errors.email &&
-                    touched.email &&
-                    'border-red-400 bg-red-50'
+                  errors.email && touched.email && 'border-red-400 bg-red-50'
                 )}
               />
               <ErrorMessage

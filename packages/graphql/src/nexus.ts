@@ -274,6 +274,20 @@ export const LearningElement = objectType({
   },
 })
 
+export const User = objectType({
+  name: 'User',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.boolean('isActive')
+
+    t.nonNull.string('email')
+    t.nonNull.string('shortname')
+
+    t.string('description')
+  },
+})
+
 export const Participant = objectType({
   name: 'Participant',
   definition(t) {
@@ -447,6 +461,13 @@ export const Query = objectType({
           { id: ctx.user.sub },
           ctx
         )
+      },
+    })
+
+    t.field('userProfile', {
+      type: User,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return AccountService.getUserProfile({ id: ctx.user.sub }, ctx)
       },
     })
 

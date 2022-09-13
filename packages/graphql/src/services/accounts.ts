@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context } from '../lib/context'
+import { Context, ContextWithOptionalUser } from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -56,6 +56,17 @@ export async function loginUser(
   })
 
   return user.id
+}
+
+export async function getUserProfile(
+  { id }: { id: string },
+  ctx: ContextWithOptionalUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id },
+  })
+
+  return user
 }
 
 export function createParticipantToken(participantId: string) {
