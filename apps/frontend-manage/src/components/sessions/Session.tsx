@@ -19,7 +19,13 @@ interface SessionProps {
 
 const defaultProps = {}
 
-const questionTypesShort: Record<string, string> = {SC: 'SC', MC: 'MC', FREE_TEXT: 'FT', NUMERICAL: 'NR', KPRIM: 'KP'}
+const questionTypesShort: Record<string, string> = {
+  SC: 'SC',
+  MC: 'MC',
+  FREE_TEXT: 'FT',
+  NUMERICAL: 'NR',
+  KPRIM: 'KP',
+}
 
 function Session({
   sessionName,
@@ -43,11 +49,19 @@ function Session({
             </div>
             <div className="flex flex-row">
               <div className="flex flex-row flex-1">
-                {session.blocks.map((block: SessionBlock) => (
+                {session.blocks.map((block: SessionBlock, index: number) => (
                   <div className="max-h-40" key={block.id}>
+                    <div className="mb-1 ml-1 text-sm">Block {index}</div>
                     {block.instances.map((instance: QuestionInstance) => (
-                      <div key={instance.id} className="flex flex-row p-0.5 border border-solid border-uzh-grey-60 rounded-md m-0.5 text-sm w-40">
-                        <div>{instance.questionData.name} ({questionTypesShort[instance.questionData.type]})</div></div>
+                      <div
+                        key={instance.id}
+                        className="flex flex-row p-0.5 border border-solid border-uzh-grey-60 rounded-md m-0.5 text-sm w-40"
+                      >
+                        <div>
+                          {instance.questionData.name} (
+                          {questionTypesShort[instance.questionData.type]})
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ))}
