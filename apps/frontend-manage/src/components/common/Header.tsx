@@ -22,7 +22,7 @@ function Header({ displayName, user }: HeaderProps): React.ReactElement {
         <Button.Icon className="mr-2">
           <FontAwesomeIcon icon={faUserCircle} size="lg" />
         </Button.Icon>
-        <Button.Label className="">{user.shortname}</Button.Label>
+        <Button.Label>{user.shortname}</Button.Label>
       </Button>
     </div>
   )
