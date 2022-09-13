@@ -118,6 +118,7 @@ model AttachmentInstance {
 enum QuestionType {
   SC
   MC
+  KPRIM
   FREE_TEXT
   NUMERICAL
 }

@@ -1311,7 +1311,7 @@ async function main(prisma: Prisma.PrismaClient) {
       name: 'BF1 VL1',
       displayName: 'Banking und Finance I - VL1',
       scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
-      scheduledEndAt: new Date('2022-09-12T23:59:59.999Z'),
+      scheduledEndAt: new Date('2022-09-15T23:59:59.999Z'),
       description: `
 Diese Woche lernen wir...
 
@@ -1350,6 +1350,7 @@ Mehr bla bla...
       },
     },
     update: {
+      scheduledEndAt: new Date('2022-09-15T23:59:59.999Z'),
       description: `
 Diese Woche lernen wir...
 
