@@ -1,7 +1,6 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithUser } from '../lib/context'
-import { shuffle } from '../lib/util'
 
 interface GetMicroSessionDataArgs {
   id: string
@@ -59,10 +58,10 @@ export async function getMicroSessionData(
     }
   })
 
-  const shuffledInstances = shuffle(instancesWithoutSolution)
+  // const shuffledInstances = shuffle(instancesWithoutSolution)
 
   return {
     ...microSession,
-    instances: shuffledInstances,
+    instances: instancesWithoutSolution,
   }
 }

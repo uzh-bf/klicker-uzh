@@ -60,7 +60,11 @@ export const QuestionData = interfaceType({
     t.nonNull.boolean('isDeleted')
   },
   resolveType: (item) => {
-    if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
+    if (
+      item.type === DB.QuestionType.SC ||
+      item.type === DB.QuestionType.MC ||
+      item.type === DB.QuestionType.KPRIM
+    ) {
       return 'ChoicesQuestionData'
     } else if (item.type === DB.QuestionType.NUMERICAL) {
       return 'NumericalQuestionData'

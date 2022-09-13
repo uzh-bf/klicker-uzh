@@ -1,3 +1,4 @@
+import { gradeQuestionKPRIM, gradeQuestionSC } from '@klicker-uzh/grading'
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
@@ -16,25 +17,54 @@ function evaluateQuestionResponse(
   switch (questionData.type) {
     case QuestionType.SC:
     case QuestionType.MC: {
+      const data = questionData as ChoicesQuestionData
+
       // TODO: feedbacks only for selected options?
       // const feedbacks = questionData.options.choices.filter((choice) =>
       //   response.choices!.includes(choice.ix)
       // )
 
-      const feedbacks = questionData.options.choices
+      const feedbacks = data.options.choices
+      const solution = data.options.choices.reduce<number[]>((acc, choice) => {
+        if (choice.correct) return [...acc, choice.ix]
+        return acc
+      }, [])
+
+      const isCorrect = gradeQuestionSC({
+        response: response.choices as number[],
+        solution,
+      })
 
       return {
-        evaluation: {
-          feedbacks,
-          choices: results.choices,
-        },
+        feedbacks,
+        choices: results.choices,
+        points: isCorrect ? 100 : 0,
+      }
+    }
+
+    case QuestionType.KPRIM: {
+      const data = questionData as ChoicesQuestionData
+
+      const feedbacks = data.options.choices
+      const solution = data.options.choices.reduce<number[]>((acc, choice) => {
+        if (choice.correct) return [...acc, choice.ix]
+        return acc
+      }, [])
+
+      const isCorrect = gradeQuestionKPRIM({
+        response: response.choices as number[],
+        solution,
+      })
+
+      return {
+        feedbacks,
+        choices: results.choices,
+        points: isCorrect ? 100 : 0,
       }
     }
 
     default:
-      return {
-        evaluation: null,
-      }
+      return null
   }
 }
 
@@ -48,27 +78,63 @@ export async function respondToQuestionInstance(
   { courseId, id, response }: RespondToQuestionInstanceArgs,
   ctx: ContextWithUser
 ) {
-  // TODO: if logged in and participating again, decrement the previous choice and increment the new one?
+  let evaluation = null
+
   // TODO: only count the first response in the results? for all remaining, only give feedback? better estimate of the difficulty...
   const updatedInstance = await ctx.prisma.$transaction(async (prisma) => {
     // TODO: award points to the user when correctly responded
     const instance = await prisma.questionInstance.findUnique({
       where: { id },
+      include: {
+        responses: {
+          where: {
+            participant: {
+              id: ctx.user.sub,
+            },
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 1,
+        },
+      },
     })
 
-    if (!instance) return null
+    const questionData =
+      instance?.questionData?.valueOf() as AllQuestionTypeData
+    const results = instance?.results?.valueOf() as AllQuestionResults
 
-    const results = instance.results?.valueOf() as AllQuestionResults
+    if (!questionData) return null
 
-    // TODO: handle the different question types
+    evaluation = evaluateQuestionResponse(questionData, results, response)
 
-    const choices = response.choices?.reduce(
-      (acc, ix) => ({
-        ...acc,
-        [ix]: acc[ix] + 1,
-      }),
-      results.choices as Record<string, number>
-    )
+    const updatedResults: {
+      choices?: Record<string, number>
+    } = {}
+
+    switch (questionData.type) {
+      case QuestionType.SC:
+      case QuestionType.MC:
+      case QuestionType.KPRIM: {
+        updatedResults.choices = response.choices!.reduce(
+          (acc, ix) => ({
+            ...acc,
+            [ix]: acc[ix] + 1,
+          }),
+          results.choices as Record<string, number>
+        )
+
+        break
+      }
+
+      case QuestionType.NUMERICAL: {
+        break
+      }
+
+      case QuestionType.FREE_TEXT: {
+        break
+      }
+    }
 
     prisma.questionResponse.upsert({
       where: {
@@ -106,21 +172,13 @@ export async function respondToQuestionInstance(
     return prisma.questionInstance.update({
       where: { id },
       data: {
-        results: {
-          choices,
-        },
+        results: updatedResults,
         participants: {
           increment: 1,
         },
       },
     })
   })
-
-  const { evaluation } = evaluateQuestionResponse(
-    updatedInstance?.questionData?.valueOf() as AllQuestionTypeData,
-    updatedInstance?.results?.valueOf() as AllQuestionResults,
-    response
-  )
 
   return {
     ...updatedInstance,

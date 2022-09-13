@@ -60,8 +60,10 @@
     "typescript": "4.8.2"
   },
   "dependencies": {
+    "@klicker-uzh/grading": "^2.0.0-alpha.0",
     "@klicker-uzh/prisma": "^2.0.0-alpha.0",
     "bcryptjs": "2.4.3",
+    "dayjs": "1.11.5",
     "dotenv": "16.0.1",
     "generate-password": "1.7.0",
     "graphql": "16.6.0",
