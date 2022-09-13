@@ -216,6 +216,7 @@ type Query {
   self: Participant
   session(id: ID!): Session
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  userProfile: User
 }
 
 interface QuestionData {
@@ -284,4 +285,12 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type User {
+  description: String
+  email: String!
+  id: ID!
+  isActive: Boolean!
+  shortname: String!
 }
