@@ -108,21 +108,6 @@ export async function respondToFeedback(
   return feedback
 }
 
-// change value of isResolved property of feedback
-export async function resolveFeedback(
-  { id, newValue }: { id: number; newValue: boolean },
-  ctx: ContextWithOptionalUser
-) {
-  const feedback = await ctx.prisma.feedback.update({
-    where: { id },
-    data: {
-      isResolved: newValue,
-      resolvedAt: new Date(),
-    },
-  })
-  return feedback
-}
-
 // add confusion timestep to session
 interface AddConfusionTimestepArgs {
   sessionId: string
@@ -162,6 +147,7 @@ export async function addConfusionTimestep(
   }
 }
 
+// publish / unpublish a feedback to be visible to students
 export async function publishFeedback(
   { id, isPublished }: { id: number; isPublished: boolean },
   ctx: ContextWithUser
@@ -176,6 +162,7 @@ export async function publishFeedback(
   })
 }
 
+// pin / unpin a feedback on the lecturers running session screen
 export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
   ctx: ContextWithUser
@@ -188,4 +175,19 @@ export async function pinFeedback(
       isPinned: isPinned,
     },
   })
+}
+
+// resolve / unresolve a feedback
+export async function resolveFeedback(
+  { id, isResolved }: { id: number; isResolved: boolean },
+  ctx: ContextWithUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: isResolved,
+      resolvedAt: isResolved ? new Date() : null,
+    },
+  })
+  return feedback
 }

@@ -19,7 +19,7 @@ interface Props {
   handleDeleteFeedback: () => void
   handlePinFeedback: (id: number, isPinned: boolean) => void
   handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (id: string, resolvedState: boolean) => void
+  handleResolveFeedback: (id: number, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void
   handleDeleteFeedbackResponse: (id: string, responseId: string) => void
   isActive?: boolean

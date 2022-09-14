@@ -879,7 +879,7 @@ export interface NexusGenArgTypes {
     }
     resolveFeedback: { // args
       id: number; // Int!
-      newValue: boolean; // Boolean!
+      isResolved: boolean; // Boolean!
     }
     respondToFeedback: { // args
       id: number; // Int!

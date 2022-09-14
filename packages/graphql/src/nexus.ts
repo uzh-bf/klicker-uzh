@@ -755,7 +755,7 @@ export const Mutation = objectType({
       type: Feedback,
       args: {
         id: nonNull(intArg()),
-        newValue: nonNull(booleanArg()),
+        isResolved: nonNull(booleanArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.resolveFeedback(args, ctx)

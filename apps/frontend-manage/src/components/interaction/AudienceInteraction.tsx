@@ -20,8 +20,9 @@ import {
   ChangeSessionSettingsDocument,
   Feedback,
   GetCockpitSessionDocument,
-  PublishFeedbackDocument,
   PinFeedbackDocument,
+  PublishFeedbackDocument,
+  ResolveFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
@@ -48,14 +49,13 @@ function AudienceInteraction({
 }: Props) {
   // TODO: implement!!
   const deleteFeedback = (props: any) => null
-  // const pinFeedback = (props: any) => null
-  const resolveFeedback = (props: any) => null
   const respondToFeedback = (props: any) => null
   const deleteFeedbackResponse = (props: any) => null
 
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
+  const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
 
   //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
   //   const [pinFeedback] = useMutation(PinFeedbackMutation)
@@ -193,7 +193,7 @@ function AudienceInteraction({
                   isPublished: boolean
                 ) => {
                   publishFeedback({
-                    variables: { id: feedbackId , isPublished: isPublished },
+                    variables: { id: feedbackId, isPublished: isPublished },
                   })
                   push([
                     'trackEvent',
@@ -203,17 +203,17 @@ function AudienceInteraction({
                   ])
                 }}
                 handleResolveFeedback={(
-                  feedbackId: string,
-                  resolvedState: boolean
+                  feedbackId: number,
+                  isResolved: boolean
                 ) => {
                   resolveFeedback({
-                    variables: { sessionId, feedbackId, resolvedState },
+                    variables: { id: feedbackId, isResolved: isResolved },
                   })
                   push([
                     'trackEvent',
                     'Running Session',
                     'Feedback Resolved',
-                    String(resolvedState),
+                    String(isResolved),
                   ])
                 }}
                 handleRespondToFeedback={(
