@@ -65,20 +65,7 @@ export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
 
   if (!user) return null
 
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '1w',
-    }
-  )
-
-  ctx.res.cookie('user_token', jwt, {
+  ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
@@ -161,9 +148,7 @@ export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
 
   if (!participant) return null
 
-  const jwt = createParticipantToken(participant.id)
-
-  ctx.res.cookie('participant_token', jwt, {
+  ctx.res.cookie('participant_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
