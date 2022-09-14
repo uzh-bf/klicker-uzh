@@ -25,6 +25,7 @@ import {
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
+  RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
@@ -49,15 +50,13 @@ function AudienceInteraction({
   isModerationEnabled,
   isGamificationEnabled,
 }: Props) {
-  // TODO: implement!!
-  const respondToFeedback = (props: any) => null
-
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
   const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
   const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
+  const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
 
   //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
   //   const [pinFeedback] = useMutation(PinFeedbackMutation)
@@ -166,9 +165,7 @@ function AudienceInteraction({
                   deleteFeedback({ variables: { id: feedbackId } })
                   push(['trackEvent', 'Running Session', 'Feedback Deleted'])
                 }}
-                handleDeleteFeedbackResponse={(
-                  responseId: number,
-                ) => {
+                handleDeleteFeedbackResponse={(responseId: number) => {
                   deleteFeedbackResponse({
                     variables: { id: responseId },
                   })
@@ -218,11 +215,11 @@ function AudienceInteraction({
                   ])
                 }}
                 handleRespondToFeedback={(
-                  feedbackId: string,
+                  feedbackId: number,
                   response: string
                 ) => {
                   respondToFeedback({
-                    variables: { sessionId, feedbackId, response },
+                    variables: { id: feedbackId, responseContent: response },
                   })
                   push([
                     'trackEvent',

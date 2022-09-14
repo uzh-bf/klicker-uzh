@@ -11,12 +11,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useFormik } from 'formik'
+import { Field, Form, Formik, useFormik } from 'formik'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface IFeedback {
+  id: number
   content: string
   createdAt: string
   votes: number
@@ -30,15 +31,12 @@ interface Props extends IFeedback {
   onDeleteFeedback: () => void
   onPinFeedback: (pinState: boolean) => void
   onResolveFeedback: (resolvedState: boolean) => void
-  onRespondToFeedback: (response: string) => void
+  onRespondToFeedback: (feebdackId: number, response: string) => void
   onDeleteResponse: (responseId: number) => void
 }
 
-const defaultProps = {
-  onDelete: (f): any => f,
-}
-
 function Feedback({
+  id,
   content,
   createdAt,
   votes,
@@ -62,7 +60,7 @@ function Feedback({
       response: Yup.string().min(1).required(),
     }),
     onSubmit: (values, { resetForm }) => {
-      onRespondToFeedback(values.response)
+      onRespondToFeedback(id, values.response)
       resetForm()
     },
   })
@@ -184,23 +182,55 @@ function Feedback({
         </div>
         <div className="flex print:hidden">
           <div className="flex-1">
-            // TODO: form
-            {/* <Form className="h-full">
-              <TextArea
-                autoFocus
-                className="h-full"
-                disabled={resolved}
-                id="response"
-                placeholder={
-                  resolved
-                    ? 'Reopen the feedback to add a new response...'
-                    : 'Write your response here...'
+            <Formik
+              initialValues={{ respondToFeedbackInput: '' }}
+              onSubmit={(values, { setSubmitting }) => {
+                if (values.respondToFeedbackInput !== '') {
+                  console.log('id', id, 'values', values.respondToFeedbackInput)
+                  onRespondToFeedback(id, values.respondToFeedbackInput)
+                  values.respondToFeedbackInput = ''
+
+                  setTimeout(() => {
+                    setSubmitting(false)
+                  }, 700)
+                } else {
+                  setSubmitting(false)
                 }
-                rows={3}
-                value={formik.values.response}
-                onChange={formik.handleChange}
-              />
-            </Form> */}
+              }}
+            >
+              {({ isSubmitting }) => (
+                <div className="flex-1">
+                  <Form>
+                    <Field
+                      className={twMerge(
+                        'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm',
+                        resolved && 'bg-gray-100 opacity-50'
+                      )}
+                      component="textarea"
+                      rows="3"
+                      name="respondToFeedbackInput"
+                      placeholder={
+                        resolved
+                          ? 'Reopen the feedback to add a new response...'
+                          : 'Write your response here...'
+                      }
+                      disabled={resolved}
+                      // value={formik.values.response}
+                    />
+                    <Button
+                      className="float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
+                      type="submit"
+                      disabled={isSubmitting || resolved}
+                    >
+                      <Button.Icon className="mr-1">
+                        <FontAwesomeIcon icon={faPaperPlane} />
+                      </Button.Icon>
+                      <Button.Label>Respond</Button.Label>
+                    </Button>
+                  </Form>
+                </div>
+              )}
+            </Formik>
           </div>
           <div className="flex flex-col flex-initial gap-2 pl-4">
             <Button
@@ -234,7 +264,7 @@ function Feedback({
               )}
               {resolved ? 'Reopen' : 'Resolve'}{' '}
             </Button>
-            <Button
+            {/* <Button
               className="px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
               disabled={resolved || !formik.isValid || !formik.dirty}
               onClick={() => {
@@ -246,14 +276,12 @@ function Feedback({
                 <FontAwesomeIcon icon={faPaperPlane} />
               </Button.Icon>
               <Button.Label>Respond</Button.Label>
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
     </div>
   )
 }
-
-Feedback.defaultProps = defaultProps
 
 export default Feedback

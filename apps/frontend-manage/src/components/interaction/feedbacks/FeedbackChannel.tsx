@@ -20,7 +20,7 @@ interface Props {
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
   handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
   handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
-  handleRespondToFeedback: (id: string, response: string) => void
+  handleRespondToFeedback: (feedbackId: number, response: string) => void
   handleDeleteFeedbackResponse: (responseId: number) => void
   isActive?: boolean
   isPublic?: boolean
@@ -130,6 +130,7 @@ function FeedbackChannel({
               )}
               <div className="flex-1">
                 <Feedback
+                  id={id}
                   content={content}
                   createdAt={createdAt}
                   pinned={isPinned}
@@ -145,7 +146,7 @@ function FeedbackChannel({
                   onResolveFeedback={(resolvedState) =>
                     handleResolveFeedback(id, resolvedState)
                   }
-                  onRespondToFeedback={(response) =>
+                  onRespondToFeedback={(id, response) =>
                     handleRespondToFeedback(id, response)
                   }
                 />
