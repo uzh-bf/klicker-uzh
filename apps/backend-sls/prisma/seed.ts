@@ -70,7 +70,7 @@ async function prepareParticipant({
   const data = {
     ...args,
     password: hashedPassword,
-    avatar: 'apple-icon-180.png',
+    avatar: '41b98856a8c221db667cf066f34b931eff048c32',
   }
 
   return {
@@ -360,8 +360,17 @@ async function main(prisma: Prisma.PrismaClient) {
   const course = await prisma.course.upsert(
     prepareCourse({
       id: '064ef09b-07b9-4bfd-b657-5c77d7123e93',
-      name: 'Banking and Finance I',
-      displayName: 'Banking and Finance I',
+      name: 'Test Course 1',
+      displayName: 'Test Course 1',
+      ownerId: user.id,
+    })
+  )
+
+  const courseBF1 = await prisma.course.upsert(
+    prepareCourse({
+      id: '064ef09b-07b9-4bfd-b657-5c77d7123e93',
+      name: 'Banking und Finance 1',
+      displayName: 'Banking und Finance 1',
       ownerId: user.id,
     })
   )
@@ -440,7 +449,6 @@ async function main(prisma: Prisma.PrismaClient) {
               'Der Shareholder Value ist *kein* Ziel des klassischen Zieldreiecks.',
           },
         ],
-        ownerId: user.id,
       },
       {
         id: 1,
@@ -477,7 +485,6 @@ async function main(prisma: Prisma.PrismaClient) {
               'Der Treasurer kümmert sich um das ganze Cash- und Credit-Management.',
           },
         ],
-        ownerId: user.id,
       },
       {
         id: 2,
@@ -525,7 +532,6 @@ async function main(prisma: Prisma.PrismaClient) {
               'Es handelt sich bei allen oben genannten Personen/Gruppen um Stakeholder.',
           },
         ],
-        ownerId: user.id,
       },
       {
         id: 3,
@@ -559,7 +565,6 @@ async function main(prisma: Prisma.PrismaClient) {
               'Das Konto Flüssige Mittel zeigt die Mittelverwendung auf und steht somit auf der Aktivseite der Bilanz.',
           },
         ],
-        ownerId: user.id,
       },
       {
         id: 4,
@@ -594,7 +599,6 @@ async function main(prisma: Prisma.PrismaClient) {
             value: 'Finanzierungsfunktion',
           },
         ],
-        ownerId: user.id,
       },
       {
         id: 5,
@@ -626,7 +630,6 @@ async function main(prisma: Prisma.PrismaClient) {
             },
           ],
         },
-        ownerId: user.id,
       },
       {
         id: 6,
@@ -640,7 +643,6 @@ async function main(prisma: Prisma.PrismaClient) {
           },
           solutions: ['Schweiz', 'CH'],
         },
-        ownerId: user.id,
       },
       {
         id: 7,
@@ -666,7 +668,6 @@ async function main(prisma: Prisma.PrismaClient) {
             },
           ],
         },
-        ownerId: user.id,
       },
       {
         id: 8,
@@ -685,27 +686,212 @@ async function main(prisma: Prisma.PrismaClient) {
             'Beispiele sind die meisten Länder in Europa',
           ],
         },
-        ownerId: user.id,
       },
-    ].map((data) => prisma.question.upsert(prepareQuestion(data)))
+      {
+        id: 9,
+        name: 'Zieldreieck',
+        content: 'Welche der folgenden Aussagen ist **falsch**?',
+        contentPlain: 'Welche der folgenden Aussagen ist falsch?',
+        type: Prisma.QuestionType.SC,
+        choices: [
+          {
+            feedback:
+              'Falsch! Zwischen den Zielsetzungen des klassischen finanziellen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+            value:
+              'Zwischen den Zielsetzungen des klassischen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+          },
+          {
+            feedback:
+              'Korrekt! Je höher die angestrebte Sicherheit, desto weniger Risiko wird eingegangen, was wiederum die Rentabilität senkt.',
+            correct: true,
+            value:
+              'Das Ziel einer hohen Rentabilität erhöht auch die Sicherheit eines Unternehmens.',
+          },
+          {
+            feedback:
+              'Falsch! Die Unabhängigkeit ist kein Ziel des klassischen Zieldreiecks.',
+            value:
+              'Unabhängigkeit ist *kein* Ziel des klassischen Zieldreiecks.',
+          },
+          {
+            feedback:
+              'Falsch! Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+            value:
+              'Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+          },
+          {
+            feedback:
+              'Falsch! Der Shareholder Value ist kein Ziel des klassischen Zieldreiecks.',
+            value:
+              'Der Shareholder Value ist *kein* Ziel des klassischen Zieldreiecks.',
+          },
+        ],
+      },
+      {
+        id: 10,
+        name: 'Microlearning 1.1',
+        content:
+          'Welche der folgenden Aussagen zur **Interaktion zwischen Kapitalnehmer:innen und Kapitalgeber:innen** ist korrekt?',
+        contentPlain:
+          'Welche der folgenden Aussagen zur Interaktion zwischen Kapitalnehmer:innen und Kapitalgeber:innen ist korrekt?',
+        type: Prisma.QuestionType.SC,
+        choices: [
+          {
+            correct: true,
+            value:
+              'Kapitalnehmer:innen und Kapitalgeber:innen interagieren via Finanzmärkte oder Finanzintermediäre miteinander.',
+            feedback: 'Diese Aussage ist korrekt.',
+          },
+          {
+            value:
+              'Haushalte gehören typischerweise zu den Kapitalnehmer:innen.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Haushalte gehören typischerweise zu den Kapitalgeber:innen, die sparen und ihr Erspartes bei Finanzintermediären anlegen oder via Finanzmärkte direkt in Kapitalnehmer:innen investieren.',
+          },
+          {
+            value:
+              'Kapitalgeber:innen haben typischerweise einen Finanzierungsbedarf, den sie selber nicht decken können.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Kapitalgeber:innen decken ihren eigenen Finanzierungsbedarf und leihen zusätzlich ihre Ersparnisse aus.',
+          },
+          {
+            value:
+              'Finanzintermediäre treten gegenüber Kapitalgeber:innen auf, nicht aber gegenüber Kapitalnehmer:innen.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Finanzintermediäre treten sowohl gegenüber Kapitalgeber:innen als auch Kapitalnehmer:innen auf.',
+          },
+          {
+            value: 'Keine der Aussagen ist korrekt.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Eine der anderen Aussagen ist korrekt.',
+          },
+        ],
+      },
+      {
+        id: 11,
+        name: 'Microlearning 1.2',
+        content:
+          'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil in der **Corporate Finance**?',
+        contentPlain:
+          'Welcher der folgenden Entscheidungsbereiche ist nicht Teil in der Corporate Finance?',
+        type: Prisma.QuestionType.SC,
+        choices: [
+          {
+            value: 'Investitionsfragen',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Investitionsfragen gehören zur Corporate Finance.',
+          },
+          {
+            value: 'Rückzahlung von Kapital',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Die Rückzahlung von Kapital gehört zur Corporate Finance.',
+          },
+          {
+            value: 'Finanzierungsfragen',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Finanzierungsfragen gehören zur Corporate Finance.',
+          },
+          {
+            value: 'Dividendenpolitik',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Die Dividendenpolitik gehört zur Corporate Finance.',
+          },
+          {
+            correct: true,
+            value: 'Führung von Mitarbeiter:innen',
+            feedback:
+              'Diese Aussage ist korrekt. Die Führung von Mitarbeiter:innen ist traditionell Teil des Human Ressource Managements. Die Corporate Finance beschäftigt sich eher mit Fragestellungen im Bereich Finanzierung und Investitionen.',
+          },
+        ],
+      },
+      {
+        id: 12,
+        name: 'Microlearning 1.3',
+        content:
+          'Welche der folgenden Aussagen zum Aufbau einer **Bilanz** ist **korrekt**?',
+        contentPlain:
+          'Welche der folgenden Aussagen zum Aufbau einer Bilanz ist korrekt?',
+        type: Prisma.QuestionType.SC,
+        choices: [
+          {
+            value:
+              'Konten, welche die Kapitalbewirtschaftung zeigen, sind auf der Passivseite einer Bilanz zu finden.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Konten, welche die Kapitalbewirtschaftung zeigen, sind auf der Aktivseite der Bilanz abgebildet.',
+          },
+          {
+            value: 'Eine Bilanz besteht aus einer Ertrags- und Passivseite.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Eine Bilanz besteht aus einer Aktiv- und Passivseite. Die Ertragskonten hingegen sind in der Erfolgsrechnung zu finden.',
+          },
+          {
+            value:
+              'Auf der Passivseite der Bilanz werden die Aktiven eines Unternehmens abgebildet.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Die Aktiven sind auf der Aktivseite der Bilanz zu finden.',
+          },
+          {
+            correct: true,
+            value: 'Das sogenannte Anlagevermögen zeigt den Kapitaleinsatz.',
+            feedback: 'Diese Aussage ist korrekt.',
+          },
+          {
+            value: 'Keine der Aussagen ist korrekt.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Eine der anderen Aussagen ist korrekt.',
+          },
+        ],
+      },
+      {
+        id: 13,
+        name: 'Microlearning 1.4',
+        content:
+          'Welche der folgenden Aussagen bezüglich des **finanzwirtschaftlichen Zieldreiecks** ist **korrekt**?',
+        contentPlain:
+          'Welche der folgenden Aussagen bezüglich des finanzwirtschaftlichen Zieldreiecks ist korrekt?',
+        type: Prisma.QuestionType.SC,
+        choices: [
+          {
+            value:
+              'Es kann nie mehr als eine Dimension des finanzwirtschaftlichen Zieldreiecks erfolgreich umgesetzt werden.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Den Zielen der Liquidität und Sicherheit kann beispielsweise gleichzeitig nachgegangen werden.',
+          },
+          {
+            value:
+              'Die Ziele des finanzwirtschaftlichen Zieldreiecks sind Liquidität, Sicherheit und Stabilität.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Die Ziele des finanzwirtschaftlichen Zieldreiecks sind Liquidität, Sicherheit und Rentabilität.',
+          },
+          {
+            value:
+              'Das Ziel der Sicherheit stellt die Priorität jedes Unternehmens dar.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Es gibt keine allgemeingültige Priorität, die für jedes Unternehmen gilt.',
+          },
+          {
+            correct: true,
+            value:
+              'Die Liquidität und Sicherheit begünstigen sich gegenseitig.',
+            feedback: 'Diese Aussage ist korrekt.',
+          },
+          {
+            value: 'Keine der Aussagen ist korrekt.',
+            feedback:
+              'Diese Aussage ist nicht korrekt. Eine der anderen Aussagen ist korrekt.',
+          },
+        ],
+      },
+    ].map((data) =>
+      prisma.question.upsert(prepareQuestion({ ownerId: user.id, ...data }))
+    )
   )
 
   const instances = await Promise.all(
-    [
-      ...questions.map((question) => ({
-        id: question.id,
-        question,
-      })),
-      ...questions.map((question) => ({
-        id: question.id + questions.length,
-        question,
-      })),
-      ...questions.map((question) => ({
-        id: question.id + questions.length * 2,
-        question,
-      })),
-    ].map((data) =>
-      prisma.questionInstance.upsert(prepareQuestionInstance(data))
+    [...questions, ...questions, ...questions].map((data, ix) =>
+      prisma.questionInstance.upsert(
+        prepareQuestionInstance({ id: ix, question: data })
+      )
     )
   )
 
@@ -797,6 +983,28 @@ Diese Woche lernen wir...
 Mehr bla bla...
             `,
       instanceIds: [17, 18, 19, 20],
+      courseId: course.id,
+      ownerId: user.id,
+    })
+  )
+
+  const microSession1BF1 = await prisma.microSession.upsert(
+    prepareMicroSession({
+      id: 'e3c71b0b-a8cf-43e9-8373-85a31673b178',
+      name: 'BF1 Microlearning 1',
+      displayName: 'Vorlesung 1',
+      scheduledStartAt: new Date('2022-09-14T07:00:00.000Z'),
+      scheduledEndAt: new Date('2022-09-22T09:00:00.000Z'),
+      description: `
+### Einführung
+
+![](https://sos-ch-dk-2.exo.io/klicker-prod/img/microlearning_bf1_1.png)
+
+Was ist Corporate Finance? Gemäss Damodaran umfasst die Corporate Finance alle Entscheidungen von Unternehmen, die finanzielle Auswirkungen haben. Diese umfassen u.a. Investitionsentscheide, Finanzierungsentscheide oder Dividendenentscheide.
+
+Du lernst zudem das finanzwirtschaftliche Zieldreieck kennen, bei dem sich die Rentabilität, Liquidität und Sicherheit einander gegenüber stehen. Zudem lernst du das oberste Ziel der unternehmerischen Tätigkeit kennen, nämlich die langfristige Maximierung des Unternehmenswertes.
+`,
+      instanceIds: [10, 11, 12, 13],
       courseId: course.id,
       ownerId: user.id,
     })

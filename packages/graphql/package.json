@@ -13,6 +13,7 @@
     "build": "NODE_ENV=production tsup --dts",
     "build:hive": "hive schema:publish src/graphql/schema.graphql",
     "build:watch": "NODE_ENV=development tsup --watch --dts",
+    "format": "prettier --write .",
     "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",

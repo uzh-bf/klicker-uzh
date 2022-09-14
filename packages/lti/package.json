@@ -11,6 +11,7 @@
     "analyze": "size-limit --why",
     "build": "NODE_ENV=production tsup",
     "build:watch": "NODE_ENV=development tsup --watch",
+    "format": "prettier --write .",
     "size": "size-limit"
   },
   "engines": {
