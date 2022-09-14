@@ -732,3 +732,49 @@ export async function getRunningSessions(
 
   return userWithSessions.sessions
 }
+
+export async function getUserSessions(
+  { userId }: { userId: string },
+  ctx: ContextWithOptionalUser
+) {
+  const userSessions = await ctx.prisma.session.findMany({
+    where: {
+      ownerId: userId,
+    },
+    include: {
+      course: true,
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  return userSessions.map((session) => {
+    return {
+      id: session.id,
+      name: session.name,
+      displayName: session.displayName,
+      accessMode: session.accessMode,
+      status: session.status,
+      createdAt: session.createdAt,
+      blocks: session.blocks.map((block) => {
+        return {
+          id: block.id,
+          instances: block.instances.map((instance) => {
+            return {
+              id: instance.id,
+              questionData: instance.questionData,
+            }
+          }),
+        }
+      }),
+      course: {
+        id: session.course?.id,
+        name: session.course?.name,
+        displayName: session.course?.displayName,
+      },
+    }
+  })
+}

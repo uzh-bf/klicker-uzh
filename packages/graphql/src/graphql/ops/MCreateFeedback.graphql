@@ -9,6 +9,10 @@ mutation CreateFeedback(
     isPublished: $isPublished
   ) {
     id
+    isPublished
+    isPinned
+    isResolved
     content
+    votes
   }
 }

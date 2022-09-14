@@ -1,0 +1,3 @@
+mutation LogoutUser($userId: ID!) {
+  logoutUser(userId: $userId)
+}
