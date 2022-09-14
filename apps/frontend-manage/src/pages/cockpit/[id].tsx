@@ -1,5 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
+  AggregatedConfusionFeedbacks,
+  Feedback,
   GetCockpitSessionDocument,
   LecturerSession,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -236,8 +238,8 @@ function Cockpit() {
 
       AUDIENCE INTERACTION
       <AudienceInteraction
-        confusionValues={confusionFeedbacks}
-        feedbacks={feedbacks}
+        confusionValues={confusionFeedbacks ? confusionFeedbacks[0] as AggregatedConfusionFeedbacks : undefined}
+        feedbacks={feedbacks as Feedback[]}
         isAudienceInteractionActive={isAudienceInteractionActive}
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}

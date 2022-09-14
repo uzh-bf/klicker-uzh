@@ -2,7 +2,6 @@ import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
 import { Button, Switch } from '@uzh-bf/design-system'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
@@ -17,9 +16,12 @@ import { twMerge } from 'tailwind-merge'
 // import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
 import { useMutation } from '@apollo/client'
 import {
+  AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
+  Feedback,
   GetCockpitSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import ConfusionCharts from './confusion/ConfusionCharts'
 
 // import ConfusionCharts from './confusion/ConfusionCharts'
 // import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -27,8 +29,8 @@ import {
 interface Props {
   sessionId: string
   sessionName: string
-  confusionValues: any
-  feedbacks: any[]
+  confusionValues?: AggregatedConfusionFeedbacks
+  feedbacks?: Feedback[]
   isAudienceInteractionActive: boolean
   isModerationEnabled: boolean
   isGamificationEnabled: boolean
@@ -42,15 +44,13 @@ function AudienceInteraction({
   isAudienceInteractionActive,
   isModerationEnabled,
   isGamificationEnabled,
-}: Props) {
+}: Props) {  
   const deleteFeedback = (props: any) => null
   const pinFeedback = (props: any) => null
   const publishFeedback = (props: any) => null
   const resolveFeedback = (props: any) => null
   const respondToFeedback = (props: any) => null
   const deleteFeedbackResponse = (props: any) => null
-
-  const [isChecked, setIsChecked] = useState(false)
 
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
 
@@ -123,7 +123,7 @@ function AudienceInteraction({
               id="moderation-switch"
               checked={isModerationEnabled}
               label=""
-              disabled={isModerationEnabled}
+              disabled={!isAudienceInteractionActive}
               onCheckedChange={(): void => {
                 changeSessionSettings({
                   refetchQueries: [{ query: GetCockpitSessionDocument }],
@@ -233,9 +233,9 @@ function AudienceInteraction({
             </div>
           </div>
 
-          {/* <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
+          <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
             <ConfusionCharts confusionValues={confusionValues} />
-          </div> */}
+          </div>
         </div>
       )}
     </div>
