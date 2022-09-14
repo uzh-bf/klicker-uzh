@@ -7,6 +7,8 @@ import { toLower, trim } from 'ramda'
 import { AzureFunction, Context, HttpRequest } from '@azure/functions'
 import {
   gradeQuestionFreeText,
+  gradeQuestionKPRIM,
+  gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
@@ -67,6 +69,7 @@ const httpTrigger: AzureFunction = async function (
     startedAt,
     firstResponseReceivedAt,
     sessionBlockId,
+    choiceCount,
   } = instanceInfo
 
   // TODO: ensure that the following code can handle missing solutions
@@ -81,26 +84,44 @@ const httpTrigger: AzureFunction = async function (
 
   // compute the timing of the response based on the first response received for the instance
   const responseTiming =
-    responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp) + 1
-  let pointsAwarded: number | string = 10000 / responseTiming / 1000
+    responseTimestamp -
+    Number(firstResponseReceivedAt ?? responseTimestamp) +
+    1000
+  let pointsAwarded: number | string = 10000000 / (responseTiming / 1000)
 
   switch (type) {
-    // TODO: handle points for partial correct answers in MC (like KPRIM?)
     case 'SC':
-    case 'MC': {
+    case 'MC':
+    case 'KPRIM': {
       response.choices.forEach((choiceIndex: number) => {
         redisMulti.hincrby(`${instanceKey}:results`, String(choiceIndex), 1)
       })
       redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
       if (participantData) {
-        if (
-          gradeQuestionSC({
+        let pointsPercentage
+        if (type === 'SC') {
+          pointsPercentage = gradeQuestionSC({
+            responseCount: Number(choiceCount),
             response: response.choices,
             solution: parsedSolutions,
           })
-        ) {
-          pointsAwarded += 100
+        } else if (type === 'MC') {
+          pointsPercentage = gradeQuestionMC({
+            responseCount: Number(choiceCount),
+            response: response.choices,
+            solution: parsedSolutions,
+          })
+        } else {
+          pointsPercentage = gradeQuestionKPRIM({
+            responseCount: Number(choiceCount),
+            response: response.choices,
+            solution: parsedSolutions,
+          })
+        }
+
+        if (pointsPercentage !== null) {
+          pointsAwarded *= pointsPercentage
 
           // if we are processing a first response, set the timestamp on the instance
           // this will allow us to award points for response timing
@@ -112,8 +133,15 @@ const httpTrigger: AzureFunction = async function (
             )
           }
         } else {
-          pointsAwarded = 0
+          pointsAwarded = 100
         }
+
+        console.warn(
+          participantData.sub,
+          pointsAwarded,
+          pointsPercentage,
+          responseTiming
+        )
 
         redisMulti.hset(
           `${instanceKey}:responses`,

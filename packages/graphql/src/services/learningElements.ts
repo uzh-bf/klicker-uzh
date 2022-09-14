@@ -6,7 +6,6 @@ import {
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
-import { shuffle } from '../lib/util'
 
 type QuestionResponse = {
   choices?: number[]
@@ -38,7 +37,7 @@ function evaluateQuestionResponse(
       if (data.type === QuestionType.SC) {
         const pointsPercentage = gradeQuestionSC({
           responseCount: data.options.choices.length,
-          response: response.choices,
+          response: response.choices!,
           solution,
         })
         return {
@@ -49,7 +48,7 @@ function evaluateQuestionResponse(
       } else if (data.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
           responseCount: data.options.choices.length,
-          response: response.choices,
+          response: response.choices!,
           solution,
         })
         return {
@@ -60,7 +59,7 @@ function evaluateQuestionResponse(
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
           responseCount: data.options.choices.length,
-          response: response.choices,
+          response: response.choices!,
           solution,
         })
         return {
@@ -227,6 +226,7 @@ export async function getLearningElementData(
     switch (questionData.type) {
       case QuestionType.SC:
       case QuestionType.MC:
+      case QuestionType.KPRIM:
         return {
           ...instance,
           questionData: {
@@ -253,10 +253,11 @@ export async function getLearningElementData(
     }
   })
 
-  const shuffledInstances = shuffle(instancesWithoutSolution)
+  // TODO: shuffle the instances?
+  // const shuffledInstances = shuffle(instancesWithoutSolution)
 
   return {
     ...element,
-    instances: shuffledInstances,
+    instances: instancesWithoutSolution,
   }
 }

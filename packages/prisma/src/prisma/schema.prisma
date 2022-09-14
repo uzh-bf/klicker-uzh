@@ -101,7 +101,7 @@ model Attachment {
 model AttachmentInstance {
   id String @id @default(uuid()) @db.Uuid
 
-  href         String  @unique
+  href         String
   name         String
   originalName String?
   description  String?
