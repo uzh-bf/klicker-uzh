@@ -50,7 +50,7 @@ function FeedbackChannel({
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
-  const [feedbackLength, setFeedbackLength] = useState(0)
+  // const [feedbackLength, setFeedbackLength] = useState(0)
 
   // useEffect(() => {
   //   requestNotificationPermissions((permission) => {
