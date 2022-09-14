@@ -34,7 +34,7 @@ const Profile = () => {
               const logoutResponse = await logoutParticipant({
                 variables: { id: data?.self?.id || '' },
               })
-              logoutResponse.data?.logoutParticipant && router.push('/login')
+              logoutResponse.data?.logoutParticipant && router.push('https://www.klicker.uzh.ch')
             }}
           >
             Logout
