@@ -28,6 +28,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
   passport.use(
     new JWTStrategy(
       {
+        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         jwtFromRequest(req) {
           if (req.headers?.['authorization'])
             return req.headers['authorization']?.replace('Bearer ', '')
