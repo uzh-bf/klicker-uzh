@@ -781,6 +781,11 @@ export async function getCockpitSession(
       },
       course: true,
       confusionFeedbacks: true,
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+      },
     },
   })
 

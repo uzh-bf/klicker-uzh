@@ -40,5 +40,21 @@ query GetCockpitSession($id: ID!) {
       difficulty
       numberOfParticipants
     }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
   }
 }
