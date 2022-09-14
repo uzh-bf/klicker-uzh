@@ -158,8 +158,11 @@ export interface NexusGenObjects {
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
   }
   MicroSession: { // root type
+    course: NexusGenRootTypes['Course']; // Course!
+    description?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
   }
   Mutation: {};
@@ -356,8 +359,11 @@ export interface NexusGenFieldTypes {
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
   }
   MicroSession: { // field return type
+    course: NexusGenRootTypes['Course']; // Course!
+    description: string | null; // String
     displayName: string; // String!
     id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
   }
   Mutation: { // field return type
@@ -426,6 +432,7 @@ export interface NexusGenFieldTypes {
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
@@ -584,8 +591,11 @@ export interface NexusGenFieldTypeNames {
     instances: 'QuestionInstance'
   }
   MicroSession: { // field return type name
+    course: 'Course'
+    description: 'String'
     displayName: 'String'
     id: 'ID'
+    instances: 'QuestionInstance'
     name: 'String'
   }
   Mutation: { // field return type name
@@ -654,6 +664,7 @@ export interface NexusGenFieldTypeNames {
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
+    microSession: 'MicroSession'
     participations: 'Participation'
     runningSessions: 'Session'
     self: 'Participant'
@@ -814,6 +825,9 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
     }
     learningElement: { // args
+      id: string; // ID!
+    }
+    microSession: { // args
       id: string; // ID!
     }
     runningSessions: { // args

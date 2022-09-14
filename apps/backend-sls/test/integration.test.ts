@@ -9,6 +9,8 @@ import { PARTICIPANT_IDS } from '../prisma/constants'
 // TODO: switch to ioredis-mock
 // jest.mock('ioredis', () => Redis)
 
+jest.setTimeout(60000)
+
 process.env.NODE_ENV = 'development'
 process.env.APP_SECRET = 'abcd'
 
@@ -127,7 +129,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2] }]) {
+            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2, 4] }]) {
                 id
                 status
                 activeBlock {
@@ -298,6 +300,7 @@ describe('API', () => {
             },
           },
         },
+
         extensions: expect.any(Object),
       },
       `
@@ -693,12 +696,13 @@ describe('API', () => {
             id: expect.any(String),
             activeBlock: {
               id: expect.any(Number),
-              instances: new Array(1).fill({
+              instances: new Array(2).fill({
                 id: expect.any(Number),
               }),
             },
           },
         },
+
         extensions: expect.any(Object),
       },
       `
@@ -708,6 +712,12 @@ describe('API', () => {
             "activeBlock": Object {
               "id": Any<Number>,
               "instances": Array [
+                Object {
+                  "id": Any<Number>,
+                  "questionData": Object {
+                    "type": "KPRIM",
+                  },
+                },
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {

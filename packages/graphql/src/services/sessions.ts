@@ -12,7 +12,8 @@ import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
     case QuestionType.SC:
-    case QuestionType.MC: {
+    case QuestionType.MC:
+    case QuestionType.KPRIM: {
       return {
         ...question,
         attachments: null,
@@ -39,7 +40,8 @@ function processQuestionData(question: Question): AllQuestionTypeData {
 function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
   switch (questionData.type) {
     case QuestionType.SC:
-    case QuestionType.MC: {
+    case QuestionType.MC:
+    case QuestionType.KPRIM: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
@@ -96,21 +98,22 @@ export async function createSession(
   { name, displayName, blocks, courseId }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
-  const allQuestionsIds = blocks.reduce<number[]>(
-    (acc, block) => [...acc, ...block.questionIds],
-    []
+  const allQuestionsIds = new Set(
+    blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
 
   const questions = await ctx.prisma.question.findMany({
     where: {
-      id: {
-        in: allQuestionsIds,
-      },
+      id: { in: Array.from(allQuestionsIds) },
     },
     include: {
       attachments: true,
     },
   })
+
+  const questionMap = questions.reduce<
+    Record<number, Question & { attachments: Attachment[] }>
+  >((acc, question) => ({ ...acc, [question.id]: question }), {})
 
   return ctx.prisma.session.create({
     data: {
@@ -119,24 +122,11 @@ export async function createSession(
       blocks: {
         create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
           const newInstances = questionIds.map((questionId) => {
-            const questionData = questions.find(
-              (q) => q.id === questionId
-            ) as Question
-            const processedQuestionData = processQuestionData(questionData)
-            const questionAttachments = questions.find(
-              (q) => q.id === questionId
-            )?.attachments as Attachment[]
-            const questionAttachmentInstances = questionAttachments.map(
-              (attachment) => ({
-                id: attachment.id,
-                name: attachment.name,
-                type: attachment.type,
-                href: attachment.href,
-                originalName: attachment.originalName,
-                description: attachment.description,
-              })
+            const question = questionMap[questionId]
+            const processedQuestionData = processQuestionData(question)
+            const questionAttachmentInstances = question.attachments.map(
+              pick(['type', 'href', 'name', 'description', 'originalName'])
             )
-
             return {
               questionData: processedQuestionData,
               results: prepareInitialInstanceResults(processedQuestionData),
@@ -305,10 +295,12 @@ export async function activateSessionBlock(
 
     switch (questionData.type) {
       case QuestionType.SC:
-      case QuestionType.MC: {
+      case QuestionType.MC:
+      case QuestionType.KPRIM: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           type: questionData.type,
+          choiceCount: questionData.options.choices.length,
           solutions: JSON.stringify(
             questionData.options.choices
               .map((choice, ix) => ({ ix, correct: choice.correct }))

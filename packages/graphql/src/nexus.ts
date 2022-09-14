@@ -22,6 +22,7 @@ import {
 import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
 import * as LearningElementService from './services/learningElements'
+import * as MicroLearningService from './services/microLearning'
 import * as ParticipantService from './services/participants'
 import * as SessionService from './services/sessions'
 
@@ -59,7 +60,11 @@ export const QuestionData = interfaceType({
     t.nonNull.boolean('isDeleted')
   },
   resolveType: (item) => {
-    if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
+    if (
+      item.type === DB.QuestionType.SC ||
+      item.type === DB.QuestionType.MC ||
+      item.type === DB.QuestionType.KPRIM
+    ) {
       return 'ChoicesQuestionData'
     } else if (item.type === DB.QuestionType.NUMERICAL) {
       return 'NumericalQuestionData'
@@ -226,16 +231,6 @@ export const QuestionInstance = objectType({
   },
 })
 
-export const MicroSession = objectType({
-  name: 'MicroSession',
-  definition(t) {
-    t.nonNull.id('id')
-
-    t.nonNull.string('name')
-    t.nonNull.string('displayName')
-  },
-})
-
 export const Course = objectType({
   name: 'Course',
   definition(t) {
@@ -263,6 +258,25 @@ export const LearningElement = objectType({
   name: 'LearningElement',
   definition(t) {
     t.nonNull.id('id')
+
+    t.nonNull.list.nonNull.field('instances', {
+      type: QuestionInstance,
+    })
+
+    t.nonNull.field('course', {
+      type: Course,
+    })
+  },
+})
+
+export const MicroSession = objectType({
+  name: 'MicroSession',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.string('description')
 
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
@@ -487,6 +501,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return LearningElementService.getLearningElementData(args, ctx)
+      },
+    })
+
+    t.field('microSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.getMicroSessionData(args, ctx)
       },
     })
 
