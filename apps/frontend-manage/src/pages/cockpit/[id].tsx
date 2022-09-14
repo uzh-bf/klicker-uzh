@@ -21,7 +21,7 @@ function Cockpit() {
   if (cockpitLoading) return <div>Loading...</div>
 
   // loading is finished, but was not successful
-  if ((!cockpitLoading && !cockpitData) || cockpitError) {
+  if (!cockpitData || cockpitError) {
     // TODO fix router instance not available error
     // router.push('/404')
     return null
@@ -33,3 +33,5 @@ function Cockpit() {
 }
 
 export default Cockpit
+
+// TODO: add confusion feedback to query - all within a certain time horizon and directly compute the average in the backend

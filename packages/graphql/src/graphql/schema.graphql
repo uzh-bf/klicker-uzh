@@ -7,6 +7,13 @@ enum AccessMode {
   RESTRICTED
 }
 
+type AggregatedConfusionFeedbacks {
+  difficulty: Float!
+  numberOfParticipants: Int!
+  speed: Float!
+  timestamp: DateTime
+}
+
 type Attachment {
   description: String
   href: String!
@@ -138,6 +145,23 @@ type LearningElement {
   instances: [QuestionInstance!]!
 }
 
+type LecturerSession {
+  accessMode: AccessMode!
+  activeBlock: SessionBlock
+  blocks: [SessionBlock!]!
+  confusionFeedbacks: [AggregatedConfusionFeedbacks]
+  course: Course
+  displayName: String!
+  feedbacks: [Feedback]
+  id: ID!
+  isAudienceInteractionActive: Boolean!
+  isGamificationEnabled: Boolean!
+  isModerationEnabled: Boolean!
+  name: String!
+  namespace: String!
+  status: SessionStatus!
+}
+
 type MicroSession {
   course: Course!
   description: String
@@ -218,7 +242,7 @@ type Participation {
 }
 
 type Query {
-  cockpitSession(id: ID!): Session
+  cockpitSession(id: ID!): LecturerSession
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement

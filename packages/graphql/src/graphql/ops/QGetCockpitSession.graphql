@@ -34,5 +34,10 @@ query GetCockpitSession($id: ID!) {
         }
       }
     }
+    confusionFeedbacks {
+      speed
+      difficulty
+      numberOfParticipants
+    }
   }
 }

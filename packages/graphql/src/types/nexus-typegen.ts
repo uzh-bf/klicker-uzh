@@ -65,6 +65,12 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
+  AggregatedConfusionFeedbacks: { // root type
+    difficulty: number; // Float!
+    numberOfParticipants: number; // Int!
+    speed: number; // Float!
+    timestamp?: NexusGenScalars['DateTime'] | null; // DateTime
+  }
   Attachment: { // root type
     description?: string | null; // String
     href: string; // String!
@@ -156,6 +162,22 @@ export interface NexusGenObjects {
     course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+  }
+  LecturerSession: { // root type
+    accessMode: NexusGenEnums['AccessMode']; // AccessMode!
+    activeBlock?: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
+    blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
+    confusionFeedbacks?: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
+    course?: NexusGenRootTypes['Course'] | null; // Course
+    displayName: string; // String!
+    feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    id: string; // ID!
+    isAudienceInteractionActive: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
+    name: string; // String!
+    namespace: string; // String!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   MicroSession: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -266,6 +288,12 @@ export type NexusGenRootTypes = NexusGenInterfaces & NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars & NexusGenEnums
 
 export interface NexusGenFieldTypes {
+  AggregatedConfusionFeedbacks: { // field return type
+    difficulty: number; // Float!
+    numberOfParticipants: number; // Int!
+    speed: number; // Float!
+    timestamp: NexusGenScalars['DateTime'] | null; // DateTime
+  }
   Attachment: { // field return type
     description: string | null; // String
     href: string; // String!
@@ -358,6 +386,22 @@ export interface NexusGenFieldTypes {
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
   }
+  LecturerSession: { // field return type
+    accessMode: NexusGenEnums['AccessMode']; // AccessMode!
+    activeBlock: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
+    blocks: NexusGenRootTypes['SessionBlock'][]; // [SessionBlock!]!
+    confusionFeedbacks: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
+    course: NexusGenRootTypes['Course'] | null; // Course
+    displayName: string; // String!
+    feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    id: string; // ID!
+    isAudienceInteractionActive: boolean; // Boolean!
+    isGamificationEnabled: boolean; // Boolean!
+    isModerationEnabled: boolean; // Boolean!
+    name: string; // String!
+    namespace: string; // String!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
+  }
   MicroSession: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
     description: string | null; // String
@@ -429,7 +473,7 @@ export interface NexusGenFieldTypes {
     points: number; // Int!
   }
   Query: { // field return type
-    cockpitSession: NexusGenRootTypes['Session'] | null; // Session
+    cockpitSession: NexusGenRootTypes['LecturerSession'] | null; // LecturerSession
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
@@ -499,6 +543,12 @@ export interface NexusGenFieldTypes {
 }
 
 export interface NexusGenFieldTypeNames {
+  AggregatedConfusionFeedbacks: { // field return type name
+    difficulty: 'Float'
+    numberOfParticipants: 'Int'
+    speed: 'Float'
+    timestamp: 'DateTime'
+  }
   Attachment: { // field return type name
     description: 'String'
     href: 'String'
@@ -591,6 +641,22 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     instances: 'QuestionInstance'
   }
+  LecturerSession: { // field return type name
+    accessMode: 'AccessMode'
+    activeBlock: 'SessionBlock'
+    blocks: 'SessionBlock'
+    confusionFeedbacks: 'AggregatedConfusionFeedbacks'
+    course: 'Course'
+    displayName: 'String'
+    feedbacks: 'Feedback'
+    id: 'ID'
+    isAudienceInteractionActive: 'Boolean'
+    isGamificationEnabled: 'Boolean'
+    isModerationEnabled: 'Boolean'
+    name: 'String'
+    namespace: 'String'
+    status: 'SessionStatus'
+  }
   MicroSession: { // field return type name
     course: 'Course'
     description: 'String'
@@ -662,7 +728,7 @@ export interface NexusGenFieldTypeNames {
     points: 'Int'
   }
   Query: { // field return type name
-    cockpitSession: 'Session'
+    cockpitSession: 'LecturerSession'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'

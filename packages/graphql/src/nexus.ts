@@ -404,6 +404,18 @@ export const ConfusionTimestep = objectType({
   },
 })
 
+export const AggregatedConfusionFeedbacks = objectType({
+  name: 'AggregatedConfusionFeedbacks',
+  definition(t) {
+    t.nonNull.float('difficulty')
+    t.nonNull.float('speed')
+
+    t.nonNull.int('numberOfParticipants')
+
+    t.date('timestamp')
+  },
+})
+
 export const SessionBlockStatus = enumType({
   name: 'SessionBlockStatus',
   members: DB.SessionBlockStatus,
@@ -471,6 +483,40 @@ export const Session = objectType({
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+  },
+})
+
+export const LecturerSession = objectType({
+  name: 'LecturerSession',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.boolean('isAudienceInteractionActive')
+    t.nonNull.boolean('isModerationEnabled')
+    t.nonNull.boolean('isGamificationEnabled')
+
+    t.nonNull.string('namespace')
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+
+    t.nonNull.field('status', {
+      type: SessionStatus,
+    })
+
+    t.field('activeBlock', {
+      type: SessionBlock,
+    })
+    t.nonNull.list.nonNull.field('blocks', {
+      type: SessionBlock,
+    })
+
+    t.nonNull.field('accessMode', { type: AccessMode })
+
+    t.list.field('feedbacks', { type: Feedback })
+
+    t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
+
+    t.field('course', { type: Course })
   },
 })
 
@@ -542,7 +588,7 @@ export const Query = objectType({
     })
 
     t.field('cockpitSession', {
-      type: Session,
+      type: LecturerSession,
       args: {
         id: nonNull(idArg()),
       },
