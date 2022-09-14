@@ -43,7 +43,7 @@ function SessionList() {
 
   return (
     <Layout displayName="Sessions">
-      <div className="mx-auto max-w-7xl">
+      <div className="">
         {runningSessions && runningSessions.length > 0 && (
           <Session
             sessionName="Laufende Sessionen"

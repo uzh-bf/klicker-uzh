@@ -46,7 +46,9 @@ function Layout({ displayName, children, className }: LayoutProps) {
           <Header user={dataUser.userProfile as User} />
         </div>
         <div className="relative min-h-full px-4 py-2">
-          <div className="h-full pb-20">{children}</div>
+          <div className="h-full pb-20 mx-auto max-w-screen-2xl">
+            {children}
+          </div>
           <Footer />
         </div>
       </div>

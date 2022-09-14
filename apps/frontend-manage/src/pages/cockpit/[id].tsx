@@ -1,7 +1,6 @@
-// import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { useQuery } from '@apollo/client'
 import Layout from '../../components/Layout'
-import { GetCockpitSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetCockpitSessionDocument, LecturerSession } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 
 function Cockpit() {
@@ -19,6 +18,7 @@ function Cockpit() {
     skip: !router.query.id,
   })
 
+  // data has not been received yet
   if (cockpitLoading) return <div>Loading...</div>
 
   // loading is finished, but was not successful
@@ -28,11 +28,9 @@ function Cockpit() {
     return null
   }
 
-  console.log(cockpitData.cockpitSession)
+  const { id, isAudienceInteractionActive, isModerationEnabled, isGamificationEnabled, namespace, name, displayName, status, startedAt, course, activeBlock, blocks, confusionFeedbacks } = cockpitData.cockpitSession as LecturerSession
 
   return <Layout>TODO</Layout>
 }
 
 export default Cockpit
-
-// TODO: add confusion feedback to query - all within a certain time horizon and directly compute the average in the backend
