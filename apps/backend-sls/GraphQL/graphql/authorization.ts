@@ -34,6 +34,8 @@ export const AuthSchema = {
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
+    logoutUser: { __authz: { rules: ['IsUserOrAdmin'] } },
+    logoutParticipant: { __authz: { rules: ['IsParticipant'] } },
     registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
     createCourse: { __authz: { rules: ['IsUserOrAdmin'] } },
     createSession: { __authz: { rules: ['IsUserOrAdmin'] } },
@@ -54,5 +56,6 @@ export const AuthSchema = {
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['isUserOrAdmin'] } },
+    userSessions: { __authz: { rules: ['isUserOrAdmin'] } },
   },
 }

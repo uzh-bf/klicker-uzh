@@ -1030,7 +1030,7 @@ async function main(prisma: Prisma.PrismaClient) {
     create: {
       id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
       name: 'BF1 VL2',
-      displayName: 'Banking und Finance I - VL1',
+      displayName: 'Banking und Finance I - VL2',
       isModerationEnabled: false,
       isAudienceInteractionActive: true,
       isGamificationEnabled: true,
@@ -1126,15 +1126,15 @@ async function main(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  const microSession = await prisma.microSession.upsert({
-    where: {
-      id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
-    },
-    create: {
-      id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
-    },
-    update: {},
-  })
+  // const microSession = await prisma.microSession.upsert({
+  //   where: {
+  //     id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
+  //   },
+  //   create: {
+  //     id: '0ce58914-efaa-4ee5-9693-db497f7e5d46',
+  //   },
+  //   update: {},
+  // })
 
   await prisma.$executeRaw`ALTER SEQUENCE "Question_id_seq" RESTART WITH 9`
   await prisma.$executeRaw`ALTER SEQUENCE "QuestionInstance_id_seq" RESTART WITH 13`

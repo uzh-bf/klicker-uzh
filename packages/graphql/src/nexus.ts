@@ -419,6 +419,11 @@ export const SessionStatus = enumType({
   members: DB.SessionStatus,
 })
 
+export const AccessMode = enumType({
+  name: 'AccessMode',
+  members: DB.AccessMode,
+})
+
 export const Session = objectType({
   name: 'Session',
   definition(t) {
@@ -443,11 +448,15 @@ export const Session = objectType({
       type: SessionBlock,
     })
 
+    t.nonNull.field('accessMode', { type: AccessMode })
+
     t.list.field('feedbacks', { type: Feedback })
 
     t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
 
     t.field('course', { type: Course })
+
+    t.nonNull.date('createdAt')
   },
 })
 
@@ -537,6 +546,13 @@ export const Query = objectType({
         return SessionService.getRunningSessions(args, ctx)
       },
     })
+
+    t.list.nonNull.field('userSessions', {
+      type: Session,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+      },
+    })
   },
 })
 
@@ -562,6 +578,26 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: Context) {
         return AccountService.loginParticipant(args, ctx)
+      },
+    })
+
+    t.field('logoutUser', {
+      type: 'ID',
+      args: {
+        userId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.logoutUser(args, ctx)
+      },
+    })
+
+    t.field('logoutParticipant', {
+      type: 'ID',
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.logoutParticipant(args, ctx)
       },
     })
 
