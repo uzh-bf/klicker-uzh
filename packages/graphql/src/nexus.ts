@@ -801,6 +801,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('publishFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPublished: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.publishFeedback(args, ctx)
+      },
+    })
+
     t.field('createCourse', {
       type: Course,
       args: {

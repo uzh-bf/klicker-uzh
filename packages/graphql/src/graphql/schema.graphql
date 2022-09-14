@@ -187,6 +187,7 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant(id: ID!): ID
   logoutUser(userId: ID!): ID
+  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
   resolveFeedback(id: Int!, newValue: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

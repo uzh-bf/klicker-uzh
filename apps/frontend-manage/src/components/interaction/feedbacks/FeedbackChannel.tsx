@@ -18,7 +18,7 @@ interface Props {
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: () => void
   handlePinFeedback: (id: string, pinState: boolean) => void
-  handlePublishFeedback: (id: string, publishState: boolean) => void
+  handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void
   handleDeleteFeedbackResponse: (id: string, responseId: string) => void

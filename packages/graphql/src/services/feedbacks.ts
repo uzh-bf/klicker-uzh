@@ -161,3 +161,17 @@ export async function addConfusionTimestep(
     })
   }
 }
+
+export async function publishFeedback(
+  { id, isPublished }: { id: number; isPublished: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id,
+    },
+    data: {
+      isPublished: isPublished,
+    },
+  })
+}

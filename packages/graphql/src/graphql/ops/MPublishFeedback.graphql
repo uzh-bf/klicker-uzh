@@ -1,0 +1,10 @@
+mutation PublishFeedback($id: Int!, $isPublished: Boolean!) {
+  publishFeedback(id: $id, isPublished: $isPublished) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+  }
+}
