@@ -170,7 +170,7 @@ const Index = function () {
               <CourseElement
                 disabled={pushDisabled}
                 key={course.id}
-                courseId={course.courseId}
+                courseId={course.id}
                 courseName={course.displayName}
                 onSubscribeClick={onSubscribeClick}
               />

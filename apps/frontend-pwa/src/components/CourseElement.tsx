@@ -2,6 +2,7 @@ import { faBellSlash } from '@fortawesome/free-regular-svg-icons'
 import { faBell } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import * as TogglePrimitive from '@radix-ui/react-toggle'
+import Link from 'next/link'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -40,8 +41,7 @@ const CourseElement = (props: courseElementProps) => {
   return (
     <div className="flex justify-between w-full mt-4 mb-4 mr-4align-center">
       <span className="w-full p-4 text-l text-start rounded-l-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
-        {/* TODO: ev. turn into link */}
-        {props.courseName}
+        <Link href={`/course/${props.courseId}`}>{props.courseName}</Link>
       </span>
       <span className={computedClassNameButton}>
         <TogglePrimitive.Root
