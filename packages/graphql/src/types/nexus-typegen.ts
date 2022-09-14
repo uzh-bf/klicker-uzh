@@ -171,12 +171,14 @@ export interface NexusGenObjects {
     course?: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    finishedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
+    startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   MicroSession: { // root type
@@ -394,12 +396,14 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    finishedAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
+    startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   MicroSession: { // field return type
@@ -649,12 +653,14 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     displayName: 'String'
     feedbacks: 'Feedback'
+    finishedAt: 'DateTime'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isGamificationEnabled: 'Boolean'
     isModerationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
+    startedAt: 'DateTime'
     status: 'SessionStatus'
   }
   MicroSession: { // field return type name

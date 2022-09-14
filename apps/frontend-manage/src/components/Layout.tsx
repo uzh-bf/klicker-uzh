@@ -10,16 +10,15 @@ import Header from './common/Header'
 interface LayoutProps {
   displayName: string
   children: React.ReactNode
-  title?: string
   className?: string
 }
 
 const defaultProps = {
-  title: 'KlickerUZH',
+  displayName: 'KlickerUZH',
   className: '',
 }
 
-function Layout({ displayName, children, title, className }: LayoutProps) {
+function Layout({ displayName, children, className }: LayoutProps) {
   const router = useRouter()
 
   const {
@@ -38,8 +37,8 @@ function Layout({ displayName, children, title, className }: LayoutProps) {
   return (
     <div className="w-full h-full">
       <Head>
-        <title>{title}</title>
-        <meta name="description" content={title} charSet="utf-8"></meta>
+        <title>{displayName}</title>
+        <meta name="description" content={displayName} charSet="utf-8"></meta>
       </Head>
 
       <div className={twMerge('pt-16 h-screen relative', className)}>

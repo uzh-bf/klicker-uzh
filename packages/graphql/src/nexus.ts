@@ -517,6 +517,9 @@ export const LecturerSession = objectType({
     t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
+
+    t.date('startedAt')
+    t.date('finishedAt')
   },
 })
 

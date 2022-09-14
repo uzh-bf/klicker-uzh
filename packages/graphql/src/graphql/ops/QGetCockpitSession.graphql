@@ -10,6 +10,7 @@ query GetCockpitSession($id: ID!) {
     name
     displayName
     status
+    startedAt
     course {
       displayName
     }

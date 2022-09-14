@@ -1,5 +1,6 @@
 // import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { useQuery } from '@apollo/client'
+import Layout from '../../components/Layout'
 import { GetCockpitSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 
@@ -29,7 +30,7 @@ function Cockpit() {
 
   console.log(cockpitData.cockpitSession)
 
-  return <div>TODO</div>
+  return <Layout>TODO</Layout>
 }
 
 export default Cockpit

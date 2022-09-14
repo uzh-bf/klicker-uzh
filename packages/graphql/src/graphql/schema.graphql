@@ -153,12 +153,14 @@ type LecturerSession {
   course: Course
   displayName: String!
   feedbacks: [Feedback]
+  finishedAt: DateTime
   id: ID!
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
   name: String!
   namespace: String!
+  startedAt: DateTime
   status: SessionStatus!
 }
 

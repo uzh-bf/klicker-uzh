@@ -794,23 +794,23 @@ export async function getCockpitSession(
 
   // compute the average of all feedbacks that were given within the last 10 minutes
   const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
-    if (feedbacks.length > 0) {
-      const summedFeedbacks = feedbacks
-        .filter(
-          (feedback) =>
-            dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
-            dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
-        )
-        .reduce(
-          (previousValue, feedback) => {
-            return {
-              speed: previousValue.speed + feedback.speed,
-              difficulty: previousValue.difficulty + feedback.difficulty,
-              numberOfParticipants: previousValue.numberOfParticipants + 1,
-            }
-          },
-          { speed: 0, difficulty: 0, numberOfParticipants: 0 }
-        )
+    const recentFeedbacks = feedbacks.filter(
+      (feedback) =>
+        dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
+        dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
+    )
+
+    if (recentFeedbacks.length > 0) {
+      const summedFeedbacks = recentFeedbacks.reduce(
+        (previousValue, feedback) => {
+          return {
+            speed: previousValue.speed + feedback.speed,
+            difficulty: previousValue.difficulty + feedback.difficulty,
+            numberOfParticipants: previousValue.numberOfParticipants + 1,
+          }
+        },
+        { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+      )
       return {
         ...summedFeedbacks,
         speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
@@ -818,6 +818,7 @@ export async function getCockpitSession(
           summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
       }
     }
+    return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
   }
 
   // recude session to only contain what is required for the lecturer cockpit
