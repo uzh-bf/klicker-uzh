@@ -44,10 +44,7 @@ function Layout({ displayName, children, title, className }: LayoutProps) {
 
       <div className={twMerge('pt-16 h-screen relative', className)}>
         <div className="fixed top-0 z-10 w-full h-14">
-          <Header
-            user={dataUser.userProfile as User}
-            displayName={displayName}
-          />
+          <Header user={dataUser.userProfile as User} />
         </div>
         <div className="relative min-h-full px-4 py-2">
           <div className="h-full pb-20">{children}</div>

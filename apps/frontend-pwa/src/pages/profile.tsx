@@ -1,10 +1,18 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LogoutParticipantDocument,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
+import { useRouter } from 'next/router'
 import { ThreeDots } from 'react-loader-spinner'
 
 const Profile = () => {
   const { data, error, loading } = useQuery(SelfDocument)
+  const router = useRouter()
+
+  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
   return (
     <Layout>
@@ -18,7 +26,21 @@ const Profile = () => {
           visible={true}
         />
       )}
-      {data && <div className="p-4">{data?.self?.id}</div>}
+      {data && data?.self && data.self.id && (
+        <div className="p-4">
+          <div>{data.self.id}</div>
+          <Button
+            onClick={async () => {
+              const logoutResponse = await logoutParticipant({
+                variables: { id: data?.self?.id || '' },
+              })
+              logoutResponse.data?.logoutParticipant && router.push('/login')
+            }}
+          >
+            Logout
+          </Button>
+        </div>
+      )}
     </Layout>
   )
 }

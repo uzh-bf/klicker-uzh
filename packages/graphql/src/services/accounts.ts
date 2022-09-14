@@ -58,6 +58,37 @@ export async function loginUser(
   return user.id
 }
 
+export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: userId },
+  })
+
+  if (!user) return null
+
+  const jwt = JWT.sign(
+    {
+      sub: user.id,
+      role: user.role,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '1w',
+    }
+  )
+
+  ctx.res.cookie('user_token', jwt, {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 0,
+    secure: process.env.NODE_ENV === 'production',
+  })
+
+  return user.id
+}
+
 export async function getUserProfile(
   { id }: { id: string },
   ctx: ContextWithOptionalUser
@@ -120,5 +151,25 @@ export async function loginParticipant(
   })
 
   // TODO: return more data (e.g. Avatar etc.)
+  return participant.id
+}
+
+export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: id },
+  })
+
+  if (!participant) return null
+
+  const jwt = createParticipantToken(participant.id)
+
+  ctx.res.cookie('participant_token', jwt, {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 0,
+    secure: process.env.NODE_ENV === 'production',
+  })
+
   return participant.id
 }
