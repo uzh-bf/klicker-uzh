@@ -11,17 +11,22 @@ interface MarkdownProps {
   className?: string;
   content: any;
   description?: string;
+  components?: {
+    img: any;
+  };
 }
 
 const defaultProps = {
   className: undefined,
   description: "Description missing",
+  components: undefined,
 };
 
 function Markdown({
   className,
   content,
   description,
+  components,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
     if (content?.length <= 2) {
@@ -45,15 +50,21 @@ function Markdown({
                   ...(defaultSchema?.attributes?.span || []),
                   ["className", "math", "math-inline"],
                 ],
+                img: [
+                  ...(defaultSchema?.attributes?.img || []),
+                  ["className", "src", "alt"],
+                ],
               },
             })
             .use(katex)
             .use(rehype2react, {
               createElement: React.createElement,
+              components,
             })
             .processSync(content).result
         : description;
     } catch (e) {
+      console.error(e);
       return content;
     }
   }, [content, description]);

@@ -60,7 +60,7 @@ function Layout({
 
       <div
         className={twMerge(
-          'md:flex md:flex-row md:pt-16 md:pb-1.5 md:px-1.5 md:gap-1.5 md:bg-uzh-grey-60 pt-16 pb-16 md:h-screen',
+          'md:flex md:flex-row md:pt-16 md:pb-1.5 md:px-1.5 md:gap-1.5 pt-16 pb-16 md:h-screen',
           pageNotFound && 'h-full',
           className
         )}
