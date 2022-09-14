@@ -19,7 +19,7 @@ async function determineInitialSubscriptionState() {
   ) {
     return {
       disabled: true,
-      info: 'Push notifications are not supported by your browser.',
+      info: 'Push-Benachrichtigungen werden von Ihrem Browser nicht unterstützt. Dies ist z. B. der Fall, wenn Sie ein iPhone benutzen.',
       reg: null,
       sub: null,
     }
@@ -29,7 +29,7 @@ async function determineInitialSubscriptionState() {
   if (Notification.permission === 'denied') {
     return {
       disabled: true,
-      info: 'You have disabled push notifications for this app. If you want to subscribe, enable push notifications in your browser.',
+      info: 'Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.',
       reg: registration,
       sub: subscription,
     }

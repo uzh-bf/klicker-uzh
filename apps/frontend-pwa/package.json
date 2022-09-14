@@ -4,10 +4,9 @@
   "version": "2.0.0-alpha.22",
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "NODE_ENV=development next dev --port 3001",
+    "devNoSW": "NODE_ENV=development next dev --port 3001",
     "build": "next build",
-    "export": "next build && next export",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "next lint"
   },
   "dependencies": {

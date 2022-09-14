@@ -21,23 +21,29 @@ const CourseElement = (props: courseElementProps) => {
   const [subscribed, setSubscribed] = useState(false)
 
   const computedClassNameSubscribed = twMerge(
-    'p-2 text-2xl rounded-full',
     props.disabled
-      ? 'bg-uzh-grey-20 text-uzh-grey-80 hover:bg-uzh-grey-20'
-      : 'bg-uzh-yellow-40 text-yellow-400 hover:text-uzh-yellow-100'
+      ? 'text-uzh-grey-20'
+      : 'text-uzh-yellow-100 hover:text-uzh-grey-20'
   )
 
   const computedClassNameNotSubscribed = twMerge(
-    'p-2 text-2xl rounded-full',
     props.disabled
-      ? 'bg-uzh-grey-20 text-uzh-grey-80 hover:bg-uzh-grey-20'
-      : 'bg-uzh-yellow-20 text-uzh-yellow-100 hover:bg-uzh-yellow-40'
+      ? 'text-uzh-grey-20'
+      : 'text-uzh-grey-20 hover:text-uzh-yellow-100'
+  )
+
+  const computedClassNameButton = twMerge(
+    'h-full p-3 text-2xl rounded-r-md',
+    props.disabled ? 'bg-slate-400' : 'bg-slate-600'
   )
 
   return (
-    <div className="flex justify-between mb-4 text-lg">
-      <span>{props.courseName}</span>
-      <span>
+    <div className="flex justify-between w-full mt-4 mb-4 mr-4align-center">
+      <span className="w-full p-4 text-l text-start rounded-l-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
+        {/* TODO: ev. turn into link */}
+        {props.courseName}
+      </span>
+      <span className={computedClassNameButton}>
         <TogglePrimitive.Root
           defaultPressed={subscribed}
           onPressedChange={setSubscribed}

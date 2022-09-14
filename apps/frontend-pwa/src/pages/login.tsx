@@ -33,7 +33,7 @@ function LoginForm() {
         resetForm()
       } else {
         console.log('Login successful!', userID)
-        Router.push('/profile')
+        Router.push('/')
       }
     } catch (e) {
       console.error(e)
