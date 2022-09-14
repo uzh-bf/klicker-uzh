@@ -175,3 +175,17 @@ export async function publishFeedback(
     },
   })
 }
+
+export async function pinFeedback(
+  { id, isPinned }: { id: number; isPinned: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id,
+    },
+    data: {
+      isPinned: isPinned,
+    },
+  })
+}

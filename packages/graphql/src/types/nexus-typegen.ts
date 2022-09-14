@@ -428,6 +428,7 @@ export interface NexusGenFieldTypes {
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
     logoutUser: string | null; // ID
+    pinFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     publishFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     resolveFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -686,6 +687,7 @@ export interface NexusGenFieldTypeNames {
     loginUser: 'ID'
     logoutParticipant: 'ID'
     logoutUser: 'ID'
+    pinFeedback: 'Feedback'
     publishFeedback: 'Feedback'
     registerParticipantFromLTI: 'ParticipantLearningData'
     resolveFeedback: 'Feedback'
@@ -861,6 +863,10 @@ export interface NexusGenArgTypes {
     }
     logoutUser: { // args
       userId: string; // ID!
+    }
+    pinFeedback: { // args
+      id: number; // Int!
+      isPinned: boolean; // Boolean!
     }
     publishFeedback: { // args
       id: number; // Int!

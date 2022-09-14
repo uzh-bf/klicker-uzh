@@ -17,7 +17,7 @@ import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 interface Props {
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: () => void
-  handlePinFeedback: (id: string, pinState: boolean) => void
+  handlePinFeedback: (id: number, isPinned: boolean) => void
   handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void

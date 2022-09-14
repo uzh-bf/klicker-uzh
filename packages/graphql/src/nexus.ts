@@ -812,6 +812,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('pinFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPinned: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.pinFeedback(args, ctx)
+      },
+    })
+
     t.field('createCourse', {
       type: Course,
       args: {

@@ -21,6 +21,7 @@ import {
   Feedback,
   GetCockpitSessionDocument,
   PublishFeedbackDocument,
+  PinFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
@@ -47,13 +48,14 @@ function AudienceInteraction({
 }: Props) {
   // TODO: implement!!
   const deleteFeedback = (props: any) => null
-  const pinFeedback = (props: any) => null
+  // const pinFeedback = (props: any) => null
   const resolveFeedback = (props: any) => null
   const respondToFeedback = (props: any) => null
   const deleteFeedbackResponse = (props: any) => null
 
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
+  const [pinFeedback] = useMutation(PinFeedbackDocument)
 
   //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
   //   const [pinFeedback] = useMutation(PinFeedbackMutation)
@@ -175,15 +177,15 @@ function AudienceInteraction({
                     'Feedback Response Deleted',
                   ])
                 }}
-                handlePinFeedback={(feedbackId: string, pinState: boolean) => {
+                handlePinFeedback={(feedbackId: number, isPinned: boolean) => {
                   pinFeedback({
-                    variables: { sessionId, feedbackId, pinState },
+                    variables: { id: feedbackId, isPinned: isPinned },
                   })
                   push([
                     'trackEvent',
                     'Running Session',
                     'Feedback Pinned',
-                    String(pinState),
+                    String(isPinned),
                   ])
                 }}
                 handlePublishFeedback={(
