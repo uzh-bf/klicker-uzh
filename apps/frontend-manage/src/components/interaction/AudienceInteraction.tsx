@@ -21,10 +21,9 @@ import {
   Feedback,
   GetCockpitSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import ConfusionCharts from './confusion/ConfusionCharts'
 
-// import ConfusionCharts from './confusion/ConfusionCharts'
-// import FeedbackChannel from './feedbacks/FeedbackChannel'
+import ConfusionCharts from './confusion/ConfusionCharts'
+import FeedbackChannel from './feedbacks/FeedbackChannel'
 
 interface Props {
   sessionId: string
@@ -45,6 +44,7 @@ function AudienceInteraction({
   isModerationEnabled,
   isGamificationEnabled,
 }: Props) {  
+  // TODO: implement!!
   const deleteFeedback = (props: any) => null
   const pinFeedback = (props: any) => null
   const publishFeedback = (props: any) => null
@@ -155,7 +155,7 @@ function AudienceInteraction({
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap">
           <div className="flex flex-col flex-1 md:flex-row">
             <div className="flex-1">
-              {/* <FeedbackChannel
+              <FeedbackChannel
                 feedbacks={feedbacks}
                 handleDeleteFeedback={(feedbackId: string): void => {
                   deleteFeedback({ variables: { feedbackId, sessionId } })
@@ -229,7 +229,7 @@ function AudienceInteraction({
                 }}
                 isActive={isAudienceInteractionActive}
                 isPublic={isModerationEnabled}
-              /> */}
+              />
             </div>
           </div>
 
