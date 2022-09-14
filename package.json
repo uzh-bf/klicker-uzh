@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "standard-version": "9.5.0",
-    "turbo": "1.4.3",
+    "turbo": "1.4.6",
     "yaml": "2.1.1"
   },
   "volta": {
