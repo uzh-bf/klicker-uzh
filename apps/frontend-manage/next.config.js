@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   i18n: {
     locales: ['de', 'en'],
     defaultLocale: 'en',
