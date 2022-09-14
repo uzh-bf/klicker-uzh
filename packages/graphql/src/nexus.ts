@@ -591,6 +591,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('logoutParticipant', {
+      type: 'ID',
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.logoutParticipant(args, ctx)
+      },
+    })
+
     t.field('registerParticipantFromLTI', {
       type: ParticipantLearningData,
       args: {
