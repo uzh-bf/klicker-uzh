@@ -9,6 +9,9 @@ const withPWA = require('next-pwa')({
 const nextConfig = withPWA({
   reactStrictMode: true,
   swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     domains: ['sos-ch-dk-2.exo.io'],
     remotePatterns: [
