@@ -372,6 +372,7 @@ export interface NexusGenFieldTypes {
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
+    logoutUser: string | null; // ID
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     resolveFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -598,6 +599,7 @@ export interface NexusGenFieldTypeNames {
     leaveCourse: 'Participation'
     loginParticipant: 'ID'
     loginUser: 'ID'
+    logoutUser: 'ID'
     registerParticipantFromLTI: 'ParticipantLearningData'
     resolveFeedback: 'Feedback'
     respondToFeedback: 'Feedback'
@@ -764,6 +766,9 @@ export interface NexusGenArgTypes {
     loginUser: { // args
       email: string; // String!
       password: string; // String!
+    }
+    logoutUser: { // args
+      userId: string; // ID!
     }
     registerParticipantFromLTI: { // args
       courseId: string; // ID!

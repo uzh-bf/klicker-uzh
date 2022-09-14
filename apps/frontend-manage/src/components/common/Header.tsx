@@ -1,27 +1,40 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetRunningSessionsDocument, User } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetRunningSessionsDocument,
+  LogoutUserDocument,
+  User,
+} from '@klicker-uzh/graphql/dist/ops'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 
 interface HeaderProps {
-  displayName: string
   user: User
 }
 
-const defaultProps = {}
-
-function Header({ displayName, user }: HeaderProps): React.ReactElement {
+function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const [userDropdown, setUserDropdown] = useState(false)
   const [runningDropdown, setRunningDropdown] = useState(false)
+  const [logoutUser] = useMutation(LogoutUserDocument)
+
   const userDropdownContent = [
     { name: 'Settings', onClick: () => router.push('/settings') },
     { name: 'Support', onClick: () => router.push('/support') },
-    { name: 'Logout', onClick: () => router.push('/logout') },
+    {
+      name: 'Logout',
+      onClick: async () => {
+        const userIdLogout = await logoutUser({
+          variables: { userId: user.id },
+        })
+        userIdLogout.data?.logoutUser
+          ? router.push('/login')
+          : console.log('Logout failed')
+      },
+    },
   ]
 
   const { data } = useQuery(GetRunningSessionsDocument, {
@@ -117,7 +130,5 @@ function Header({ displayName, user }: HeaderProps): React.ReactElement {
     </div>
   )
 }
-
-Header.defaultProps = defaultProps
 
 export default Header

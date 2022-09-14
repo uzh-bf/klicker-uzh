@@ -33,9 +33,16 @@ function LoginForm() {
         {({ errors, touched, isSubmitting }) => {
           return (
             <div className="">
-              <div className='w-full mb-8 text-center sm:mb-12'><Image src="/KlickerLogo.png" width={300} height={90} alt='KlickerUZH Logo' /></div>
+              <div className="w-full mb-8 text-center sm:mb-12">
+                <Image
+                  src="/KlickerLogo.png"
+                  width={300}
+                  height={90}
+                  alt="KlickerUZH Logo"
+                />
+              </div>
               <H1>Login</H1>
-              <div className='mb-10'>
+              <div className="mb-10">
                 <Form className="w-72 sm:w-96">
                   <RadixLabel.Root
                     htmlFor="email"
