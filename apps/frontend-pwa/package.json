@@ -13,7 +13,7 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@fortawesome/fontawesome-svg-core": "6.1.2",
-    "@fortawesome/free-regular-svg-icons": "6.1.2",
+    "@fortawesome/free-regular-svg-icons": "6.2.0",
     "@fortawesome/free-solid-svg-icons": "6.1.2",
     "@fortawesome/react-fontawesome": "0.2.0",
     "@klicker-uzh/prisma": "^2.0.0-alpha.8",
