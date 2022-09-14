@@ -7,7 +7,6 @@ import {
   FeedbackResponse,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
-import { useState } from 'react'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'

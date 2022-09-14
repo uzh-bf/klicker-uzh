@@ -23,7 +23,10 @@ function SessionList() {
   } = useMemo(
     () =>
       dataSessions?.userSessions?.reduce(
-        (memo: { [x: string]: SessionType[] }, x: { [x: string]: string | number }) => {
+        (
+          memo: { [x: string]: SessionType[] },
+          x: { [x: string]: string | number }
+        ) => {
           memo[x['status']].push(x as SessionType)
           return memo
         },

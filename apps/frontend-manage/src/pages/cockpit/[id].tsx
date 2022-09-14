@@ -7,8 +7,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 
-import Layout from '../../components/Layout'
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
+import Layout from '../../components/Layout'
 
 function Cockpit() {
   const router = useRouter()
@@ -87,7 +87,7 @@ function Cockpit() {
     activeBlock,
     blocks,
     confusionFeedbacks,
-    feedbacks
+    feedbacks,
   } = cockpitData.cockpitSession as LecturerSession
 
   // TODO: add gamification leaderboard button
@@ -236,10 +236,13 @@ function Cockpit() {
           }
         /> */}
       </div>
-
       AUDIENCE INTERACTION
       <AudienceInteraction
-        confusionValues={confusionFeedbacks ? confusionFeedbacks[0] as AggregatedConfusionFeedbacks : undefined}
+        confusionValues={
+          confusionFeedbacks
+            ? (confusionFeedbacks[0] as AggregatedConfusionFeedbacks)
+            : undefined
+        }
         feedbacks={feedbacks as Feedback[]}
         isAudienceInteractionActive={isAudienceInteractionActive}
         isModerationEnabled={isModerationEnabled}

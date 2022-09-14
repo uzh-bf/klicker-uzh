@@ -2,11 +2,13 @@ import dynamic from 'next/dynamic'
 import React from 'react'
 
 // HACK: ensure that the react-d3-speedometer is not loaded on SSR
-const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), { ssr: false })
+const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), {
+  ssr: false,
+})
 
 interface Props {
   runningValue: number
-  labels: {min: string, mid: string, max: string}
+  labels: { min: string; mid: string; max: string }
 }
 
 const RED_COLOR = 'rgba(240, 43, 30, 0.7)'
@@ -55,7 +57,13 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
           needleColor="#dc6027"
           needleHeightRatio={0.4}
           paddingHorizontal={3}
-          segmentColors={[RED_COLOR, ORANGE_COLOR, GREEN_COLOR, ORANGE_COLOR, RED_COLOR]}
+          segmentColors={[
+            RED_COLOR,
+            ORANGE_COLOR,
+            GREEN_COLOR,
+            ORANGE_COLOR,
+            RED_COLOR,
+          ]}
           startColor="#FF0000"
           value={runningValue}
         />

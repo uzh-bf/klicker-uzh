@@ -1,20 +1,6 @@
+import { useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { push } from '@socialgouv/matomo-next'
-import { Button, Switch } from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
-
-// import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
-// import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedbackResponseMutation.graphql'
-// import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
-// import PublishFeedbackMutation from '../../graphql/mutations/PublishFeedbackMutation.graphql'
-// import ResolveFeedbackMutation from '../../graphql/mutations/ResolveFeedbackMutation.graphql'
-// import RespondToFeedbackMutation from '../../graphql/mutations/RespondToFeedbackMutation.graphql'
-// import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
-// import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
-// import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
-// import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-import { useMutation } from '@apollo/client'
 import {
   AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
@@ -27,6 +13,9 @@ import {
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { push } from '@socialgouv/matomo-next'
+import { Button, Switch } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -57,13 +46,6 @@ function AudienceInteraction({
   const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
   const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
   const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
-
-  //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
-  //   const [pinFeedback] = useMutation(PinFeedbackMutation)
-  //   const [publishFeedback] = useMutation(PublishFeedbackMutation)
-  //   const [resolveFeedback] = useMutation(ResolveFeedbackMutation)
-  //   const [respondToFeedback] = useMutation(RespondToFeedbackMutation)
-  //   const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseMutation)
 
   return (
     <div>

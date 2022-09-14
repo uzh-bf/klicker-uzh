@@ -8,7 +8,7 @@ function useStickyState(defaultValue: boolean, key: string) {
   useEffect(() => {
     const get = async () => {
       try {
-        const stickyValue = await localForage.getItem(key) as boolean
+        const stickyValue = (await localForage.getItem(key)) as boolean
         setValue(stickyValue)
       } catch {
         setValue(defaultValue)

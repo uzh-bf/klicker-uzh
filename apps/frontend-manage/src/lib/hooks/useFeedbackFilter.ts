@@ -37,7 +37,9 @@ function useFeedbackFilter(
   const [sortedFeedbacks, setSortedFeedbacks] = useState(feedbacks)
 
   const [showResolved, setShowResolved] = useState(showResolvedInitial ?? true)
-  const [showUnpublished, setShowUnpublished] = useState(showUnpublishedInitial ?? true)
+  const [showUnpublished, setShowUnpublished] = useState(
+    showUnpublishedInitial ?? true
+  )
   const [showOpen, setShowOpen] = useState(showOpenInitial ?? true)
   const [showUnpinned, setShowUnpinned] = useState(showUnpinnedInitial ?? true)
   const [sortBy, setSortBy] = useState(sortByInitial ?? 'votes')
@@ -50,7 +52,9 @@ function useFeedbackFilter(
       const search = new JsSearch.Search('id')
       search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
       search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-      search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+      search.tokenizer = new JsSearch.StopWordsTokenizer(
+        new JsSearch.SimpleTokenizer()
+      )
       search.addIndex('content')
       search.addDocuments(feedbacks as Object[])
       setSearchIndex(search)
@@ -71,7 +75,16 @@ function useFeedbackFilter(
         return true
       })
     )
-  }, [feedbacks, searchIndex, searchString, showResolved, showOpen, showUnpinned, showUnpublished, withSearch])
+  }, [
+    feedbacks,
+    searchIndex,
+    searchString,
+    showResolved,
+    showOpen,
+    showUnpinned,
+    showUnpublished,
+    withSearch,
+  ])
 
   useEffect(() => {
     setSortedFeedbacks(
