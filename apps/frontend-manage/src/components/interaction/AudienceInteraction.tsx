@@ -18,6 +18,7 @@ import { useMutation } from '@apollo/client'
 import {
   AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
+  DeleteFeedbackDocument,
   Feedback,
   GetCockpitSessionDocument,
   PinFeedbackDocument,
@@ -48,7 +49,6 @@ function AudienceInteraction({
   isGamificationEnabled,
 }: Props) {
   // TODO: implement!!
-  const deleteFeedback = (props: any) => null
   const respondToFeedback = (props: any) => null
   const deleteFeedbackResponse = (props: any) => null
 
@@ -56,6 +56,7 @@ function AudienceInteraction({
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
+  const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
 
   //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
   //   const [pinFeedback] = useMutation(PinFeedbackMutation)
@@ -160,8 +161,8 @@ function AudienceInteraction({
             <div className="flex-1">
               <FeedbackChannel
                 feedbacks={feedbacks}
-                handleDeleteFeedback={(feedbackId: string): void => {
-                  deleteFeedback({ variables: { feedbackId, sessionId } })
+                handleDeleteFeedback={(feedbackId: number): void => {
+                  deleteFeedback({ variables: { id: feedbackId } })
                   push(['trackEvent', 'Running Session', 'Feedback Deleted'])
                 }}
                 handleDeleteFeedbackResponse={(

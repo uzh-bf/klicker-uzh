@@ -757,7 +757,7 @@ export const Mutation = objectType({
         id: nonNull(intArg()),
         isResolved: nonNull(booleanArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.resolveFeedback(args, ctx)
       },
     })
@@ -768,8 +768,18 @@ export const Mutation = objectType({
         id: nonNull(intArg()),
         responseContent: nonNull(stringArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.respondToFeedback(args, ctx)
+      },
+    })
+
+    t.field('deleteFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedback(args, ctx)
       },
     })
 
