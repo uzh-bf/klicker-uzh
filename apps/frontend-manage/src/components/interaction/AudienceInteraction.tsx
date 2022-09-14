@@ -11,8 +11,10 @@ import {
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
-import { Switch } from '@uzh-bf/design-system'
+import { Button, Switch } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
@@ -59,19 +61,18 @@ function AudienceInteraction({
         <div className="flex flex-col flex-wrap self-start gap-4 md:flex-row print:hidden">
           {isAudienceInteractionActive && (
             <div className="order-3 md:order-1">
-              {/* // TODO: readd this button when the lecturer view is implemented
               <a
-                href={`/sessions/feedbacks`}
+                href={`/lecturer/${sessionId}`}
                 rel="noopener noreferrer"
                 target="_blank"
               >
                 <Button className="h-10 px-4">
-                  <Button.Icon>
+                  <Button.Icon className='mr-1'>
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
                   <Button.Label>Dozierendenansicht</Button.Label>
                 </Button>
-              </a> */}
+              </a>
             </div>
           )}
 

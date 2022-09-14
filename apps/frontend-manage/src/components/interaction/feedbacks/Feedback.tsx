@@ -84,7 +84,7 @@ function Feedback({
                   <FontAwesomeIcon icon={faCheck} className="ml-2" />
                   {responses && responses.length > 0 && (
                     <div className="text-gray-500 ml-7 md:hidden print:hidden">
-                      {responses.length} responses given
+                      {responses.length} Antworten gegeben
                     </div>
                   )}
                 </>
@@ -104,7 +104,7 @@ function Feedback({
           <div className="flex flex-row items-end mt-2">
             {responses && responses.length > 0 && (
               <div className="hidden mr-4 text-gray-500 md:block">
-                {responses.length} responses given
+                {responses.length} Antworten gegeben
               </div>
             )}
             <Button

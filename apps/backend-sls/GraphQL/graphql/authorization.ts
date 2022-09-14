@@ -57,6 +57,7 @@ export const AuthSchema = {
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     participations: { __authz: { rules: ['IsParticipant'] } },
+    pinnedFeedbacks: { __authz: { rules: ['IsUserOrAdmin'] } },
     self: { __authz: { rules: ['IsParticipant'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },

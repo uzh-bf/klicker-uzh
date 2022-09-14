@@ -600,6 +600,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('pinnedFeedbacks', {
+      type: LecturerSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getPinnedFeedbacks(args, ctx)
+      },
+    })
+
     t.list.nonNull.field('sessionLeaderboard', {
       type: LeaderboardEntry,
       args: {

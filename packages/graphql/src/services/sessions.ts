@@ -766,6 +766,35 @@ export async function getUserSessions(
   })
 }
 
+// compute the average of all feedbacks that were given within the last 10 minutes
+const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+  const recentFeedbacks = feedbacks.filter(
+    (feedback) =>
+      dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
+      dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
+  )
+
+  if (recentFeedbacks.length > 0) {
+    const summedFeedbacks = recentFeedbacks.reduce(
+      (previousValue, feedback) => {
+        return {
+          speed: previousValue.speed + feedback.speed,
+          difficulty: previousValue.difficulty + feedback.difficulty,
+          numberOfParticipants: previousValue.numberOfParticipants + 1,
+        }
+      },
+      { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+    )
+    return {
+      ...summedFeedbacks,
+      speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
+      difficulty:
+        summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
+    }
+  }
+  return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
+}
+
 export async function getCockpitSession(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -795,35 +824,6 @@ export async function getCockpitSession(
     !session.activeBlock
   ) {
     return null
-  }
-
-  // compute the average of all feedbacks that were given within the last 10 minutes
-  const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
-    const recentFeedbacks = feedbacks.filter(
-      (feedback) =>
-        dayjs().diff(dayjs(feedback.createdAt)) > 0 &&
-        dayjs().diff(dayjs(feedback.createdAt)) < 1000 * 60 * 10
-    )
-
-    if (recentFeedbacks.length > 0) {
-      const summedFeedbacks = recentFeedbacks.reduce(
-        (previousValue, feedback) => {
-          return {
-            speed: previousValue.speed + feedback.speed,
-            difficulty: previousValue.difficulty + feedback.difficulty,
-            numberOfParticipants: previousValue.numberOfParticipants + 1,
-          }
-        },
-        { speed: 0, difficulty: 0, numberOfParticipants: 0 }
-      )
-      return {
-        ...summedFeedbacks,
-        speed: summedFeedbacks.speed / summedFeedbacks.numberOfParticipants,
-        difficulty:
-          summedFeedbacks.difficulty / summedFeedbacks.numberOfParticipants,
-      }
-    }
-    return { speed: 0, difficulty: 0, numberOfParticipants: 0 }
   }
 
   // recude session to only contain what is required for the lecturer cockpit
@@ -856,6 +856,35 @@ export async function getCockpitSession(
         }),
       }
     }),
+    confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
+  }
+
+  return reducedSession
+}
+
+export async function getPinnedFeedbacks(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      confusionFeedbacks: true,
+      feedbacks: {
+        where: {
+          isPinned: true,
+        },
+      },
+    },
+  })
+
+  if (session?.status !== SessionStatus.RUNNING || !session) {
+    return null
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
     confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
   }
 

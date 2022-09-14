@@ -254,6 +254,7 @@ type Query {
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
   participations: [Participation!]
+  pinnedFeedbacks(id: ID!): LecturerSession
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session

@@ -487,6 +487,7 @@ export interface NexusGenFieldTypes {
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
+    pinnedFeedbacks: NexusGenRootTypes['LecturerSession'] | null; // LecturerSession
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
@@ -748,6 +749,7 @@ export interface NexusGenFieldTypeNames {
     learningElement: 'LearningElement'
     microSession: 'MicroSession'
     participations: 'Participation'
+    pinnedFeedbacks: 'LecturerSession'
     runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
@@ -927,6 +929,9 @@ export interface NexusGenArgTypes {
       id: string; // ID!
     }
     microSession: { // args
+      id: string; // ID!
+    }
+    pinnedFeedbacks: { // args
       id: string; // ID!
     }
     runningSessions: { // args
