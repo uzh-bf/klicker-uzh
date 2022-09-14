@@ -783,6 +783,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('deleteFeedbackResponse', {
+      type: FeedbackResponse,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedbackResponse(args, ctx)
+      },
+    })
+
     t.field('respondToQuestionInstance', {
       type: QuestionInstance,
       args: {

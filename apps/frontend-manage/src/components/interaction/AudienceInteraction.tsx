@@ -19,6 +19,7 @@ import {
   AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
   DeleteFeedbackDocument,
+  DeleteFeedbackResponseDocument,
   Feedback,
   GetCockpitSessionDocument,
   PinFeedbackDocument,
@@ -50,13 +51,13 @@ function AudienceInteraction({
 }: Props) {
   // TODO: implement!!
   const respondToFeedback = (props: any) => null
-  const deleteFeedbackResponse = (props: any) => null
 
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
   const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
+  const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
 
   //   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
   //   const [pinFeedback] = useMutation(PinFeedbackMutation)
@@ -166,11 +167,10 @@ function AudienceInteraction({
                   push(['trackEvent', 'Running Session', 'Feedback Deleted'])
                 }}
                 handleDeleteFeedbackResponse={(
-                  feedbackId: string,
-                  responseId: string
+                  responseId: number,
                 ) => {
                   deleteFeedbackResponse({
-                    variables: { sessionId, feedbackId, responseId },
+                    variables: { id: responseId },
                   })
                   push([
                     'trackEvent',

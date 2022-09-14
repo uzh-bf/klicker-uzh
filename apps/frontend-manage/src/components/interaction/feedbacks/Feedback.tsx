@@ -31,7 +31,7 @@ interface Props extends IFeedback {
   onPinFeedback: (pinState: boolean) => void
   onResolveFeedback: (resolvedState: boolean) => void
   onRespondToFeedback: (response: string) => void
-  onDeleteResponse: (responseId: string) => void
+  onDeleteResponse: (responseId: number) => void
 }
 
 const defaultProps = {

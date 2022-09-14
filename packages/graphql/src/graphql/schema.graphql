@@ -182,6 +182,7 @@ type Mutation {
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
+  deleteFeedbackResponse(id: Int!): FeedbackResponse
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID

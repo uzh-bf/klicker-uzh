@@ -16,12 +16,12 @@ import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
   feedbacks?: FeedbackType[]
-  handleDeleteFeedback: (id: number) => void
-  handlePinFeedback: (id: number, isPinned: boolean) => void
+  handleDeleteFeedback: (feedbackId: number) => void
+  handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
   handlePublishFeedback: (feedbackId: number, isPublished: boolean) => void
-  handleResolveFeedback: (id: number, resolvedState: boolean) => void
+  handleResolveFeedback: (feedbackId: number, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void
-  handleDeleteFeedbackResponse: (id: string, responseId: string) => void
+  handleDeleteFeedbackResponse: (responseId: number) => void
   isActive?: boolean
   isPublic?: boolean
 }
@@ -139,7 +139,7 @@ function FeedbackChannel({
                   votes={votes}
                   onDeleteFeedback={() => handleDeleteFeedback(id)}
                   onDeleteResponse={(responseId) =>
-                    handleDeleteFeedbackResponse(id, responseId)
+                    handleDeleteFeedbackResponse(responseId)
                   }
                   onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
                   onResolveFeedback={(resolvedState) =>

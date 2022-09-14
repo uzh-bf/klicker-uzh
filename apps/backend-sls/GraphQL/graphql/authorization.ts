@@ -33,6 +33,7 @@ export const AuthSchema = {
     addConfusionTimestep: { __authz: { rules: ['Allow'] } },
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
+    deleteFeedbackResponse: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
     logoutUser: { __authz: { rules: ['IsUserOrAdmin'] } },
