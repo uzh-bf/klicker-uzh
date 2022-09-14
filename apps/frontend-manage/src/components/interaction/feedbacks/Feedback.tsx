@@ -1,10 +1,13 @@
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faThumbsUp, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
   faArrowUp,
+  faCheck,
+  faComments,
   faLock,
   faLockOpen,
   faPaperPlane,
+  faQuestion,
   faThumbTack,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -78,7 +81,7 @@ function Feedback({
             <div className="min-w-max">
               {resolved ? (
                 <>
-                  <div>//TODO check icon Resolved during session</div>
+                  <FontAwesomeIcon icon={faCheck} className="ml-2" />
                   {responses && responses.length > 0 && (
                     <div className="text-gray-500 ml-7 md:hidden print:hidden">
                       {responses.length} responses given
@@ -86,14 +89,18 @@ function Feedback({
                   )}
                 </>
               ) : (
-                <div>// TODO discussion Icon</div>
+                <FontAwesomeIcon icon={faComments} className="ml-2" />
               )}
             </div>
-            <div className="ml-4">{pinned && '// TODO PIN IC'}</div>
+            <div className="ml-4">
+              {pinned && <FontAwesomeIcon icon={faThumbTack} />}
+            </div>
           </div>
         </div>
         <div className="flex flex-col items-end justify-between flex-initial print:hidden">
-          <div className="text-xl text-gray-500">{votes} //TODO Thumbup IC</div>
+          <div className="text-xl text-gray-500">
+            {votes} <FontAwesomeIcon icon={faThumbsUp} className="ml-2" />
+          </div>
           <div className="flex flex-row items-end mt-2">
             {responses && responses.length > 0 && (
               <div className="hidden mr-4 text-gray-500 md:block">
@@ -161,10 +168,12 @@ function Feedback({
                 </div>
                 <div className="flex flex-row items-center flex-initial print:hidden">
                   <div className={twMerge('text-gray-500')}>
-                    {response.positiveReactions} // TODO Thumbup IC
+                    {response.positiveReactions}{' '}
+                    <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
                   </div>
                   <div className={twMerge('ml-2', 'text-gray-500')}>
-                    {response.negativeReactions} // TODO QuestionIcon
+                    {response.negativeReactions}{' '}
+                    <FontAwesomeIcon icon={faQuestion} className="mr-0.5" />
                   </div>
                   <div className="ml-2 print:hidden">
                     <Button

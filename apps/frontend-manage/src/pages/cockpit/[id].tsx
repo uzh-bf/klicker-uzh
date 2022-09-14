@@ -236,7 +236,7 @@ function Cockpit() {
           }
         /> */}
       </div>
-      AUDIENCE INTERACTION
+
       <AudienceInteraction
         confusionValues={
           confusionFeedbacks

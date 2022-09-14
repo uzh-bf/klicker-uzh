@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
@@ -14,7 +12,7 @@ import {
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { Button, Switch } from '@uzh-bf/design-system'
+import { Switch } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
@@ -61,6 +59,7 @@ function AudienceInteraction({
         <div className="flex flex-col flex-wrap self-start gap-4 md:flex-row print:hidden">
           {isAudienceInteractionActive && (
             <div className="order-3 md:order-1">
+              {/* // TODO: readd this button when the lecturer view is implemented
               <a
                 href={`/sessions/feedbacks`}
                 rel="noopener noreferrer"
@@ -72,7 +71,7 @@ function AudienceInteraction({
                   </Button.Icon>
                   <Button.Label>Dozierendenansicht</Button.Label>
                 </Button>
-              </a>
+              </a> */}
             </div>
           )}
 
