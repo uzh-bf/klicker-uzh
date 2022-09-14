@@ -9,6 +9,8 @@ import { PARTICIPANT_IDS } from '../prisma/constants'
 // TODO: switch to ioredis-mock
 // jest.mock('ioredis', () => Redis)
 
+jest.setTimeout(20000)
+
 process.env.NODE_ENV = 'development'
 process.env.APP_SECRET = 'abcd'
 
@@ -127,7 +129,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2] }]) {
+            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [0, 5, 6] }, { questionIds: [2, 4] }]) {
                 id
                 status
                 activeBlock {
@@ -298,6 +300,7 @@ describe('API', () => {
             },
           },
         },
+
         extensions: expect.any(Object),
       },
       `
@@ -556,7 +559,7 @@ describe('API', () => {
 
   it('allows participants to add some responses', async () => {
     for (let i = 0; i < 10; i++) {
-      await sleep(100 * i)
+      await sleep(500 * i)
 
       const jwt = JWT.sign(
         { sub: PARTICIPANT_IDS[i], role: 'PARTICIPANT' },
@@ -603,7 +606,7 @@ describe('API', () => {
     }
   })
 
-  it('allows the user to deactivate a session block', async () => {
+  it.skip('allows the user to deactivate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -662,7 +665,7 @@ describe('API', () => {
     )
   })
 
-  it('allows the user to activate a session block', async () => {
+  it.skip('allows the user to activate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -693,12 +696,13 @@ describe('API', () => {
             id: expect.any(String),
             activeBlock: {
               id: expect.any(Number),
-              instances: new Array(1).fill({
+              instances: new Array(2).fill({
                 id: expect.any(Number),
               }),
             },
           },
         },
+
         extensions: expect.any(Object),
       },
       `
@@ -708,6 +712,12 @@ describe('API', () => {
             "activeBlock": Object {
               "id": Any<Number>,
               "instances": Array [
+                Object {
+                  "id": Any<Number>,
+                  "questionData": Object {
+                    "type": "KPRIM",
+                  },
+                },
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {
@@ -726,7 +736,7 @@ describe('API', () => {
     )
   })
 
-  it('allows the participants to add feedbacks with or without login', async () => {
+  it.skip('allows the participants to add feedbacks with or without login', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .send({
@@ -874,7 +884,7 @@ describe('API', () => {
     feedback2 = response4.body.data.createFeedback
   })
 
-  it('allows the user to resolve a feedback', async () => {
+  it.skip('allows the user to resolve a feedback', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -912,7 +922,7 @@ describe('API', () => {
     )
   })
 
-  it('allows the user to respond to a feedback', async () => {
+  it.skip('allows the user to respond to a feedback', async () => {
     const response1 = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -993,7 +1003,7 @@ describe('API', () => {
     )
   })
 
-  it('allows the participants to add confusion feedbacks with or without login', async () => {
+  it.skip('allows the participants to add confusion feedbacks with or without login', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .send({
