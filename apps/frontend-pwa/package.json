@@ -16,6 +16,7 @@
     "@fortawesome/free-regular-svg-icons": "6.1.2",
     "@fortawesome/free-solid-svg-icons": "6.1.2",
     "@fortawesome/react-fontawesome": "0.2.0",
+    "@klicker-uzh/prisma": "^2.0.0-alpha.8",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/markdown": "^2.0.0-alpha.8",
     "@socialgouv/matomo-next": "1.4.0",
