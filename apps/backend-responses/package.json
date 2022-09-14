@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-responses",
-  "version": "2.0.0-alpha.22",
+  "version": "2.0.0-alpha.23",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "module": "dist/backend-responses.esm.js",
@@ -19,6 +19,7 @@
     "test": "dts test"
   },
   "dependencies": {
+    "@klicker-uzh/grading": "^2.0.0-alpha.23",
     "@upstash/redis": "1.13.1",
     "ioredis": "5.2.3",
     "jsonwebtoken": "8.5.1",
@@ -35,7 +36,7 @@
     "@types/node": "^18.0.0",
     "@types/ramda": "0.28.15",
     "@types/supertest": "^2.0.12",
-    "@uzh-bf/design-system": "0.0.37",
+    "@uzh-bf/design-system": "0.0.38",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",
     "husky": "8.0.1",

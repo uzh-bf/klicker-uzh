@@ -93,7 +93,6 @@ function LearningElement({ courseId, id }: Props) {
               <div className="pb-2">
                 <Markdown content={questionData.content} />
               </div>
-
               <OptionsDisplay
                 isEvaluation={isEvaluation}
                 evaluation={currentInstance.evaluation}

@@ -22,6 +22,7 @@ import {
 import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
 import * as LearningElementService from './services/learningElements'
+import * as MicroLearningService from './services/microLearning'
 import * as ParticipantService from './services/participants'
 import * as SessionService from './services/sessions'
 
@@ -59,7 +60,11 @@ export const QuestionData = interfaceType({
     t.nonNull.boolean('isDeleted')
   },
   resolveType: (item) => {
-    if (item.type === DB.QuestionType.SC || item.type === DB.QuestionType.MC) {
+    if (
+      item.type === DB.QuestionType.SC ||
+      item.type === DB.QuestionType.MC ||
+      item.type === DB.QuestionType.KPRIM
+    ) {
       return 'ChoicesQuestionData'
     } else if (item.type === DB.QuestionType.NUMERICAL) {
       return 'NumericalQuestionData'
@@ -226,16 +231,6 @@ export const QuestionInstance = objectType({
   },
 })
 
-export const MicroSession = objectType({
-  name: 'MicroSession',
-  definition(t) {
-    t.nonNull.id('id')
-
-    t.nonNull.string('name')
-    t.nonNull.string('displayName')
-  },
-})
-
 export const Course = objectType({
   name: 'Course',
   definition(t) {
@@ -271,6 +266,39 @@ export const LearningElement = objectType({
     t.nonNull.field('course', {
       type: Course,
     })
+  },
+})
+
+export const MicroSession = objectType({
+  name: 'MicroSession',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.string('description')
+
+    t.nonNull.list.nonNull.field('instances', {
+      type: QuestionInstance,
+    })
+
+    t.nonNull.field('course', {
+      type: Course,
+    })
+  },
+})
+
+export const User = objectType({
+  name: 'User',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.boolean('isActive')
+
+    t.nonNull.string('email')
+    t.nonNull.string('shortname')
+
+    t.string('description')
   },
 })
 
@@ -405,6 +433,11 @@ export const SessionStatus = enumType({
   members: DB.SessionStatus,
 })
 
+export const AccessMode = enumType({
+  name: 'AccessMode',
+  members: DB.AccessMode,
+})
+
 export const Session = objectType({
   name: 'Session',
   definition(t) {
@@ -429,11 +462,15 @@ export const Session = objectType({
       type: SessionBlock,
     })
 
+    t.nonNull.field('accessMode', { type: AccessMode })
+
     t.list.field('feedbacks', { type: Feedback })
 
     t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
 
     t.field('course', { type: Course })
+
+    t.nonNull.date('createdAt')
   },
 })
 
@@ -450,6 +487,13 @@ export const Query = objectType({
       },
     })
 
+    t.field('userProfile', {
+      type: User,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return AccountService.getUserProfile({ id: ctx.user.sub }, ctx)
+      },
+    })
+
     t.field('learningElement', {
       type: LearningElement,
       args: {
@@ -457,6 +501,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return LearningElementService.getLearningElementData(args, ctx)
+      },
+    })
+
+    t.field('microSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.getMicroSessionData(args, ctx)
       },
     })
 
@@ -516,6 +570,13 @@ export const Query = objectType({
         return SessionService.getRunningSessions(args, ctx)
       },
     })
+
+    t.list.nonNull.field('userSessions', {
+      type: Session,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+      },
+    })
   },
 })
 
@@ -541,6 +602,26 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: Context) {
         return AccountService.loginParticipant(args, ctx)
+      },
+    })
+
+    t.field('logoutUser', {
+      type: 'ID',
+      args: {
+        userId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.logoutUser(args, ctx)
+      },
+    })
+
+    t.field('logoutParticipant', {
+      type: 'ID',
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.logoutParticipant(args, ctx)
       },
     })
 

@@ -3,4 +3,5 @@ export enum QuestionType {
   MC = 'MC',
   NUMERICAL = 'NUMERICAL',
   FREE_TEXT = 'FREE_TEXT',
+  KPRIM = 'KPRIM',
 }

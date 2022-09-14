@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context } from '../lib/context'
+import { Context, ContextWithOptionalUser } from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -58,6 +58,35 @@ export async function loginUser(
   return user.id
 }
 
+export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: userId },
+  })
+
+  if (!user) return null
+
+  ctx.res.cookie('user_token', 'logoutString', {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 0,
+    secure: process.env.NODE_ENV === 'production',
+  })
+
+  return user.id
+}
+
+export async function getUserProfile(
+  { id }: { id: string },
+  ctx: ContextWithOptionalUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id },
+  })
+
+  return user
+}
+
 export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {
@@ -109,5 +138,23 @@ export async function loginParticipant(
   })
 
   // TODO: return more data (e.g. Avatar etc.)
+  return participant.id
+}
+
+export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: id },
+  })
+
+  if (!participant) return null
+
+  ctx.res.cookie('participant_token', 'logoutString', {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 0,
+    secure: process.env.NODE_ENV === 'production',
+  })
+
   return participant.id
 }

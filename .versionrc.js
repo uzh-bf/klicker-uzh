@@ -13,6 +13,7 @@ module.exports = {
     'apps/frontend-learning/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
+    'packages/grading/',
     'packages/graphql/',
     'packages/lti/',
     'packages/prisma/',

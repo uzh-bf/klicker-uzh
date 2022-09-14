@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "2.0.0-alpha.22",
+  "version": "2.0.0-alpha.23",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3002",
@@ -12,14 +12,16 @@
   "dependencies": {
     "@apollo/client": "3.6.9",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
-    "@uzh-bf/design-system": "0.0.37",
+    "@klicker-uzh/prisma": "^2.0.0-alpha.8",
+    "@radix-ui/react-dropdown-menu": "1.0.0",
+    "@uzh-bf/design-system": "0.0.38",
     "deepmerge": "4.2.2",
     "graphql": "16.6.0",
     "next": "12.2.5",
-    "next-intl": "2.7.4",
     "ramda": "0.28.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-qrcode-logo": "2.8.0",
     "tailwind-merge": "1.6.0"
   },
   "devDependencies": {

@@ -1,0 +1,27 @@
+#import "./FQuestionData.graphql"
+
+query GetMicroSession($id: ID!) {
+  microSession(id: $id) {
+    id
+    displayName
+    description
+    course {
+      id
+      displayName
+      color
+    }
+    instances {
+      id
+      ...QuestionData
+      evaluation {
+        feedbacks {
+          ix
+          feedback
+          correct
+          value
+        }
+        choices
+      }
+    }
+  }
+}
