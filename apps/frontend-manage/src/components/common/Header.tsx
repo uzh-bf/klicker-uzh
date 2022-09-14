@@ -86,7 +86,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                     key={session.name}
                   >
                     <a
-                      onClick={() => router.push(`/running/${session.id}`)}
+                      onClick={() => router.push(`/cockpit/${session.id}`)}
                       className="my-auto text-center"
                     >
                       {session.name}

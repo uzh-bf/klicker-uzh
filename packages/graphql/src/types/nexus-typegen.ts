@@ -429,6 +429,7 @@ export interface NexusGenFieldTypes {
     points: number; // Int!
   }
   Query: { // field return type
+    cockpitSession: NexusGenRootTypes['Session'] | null; // Session
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
@@ -661,6 +662,7 @@ export interface NexusGenFieldTypeNames {
     points: 'Int'
   }
   Query: { // field return type name
+    cockpitSession: 'Session'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
@@ -818,6 +820,9 @@ export interface NexusGenArgTypes {
     }
   }
   Query: {
+    cockpitSession: { // args
+      id: string; // ID!
+    }
     feedbacks: { // args
       id: string; // ID!
     }

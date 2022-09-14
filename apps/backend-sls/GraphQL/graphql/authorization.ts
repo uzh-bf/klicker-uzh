@@ -48,6 +48,7 @@ export const AuthSchema = {
 
   Query: {
     '*': { __authz: { rules: ['Reject'] } },
+    cockpitSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
@@ -55,7 +56,7 @@ export const AuthSchema = {
     self: { __authz: { rules: ['IsParticipant'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
-    userProfile: { __authz: { rules: ['isUserOrAdmin'] } },
-    userSessions: { __authz: { rules: ['isUserOrAdmin'] } },
+    userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
+    userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
 }

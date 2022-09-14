@@ -770,3 +770,63 @@ export async function getUserSessions(
     }
   })
 }
+
+export async function getCockpitSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+      course: true,
+    },
+  })
+
+  if (
+    session?.status !== SessionStatus.RUNNING ||
+    !session ||
+    !session.activeBlock
+  ) {
+    return null
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
+    activeBlock: {
+      id: session.activeBlock.id,
+    },
+    blocks: session.blocks.map((block) => {
+      return {
+        ...block,
+        instances: block.instances.map((instance) => {
+          const questionData =
+            instance.questionData?.valueOf() as AllQuestionTypeData
+          if (
+            !questionData ||
+            typeof questionData !== 'object' ||
+            Array.isArray(questionData)
+          ) {
+            return instance
+          } else {
+            return {
+              ...instance,
+              questionData: {
+                ...questionData,
+                options: null,
+              },
+            }
+          }
+        }),
+      }
+    }),
+  }
+
+  return reducedSession
+}

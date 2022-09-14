@@ -218,6 +218,7 @@ type Participation {
 }
 
 type Query {
+  cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement

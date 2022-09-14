@@ -541,6 +541,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('cockpitSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getCockpitSession(args, ctx)
+      },
+    })
+
     t.list.nonNull.field('sessionLeaderboard', {
       type: LeaderboardEntry,
       args: {
