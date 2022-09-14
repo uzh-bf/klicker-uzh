@@ -3,9 +3,9 @@ import {
   GetUserSessionsDocument,
   Session as SessionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
 import Session from '../../components/sessions/Session'
 
+import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 
 function SessionList() {
@@ -15,32 +15,25 @@ function SessionList() {
     data: dataSessions,
   } = useQuery(GetUserSessionsDocument)
 
-  const runningSessions = useMemo(
+  const {
+    RUNNING: runningSessions,
+    SCHEDULED: scheduledSessions,
+    PREPARED: preparedSessions,
+    COMPLETED: completedSessions,
+  } = useMemo(
     () =>
-      dataSessions?.userSessions?.filter(
-        (session) => session?.status === 'RUNNING'
-      ),
-    [dataSessions]
-  )
-  const scheduledSessions = useMemo(
-    () =>
-      dataSessions?.userSessions?.filter(
-        (session) => session?.status === 'SCHEDULED'
-      ),
-    [dataSessions]
-  )
-  const preparedSessions = useMemo(
-    () =>
-      dataSessions?.userSessions?.filter(
-        (session) => session?.status === 'PREPARED'
-      ),
-    [dataSessions]
-  )
-  const completedSessions = useMemo(
-    () =>
-      dataSessions?.userSessions?.filter(
-        (session) => session?.status === 'COMPLETED'
-      ),
+      dataSessions?.userSessions?.reduce(
+        (memo, x) => {
+          memo[x['status']].push(x as SessionType)
+          return memo
+        },
+        {
+          RUNNING: new Array<SessionType>(),
+          SCHEDULED: new Array<SessionType>(),
+          PREPARED: new Array<SessionType>(),
+          COMPLETED: new Array<SessionType>(),
+        }
+      ) || { RUNNING: [], SCHEDULED: [], PREPARED: [], COMPLETED: [] },
     [dataSessions]
   )
 

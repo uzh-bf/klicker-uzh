@@ -31,7 +31,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           variables: { userId: user.id },
         })
         userIdLogout.data?.logoutUser
-          ? router.push('/login')
+          ? router.push('https://www.klicker.uzh.ch')
           : console.log('Logout failed')
       },
     },
