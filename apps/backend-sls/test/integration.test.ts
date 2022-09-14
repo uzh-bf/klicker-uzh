@@ -9,7 +9,7 @@ import { PARTICIPANT_IDS } from '../prisma/constants'
 // TODO: switch to ioredis-mock
 // jest.mock('ioredis', () => Redis)
 
-jest.setTimeout(20000)
+jest.setTimeout(60000)
 
 process.env.NODE_ENV = 'development'
 process.env.APP_SECRET = 'abcd'
@@ -559,7 +559,7 @@ describe('API', () => {
 
   it('allows participants to add some responses', async () => {
     for (let i = 0; i < 10; i++) {
-      await sleep(500 * i)
+      await sleep(100 * i)
 
       const jwt = JWT.sign(
         { sub: PARTICIPANT_IDS[i], role: 'PARTICIPANT' },
@@ -606,7 +606,7 @@ describe('API', () => {
     }
   })
 
-  it.skip('allows the user to deactivate a session block', async () => {
+  it('allows the user to deactivate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -665,7 +665,7 @@ describe('API', () => {
     )
   })
 
-  it.skip('allows the user to activate a session block', async () => {
+  it('allows the user to activate a session block', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -736,7 +736,7 @@ describe('API', () => {
     )
   })
 
-  it.skip('allows the participants to add feedbacks with or without login', async () => {
+  it('allows the participants to add feedbacks with or without login', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .send({
@@ -884,7 +884,7 @@ describe('API', () => {
     feedback2 = response4.body.data.createFeedback
   })
 
-  it.skip('allows the user to resolve a feedback', async () => {
+  it('allows the user to resolve a feedback', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -922,7 +922,7 @@ describe('API', () => {
     )
   })
 
-  it.skip('allows the user to respond to a feedback', async () => {
+  it('allows the user to respond to a feedback', async () => {
     const response1 = await request(app)
       .post('/api/graphql')
       .set('Cookie', [userCookie])
@@ -1003,7 +1003,7 @@ describe('API', () => {
     )
   })
 
-  it.skip('allows the participants to add confusion feedbacks with or without login', async () => {
+  it('allows the participants to add confusion feedbacks with or without login', async () => {
     const response = await request(app)
       .post('/api/graphql')
       .send({
