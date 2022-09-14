@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.21...v2.0.0-alpha.23) (2022-09-14)
+
+
+### Features
+
+* add confusion feedback functionality to live sessions ([#2865](https://github.com/uzh-bf/klicker-uzh/issues/2865)) ([a5baac8](https://github.com/uzh-bf/klicker-uzh/commit/a5baac84e95d9687a7c34aa3c05c295949b98df7))
+* add feedback structure and corresponding queries and mutations for live sessions ([#2852](https://github.com/uzh-bf/klicker-uzh/issues/2852)) ([3de9fd0](https://github.com/uzh-bf/klicker-uzh/commit/3de9fd0463125db087655e15483b703bc025b020))
+* **apps/frontend-pwa:** add a join page with next ISR ([#2871](https://github.com/uzh-bf/klicker-uzh/issues/2871)) ([586f123](https://github.com/uzh-bf/klicker-uzh/commit/586f123e356f0203e1b078b98f6f4c542cb57d7b))
+* basic index page in PWA ([#2843](https://github.com/uzh-bf/klicker-uzh/issues/2843)) ([02783ff](https://github.com/uzh-bf/klicker-uzh/commit/02783ff6ecdfd05c7697d142ea3e835486eefdd1))
+* block deactivation with redis persistence, leaderboard computation ([#2851](https://github.com/uzh-bf/klicker-uzh/issues/2851)) ([2df3c1a](https://github.com/uzh-bf/klicker-uzh/commit/2df3c1a6b5e16a502e5367d21f1c11b5a1a62815))
+* implement session list with corresponding query and logout functionality ([#2875](https://github.com/uzh-bf/klicker-uzh/issues/2875)) ([3f10950](https://github.com/uzh-bf/klicker-uzh/commit/3f10950c6d7f12ea8031bada2dbf67601706fe8f))
+* implement user login functionality for manage frontend ([#2873](https://github.com/uzh-bf/klicker-uzh/issues/2873)) ([24e5a01](https://github.com/uzh-bf/klicker-uzh/commit/24e5a0101a7cd74727bd3409c91c06825d397eab))
+* initial microlearning session playthrough ([#2872](https://github.com/uzh-bf/klicker-uzh/issues/2872)) ([359598e](https://github.com/uzh-bf/klicker-uzh/commit/359598e597a79f78bb49277d1a0590caf6246109))
+* initial session creation and start ([#2819](https://github.com/uzh-bf/klicker-uzh/issues/2819)) ([deed5c8](https://github.com/uzh-bf/klicker-uzh/commit/deed5c87a1f6854f462fcb5a6768c128330aadea))
+* processing responses ([#2840](https://github.com/uzh-bf/klicker-uzh/issues/2840)) ([3e7c62d](https://github.com/uzh-bf/klicker-uzh/commit/3e7c62d8c0012afd7c81127f40eba3f63ce77c4b))
+* rebuild join page ([#2800](https://github.com/uzh-bf/klicker-uzh/issues/2800)) ([3fa059c](https://github.com/uzh-bf/klicker-uzh/commit/3fa059c934bcd389fc3863e6f217e678e926eb94))
+
+
+### Bug Fixes
+
+* **apps/backend-*:** fix builds for azure functions ([7556261](https://github.com/uzh-bf/klicker-uzh/commit/7556261ae85bd003b74054d0dbc356089672921c))
+* **apps/frontend-learning:** fix type issues ([a35e02a](https://github.com/uzh-bf/klicker-uzh/commit/a35e02a259557064c90033648ff2fdd08cb95073))
+* **apps/frontend-manage:** fix missing base url in tsconfig ([2922505](https://github.com/uzh-bf/klicker-uzh/commit/2922505019fec8966f1313602b676751cbd296e7))
+* **apps/frontend-pwa:** fix type issues ([d5e18de](https://github.com/uzh-bf/klicker-uzh/commit/d5e18de7c730bd65e1ded70d8f468062249e9eaf))
+* **packages/graphql:** pass the color param to create course ([e764a5c](https://github.com/uzh-bf/klicker-uzh/commit/e764a5c8b527bbac8dce63cc6d2066ab190aac52))
+* remove duplicate tests ([2a9b6cb](https://github.com/uzh-bf/klicker-uzh/commit/2a9b6cb53934babfdabd641e106fa3ca0d9b23e7))
+
+
+### Refactors
+
+* merge frontend-learning into frontend-pwa ([#2863](https://github.com/uzh-bf/klicker-uzh/issues/2863)) ([8904d3d](https://github.com/uzh-bf/klicker-uzh/commit/8904d3d6294b7e60df93f75e6d091af2bc931f55))
+
+
+### Enhancements
+
+* add responses, mobile layout changes ([#2842](https://github.com/uzh-bf/klicker-uzh/issues/2842)) ([1fba672](https://github.com/uzh-bf/klicker-uzh/commit/1fba672925720d125ed44e71af52aac0739937d9))
+* add simple self query for profile page ([b4ba1bc](https://github.com/uzh-bf/klicker-uzh/commit/b4ba1bc788b9d5be44a34872d74bad837a628111))
+* **apps/frontend-pwa:** add api endpoint for avatar generation ([05f99ba](https://github.com/uzh-bf/klicker-uzh/commit/05f99ba1ec4aa9e70e9f03e0c4b5d3b68ee61150))
+* **apps/frontend-pwa:** further improvements for feedbacks ([6b5ec65](https://github.com/uzh-bf/klicker-uzh/commit/6b5ec6530163b8e2b0dafc80153c6d8e7bad820c))
+* **apps/frontend-pwa:** improve layout of learning element ([92b319d](https://github.com/uzh-bf/klicker-uzh/commit/92b319d0738c87e363c3626e4eb14e2be4a7cbb3))
+* **backend-sls:** implement feedback creation in test suite ([#2864](https://github.com/uzh-bf/klicker-uzh/issues/2864)) ([94b74a6](https://github.com/uzh-bf/klicker-uzh/commit/94b74a61ce7a14e8e73b39ba87b89992a3fbb8b2))
+* create course and extend integration test ([#2850](https://github.com/uzh-bf/klicker-uzh/issues/2850)) ([9b64e2c](https://github.com/uzh-bf/klicker-uzh/commit/9b64e2c1d967f600cfd5b8077e0c6e19ff7e295c))
+* display leaderboard entries and small PWA improvements ([#2862](https://github.com/uzh-bf/klicker-uzh/issues/2862)) ([f111dc4](https://github.com/uzh-bf/klicker-uzh/commit/f111dc463d6e625c3aa3e514ee61ea3e9e34bcba))
+* features and improvements for the live session page ([#2867](https://github.com/uzh-bf/klicker-uzh/issues/2867)) ([b4a0bcd](https://github.com/uzh-bf/klicker-uzh/commit/b4a0bcd60942bff08ea30e95e3e3cd6bc991547d))
+* **frontend-pwa:** add react-loader-spinner ([1c2ec17](https://github.com/uzh-bf/klicker-uzh/commit/1c2ec17e0a45ecc20add40523ec32f554608d4b6))
+* improve learning element ([474ef06](https://github.com/uzh-bf/klicker-uzh/commit/474ef066dc891f439a6b8b037e23489ecacd7579))
+* initial add response procedure ([fe11d25](https://github.com/uzh-bf/klicker-uzh/commit/fe11d25b5efe1ccdc89ca7deb83151f97552c62d))
+* initial improvements on learning element design ([#2868](https://github.com/uzh-bf/klicker-uzh/issues/2868)) ([bd4df0b](https://github.com/uzh-bf/klicker-uzh/commit/bd4df0b133a2f28a0c150f3bd806520a389f00dc))
+* mobile layout framework and logic for local response storage ([#2841](https://github.com/uzh-bf/klicker-uzh/issues/2841)) ([56e80f5](https://github.com/uzh-bf/klicker-uzh/commit/56e80f51fee9b9eff2583ea6ffc0867efc643c16))
+
+
+### Other
+
+* add API_DOMAIN and COOKIE_DOMAIN to templates ([456a16b](https://github.com/uzh-bf/klicker-uzh/commit/456a16b803abe449efa9bbe9762602c484dca791))
+* adjust naming of workflow for backend-responses ([5d6dfb5](https://github.com/uzh-bf/klicker-uzh/commit/5d6dfb59e731532eb919ad9afd03b7208bb6ec78))
+* **apps/frontend-pwa:** update webp with lossless ([2c16354](https://github.com/uzh-bf/klicker-uzh/commit/2c163543b014b9f8794df3b23c43cdf1500ebeb4))
+* **backend-*:** fix text suite and config for the cache to work as expected ([a39874e](https://github.com/uzh-bf/klicker-uzh/commit/a39874e37578a980b1a754726a7509c2a8ad8ec1))
+* **frontend-pwa:** replace next image by next future image for question attachment rendering ([6206659](https://github.com/uzh-bf/klicker-uzh/commit/62066595b3f2eb99d82d72aef7cd6c5a1e0a2591))
+* local development with docker-based redis and postgres ([237ba16](https://github.com/uzh-bf/klicker-uzh/commit/237ba16bb6afee0062048c594998c69c6544b6c6))
+* lockfile maintenance ([b935137](https://github.com/uzh-bf/klicker-uzh/commit/b93513777a7b4677f57e0cdb4849e5a4bdc5d16b))
+* lockfile maintenance ([70115fb](https://github.com/uzh-bf/klicker-uzh/commit/70115fb9f260fb18edbb21c88a7209eeeaea964a))
+* one more upgrade of design system ([24e95d0](https://github.com/uzh-bf/klicker-uzh/commit/24e95d0fb7c150b695465f1a290b7116e568923e))
+* **release:** 2.0.0-alpha.22 ([8aa6043](https://github.com/uzh-bf/klicker-uzh/commit/8aa6043be8f64898679e8efcb80a58a983ddd75a))
+* update [@klicker-uzh](https://github.com/klicker-uzh) packages as peer deps ([30ebb3c](https://github.com/uzh-bf/klicker-uzh/commit/30ebb3c5003593faeada7cffe8957c410152d586))
+* update design system and run prettier across packages ([71ed011](https://github.com/uzh-bf/klicker-uzh/commit/71ed0113458320e64962f27484a32775efbde71f))
+* update versioning ([c0f8a50](https://github.com/uzh-bf/klicker-uzh/commit/c0f8a506f42ed76bcf39819b574b8d693d8e3f0f))
+* version bump ([fb69b1e](https://github.com/uzh-bf/klicker-uzh/commit/fb69b1e399f263aeef627ce8c2f5193e90da4fb1))
+
 ## [2.0.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.21...v2.0.0-alpha.22) (2022-09-08)
 
 
