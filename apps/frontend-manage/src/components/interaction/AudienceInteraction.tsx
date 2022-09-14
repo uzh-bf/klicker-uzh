@@ -15,8 +15,11 @@ import { twMerge } from 'tailwind-merge'
 // import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 // import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 // import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-import { GetCockpitSessionDocument, ChangeSessionSettingsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useMutation } from '@apollo/client'
+import {
+  ChangeSessionSettingsDocument,
+  GetCockpitSessionDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 
 // import ConfusionCharts from './confusion/ConfusionCharts'
 // import FeedbackChannel from './feedbacks/FeedbackChannel'
@@ -38,7 +41,7 @@ function AudienceInteraction({
   feedbacks,
   isAudienceInteractionActive,
   isModerationEnabled,
-  isGamificationEnabled
+  isGamificationEnabled,
 }: Props) {
   const deleteFeedback = (props: any) => null
   const pinFeedback = (props: any) => null
@@ -98,6 +101,9 @@ function AudienceInteraction({
                   variables: {
                     id: sessionId,
                     isAudienceInteractionActive: !isAudienceInteractionActive,
+                    isModerationEnabled: !isAudienceInteractionActive
+                      ? isModerationEnabled
+                      : false,
                   },
                 })
                 push([
@@ -117,7 +123,7 @@ function AudienceInteraction({
               id="moderation-switch"
               checked={isModerationEnabled}
               label=""
-              disabled={!isAudienceInteractionActive}
+              disabled={isModerationEnabled}
               onCheckedChange={(): void => {
                 changeSessionSettings({
                   refetchQueries: [{ query: GetCockpitSessionDocument }],
@@ -134,7 +140,11 @@ function AudienceInteraction({
                 ])
               }}
             />
-            <span className={twMerge(!isAudienceInteractionActive && 'text-gray-400')}>
+            <span
+              className={twMerge(
+                !isAudienceInteractionActive && 'text-gray-400'
+              )}
+            >
               Moderation aktivieren
             </span>
           </div>
