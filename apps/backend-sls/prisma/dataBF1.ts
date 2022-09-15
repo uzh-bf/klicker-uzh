@@ -915,11 +915,11 @@ export const QUESTIONS = [
 
     name: 'Modul 2.3 Net Present Value II',
     content:
-      'Sie wollen eine neue Stanzmaschine kaufen, dabei stehen drei verschiedene Typen zur Auswahl. Alle drei Maschinen kosten gleich viel (Kaufpreis CHF 230'000) und werden total in 5 Jahren gleich viel Gewinn erwirtschaften (CHF 300'000). Nur fallen die einzelnen Jahresgewinne der einzelnen Maschinen unterschiedlich an. Nach 5 Jahren müssen alle Maschinen wieder ersetzt werden.
+      'Sie wollen eine neue Stanzmaschine kaufen, dabei stehen drei verschiedene Typen zur Auswahl. Alle drei Maschinen kosten gleich viel (Kaufpreis CHF 230000) und werden total in 5 Jahren gleich viel Gewinn erwirtschaften (CHF 300000). Nur fallen die einzelnen Jahresgewinne der einzelnen Maschinen unterschiedlich an. Nach 5 Jahren müssen alle Maschinen wieder ersetzt werden.
       Welche Maschine hat den **höchsten Kapitalwert (Net Present Value)**? Nehmen Sie an, es herrscht ein jährlich konstanter Zins von 10%.
       (gerundet auf ganze Franken)?',
     contentPlain:
-      'Sie wollen eine neue Stanzmaschine kaufen, dabei stehen drei verschiedene Typen zur Auswahl. Alle drei Maschinen kosten gleich viel (Kaufpreis CHF 230'000) und werden total in 5 Jahren gleich viel Gewinn erwirtschaften (CHF 300'000). Nur fallen die einzelnen Jahresgewinne der einzelnen Maschinen unterschiedlich an. Nach 5 Jahren müssen alle Maschinen wieder ersetzt werden.
+      'Sie wollen eine neue Stanzmaschine kaufen, dabei stehen drei verschiedene Typen zur Auswahl. Alle drei Maschinen kosten gleich viel (Kaufpreis CHF 230000) und werden total in 5 Jahren gleich viel Gewinn erwirtschaften (CHF 300000). Nur fallen die einzelnen Jahresgewinne der einzelnen Maschinen unterschiedlich an. Nach 5 Jahren müssen alle Maschinen wieder ersetzt werden.
       Welche Maschine hat den höchsten Kapitalwert (Net Present Value)? Nehmen Sie an, es herrscht ein jährlich konstanter Zins von 10%.
       (gerundet auf ganze Franken)',
     type: QuestionType.SC,
@@ -946,16 +946,9 @@ export const QUESTIONS = [
 
     name: 'Modul 2.3 Net Present Value III',
     content:
-      'Wie **hoch** ist der **Net Present Value** der folgenden Cash-flows bei einem Zinssatz von 5%?
-
-      Zeit t	            0	  1	  2	  3	  4	   5
-      Cash-Flow in CHF	-200	70	75	60	95	-30
-      ',
+      'Wie **hoch** ist der **Net Present Value** der folgenden Cash-flows bei einem Zinssatz von 5%?',
     contentPlain:
-      'Wie **hoch** ist der **Net Present Value** der folgenden Cash-flows bei einem Zinssatz von 5%?
-
-      Zeit t	            0	  1	  2	  3	  4	   5
-      Cash-Flow in CHF	-200	70	75	60	95	-30',
+      'Wie **hoch** ist der **Net Present Value** der folgenden Cash-flows bei einem Zinssatz von 5%?',
     type: QuestionType.SC,
     choices: [
       {
@@ -983,6 +976,262 @@ export const QUESTIONS = [
         value: 'Die Angaben reichen für die Berechnung nicht aus.',
         feedback:
           'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 2.3 Interner Zinssatz I',
+    content:
+      'Die **IRR** (Methode des internen Zinssatzes) stellt …',
+    contentPlain:
+      'Die IRR (Methode des internen Zinssatzes) stellt …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '… die maximale Rendite dar, die mit einem Projekt erzielt werden kann.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      { 
+        value: '… die langfristig erzielte Gesamtkapitalrendite einer Unternehmung dar.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '… den durchschnittlichen Zins dar, zu dem eine Unternehmung Kapital für ein Projekt aufnehmen kann.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true,
+        value: '… den maximalen Kapitalkostensatz dar, bei dem ein Projekt gerade noch einen NPV von 0 generiert.',
+        feedback:
+          'Diese Aussage ist korrekt! Mit Hilfe der IRR kann bestimmt werden, welches der maximale Kapitalkostensatz ist, bei dem ein Projekt gerade noch einen NPV von 0 generiert.',
+      },
+      {
+        value: '… die maximale Rendite dar, die ein Projekt erzielen muss, um gerade noch einen NPV von Null zu generieren.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+    id: 
+    name: 'Modul 2.3 Interner Zinssatz II',
+    content:
+      'Beurteile folgende Aussagen zum **internen Zinssatz** auf Ihre Richtigkeit:',
+    contentPlain:
+      'Beurteile folgende Aussagen zum internen Zinssatz auf Ihre Richtigkeit:',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true,
+          value: 'Der interne Zinssatz einer Investition unterscheidet sich in aller Regel von der statisch ermittelten Rentabilität, weil das Auf- und Abzinsen berücksichtigt wird.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der interne Zinssatz ist derjenige Zinssatz, bei dem sich gerade ein Kapitalwert von K=0 ergibt.',
+        value: 'Der interne Zinssatz einer Investition ist gleich Null, falls der Kapitalwert der Investition Null ist.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true,
+          value: 'Im Rahmen der Annuitätenmethode ermittelt man die durchschnittlich jährlichen Ein- und Auszahlungen und/oder den durchschnittlich jährlichen Überschuss.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Wenn der durchschnittlich jährliche Überschuss einer Investition gleich Null ist, dann stimmen Kalkulationszinssatz und interner Zinssatz überein.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 2.3 Interner Zinssatz III',
+    content:
+      'Die Cash-flows einer Investition werden wie folgt geschätzt: Der NPV bei einem Zinssatz von 5% entspricht 13.01 CHF. Die geschätze **IRR** liegt zwischen …',
+    contentPlain:
+      'Die Cash-flows einer Investition werden wie folgt geschätzt: Der NPV bei einem Zinssatz von 5% entspricht 13.01 CHF. Die geschätze IRR liegt zwischen …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '-5% und 0%.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die IRR ist derjenige Zinssatz, bei welchem sich ein NPV von 0 ergibt. Bei einem Zinssatz von 5% ist der NPV bereits positiv, also wird der NPV noch grösser werden, falls die IRR zwischen -5% und 0% liegen würde. Die IRR muss grösser sein als 5%.',
+      },
+      { 
+        value: '0% und 5%.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!  Die IRR ist derjenige Zinssatz, bei welchem sich ein NPV von 0 ergibt. Bei einem Zinssatz von 5% ist der NPV bereits positiv, also wird der NPV noch grösser werden, falls die IRR zwischen 0% und 5% liegen würde. Die IRR muss grösser sein als 5%.',
+      },
+      {
+        value: '5% und 10%.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die IRR ist derjenige Zinssatz, bei welchem sich ein NPV von 0 ergibt. Bei einem Zinssatz von 10% beträgt der NPV 2.78. Die IRR muss also grösser sein als 10%.',
+      },
+      {
+        correct: true,
+        value: '10% und 15%.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: 'Die Angaben reichen für die Berechnung der IRR nicht aus.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Angaben reichen aus, um die IRR schätzen zu können.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Beteiligungsfinanzierung',
+    content:
+      'Die **Beteiligungsfinanzierung** ist eine Form der …',
+    contentPlain:
+      'Die Beteiligungsfinanzierung ist eine Form der …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true,
+        value: '… Aussenfinanzierung.',
+        feedback:
+          'Diese Aussage ist korrekt! Bei der Beteiligungsfinanzierung wird das Kapital durch die Eigentümer als Beteiligungskapital zur Verfügung gestellt.',
+      },
+      { 
+        value: '… Selbstfinanzierung.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Selbstfinanzierung ist eine Form der Innenfinanzierung. Dabei findet eine Finanzierung über die Zurückbehaltung von erzielten Gewinnen statt.',
+      },
+      {
+        value: '… Innenfinanzierung.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Beteiligungsfinanzierung zählt zur Aussenfinanzierung.',
+      },
+      {
+        value: '… Kreditfinanzierung.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Kredifinanzierung ist eine Form der Fremdfinanzierung und die Beteiligungsfinanzierung gehört zum Eigenkapital.',
+      },
+      {
+        value: '… Finanzierung aus Abschreibungsrückflüssen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Finanzierung aus Abschreibrückflüssen ist eine Form der Verflüssigungsfinanzierung.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Eigenfinanzierungsgrad',
+    content:
+      'Was bezeichnet der sogenannte **Eigenfinanzierungsgrad**?',
+    contentPlain:
+      'Was bezeichnet der sogenannte Eigenfinanzierungsgrad?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Die Zuwachsquote des Eigenkapitals im Vergleich zum Vorjahr.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      { 
+        value: 'Der Anteil an Investitionen, der durch den erwirtschafteten Gewinn des Unternehmens bestritten wird.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: 'Der Anteil des Fremdkapitals zum Eigenkapital.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true,
+        value: 'Der Anteil des Eigenkapitals am gesamten Kapital, mit dem ein Unternehmen arbeitet.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: 'Der Anteil des Gewinnes am durchschnittlichen Eigenkapital.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Das ist die Eigenkapitalrentabilität.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Aktienkapitalerhöhung',
+    content:
+      'Das Aktienkapital einer Unternehmung wird von bisher 7.5 Mio. CHF auf 10 Mio. CHF erhöht. Der Nennwert der neuen Aktien beträgt wie bei den alten Aktien CHF 25. Der Emissionspreis wird bei CHF 1500 festgesetzt. Vor der Aktienkapitalerhöhung notierten die alten Aktien bei CHF 1600. Bei welchem Preis wird die Aktie nach der Erhöhung notieren?',
+    contentPlain:
+      'Das Aktienkapital einer Unternehmung wird von bisher 7.5 Mio. CHF auf 10 Mio. CHF erhöht. Der Nennwert der neuen Aktien beträgt wie bei den alten Aktien CHF 25. Der Emissionspreis wird bei CHF 1500 festgesetzt. Vor der Aktienkapitalerhöhung notierten die alten Aktien bei CHF 1600. Bei welchem Preis wird die Aktie nach der Erhöhung notieren?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'CHF 1475',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      { 
+        value: 'CHF 1500',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true,
+        value: 'CHF 1575',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: 'CHF 1625',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: 'CHF 1650',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Mindestnominalwert von Aktien',
+    content:
+      'Der Nominalwert einer Aktie muss in der Schweiz mindestens …',
+    contentPlain:
+      'Der Nominalwert einer Aktie muss in der Schweiz mindestens …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true,
+        value: '… 1 Rappen betragen.',
+        feedback:
+          'Diese Aussage ist korrekt! Seit Mai 2001 muss der minimale Nominalwert einer Aktie nur noch einen Rappen betragen.',
+      },
+      { 
+        value: '… 10 Rappen betragen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Seit Mai 2001 liegt der minimale Nominalwert einer Aktie bei einem Rappen. Zuvor lag dieser Betrag bei CHF 10.',
+      },
+      {
+        value: '… CHF 1 betragen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Seit Mai 2001 liegt der minimale Nominalwert einer Aktie bei einem Rappen. Zuvor lag dieser Betrag bei CHF 10.',
+      },
+      {
+        value: '… CH 10 betragen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Seit Mai 2001 liegt der minimale Nominalwert einer Aktie bei einem Rappen. Zuvor lag dieser Betrag bei CHF 10.',
+      },
+      {
+        value: '… CHF 100 betragen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Seit Mai 2001 liegt der minimale Nominalwert einer Aktie bei einem Rappen. Zuvor lag dieser Betrag bei CHF 10.',
       },
     ],
   },
