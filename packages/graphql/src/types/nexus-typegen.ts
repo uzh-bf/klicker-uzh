@@ -154,8 +154,10 @@ export interface NexusGenObjects {
   }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
+    displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
   }
   MicroSession: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -355,8 +357,10 @@ export interface NexusGenFieldTypes {
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
+    displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
   }
   MicroSession: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
@@ -587,8 +591,10 @@ export interface NexusGenFieldTypeNames {
   }
   LearningElement: { // field return type name
     course: 'Course'
+    displayName: 'String'
     id: 'ID'
     instances: 'QuestionInstance'
+    name: 'String'
   }
   MicroSession: { // field return type name
     course: 'Course'
@@ -788,7 +794,6 @@ export interface NexusGenArgTypes {
     }
     registerParticipantFromLTI: { // args
       courseId: string; // ID!
-      participantEmail: string; // String!
       participantId: string; // ID!
     }
     resolveFeedback: { // args

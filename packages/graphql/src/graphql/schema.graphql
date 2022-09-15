@@ -132,8 +132,10 @@ type LeaderboardEntry {
 
 type LearningElement {
   course: Course!
+  displayName: String!
   id: ID!
   instances: [QuestionInstance!]!
+  name: String!
 }
 
 type MicroSession {
@@ -159,7 +161,7 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant(id: ID!): ID
   logoutUser(userId: ID!): ID
-  registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
   resolveFeedback(id: Int!, newValue: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
