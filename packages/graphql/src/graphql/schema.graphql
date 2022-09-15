@@ -168,6 +168,7 @@ type Mutation {
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): PushSubscription
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -217,6 +218,15 @@ type Participation {
   id: Int!
   isActive: Boolean!
   points: Int!
+  subscriptions: [Subscription!]
+}
+
+type PushSubscription {
+  auth: String!
+  endpoint: String!
+  expirationTime: Int
+  id: Int!
+  p256dh: String!
 }
 
 type Query {
@@ -301,6 +311,22 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type Subscription {
+  endpoint: String!
+  id: ID!
+}
+
+input SubscriptionKeys {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeys!
 }
 
 type User {

@@ -498,7 +498,10 @@ model QuestionResponse {
 model PushSubscription {
   id Int @id @default(autoincrement())
 
-  endpoint String
+  endpoint       String
+  expirationTime Int?
+  p256dh         String
+  auth           String
 
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid
