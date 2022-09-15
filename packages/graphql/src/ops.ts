@@ -38,9 +38,7 @@ export enum AttachmentType {
   Gif = 'GIF',
   Jpeg = 'JPEG',
   Link = 'LINK',
-  Png = 'PNG',
-  Svg = 'SVG',
-  Webp = 'WEBP'
+  Png = 'PNG'
 }
 
 export type BlockInput = {

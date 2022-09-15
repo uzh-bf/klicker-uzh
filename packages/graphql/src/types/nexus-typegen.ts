@@ -49,7 +49,7 @@ export interface NexusGenInputs {
 
 export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
-  AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
+  AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
 }
