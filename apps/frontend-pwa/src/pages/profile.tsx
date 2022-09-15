@@ -23,7 +23,9 @@ const Profile = () => {
         alt="Avatar-Image"
       />
       <p className="font-bold mt-3">{fakeUsername}</p>
-      <Button onClick={() => Router.push('/edit_profile')} className='mt-7'>Bearbeiten</Button>
+      <Button onClick={() => Router.push('/edit_profile')} className="mt-7">
+        Bearbeiten
+      </Button>
     </div>
   )
 }

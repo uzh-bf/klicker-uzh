@@ -1,16 +1,17 @@
 import { AvatarProps, BigHead } from '@bigheads/core'
-import Layout from '@components/Layout'
 import { NextPageWithLayout } from '@pages/_app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { Field, Form, Formik } from 'formik'
-import { AVATAR_OPTIONS, AVATAR_LABELS } from 'src/constants'
-import * as yup from 'yup'
 import hash from 'object-hash'
-import {omit} from 'ramda'
+import { omit } from 'ramda'
+import { AVATAR_LABELS, AVATAR_OPTIONS } from 'src/constants'
+import * as yup from 'yup'
 
 const fakeUsername = 'testuser'
 const EditProfile: NextPageWithLayout = () => {
-  const onSubmit = (values: any) => {console.log("submit", values)}
+  const onSubmit = (values: any) => {
+    console.log('submit', values)
+  }
 
   const initialValues: {
     userName: string
@@ -85,104 +86,128 @@ const EditProfile: NextPageWithLayout = () => {
               skinTone={values.skinTone}
             />
             <Form>
-              <div className='flex flex-row items-center mt-7'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Geschlecht</p>
+              <div className="flex flex-row items-center mt-7">
+                <div className="flex-1">
+                  <p className="font-bold">Geschlecht</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="body" style={{ width: '100%'}} >
-                    {AVATAR_OPTIONS.body.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="body" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.body.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Hautfarbe</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Hautfarbe</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="skinTone" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.skinTone.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="skinTone" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.skinTone.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Augen</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Augen</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="eyes" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.eyes.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="eyes" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.eyes.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Frisur</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Frisur</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="hair" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.hair.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="hair" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.hair.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Haarfarbe</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Haarfarbe</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="hairColor" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.hairColor.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="hairColor" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.hairColor.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Kleiderfarbe</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Kleiderfarbe</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="clothingColor" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.clothingColor.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field
+                    as="select"
+                    name="clothingColor"
+                    style={{ width: '100%' }}
+                  >
+                    {AVATAR_OPTIONS.clothingColor.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Mund</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Mund</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="mouth" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.mouth.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="mouth" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.mouth.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Brille</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Brille</p>
                 </div>
-                <div className='flex-1'>
-                  <Field as="select" name="accessory" style={{ width: '100%'}}>
-                    {AVATAR_OPTIONS.accessory.map(value => <option value={value}>{AVATAR_LABELS[value]}</option>)}
+                <div className="flex-1">
+                  <Field as="select" name="accessory" style={{ width: '100%' }}>
+                    {AVATAR_OPTIONS.accessory.map((value) => (
+                      <option value={value}>{AVATAR_LABELS[value]}</option>
+                    ))}
                   </Field>
                 </div>
               </div>
 
-              <div className='flex flex-row items-center'>
-                <div className='flex-1'>
-                  <p className='font-bold'>Benutzername</p>
+              <div className="flex flex-row items-center">
+                <div className="flex-1">
+                  <p className="font-bold">Benutzername</p>
                 </div>
-                <div className='flex-1'>
-                  <Field type="text" name="userName" style={{ width: '100%', backgroundColor: 'lightgray'}}/>
+                <div className="flex-1">
+                  <Field
+                    type="text"
+                    name="userName"
+                    style={{ width: '100%', backgroundColor: 'lightgray' }}
+                  />
                 </div>
               </div>
 
-              <div className='flex justify-center mt-7'>
+              <div className="flex justify-center mt-7">
                 <Button type="submit" disabled={isSubmitting || !isValid}>
                   Save
                 </Button>
