@@ -765,7 +765,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 1 without participant", isPublished: true) {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 1 without participant") {
                 id
                 content
             }
@@ -801,7 +801,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 2 of logged in participant", isPublished: true) {
+            createFeedback(sessionId: "${session.id}", content: "Published Feedback Nr. 2 of logged in participant") {
                 id
                 content
             }
@@ -837,7 +837,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createFeedback(sessionId: "${session.id}", content: "Feedback resolved without responses", isPublished: true) {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved without responses") {
                 id
                 content
             }
@@ -873,7 +873,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createFeedback(sessionId: "${session.id}", content: "Feedback resolved with responses", isPublished: true) {
+            createFeedback(sessionId: "${session.id}", content: "Feedback resolved with responses") {
                 id
                 content
             }

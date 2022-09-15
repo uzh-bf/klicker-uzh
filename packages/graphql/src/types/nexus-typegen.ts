@@ -843,7 +843,6 @@ export interface NexusGenArgTypes {
     }
     createFeedback: { // args
       content: string; // String!
-      isPublished: boolean; // Boolean!
       sessionId: string; // ID!
     }
     createSession: { // args

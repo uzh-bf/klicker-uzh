@@ -756,7 +756,6 @@ export const Mutation = objectType({
       args: {
         sessionId: nonNull(idArg()),
         content: nonNull(stringArg()),
-        isPublished: nonNull(booleanArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.createFeedback(args, ctx)
