@@ -1,0 +1,74 @@
+{
+
+    name: 'Microlearning 1.2',
+    content:
+      'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil in der **Corporate Finance**?',
+    contentPlain:
+      'Welcher der folgenden Entscheidungsbereiche ist nicht Teil in der Corporate Finance?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Investitionsfragen',
+        feedback:
+          'Diese Aussage ist nicht korrekt. Investitionsfragen gehören zur Corporate Finance.',
+      },
+      {
+        value: 'Rückzahlung von Kapital',
+        feedback:
+          'Diese Aussage ist nicht korrekt. Die Rückzahlung von Kapital gehört zur Corporate Finance.',
+      },
+      {
+        value: 'Finanzierungsfragen',
+        feedback:
+          'Diese Aussage ist nicht korrekt. Finanzierungsfragen gehören zur Corporate Finance.',
+      },
+      {
+        value: 'Dividendenpolitik',
+        feedback:
+          'Diese Aussage ist nicht korrekt. Die Dividendenpolitik gehört zur Corporate Finance.',
+      },
+      {
+        correct: true,
+        value: 'Führung von Mitarbeiter:innen',
+        feedback:
+          'Diese Aussage ist korrekt. Die Führung von Mitarbeiter:innen ist traditionell Teil des Human Ressource Managements. Die Corporate Finance beschäftigt sich eher mit Fragestellungen im Bereich Finanzierung und Investitionen.',
+      },
+    ],
+  },
+
+
+
+  {
+    id: 4,
+    name: 'Modul 1.1 Grundfunktionen des Fremdkapitals',
+    content:
+      'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
+    contentPlain:
+      'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt! Dritte stellen für eine bestimmte Zeitdauer Fremdkapital zur Verfügung.',
+        correct: true,
+        value: 'Gläubigerkapital',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Dies ist eine Grundfunktion des Eigenkapitals.',
+        value: 'Liquiditätssicherungsfunktion',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt! Fremdkapitalgeber haben in der Regel Anspruch auf Verzinsung und Rückzahlung des Kapitals zu einem vereinbarten Termin.',
+        correct: true,
+        value: 'Gewinnunabhängiges Kapitalentgelt',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt! Es gehört zur Außenfinanzierung bzw. Fremdfinazierung.',
+        correct: true,
+        value: 'Finanzierungsfunktion',
+      },
+    ],
+  },
