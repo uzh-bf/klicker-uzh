@@ -327,7 +327,9 @@ model Session {
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
-  instances QuestionInstance[]
+  name        String
+  displayName String
+  instances   QuestionInstance[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
@@ -433,7 +435,6 @@ model Participant {
   id String @id @default(uuid()) @db.Uuid
 
   username    String    @unique
-  email       String    @unique
   password    String
   avatar      String    @default("placeholder.png")
   lastLoginAt DateTime?
