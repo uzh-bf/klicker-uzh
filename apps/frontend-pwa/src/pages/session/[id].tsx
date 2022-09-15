@@ -114,7 +114,7 @@ function Index({
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
     >
-      <div className="gap-4 md:flex md:flex-row md:max-w-7xl md:m-auto">
+      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
         <div
           className={twMerge(
             'md:p-4 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden md:overflow-scroll',

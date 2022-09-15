@@ -86,7 +86,7 @@ function MicroSessionInstance() {
       courseName={data.microSession.course.displayName}
       mobileMenuItems={[]}
     >
-      <div className="md:max-w-4xl md:m-auto">
+      <div className="md:max-w-5xl md:m-auto md:w-full">
         <div className="order-2 pt-0 md:p-4 md:border md:border-b-0 md:pt-4 md:order-2 md:rounded-t">
           {questionData && (
             <div className="flex flex-col gap-4 md:flex-row">
