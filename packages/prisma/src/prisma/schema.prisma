@@ -409,9 +409,6 @@ model ConfusionTimestep {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String  @db.Uuid
 
-  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String?      @db.Uuid
-
   createdAt DateTime @default(now())
 }
 
@@ -439,12 +436,11 @@ model Participant {
   avatar      String    @default("placeholder.png")
   lastLoginAt DateTime?
 
-  accounts           ParticipantAccount[]
-  participations     Participation[]
-  questionResponses  QuestionResponse[]
-  feedbacks          Feedback[]
-  confusionTimesteps ConfusionTimestep[]
-  leaderboards       LeaderboardEntry[]
+  accounts          ParticipantAccount[]
+  participations    Participation[]
+  questionResponses QuestionResponse[]
+  feedbacks         Feedback[]
+  leaderboards      LeaderboardEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
