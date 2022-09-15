@@ -1,4 +1,5 @@
 import Prisma from '@klicker-uzh/prisma'
+const { AttachmentType, QuestionType, SessionStatus } = Prisma
 
 export const PARTICIPANT_IDS = []
 
@@ -10,7 +11,7 @@ export const QUESTIONS = [
     name: 'Zieldreieck',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         feedback:
@@ -49,7 +50,7 @@ export const QUESTIONS = [
     name: 'Organisation des Finanzwesens',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         feedback: 'Diese Aussage ist nicht korrekt!',
@@ -87,7 +88,7 @@ export const QUESTIONS = [
       'Welche der folgenden Personen/Gruppen sind **keine** Stakeholder?',
     contentPlain:
       'Welche der folgenden Personen/Gruppen sind keine Stakeholder?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch! Beim Staat handelt es sich um einen Stakeholder.',
@@ -122,7 +123,7 @@ export const QUESTIONS = [
       'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
     contentPlain:
       'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
-    type: Prisma.QuestionType.KPRIM,
+    type: QuestionType.KPRIM,
     choices: [
       {
         feedback:
@@ -155,7 +156,7 @@ export const QUESTIONS = [
       'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
     contentPlain:
       'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
-    type: Prisma.QuestionType.KPRIM,
+    type: QuestionType.KPRIM,
     choices: [
       {
         feedback:
@@ -189,7 +190,7 @@ export const QUESTIONS = [
       'Welche der folgenden Aussagen zur **Interaktion zwischen Kapitalnehmer:innen und Kapitalgeber:innen** ist korrekt?',
     contentPlain:
       'Welche der folgenden Aussagen zur Interaktion zwischen Kapitalnehmer:innen und Kapitalgeber:innen ist korrekt?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         correct: true,
@@ -228,7 +229,7 @@ export const QUESTIONS = [
       'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil in der **Corporate Finance**?',
     contentPlain:
       'Welcher der folgenden Entscheidungsbereiche ist nicht Teil in der Corporate Finance?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         value: 'Investitionsfragen',
@@ -265,7 +266,7 @@ export const QUESTIONS = [
       'Welche der folgenden Aussagen zum Aufbau einer **Bilanz** ist **korrekt**?',
     contentPlain:
       'Welche der folgenden Aussagen zum Aufbau einer Bilanz ist korrekt?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         value:
@@ -303,7 +304,7 @@ export const QUESTIONS = [
       'Welche der folgenden Aussagen bezüglich des **finanzwirtschaftlichen Zieldreiecks** ist **korrekt**?',
     contentPlain:
       'Welche der folgenden Aussagen bezüglich des finanzwirtschaftlichen Zieldreiecks ist korrekt?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         value:
@@ -340,7 +341,7 @@ export const QUESTIONS = [
     name: 'Jodel Woche 01',
     content: 'Wie oft benutzt du Jodel?',
     contentPlain: 'Wie oft benutzt du Jodel?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         value: 'Ich schaue täglich rein und schreibe ab und zu einen Post.',
@@ -375,7 +376,7 @@ export const SESSIONS = [
     id: 'd18dfa3b-a965-4dc3-985f-6695e8a43113',
     name: 'BF1 VL Woche 01',
     displayName: 'BF1 - Woche 01',
-    status: Prisma.SessionStatus.PREPARED,
+    status: SessionStatus.PREPARED,
     blocks: [{ questions: [14] }],
   },
 ]

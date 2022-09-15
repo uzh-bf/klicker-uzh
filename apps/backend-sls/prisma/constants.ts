@@ -1,30 +1,18 @@
-import * as Prisma from '@klicker-uzh/prisma'
-
-export const PARTICIPANT_IDS = [
-  '6f45065c-667f-4259-818c-c6f6b477eb48',
-  '0b7c946c-cfc9-4b82-ac97-b058bf48924b',
-  '52c20f0f-f5d4-4354-a5d6-a0c103f2b9ea',
-  '16c39a69-03b4-4ce4-a695-e7b93d535598',
-  'c48f624e-7de9-4e1b-a16d-82d22e64828f',
-  '7cf9a94a-31a6-4c53-85d7-608dfa904e30',
-  'f53e6a95-689b-48c0-bfab-6625c04f39ed',
-  '46407010-0e7c-4903-9a66-2c8d9d6909b0',
-  '84b0ba5d-34bc-45cd-8253-f3e8c340e5ff',
-  '05a933a0-b2bc-4551-b7e1-6975140d996d',
-]
+import Prisma from '@klicker-uzh/prisma'
+const { AttachmentType, QuestionType, SessionStatus } = Prisma
 
 export const ATTACHMENTS = [
   {
     id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
     href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.svg',
     name: 'Test Attachment 1',
-    type: Prisma.AttachmentType.SVG,
+    type: AttachmentType.SVG,
   },
   {
     id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
     href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp',
     name: 'Test Attachment 2',
-    type: Prisma.AttachmentType.WEBP,
+    type: AttachmentType.WEBP,
   },
 ]
 
@@ -34,7 +22,7 @@ export const QUESTIONS = [
     name: 'Numerische Testfrage',
     content: 'Was ist richtig?',
     contentPlain: 'Was ist richtig?',
-    type: Prisma.QuestionType.NUMERICAL,
+    type: QuestionType.NUMERICAL,
     options: {
       restrictions: {
         min: 0,
@@ -65,7 +53,7 @@ export const QUESTIONS = [
     name: 'Freitext Testfrage',
     content: 'Was ist richtig?',
     contentPlain: 'Was ist richtig?',
-    type: Prisma.QuestionType.FREE_TEXT,
+    type: QuestionType.FREE_TEXT,
     options: {
       restrictions: {
         maxLength: 200,
@@ -104,7 +92,7 @@ export const QUESTIONS = [
     content: 'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
     contentPlain:
       'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
-    type: Prisma.QuestionType.FREE_TEXT,
+    type: QuestionType.FREE_TEXT,
     options: {
       restrictions: {
         maxLength: 100,
@@ -120,7 +108,7 @@ export const QUESTIONS = [
     name: 'Zieldreieck',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
-    type: Prisma.QuestionType.SC,
+    type: QuestionType.SC,
     choices: [
       {
         feedback:
@@ -161,7 +149,7 @@ export const LEARNING_ELEMENTS = [
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     name: 'Test Learning Element 1',
     displayName: 'Test Learning Element 1',
-    questions: [0, 1, 2, 3, 4],
+    questions: [5, 6, 7, 8, 9],
   },
 ]
 
@@ -170,8 +158,8 @@ export const SESSIONS = [
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     name: 'BF1 VL1',
     displayName: 'Banking und Finance I - VL1',
-    status: Prisma.SessionStatus.PREPARED,
-    blocks: [{ questions: [6, 7, 8] }, { questions: [9, 10, 11] }],
+    status: SessionStatus.PREPARED,
+    blocks: [{ questions: [6, 7, 8] }, { questions: [9, 5] }],
   },
   {
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
@@ -180,7 +168,7 @@ export const SESSIONS = [
     isModerationEnabled: false,
     isAudienceInteractionActive: true,
     isGamificationEnabled: true,
-    status: Prisma.SessionStatus.PREPARED,
+    status: SessionStatus.PREPARED,
     blocks: [
       {
         questions: [6, 7, 8],
@@ -188,28 +176,7 @@ export const SESSIONS = [
         timeLimit: 20,
       },
       {
-        questions: [9, 10, 11],
-        expiresAt: new Date('2022-12-31T23:59:59.999Z'),
-        timeLimit: 30,
-      },
-    ],
-  },
-  {
-    id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c0a',
-    name: 'BF1 VL3',
-    displayName: 'Banking und Finance I - VL3',
-    isModerationEnabled: false,
-    isAudienceInteractionActive: true,
-    isGamificationEnabled: true,
-    status: Prisma.SessionStatus.PREPARED,
-    blocks: [
-      {
-        questions: [12, 7],
-        expiresAt: new Date('2022-12-31T23:59:59.999Z'),
-        timeLimit: 20,
-      },
-      {
-        questions: [3, 4],
+        questions: [9, 5],
         expiresAt: new Date('2022-12-31T23:59:59.999Z'),
         timeLimit: 30,
       },
@@ -231,6 +198,6 @@ Diese Woche lernen wir...
 
 Mehr bla bla...
 `,
-    questions: [1, 4, 6, 3],
+    questions: [9, 5, 6, 7, 8],
   },
 ]
