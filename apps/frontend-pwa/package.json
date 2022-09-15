@@ -4,10 +4,11 @@
   "version": "2.0.0-alpha.23",
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "NODE_ENV=development next dev --port 3001",
+    "dev": "NODE_ENV=development next dev --port 3232",
     "build": "next build",
     "start": "next start --port 3001",
-    "lint": "next lint"
+    "lint": "next lint",
+    "pushTest": "node src/testPush.js"
   },
   "dependencies": {
     "@apollo/client": "3.6.9",
@@ -15,12 +16,12 @@
     "@fortawesome/free-regular-svg-icons": "6.1.2",
     "@fortawesome/free-solid-svg-icons": "6.1.2",
     "@fortawesome/react-fontawesome": "0.2.0",
-    "@klicker-uzh/prisma": "^2.0.0-alpha.8",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/markdown": "^2.0.0-alpha.8",
+    "@klicker-uzh/prisma": "^2.0.0-alpha.8",
+    "@radix-ui/react-toggle": "1.0.0",
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "0.0.38",
-    "@radix-ui/react-toggle": "1.0.0",
     "body-parser": "1.20.0",
     "dayjs": "1.11.5",
     "deepmerge": "4.2.2",
@@ -48,6 +49,7 @@
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@types/sharp": "0.30.5",
+    "@types/web-push": "^3.3.2",
     "autoprefixer": "10.4.8",
     "eslint": "8.23.0",
     "eslint-config-next": "12.2.5",
@@ -55,7 +57,8 @@
     "prettier": "2.7.1",
     "prettier-plugin-organize-imports": "3.1.1",
     "tailwindcss": "3.1.8",
-    "typescript": "4.8.2"
+    "typescript": "4.8.2",
+    "web-push": "^3.5.0"
   },
   "volta": {
     "extends": "../../package.json"

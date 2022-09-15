@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
 import ErrorNotification from '@components/ErrorNotification'
 import Layout from '@components/Layout'
@@ -6,6 +6,7 @@ import {
   MicroSession,
   ParticipationsDocument,
   Session,
+  SubscribeToPushDocument
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
@@ -17,10 +18,10 @@ import {
 } from '../utils/push'
 
 const Index = function () {
-  const { data, loading, error } = useQuery(ParticipationsDocument)
+  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const router = useRouter()
 
-  const [pushDisabled, setPushDisabled] = useState<boolean>(true)
+  const [pushDisabled, setPushDisabled] = useState<boolean | null >(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
     useState<ServiceWorkerRegistration | null>(null)
@@ -37,6 +38,8 @@ const Index = function () {
       setSubscription(sub)
     })
   }, [])
+
+  const { data, loading, error } = useQuery(ParticipationsDocument, {skip: pushDisabled === null, variables: { endpoint: subscription?.endpoint}})
 
   const {
     courses,
@@ -56,6 +59,7 @@ const Index = function () {
           {
             id: participation.course.id,
             displayName: participation.course.displayName,
+            isSubscribed: participation.subscriptions?.length > 0,
           },
         ],
         activeSessions: [
@@ -71,7 +75,7 @@ const Index = function () {
   }, [data])
 
   if (!loading && !data) {
-    router.push('/login')
+    // router.push('/login')
   }
   if (loading || !data) {
     return <div>loading...</div>
@@ -79,20 +83,21 @@ const Index = function () {
 
   async function onSubscribeClick(
     subscribed: boolean,
-    setSubscribed: Dispatch<SetStateAction<boolean>>,
     courseId: string
   ) {
     setUserInfo('')
     // Case 1: User unsubscribed
     if (subscribed) {
-      setSubscribed(false)
       // TODO: updateSubscriptionOnServer(subscription, courseId)
       // Case 2: User subscribed
     } else {
       // Case 2a: User already has a push subscription
       if (subscription) {
-        // TODO: updateSubscriptionOnServer(subscription, courseId)
-        setSubscribed(true)
+        console.log(JSON.parse(JSON.stringify(subscription)))
+        subscribeToPush({variables: {
+          subscriptionObject: JSON.parse(JSON.stringify(subscription)),
+          courseId
+        }})
         // Case 2b: User has no push subscription yet
       } else {
         try {
@@ -100,15 +105,15 @@ const Index = function () {
             registration!,
             courseId
           )
-          // TODO: updateSubscriptionOnServer(newSubscription, courseId)
-          setSubscribed(true)
           setSubscription(newSubscription)
-          console.log('Subscription: ', JSON.stringify(newSubscription))
+          subscribeToPush({variables: {
+            subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
+            courseId
+          }})
         } catch (e) {
           console.error(e)
           // Push notifications are disabled
           if (Notification.permission === 'denied') {
-            setSubscribed(false)
             setPushDisabled(true)
             setUserInfo(
               `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
@@ -119,13 +124,11 @@ const Index = function () {
             e instanceof DOMException &&
             e.name === 'NotAllowedError'
           ) {
-            setSubscribed(false)
             setUserInfo(
               'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
             )
             // An error occured
           } else {
-            setSubscribed(false)
             setUserInfo(
               'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
             )
@@ -168,11 +171,12 @@ const Index = function () {
           <div className="mt-2 mb-8">
             {courses.map((course: any) => (
               <CourseElement
-                disabled={pushDisabled}
+                disabled={!!pushDisabled}
                 key={course.id}
                 courseId={course.id}
                 courseName={course.displayName}
                 onSubscribeClick={onSubscribeClick}
+                isSubscribed={course.isSubscribed}
               />
             ))}
           </div>

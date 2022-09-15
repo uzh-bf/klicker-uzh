@@ -1,0 +1,9 @@
+mutation SubscribeToPush($courseId: ID!, $subscriptionObject: SubscriptionObjectInput!) {
+  subscribeToPush(courseId: $courseId, subscriptionObject: $subscriptionObject) {
+    id
+    endpoint
+    expirationTime
+    p256dh
+    auth
+  }
+}

@@ -58,33 +58,10 @@ async function subscribeParticipant(
   return newSubscription
 }
 
-// TODO: Adapt once backend is specified
-function sendSubscriptionToBackEnd(subscription: PushSubscription) {
-  return fetch('/api/save-subscription/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(subscription),
-  })
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error('Bad status code from server.')
-      }
-
-      return response.json()
-    })
-    .then(function (responseData) {
-      if (!(responseData.data && responseData.data.success)) {
-        throw new Error('Bad response from server.')
-      }
-    })
-}
-
 // TODO: function updateSubscriptionServer()
 
 export {
   base64ToUint8Array,
   determineInitialSubscriptionState,
-  subscribeParticipant,
+  subscribeParticipant
 }
