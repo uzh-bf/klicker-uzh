@@ -62,7 +62,7 @@ const Index = function () {
           {
             id: participation.course.id,
             displayName: participation.course.displayName,
-            isSubscribed: participation.subscriptions?.length > 0,
+            isSubscribed: participation.subscriptions && participation.subscriptions.length   > 0,
           },
         ],
         activeSessions: [
