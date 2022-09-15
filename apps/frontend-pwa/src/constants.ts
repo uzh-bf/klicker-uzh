@@ -52,7 +52,7 @@ export const AVATAR_LABELS = {
   none: 'Keine',
   roundGlasses: 'Sehbrille',
   tinyGlasses: 'Lesebrille',
-  shades: 'Sonnenbrille'
+  shades: 'Sonnenbrille',
 }
 
 export const QUESTION_GROUPS = {

@@ -1,9 +1,7 @@
 import { faBellSlash } from '@fortawesome/free-regular-svg-icons'
 import { faBell } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import * as TogglePrimitive from '@radix-ui/react-toggle'
 import Link from 'next/link'
-import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type courseElementProps = {
@@ -11,10 +9,7 @@ type courseElementProps = {
   courseId: string
   disabled: boolean
   isSubscribed: boolean
-  onSubscribeClick: (
-    subscribed: boolean,
-    courseId: string
-  ) => void
+  onSubscribeClick: (subscribed: boolean, courseId: string) => void
 }
 
 const CourseElement = (props: courseElementProps) => {
@@ -43,27 +38,27 @@ const CourseElement = (props: courseElementProps) => {
         <Link href={`/course/${props.courseId}`}>{props.courseName}</Link>
       </span>
       <span className={computedClassNameButton}>
-          <button
-            disabled={props.disabled}
-            onClick={() =>
-              props.onSubscribeClick(props.isSubscribed, props.courseId)
-            }
-          >
-            {props.isSubscribed ? (
-              <FontAwesomeIcon
-                icon={faBell}
-                fixedWidth
-                className={computedClassNameSubscribed}
-              />
-            ) : (
-              <FontAwesomeIcon
-                icon={faBellSlash}
-                fixedWidth
-                flip="horizontal"
-                className={computedClassNameNotSubscribed}
-              />
-            )}
-          </button>
+        <button
+          disabled={props.disabled}
+          onClick={() =>
+            props.onSubscribeClick(props.isSubscribed, props.courseId)
+          }
+        >
+          {props.isSubscribed ? (
+            <FontAwesomeIcon
+              icon={faBell}
+              fixedWidth
+              className={computedClassNameSubscribed}
+            />
+          ) : (
+            <FontAwesomeIcon
+              icon={faBellSlash}
+              fixedWidth
+              flip="horizontal"
+              className={computedClassNameNotSubscribed}
+            />
+          )}
+        </button>
       </span>
     </div>
   )

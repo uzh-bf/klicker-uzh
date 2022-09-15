@@ -6,12 +6,12 @@ import {
   MicroSession,
   ParticipationsDocument,
   Session,
-  SubscribeToPushDocument
+  SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -21,7 +21,7 @@ const Index = function () {
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const router = useRouter()
 
-  const [pushDisabled, setPushDisabled] = useState<boolean | null >(null)
+  const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
     useState<ServiceWorkerRegistration | null>(null)
@@ -39,7 +39,10 @@ const Index = function () {
     })
   }, [])
 
-  const { data, loading, error } = useQuery(ParticipationsDocument, {skip: pushDisabled === null, variables: { endpoint: subscription?.endpoint}})
+  const { data, loading, error } = useQuery(ParticipationsDocument, {
+    skip: pushDisabled === null,
+    variables: { endpoint: subscription?.endpoint },
+  })
 
   const {
     courses,
@@ -74,15 +77,11 @@ const Index = function () {
     }, obj)
   }, [data])
 
-
   if (loading || !data) {
     return <div>loading...</div>
   }
 
-  async function onSubscribeClick(
-    subscribed: boolean,
-    courseId: string
-  ) {
+  async function onSubscribeClick(subscribed: boolean, courseId: string) {
     setUserInfo('')
     // Case 1: User unsubscribed
     if (subscribed) {
@@ -91,10 +90,12 @@ const Index = function () {
     } else {
       // Case 2a: User already has a push subscription
       if (subscription) {
-        subscribeToPush({variables: {
-          subscriptionObject: subscription,
-          courseId
-        }})
+        subscribeToPush({
+          variables: {
+            subscriptionObject: subscription,
+            courseId,
+          },
+        })
         // Case 2b: User has no push subscription yet
       } else {
         try {
@@ -103,10 +104,12 @@ const Index = function () {
             courseId
           )
           setSubscription(newSubscription)
-          subscribeToPush({variables: {
-            subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
-            courseId
-          }})
+          subscribeToPush({
+            variables: {
+              subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
+              courseId,
+            },
+          })
         } catch (e) {
           console.error(e)
           // Push notifications are disabled

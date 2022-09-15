@@ -1,5 +1,11 @@
-mutation SubscribeToPush($courseId: ID!, $subscriptionObject: SubscriptionObjectInput!) {
-  subscribeToPush(courseId: $courseId, subscriptionObject: $subscriptionObject) {
+mutation SubscribeToPush(
+  $courseId: ID!
+  $subscriptionObject: SubscriptionObjectInput!
+) {
+  subscribeToPush(
+    courseId: $courseId
+    subscriptionObject: $subscriptionObject
+  ) {
     id
     endpoint
     expirationTime

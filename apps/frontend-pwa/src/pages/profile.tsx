@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 
 const fakeUsername = 'testuser'
 const Profile = () => {
-  const {data, loading} = useQuery(SelfDocument)
+  const { data, loading } = useQuery(SelfDocument)
 
   const [pageInIframe, setPageInIframe] = useState(false)
 

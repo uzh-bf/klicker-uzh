@@ -7,7 +7,7 @@ self.addEventListener('push', function (event) {
     registration.showNotification(data.title, {
       body: data.message,
       icon: '/manifest-icon-192.maskable.png',
-      requireInteraction: true
+      requireInteraction: true,
     })
   )
 })
