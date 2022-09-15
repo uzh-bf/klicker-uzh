@@ -41,6 +41,7 @@ export const AvatarSettingsInput = inputObjectType({
     t.nonNull.string('accessory')
     t.nonNull.string('hairColor')
     t.nonNull.string('clothingColor')
+    t.nonNull.string('facialHair')
   },
 })
 
@@ -687,20 +688,14 @@ export const Mutation = objectType({
 
     t.field('logoutUser', {
       type: 'ID',
-      args: {
-        userId: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutUser(args, ctx)
       },
     })
 
     t.field('logoutParticipant', {
       type: 'ID',
-      args: {
-        id: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutParticipant(args, ctx)
       },
     })

@@ -30,6 +30,7 @@ input AvatarSettingsInput {
   body: String!
   clothingColor: String!
   eyes: String!
+  facialHair: String!
   hair: String!
   hairColor: String!
   mouth: String!

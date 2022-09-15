@@ -7,19 +7,19 @@ export const QUESTION_TYPES = {
 
 export const AVATAR_OPTIONS = {
   skinTone: ['light', 'dark'],
-  eyes: ['normal', 'happy', 'content', 'squint', 'heart'],
+  eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],
   eyebrows: ['raised'],
   // mouth: ['grin', 'openSmile', 'open', 'serious', 'tongue'],
   mouth: ['grin', 'openSmile', 'serious'],
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
-  facialHair: ['none'],
+  facialHair: ['none', 'stubble', 'mediumBeard'],
   clothing: ['shirt'],
   accessory: ['none', 'roundGlasses', 'tinyGlasses', 'shades'],
   graphic: ['none'],
   hat: ['none'],
-  body: ['chest', 'breasts'],
+  body: ['breasts', 'chest'],
   hairColor: ['blonde', 'black', 'brown'],
-  clothingColor: ['white', 'blue', 'green', 'red'],
+  clothingColor: ['blue', 'green', 'red'],
 }
 
 export const AVATAR_LABELS = {
@@ -53,6 +53,8 @@ export const AVATAR_LABELS = {
   roundGlasses: 'Sehbrille',
   tinyGlasses: 'Lesebrille',
   shades: 'Sonnenbrille',
+  stubble: 'Stoppeln',
+  mediumBeard: 'Bart',
 }
 
 export const QUESTION_GROUPS = {

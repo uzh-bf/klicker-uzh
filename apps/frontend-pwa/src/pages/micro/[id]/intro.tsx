@@ -43,7 +43,7 @@ function MicroSessionIntroduction() {
       courseName={data.microSession.course.displayName}
       mobileMenuItems={[]}
     >
-      <div className="flex flex-col w-full md:p-4 md:border md:rounded md:bg-white">
+      <div className="flex flex-col w-full md:p-4 md:border md:rounded md:max-w-4xl md:m-auto">
         <Prose className="max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current">
           <DynamicMarkdown
             content={data.microSession.description}

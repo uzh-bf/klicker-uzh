@@ -3,12 +3,17 @@ import CourseElement from '@components/CourseElement'
 import ErrorNotification from '@components/ErrorNotification'
 import Layout from '@components/Layout'
 import {
+  faBookOpenReader,
+  faChalkboard,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
   MicroSession,
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { Button, H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -62,7 +67,9 @@ const Index = function () {
           {
             id: participation.course.id,
             displayName: participation.course.displayName,
-            isSubscribed: participation.subscriptions && participation.subscriptions.length   > 0,
+            isSubscribed:
+              participation.subscriptions &&
+              participation.subscriptions.length > 0,
           },
         ],
         activeSessions: [
@@ -141,49 +148,54 @@ const Index = function () {
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center w-full h-full">
-        <div className="items-start w-full max-w-md p-14">
-          <H1>Aktive Sessions</H1>
-          <div className="flex flex-col mt-2 mb-8">
-            {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
-            {activeSessions.map((session) => (
-              <Link href={`/session/${session.id}`} key={session.id}>
-                <a className="w-full p-3 mt-4 mb-4 mr-4 rounded-md text-l text-start bg-uzh-grey-20 hover:bg-uzh-grey-40">
-                  {session.displayName}
-                </a>
-              </Link>
-            ))}
-          </div>
-
-          <H1>Verfügbares Microlearning</H1>
-          <div className="flex flex-col mt-2 mb-8">
-            {activeMicrolearning.length === 0 && (
-              <div>Kein aktives Microlearning.</div>
-            )}
-            {activeMicrolearning.map((micro: any) => (
-              <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
-                <a className="w-full p-3 mt-4 mb-4 mr-4 text-xl text-center rounded-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
-                  {micro.displayName}
-                </a>
-              </Link>
-            ))}
-          </div>
-
-          <H1>Kurse</H1>
-          <div className="mt-2 mb-8">
-            {courses.map((course: any) => (
-              <CourseElement
-                disabled={!!pushDisabled}
-                key={course.id}
-                courseId={course.id}
-                courseName={course.displayName}
-                onSubscribeClick={onSubscribeClick}
-                isSubscribed={course.isSubscribed}
-              />
-            ))}
-          </div>
-          {userInfo && <ErrorNotification message={userInfo} />}
+      <div className="flex flex-col md:w-full md:max-w-md md:p-4 md:m-auto md:border md:rounded">
+        <H1 className="text-xl">Aktive Sessions</H1>
+        <div className="flex flex-col gap-2 mt-2 mb-8">
+          {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
+          {activeSessions.map((session) => (
+            <Link href={`/session/${session.id}`} key={session.id}>
+              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faChalkboard} />
+                </Button.Icon>
+                <Button.Label>{session.displayName}</Button.Label>
+              </Button>
+            </Link>
+          ))}
         </div>
+
+        <H1 className="text-xl">Verfügbares Microlearning</H1>
+        <div className="flex flex-col gap-2 mt-2 mb-8">
+          {activeMicrolearning.length === 0 && (
+            <div>Kein aktives Microlearning.</div>
+          )}
+          {activeMicrolearning.map((micro: any) => (
+            <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
+              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faBookOpenReader} />
+                </Button.Icon>
+                <Button.Label>{micro.displayName}</Button.Label>
+              </Button>
+            </Link>
+          ))}
+        </div>
+
+        <H1 className="text-xl">Meine Kurse</H1>
+        <div className="flex flex-col gap-2 mt-2">
+          {courses.map((course: any) => (
+            <CourseElement
+              disabled={!!pushDisabled}
+              key={course.id}
+              courseId={course.id}
+              courseName={course.displayName}
+              onSubscribeClick={onSubscribeClick}
+              isSubscribed={course.isSubscribed}
+            />
+          ))}
+        </div>
+
+        {userInfo && <ErrorNotification message={userInfo} />}
       </div>
     </Layout>
   )

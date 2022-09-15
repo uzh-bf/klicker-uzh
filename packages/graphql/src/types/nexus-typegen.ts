@@ -41,6 +41,7 @@ export interface NexusGenInputs {
     body: string; // String!
     clothingColor: string; // String!
     eyes: string; // String!
+    facialHair: string; // String!
     hair: string; // String!
     hairColor: string; // String!
     mouth: string; // String!

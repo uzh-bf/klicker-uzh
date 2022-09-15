@@ -48,6 +48,7 @@ export type AvatarSettingsInput = {
   body: Scalars['String'];
   clothingColor: Scalars['String'];
   eyes: Scalars['String'];
+  facialHair: Scalars['String'];
   hair: Scalars['String'];
   hairColor: Scalars['String'];
   mouth: Scalars['String'];
