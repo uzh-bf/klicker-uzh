@@ -64,7 +64,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-          loginUser(email: "roland.schlaefli@bf.uzh.ch", password: "abcd")
+          loginUser(email: "roland.schlaefli@bf.uzh.ch", password: "testing")
         }
       `,
       })

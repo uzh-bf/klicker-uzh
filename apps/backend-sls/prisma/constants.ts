@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import * as Prisma from '@klicker-uzh/prisma'
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',

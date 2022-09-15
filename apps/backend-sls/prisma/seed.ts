@@ -121,7 +121,7 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const courseBF1 = await prisma.course.upsert(
     prepareCourse({
-      id: '064ef09b-07b9-4bfd-b657-5c77d7123e93',
+      id: '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2',
       name: 'Banking und Finance 1',
       displayName: 'Banking und Finance 1',
       ownerId: userBF1.id,
@@ -188,7 +188,7 @@ async function main(prisma: Prisma.PrismaClient) {
 
   const courseAMI = await prisma.course.upsert(
     prepareCourse({
-      id: '064ef09b-07b9-4bfd-b657-5c77d7123e93',
+      id: '2f208c63-cb02-4b46-9462-7ce735a42235',
       name: 'Asset Management: Investments',
       displayName: 'Asset Management: Investments',
       ownerId: userAMI.id,
