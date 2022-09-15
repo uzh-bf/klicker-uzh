@@ -64,10 +64,9 @@ const EditProfile: NextPageWithLayout = () => {
     >
       {({ values, errors, isSubmitting, isValid }) => {
         return (
-          <div className="relative flex flex-col items-center justify-center w-screen h-screen pb-20 overflow-auto">
+          <div className="flex flex-col items-center justify-center">
             <H1>Profil Bearbeiten</H1>
             <BigHead
-              style={{ minWidth: '200px', minHeight: '200px' }}
               accessory={values.accessory}
               body={values.body}
               clothing={values.clothing}
@@ -84,6 +83,7 @@ const EditProfile: NextPageWithLayout = () => {
               mask={false}
               mouth={values.mouth}
               skinTone={values.skinTone}
+              className="h-48"
             />
             <Form>
               <div className="flex flex-row items-center mt-7">

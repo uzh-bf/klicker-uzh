@@ -18,7 +18,7 @@ export const AVATAR_OPTIONS = {
   hat: ['none'],
   body: ['chest', 'breasts'],
   hairColor: ['blonde', 'black', 'brown'],
-  clothingColor: ['white', 'blue', 'black', 'green', 'red'],
+  clothingColor: ['white', 'blue', 'green', 'red'],
 }
 
 export const AVATAR_LABELS = {
