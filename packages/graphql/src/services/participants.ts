@@ -1,8 +1,6 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
 import {
   Context,
   ContextWithOptionalUser,
@@ -179,11 +177,10 @@ export async function getCourseOverviewData(
 interface RegisterParticipantFromLTIArgs {
   courseId: string
   participantId: string
-  participantEmail: string
 }
 
 export async function registerParticipantFromLTI(
-  { courseId, participantId, participantEmail }: RegisterParticipantFromLTIArgs,
+  { courseId, participantId }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({ where: { id: courseId } })
@@ -229,20 +226,12 @@ export async function registerParticipantFromLTI(
 
     const hash = await bcrypt.hash(password, 12)
 
-    if (!isEmail(participantEmail)) {
-      return null
-    }
-
-    // normalize the email address to remove any ambiguity
-    const normalizedEmail = normalizeEmail(participantEmail) as string
-
     participant = await ctx.prisma.participantAccount.create({
       data: {
         ssoType: SSOType.LTI,
         ssoId: participantId,
         participant: {
           create: {
-            email: normalizedEmail,
             password: hash,
             username,
           },

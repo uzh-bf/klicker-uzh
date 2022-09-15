@@ -53,7 +53,6 @@ export async function getParticipantToken(ctx: any) {
     variables: {
       courseId: query.courseId as string,
       participantId: request.body.lis_person_sourcedid,
-      participantEmail: request.body.lis_person_contact_email_primary,
     },
     context: cookies['participant_token']
       ? {
