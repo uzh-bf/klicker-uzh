@@ -67,11 +67,12 @@ type Data = {
   img: string
 }
 
+
 async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   try {
     const rng = Math.random
 
-    const mergedProps = getRandomOptions(rng) as any
+    const mergedProps = {body:"breasts",skinTone:"light",eyes:"happy",mouth:"openSmile",hair:"afro",clothingColor:"white",accessory:"roundGlasses",hairColor:"black", eyebrows: "raised", faceMask: false, lashes: false, mask: false, clothing: 'shirt', facialHair: 'none', graphic: 'none', hat: 'none'}
 
     const hashedProps = hash(mergedProps)
 

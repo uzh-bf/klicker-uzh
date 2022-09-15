@@ -1,49 +1,22 @@
+import { useMutation, useQuery } from '@apollo/client'
 import { AvatarProps, BigHead } from '@bigheads/core'
+import ErrorNotification from '@components/ErrorNotification'
+import { SelfDocument, UpdateParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { NextPageWithLayout } from '@pages/_app'
 import { Button, H1 } from '@uzh-bf/design-system'
-import { Field, Form, Formik } from 'formik'
+import { ErrorMessage, Field, Form, Formik } from 'formik'
+import Router from 'next/router'
 import hash from 'object-hash'
-import { omit } from 'ramda'
+import { omit, pick } from 'ramda'
 import { AVATAR_LABELS, AVATAR_OPTIONS } from 'src/constants'
 import * as yup from 'yup'
 
-const fakeUsername = 'testuser'
 const EditProfile: NextPageWithLayout = () => {
-  const onSubmit = (values: any) => {
-    console.log('submit', values)
-  }
+  const { data, loading } = useQuery(SelfDocument)
+  const [updateParticipantProfile, { error }] = useMutation(UpdateParticipantProfileDocument)
 
-  const initialValues: {
-    userName: string
-    body: AvatarProps['body']
-    skinTone: AvatarProps['skinTone']
-    eyes: AvatarProps['eyes']
-    eyebrows: AvatarProps['eyebrows']
-    mouth: AvatarProps['mouth']
-    hair: AvatarProps['hair']
-    facialHair: AvatarProps['facialHair']
-    clothing: AvatarProps['clothing']
-    accessory: AvatarProps['accessory']
-    graphic: AvatarProps['graphic']
-    hat: AvatarProps['hat']
-    hairColor: AvatarProps['hairColor']
-    clothingColor: AvatarProps['clothingColor']
-    lipColor: AvatarProps['lipColor']
-  } = {
-    userName: fakeUsername,
-    body: AVATAR_OPTIONS.body[0],
-    skinTone: AVATAR_OPTIONS.skinTone[0],
-    eyes: AVATAR_OPTIONS.eyes[0],
-    eyebrows: AVATAR_OPTIONS.eyebrows[0],
-    mouth: AVATAR_OPTIONS.mouth[0],
-    hair: AVATAR_OPTIONS.hair[0],
-    facialHair: AVATAR_OPTIONS.facialHair[0],
-    clothing: AVATAR_OPTIONS.clothing[0],
-    accessory: AVATAR_OPTIONS.accessory[0],
-    graphic: AVATAR_OPTIONS.graphic[0],
-    hat: AVATAR_OPTIONS.hat[0],
-    hairColor: AVATAR_OPTIONS.hairColor[0],
-    clothingColor: AVATAR_OPTIONS.clothingColor[0],
+  if (loading || !data?.self) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -53,13 +26,35 @@ const EditProfile: NextPageWithLayout = () => {
         // TODO: min and max length of username
         name: yup.string().min(5),
       })}
-      initialValues={initialValues}
-      onSubmit={(values, { setSubmitting }) => {
+      initialValues={{
+        userName: data.self.username,
+
+        // TODO: canton or country on the shirts
+        body: data.self.avatarSettings?.body ?? AVATAR_OPTIONS.body[0],
+        skinTone: data.self.avatarSettings?.skinTone ?? AVATAR_OPTIONS.skinTone[0],
+        eyes: data.self.avatarSettings?.eyes ?? AVATAR_OPTIONS.eyes[0],
+        mouth: data.self.avatarSettings?.mouth ?? AVATAR_OPTIONS.mouth[0],
+        hair: data.self.avatarSettings?.hair ?? AVATAR_OPTIONS.hair[0],
+        clothingColor: data.self.avatarSettings?.clothingColor ?? AVATAR_OPTIONS.clothingColor[0],
+        accessory: data.self.avatarSettings?.accessory ?? AVATAR_OPTIONS.accessory[0],
+        hairColor: data.self.avatarSettings?.hairColor ?? AVATAR_OPTIONS.hairColor[0],
+        eyebrows: "raised", faceMask: false, lashes: false, mask: false, clothing: 'shirt', facialHair: 'none', graphic: 'none', hat: 'none'
+      }}
+      onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
-        const valuesToHash = omit(['userName'], values)
-        const hashedValues = hash(valuesToHash)
-        console.log('submit', valuesToHash, hashedValues)
-        setSubmitting(false)
+
+        const avatarSettings = omit(['userName'], values)
+        const avatarHash = hash(avatarSettings)
+
+        const result = await updateParticipantProfile({
+          variables: {
+            username: values.userName,
+            avatar: avatarHash,
+            avatarSettings: pick(['body', 'skinTone', 'eyes', 'mouth', 'hair', 'clothingColor', 'accessory', 'hairColor'], avatarSettings)
+          }
+        })
+
+        Router.push('/profile')
       }}
     >
       {({ values, errors, isSubmitting, isValid }) => {
@@ -67,23 +62,26 @@ const EditProfile: NextPageWithLayout = () => {
           <div className="flex flex-col items-center justify-center">
             <H1>Profil Bearbeiten</H1>
             <BigHead
+                          className="h-48"
+
+                          eyebrows={AVATAR_OPTIONS.eyebrows[0]}
+                          faceMask={false}
+                          lashes={false}
+                          mask={false}
+                          clothing={AVATAR_OPTIONS.clothing[0]}
+                          facialHair={AVATAR_OPTIONS.facialHair[0]}
+                          hat={AVATAR_OPTIONS.hat[0]}
+                          graphic={AVATAR_OPTIONS.graphic[0]}
+
               accessory={values.accessory}
               body={values.body}
-              clothing={values.clothing}
+              skinTone={values.skinTone}
               clothingColor={values.clothingColor}
-              eyebrows={values.eyebrows}
               eyes={values.eyes}
-              faceMask={false}
-              facialHair={values.facialHair}
-              graphic={values.graphic}
               hair={values.hair}
               hairColor={values.hairColor}
-              hat={values.hat}
-              lashes={false}
-              mask={false}
               mouth={values.mouth}
-              skinTone={values.skinTone}
-              className="h-48"
+
             />
             <Form>
               <div className="flex flex-row items-center mt-7">
@@ -212,6 +210,8 @@ const EditProfile: NextPageWithLayout = () => {
                   Save
                 </Button>
               </div>
+
+              {error && <ErrorNotification message="Please choose a different username." />}
             </Form>
           </div>
         )

@@ -26,8 +26,24 @@ import * as MicroLearningService from './services/microLearning'
 import * as ParticipantService from './services/participants'
 import * as SessionService from './services/sessions'
 
+const result =
+
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
+
+export const AvatarSettingsInput = inputObjectType({
+  name: 'AvatarSettingsInput',
+  definition(t) {
+    t.nonNull.string('body')
+    t.nonNull.string('skinTone')
+    t.nonNull.string('eyes')
+    t.nonNull.string('mouth')
+    t.nonNull.string('hair')
+    t.nonNull.string('accessory')
+    t.nonNull.string('hairColor')
+    t.nonNull.string('clothingColor')
+  },
+})
 
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
@@ -311,6 +327,9 @@ export const Participant = objectType({
     t.nonNull.id('id')
 
     t.nonNull.string('avatar')
+    t.field('avatarSettings', {
+      type: 'JSONObject',
+    })
     t.nonNull.string('username')
   },
 })
@@ -586,6 +605,20 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('updateParticipantProfile', {
+      type: Participant,
+      args: {
+        username: stringArg(),
+        avatar: stringArg(),
+        avatarSettings: arg({
+          type: AvatarSettingsInput,
+        }),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
+      },
+    })
+
     t.field('loginUser', {
       type: 'ID',
       args: {

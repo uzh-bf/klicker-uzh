@@ -1,0 +1,8 @@
+mutation UpdateParticipantProfile($avatar: String, $avatarSettings: AvatarSettingsInput, $username: String) {
+  updateParticipantProfile(avatar: $avatar, avatarSettings: $avatarSettings, username: $username) {
+    id
+    username
+    avatar
+    avatarSettings
+  }
+}
