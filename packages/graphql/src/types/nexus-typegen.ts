@@ -160,8 +160,10 @@ export interface NexusGenObjects {
   }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
+    displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
   }
   LecturerSession: { // root type
     accessMode: NexusGenEnums['AccessMode']; // AccessMode!
@@ -385,8 +387,10 @@ export interface NexusGenFieldTypes {
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
+    displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
   }
   LecturerSession: { // field return type
     accessMode: NexusGenEnums['AccessMode']; // AccessMode!
@@ -647,8 +651,10 @@ export interface NexusGenFieldTypeNames {
   }
   LearningElement: { // field return type name
     course: 'Course'
+    displayName: 'String'
     id: 'ID'
     instances: 'QuestionInstance'
+    name: 'String'
   }
   LecturerSession: { // field return type name
     accessMode: 'AccessMode'
@@ -886,7 +892,6 @@ export interface NexusGenArgTypes {
     }
     registerParticipantFromLTI: { // args
       courseId: string; // ID!
-      participantEmail: string; // String!
       participantId: string; // ID!
     }
     resolveFeedback: { // args

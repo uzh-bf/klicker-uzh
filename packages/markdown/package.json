@@ -12,6 +12,7 @@
     "analyze": "size-limit --why",
     "build": "NODE_ENV=production tsup",
     "build:watch": "NODE_ENV=development tsup --watch",
+    "format": "prettier --write .",
     "size": "size-limit"
   },
   "engines": {
@@ -24,18 +25,18 @@
     }
   ],
   "peerDependencies": {
-    "next": "^12.0.0"
+    "next": "^12.0.0",
+    "react": "^18.2.0"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "8.0.1",
+    "@size-limit/preset-small-lib": "8.1.0",
     "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
-    "size-limit": "8.0.1",
-    "tsup": "6.2.2",
-    "typescript": "4.8.2"
+    "size-limit": "8.1.0",
+    "tsup": "6.2.3",
+    "typescript": "4.8.3"
   },
   "dependencies": {
-    "react": "18.2.0",
     "rehype-katex": "6.0.2",
     "rehype-react": "7.1.1",
     "rehype-sanitize": "5.0.1",

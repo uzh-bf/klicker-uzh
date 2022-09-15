@@ -152,18 +152,18 @@ function Options({
 
               return (
                 <div className="flex flex-col" key={choice.ix}>
-                  <div
-
-                    className="flex flex-row items-center justify-between p-2 border"
-                  >
+                  <div className="flex flex-row items-center justify-between p-2 border">
                     <div>
                       <Markdown content={choice.value} />
                     </div>
                     <div className="flex flex-row gap-2">
                       <Button
                         className={
-                          feedbacks && response?.includes(choice.ix) &&
-                          (correctAnswer ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700')
+                          feedbacks &&
+                          response?.includes(choice.ix) &&
+                          (correctAnswer
+                            ? 'bg-green-200 text-green-700'
+                            : 'bg-red-200 text-red-700')
                         }
                         disabled={isEvaluation}
                         active={response?.includes(choice.ix)}
@@ -182,8 +182,11 @@ function Options({
                       </Button>
                       <Button
                         className={
-                          feedbacks && !response?.includes(choice.ix) &&
-                          (correctAnswer ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700')
+                          feedbacks &&
+                          !response?.includes(choice.ix) &&
+                          (correctAnswer
+                            ? 'bg-green-200 text-green-700'
+                            : 'bg-red-200 text-red-700')
                         }
                         disabled={isEvaluation}
                         active={!response?.includes(choice.ix)}
@@ -274,10 +277,11 @@ function OptionsDisplay({
       />
       <div className="self-end mt-4">
         <Button
+          className="text-lg"
           disabled={!isEvaluation && response?.length === 0}
           onClick={onSubmitResponse}
         >
-          {isEvaluation ? 'Next Question' : 'Submit'}
+          {isEvaluation ? 'Weiter' : 'Antwort absenden'}
         </Button>
       </div>
     </div>

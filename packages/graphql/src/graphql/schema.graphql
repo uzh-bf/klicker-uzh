@@ -141,8 +141,10 @@ type LeaderboardEntry {
 
 type LearningElement {
   course: Course!
+  displayName: String!
   id: ID!
   instances: [QuestionInstance!]!
+  name: String!
 }
 
 type LecturerSession {
@@ -191,7 +193,7 @@ type Mutation {
   logoutUser(userId: ID!): ID
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
-  registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance

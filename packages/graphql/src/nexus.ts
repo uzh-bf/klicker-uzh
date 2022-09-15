@@ -259,6 +259,9 @@ export const LearningElement = objectType({
   definition(t) {
     t.nonNull.id('id')
 
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
@@ -699,7 +702,6 @@ export const Mutation = objectType({
       args: {
         courseId: nonNull(idArg()),
         participantId: nonNull(idArg()),
-        participantEmail: nonNull(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return ParticipantService.registerParticipantFromLTI(args, ctx)

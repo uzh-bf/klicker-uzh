@@ -208,6 +208,7 @@ model Course {
   ownerId String @db.Uuid
 
   participations Participation[]
+  subscriptions  PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -326,7 +327,9 @@ model Session {
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
-  instances QuestionInstance[]
+  name        String
+  displayName String
+  instances   QuestionInstance[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
@@ -432,7 +435,6 @@ model Participant {
   id String @id @default(uuid()) @db.Uuid
 
   username    String    @unique
-  email       String    @unique
   password    String
   avatar      String    @default("placeholder.png")
   lastLoginAt DateTime?
@@ -462,7 +464,8 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  responses QuestionResponse[]
+  responses     QuestionResponse[]
+  subscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -490,4 +493,20 @@ model QuestionResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, questionInstanceId])
+}
+
+model PushSubscription {
+  id Int @id @default(autoincrement())
+
+  endpoint String
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id])
+  participationId Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, endpoint])
 }
