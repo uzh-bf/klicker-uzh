@@ -5,13 +5,18 @@ import {
   GetCockpitSessionDocument,
   LecturerSession,
 } from '@klicker-uzh/graphql/dist/ops'
+import { push } from '@socialgouv/matomo-next'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 
 import AudienceInteraction from '../../components/interaction/AudienceInteraction'
 import Layout from '../../components/Layout'
+import SessionTimeline from '../../components/sessions/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
+  const [isParticipantListVisible, setIsParticipantListVisible] =
+    useState(false)
 
   // TODO: add toast notifications - this react library react-toast-notifications is outdated and will not work with react 18
   // const { addToast } = useToasts()
@@ -34,8 +39,6 @@ function Cockpit() {
   // const [cancelSession, { loading: isCancelSessionLoading }] = useMutation(CancelSessionMutation)
   // const [activateNextBlock, { loading: isActivateNextBlockLoading }] = useMutation(ActivateNextBlockMutation)
   // const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
-
-  // const [isParticipantListVisible, setIsParticipantListVisible] = useState(false)
 
   // const shortname = _get(accountSummary, 'data.user.shortname')
 
@@ -94,12 +97,12 @@ function Cockpit() {
   return (
     <Layout>
       <div className="mb-8 print:hidden">
-        {/* // TODO: add hint for authenticated session, if this is enabled */}
+        {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         SESSION TIMELINE
-        {/* <SessionTimeline
-          // activeBlock={activeBlock}
-          activeStep={activeStep}
-          authenticationMode={settings.authenticationMode}
+        <SessionTimeline
+          activeBlock={activeBlock}
+          // activeStep={activeStep}
+          // authenticationMode={settings.authenticationMode}
           blocks={blocks}
           handleActivateBlockById={(blockId): void => {
             if (
@@ -203,38 +206,37 @@ function Cockpit() {
             })
             push(['trackEvent', 'Running Session', 'Evaluation Published'])
           }}
-          intl={intl}
-          isEvaluationPublic={settings.isEvaluationPublic}
-          isParticipantAuthenticationEnabled={
-            settings.isParticipantAuthenticationEnabled
-          }
-          isParticipantListVisible={isParticipantListVisible}
-          participants={participants}
+          // TODO: add isEvaluationPublic attribute to session and then pass it down here
+          isEvaluationPublic={true}
+          // isParticipantAuthenticationEnabled={
+          //   settings.isParticipantAuthenticationEnabled
+          // }
+          // isParticipantListVisible={isParticipantListVisible}
+          // participants={participants}
           sessionId={id}
-          shortname={shortname}
           startedAt={startedAt}
-          storageMode={settings.storageMode}
-          subscribeToMore={subscribeToMore({
-            document: RunningSessionUpdatedSubscription,
-            updateQuery: (prev, { subscriptionData }): any => {
-              if (!subscriptionData.data) return prev
-              return {
-                ...prev,
-                runningSession: {
-                  ...prev.runningSession,
-                  ..._pick(subscriptionData.data.runningSessionUpdated, [
-                    'activeBlock',
-                    'activeStep',
-                  ]),
-                },
-              }
-            },
-            variables: { sessionId: id },
-          })}
-          withQuestionBlockExperiments={
-            featureFlags?.flags?.questionBlockExperiments
-          }
-        /> */}
+          // storageMode={settings.storageMode}
+          // subscribeToMore={subscribeToMore({
+          //   document: RunningSessionUpdatedSubscription,
+          //   updateQuery: (prev, { subscriptionData }): any => {
+          //     if (!subscriptionData.data) return prev
+          //     return {
+          //       ...prev,
+          //       runningSession: {
+          //         ...prev.runningSession,
+          //         ..._pick(subscriptionData.data.runningSessionUpdated, [
+          //           'activeBlock',
+          //           'activeStep',
+          //         ]),
+          //       },
+          //     }
+          //   },
+          //   variables: { sessionId: id },
+          // })}
+          // withQuestionBlockExperiments={
+          //   featureFlags?.flags?.questionBlockExperiments
+          // }
+        />
       </div>
 
       <AudienceInteraction
