@@ -21,7 +21,9 @@ function Evaluation() {
       courseName={data.microSession.course.displayName}
       mobileMenuItems={[]}
     >
-      hello world
+      <div className="md:max-w-5xl md:m-auto md:p-4 md:w-full md:border md:rounded">
+        hello world
+      </div>
     </Layout>
   )
 }

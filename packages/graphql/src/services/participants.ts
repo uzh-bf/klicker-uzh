@@ -18,7 +18,25 @@ export async function getParticipantProfile(
 ) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
-    select: { id: true, avatar: true, username: true },
+    select: { id: true, avatar: true, avatarSettings: true, username: true },
+  })
+
+  return participant
+}
+
+interface UpdateParticipantProfileArgs {
+  username?: string
+  avatar?: string
+  avatarSettings?: any
+}
+
+export async function updateParticipantProfile(
+  { username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: { username, avatar, avatarSettings },
   })
 
   return participant

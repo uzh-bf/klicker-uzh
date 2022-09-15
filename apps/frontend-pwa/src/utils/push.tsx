@@ -63,5 +63,5 @@ async function subscribeParticipant(
 export {
   base64ToUint8Array,
   determineInitialSubscriptionState,
-  subscribeParticipant
+  subscribeParticipant,
 }

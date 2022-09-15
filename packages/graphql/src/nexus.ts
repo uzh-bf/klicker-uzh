@@ -30,6 +30,21 @@ import * as SessionService from './services/sessions'
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 
+export const AvatarSettingsInput = inputObjectType({
+  name: 'AvatarSettingsInput',
+  definition(t) {
+    t.nonNull.string('body')
+    t.nonNull.string('skinTone')
+    t.nonNull.string('eyes')
+    t.nonNull.string('mouth')
+    t.nonNull.string('hair')
+    t.nonNull.string('accessory')
+    t.nonNull.string('hairColor')
+    t.nonNull.string('clothingColor')
+    t.nonNull.string('facialHair')
+  },
+})
+
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
   definition(t) {
@@ -331,6 +346,9 @@ export const Participant = objectType({
     t.nonNull.id('id')
 
     t.nonNull.string('avatar')
+    t.field('avatarSettings', {
+      type: 'JSONObject',
+    })
     t.nonNull.string('username')
   },
 })
@@ -632,6 +650,20 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('updateParticipantProfile', {
+      type: Participant,
+      args: {
+        username: stringArg(),
+        avatar: stringArg(),
+        avatarSettings: arg({
+          type: AvatarSettingsInput,
+        }),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
+      },
+    })
+
     t.field('loginUser', {
       type: 'ID',
       args: {
@@ -656,20 +688,14 @@ export const Mutation = objectType({
 
     t.field('logoutUser', {
       type: 'ID',
-      args: {
-        userId: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutUser(args, ctx)
       },
     })
 
     t.field('logoutParticipant', {
       type: 'ID',
-      args: {
-        id: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutParticipant(args, ctx)
       },
     })

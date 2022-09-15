@@ -25,6 +25,18 @@ enum AttachmentType {
   WEBP
 }
 
+input AvatarSettingsInput {
+  accessory: String!
+  body: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
@@ -169,6 +181,7 @@ type Mutation {
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): PushSubscription
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -201,6 +214,7 @@ type NumericalSolutionRange {
 
 type Participant {
   avatar: String!
+  avatarSettings: JSONObject
   id: ID!
   username: String!
 }
@@ -234,7 +248,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
-  participations: [Participation!]
+  participations(endpoint: String): [Participation!]
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session

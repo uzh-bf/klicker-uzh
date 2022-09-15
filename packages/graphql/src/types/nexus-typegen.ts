@@ -36,6 +36,17 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  AvatarSettingsInput: { // input type
+    accessory: string; // String!
+    body: string; // String!
+    clothingColor: string; // String!
+    eyes: string; // String!
+    facialHair: string; // String!
+    hair: string; // String!
+    hairColor: string; // String!
+    mouth: string; // String!
+    skinTone: string; // String!
+  }
   BlockInput: { // input type
     questionIds: number[]; // [Int!]!
     randomSelection?: number | null; // Int
@@ -201,6 +212,7 @@ export interface NexusGenObjects {
   }
   Participant: { // root type
     avatar: string; // String!
+    avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     username: string; // String!
   }
@@ -411,6 +423,7 @@ export interface NexusGenFieldTypes {
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     subscribeToPush: NexusGenRootTypes['PushSubscription'] | null; // PushSubscription
+    updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
   }
@@ -438,6 +451,7 @@ export interface NexusGenFieldTypes {
   }
   Participant: { // field return type
     avatar: string; // String!
+    avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     username: string; // String!
   }
@@ -658,6 +672,7 @@ export interface NexusGenFieldTypeNames {
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     subscribeToPush: 'PushSubscription'
+    updateParticipantProfile: 'Participant'
     upvoteFeedback: 'Feedback'
     voteFeedbackResponse: 'FeedbackResponse'
   }
@@ -685,6 +700,7 @@ export interface NexusGenFieldTypeNames {
   }
   Participant: { // field return type name
     avatar: 'String'
+    avatarSettings: 'JSONObject'
     id: 'ID'
     username: 'String'
   }
@@ -863,6 +879,11 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
       subscriptionObject: NexusGenInputs['SubscriptionObjectInput']; // SubscriptionObjectInput!
     }
+    updateParticipantProfile: { // args
+      avatar?: string | null; // String
+      avatarSettings?: NexusGenInputs['AvatarSettingsInput'] | null; // AvatarSettingsInput
+      username?: string | null; // String
+    }
     upvoteFeedback: { // args
       feedbackId: number; // Int!
       increment: number; // Int!
@@ -885,6 +906,9 @@ export interface NexusGenArgTypes {
     }
     microSession: { // args
       id: string; // ID!
+    }
+    participations: { // args
+      endpoint?: string | null; // String
     }
     runningSessions: { // args
       shortname: string; // String!
