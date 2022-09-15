@@ -179,6 +179,7 @@ type Mutation {
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): PushSubscription
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -230,6 +231,15 @@ type Participation {
   id: Int!
   isActive: Boolean!
   points: Int!
+  subscriptions: [Subscription!]
+}
+
+type PushSubscription {
+  auth: String!
+  endpoint: String!
+  expirationTime: Int
+  id: Int!
+  p256dh: String!
 }
 
 type Query {
@@ -237,7 +247,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
-  participations: [Participation!]
+  participations(endpoint: String): [Participation!]
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
@@ -314,6 +324,22 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type Subscription {
+  endpoint: String!
+  id: ID!
+}
+
+input SubscriptionKeys {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeys!
 }
 
 type User {

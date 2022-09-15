@@ -55,6 +55,15 @@ export interface NexusGenInputs {
     choices?: number[] | null; // [Int!]
     value?: string | null; // String
   }
+  SubscriptionKeys: { // input type
+    auth: string; // String!
+    p256dh: string; // String!
+  }
+  SubscriptionObjectInput: { // input type
+    endpoint: string; // String!
+    expirationTime?: number | null; // Int
+    keys: NexusGenInputs['SubscriptionKeys']; // SubscriptionKeys!
+  }
 }
 
 export interface NexusGenEnums {
@@ -218,6 +227,14 @@ export interface NexusGenObjects {
     id: number; // Int!
     isActive: boolean; // Boolean!
     points: number; // Int!
+    subscriptions?: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+  }
+  PushSubscription: { // root type
+    auth: string; // String!
+    endpoint: string; // String!
+    expirationTime?: number | null; // Int
+    id: number; // Int!
+    p256dh: string; // String!
   }
   Query: {};
   QuestionFeedback: { // root type
@@ -257,6 +274,10 @@ export interface NexusGenObjects {
     randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
+  }
+  Subscription: { // root type
+    endpoint: string; // String!
+    id: string; // ID!
   }
   User: { // root type
     description?: string | null; // String
@@ -400,6 +421,7 @@ export interface NexusGenFieldTypes {
     respondToFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
+    subscribeToPush: NexusGenRootTypes['PushSubscription'] | null; // PushSubscription
     updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
@@ -444,6 +466,14 @@ export interface NexusGenFieldTypes {
     id: number; // Int!
     isActive: boolean; // Boolean!
     points: number; // Int!
+    subscriptions: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+  }
+  PushSubscription: { // field return type
+    auth: string; // String!
+    endpoint: string; // String!
+    expirationTime: number | null; // Int
+    id: number; // Int!
+    p256dh: string; // String!
   }
   Query: { // field return type
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
@@ -495,6 +525,10 @@ export interface NexusGenFieldTypes {
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
+  }
+  Subscription: { // field return type
+    endpoint: string; // String!
+    id: string; // ID!
   }
   User: { // field return type
     description: string | null; // String
@@ -636,6 +670,7 @@ export interface NexusGenFieldTypeNames {
     respondToFeedback: 'Feedback'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
+    subscribeToPush: 'PushSubscription'
     updateParticipantProfile: 'Participant'
     upvoteFeedback: 'Feedback'
     voteFeedbackResponse: 'FeedbackResponse'
@@ -680,6 +715,14 @@ export interface NexusGenFieldTypeNames {
     id: 'Int'
     isActive: 'Boolean'
     points: 'Int'
+    subscriptions: 'Subscription'
+  }
+  PushSubscription: { // field return type name
+    auth: 'String'
+    endpoint: 'String'
+    expirationTime: 'Int'
+    id: 'Int'
+    p256dh: 'String'
   }
   Query: { // field return type name
     feedbacks: 'Feedback'
@@ -731,6 +774,10 @@ export interface NexusGenFieldTypeNames {
     randomSelection: 'Boolean'
     status: 'SessionBlockStatus'
     timeLimit: 'Int'
+  }
+  Subscription: { // field return type name
+    endpoint: 'String'
+    id: 'ID'
   }
   User: { // field return type name
     description: 'String'
@@ -827,6 +874,10 @@ export interface NexusGenArgTypes {
     startSession: { // args
       id: string; // ID!
     }
+    subscribeToPush: { // args
+      courseId: string; // ID!
+      subscriptionObject: NexusGenInputs['SubscriptionObjectInput']; // SubscriptionObjectInput!
+    }
     updateParticipantProfile: { // args
       avatar?: string | null; // String
       avatarSettings?: NexusGenInputs['AvatarSettingsInput'] | null; // AvatarSettingsInput
@@ -854,6 +905,9 @@ export interface NexusGenArgTypes {
     }
     microSession: { // args
       id: string; // ID!
+    }
+    participations: { // args
+      endpoint?: string | null; // String
     }
     runningSessions: { // args
       shortname: string; // String!

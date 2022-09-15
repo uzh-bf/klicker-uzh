@@ -42,13 +42,25 @@ export async function updateParticipantProfile(
   return participant
 }
 
-export async function getParticipations(_: any, ctx: ContextWithUser) {
+interface GetParticipationsArgs {
+  endpoint?: string
+}
+
+export async function getParticipations(
+  { endpoint }: GetParticipationsArgs,
+  ctx: ContextWithUser
+) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       participations: {
         where: { isActive: true },
         include: {
+          subscriptions: endpoint
+            ? {
+                where: { endpoint },
+              }
+            : undefined,
           course: {
             include: {
               microSessions: {

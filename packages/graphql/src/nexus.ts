@@ -23,10 +23,9 @@ import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
 import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
+import * as NotificationService from './services/notifications'
 import * as ParticipantService from './services/participants'
 import * as SessionService from './services/sessions'
-
-const result =
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
@@ -51,6 +50,25 @@ export const BlockInput = inputObjectType({
     t.nonNull.list.nonNull.int('questionIds')
     t.int('randomSelection')
     t.int('timeLimit')
+  },
+})
+
+export const SubscriptionKeysInput = inputObjectType({
+  name: 'SubscriptionKeys',
+  definition(t) {
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
+  },
+})
+
+export const SubscriptionObjectInput = inputObjectType({
+  name: 'SubscriptionObjectInput',
+  definition(t) {
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.field('keys', {
+      type: SubscriptionKeysInput,
+    })
   },
 })
 
@@ -334,6 +352,15 @@ export const Participant = objectType({
   },
 })
 
+export const Subscription = objectType({
+  name: 'Subscription',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('endpoint')
+  },
+})
+
 export const Participation = objectType({
   name: 'Participation',
   definition(t) {
@@ -344,6 +371,9 @@ export const Participation = objectType({
 
     t.nonNull.field('course', {
       type: Course,
+    })
+    t.list.nonNull.field('subscriptions', {
+      type: Subscription,
     })
   },
 })
@@ -496,6 +526,17 @@ export const Session = objectType({
   },
 })
 
+export const PushSubscription = objectType({
+  name: 'PushSubscription',
+  definition(t) {
+    t.nonNull.int('id')
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -548,6 +589,9 @@ export const Query = objectType({
 
     t.list.nonNull.field('participations', {
       type: Participation,
+      args: {
+        endpoint: stringArg(),
+      },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.getParticipations(args, ctx)
       },
@@ -850,6 +894,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.deactivateSessionBlock(args, ctx)
+      },
+    })
+
+    t.field('subscribeToPush', {
+      type: PushSubscription,
+      args: {
+        subscriptionObject: nonNull(SubscriptionObjectInput),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return NotificationService.subscribeToPush(args, ctx)
       },
     })
   },
