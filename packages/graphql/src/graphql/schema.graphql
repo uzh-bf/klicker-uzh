@@ -173,8 +173,8 @@ type Mutation {
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
-  logoutParticipant(id: ID!): ID
-  logoutUser(userId: ID!): ID
+  logoutParticipant: ID
+  logoutUser: ID
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
   resolveFeedback(id: Int!, newValue: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

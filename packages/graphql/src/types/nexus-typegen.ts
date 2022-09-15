@@ -849,12 +849,6 @@ export interface NexusGenArgTypes {
       email: string; // String!
       password: string; // String!
     }
-    logoutParticipant: { // args
-      id: string; // ID!
-    }
-    logoutUser: { // args
-      userId: string; // ID!
-    }
     registerParticipantFromLTI: { // args
       courseId: string; // ID!
       participantId: string; // ID!

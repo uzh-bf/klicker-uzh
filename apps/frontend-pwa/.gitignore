@@ -41,3 +41,5 @@ public/fallback*.js*
 public/worker*.js
 
 src/testPush.js
+
+public/avatars

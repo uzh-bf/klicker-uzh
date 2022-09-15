@@ -9,7 +9,6 @@ export const AVATAR_OPTIONS = {
   skinTone: ['light', 'dark'],
   eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],
   eyebrows: ['raised'],
-  // mouth: ['grin', 'openSmile', 'open', 'serious', 'tongue'],
   mouth: ['grin', 'openSmile', 'serious'],
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   facialHair: ['none', 'stubble', 'mediumBeard'],
