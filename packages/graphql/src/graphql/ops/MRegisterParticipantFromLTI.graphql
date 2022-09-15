@@ -1,12 +1,7 @@
-mutation RegisterParticipantFromLTI(
-  $courseId: ID!
-  $participantId: ID!
-  $participantEmail: String!
-) {
+mutation RegisterParticipantFromLTI($courseId: ID!, $participantId: ID!) {
   registerParticipantFromLTI(
     courseId: $courseId
     participantId: $participantId
-    participantEmail: $participantEmail
   ) {
     id
     participantToken
