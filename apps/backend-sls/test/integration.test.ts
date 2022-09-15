@@ -891,7 +891,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            resolveFeedback(id: ${feedback1.id}, newValue: true) {
+            resolveFeedback(id: ${feedback1.id}, isResolved: true) {
                 id
                 isResolved
             }

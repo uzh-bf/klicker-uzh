@@ -21,6 +21,7 @@
     "next": "12.2.5",
     "ramda": "0.28.0",
     "react": "18.2.0",
+    "react-csv": "2.2.2",
     "react-d3-speedometer": "2.0.0-rc.3",
     "react-dom": "18.2.0",
     "react-qrcode-logo": "2.8.0",
