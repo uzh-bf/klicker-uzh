@@ -34,6 +34,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "publish": "turbo run publish",
+    "format": "turbo run format",
     "release": "standard-version --no-verify",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
@@ -45,7 +46,7 @@
   },
   "devDependencies": {
     "standard-version": "9.5.0",
-    "turbo": "1.4.3",
+    "turbo": "1.4.6",
     "yaml": "2.1.1"
   },
   "volta": {

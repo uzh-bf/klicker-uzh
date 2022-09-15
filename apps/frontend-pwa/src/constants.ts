@@ -22,7 +22,6 @@ export const AVATAR_OPTIONS = {
   lipColor: ['red'],
 }
 
-
 export const QUESTION_GROUPS = {
   CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC],
   FREE_TEXT: [QUESTION_TYPES.FREE_TEXT],
@@ -40,4 +39,3 @@ export const QUESTION_GROUPS = {
   ],
   WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
 }
-
