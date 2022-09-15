@@ -11,6 +11,7 @@
     "analyze": "size-limit --why",
     "build": "NODE_ENV=production tsup",
     "build:watch": "NODE_ENV=development tsup --watch",
+    "format": "prettier --write .",
     "size": "size-limit",
     "test": "jest"
   },
@@ -29,6 +30,7 @@
     "@tsconfig/recommended": "1.0.1",
     "@types/jest": "^29.0.2",
     "@types/ramda": "0.28.15",
+    "@uzh-bf/design-system": "0.0.39",
     "jest": "29.0.3",
     "size-limit": "8.1.0",
     "ts-jest": "29.0.1",

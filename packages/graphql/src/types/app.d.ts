@@ -16,7 +16,7 @@ interface QuestionData<Type, Options> {
 interface Choice {
   ix: number
   value: string
-  correct: boolean
+  correct?: boolean
   feedback?: string
 }
 

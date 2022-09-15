@@ -1,6 +1,14 @@
 import { or, preExecRule } from '@graphql-authz/core'
 import { UserRole } from '@klicker-uzh/prisma'
 
+const Reject = preExecRule()(() => {
+  return false
+})
+
+const Allow = preExecRule()(() => {
+  return true
+})
+
 const IsAuthenticated = preExecRule()((ctx: any) => {
   return !!ctx.user
 })
@@ -20,6 +28,8 @@ const IsAdmin = preExecRule()((ctx: any) => {
 const IsUserOrAdmin = or(IsUser, IsAdmin)
 
 export const Rules = {
+  Reject,
+  Allow,
   IsAuthenticated,
   IsParticipant,
   IsUser,
@@ -29,7 +39,7 @@ export const Rules = {
 
 export const AuthSchema = {
   Mutation: {
-    '*': { __authz: { rules: ['Reject'] } },
+    '*': { __authz: { rules: ['Allow'] } },
     addConfusionTimestep: { __authz: { rules: ['Allow'] } },
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
@@ -47,7 +57,7 @@ export const AuthSchema = {
   },
 
   Query: {
-    '*': { __authz: { rules: ['Reject'] } },
+    '*': { __authz: { rules: ['Allow'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
@@ -55,7 +65,8 @@ export const AuthSchema = {
     self: { __authz: { rules: ['IsParticipant'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
-    userProfile: { __authz: { rules: ['isUserOrAdmin'] } },
-    userSessions: { __authz: { rules: ['isUserOrAdmin'] } },
+    userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
+    userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
+    microSession: { __authz: { rules: ['IsParticipant'] } },
   },
 }
