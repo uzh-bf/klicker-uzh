@@ -74,9 +74,7 @@ const Index = function () {
     }, obj)
   }, [data])
 
-  if (!loading && !data) {
-    // router.push('/login')
-  }
+
   if (loading || !data) {
     return <div>loading...</div>
   }
@@ -93,9 +91,8 @@ const Index = function () {
     } else {
       // Case 2a: User already has a push subscription
       if (subscription) {
-        console.log(JSON.parse(JSON.stringify(subscription)))
         subscribeToPush({variables: {
-          subscriptionObject: JSON.parse(JSON.stringify(subscription)),
+          subscriptionObject: subscription,
           courseId
         }})
         // Case 2b: User has no push subscription yet
@@ -154,6 +151,7 @@ const Index = function () {
               </Link>
             ))}
           </div>
+
           <H1>Verfügbares Microlearning</H1>
           <div className="flex flex-col mt-2 mb-8">
             {activeMicrolearning.length === 0 && (
@@ -167,6 +165,7 @@ const Index = function () {
               </Link>
             ))}
           </div>
+
           <H1>Kurse</H1>
           <div className="mt-2 mb-8">
             {courses.map((course: any) => (
