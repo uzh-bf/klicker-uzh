@@ -12,7 +12,7 @@
       "prisma/dataAMI.ts": "esm",
       "prisma/helpers.ts": "esm",
       "prisma/seed.ts": "esm",
-      "test/integration.test.ts": "esm",
+      "test/integration.test.ts": "esm"
     }
   }
 }
