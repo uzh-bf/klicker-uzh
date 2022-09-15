@@ -1,11 +1,13 @@
 'use strict'
 
 self.addEventListener('push', function (event) {
-  const data = JSON.parse(event.data.text())
+  console.log(event)
+  const data = event.data.json()
   event.waitUntil(
     registration.showNotification(data.title, {
       body: data.message,
-      icon: '/manifest-icon-192.maskable.png'
+      icon: '/manifest-icon-192.maskable.png',
+      requireInteraction: true
     })
   )
 })

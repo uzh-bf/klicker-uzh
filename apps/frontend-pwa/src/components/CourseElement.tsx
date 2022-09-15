@@ -10,16 +10,15 @@ type courseElementProps = {
   courseName: string
   courseId: string
   disabled: boolean
+  isSubscribed: boolean
   onSubscribeClick: (
     subscribed: boolean,
-    setSubscribed: Dispatch<SetStateAction<boolean>>,
     courseId: string
   ) => void
 }
 
 const CourseElement = (props: courseElementProps) => {
   // TODO: Fetch initial subscription state from DB
-  const [subscribed, setSubscribed] = useState(false)
 
   const computedClassNameSubscribed = twMerge(
     props.disabled
@@ -44,18 +43,13 @@ const CourseElement = (props: courseElementProps) => {
         <Link href={`/course/${props.courseId}`}>{props.courseName}</Link>
       </span>
       <span className={computedClassNameButton}>
-        <TogglePrimitive.Root
-          defaultPressed={subscribed}
-          onPressedChange={setSubscribed}
-          asChild
-        >
           <button
             disabled={props.disabled}
             onClick={() =>
-              props.onSubscribeClick(subscribed, setSubscribed, props.courseId)
+              props.onSubscribeClick(props.isSubscribed, props.courseId)
             }
           >
-            {subscribed ? (
+            {props.isSubscribed ? (
               <FontAwesomeIcon
                 icon={faBell}
                 fixedWidth
@@ -70,7 +64,6 @@ const CourseElement = (props: courseElementProps) => {
               />
             )}
           </button>
-        </TogglePrimitive.Root>
       </span>
     </div>
   )

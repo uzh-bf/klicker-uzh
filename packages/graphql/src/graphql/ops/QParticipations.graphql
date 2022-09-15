@@ -1,7 +1,11 @@
-query Participations {
-  participations {
+query Participations($endpoint: String) {
+  participations(endpoint: $endpoint) {
     id
     points
+    subscriptions {
+      id
+      endpoint
+    }
     course {
       id
       displayName
