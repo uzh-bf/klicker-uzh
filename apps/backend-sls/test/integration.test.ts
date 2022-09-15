@@ -596,6 +596,17 @@ describe('API', () => {
       axios.post(
         'http://127.0.0.1:7072/api/AddResponse',
         {
+          instanceId: instances['KPRIM' as any],
+          sessionId: session.id,
+          response: { choices: [2] },
+        },
+        {
+          headers: { cookie: `participant_token=${jwt}` },
+        }
+      )
+      axios.post(
+        'http://127.0.0.1:7072/api/AddResponse',
+        {
           instanceId: instances['NUMERICAL' as any],
           sessionId: session.id,
           response: { value: 1 },
@@ -733,7 +744,7 @@ describe('API', () => {
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {
-                    "type": "FREE_TEXT",
+                    "type": "KPRIM",
                   },
                 },
               ],

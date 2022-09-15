@@ -66,7 +66,7 @@ function Layout({
           />
         </div>
 
-        <div className="flex flex-col max-w-4xl p-4 md:self-center md:m-auto">
+        <div className="flex flex-col max-w-6xl p-4 md:self-center md:m-auto">
           {children}
         </div>
 

@@ -114,9 +114,10 @@ function Index({
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
     >
+      <div className="gap-4 md:flex md:flex-row">
       <div
         className={twMerge(
-          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block md:overflow-scroll',
+          'md:p-4 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden md:overflow-scroll',
           isAudienceInteractionActive && 'md:w-1/2',
           activeMobilePage === 'questions' && 'block'
         )}
@@ -153,7 +154,7 @@ function Index({
       {isGamificationEnabled && (
         <div
           className={twMerge(
-            'w-full p-4 bg-white hidden min-h-full',
+            'bg-white hidden min-h-full flex-1 md:p-4',
             activeMobilePage === 'leaderboard' && 'block md:hidden'
           )}
         >
@@ -164,13 +165,13 @@ function Index({
       {isAudienceInteractionActive && (
         <div
           className={twMerge(
-            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block md:overflow-scroll',
+            'md:p-4 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:overflow-scroll md:rounded-lg',
             activeMobilePage === 'feedbacks' && 'block'
           )}
         >
           <FeedbackArea isModerationEnabled={isModerationEnabled} />
         </div>
-      )}
+      )}</div>
     </Layout>
   )
 }

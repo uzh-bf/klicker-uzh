@@ -88,20 +88,36 @@ export const QUESTIONS = [
   },
   {
     id: 8,
-    name: 'Soziale Marktwirtschaft',
-    content: 'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
+    name: 'Bilanz',
+    content:
+      'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
     contentPlain:
-      'Beschreibe die Hauptprinzipien einer sozialen Marktwirtschaft.',
-    type: QuestionType.FREE_TEXT,
-    options: {
-      restrictions: {
-        maxLength: 100,
+      'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Aktivseite zeigt die Mittelverwendung auf.',
+        value: 'Die Aktivseite zeigt die Mittelherkunft auf.',
       },
-      solutions: [
-        'Freie Marktwirtschaft mit Ausgleichsfunktionen',
-        'Beispiele sind die meisten Länder in Europa',
-      ],
-    },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Passivseite zeigt die Mittelherkunft auf.',
+        value: 'Die Passivseite der Bilanz zeigt die Mittelverwendung auf.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Das EK zeigt zwar die Mittelherkunft auf, diese wird aber auf der Passivseite der Bilanz abgebildet.',
+        value:
+          'Das EK zeigt die Mittelherkunft auf und steht somit auf der Aktivseite der Bilanz.',
+      },
+      {
+        feedback: 'Diese Aussage ist korrekt!',
+        correct: true,
+        value:
+          'Das Konto Flüssige Mittel zeigt die Mittelverwendung auf und steht somit auf der Aktivseite der Bilanz.',
+      },
+    ],
   },
   {
     id: 9,
@@ -149,7 +165,7 @@ export const LEARNING_ELEMENTS = [
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     name: 'Test Learning Element 1',
     displayName: 'Test Learning Element 1',
-    questions: [5, 6, 7, 8, 9],
+    questions: [9, 8],
   },
 ]
 
@@ -171,12 +187,12 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [6, 7, 8],
+        questions: [6, 7, 8, 9],
         expiresAt: new Date('2022-12-31T23:59:59.999Z'),
         timeLimit: 20,
       },
       {
-        questions: [9, 5],
+        questions: [6, 7, 8, 9],
         expiresAt: new Date('2022-12-31T23:59:59.999Z'),
         timeLimit: 30,
       },
@@ -198,6 +214,6 @@ Diese Woche lernen wir...
 
 Mehr bla bla...
 `,
-    questions: [9, 5, 6, 7, 8],
+    questions: [9, 8],
   },
 ]
