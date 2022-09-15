@@ -1,15 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
-import { NextPageWithLayout } from '@pages/_app'
-import { H1, Button } from '@uzh-bf/design-system'
-import { ThreeDots } from 'react-loader-spinner'
-import { BigHead } from '@bigheads/core'
+import { Button, H1 } from '@uzh-bf/design-system'
 import Router from 'next/router'
+import { useEffect, useState } from 'react'
 
+const fakeUsername = 'testuser'
 const Profile = () => {
   const [pageInIframe, setPageInIframe] = useState(false)
-  const { data, error, loading } = useQuery(SelfDocument)
 
   // detect if the page is currently shown as an iframe (i.e. in OLAT) -> hide the logout button in this case
   useEffect(() => {
@@ -21,54 +16,15 @@ const Profile = () => {
   }, [])
 
   return (
-    <Layout>
-      {loading && (
-        <ThreeDots
-          height="80"
-          width="80"
-          radius="9"
-          color="#4fa94d"
-          ariaLabel="three-dots-loading"
-          visible={true}
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div>
+    <div className="relative flex flex-col items-center justify-center w-screen h-screen pb-20">
       <H1>Profil</H1>
-      <BigHead
-        style={{ width: '400px', height: '400px'}}
-        accessory="roundGlasses"
-        body="breasts"
-        circleColor="blue"
-        clothing="vneck"
-        clothingColor="blue"
-        eyebrows="serious"
-        eyes="leftTwitch"
-        faceMask={false}
-        faceMaskColor="green"
-        facialHair="stubble"
-        graphic="none"
-        hair="balding"
-        hairColor="blonde"
-        hat="none"
-        hatColor="white"
-        lashes={false}
-        lipColor="red"
-        mask
-        mouth="lips"
-        skinTone="yellow"
+      <img
+        src="https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp"
+        alt="Avatar-Image"
       />
-      <p className=''>{data?.self?.username}</p>
-      <Button onClick={() => Router.push('/edit_profile')}>Bearbeiten</Button>
+      <p className="font-bold mt-3">{fakeUsername}</p>
+      <Button onClick={() => Router.push('/edit_profile')} className='mt-7'>Bearbeiten</Button>
     </div>
   )
 }
-
-Profile.getLayout = function getLayout(page) {
-  return <Layout>{page}</Layout>
-}
-
 export default Profile
