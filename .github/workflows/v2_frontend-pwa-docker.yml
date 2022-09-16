@@ -1,4 +1,4 @@
-name: Build Frontend Image
+name: Build Docker image for frontend-pwa
 
 on:
   push:

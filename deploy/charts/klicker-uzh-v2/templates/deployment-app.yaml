@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa
+spec:
+  {{- with .Values.frontendPWA.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.frontendPWA.autoscaling.enabled }}
+  replicas: {{ .Values.frontendPWA.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-pwa
+  template:
+    metadata:
+      {{- with .Values.frontendPWA.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend-pwa
+    spec:
+      {{- with .Values.frontendPWA.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.frontendPWA.podSecurityContext | nindent 8 }}
+      containers:
+        - name: frontend-pwa
+          securityContext:
+            {{- toYaml .Values.frontendPWA.securityContext | nindent 12 }}
+          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontendPWA.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-frontend-pwa
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-frontend-pwa
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.frontendPWA.resources | nindent 12 }}
+      {{- with .Values.frontendPWA.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendPWA.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendPWA.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
