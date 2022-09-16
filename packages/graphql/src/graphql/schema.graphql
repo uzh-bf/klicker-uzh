@@ -97,9 +97,11 @@ type Feedback {
 
 type FeedbackResponse {
   content: String!
+  createdAt: DateTime!
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
+  resolvedAt: DateTime
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -183,6 +185,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): FeedbackResponse
+  endSession(id: ID!): Session
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID

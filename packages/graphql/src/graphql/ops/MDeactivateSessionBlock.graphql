@@ -1,0 +1,16 @@
+mutation DeactivateSessionBlock($sessionId: ID!, $sessionBlockId: Int!) {
+  deactivateSessionBlock(
+    sessionId: $sessionId
+    sessionBlockId: $sessionBlockId
+  ) {
+    id
+    status
+    activeBlock {
+      id
+    }
+    blocks {
+      id
+      status
+    }
+  }
+}

@@ -1,11 +1,13 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
+  ActivateSessionBlockDocument,
   AggregatedConfusionFeedbacks,
+  DeactivateSessionBlockDocument,
+  EndSessionDocument,
   Feedback,
   GetCockpitSessionDocument,
   LecturerSession,
 } from '@klicker-uzh/graphql/dist/ops'
-import { push } from '@socialgouv/matomo-next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
@@ -15,8 +17,11 @@ import SessionTimeline from '../../../components/sessions/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const [isParticipantListVisible, setIsParticipantListVisible] =
-    useState(false)
+  const [isEvaluationPublic, setEvaluationPublic] = useState(false)
+
+  const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
+  const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
+  const [endSession] = useMutation(EndSessionDocument)
 
   // TODO: add toast notifications - this react library react-toast-notifications is outdated and will not work with react 18
   // const { addToast } = useToasts()
@@ -101,142 +106,27 @@ function Cockpit() {
         {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         SESSION TIMELINE
         <SessionTimeline
-          activeBlock={activeBlock}
-          // activeStep={activeStep}
-          // authenticationMode={settings.authenticationMode}
           blocks={blocks}
-          handleActivateBlockById={(blockId): void => {
-            if (
-              !_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])
-            ) {
-              activateBlockById({
-                variables: { blockId, sessionId: id },
-              })
-              push(['trackEvent', 'Running Session', 'Block Activated By Id'])
-            }
+          handleEndSession={() => {
+            endSession({ variables: { id: id } })
+            router.push('/sessions')
           }}
-          handleActiveBlock={(): void => {
-            // startPolling(10000)
-          }}
-          handleCancelSession={async (): Promise<void> => {
-            if (!isAnythingLoading) {
-              await cancelSession({
-                refetchQueries: [
-                  { query: SessionListQuery },
-                  { query: RunningSessionQuery },
-                  { query: AccountSummaryQuery },
-                ],
-                variables: { id },
-              })
-              push(['trackEvent', 'Running Session', 'Session Canceled'])
-
-              // redirect to the question pool
-              router.push('/sessions')
-            }
-          }}
-          handleEndSession={async (): Promise<void> => {
-            if (!isAnythingLoading) {
-              // run the mutation
-              await endSession({
-                refetchQueries: [
-                  { query: SessionListQuery },
-                  { query: RunningSessionQuery },
-                  { query: AccountSummaryQuery },
-                ],
-                variables: { id },
-              })
-              push(['trackEvent', 'Running Session', 'Session Finished'])
-
-              // redirect to the question pool
-              router.push('/questions')
-            }
-          }}
-          handleNextBlock={(): void => {
-            if (
-              !_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])
-            ) {
-              activateNextBlock({
-                refetchQueries: [{ query: RunningSessionQuery }],
-              })
-              push(['trackEvent', 'Running Session', 'Next Block Activated'])
-            }
-          }}
-          handleNoActiveBlock={(): void => {
-            // stopPolling()
-          }}
-          handlePauseSession={async (): Promise<void> => {
-            if (!isAnythingLoading) {
-              await pauseSession({
-                refetchQueries: [
-                  { query: SessionListQuery },
-                  { query: RunningSessionQuery },
-                  { query: AccountSummaryQuery },
-                ],
-                variables: { id },
-              })
-              push(['trackEvent', 'Running Session', 'Session Paused'])
-
-              router.push('/sessions')
-            }
-          }}
-          handleResetQuestionBlock={async (blockId): Promise<void> => {
-            await resetQuestionBlock({ variables: { sessionId: id, blockId } })
-            push(['trackEvent', 'Running Session', 'Question Block Reset'])
-
-            addToast(
-              <FormattedMessage
-                defaultMessage="Question block successfully reset."
-                id="sessions.running.resetSessionblock.success"
-              />,
-              {
-                appearance: 'success',
-              }
-            )
-          }}
-          handleToggleParticipantList={(): void =>
-            setIsParticipantListVisible((isVisible) => !isVisible)
-          }
-          handleTogglePublicEvaluation={(): void => {
-            updateSettings({
-              variables: {
-                sessionId: id,
-                settings: {
-                  isEvaluationPublic: !settings.isEvaluationPublic,
-                },
-              },
+          handleOpenBlock={(blockId: number) => {
+            activateSessionBlock({
+              variables: { sessionId: id, sessionBlockId: blockId },
             })
-            push(['trackEvent', 'Running Session', 'Evaluation Published'])
           }}
-          // TODO: add isEvaluationPublic attribute to session and then pass it down here
-          isEvaluationPublic={true}
-          // isParticipantAuthenticationEnabled={
-          //   settings.isParticipantAuthenticationEnabled
-          // }
-          // isParticipantListVisible={isParticipantListVisible}
-          // participants={participants}
+          handleCloseBlock={(blockId: number) => {
+            deactivateSessionBlock({
+              variables: { sessionId: id, sessionBlockId: blockId },
+            })
+          }}
+          handleTogglePublicEvaluation={() =>
+            setEvaluationPublic(!isEvaluationPublic)
+          }
+          isEvaluationPublic={isEvaluationPublic}
           sessionId={id}
           startedAt={startedAt}
-          // storageMode={settings.storageMode}
-          // subscribeToMore={subscribeToMore({
-          //   document: RunningSessionUpdatedSubscription,
-          //   updateQuery: (prev, { subscriptionData }): any => {
-          //     if (!subscriptionData.data) return prev
-          //     return {
-          //       ...prev,
-          //       runningSession: {
-          //         ...prev.runningSession,
-          //         ..._pick(subscriptionData.data.runningSessionUpdated, [
-          //           'activeBlock',
-          //           'activeStep',
-          //         ]),
-          //       },
-          //     }
-          //   },
-          //   variables: { sessionId: id },
-          // })}
-          // withQuestionBlockExperiments={
-          //   featureFlags?.flags?.questionBlockExperiments
-          // }
         />
       </div>
 

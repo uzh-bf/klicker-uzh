@@ -389,6 +389,9 @@ export const FeedbackResponse = objectType({
 
     t.nonNull.int('positiveReactions')
     t.nonNull.int('negativeReactions')
+
+    t.date('resolvedAt')
+    t.nonNull.date('createdAt')
   },
 })
 
@@ -506,6 +509,7 @@ export const LecturerSession = objectType({
     t.field('activeBlock', {
       type: SessionBlock,
     })
+
     t.nonNull.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
@@ -891,6 +895,16 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.startSession(args, ctx)
+      },
+    })
+
+    t.field('endSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.endSession(args, ctx)
       },
     })
 

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Modal } from '@uzh-bf/design-system'
 import getConfig from 'next/config'
 import Link from 'next/link'
-import React from 'react'
+import React, { useState } from 'react'
 import { QRCode } from 'react-qrcode-logo'
 
 const { publicRuntimeConfig } = getConfig()
@@ -17,14 +17,15 @@ function QRPopup({ id }: Props): React.ReactElement {
     ? `${publicRuntimeConfig.joinUrl}/${id}`
     : `${publicRuntimeConfig.baseUrl}/join/${id}`
 
+  const [modalOpen, setModalOpen] = useState(false)
+
   return (
     <Modal
       className="bottom right"
       trigger={
         <Button
           className="w-[41%] sm:w-max !mr-0"
-          labelPosition="left"
-          size="small"
+          onClick={() => setModalOpen(true)}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
@@ -32,6 +33,8 @@ function QRPopup({ id }: Props): React.ReactElement {
           QR Code
         </Button>
       }
+      open={modalOpen}
+      onClose={() => setModalOpen(false)}
     >
       <div>
         <div className="font-bold">

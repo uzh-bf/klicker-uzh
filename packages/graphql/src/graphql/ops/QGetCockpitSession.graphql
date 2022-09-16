@@ -14,9 +14,6 @@ query GetCockpitSession($id: ID!) {
     course {
       displayName
     }
-    activeBlock {
-      id
-    }
     blocks {
       id
       status

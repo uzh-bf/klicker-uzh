@@ -233,6 +233,47 @@ export async function startSession(
   }
 }
 
+interface EndSessionArgs {
+  id: string
+}
+
+export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
+  const session = await ctx.prisma.session.findFirst({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      blocks: true,
+    },
+  })
+
+  // if there is no session matching the current user and session id, exit early
+  if (!session) {
+    return null
+  }
+
+  if (session.status === SessionStatus.COMPLETED) {
+    return session
+  }
+  if (
+    session.status === SessionStatus.PREPARED ||
+    session.status === SessionStatus.SCHEDULED
+  ) {
+    return null
+  }
+
+  return ctx.prisma.session.update({
+    where: {
+      id,
+    },
+    data: {
+      status: SessionStatus.COMPLETED,
+      finishedAt: new Date(),
+    },
+  })
+}
+
 interface ActivateSessionBlockArgs {
   sessionId: string
   sessionBlockId: number
@@ -818,20 +859,13 @@ export async function getCockpitSession(
     },
   })
 
-  if (
-    session?.status !== SessionStatus.RUNNING ||
-    !session ||
-    !session.activeBlock
-  ) {
+  if (session?.status !== SessionStatus.RUNNING || !session) {
     return null
   }
 
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
-    activeBlock: {
-      id: session.activeBlock.id,
-    },
     blocks: session.blocks.map((block) => {
       return {
         ...block,

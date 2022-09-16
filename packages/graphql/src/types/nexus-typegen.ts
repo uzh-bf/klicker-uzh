@@ -127,9 +127,11 @@ export interface NexusGenObjects {
   }
   FeedbackResponse: { // root type
     content: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
     id: number; // Int!
     negativeReactions: number; // Int!
     positiveReactions: number; // Int!
+    resolvedAt?: NexusGenScalars['DateTime'] | null; // DateTime
   }
   FreeTextQuestionData: { // root type
     content: string; // String!
@@ -352,9 +354,11 @@ export interface NexusGenFieldTypes {
   }
   FeedbackResponse: { // field return type
     content: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
     id: number; // Int!
     negativeReactions: number; // Int!
     positiveReactions: number; // Int!
+    resolvedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
   FreeTextQuestionData: { // field return type
     content: string; // String!
@@ -424,6 +428,7 @@ export interface NexusGenFieldTypes {
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
+    endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
     leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
     loginParticipant: string | null; // ID
@@ -614,9 +619,11 @@ export interface NexusGenFieldTypeNames {
   }
   FeedbackResponse: { // field return type name
     content: 'String'
+    createdAt: 'DateTime'
     id: 'Int'
     negativeReactions: 'Int'
     positiveReactions: 'Int'
+    resolvedAt: 'DateTime'
   }
   FreeTextQuestionData: { // field return type name
     content: 'String'
@@ -686,6 +693,7 @@ export interface NexusGenFieldTypeNames {
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'FeedbackResponse'
+    endSession: 'Session'
     joinCourse: 'Participation'
     leaveCourse: 'Participation'
     loginParticipant: 'ID'
@@ -855,6 +863,9 @@ export interface NexusGenArgTypes {
     }
     deleteFeedbackResponse: { // args
       id: number; // Int!
+    }
+    endSession: { // args
+      id: string; // ID!
     }
     joinCourse: { // args
       courseId: string; // ID!
