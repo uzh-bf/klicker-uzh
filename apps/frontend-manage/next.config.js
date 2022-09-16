@@ -11,11 +11,11 @@ const nextConfig = {
   },
   publicRuntimeConfig: {
     API_URL:
-      process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:7071/api/graphql',
+      process.env.NEXT_PUBLIC_API_URL,
   },
   serverRuntimeConfig: {
-    APP_DOMAIN: process.env.APP_DOMAIN ?? '127.0.0.1',
-    COOKIE_DOMAIN: process.env.COOKIE_DOMAIN ?? process.env.APP_DOMAIN,
+    APP_DOMAIN: process.env.APP_DOMAIN,
+    COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
 }
 
