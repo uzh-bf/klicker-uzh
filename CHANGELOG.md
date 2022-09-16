@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.24...v2.0.0-alpha.25) (2022-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure build outputs standalone and does not fail for eslint issues ([56b8746](https://github.com/uzh-bf/klicker-uzh/commit/56b87461ac344d498405ad21608ff6b1a7b543a0))
+* **apps/frontend-pwa:** ensure avatar paths are dynamic, use svg for avatars for now ([e5258b1](https://github.com/uzh-bf/klicker-uzh/commit/e5258b1e3c83f55ab4b1cbbc2c2a27e36ae75012))
+* **apps/frontend-pwa:** ensure default production endpoints are matching schema: ([68d9921](https://github.com/uzh-bf/klicker-uzh/commit/68d9921c713dbf7f5c611042621d6539ddaf3992))
+* **apps/frontend-pwa:** ensure installation prompt for PWA shows up ([#2892](https://github.com/uzh-bf/klicker-uzh/issues/2892)) ([8668d53](https://github.com/uzh-bf/klicker-uzh/commit/8668d53b11cb2ea512e48fd2fead2019c2680b01))
+* **apps/frontend-pwa:** improve cookie redirection login on learning element ([ee166d4](https://github.com/uzh-bf/klicker-uzh/commit/ee166d450c364e4bfd02dc9f1f622708ea0abec8))
+* **apps/frontend-pwa:** migrate learning element to server side props ([e0c5975](https://github.com/uzh-bf/klicker-uzh/commit/e0c597517a63cd9002a320fc6ba3e6056502049a))
+* **apps/frontend-pwa:** remove trailing slash from avatar base path ([5755389](https://github.com/uzh-bf/klicker-uzh/commit/5755389350549e608429be3ed74cc23fe6c04013))
+* **apps/frontend-pwa:** use .next() to return from middleware ([02d8472](https://github.com/uzh-bf/klicker-uzh/commit/02d8472b2ea1c3adb2b154c40258bc3ed51001fc))
+* **apps/frontend-pwa:** use server side props for learning element ([ba249cd](https://github.com/uzh-bf/klicker-uzh/commit/ba249cd4ac1bf1a2ebcbaf8557f405e6081266d3))
+
+
+### Other
+
+* **apps/frontend-manage:** install missing packages and add some for consistency ([28f6bfd](https://github.com/uzh-bf/klicker-uzh/commit/28f6bfdbc717c791a15b7ed581d57ebb11d9be5b))
+* **apps/frontend-pwa:** evaluate middleware instead of server side props ([a844ffb](https://github.com/uzh-bf/klicker-uzh/commit/a844ffb4165409689b10f12fbe943f299307386c))
+* lockfile maintenance ([d121f31](https://github.com/uzh-bf/klicker-uzh/commit/d121f315374563ee36c9b58bc1cc19efcb65ebc5))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add notifications to prompt user to install PWA ([#2891](https://github.com/uzh-bf/klicker-uzh/issues/2891)) ([6a5a985](https://github.com/uzh-bf/klicker-uzh/commit/6a5a98512f08f660e8bb3193e56c634d49d16c65))
+* **apps/frontend-pwa:** ensure middleware is skipped if a participant token is available ([c1bbc0c](https://github.com/uzh-bf/klicker-uzh/commit/c1bbc0c2e180a74426211649f00c83e0a896d687))
+
+
+### Deployment
+
+* add a new chart for klicker-uzh-v2 deployment ([46283b2](https://github.com/uzh-bf/klicker-uzh/commit/46283b29fd764a2ff594789f78895676e1c2e1f4))
+* add basic action for frontend-pwa docker build ([31114f2](https://github.com/uzh-bf/klicker-uzh/commit/31114f2d362c054b7e805e86704e38988283688c))
+* add basic docker build action for manage frontend ([4006c29](https://github.com/uzh-bf/klicker-uzh/commit/4006c29c8f8cff9b21be6bf6db64790347a79bdc))
+* add frontend manage to chart v2 ([2a40aac](https://github.com/uzh-bf/klicker-uzh/commit/2a40aace62b4a650e4dbf11138719ce1608a84be))
+* adjust generated actions workflows for production and QA azure functions ([f4b2865](https://github.com/uzh-bf/klicker-uzh/commit/f4b28651ada530eb0fed96a79f4e65b4e22dd744))
+* **apps/frontend-pwa:** initial docker setup for production deploy ([cb702f8](https://github.com/uzh-bf/klicker-uzh/commit/cb702f8903433fe0eef28941f7336316aacda985))
+* ensure workflows are only triggered on v2 and tags ([7a36ce6](https://github.com/uzh-bf/klicker-uzh/commit/7a36ce6d6fb7471e34cd99bb1212dd2ac84d1f44))
+* fix dockerfile path for PWA image ([cbdcf30](https://github.com/uzh-bf/klicker-uzh/commit/cbdcf300ef3fbccd4557f348849eb083c8f82e6f))
+* remove old workflows for azure function deployment (rs) ([225644b](https://github.com/uzh-bf/klicker-uzh/commit/225644b030a6ee95ceedb496e1bec214415c4320))
+* update resource definitions and use rolling update ([5ac1507](https://github.com/uzh-bf/klicker-uzh/commit/5ac1507be994b8480f5bc5d90f05a13cfbd49268))
+
 ## [2.0.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.23...v2.0.0-alpha.24) (2022-09-16)
 
 
