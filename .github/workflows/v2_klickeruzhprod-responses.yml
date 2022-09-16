@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js project to Azure Function App - klickeruzhprod-responses
+name: Build and deploy backend-responses to Azure Function App (Production)
 
 on:
   push:
@@ -10,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-responses' # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
@@ -28,10 +25,12 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
+          rm package.json
+          rm package-lock.json
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm install
+          npm install --package-lock=false
           npm run build --if-present
-          npm run test --if-present
+          npm prune --omit=dev
           popd
 
       - name: 'Run Azure Functions Action'
