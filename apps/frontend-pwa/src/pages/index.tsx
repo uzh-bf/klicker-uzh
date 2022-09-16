@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
-import ErrorNotification from '@components/ErrorNotification'
+import UserNotification from '@components/UserNotification'
 import Layout from '@components/Layout'
 import {
   faBookOpenReader,
@@ -195,7 +195,7 @@ const Index = function () {
           ))}
         </div>
 
-        {userInfo && <ErrorNotification message={userInfo} />}
+        {userInfo && <UserNotification notificationType='info' message={userInfo} />}
       </div>
     </Layout>
   )
