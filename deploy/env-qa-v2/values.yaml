@@ -13,4 +13,21 @@ frontendPWA:
           - pwa.klicker-qa.bf-app.ch
 
   strategy:
-    type: Recreate
+    type: Rolling
+
+frontendManage:
+  hostname: manage.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: manage.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-manage-tls
+        hosts:
+          - manage.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Rolling

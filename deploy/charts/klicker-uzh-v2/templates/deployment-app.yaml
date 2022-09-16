@@ -70,3 +70,76 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-manage
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-manage
+spec:
+  {{- with .Values.frontendManage.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.frontendManage.autoscaling.enabled }}
+  replicas: {{ .Values.frontendManage.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-manage
+  template:
+    metadata:
+      {{- with .Values.frontendManage.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend-manage
+    spec:
+      {{- with .Values.frontendManage.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.frontendManage.podSecurityContext | nindent 8 }}
+      containers:
+        - name: frontend-manage
+          securityContext:
+            {{- toYaml .Values.frontendManage.securityContext | nindent 12 }}
+          image: "{{ .Values.frontendManage.image.repository }}:{{ .Values.frontendManage.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontendManage.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-frontend-manage
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-frontend-manage
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.frontendManage.resources | nindent 12 }}
+      {{- with .Values.frontendManage.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendManage.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendManage.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
