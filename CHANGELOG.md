@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.25...v2.0.0-alpha.26) (2022-09-16)
+
+
+### Features
+
+* add cockpit lecturer view for running session including db interactions ([#2879](https://github.com/uzh-bf/klicker-uzh/issues/2879)) ([3adb461](https://github.com/uzh-bf/klicker-uzh/commit/3adb4616696640c4ec1fae69b100f9480f95865c))
+* **apps/frontend-pwa:** create very basic leaderboard ([c142803](https://github.com/uzh-bf/klicker-uzh/commit/c142803334184163a1fbb87858dc751e4c76fd28))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** use server side props on join page to allow embed in OLAT ([8c54f31](https://github.com/uzh-bf/klicker-uzh/commit/8c54f31b52a8aaf5cbaeb78883766f996f8f6ae9))
+
+
+### Other
+
+* lockfile maintenance ([3e3da0b](https://github.com/uzh-bf/klicker-uzh/commit/3e3da0b77d90e7f2c9c798fd10b3ff261a0211e9))
+
 ## [2.0.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.24...v2.0.0-alpha.25) (2022-09-16)
 
 
