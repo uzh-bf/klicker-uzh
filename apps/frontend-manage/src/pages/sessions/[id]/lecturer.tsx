@@ -10,7 +10,7 @@ import {
 import dayjs from 'dayjs'
 import Head from 'next/head'
 import { useMemo } from 'react'
-import ConfusionCharts from '../../components/interaction/confusion/ConfusionCharts'
+import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
 // import { Dropdown, Icon } from 'semantic-ui-react'
 import { useRouter } from 'next/router'

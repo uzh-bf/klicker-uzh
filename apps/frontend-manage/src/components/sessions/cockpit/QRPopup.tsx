@@ -1,5 +1,6 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import QR from '@pages/qr/[...args]'
 import { Button, Modal } from '@uzh-bf/design-system'
 import getConfig from 'next/config'
 import Link from 'next/link'
@@ -13,10 +14,6 @@ interface Props {
 }
 
 function QRPopup({ id }: Props): React.ReactElement {
-  const joinUrl = publicRuntimeConfig.joinUrl
-    ? `${publicRuntimeConfig.joinUrl}/${id}`
-    : `${publicRuntimeConfig.baseUrl}/join/${id}`
-
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -38,20 +35,14 @@ function QRPopup({ id }: Props): React.ReactElement {
     >
       <div>
         <div className="font-bold">
-          <Link href={joinUrl}>{joinUrl}</Link>
+          <Link href={`https://pwa.klicker.uzh.ch/session/${id}`}>{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
         </div>
 
         <div>
-          <QRCode
-            logoHeight={40}
-            logoImage="https://www.klicker.uzh.ch/img/KlickerUZH_Gray_BG.png"
-            logoWidth={120}
-            size={300}
-            value={`${publicRuntimeConfig.baseUrl}/join/${id}`}
-          />
+          <QR path={`/session/${id}`} width={200}/>
         </div>
 
-        <Link passHref href={`/qr/${id}`}>
+        <Link passHref href={`/qr/session/${id}`}>
           <a target="_blank">
             <Button
               fluid

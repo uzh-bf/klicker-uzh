@@ -179,7 +179,7 @@ function SessionTimeline({
             <QRPopup id={sessionId} />
             <a
               className="flex-1"
-              href={`/join/${sessionId}`}
+              href={`https://pwa.klicker.uzh.ch/session/${sessionId}`}
               rel="noopener noreferrer"
               target="_blank"
             >
