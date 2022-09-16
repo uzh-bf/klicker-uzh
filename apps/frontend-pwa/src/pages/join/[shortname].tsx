@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 
 interface Props {
@@ -38,9 +38,7 @@ function Join({ isInactive, shortname }: Props) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async (ctx) => {
-  const apolloClient = initializeApollo()
-
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (typeof ctx.params?.shortname !== 'string') {
     return {
       redirect: {
@@ -49,6 +47,8 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
       },
     }
   }
+
+  const apolloClient = initializeApollo()
 
   const result = await apolloClient.query({
     query: GetRunningSessionsDocument,
@@ -80,15 +80,7 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
     props: {
       shortname: ctx.params.shortname,
     },
-    revalidate: 5,
   })
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
 }
 
 export default Join
