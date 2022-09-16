@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
-import UserNotification from '@components/UserNotification'
 import Layout from '@components/Layout'
+import UserNotification from '@components/UserNotification'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -195,7 +195,9 @@ const Index = function () {
           ))}
         </div>
 
-        {userInfo && <UserNotification notificationType='info' message={userInfo} />}
+        {userInfo && (
+          <UserNotification notificationType="info" message={userInfo} />
+        )}
       </div>
     </Layout>
   )

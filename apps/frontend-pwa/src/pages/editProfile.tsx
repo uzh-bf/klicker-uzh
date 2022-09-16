@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
-import UserNotification from '@components/UserNotification'
 import Layout from '@components/Layout'
+import UserNotification from '@components/UserNotification'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
@@ -291,7 +291,10 @@ const EditProfile: NextPageWithLayout = () => {
                   </div>
 
                   {error && (
-                    <UserNotification notificationType='error' message="Please choose a different username." />
+                    <UserNotification
+                      notificationType="error"
+                      message="Please choose a different username."
+                    />
                   )}
                 </div>
               </Form>
