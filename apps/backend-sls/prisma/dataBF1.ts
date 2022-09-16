@@ -580,7 +580,7 @@ export const QUESTIONS = [
     id: 
     name: 'Modul 2.2 Unterjährige Verzinsung 1',
     content:
-      'Du sollst ein Vermögen von 10'000 CHF für ein Jahr anlegen und hast die Auswahl zwischen folgenden Anlagen:
+      'Du sollst ein Vermögen von 10000 CHF für ein Jahr anlegen und hast die Auswahl zwischen folgenden Anlagen:
 
       A) Anlage zu 4.8%, vierteljährliche Verzinsung
       
@@ -592,7 +592,7 @@ export const QUESTIONS = [
       
       Beurteile **folgende Aussagen** zu den verschiedenen Anlagen auf ihre **Richtigkeit**.',
     contentPlain:
-      'Du sollst ein Vermögen von 10'000 CHF für ein Jahr anlegen und hast die Auswahl zwischen folgenden Anlagen:
+      'Du sollst ein Vermögen von 10000 CHF für ein Jahr anlegen und hast die Auswahl zwischen folgenden Anlagen:
 
       A) Anlage zu 4.8%, vierteljährliche Verzinsung
       
@@ -1029,7 +1029,7 @@ export const QUESTIONS = [
         feedback:
           'Diese Aussage ist korrekt!',
         correct: true,
-          value: 'Der interne Zinssatz einer Investition unterscheidet sich in aller Regel von der statisch ermittelten Rentabilität, weil das Auf- und Abzinsen berücksichtigt wird.',
+        value: 'Der interne Zinssatz einer Investition unterscheidet sich in aller Regel von der statisch ermittelten Rentabilität, weil das Auf- und Abzinsen berücksichtigt wird.',
       },
       {
         feedback:
@@ -1040,7 +1040,7 @@ export const QUESTIONS = [
         feedback:
           'Diese Aussage ist korrekt!',
         correct: true,
-          value: 'Im Rahmen der Annuitätenmethode ermittelt man die durchschnittlich jährlichen Ein- und Auszahlungen und/oder den durchschnittlich jährlichen Überschuss.',
+        value: 'Im Rahmen der Annuitätenmethode ermittelt man die durchschnittlich jährlichen Ein- und Auszahlungen und/oder den durchschnittlich jährlichen Überschuss.',
       },
       {
         feedback:
@@ -1232,6 +1232,511 @@ export const QUESTIONS = [
         value: '… CHF 100 betragen.',
         feedback:
           'Diese Aussage ist nicht korrekt! Seit Mai 2001 liegt der minimale Nominalwert einer Aktie bei einem Rappen. Zuvor lag dieser Betrag bei CHF 10.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Vinkulierung',
+    content:
+      'Durch Vinkulierung können unerwünschte Aktionäre von der Ausübung der Mitgliedschaftsrechte ausgeschlossen werden. Die Vinkulierung kann angewendet werden auf …',
+    contentPlain:
+      'Durch Vinkulierung können unerwünschte Aktionäre von der Ausübung der Mitgliedschaftsrechte ausgeschlossen werden. Die Vinkulierung kann angewendet werden auf …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true,
+        value: '… Namenaktien.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      { 
+        value: '… Inhaberaktien.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Nur Namenaktien können vinkuliert werden. Inhaberaktien können durch blosse Übergabe übertragen werden.',
+      },
+      {
+        value: '… Optionen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Nur Namenaktien können vinkuliert werden.',
+      },
+      {
+        value: '… Partizipationsscheine.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Nur Namenaktien können vinkuliert werden. Partizipationsscheine beinhalten ohnehin kein Stimmrecht.',
+      },
+      {
+        value: '… Bezugsrechte.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Nur Namenaktien können vinkuliert werden.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Kapitalerhöhung',
+    content:
+      'Die Anwaltskanzlei AG hat einen Unternehmenswert (netto) von 10 Millionen CHF. Diese Aktiengesellschaft hat 10000 Aktien, auf welchen eine Dividende von 30 CHF pro Titel ausbezahlt wird. Die Anwaltskanzlei AG möchte die Dividendenzahlung vollumfänglich über eine Aktienkapitalerhöhung finanzieren (neue Aktien bekommen noch keine Dividenden). Der Emissionspreis ist gleich dem Marktpreis und es herrscht ein perfekter Kapitalmarkt. Wie viele neue Aktien müssen emittiert werden?',
+    contentPlain:
+      'Die Anwaltskanzlei AG hat einen Unternehmenswert (netto) von 10 Millionen CHF. Diese Aktiengesellschaft hat 10000 Aktien, auf welchen eine Dividende von 30 CHF pro Titel ausbezahlt wird. Die Anwaltskanzlei AG möchte die Dividendenzahlung vollumfänglich über eine Aktienkapitalerhöhung finanzieren (neue Aktien bekommen noch keine Dividenden). Der Emissionspreis ist gleich dem Marktpreis und es herrscht ein perfekter Kapitalmarkt. Wie viele neue Aktien müssen emittiert werden?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '300 Stück',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      { 
+        correct: true, 
+        value: '309 Stück',
+        feedback:
+          'Diese Aussage ist korrekt! Der Wert der Aktie nach der Dividendenzahlung = (10 Mio./10000 Stück)- 30 CHF = 970 CHF. Zur Finanzierung der Dividendenzahlungen von 300000 CHF braucht es 309 neue Aktien = (300000 CHF / 970 CHF) = 309 Stück.',
+      },
+      {
+        value: '400 Stück',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '570 Stück',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '638 Stück',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Agio',
+    content:
+      'Was versteht man im Zusammenhang mit Aktien unter einem **Agio**?',
+    contentPlain:
+      'Was versteht man im Zusammenhang mit Aktien unter einem Agio?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true, 
+        value: 'Differenz zwischen dem Ausgabekurs und dem Nennwert einer Aktie.',
+        feedback:
+          'Diese Aussage ist korrekt! Daher bezeichnet man das Agio auch als Emissionsagio.',
+      },
+      {  
+        value: 'Differenz zwischen dem Nennwert einer Aktie und dem Börsenkurs.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Als Agio bezeichnet man die Differenz zwischen dem Ausgabekurs und dem Nennwert einer Aktie.',
+      },
+      {
+        value: 'Differenz zwischen dem Ausgabekurs und dem Börsenkurs.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Als Agio bezeichnet man die Differenz zwischen dem Ausgabekurs und dem Nennwert einer Aktie.',
+      },
+      {
+        value: 'Differenz zwischen dem Ausgabekurs und dem Schlusskurs der Aktie an deren ersten Handelstag an der Börse.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Als Agio bezeichnet man die Differenz zwischen dem Ausgabekurs und dem Nennwert einer Aktie.',
+      },
+      {
+        value: 'Differenz zwischen dem höchsten und tiefsten Aktienkurs.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Als Agio bezeichnet man die Differenz zwischen dem Ausgabekurs und dem Nennwert einer Aktie.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 genehmigte Kapitalerhöhung',
+    content:
+      'Innerhalb welcher Zeitspanne muss eine genehmigte Kapitalerhöhung durchgeführt werden?',
+    contentPlain:
+      'Innerhalb welcher Zeitspanne muss eine genehmigte Kapitalerhöhung durchgeführt werden?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Es existiert keine „Deadline“, in welcher eine Kapitalerhöhung durchführt werden muss.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die genehmigte Kapitalerhöhung ist innert einer Frist von maximal 2 Jahren durchzuführen. Das genehmigte Kapital ist auf die Hälfte des bisherigen Aktienkapitals limitiert (OR 651 ff.).',
+      },
+      {  
+        value: 'Innerhalb 30 Tagen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die genehmigte Kapitalerhöhung ist innert einer Frist von maximal 2 Jahren durchzuführen. Das genehmigte Kapital ist auf die Hälfte des bisherigen Aktienkapitals limitiert (OR 651 ff.).',
+      },
+      {
+        value: 'Innerhalb eines Jahres.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die genehmigte Kapitalerhöhung ist innert einer Frist von maximal 2 Jahren durchzuführen. Das genehmigte Kapital ist auf die Hälfte des bisherigen Aktienkapitals limitiert (OR 651 ff.).',
+      },
+      {
+        correct: true, 
+        value: 'Innerhalb der nächsten 2 Jahre.',
+        feedback:
+          'Diese Aussage ist korrekt! Das genehmigte Kapital ist auf die Hälfte des bisherigen Aktienkapitals limitiert (OR 651 ff.).',
+      },
+      {
+        value: 'Innerhalb der nächsten 3 Jahre.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die genehmigte Kapitalerhöhung ist innert einer Frist von maximal 2 Jahren durchzuführen. Das genehmigte Kapital ist auf die Hälfte des bisherigen Aktienkapitals limitiert (OR 651 ff.).',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Bezugsrecht I',
+    content:
+      'Die Anwaltskanzlei AG möchte pro acht alte Aktien eine neue Aktie emittieren: Börsenkurs der alten beträgt 178 CHF und der Ausgabepreis der neuen Aktie beträgt 160 CHF. Welchen Wert hat das Bezugsrecht?',
+    contentPlain:
+      'Die Anwaltskanzlei AG möchte pro acht alte Aktien eine neue Aktie emittieren: Börsenkurs der alten beträgt 178 CHF und der Ausgabepreis der neuen Aktie beträgt 160 CHF. Welchen Wert hat das Bezugsrecht?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true, 
+        value: '2 CHF',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: S = Börsenkurs alt, X = Ausgabepreis der Aktien, a = Anz. alte Aktien, n = Anz. neue Aktien. Bezugsrecht = (S-X) / ((a/j)+1) = (178-160) / ((8/1)+1) = 2.0',
+      },
+      {  
+        value: '2.1 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '2.2 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '2.3 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '2.5 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Bezugsrecht II',
+    content:
+      'Ein Unternehmen führt eine Kapitalerhöhung durch und gibt dabei 100000 neue Aktien aus. Nach der Kapitalerhöhung sind insgesamt 500000 Aktien ausstehend. Der Emissionspreis für die neuen Aktien beträgt 325 CHF, während der Kurs vor der Kapitalerhöhung 364 CHF war. Welchen  **Wert**  hat das  **Bezugsrecht**?',
+    contentPlain:
+      'Ein Unternehmen führt eine Kapitalerhöhung durch und gibt dabei 100000 neue Aktien aus. Nach der Kapitalerhöhung sind insgesamt 500000 Aktien ausstehend. Der Emissionspreis für die neuen Aktien beträgt 325 CHF, während der Kurs vor der Kapitalerhöhung 364 CHF war. Welchen  Wert  hat das  Bezugsrecht?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '6.50 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {  
+        value: '31.20 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '39.00 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true, 
+        value: '7.80 CHF',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: Wert Bezugsrecht = (364-325)/((4/1)+1) = 7.8',
+      },
+      {
+        value: 'Die Angaben reichen für die Berechnung nicht aus.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Angaben reichen aus.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 3.1 Selbstfinanzierung',
+    content:
+      'Beurteile die folgenden Aussagen zur **Selbstfinanzierung** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Selbstfinanzierung auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Selbstfinanzierung wirkt sich nicht auf das Aktienkapital einer Unternehmung aus. Finanziert sich eine Unternehmung selbst, so wirkt sich dies auf ihr Eigenkapital aus: Der Verzicht auf die Gewinnausschüttung erhöht die Reserven.',
+        value: 'Durch Selbstfinanzierung erhöht sich das Aktienkapital einer Unternehmung.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Ohne Selbstfinanzierung kann eine Unternehmung langfristig nicht wachsen.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Unter Selbstfinanzierung versteht man die Kapitalbeschaffung mittels Verzicht auf Gewinnausschüttung. Abschreibungsgegenwerte dienen der Finanzierung von Ersatzinvestitionen.',
+        value: 'Eine Unternehmung kann sich anhand von Abschreibungsgegenwerten selbst finanzieren.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Werden Dividenden ausgeschüttet, so stehen der Unternehmung weniger Mittel zur Verfügung, sich selbst zu finanzieren.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 3.1 Kreditfinanzierung',
+    content:
+      'Beurteile die folgenden Aussagen zur **Kreditfinanzierung** bzw. zum **langfristigen Fremdkapital** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Kreditfinanzierung bzw. zum langfristigen Fremdkapital auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei einer Wandelanleihe besteht dieses Recht und nicht bei einer gewöhnlichen Anleihe.',
+        value: 'Eine gewöhnliche Anleihe beinhaltet das Recht, während einer bestimmten Zeit zu einem festgelegten Verhältnis eine Obligation in Beteiligungspapiere umzuwandeln.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Kreditfinanzierung gehört zwar zur Außenfinanzierung, stärkt aber weder die Eigenkapitalbasis noch vermindert es den Leverage. Dies würde man durch die Selbstfinanzierung erreichen.',
+        value: 'Die Kreditfinanzierung gehört zur Aussenfinanzierung. Diese stärkt die Eigenkapitalbasis und vermindert den Leverage.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Eine Anleihensobligation ist eine Teilschuldverschreibung einer grösseren, in der Regel langfristigen Anleihe.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Die Höhe des Zinssatzes ist abhängig von der Bonität des Schuldners, der Laufzeit der Obligation und den Kapitalmarktverhältnissen im Zeitpunkt der Ausgabe einer Obligationenanleihe.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Kapitalbindung',
+    content:
+      'Welche der folgenden Aussagen zur **Kapitalbedarfsrechnung für das Umlaufvermögen** ist **richtig**?',
+    contentPlain:
+      'Welche der folgenden Aussagen zur Kapitalbedarfsrechnung für das Umlaufvermögen ist richtig?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        correct: true, 
+        value: 'Je länger die Kreditorenfrist ist, desto kürzer wird der Kapitalbedarf ausfallen, da das Rohmaterial später bezahlt werden muss.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {  
+        value: 'Je kürzer die Debitorenfrist ist, desto länger wird der Kapitalbedarf ausfallen, da die Kunden ihre Rechnung später bezahlen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei einer kürzeren Debitorenfrist müssen die Kunden ihre Rechnungen früher begleichen, was den Kapitalbedarf senkt.',
+      },
+      {
+        value: 'Wenn die Produktionszeit um die Hälfte gekürzt werden kann, verringert sich auch der Kapitalbedarf um die Hälfte.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei der Ermittlung des Kapitalbedarfs für das Umlaufvermögen beeinflussen mehrere Faktoren wie zum Beispiel die durchschnittliche Lagerzeit, Produktionszeit, Lagerzeit der Fertiggüter, die Debitorenfrist sowie die Kreditorenfrist den Kapitalbedarf. Wird die Produktionszeit um die Hälfte gekürzt, kann der Kapitalbedarf nicht so stark verringert werden.',
+      },
+      {
+        value: 'Die Lohnkosten spielen für die Berechnung des Kapitalbedarfs keine Rolle, wenn die Kreditorenfrist länger als die Zahlungsfrist der Löhne ist.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Zwischen der Kreditorenfrist und der Zahlungsfrist der Löhne besteht kein direkter Zusammenhang.',
+      },
+      {
+        value: 'Keine der Aussagen ist korrekt.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.1 Bondpreis',
+    content:
+      'Folgende Werte einer Obligation sind gegeben: <BILD HIER> Wie **hoch** ist der heutige **Bondpreis**?',
+    contentPlain:
+      'Folgende Werte einer Obligation sind gegeben: <BILD HIER> Wie hoch ist der heutige Bondpreis?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '55.4%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der theoretische Wert einer Obligation lässt sich durch die Diskontierung aller zukünftig anfallenden Coupon- und Tilgungszahlungen berechnen. Damit der Bondpreis unter 100% liegt, müsste der Marktzins über dem Coupon liegen.',
+      },
+      {  
+        correct: true, 
+        value: '100%',
+        feedback:
+          'Diese Aussage ist korrekt! Entspricht der Coupon gerade dem Marktzins, so ist der heutige Bondpreis genau 100%.',
+      },
+      {
+        value: '180.6%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der theoretische Wert einer Obligation lässt sich durch die Diskontierung aller zukünftig anfallenden Coupon- und Tilgungszahlungen berechnen.  Damit der Bondpreis über 100% liegt, müsste der Marktzins unter dem Coupon liegen.',
+      },
+      {
+        value: '0%',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: 'Die Angaben reichen nicht aus, um den Bondpreis zu berechnen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Angaben reichen aus, um den Bondpreis zu berechnen.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.2 Leverage-Effekt I',
+    content:
+      'Aus unserer Bilanz der Anwaltskanzlei AG kann man folgende Zahlen entnehmen: Gesamtkapital von 1.5 Mio. CHF, Eigenkapital von 800000 CHF, Gesamtkapitalrendite von 10 % und einen Fremdkapitalzinssatz von 5 %. Wie gross ist die **Eigenkapitalrentabilität** der Anwaltskanzlei AG?',
+    contentPlain:
+      'Aus unserer Bilanz der Anwaltskanzlei AG kann man folgende Zahlen entnehmen: Gesamtkapital von 1.5 Mio. CHF, Eigenkapital von 800000 CHF, Gesamtkapitalrendite von 10 % und einen Fremdkapitalzinssatz von 5 %. Wie gross ist die Eigenkapitalrentabilität der Anwaltskanzlei AG?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '5 %',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {  
+        value: '7 %',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true, 
+        value: '14.4 %',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: rEK = rGK + (FK/EK) * (rGK-rFK) = 0.1 + (700000/800000)*(0.1-0.05) = 14.4%.',
+      },
+      {
+        value: '15.7 %',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '19.4 %',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.2 Leverage-Effekt II',
+    content:
+      'Welche der folgenden Aussagen zum **Leverage Effekt** ist **falsch**?',
+    contentPlain:
+      'Welche der folgenden Aussagen zum Leverage Effekt ist falsch?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Wenn die Gesamtkapitalrendite den Fremdkapitalkosten entspricht, ist die Eigenkapitalrendite gleich der Gesamtkapitalrendite.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Aus der Formel des Rendite Leverage Effekts wird ersichtlich, dass der Wert in der Klammer null wird, wenn die Gesamtkapitalrendite den Fremdkapitalkosten entspricht und somit die Eigenkapitalrendite der Gesamtkapitalrendite entspricht.',
+      },
+      {  
+        value: 'Die Gesamtkapitalrendite muss immer zwischen den Fremdkapitalkosten und der Eigenkapitalrendite liegen oder diesen entsprechen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Gesamtkapitalrendite ist ein gewichteter Durchschnitt der Eigenkapitalrendite und der Fremdkapitalkosten und liegt damit immer zwischen oder ist gleich den beiden.',
+      },
+      {
+        value: 'Auch wenn die Fremdkapitalkosten 0% betragen, tritt der Leverage Effekt auf.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!  Falls die Fremdkapitalkosten 0% betragen, reduziert sich die Formel des Rendite Leverage Effekts und auch dann kann durch die Veränderung des FK/EK-Verhältnisses die Eigenkapitalrendite beeinflusst werden, der Leverage Effekt tritt also in diesem Fall auf.',
+      },
+      {
+        correct: true, 
+        value: 'Die Eigenkapitalrendite liegt immer über den Fremdkapitalkosten.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: 'Solange die Gesamtkapitalrendite über den Fremdkapitalkosten liegt, kann mit zunehmender Verschuldung die Rendite des Eigenkapitals gesteigert werden.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Wenn die Gesamtkapitalrendite höher wie die Fremdkapitalkosten sind, wird die Klammer in der Formel positiv. Deshalb nimmt bei einen grösseren FK/EK-Verhältnis auch die Eigenkapitalrendite zu.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 3.2 Eigenkapitalrendite I',
+    content:
+      'Beurteile die folgenden Aussagen zur **Eigenkapitalrendite (ROE)** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Eigenkapitalrendite (ROE) auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt! Bei erhöhtem Financial Leverage (FK/EK wird grösser) steigt die erwartete (also die von den Eigenkapitalgebern verlangte) Rendite.',
+        correct: true, 
+        value: 'Die Eigenkapitalgeber fordern vom Unternehmen für die Übernahme von finanziellem Risiko (Zunahme der Fremdkapitalquote) eine Entschädigung in Form von erhöhtem ROE.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Wenn die Rendite des Fremdkapitals (Fremdkapitalkosten, rFK) grösser ist als die Rendite des Gesamtkapitals (rGK) wird der Term (rGK-rFK) negativ und die Rendite des Eigenkapitals nimmt ab. rEK = rGK + (FK/EK) * (rGK-rFK)',
+        value: 'Die Rendite des Eigenkapitals kann mit Erhöhung des Leverage gesteigert werden, wenn die Rendite des Fremdkapitals über der Rendite des Gesamtkapitals liegt.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! ', 
+        value: 'Die Eigenkapitalgeber haben einen vertaglich fixierten Anspruch auf die geforderte Eigenkapitalrendite.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Wenn die Rendite des Fremdkapitals (Fremdkapitalkosten, rFK) grösser ist als die Rendite des Gesamtkapitals (rGK) wird der Term (rGK-rFK) negativ und die Rendite des Eigenkapitals nimmt ab.',
+        value: 'Ein erhöhter Leverage führt immer zu einer höheren Eigenkapitalrendite.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 3.2 Eigenkapitalrendite II',
+    content:
+      '<BILD HIER> Wie **hoch** ist die **Eigenkapitalrendite**?',
+    contentPlain:
+      '<BILD HIER> Wie hoch ist die Eigenkapitalrendite?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '7.5%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Da die Fremdkapitalkosten in diesem Beispiel nicht bekannt sind, reichen die Angaben nicht aus, um die Eigenkapitalrendite zu berechnen. Die Formel zur Eigenkapitalrendite lautet: <BILD HIER>',
+      },
+      {  
+        value: '12%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Da die Fremdkapitalkosten in diesem Beispiel nicht bekannt sind, reichen die Angaben nicht aus, um die Eigenkapitalrendite zu berechnen. Die Formel zur Eigenkapitalrendite lautet: <BILD HIER>',
+      },
+      {
+        value: '13.5%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Da die Fremdkapitalkosten in diesem Beispiel nicht bekannt sind, reichen die Angaben nicht aus, um die Eigenkapitalrendite zu berechnen. Die Formel zur Eigenkapitalrendite lautet: <BILD HIER>',
+      },
+      {
+        value: '0%',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Da die Fremdkapitalkosten in diesem Beispiel nicht bekannt sind, reichen die Angaben nicht aus, um die Eigenkapitalrendite zu berechnen. Die Formel zur Eigenkapitalrendite lautet: <BILD HIER>',
+      },
+      {
+        correct: true, 
+        value: 'Die Angaben reichen für die Berechnung nicht aus.',
+        feedback:
+          'Diese Aussage ist korrekt!',
       },
     ],
   },
