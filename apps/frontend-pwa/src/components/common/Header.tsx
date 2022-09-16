@@ -37,10 +37,7 @@ function Header({
         {participant?.avatar ? (
           <Link href="/profile" className="">
             <Image
-              src={
-                `https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/${participant.avatar}_small.webp` ||
-                '/placeholder.png'
-              }
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`}
               alt=""
               width="45"
               height="45"
