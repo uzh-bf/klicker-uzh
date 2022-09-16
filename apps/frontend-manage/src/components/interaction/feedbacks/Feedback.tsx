@@ -195,7 +195,6 @@ function Feedback({
               initialValues={{ respondToFeedbackInput: '' }}
               onSubmit={(values, { setSubmitting }) => {
                 if (values.respondToFeedbackInput !== '') {
-                  console.log('id', id, 'values', values.respondToFeedbackInput)
                   onRespondToFeedback(id, values.respondToFeedbackInput)
                   values.respondToFeedbackInput = ''
 

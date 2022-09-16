@@ -80,8 +80,6 @@ function Cockpit() {
     return null
   }
 
-  console.log(cockpitData.cockpitSession)
-
   const {
     id,
     isAudienceInteractionActive,

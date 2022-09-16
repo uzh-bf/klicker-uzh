@@ -162,8 +162,6 @@ function SessionTimeline({
     }
   }, [activeBlockId, blocks, lastActiveBlockId])
 
-  // console.log(activeBlockId, lastActiveBlockId)
-
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
       <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
