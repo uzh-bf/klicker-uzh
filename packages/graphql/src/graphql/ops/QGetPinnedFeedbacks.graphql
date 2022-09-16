@@ -1,0 +1,29 @@
+query GetPinnedFeedbacks($id: ID!) {
+  pinnedFeedbacks(id: $id) {
+    id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
+    confusionFeedbacks {
+      speed
+      difficulty
+      numberOfParticipants
+    }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
+  }
+}

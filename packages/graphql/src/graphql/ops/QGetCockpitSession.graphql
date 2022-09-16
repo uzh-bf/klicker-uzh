@@ -1,0 +1,57 @@
+# import "./FQuestionDataWithoutSolutions.graphql"
+
+query GetCockpitSession($id: ID!) {
+  cockpitSession(id: $id) {
+    id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
+    namespace
+    name
+    displayName
+    status
+    startedAt
+    course {
+      displayName
+    }
+    blocks {
+      id
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      instances {
+        id
+        questionData {
+          id
+          name
+          type
+          content
+          contentPlain
+        }
+      }
+    }
+    confusionFeedbacks {
+      speed
+      difficulty
+      numberOfParticipants
+    }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
+  }
+}

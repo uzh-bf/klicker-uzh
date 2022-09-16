@@ -34,8 +34,6 @@ function Index({
   const sessionId = router.query.id as string
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  console.log(course)
-
   const handleNewResponse = async (
     type: string,
     instanceId: number,

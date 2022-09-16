@@ -23,7 +23,10 @@ function SessionList() {
   } = useMemo(
     () =>
       dataSessions?.userSessions?.reduce(
-        (memo, x) => {
+        (
+          memo: { [x: string]: SessionType[] },
+          x: { [x: string]: string | number }
+        ) => {
           memo[x['status']].push(x as SessionType)
           return memo
         },
@@ -43,7 +46,7 @@ function SessionList() {
 
   return (
     <Layout displayName="Sessions">
-      <div className="mx-auto max-w-7xl">
+      <div className="">
         {runningSessions && runningSessions.length > 0 && (
           <Session
             sessionName="Laufende Sessionen"

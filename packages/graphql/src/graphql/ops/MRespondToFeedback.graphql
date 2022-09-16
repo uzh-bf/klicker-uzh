@@ -1,0 +1,18 @@
+mutation RespondToFeedback($id: Int!, $responseContent: String!) {
+  respondToFeedback(id: $id, responseContent: $responseContent) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+    resolvedAt
+    createdAt
+    responses {
+      id
+      content
+      positiveReactions
+      negativeReactions
+    }
+  }
+}

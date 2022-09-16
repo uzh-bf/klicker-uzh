@@ -442,6 +442,9 @@ export const FeedbackResponse = objectType({
 
     t.nonNull.int('positiveReactions')
     t.nonNull.int('negativeReactions')
+
+    t.date('resolvedAt')
+    t.nonNull.date('createdAt')
   },
 })
 
@@ -454,6 +457,18 @@ export const ConfusionTimestep = objectType({
     t.nonNull.int('speed')
 
     t.nonNull.date('createdAt')
+  },
+})
+
+export const AggregatedConfusionFeedbacks = objectType({
+  name: 'AggregatedConfusionFeedbacks',
+  definition(t) {
+    t.nonNull.float('difficulty')
+    t.nonNull.float('speed')
+
+    t.nonNull.int('numberOfParticipants')
+
+    t.date('timestamp')
   },
 })
 
@@ -524,6 +539,44 @@ export const Session = objectType({
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+  },
+})
+
+export const LecturerSession = objectType({
+  name: 'LecturerSession',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.boolean('isAudienceInteractionActive')
+    t.nonNull.boolean('isModerationEnabled')
+    t.nonNull.boolean('isGamificationEnabled')
+
+    t.nonNull.string('namespace')
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+
+    t.nonNull.field('status', {
+      type: SessionStatus,
+    })
+
+    t.field('activeBlock', {
+      type: SessionBlock,
+    })
+
+    t.nonNull.list.nonNull.field('blocks', {
+      type: SessionBlock,
+    })
+
+    t.nonNull.field('accessMode', { type: AccessMode })
+
+    t.list.field('feedbacks', { type: Feedback })
+
+    t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
+
+    t.field('course', { type: Course })
+
+    t.date('startedAt')
+    t.date('finishedAt')
   },
 })
 
@@ -605,6 +658,26 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.getRunningSession(args, ctx)
+      },
+    })
+
+    t.field('cockpitSession', {
+      type: LecturerSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getCockpitSession(args, ctx)
+      },
+    })
+
+    t.field('pinnedFeedbacks', {
+      type: LecturerSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getPinnedFeedbacks(args, ctx)
       },
     })
 
@@ -759,7 +832,6 @@ export const Mutation = objectType({
       args: {
         sessionId: nonNull(idArg()),
         content: nonNull(stringArg()),
-        isPublished: nonNull(booleanArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.createFeedback(args, ctx)
@@ -770,9 +842,9 @@ export const Mutation = objectType({
       type: Feedback,
       args: {
         id: nonNull(intArg()),
-        newValue: nonNull(booleanArg()),
+        isResolved: nonNull(booleanArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.resolveFeedback(args, ctx)
       },
     })
@@ -783,8 +855,28 @@ export const Mutation = objectType({
         id: nonNull(intArg()),
         responseContent: nonNull(stringArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.respondToFeedback(args, ctx)
+      },
+    })
+
+    t.field('deleteFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedback(args, ctx)
+      },
+    })
+
+    t.field('deleteFeedbackResponse', {
+      type: FeedbackResponse,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedbackResponse(args, ctx)
       },
     })
 
@@ -813,6 +905,28 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.addConfusionTimestep(args, ctx)
+      },
+    })
+
+    t.field('publishFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPublished: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.publishFeedback(args, ctx)
+      },
+    })
+
+    t.field('pinFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPinned: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.pinFeedback(args, ctx)
       },
     })
 
@@ -854,6 +968,16 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.startSession(args, ctx)
+      },
+    })
+
+    t.field('endSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.endSession(args, ctx)
       },
     })
 

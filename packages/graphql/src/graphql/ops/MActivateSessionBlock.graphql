@@ -1,0 +1,10 @@
+mutation ActivateSessionBlock($sessionId: ID!, $sessionBlockId: Int!) {
+  activateSessionBlock(sessionId: $sessionId, sessionBlockId: $sessionBlockId) {
+    id
+    status
+    blocks {
+      id
+      status
+    }
+  }
+}

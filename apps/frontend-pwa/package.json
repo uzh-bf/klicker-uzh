@@ -24,7 +24,7 @@
     "@klicker-uzh/prisma": "^2.0.0-alpha.8",
     "@radix-ui/react-toggle": "1.0.0",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.0.38",
+    "@uzh-bf/design-system": "0.0.39",
     "body-parser": "1.20.0",
     "dayjs": "1.11.5",
     "deepmerge": "4.2.2",

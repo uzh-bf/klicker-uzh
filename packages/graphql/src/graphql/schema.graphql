@@ -7,6 +7,13 @@ enum AccessMode {
   RESTRICTED
 }
 
+type AggregatedConfusionFeedbacks {
+  difficulty: Float!
+  numberOfParticipants: Int!
+  speed: Float!
+  timestamp: DateTime
+}
+
 type Attachment {
   description: String
   href: String!
@@ -102,9 +109,11 @@ type Feedback {
 
 type FeedbackResponse {
   content: String!
+  createdAt: DateTime!
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
+  resolvedAt: DateTime
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -152,6 +161,25 @@ type LearningElement {
   name: String!
 }
 
+type LecturerSession {
+  accessMode: AccessMode!
+  activeBlock: SessionBlock
+  blocks: [SessionBlock!]!
+  confusionFeedbacks: [AggregatedConfusionFeedbacks]
+  course: Course
+  displayName: String!
+  feedbacks: [Feedback]
+  finishedAt: DateTime
+  id: ID!
+  isAudienceInteractionActive: Boolean!
+  isGamificationEnabled: Boolean!
+  isModerationEnabled: Boolean!
+  name: String!
+  namespace: String!
+  startedAt: DateTime
+  status: SessionStatus!
+}
+
 type MicroSession {
   course: Course!
   description: String
@@ -166,17 +194,22 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
-  createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
+  createFeedback(content: String!, sessionId: ID!): Feedback
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  deleteFeedback(id: Int!): Feedback
+  deleteFeedbackResponse(id: Int!): FeedbackResponse
+  endSession(id: ID!): Session
   joinCourse(courseId: ID!): Participation
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  pinFeedback(id: Int!, isPinned: Boolean!): Feedback
+  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
-  resolveFeedback(id: Int!, newValue: Boolean!): Feedback
+  resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
@@ -244,11 +277,13 @@ type PushSubscription {
 }
 
 type Query {
+  cockpitSession(id: ID!): LecturerSession
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
   participations(endpoint: String): [Participation!]
+  pinnedFeedbacks(id: ID!): LecturerSession
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session

@@ -66,12 +66,13 @@ function Session({
                   </div>
                 ))}
               </div>
-              {session.status !== 'RUNNING' && (
+              {(session.status !== 'RUNNING') &&
+                (session.status !== 'COMPLETED') && (
                 <Button
                   className="px-2 mt-1 text-sm h-9 border-uzh-grey-80"
                   onClick={async () => {
                     await startSession({ variables: { id: session.id } })
-                    router.push(`/running/${session.id}`)
+                    router.push(`sessions/${session.id}/cockpit`)
                   }}
                 >
                   <Button.Icon>

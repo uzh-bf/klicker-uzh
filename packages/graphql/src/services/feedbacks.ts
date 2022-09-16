@@ -4,17 +4,23 @@ export async function getFeedbacks(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const feedbacks = await ctx.prisma.session
-    .findUnique({
-      where: { id },
-    })
-    .feedbacks({
-      where: { isPublished: true },
-      include: { responses: { orderBy: { createdAt: 'desc' } } },
-      orderBy: { createdAt: 'desc' },
-    })
+  const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      feedbacks: {
+        include: { responses: { orderBy: { createdAt: 'desc' } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
 
-  return feedbacks
+  if (sessionWithFeedbacks?.isModerationEnabled) {
+    return sessionWithFeedbacks.feedbacks.filter(
+      (feedback) => feedback.isPublished
+    )
+  }
+
+  return sessionWithFeedbacks?.feedbacks ?? []
 }
 
 export async function upvoteFeedback(
@@ -51,48 +57,48 @@ export async function voteFeedbackResponse(
 }
 
 export async function createFeedback(
-  {
-    sessionId,
-    content,
-    isPublished,
-  }: { sessionId: string; content: string; isPublished: boolean },
+  { sessionId, content }: { sessionId: string; content: string },
   ctx: ContextWithOptionalUser
 ) {
-  if (ctx.user?.sub) {
+  // TODO: without accounting for the role, the user token would count as logged in
+  // but no participant would match the id of the admin user...
+  const isLoggedInParticipant = ctx.user?.sub && ctx.user.role === 'PARTICIPANT'
+
+  if (isLoggedInParticipant) {
     return ctx.prisma.feedback.create({
       data: {
         content,
-        isPublished: isPublished,
         session: {
           connect: { id: sessionId },
         },
         participant: {
-          connect: { id: ctx.user.sub },
-        },
-      },
-    })
-  } else {
-    return ctx.prisma.feedback.create({
-      data: {
-        content,
-        isPublished: isPublished,
-        session: {
-          connect: { id: sessionId },
+          connect: { id: ctx.user!.sub },
         },
       },
     })
   }
+
+  return ctx.prisma.feedback.create({
+    data: {
+      content,
+      session: {
+        connect: { id: sessionId },
+      },
+    },
+  })
 }
 
 // add response to an existing feedback
 export async function respondToFeedback(
   { id, responseContent }: { id: number; responseContent: string },
-  ctx: ContextWithOptionalUser
+  ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: { id },
     data: {
+      isPublished: true,
       isResolved: true,
+      isPinned: false,
       resolvedAt: new Date(),
       responses: {
         create: {
@@ -108,21 +114,6 @@ export async function respondToFeedback(
   return feedback
 }
 
-// change value of isResolved property of feedback
-export async function resolveFeedback(
-  { id, newValue }: { id: number; newValue: boolean },
-  ctx: ContextWithOptionalUser
-) {
-  const feedback = await ctx.prisma.feedback.update({
-    where: { id },
-    data: {
-      isResolved: newValue,
-      resolvedAt: new Date(),
-    },
-  })
-  return feedback
-}
-
 // add confusion timestep to session
 interface AddConfusionTimestepArgs {
   sessionId: string
@@ -134,30 +125,81 @@ export async function addConfusionTimestep(
   { sessionId, difficulty, speed }: AddConfusionTimestepArgs,
   ctx: ContextWithOptionalUser
 ) {
-  if (ctx.user?.sub) {
-    return ctx.prisma.confusionTimestep.create({
-      data: {
-        difficulty,
-        speed,
-        session: {
-          connect: { id: sessionId },
-        },
-        participant: {
-          connect: { id: ctx.user.sub },
-        },
-        createdAt: new Date(),
+  return ctx.prisma.confusionTimestep.create({
+    data: {
+      difficulty,
+      speed,
+      session: {
+        connect: { id: sessionId },
       },
-    })
-  } else {
-    return ctx.prisma.confusionTimestep.create({
-      data: {
-        difficulty,
-        speed,
-        session: {
-          connect: { id: sessionId },
-        },
-        createdAt: new Date(),
-      },
-    })
-  }
+      createdAt: new Date(),
+    },
+  })
+}
+
+// publish / unpublish a feedback to be visible to students
+export async function publishFeedback(
+  { id, isPublished }: { id: number; isPublished: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id,
+    },
+    data: {
+      isPublished: isPublished,
+    },
+  })
+}
+
+// pin / unpin a feedback on the lecturers running session screen
+export async function pinFeedback(
+  { id, isPinned }: { id: number; isPinned: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.feedback.update({
+    where: {
+      id,
+    },
+    data: {
+      isPinned: isPinned,
+    },
+  })
+}
+
+// resolve / unresolve a feedback
+export async function resolveFeedback(
+  { id, isResolved }: { id: number; isResolved: boolean },
+  ctx: ContextWithUser
+) {
+  const feedback = await ctx.prisma.feedback.update({
+    where: { id },
+    data: {
+      isResolved: isResolved,
+      resolvedAt: isResolved ? new Date() : null,
+    },
+  })
+  return feedback
+}
+
+// deletes a feedback (and all its responses through cascade)
+export async function deleteFeedback(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const feedback = await ctx.prisma.feedback.delete({
+    where: { id },
+  })
+  return feedback
+}
+
+// deletes a feedback response
+export async function deleteFeedbackResponse(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
+    where: { id },
+  })
+  return feedbackResponse
 }
