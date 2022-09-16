@@ -68,7 +68,7 @@ function Index({
     }
     try {
       const response = await fetch(
-        publicRuntimeConfig.ADDRESPONSE_URL,
+        publicRuntimeConfig.ADD_RESPONSE_URL,
         requestOptions
       )
     } catch (e) {

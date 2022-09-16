@@ -7,6 +7,7 @@ const withPWA = require('next-pwa')({
 })
 
 const nextConfig = withPWA({
+  output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
   eslint: {
@@ -16,26 +17,23 @@ const nextConfig = withPWA({
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['sos-ch-dk-2.exo.io'],
+    domains: [process.env.S3_HOSTNAME],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'sos-ch-dk-2.exo.io',
+        hostname: process.env.S3_HOSTNAME,
         port: '443',
-        pathname: '/klicker-uzh-dev/**',
+        pathname: process.env.S3_PATHNAME,
       },
     ],
   },
   publicRuntimeConfig: {
-    API_URL:
-      process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:7071/api/graphql',
-    ADDRESPONSE_URL:
-      process.env.NEXT_PUBLIC_ADDRESPONSE_URL ??
-      'http://127.0.0.1:7072/api/AddResponse',
+    API_URL: process.env.NEXT_PUBLIC_API_URL,
+    ADD_RESPONSE_URL: process.env.NEXT_PUBLIC_ADD_RESPONSE_URL,
   },
   serverRuntimeConfig: {
-    APP_DOMAIN: process.env.APP_DOMAIN ?? '127.0.0.1',
-    COOKIE_DOMAIN: process.env.COOKIE_DOMAIN ?? process.env.APP_DOMAIN,
+    APP_DOMAIN: process.env.APP_DOMAIN,
+    COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
 })
 
