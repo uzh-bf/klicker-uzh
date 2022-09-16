@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    // if the requester has a login cookie -> skip everything else and redirect to the requested element
+  // if the requester has a login cookie -> skip everything else and redirect to the requested element
   if (request.cookies.get('participant_token')) {
     return NextResponse.next()
   }
