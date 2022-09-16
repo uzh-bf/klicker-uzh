@@ -8,7 +8,7 @@ export const ATTACHMENTS = []
 export const QUESTIONS = [
   {
     id: 0,
-    name: 'Modul 1.1 Zieldreieck',
+    name: 'Modul 1 Zieldreieck',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
     type: QuestionType.SC,
@@ -47,7 +47,7 @@ export const QUESTIONS = [
   },
   {
     id: 1,
-    name: 'Modul 1.1 Organisation des Finanzwesens',
+    name: 'Modul 1 Organisation des Finanzwesens',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
     type: QuestionType.SC,
@@ -83,7 +83,7 @@ export const QUESTIONS = [
   },
   {
     id: 2,
-    name: 'Modul 1.1 Stakeholder',
+    name: 'Modul 1 Stakeholder',
     content:
       'Welche der folgenden Personen/Gruppen sind **keine** Stakeholder?',
     contentPlain:
@@ -118,7 +118,7 @@ export const QUESTIONS = [
   },
   {
     id: 3,
-    name: 'Modul 1.1 Bilanz',
+    name: 'Modul 1 Bilanz',
     content:
       'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
     contentPlain:
@@ -151,7 +151,7 @@ export const QUESTIONS = [
   },
   {
     id: 4,
-    name: 'Modul 1.1 Grundfunktionen des Fremdkapitals',
+    name: 'Modul 1 Grundfunktionen des Fremdkapitals',
     content:
       'Welches sind Merkmale des Fremdkapitals? Beurteile die folgenden Aussagen auf ihre Richtigkeit:',
     contentPlain:
@@ -1737,6 +1737,375 @@ export const QUESTIONS = [
         value: 'Die Angaben reichen für die Berechnung nicht aus.',
         feedback:
           'Diese Aussage ist korrekt!',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 4 Gründe für die Unternehmensbewertung I',
+    content:
+      'Beurteile die folgenden Aussagen zur **Unternehmensbewertung** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Unternehmensbewertung auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Beim Kauf bzw. Verkauf ganzer Unternehmen oder Unternehmensanteile ist eine Unternehmensbewertung nötig.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Es existieren keine allgemein anerkannten objektiven Bewertungskriterien, die einen absolut richtigen Unternehmenswert liefern.',
+        value: 'Um den richtigen Unternehmenswert zu berechnen, ist eine Unternehmensbewertung nötig.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!', 
+        correct: true, 
+        value: 'Bei Aufnahme oder Ausscheiden von Gesellschaftern ist eine Unternehmensbewertung nötig.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Bei Aufnahme, Erhöhung oder Verlängerung von Krediten ist eine Unternehmensbewertung nötig.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 4 Gründe für die Unternehmensbewertung II',
+    content:
+      'Bei welcher der nachfolgenden Ereignisse besteht **kein** Anlass zu einer **Unternehmensbewertung**?',
+    contentPlain:
+      'Bei welcher der nachfolgenden Ereignisse besteht kein Anlass zu einer Unternehmensbewertung?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Bei der Aufnahme, Erhöhung oder Verlängerung von Krediten',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Eine Unternehmensbewertung im Zusammenhang mit der Aufnahme, Erhöhung oder Verlängerung von Krediten kann sehr wichtig sein, da aufgrund der Ergebnisse der Bewertung die Kreditkonditionen beeinflusst werden.',
+      },
+      {  
+        value: 'Bei einem wertorientierten Entlöhnungssystem',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei einem Entlöhnungssystem, das sich am Wert der Unternehmung oder auch einzelner Geschäftsbereiche orientiert, spielt die Bewertung eine entscheidende Rolle.',
+      },
+      {
+        value: 'Beim Kauf oder Verkauf ganzer Unternehmen (Mergers & Acquisitions)',
+        feedback:
+          'Diese Aussage ist nicht korrekt!  Beim Kauf oder Verkauf von Unternehmen wird auf der Grundlage einer Unternehmensbewertung der Kaufpreis bestimmt.',
+      },
+      {
+        correct: true, 
+        value: 'Bei der Auszahlung einer Dividende',
+        feedback:
+          'Diese Aussage ist korrekt! Die Auszahlung einer Dividende reduziert zwar den Wert eines Unternehmens, es gibt jedoch keinen Grund, eine Bewertung durchzuführen.',
+      },
+      {
+        value: 'Bei rechtlichen Anlässen wie Steuerbemessung, Schadenersatz oder Erbrecht',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Rechtliche Anlässe basieren teilweise auf dem Wert einer Unternehmung und damit ist die Unternehmensbewertung bei solchen Ereignissen essenziell.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 4 Allgemeine Fragen zur Unternehmensbewertung',
+    content:
+      'Beurteile die folgenden Aussagen zur **Unternehmensbewertung** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Unternehmensbewertung auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die stillen Reserven müssen auf jeden Fall miteinbezogen werden, da sonst das Ergebnis nicht den wirklichen Tatsachen entsprechen würde.',
+        value: 'Wird der Substanzwert einer Unternehmung berechnet, dürfen die stillen Reserven nicht berücksichtigt werden, um ein möglichst „bilanztreues“ Ergebnis zu erhalten.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Mittelwertmethode folgt keiner Logik, sondern stellt das Arithmetische Mittel von Substanz- und Ertragswert dar.',
+        value: 'Die Mittelwertmethode folgt der einfachen Logik, dass der Unternehmenswert dem Mittelwert von Aktiven und Passiven entspricht.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!', 
+        correct: true, 
+        value: 'Unter Übergewinn wird jener Teil des Gewinns verstanden, der über eine normale Kapitalverzinsung hinausgeht.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Ist der Ertragswert grösser als der Substanzwert, so wird die Differenz als Goodwill bezeichnet.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 4 Ertragswert I',
+    content:
+      'Beurteile die folgenden Aussagen zum **Ertragswert** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zum Ertragswert auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der Unternehmenswert wird umso größer, je tiefer der Zinssatz gewählt wird.',
+        value: 'Unter der Annahme von sicheren Daten wird der Unternehmenswert umso größer, je höher der Zinssatz gewählt wird.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Bei der Berechnung des Ertragswertes wird angenommen, dass der Gewinn bis in die Unendlichkeit gleich bleibt.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!', 
+        correct: true, 
+        value: 'Der Ertragswert bildet einen wesentlichen Bestandteil bei der Berechnung des Mittelwertes.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Die Formel berücksichtigt ausschliesslich monetäre Aspekte.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 4 Ertragswert II',
+    content:
+      'Die Elbas AG hat Fremdkapital von 220 Mio. CHF. Der Gewinn vor Zinsen für das Jahr 2005 beträgt 48 Mio. CHF. Der Eigenkapitalkostensatz wird auf 12% und der Fremdkapitalkostensatz auf 4% geschätzt. Wie **hoch** ist der **Ertragswert netto** (in Mio. CHF) für dieses Jahr?',
+    contentPlain:
+      'Die Elbas AG hat Fremdkapital von 220 Mio. CHF. Der Gewinn vor Zinsen für das Jahr 2005 beträgt 48 Mio. CHF. Der Eigenkapitalkostensatz wird auf 12% und der Fremdkapitalkostensatz auf 4% geschätzt. Wie hoch ist der Ertragswert netto (in Mio. CHF) für dieses Jahr?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '400',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Du hast vergessen den Reingewinn zu berechnen. (Gewinn vor Zinsen - Zinsen)',
+      },
+      {  
+        value: '380',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true, 
+        value: '326.7',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: Der Ertragswert netto berechnet sich folgendermassen: EW(netto) = Reingewinn / Eigenkapitalkostensatz. Vom Gewinn vor Zinsen müssen noch die Zinsen von 220*4%=8.8 abgezogen werden. EW(netto) = (48-8.8) / 0.12 = 326.7',
+      },
+      { 
+        value: '540',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: 'Die Angaben reichen nicht aus, um den Ertragswert zu berechnen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 4 Ertragswert III',
+    content:
+      'Die Betriebs-AG hat im Jahr 2005 einen unbereinigten Reingewinn von 750 Mio. CHF erzielt. Im Jahr 2005 wurden stille Reserven in der Höhe von 15 Mio. CHF gebildet und die Fremdkapitalzinsen beliefen sich auf 30 Mio. CHF bei einem Fremdkapital von 500 Mio. CHF. Der Gesamtkapitalkostensatz beträgt 10% und der Eigenkapitalkostensatz 10.268%. Wie **hoch** ist der **Ertragswert netto** (in Mio. CHF)?',
+    contentPlain:
+      'Die Betriebs-AG hat im Jahr 2005 einen unbereinigten Reingewinn von 750 Mio. CHF erzielt. Im Jahr 2005 wurden stille Reserven in der Höhe von 15 Mio. CHF gebildet und die Fremdkapitalzinsen beliefen sich auf 30 Mio. CHF bei einem Fremdkapital von 500 Mio. CHF. Der Gesamtkapitalkostensatz beträgt 10% und der Eigenkapitalkostensatz 10.268%. Wie hoch ist der Ertragswert netto (in Mio. CHF)?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '7350',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {  
+        value: '7650',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true, 
+        value: '7450',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: Der Ertragswert auf Nettoebene wird folgendermassen berechnet: EW(netto) = Reingewinn / Eigenkapitalkostensatz. Der Reingewinn muss um die Bildung der stillen Reserven erhöht werden. EW(netto) = (750+15) / 0.10268 = 7450',
+      },
+      { 
+        value: '7150',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '7500',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 4 Mittelwert-Methode',
+    content:
+      'Beurteile die folgenden Aussagen zur **Mittelwert-Methode** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur Mittelwert-Methode auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Das Mittelwertverfahren stellt eine Kombination zwischen dem reinen Ertragswertverfahren und der Berechnung des Substanzwertes dar.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die doppelte Gewichtung erfolgt, weil man der Zukunftsorientierung mehr Wichtigkeit beimisst.', 
+        value: 'Da der Substanzwert nur einen kleinen Teil des Wertes der Unternehmung ausmacht, wird der Ertragswert bei der Mittelwert-Methode meistens doppelt gewichtet.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Gerade wenn die Diskrepanz zwischen Ertragswert und Substanzwert sehr gross ist, ist es wichtig, dass beide Werte bekannt sind. Die Differenz ist eine wichtige Information, die mit der Berechnung des Mittelwerts verloren gehen würde.', 
+        value: 'Ist die Diskrepanz zwischen Ertragswert und Substanzwert sehr gross, kann die Mittelwert-Methode von grosser Hilfe bei der Bestimmung des richtigen Unternehmenswertes sein.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Für die dynamische Bewertung einer Unternehmung sollte die Mittelwert-Methode nicht angewandt werden.',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 4 Mittelwert-Berechnung',
+    content:
+      'Es sind folgende Zahlen über unsere Anwaltskanzlei bekannt:
+
+      Aus der bereinigten Erfolgsrechnung: Umsatz = 720000 CHF, Kosten (Total) = 600000 CHF
+      Aus der bereinigten Bilanz: Fremdkapital = 220000 CHF, Eigenkapital = 130000 CHF
+      
+      Der Eigenkapitalkostensatz beträgt 10%. Die Berechnung des Mittelwertes soll auf der Basis von Netto-Werten und nach der einfachen Methode (einfache Gewichtung) erfolgen.
+      
+      Wie gross ist der Unternehmenswert der Anwaltskanzlei nach der Mittelwert-Methode?',
+    contentPlain:
+      'Es sind folgende Zahlen über unsere Anwaltskanzlei bekannt:
+
+      Aus der bereinigten Erfolgsrechnung: Umsatz = 720000 CHF, Kosten (Total) = 600000 CHF
+      Aus der bereinigten Bilanz: Fremdkapital = 220000 CHF, Eigenkapital = 130000 CHF
+      
+      Der Eigenkapitalkostensatz beträgt 10%. Die Berechnung des Mittelwertes soll auf der Basis von Netto-Werten und nach der einfachen Methode (einfache Gewichtung) erfolgen.
+      
+      Wie gross ist der Unternehmenswert der Anwaltskanzlei nach der Mittelwert-Methode?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '100000 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {  
+        value: '119545.45 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        correct: true, 
+        value: '665000 CHF',
+        feedback:
+          'Diese Aussage ist korrekt! Lösungsweg: Der Substanzwert entspricht dem bereinigten Eigenkapital der Bilanz (= 130000 CHF).
+
+          Den Ertragswert berechnest du, indem du den Reingewinn (= Umsatz - Kosten = 120000 CHF) mit dem Eigenkapitalkostensatz kapitalisierst (120000 CHF / 0.1 = 1.2 Mio. CHF).
+          
+          Der Mittelwert beträgt demnach: (1.2 Mio. CHF + 130000 CHF) / 2 = 665000 CHF.',
+      },
+      { 
+        value: '710000 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+      {
+        value: '1250000 CHF',
+        feedback:
+          'Diese Aussage ist nicht korrekt!',
+      },
+    ],
+  },
+  {
+
+    name: 'Modul 4 DCF-Methode',
+    content:
+      'Für die Berechnung des Unternehmenswertes nach der DCF-Methode werden die **Free Cash Flows (FCF)** verwendet. Diese repräsentieren …',
+    contentPlain:
+      'Für die Berechnung des Unternehmenswertes nach der DCF-Methode werden die Free Cash Flows (FCF) verwendet. Diese repräsentieren …',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '… den gleichen Wert wie die operationellen Cash Flows, nur die Bezeichnung lautet anders.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die FCF stellen den operationellen CF um die Investitionen bereinigt dar.',
+      },
+      {  
+        value: '… Reingewinn plus Abschreibungen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Damit wird der „normale“, operationelle CF beschrieben.',
+      },
+      {
+        value: '… den operationellen Cash Flow plus alle Investitionen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der FCF ist derjenige Teil, der nach Abzug aller Investitionen für die Ausschüttung an den Aktionär übrig bleibt.',
+      },
+      { 
+        correct: true, 
+        value: '… den operationellen Cash Flow abzüglich aller Investitionen.',
+        feedback:
+          'Diese Aussage ist korrekt!',
+      },
+      {
+        value: '… denjenigen Teil des Cash Flow, den das Management nach freiem Ermessen für Investitionsprojekte verwenden kann.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der FCF ist derjenige Teil, der nach Abzug aller Investitionen für die Ausschüttung an den Aktionär übrig bleibt.',
+      },
+    ],
+  },
+  {
+     
+    name: 'Modul 4 DCF-Analyse',
+    content:
+      'Beurteile die folgenden Aussagen zur **DCF-Analyse** auf ihre Richtigkeit.',
+    contentPlain:
+      'Beurteile die folgenden Aussagen zur DCF-Analyse auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback:
+          'Diese Aussage ist korrekt!',
+        correct: true, 
+        value: 'Die DCF-Analyse berücksichtigt die Tatsache, dass ein Franken heute mehr Wert ist als ein Franken morgen.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die in der Vergangenheit erzielten Cash Flows haben keinen Einfluß auf die DCF-Analyse.', 
+        value: 'Die DCF-Analyse hängt von den prognostizierten und vergangenen Cash Flows und den Opportunitätskosten des Kapitals ab.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Eine Stärke der DCF-Analyse ist es, dass sie eine Prognose für die zukünftige Entwicklung ermöglicht.', 
+        value: 'Die DCF-Analyse erlaubt keine Aussagen über die zukünftige Entwicklung einer Unternehmung.',
+      },
+      {
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die DCF-Analyse ist ein ausschliesslich dynamisches Unternehmensbewertungsverfahren.',
+        value: 'Die DCF-Analyse verbindet die statischen Unternehmensbewertungsverfahren mit den dynamischen.',
       },
     ],
   },
