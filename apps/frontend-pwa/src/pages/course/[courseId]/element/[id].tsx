@@ -6,11 +6,10 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-// import { addApolloState, initializeApollo } from '@lib/apollo'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
-// import getLtiContext from 'next-ims-lti'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -131,98 +130,46 @@ function LearningElement({ courseId, id }: Props) {
   )
 }
 
-// export const getServerSideProps: GetServerSideProps = async (ctx) => {
-//   if (
-//     typeof ctx.params?.courseId !== 'string' ||
-//     typeof ctx.params?.id !== 'string'
-//   ) {
-//     return {
-//       redirect: {
-//         destination: '/404',
-//         permanent: false,
-//       },
-//     }
-//   }
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  if (
+    typeof ctx.params?.courseId !== 'string' ||
+    typeof ctx.params?.id !== 'string'
+  ) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
-//   // const ltiContext = await getLtiContext({
-//   //   ctx,
-//   //   key: 'key',
-//   //   secret: 'secret',
-//   //   persist: false,
-//   //   cookieOptions: {
-//   //     path: '/',
-//   //   },
-//   // })
+  const apolloClient = initializeApollo()
 
-//   // console.log(ltiContext)
+  try {
+    await apolloClient.query({
+      query: GetLearningElementDocument,
+      variables: { id: ctx.params.id },
+      context: {
+        headers: {
+          cookie: ctx.req.headers.cookie,
+        }
+      }
+    })
+  } catch (e) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
-//   const apolloClient = initializeApollo()
-
-//   try {
-//     await apolloClient.query({
-//       query: GetLearningElementDocument,
-//       variables: { id: ctx.params.id },
-//     })
-//   } catch (e) {
-//     return {
-//       redirect: {
-//         destination: '/404',
-//         permanent: false,
-//       },
-//     }
-//   }
-
-//   return addApolloState(apolloClient, {
-//     props: {
-//       id: ctx.params.id,
-//       courseId: ctx.params.courseId,
-//     },
-//   })
-// }
-
-// export const getStaticProps: GetStaticProps = async (ctx) => {
-//   if (
-//     typeof ctx.params?.courseId !== 'string' ||
-//     typeof ctx.params?.id !== 'string'
-//   ) {
-//     return {
-//       redirect: {
-//         destination: '/404',
-//         permanent: false,
-//       },
-//     }
-//   }
-
-//   const apolloClient = initializeApollo()
-
-//   try {
-//     await apolloClient.query({
-//       query: GetLearningElementDocument,
-//       variables: { id: ctx.params.id },
-//     })
-//   } catch (e) {
-//     return {
-//       redirect: {
-//         destination: '/404',
-//         permanent: false,
-//       },
-//     }
-//   }
-
-//   return addApolloState(apolloClient, {
-//     props: {
-//       id: ctx.params.id,
-//       courseId: ctx.params.courseId,
-//     },
-//     revalidate: 60,
-//   })
-// }
-
-// export const getStaticPaths: GetStaticPaths = async () => {
-//   return {
-//     paths: [],
-//     fallback: 'blocking',
-//   }
-// }
+  return addApolloState(apolloClient, {
+    props: {
+      id: ctx.params.id,
+      courseId: ctx.params.courseId,
+    },
+  })
+}
 
 export default LearningElement
