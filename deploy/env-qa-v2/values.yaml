@@ -13,7 +13,7 @@ frontendPWA:
           - pwa.klicker-qa.bf-app.ch
 
   strategy:
-    type: Rolling
+    type: RollingUpdate
 
 frontendManage:
   hostname: manage.klicker-qa.bf-app.ch
@@ -30,4 +30,4 @@ frontendManage:
           - manage.klicker-qa.bf-app.ch
 
   strategy:
-    type: Rolling
+    type: RollingUpdate

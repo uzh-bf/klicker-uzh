@@ -8,5 +8,8 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - frontend:
+      - frontendPWA:
+          replicaCount: 1
+
+        frontendManage:
           replicaCount: 1

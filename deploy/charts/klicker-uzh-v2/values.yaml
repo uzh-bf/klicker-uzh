@@ -32,7 +32,7 @@ frontendPWA:
       memory: 200Mi
     limits:
       cpu: 1000m
-      memory: 500Mi
+      memory: 1000Mi
 
   autoscaling:
     enabled: false
@@ -67,11 +67,11 @@ frontendManage:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 500m
-      memory: 300Mi
+      cpu: 1000m
+      memory: 1000Mi
 
   autoscaling:
     enabled: false
