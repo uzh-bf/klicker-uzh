@@ -2,8 +2,9 @@ name: Build and deploy backend-responses to Azure Function App (Production)
 
 on:
   push:
-    branches:
-      - v2
+    tags: [ 'v*.*.*' ]
+    paths:
+      - "apps/backend-responses/**"
   workflow_dispatch:
 
 env:

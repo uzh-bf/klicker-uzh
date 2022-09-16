@@ -2,8 +2,9 @@ name: Build and deploy backend-sls to Azure Function App (Production)
 
 on:
   push:
-    branches:
-      - v2
+    tags: [ 'v*.*.*' ]
+    paths:
+      - "apps/backend-sls/**"
   workflow_dispatch:
 
 env:
