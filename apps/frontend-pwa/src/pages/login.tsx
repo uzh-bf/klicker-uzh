@@ -28,6 +28,7 @@ function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
   const [oniOS, setOniOS] = useState(false)
+  const [onChrome, setOnChrome] = useState(false)
   const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
 
   useEffect(() => {
@@ -36,12 +37,17 @@ function LoginForm() {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault()
         deferredPrompt.current = e as BeforeInstallPromptEvent
+        setOnChrome(true)
       })
     } else {
       // We assume users are on iOS (for now)
       setOniOS(true)
     }
   }, [])
+
+  const onInstallClick = async () => {
+    deferredPrompt.current!.prompt()
+  }
 
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setError('')
@@ -140,14 +146,14 @@ function LoginForm() {
                       <Button.Label>Anmelden</Button.Label>
                     </Button>
                   </div>
-                  {deferredPrompt.current &&
-                    <div className="flex flex-col justify-center mt-7">
+                  {onChrome &&
+                    <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification notificationType='info' message='Installieren Sie die Klicker App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.'>
                         <Button
                           className="mt-2 w-fit border-uzh-grey-80"
-                          onClick={deferredPrompt.current.prompt}
+                          onClick={onInstallClick}
                         >
-                          <Button.Label>Jetzt installieren!</Button.Label>
+                          <Button.Label>Jetzt installieren</Button.Label>
                         </Button>
                       </UserNotification>
                     </div>
