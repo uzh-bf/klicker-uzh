@@ -86,47 +86,49 @@ function MicroSessionInstance() {
       courseName={data.microSession.course.displayName}
       mobileMenuItems={[]}
     >
-      <div className="order-2 pt-0 md:p-4 md:border md:border-b-0 md:pt-4 md:order-2 md:mt-4 md:rounded-t">
-        {questionData && (
-          <div className="flex flex-col gap-4 md:flex-row">
-            <div className="flex-1 basis-2/3">
-              <div className="pb-2">
-                <Markdown content={questionData.content} />
-              </div>
+      <div className="md:max-w-5xl md:m-auto md:w-full">
+        <div className="order-2 pt-0 md:p-4 md:border md:border-b-0 md:pt-4 md:order-2 md:rounded-t">
+          {questionData && (
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="flex-1 basis-2/3">
+                <div className="pb-2">
+                  <Markdown content={questionData.content} />
+                </div>
 
-              <OptionsDisplay
-                isEvaluation={isEvaluation}
-                evaluation={currentInstance.evaluation}
-                response={response}
-                onChangeResponse={setResponse}
-                onSubmitResponse={
-                  isEvaluation ? handleNextQuestion : handleSubmitResponse
-                }
-                questionType={questionData.type as QuestionType}
-                options={questionData.options}
-              />
-            </div>
-
-            {currentInstance.evaluation && (
-              <div className="flex-1 p-4 border rounded basis-1/3 bg-gray-50">
-                <EvaluationDisplay
-                  options={questionData.options}
-                  questionType={questionData.type}
+                <OptionsDisplay
+                  isEvaluation={isEvaluation}
                   evaluation={currentInstance.evaluation}
+                  response={response}
+                  onChangeResponse={setResponse}
+                  onSubmitResponse={
+                    isEvaluation ? handleNextQuestion : handleSubmitResponse
+                  }
+                  questionType={questionData.type as QuestionType}
+                  options={questionData.options}
                 />
               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      <div className="order-1 pb-4 md:p-4 md:pt-0 md:border md:border-t-0 md:order-3 md:rounded-b">
-        <Progress
-          isMaxVisible
-          formatter={(v) => v}
-          value={isEvaluation ? Number(ix) + 1 : Number(ix)}
-          max={data.microSession?.instances?.length ?? 0}
-        />
+              {currentInstance.evaluation && (
+                <div className="flex-1 p-4 border rounded basis-1/3 bg-gray-50">
+                  <EvaluationDisplay
+                    options={questionData.options}
+                    questionType={questionData.type}
+                    evaluation={currentInstance.evaluation}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="order-1 pb-4 md:p-4 md:pt-0 md:border md:border-t-0 md:order-3 md:rounded-b">
+          <Progress
+            isMaxVisible
+            formatter={(v) => v}
+            value={isEvaluation ? Number(ix) + 1 : Number(ix)}
+            max={data.microSession?.instances?.length ?? 0}
+          />
+        </div>
       </div>
     </Layout>
   )

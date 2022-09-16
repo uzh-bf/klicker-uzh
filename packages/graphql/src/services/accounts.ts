@@ -3,7 +3,11 @@ import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context, ContextWithOptionalUser } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -58,13 +62,7 @@ export async function loginUser(
   return user.id
 }
 
-export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: userId },
-  })
-
-  if (!user) return null
-
+export async function logoutUser(_, ctx: ContextWithUser) {
   ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
@@ -73,7 +71,7 @@ export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
     secure: process.env.NODE_ENV === 'production',
   })
 
-  return user.id
+  return ctx.user.sub
 }
 
 export async function getUserProfile(
@@ -141,13 +139,7 @@ export async function loginParticipant(
   return participant.id
 }
 
-export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id: id },
-  })
-
-  if (!participant) return null
-
+export async function logoutParticipant(_, ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
@@ -156,5 +148,5 @@ export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
     secure: process.env.NODE_ENV === 'production',
   })
 
-  return participant.id
+  return ctx.user.sub
 }

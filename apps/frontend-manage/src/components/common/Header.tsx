@@ -27,9 +27,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
     {
       name: 'Logout',
       onClick: async () => {
-        const userIdLogout = await logoutUser({
-          variables: { userId: user.id },
-        })
+        const userIdLogout = await logoutUser()
         userIdLogout.data?.logoutUser
           ? router.push('https://www.klicker.uzh.ch')
           : console.log('Logout failed')

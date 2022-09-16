@@ -1,0 +1,12 @@
+Dockerfile
+.dockerignore
+node_modules/
+npm-debug.log
+README.md
+.next/
+.git/
+.vercel/
+.turbo/
+.env.local
+.env.local.template
+public/avatars/

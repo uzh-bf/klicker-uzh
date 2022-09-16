@@ -583,7 +583,7 @@ describe('API', () => {
       )
 
       axios.post(
-        'http://127.0.0.1:7072/api/AddResponse',
+        process.env.ADD_RESPONSE_URL as string,
         {
           instanceId: instances['SC' as any],
           sessionId: session.id,
@@ -594,7 +594,7 @@ describe('API', () => {
         }
       )
       axios.post(
-        'http://127.0.0.1:7072/api/AddResponse',
+        process.env.ADD_RESPONSE_URL as string,
         {
           instanceId: instances['KPRIM' as any],
           sessionId: session.id,
@@ -605,7 +605,7 @@ describe('API', () => {
         }
       )
       axios.post(
-        'http://127.0.0.1:7072/api/AddResponse',
+        process.env.ADD_RESPONSE_URL as string,
         {
           instanceId: instances['NUMERICAL' as any],
           sessionId: session.id,
@@ -616,7 +616,7 @@ describe('API', () => {
         }
       )
       axios.post(
-        'http://127.0.0.1:7072/api/AddResponse',
+        process.env.ADD_RESPONSE_URL as string,
         {
           instanceId: instances['FREE_TEXT' as any],
           sessionId: session.id,

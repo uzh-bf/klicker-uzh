@@ -18,13 +18,13 @@ function Header({
   courseName,
 }: HeaderProps): React.ReactElement {
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-2 text-white bg-slate-800">
+    <div className="flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800">
       {title && courseName && (
         <div>
-          <H1 className="mt-1 text-sm font-normal text-uzh-grey-60">
+          <H1 className="m-0 text-sm font-normal text-uzh-grey-60">
             {courseName}
           </H1>
-          <H2 className="mb-0 text-base">{title}</H2>
+          <H2 className="m-0 text-base">{title}</H2>
         </div>
       )}
       {title && !courseName && <H1 className="text-lg">{title}</H1>}
@@ -34,29 +34,25 @@ function Header({
             Home
           </Button>
         </Link>
-        {participant ? (
-          <Link href="/profile">
+        {participant?.avatar ? (
+          <Link href="/profile" className="">
             <Image
-              src={
-                `https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/${participant.avatar}_small.webp` ||
-                '/placeholder.png'
-              }
-              alt="logo"
-              width="50"
-              height="50"
-              className="bg-white rounded-full "
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`}
+              alt=""
+              width="45"
+              height="45"
+              className="bg-white rounded-full cursor-pointer"
             />
           </Link>
         ) : (
-          <Link href="/login">
-            <a className="">
-              <Image
-                src={'/placeholder.png'}
-                alt="logo"
-                width="45"
-                height="45"
-              />
-            </a>
+          <Link href="/login" className="cursor-pointer">
+            <Image
+              src={'/placeholder.png'}
+              alt=""
+              width="45"
+              height="45"
+              className="bg-white rounded-full cursor-pointer"
+            />
           </Link>
         )}
       </div>

@@ -4,16 +4,16 @@ import {
   LogoutParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
-import { useRouter } from 'next/router'
+import { Button, H1 } from '@uzh-bf/design-system'
+import Image from 'next/future/image'
+import Router from 'next/router'
 import { useEffect, useState } from 'react'
-import { ThreeDots } from 'react-loader-spinner'
 
 const Profile = () => {
-  const [pageInIframe, setPageInIframe] = useState(false)
-  const { data, error, loading } = useQuery(SelfDocument)
-  const router = useRouter()
+  const { data, loading } = useQuery(SelfDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+
+  const [pageInIframe, setPageInIframe] = useState(false)
 
   // detect if the page is currently shown as an iframe (i.e. in OLAT) -> hide the logout button in this case
   useEffect(() => {
@@ -24,36 +24,41 @@ const Profile = () => {
     }
   }, [])
 
+  if (loading || !data?.self) return <div>loading...</div>
+
   return (
     <Layout>
-      {loading && (
-        <ThreeDots
-          height="80"
-          width="80"
-          radius="9"
-          color="#4fa94d"
-          ariaLabel="three-dots-loading"
-          visible={true}
-        />
-      )}
-      {!pageInIframe && data && data?.self && data.self.id && (
-        <div className="p-4">
-          <div>{data.self.id}</div>
-          <Button
-            onClick={async () => {
-              const logoutResponse = await logoutParticipant({
-                variables: { id: data?.self?.id || '' },
-              })
-              logoutResponse.data?.logoutParticipant &&
-                router.push('https://www.klicker.uzh.ch')
-            }}
-          >
-            Logout
-          </Button>
+      <div className="flex flex-col items-center md:max-w-md md:border md:rounded md:p-4 md:m-auto md:w-full">
+        <H1>{data.self.username}</H1>
+
+        <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`}
+            alt=""
+            fill
+          />
         </div>
-      )}
+
+        <Button
+          fluid
+          onClick={() => Router.push('/editProfile')}
+          className="mt-7"
+        >
+          Profil editieren
+        </Button>
+
+        <Button
+          fluid
+          onClick={async () => {
+            await logoutParticipant()
+            Router.push('https://www.klicker.uzh.ch')
+          }}
+          className="mt-2"
+        >
+          Ausloggen
+        </Button>
+      </div>
     </Layout>
   )
 }
-
 export default Profile

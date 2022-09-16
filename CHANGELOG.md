@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.23...v2.0.0-alpha.24) (2022-09-16)
+
+
+### Features
+
+* add backend persistence for push subscriptions ([7a42ad3](https://github.com/uzh-bf/klicker-uzh/commit/7a42ad391b9747bf0e76f54489428feb8df6e4bf))
+* **apps/frontend-manage:** add qr page that displays qr to join page with new logo ([9d87ccf](https://github.com/uzh-bf/klicker-uzh/commit/9d87ccff17d83b9b0a67a0f3b88c207997983c29))
+* **apps/frontend-pwa:** add logic to login page and connect index to backend ([#2878](https://github.com/uzh-bf/klicker-uzh/issues/2878)) ([9b5bc78](https://github.com/uzh-bf/klicker-uzh/commit/9b5bc78ff2069504ae66acae9648e4bed503d831))
+* profile setup (username, avatar) and PWA layout improvements ([#2809](https://github.com/uzh-bf/klicker-uzh/issues/2809)) ([3ffc30d](https://github.com/uzh-bf/klicker-uzh/commit/3ffc30d0eb960fcbcd045a99c3eeb998ebfa993b))
+
+
+### Bug Fixes
+
+* **apps/backend-responses:** ensure that grading package is installed ([29b0630](https://github.com/uzh-bf/klicker-uzh/commit/29b0630cfc35cf7c62519adba3777b66e7b8ed38))
+* more efficient implementations and fixes for session list and logout functionalities ([#2877](https://github.com/uzh-bf/klicker-uzh/issues/2877)) ([1afc57b](https://github.com/uzh-bf/klicker-uzh/commit/1afc57bc476215f001ce4cb245c0e12bbed9282f))
+* **packages/graphql:** remove ids from logout mutations ([bb7d35e](https://github.com/uzh-bf/klicker-uzh/commit/bb7d35e0f1334760824d3716c3d04730c34fb4b5))
+
+
+### Dependencies
+
+* upgrade everything to latest version ([#2880](https://github.com/uzh-bf/klicker-uzh/issues/2880)) ([ba28b47](https://github.com/uzh-bf/klicker-uzh/commit/ba28b47902ca8d5766705c21d79978ac2df7cb3d))
+
+
+### Enhancements
+
+* rework seed, improve layout of PWA, error boundary and error pages ([#2887](https://github.com/uzh-bf/klicker-uzh/issues/2887)) ([f58b8f6](https://github.com/uzh-bf/klicker-uzh/commit/f58b8f6ee416211c8d8fdbcbd8897d31aae71033))
+
+
+### Other
+
+* add script for avatar generation ([d3b0cec](https://github.com/uzh-bf/klicker-uzh/commit/d3b0cecc832490cbb7a41c35b4ba8cab5ffa5f22))
+* adjust test timeout ([ccb7d9c](https://github.com/uzh-bf/klicker-uzh/commit/ccb7d9ccb42fc69a37cb08efda0ae183687c9831))
+* disable typescript build checks for nextjs apps ([d6e8043](https://github.com/uzh-bf/klicker-uzh/commit/d6e80437c5c904b330799a0cb40e6e8203624431))
+* lockfile maintenance ([1d6a0a6](https://github.com/uzh-bf/klicker-uzh/commit/1d6a0a6671abf9343c0731946aeb12db4de0145c))
+* lockfile maintenance ([6e78239](https://github.com/uzh-bf/klicker-uzh/commit/6e7823910ad270d771c549f43200fcb1ae1552b8))
+* lockfile maintenance ([4610a5c](https://github.com/uzh-bf/klicker-uzh/commit/4610a5c2b2d827c25e60a4b01dbc0bc903ec7f71))
+* redeploy ([4dcaa65](https://github.com/uzh-bf/klicker-uzh/commit/4dcaa659ad42752d3f6ca3c71a8ce44775d9eca7))
+* remove cruft ([23bce5c](https://github.com/uzh-bf/klicker-uzh/commit/23bce5c5a44a481495e013d7d19cd7af72a8731f))
+
 ## [2.0.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.21...v2.0.0-alpha.23) (2022-09-14)
 
 

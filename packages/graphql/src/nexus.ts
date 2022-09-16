@@ -23,11 +23,27 @@ import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
 import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
+import * as NotificationService from './services/notifications'
 import * as ParticipantService from './services/participants'
 import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
+
+export const AvatarSettingsInput = inputObjectType({
+  name: 'AvatarSettingsInput',
+  definition(t) {
+    t.nonNull.string('body')
+    t.nonNull.string('skinTone')
+    t.nonNull.string('eyes')
+    t.nonNull.string('mouth')
+    t.nonNull.string('hair')
+    t.nonNull.string('accessory')
+    t.nonNull.string('hairColor')
+    t.nonNull.string('clothingColor')
+    t.nonNull.string('facialHair')
+  },
+})
 
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
@@ -35,6 +51,25 @@ export const BlockInput = inputObjectType({
     t.nonNull.list.nonNull.int('questionIds')
     t.int('randomSelection')
     t.int('timeLimit')
+  },
+})
+
+export const SubscriptionKeysInput = inputObjectType({
+  name: 'SubscriptionKeys',
+  definition(t) {
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
+  },
+})
+
+export const SubscriptionObjectInput = inputObjectType({
+  name: 'SubscriptionObjectInput',
+  definition(t) {
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.field('keys', {
+      type: SubscriptionKeysInput,
+    })
   },
 })
 
@@ -311,7 +346,19 @@ export const Participant = objectType({
     t.nonNull.id('id')
 
     t.nonNull.string('avatar')
+    t.field('avatarSettings', {
+      type: 'JSONObject',
+    })
     t.nonNull.string('username')
+  },
+})
+
+export const Subscription = objectType({
+  name: 'Subscription',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('endpoint')
   },
 })
 
@@ -325,6 +372,9 @@ export const Participation = objectType({
 
     t.nonNull.field('course', {
       type: Course,
+    })
+    t.list.nonNull.field('subscriptions', {
+      type: Subscription,
     })
   },
 })
@@ -530,6 +580,17 @@ export const LecturerSession = objectType({
   },
 })
 
+export const PushSubscription = objectType({
+  name: 'PushSubscription',
+  definition(t) {
+    t.nonNull.int('id')
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -582,6 +643,9 @@ export const Query = objectType({
 
     t.list.nonNull.field('participations', {
       type: Participation,
+      args: {
+        endpoint: stringArg(),
+      },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.getParticipations(args, ctx)
       },
@@ -659,6 +723,20 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('updateParticipantProfile', {
+      type: Participant,
+      args: {
+        username: stringArg(),
+        avatar: stringArg(),
+        avatarSettings: arg({
+          type: AvatarSettingsInput,
+        }),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
+      },
+    })
+
     t.field('loginUser', {
       type: 'ID',
       args: {
@@ -683,20 +761,14 @@ export const Mutation = objectType({
 
     t.field('logoutUser', {
       type: 'ID',
-      args: {
-        userId: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutUser(args, ctx)
       },
     })
 
     t.field('logoutParticipant', {
       type: 'ID',
-      args: {
-        id: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutParticipant(args, ctx)
       },
     })
@@ -941,6 +1013,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.deactivateSessionBlock(args, ctx)
+      },
+    })
+
+    t.field('subscribeToPush', {
+      type: PushSubscription,
+      args: {
+        subscriptionObject: nonNull(SubscriptionObjectInput),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return NotificationService.subscribeToPush(args, ctx)
       },
     })
   },

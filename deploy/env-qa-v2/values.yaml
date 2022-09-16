@@ -1,0 +1,33 @@
+frontendPWA:
+  hostname: pwa.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: pwa.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-pwa-tls
+        hosts:
+          - pwa.klicker-qa.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+
+frontendManage:
+  hostname: manage.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: manage.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-manage-tls
+        hosts:
+          - manage.klicker-qa.bf-app.ch
+
+  strategy:
+    type: RollingUpdate

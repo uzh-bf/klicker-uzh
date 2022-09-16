@@ -431,9 +431,11 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  username    String    @unique
-  password    String
-  avatar      String    @default("placeholder.png")
+  username       String @unique
+  password       String
+  avatar         String @default("placeholder.png")
+  avatarSettings Json?
+
   lastLoginAt DateTime?
 
   accounts          ParticipantAccount[]
@@ -494,7 +496,10 @@ model QuestionResponse {
 model PushSubscription {
   id Int @id @default(autoincrement())
 
-  endpoint String
+  endpoint       String
+  expirationTime Int?
+  p256dh         String
+  auth           String
 
   course   Course @relation(fields: [courseId], references: [id])
   courseId String @db.Uuid

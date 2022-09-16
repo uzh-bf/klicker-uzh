@@ -32,6 +32,18 @@ enum AttachmentType {
   WEBP
 }
 
+input AvatarSettingsInput {
+  accessory: String!
+  body: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
@@ -192,8 +204,8 @@ type Mutation {
   leaveCourse(courseId: ID!): Participation
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
-  logoutParticipant(id: ID!): ID
-  logoutUser(userId: ID!): ID
+  logoutParticipant: ID
+  logoutUser: ID
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
@@ -201,6 +213,8 @@ type Mutation {
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): PushSubscription
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -233,6 +247,7 @@ type NumericalSolutionRange {
 
 type Participant {
   avatar: String!
+  avatarSettings: JSONObject
   id: ID!
   username: String!
 }
@@ -250,6 +265,15 @@ type Participation {
   id: Int!
   isActive: Boolean!
   points: Int!
+  subscriptions: [Subscription!]
+}
+
+type PushSubscription {
+  auth: String!
+  endpoint: String!
+  expirationTime: Int
+  id: Int!
+  p256dh: String!
 }
 
 type Query {
@@ -258,7 +282,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
-  participations: [Participation!]
+  participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: ID!): LecturerSession
   runningSessions(shortname: String!): [Session!]
   self: Participant
@@ -336,6 +360,22 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type Subscription {
+  endpoint: String!
+  id: ID!
+}
+
+input SubscriptionKeys {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeys!
 }
 
 type User {

@@ -56,6 +56,7 @@ export const AuthSchema = {
     createSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
     leaveCourse: { __authz: { rules: ['IsParticipant'] } },
+    updateParticipantProfile: { __authz: { rules: ['IsParticipant'] } },
     resolveFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     respondToFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },

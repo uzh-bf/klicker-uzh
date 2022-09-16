@@ -1,26 +1,32 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
-import ErrorNotification from '@components/ErrorNotification'
 import Layout from '@components/Layout'
+import UserNotification from '@components/UserNotification'
+import {
+  faBookOpenReader,
+  faChalkboard,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroSession,
   ParticipationsDocument,
   Session,
+  SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { Button, H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
 } from '../utils/push'
 
 const Index = function () {
-  const { data, loading, error } = useQuery(ParticipationsDocument)
+  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const router = useRouter()
 
-  const [pushDisabled, setPushDisabled] = useState<boolean>(true)
+  const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
     useState<ServiceWorkerRegistration | null>(null)
@@ -37,6 +43,11 @@ const Index = function () {
       setSubscription(sub)
     })
   }, [])
+
+  const { data, loading, error } = useQuery(ParticipationsDocument, {
+    skip: pushDisabled === null,
+    variables: { endpoint: subscription?.endpoint },
+  })
 
   const {
     courses,
@@ -56,6 +67,9 @@ const Index = function () {
           {
             id: participation.course.id,
             displayName: participation.course.displayName,
+            isSubscribed:
+              participation.subscriptions &&
+              participation.subscriptions.length > 0,
           },
         ],
         activeSessions: [
@@ -70,29 +84,25 @@ const Index = function () {
     }, obj)
   }, [data])
 
-  if (!loading && !data) {
-    router.push('/login')
-  }
   if (loading || !data) {
     return <div>loading...</div>
   }
 
-  async function onSubscribeClick(
-    subscribed: boolean,
-    setSubscribed: Dispatch<SetStateAction<boolean>>,
-    courseId: string
-  ) {
+  async function onSubscribeClick(subscribed: boolean, courseId: string) {
     setUserInfo('')
     // Case 1: User unsubscribed
     if (subscribed) {
-      setSubscribed(false)
       // TODO: updateSubscriptionOnServer(subscription, courseId)
       // Case 2: User subscribed
     } else {
       // Case 2a: User already has a push subscription
       if (subscription) {
-        // TODO: updateSubscriptionOnServer(subscription, courseId)
-        setSubscribed(true)
+        subscribeToPush({
+          variables: {
+            subscriptionObject: subscription,
+            courseId,
+          },
+        })
         // Case 2b: User has no push subscription yet
       } else {
         try {
@@ -100,15 +110,17 @@ const Index = function () {
             registration!,
             courseId
           )
-          // TODO: updateSubscriptionOnServer(newSubscription, courseId)
-          setSubscribed(true)
           setSubscription(newSubscription)
-          console.log('Subscription: ', JSON.stringify(newSubscription))
+          subscribeToPush({
+            variables: {
+              subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
+              courseId,
+            },
+          })
         } catch (e) {
           console.error(e)
           // Push notifications are disabled
           if (Notification.permission === 'denied') {
-            setSubscribed(false)
             setPushDisabled(true)
             setUserInfo(
               `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
@@ -119,13 +131,11 @@ const Index = function () {
             e instanceof DOMException &&
             e.name === 'NotAllowedError'
           ) {
-            setSubscribed(false)
             setUserInfo(
               'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
             )
             // An error occured
           } else {
-            setSubscribed(false)
             setUserInfo(
               'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
             )
@@ -138,46 +148,56 @@ const Index = function () {
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center w-full h-full">
-        <div className="items-start w-full max-w-md p-14">
-          <H1>Aktive Sessions</H1>
-          <div className="flex flex-col mt-2 mb-8">
-            {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
-            {activeSessions.map((session) => (
-              <Link href={`/session/${session.id}`} key={session.id}>
-                <a className="w-full p-3 mt-4 mb-4 mr-4 rounded-md text-l text-start bg-uzh-grey-20 hover:bg-uzh-grey-40">
-                  {session.displayName}
-                </a>
-              </Link>
-            ))}
-          </div>
-          <H1>Verfügbares Microlearning</H1>
-          <div className="flex flex-col mt-2 mb-8">
-            {activeMicrolearning.length === 0 && (
-              <div>Kein aktives Microlearning.</div>
-            )}
-            {activeMicrolearning.map((micro: any) => (
-              <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
-                <a className="w-full p-3 mt-4 mb-4 mr-4 text-xl text-center rounded-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
-                  {micro.displayName}
-                </a>
-              </Link>
-            ))}
-          </div>
-          <H1>Kurse</H1>
-          <div className="mt-2 mb-8">
-            {courses.map((course: any) => (
-              <CourseElement
-                disabled={pushDisabled}
-                key={course.id}
-                courseId={course.id}
-                courseName={course.displayName}
-                onSubscribeClick={onSubscribeClick}
-              />
-            ))}
-          </div>
-          {userInfo && <ErrorNotification message={userInfo} />}
+      <div className="flex flex-col md:w-full md:max-w-md md:p-4 md:m-auto md:border md:rounded">
+        <H1 className="text-xl">Aktive Sessions</H1>
+        <div className="flex flex-col gap-2 mt-2 mb-8">
+          {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
+          {activeSessions.map((session) => (
+            <Link href={`/session/${session.id}`} key={session.id}>
+              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faChalkboard} />
+                </Button.Icon>
+                <Button.Label>{session.displayName}</Button.Label>
+              </Button>
+            </Link>
+          ))}
         </div>
+
+        <H1 className="text-xl">Verfügbares Microlearning</H1>
+        <div className="flex flex-col gap-2 mt-2 mb-8">
+          {activeMicrolearning.length === 0 && (
+            <div>Kein aktives Microlearning.</div>
+          )}
+          {activeMicrolearning.map((micro: any) => (
+            <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
+              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faBookOpenReader} />
+                </Button.Icon>
+                <Button.Label>{micro.displayName}</Button.Label>
+              </Button>
+            </Link>
+          ))}
+        </div>
+
+        <H1 className="text-xl">Meine Kurse</H1>
+        <div className="flex flex-col gap-2 mt-2">
+          {courses.map((course: any) => (
+            <CourseElement
+              disabled={!!pushDisabled}
+              key={course.id}
+              courseId={course.id}
+              courseName={course.displayName}
+              onSubscribeClick={onSubscribeClick}
+              isSubscribed={course.isSubscribed}
+            />
+          ))}
+        </div>
+
+        {userInfo && (
+          <UserNotification notificationType="info" message={userInfo} />
+        )}
       </div>
     </Layout>
   )

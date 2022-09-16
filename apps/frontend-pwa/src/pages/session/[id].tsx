@@ -66,7 +66,7 @@ function Index({
     }
     try {
       const response = await fetch(
-        publicRuntimeConfig.ADDRESPONSE_URL,
+        publicRuntimeConfig.ADD_RESPONSE_URL,
         requestOptions
       )
     } catch (e) {
@@ -112,7 +112,7 @@ function Index({
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
     >
-      <div className="gap-4 md:flex md:flex-row">
+      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
         <div
           className={twMerge(
             'md:p-4 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden md:overflow-scroll',
