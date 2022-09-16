@@ -16,12 +16,12 @@ const loginSchema = Yup.object().shape({
 })
 
 interface BeforeInstallPromptEventReturn {
-  userChoice: string;
+  userChoice: string
   platform: string
 }
 
 interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<BeforeInstallPromptEventReturn>;
+  prompt(): Promise<BeforeInstallPromptEventReturn>
 }
 
 function LoginForm() {
@@ -33,7 +33,7 @@ function LoginForm() {
 
   useEffect(() => {
     // Check if event is supported
-    if ("onbeforeinstallprompt" in window) {
+    if ('onbeforeinstallprompt' in window) {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault()
         deferredPrompt.current = e as BeforeInstallPromptEvent
@@ -107,8 +107,8 @@ function LoginForm() {
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
                       errors.username &&
-                      touched.username &&
-                      'border-red-400 bg-red-50'
+                        touched.username &&
+                        'border-red-400 bg-red-50'
                     )}
                   />
                   <ErrorMessage
@@ -136,7 +136,12 @@ function LoginForm() {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  {error && <UserNotification notificationType="error" message={error} />}
+                  {error && (
+                    <UserNotification
+                      notificationType="error"
+                      message={error}
+                    />
+                  )}
                   <div className="flex justify-center mt-7">
                     <Button
                       type="submit"
@@ -148,7 +153,7 @@ function LoginForm() {
                   </div>
                   {onChrome &&
                     <div className="flex flex-col justify-center md:hidden mt-7">
-                      <UserNotification notificationType='info' message='Installieren Sie die Klicker App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.'>
+                      <UserNotification notificationType='info' message='Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.'>
                         <Button
                           className="mt-2 w-fit border-uzh-grey-80"
                           onClick={onInstallClick}
@@ -157,9 +162,13 @@ function LoginForm() {
                         </Button>
                       </UserNotification>
                     </div>
-                  }
-                  {oniOS &&
-                    <UserNotification notificationType="info" message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren." />}
+                  )}
+                  {oniOS && (
+                    <UserNotification
+                      notificationType="info"
+                      message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+                    />
+                  )}
                 </Form>
               </div>
             </div>

@@ -8,15 +8,15 @@ import { BigHead } from '@bigheads/core'
 import { AVATAR_OPTIONS } from '../constants.js'
 
 async function main() {
-  AVATAR_OPTIONS.skinTone.forEach(skinTone => {
-    AVATAR_OPTIONS.eyes.forEach(eyes => {
-      AVATAR_OPTIONS.mouth.forEach(mouth => {
-        AVATAR_OPTIONS.hair.forEach(hair => {
-          AVATAR_OPTIONS.facialHair.forEach(facialHair => {
-            AVATAR_OPTIONS.body.forEach(body => {
-              AVATAR_OPTIONS.accessory.forEach(accessory => {
-                AVATAR_OPTIONS.hairColor.forEach(hairColor => {
-                  AVATAR_OPTIONS.clothingColor.forEach(clothingColor => {
+  AVATAR_OPTIONS.skinTone.forEach((skinTone) => {
+    AVATAR_OPTIONS.eyes.forEach((eyes) => {
+      AVATAR_OPTIONS.mouth.forEach((mouth) => {
+        AVATAR_OPTIONS.hair.forEach((hair) => {
+          AVATAR_OPTIONS.facialHair.forEach((facialHair) => {
+            AVATAR_OPTIONS.body.forEach((body) => {
+              AVATAR_OPTIONS.accessory.forEach((accessory) => {
+                AVATAR_OPTIONS.hairColor.forEach((hairColor) => {
+                  AVATAR_OPTIONS.clothingColor.forEach((clothingColor) => {
                     const definition = {
                       skinTone,
                       eyes,
@@ -44,27 +44,29 @@ async function main() {
 
                     const promises = Promise.all([
                       sharp(Buffer.from(avatarString))
-                      .resize({
-                        height: 200,
-                      })
-                      .webp({
-                        lossless: true,
-                      })
-                      .toFile(`public/avatars/${hashedProps}.webp`),
+                        .resize({
+                          height: 200,
+                        })
+                        .webp({
+                          lossless: true,
+                        })
+                        .toFile(`public/avatars/${hashedProps}.webp`),
                       sharp(Buffer.from(avatarString))
-                      .resize({
-                        height: 50,
-                      })
-                      .webp({
-                        lossless: true,
-                      })
-                      .toFile(`public/avatars/${hashedProps}_small.webp`)
+                        .resize({
+                          height: 50,
+                        })
+                        .webp({
+                          lossless: true,
+                        })
+                        .toFile(`public/avatars/${hashedProps}_small.webp`),
                     ])
 
-                    fs.writeFileSync(`public/avatars/${hashedProps}.svg`, avatarString)
+                    fs.writeFileSync(
+                      `public/avatars/${hashedProps}.svg`,
+                      avatarString
+                    )
 
                     console.log(hashedProps)
-
                   })
                 })
               })

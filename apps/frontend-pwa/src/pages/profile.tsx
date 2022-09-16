@@ -30,13 +30,15 @@ const Profile = () => {
     <Layout>
       <div className="flex flex-col items-center md:max-w-md md:border md:rounded md:p-4 md:m-auto md:w-full">
         <H1>{data.self.username}</H1>
-        <div className="relative h-36 md:h-48">
+
+        <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
           <Image
-            src={`https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/${data.self.avatar}.webp`}
-            alt="Avatar-Image"
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`}
+            alt=""
             fill
           />
         </div>
+
         <Button
           fluid
           onClick={() => Router.push('/editProfile')}
@@ -44,6 +46,7 @@ const Profile = () => {
         >
           Profil editieren
         </Button>
+
         <Button
           fluid
           onClick={async () => {

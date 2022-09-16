@@ -9,7 +9,7 @@ import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -130,7 +130,7 @@ function LearningElement({ courseId, id }: Props) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async (ctx) => {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (
     typeof ctx.params?.courseId !== 'string' ||
     typeof ctx.params?.id !== 'string'
@@ -149,6 +149,11 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
     await apolloClient.query({
       query: GetLearningElementDocument,
       variables: { id: ctx.params.id },
+      context: {
+        headers: {
+          cookie: ctx.req.headers.cookie,
+        }
+      }
     })
   } catch (e) {
     return {
@@ -164,15 +169,7 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
     },
-    revalidate: 60,
   })
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
 }
 
 export default LearningElement

@@ -22,13 +22,19 @@
       "@type/*": ["src/types/*"]
     }
   },
-  "include": ["next-env.d.ts", "types/app.d.ts", "**/*.ts", "**/*.tsx", "src/utils/generateAvatars.js"],
+  "include": [
+    "next-env.d.ts",
+    "types/app.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "src/utils/generateAvatars.js"
+  ],
   "exclude": ["node_modules"],
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
       "src/constants.ts": "esm",
-      "src/utils/generateAvatars.ts": "esm",
+      "src/utils/generateAvatars.ts": "esm"
     }
   }
 }

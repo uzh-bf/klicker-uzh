@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
-import UserNotification from '@components/UserNotification'
 import Layout from '@components/Layout'
+import UserNotification from '@components/UserNotification'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
@@ -37,35 +37,46 @@ const EditProfile: NextPageWithLayout = () => {
           userName: data.self.username,
 
           // TODO: canton or country on the shirts
-          body: data.self.avatarSettings?.body ?? AVATAR_OPTIONS.body[0],
           skinTone:
             data.self.avatarSettings?.skinTone ?? AVATAR_OPTIONS.skinTone[0],
           eyes: data.self.avatarSettings?.eyes ?? AVATAR_OPTIONS.eyes[0],
           mouth: data.self.avatarSettings?.mouth ?? AVATAR_OPTIONS.mouth[0],
           hair: data.self.avatarSettings?.hair ?? AVATAR_OPTIONS.hair[0],
-          clothingColor:
-            data.self.avatarSettings?.clothingColor ??
-            AVATAR_OPTIONS.clothingColor[0],
+          facialHair:
+            data.self.avatarSettings?.facialHair ??
+            AVATAR_OPTIONS.facialHair[0],
+          body: data.self.avatarSettings?.body ?? AVATAR_OPTIONS.body[0],
           accessory:
             data.self.avatarSettings?.accessory ?? AVATAR_OPTIONS.accessory[0],
           hairColor:
             data.self.avatarSettings?.hairColor ?? AVATAR_OPTIONS.hairColor[0],
-          facialHair:
-            data.self.avatarSettings?.facialHair ??
-            AVATAR_OPTIONS.facialHair[0],
-          eyebrows: 'raised',
-          faceMask: false,
-          lashes: false,
-          mask: false,
-          clothing: 'shirt',
-          graphic: 'none',
-          hat: 'none',
+          clothingColor:
+            data.self.avatarSettings?.clothingColor ??
+            AVATAR_OPTIONS.clothingColor[0],
         }}
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          const avatarSettings = omit(['userName'], values)
-          const avatarHash = hash(avatarSettings)
+          const definition = {
+            skinTone: values.skinTone,
+            eyes: values.eyes,
+            mouth: values.mouth,
+            hair: values.hair,
+            facialHair: values.facialHair,
+            body: values.body,
+            accessory: values.accessory,
+            hairColor: values.hairColor,
+            clothingColor: values.clothingColor,
+            eyebrows: 'raised',
+            faceMask: false,
+            lashes: false,
+            mask: false,
+            clothing: 'shirt',
+            graphic: 'none',
+            hat: 'none',
+          }
+
+          const avatarHash = hash(definition)
 
           const result = await updateParticipantProfile({
             variables: {
@@ -83,7 +94,7 @@ const EditProfile: NextPageWithLayout = () => {
                   'hairColor',
                   'facialHair',
                 ],
-                avatarSettings
+                definition
               ),
             },
           })
@@ -95,14 +106,15 @@ const EditProfile: NextPageWithLayout = () => {
           return (
             <div className="flex flex-col items-center justify-center md:border md:p-4 md:rounded md:max-w-md md:m-auto">
               <BigHead
-                className="border rounded-full h-36 md:h-48 border-uzh-blue-20"
-                eyebrows={AVATAR_OPTIONS.eyebrows[0] as 'raised'}
+                // @ts-ignore
+                className="border-b-4 border-uzh-blue-100 h-36 md:h-48 "
+                eyebrows="raised"
                 faceMask={false}
                 lashes={false}
                 mask={false}
-                clothing={AVATAR_OPTIONS.clothing[0] as 'shirt'}
-                hat={AVATAR_OPTIONS.hat[0] as 'none'}
-                graphic={AVATAR_OPTIONS.graphic[0] as 'none'}
+                clothing="shirt"
+                hat="none"
+                graphic="none"
                 accessory={values.accessory}
                 body={values.body}
                 skinTone={values.skinTone}
@@ -291,7 +303,10 @@ const EditProfile: NextPageWithLayout = () => {
                   </div>
 
                   {error && (
-                    <UserNotification notificationType='error' message="Please choose a different username." />
+                    <UserNotification
+                      notificationType="error"
+                      message="Please choose a different username."
+                    />
                   )}
                 </div>
               </Form>

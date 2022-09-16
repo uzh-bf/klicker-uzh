@@ -1,12 +1,12 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy backend-sls to Azure Function App - klicker-uzh-rs
+name: Build and deploy backend-sls to Azure Function App (QA)
 
 on:
   push:
     branches:
-      - v2
+      - "v2"
+    paths:
+      - "apps/backend-sls/**"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 env:
@@ -40,7 +40,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: 'klicker-uzh-rs'
-          slot-name: 'Production'
+          app-name: 'klickeruzhprod-graphql'
+          slot-name: 'qa'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_254C9ABC76E04DB88EBD60B621A52B04 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_26F523BE43FE4F158F92C5C3051455A7 }}

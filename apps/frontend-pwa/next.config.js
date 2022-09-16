@@ -17,7 +17,7 @@ const nextConfig = withPWA({
     ignoreBuildErrors: true,
   },
   images: {
-    domains: [process.env.S3_HOSTNAME],
+    domains: ['127.0.0.1', process.env.S3_HOSTNAME],
     remotePatterns: [
       {
         protocol: 'https',
