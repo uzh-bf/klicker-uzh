@@ -5,19 +5,43 @@ import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/image'
 import Router from 'next/router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import ErrorNotification from '../components/ErrorNotification'
+import UserNotification from '../components/UserNotification'
 
 const loginSchema = Yup.object().shape({
   username: Yup.string().required('Enter your username'),
   password: Yup.string().required('Enter your password'),
 })
 
+interface BeforeInstallPromptEventReturn {
+  userChoice: string;
+  platform: string
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<BeforeInstallPromptEventReturn>;
+}
+
 function LoginForm() {
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
+  const [oniOS, setOniOS] = useState(false)
+  const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
+
+  useEffect(() => {
+    // Check if event is supported
+    if ("onbeforeinstallprompt" in window) {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault()
+        deferredPrompt.current = e as BeforeInstallPromptEvent
+      })
+    } else {
+      // We assume users are on iOS (for now)
+      setOniOS(true)
+    }
+  }, [])
 
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setError('')
@@ -43,6 +67,7 @@ function LoginForm() {
       resetForm()
     }
   }
+
   return (
     <div className="relative flex flex-col items-center justify-center w-screen h-screen pb-20">
       <Formik
@@ -76,8 +101,8 @@ function LoginForm() {
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
                       errors.username &&
-                        touched.username &&
-                        'border-red-400 bg-red-50'
+                      touched.username &&
+                      'border-red-400 bg-red-50'
                     )}
                   />
                   <ErrorMessage
@@ -105,7 +130,7 @@ function LoginForm() {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  {error && <ErrorNotification message={error} />}
+                  {error && <UserNotification notificationType="error" message={error} />}
                   <div className="flex justify-center mt-7">
                     <Button
                       type="submit"
@@ -115,6 +140,20 @@ function LoginForm() {
                       <Button.Label>Anmelden</Button.Label>
                     </Button>
                   </div>
+                  {deferredPrompt.current &&
+                    <div className="flex flex-col justify-center mt-7">
+                      <UserNotification notificationType='info' message='Installieren Sie die Klicker App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.'>
+                        <Button
+                          className="mt-2 w-fit border-uzh-grey-80"
+                          onClick={deferredPrompt.current.prompt}
+                        >
+                          <Button.Label>Jetzt installieren!</Button.Label>
+                        </Button>
+                      </UserNotification>
+                    </div>
+                  }
+                  {oniOS &&
+                    <UserNotification notificationType="info" message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren." />}
                 </Form>
               </div>
             </div>
