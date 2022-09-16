@@ -9,9 +9,9 @@ import { push } from '@socialgouv/matomo-next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-import AudienceInteraction from '../../components/interaction/AudienceInteraction'
-import Layout from '../../components/Layout'
-import SessionTimeline from '../../components/sessions/SessionTimeline'
+import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
+import Layout from '../../../components/Layout'
+import SessionTimeline from '../../../components/sessions/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
@@ -28,6 +28,7 @@ function Cockpit() {
   //   router.prefetch('/qr')
   // }, [router])
 
+  // TODO: implement missing queries and corresponding frontend components
   // const accountSummary = useQuery(AccountSummaryQuery)
   // const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, {
   //   pollInterval: 10000,
