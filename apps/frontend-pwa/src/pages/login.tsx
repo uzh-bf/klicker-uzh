@@ -151,9 +151,12 @@ function LoginForm() {
                       <Button.Label>Anmelden</Button.Label>
                     </Button>
                   </div>
-                  {onChrome &&
+                  {onChrome && (
                     <div className="flex flex-col justify-center md:hidden mt-7">
-                      <UserNotification notificationType='info' message='Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.'>
+                      <UserNotification
+                        notificationType="info"
+                        message="Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind."
+                      >
                         <Button
                           className="mt-2 w-fit border-uzh-grey-80"
                           onClick={onInstallClick}

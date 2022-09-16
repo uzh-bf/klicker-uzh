@@ -11,7 +11,7 @@ import { Button } from '@uzh-bf/design-system'
 import { Field, Form, Formik } from 'formik'
 import Router from 'next/router'
 import hash from 'object-hash'
-import { omit, pick } from 'ramda'
+import { pick } from 'ramda'
 import { AVATAR_LABELS, AVATAR_OPTIONS } from 'src/constants'
 import * as yup from 'yup'
 

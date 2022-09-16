@@ -55,7 +55,7 @@ export const AVATAR_LABELS = {
   shades: 'Sonnenbrille',
   stubble: 'Stoppeln',
   mediumBeard: 'Bart',
-  wink: 'Zwinkern'
+  wink: 'Zwinkern',
 }
 
 export const QUESTION_GROUPS = {

@@ -12,6 +12,7 @@ import { Progress } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import { useState } from 'react'
 
 const PLACEHOLDER_IMG =
@@ -143,19 +144,24 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
+  const cookies = nookies.get(ctx)
+
   const apolloClient = initializeApollo()
 
   try {
     await apolloClient.query({
       query: GetLearningElementDocument,
       variables: { id: ctx.params.id },
-      context: {
-        headers: {
-          cookie: ctx.req.headers.cookie,
-        }
-      }
+      context: cookies['participant_token']
+        ? {
+            headers: {
+              authorization: `Bearer ${cookies['participant_token']}`,
+            },
+          }
+        : undefined,
     })
   } catch (e) {
+    console.error(e)
     return {
       redirect: {
         destination: '/404',

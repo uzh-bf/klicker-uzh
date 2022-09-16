@@ -25,8 +25,7 @@ const nextConfig = {
     ],
   },
   publicRuntimeConfig: {
-    API_URL:
-      process.env.NEXT_PUBLIC_API_URL,
+    API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
   serverRuntimeConfig: {
     APP_DOMAIN: process.env.APP_DOMAIN,
