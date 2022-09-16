@@ -96,6 +96,8 @@ function SessionTimeline({
   const isFeedbackSession = blocks?.length === 0
 
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
+
+  // logic: keep track of the current and previous block
   const [buttonState, setButtonState] = useState('first block')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
@@ -159,6 +161,8 @@ function SessionTimeline({
       }
     }
   }, [activeBlockId, blocks, lastActiveBlockId])
+
+  // console.log(activeBlockId, lastActiveBlockId)
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
@@ -240,8 +244,14 @@ function SessionTimeline({
                 buttonState === 'end session' && 'bg-uzh-red-100 text-white'
               )}
               onClick={() => {
-                if (buttonState === 'first block' || buttonState === 'next block') {
-                  handleOpenBlock(blocks[lastActiveBlockId + 1].id)
+                if (buttonState === 'first block') {
+                  handleOpenBlock(blocks[0].id)
+                } else if (buttonState === 'next block') {
+                  const openBlockIndex =
+                    blocks.findIndex(
+                      (block) => block.id === lastActiveBlockId
+                    ) + 1
+                  handleOpenBlock(blocks[openBlockIndex].id)
                 } else if (buttonState === 'block active') {
                   handleCloseBlock(activeBlockId)
                 } else {

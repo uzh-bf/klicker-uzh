@@ -2,14 +2,9 @@ mutation ActivateSessionBlock($sessionId: ID!, $sessionBlockId: Int!) {
   activateSessionBlock(sessionId: $sessionId, sessionBlockId: $sessionBlockId) {
     id
     status
-    activeBlock {
+    blocks {
       id
-      instances {
-        id
-        questionData {
-          type
-        }
-      }
+      status
     }
   }
 }
