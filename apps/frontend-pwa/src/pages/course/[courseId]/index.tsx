@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import Layout from '@components/Layout'
 import { addApolloState } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 
@@ -20,6 +21,7 @@ interface ParticipantProps {
   pseudonym: string
   points?: number
   isHighlighted?: boolean
+  className?: string
 }
 
 function Participant({
@@ -27,19 +29,21 @@ function Participant({
   pseudonym,
   isHighlighted,
   children,
+  className,
 }: PropsWithChildren<ParticipantProps>) {
   return (
     <div
       className={twMerge(
         'flex flex-row items-center gap-4 p-1 border rounded',
-        isHighlighted && 'bg-uzh-grey-20'
+        isHighlighted && 'bg-uzh-grey-20',
+        className
       )}
     >
-      <div className="relative w-auto h-6 border rounded-full aspect-square">
+      <div className="relative w-6 h-6 border rounded-full">
         <Image
           className="rounded-full"
-          src={avatar || PLACEHOLDER_IMG}
-          alt="Participant Avatar"
+          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
+          alt=""
           layout="fill"
         />
       </div>
@@ -93,40 +97,71 @@ function CourseOverview({ course, participation, participant }: any) {
   })
 
   return (
-    <div className="">
-      <div className="flex flex-row items-center justify-between px-4 py-2 text-white bg-uzh-blue-100">
-        <div className="">{course.name}</div>
-        <div className="relative w-auto h-8 aspect-square">
-          <Image
-            className="rounded-full"
-            src={participant?.avatar || PLACEHOLDER_IMG}
-            alt="Participant Avatar"
-            layout="fill"
+    <Layout>
+      <div className="space-y-2">
+        <div className="flex flex-col gap-4 md:pt-4 md:items-end md:flex-row">
+          <div className="flex-1 order-2 h-24 border-b-2 md:order-1 bg-uzh-grey-20 border-uzh-blue-100">
+            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+              2.
+            </div>
+            <ParticipantOther
+              className="bg-white shadow border-uzh-red-100"
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+          </div>
+          <div className="flex-1 order-1 border-b-2 md:order-2 h-28 bg-uzh-grey-20 border-uzh-blue-100">
+            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+              1.
+            </div>
+            <ParticipantOther
+              className="bg-white shadow border-uzh-red-100"
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+          </div>
+          <div className="flex-1 order-3 h-20 border-b-2 bg-uzh-grey-20 border-uzh-blue-100">
+            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+              3.
+            </div>
+            <ParticipantOther
+              className="bg-white shadow border-uzh-red-100"
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+          </div>
+        </div>
+
+        <div className="pt-8 space-y-2">
+          <ParticipantOther
+            pseudonym={participant?.username}
+            avatar={participant?.avatar}
+            points={participation?.points}
+          />
+          <ParticipantOther
+            pseudonym={participant?.username}
+            avatar={participant?.avatar}
+            points={participation?.points}
+          />
+          <ParticipantSelf
+            isActive={participation?.isActive}
+            pseudonym={participant?.username}
+            avatar={participant?.avatar}
+            points={participation?.points}
+            onJoinCourse={joinCourse}
+            onLeaveCourse={leaveCourse}
+          />
+          <ParticipantOther
+            pseudonym={participant?.username}
+            avatar={participant?.avatar}
+            points={participation?.points}
           />
         </div>
       </div>
-
-      <div className="p-4 space-y-1">
-        <ParticipantOther
-          pseudonym={participant?.pseudonym}
-          avatar={participant?.avatar}
-          points={participation?.points}
-        />
-        <ParticipantSelf
-          isActive={participation?.isActive}
-          pseudonym={participant?.pseudonym}
-          avatar={participant?.avatar}
-          points={participation?.points}
-          onJoinCourse={joinCourse}
-          onLeaveCourse={leaveCourse}
-        />
-        <ParticipantOther
-          pseudonym={participant?.pseudonym}
-          avatar={participant?.avatar}
-          points={participation?.points}
-        />
-      </div>
-    </div>
+    </Layout>
   )
 }
 
