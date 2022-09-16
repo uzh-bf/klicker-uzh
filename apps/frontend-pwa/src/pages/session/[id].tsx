@@ -112,63 +112,68 @@ function Index({
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
     >
-      <div
-        className={twMerge(
-          'p-4 md:rounded-lg md:border-2 md:border-solid md:border-uzh-blue-40 w-full bg-white hidden md:block md:overflow-scroll',
-          isAudienceInteractionActive && 'md:w-1/2',
-          activeMobilePage === 'questions' && 'block'
-        )}
-      >
-        {!activeBlock ? (
-          isGamificationEnabled ? (
-            <div className={twMerge('w-full bg-white min-h-full')}>
-              <Leaderboard sessionId={sessionId} className="hidden md:block" />
-              <div className="md:hidden">Keine Frage aktiv.</div>
-            </div>
+      <div className="gap-4 md:flex md:flex-row">
+        <div
+          className={twMerge(
+            'md:p-4 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden md:overflow-scroll',
+            isAudienceInteractionActive && 'md:w-1/2',
+            activeMobilePage === 'questions' && 'block'
+          )}
+        >
+          {!activeBlock ? (
+            isGamificationEnabled ? (
+              <div className={twMerge('w-full bg-white min-h-full')}>
+                <Leaderboard
+                  sessionId={sessionId}
+                  className="hidden md:block"
+                />
+                <div className="md:hidden">Keine Frage aktiv.</div>
+              </div>
+            ) : (
+              <div>Keine Frage aktiv.</div>
+            )
           ) : (
-            <div>Keine Frage aktiv.</div>
-          )
-        ) : (
-          <QuestionArea
-            expiresAt={activeBlock?.expiresAt}
-            questions={
-              activeBlock?.instances.map((question: any) => {
-                return {
-                  ...question.questionData,
-                  instanceId: question.id,
-                  attachments: question.attachments,
-                }
-              }) || []
-            }
-            handleNewResponse={handleNewResponse}
-            sessionId={sessionId}
-            timeLimit={activeBlock?.timeLimit as number}
-            execution={activeBlock?.execution || 0}
-          />
+            <QuestionArea
+              expiresAt={activeBlock?.expiresAt}
+              questions={
+                activeBlock?.instances.map((question: any) => {
+                  return {
+                    ...question.questionData,
+                    instanceId: question.id,
+                    attachments: question.attachments,
+                  }
+                }) || []
+              }
+              handleNewResponse={handleNewResponse}
+              sessionId={sessionId}
+              timeLimit={activeBlock?.timeLimit as number}
+              execution={activeBlock?.execution || 0}
+            />
+          )}
+        </div>
+
+        {isGamificationEnabled && (
+          <div
+            className={twMerge(
+              'bg-white hidden min-h-full flex-1 md:p-4',
+              activeMobilePage === 'leaderboard' && 'block md:hidden'
+            )}
+          >
+            <Leaderboard sessionId={sessionId} />
+          </div>
+        )}
+
+        {isAudienceInteractionActive && (
+          <div
+            className={twMerge(
+              'md:p-4 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:overflow-scroll md:rounded-lg',
+              activeMobilePage === 'feedbacks' && 'block'
+            )}
+          >
+            <FeedbackArea isModerationEnabled={isModerationEnabled} />
+          </div>
         )}
       </div>
-
-      {isGamificationEnabled && (
-        <div
-          className={twMerge(
-            'w-full p-4 bg-white hidden min-h-full',
-            activeMobilePage === 'leaderboard' && 'block md:hidden'
-          )}
-        >
-          <Leaderboard sessionId={sessionId} />
-        </div>
-      )}
-
-      {isAudienceInteractionActive && (
-        <div
-          className={twMerge(
-            'w-full md:w-1/2 p-4 bg-white md:border-2 md:border-solid md:rounded-lg md:border-uzh-blue-40 hidden md:block md:overflow-scroll',
-            activeMobilePage === 'feedbacks' && 'block'
-          )}
-        >
-          <FeedbackArea isModerationEnabled={isModerationEnabled} />
-        </div>
-      )}
     </Layout>
   )
 }

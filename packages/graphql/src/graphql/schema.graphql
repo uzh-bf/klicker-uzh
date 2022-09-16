@@ -143,8 +143,10 @@ type LeaderboardEntry {
 
 type LearningElement {
   course: Course!
+  displayName: String!
   id: ID!
   instances: [QuestionInstance!]!
+  name: String!
 }
 
 type LecturerSession {
@@ -180,7 +182,7 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
-  createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
+  createFeedback(content: String!, sessionId: ID!): Feedback
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
@@ -194,7 +196,7 @@ type Mutation {
   logoutUser(userId: ID!): ID
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
-  registerParticipantFromLTI(courseId: ID!, participantEmail: String!, participantId: ID!): ParticipantLearningData
+  registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance

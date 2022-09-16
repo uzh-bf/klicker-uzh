@@ -859,13 +859,18 @@ export async function getCockpitSession(
     },
   })
 
-  if (session?.status !== SessionStatus.RUNNING || !session) {
+  if (!session || session?.status !== SessionStatus.RUNNING) {
     return null
   }
 
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
+    activeBlock: session.activeBlock
+      ? {
+          id: session.activeBlock.id,
+        }
+      : null,
     blocks: session.blocks.map((block) => {
       return {
         ...block,
