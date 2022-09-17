@@ -278,6 +278,7 @@ type PushSubscription {
 
 type Query {
   cockpitSession(id: ID!): LecturerSession
+  evaluationSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
@@ -330,12 +331,14 @@ type Session {
   createdAt: DateTime!
   displayName: String!
   feedbacks: [Feedback]
+  finishedAt: DateTime
   id: ID!
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
   name: String!
   namespace: String!
+  startedAt: DateTime
   status: SessionStatus!
 }
 

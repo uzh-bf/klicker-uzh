@@ -6,6 +6,22 @@ export const QUESTION_TYPES = {
   KPRIM: 'KPRIM',
 }
 
+export const SESSION_STATUS = {
+  SCHEDULED: 'SCHEDULED',
+  PREPARED: 'PREPARED',
+  ACTIVE: 'ACTIVE',
+  EXECUTED: 'EXECUTED',
+}
+
+export const CHART_TYPES = {
+  BAR_CHART: 'BAR_CHART',
+  CLOUD_CHART: 'CLOUD_CHART',
+  HISTOGRAM: 'HISTOGRAM',
+  PIE_CHART: 'PIE_CHART',
+  STACK_CHART: 'STACK_CHART',
+  TABLE: 'TABLE',
+}
+
 // TODO: remove if unused
 // export const AVATAR_OPTIONS = {
 //   skinTone: ['light', 'dark'],

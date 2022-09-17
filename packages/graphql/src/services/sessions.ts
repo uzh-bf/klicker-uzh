@@ -929,3 +929,47 @@ export async function getPinnedFeedbacks(
 
   return reducedSession
 }
+
+export async function getEvaluationSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+      course: true,
+      confusionFeedbacks: true,
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+      },
+    },
+  })
+
+  if (
+    !session ||
+    (session?.status !== SessionStatus.RUNNING &&
+      session?.status !== SessionStatus.COMPLETED)
+  ) {
+    return null
+  }
+
+  // recude session to only contain what is required for the lecturer cockpit
+  const reducedSession = {
+    ...session,
+    activeBlock: session.activeBlock
+      ? {
+          id: session.activeBlock.id,
+        }
+      : null,
+  }
+
+  return reducedSession
+}

@@ -285,12 +285,14 @@ export interface NexusGenObjects {
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    finishedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
+    startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // root type
@@ -535,6 +537,7 @@ export interface NexusGenFieldTypes {
   }
   Query: { // field return type
     cockpitSession: NexusGenRootTypes['LecturerSession'] | null; // LecturerSession
+    evaluationSession: NexusGenRootTypes['Session'] | null; // Session
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
@@ -569,12 +572,14 @@ export interface NexusGenFieldTypes {
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
+    finishedAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     name: string; // String!
     namespace: string; // String!
+    startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   SessionBlock: { // field return type
@@ -817,6 +822,7 @@ export interface NexusGenFieldTypeNames {
   }
   Query: { // field return type name
     cockpitSession: 'LecturerSession'
+    evaluationSession: 'Session'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
@@ -851,12 +857,14 @@ export interface NexusGenFieldTypeNames {
     createdAt: 'DateTime'
     displayName: 'String'
     feedbacks: 'Feedback'
+    finishedAt: 'DateTime'
     id: 'ID'
     isAudienceInteractionActive: 'Boolean'
     isGamificationEnabled: 'Boolean'
     isModerationEnabled: 'Boolean'
     name: 'String'
     namespace: 'String'
+    startedAt: 'DateTime'
     status: 'SessionStatus'
   }
   SessionBlock: { // field return type name
@@ -998,6 +1006,9 @@ export interface NexusGenArgTypes {
   }
   Query: {
     cockpitSession: { // args
+      id: string; // ID!
+    }
+    evaluationSession: { // args
       id: string; // ID!
     }
     feedbacks: { // args

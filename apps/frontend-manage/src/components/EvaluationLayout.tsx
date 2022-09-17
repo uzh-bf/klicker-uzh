@@ -1,6 +1,9 @@
-import { faFile } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChevronDown,
+  faChevronUp,
+  faFile,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { Button } from '@uzh-bf/design-system'
 import { cloneDeep } from 'lodash'
 import getConfig from 'next/config'
@@ -371,9 +374,9 @@ function EvaluationLayout({
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
         >
           {questionCollapsed ? (
-            <ChevronDownIcon className="!m-0 -mt-1 h-3" />
+            <FontAwesomeIcon icon={faChevronDown} className="h-3 -mt-1" />
           ) : (
-            <ChevronUpIcon className="!m-0 -mt-1 h-3" />
+            <FontAwesomeIcon icon={faChevronUp} className="h-3 -mt-1" />
           )}
         </button>
       )}

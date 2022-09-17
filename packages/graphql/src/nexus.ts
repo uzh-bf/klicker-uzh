@@ -539,6 +539,8 @@ export const Session = objectType({
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+    t.date('startedAt')
+    t.date('finishedAt')
   },
 })
 
@@ -658,6 +660,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.getRunningSession(args, ctx)
+      },
+    })
+
+    t.field('evaluationSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getEvaluationSession(args, ctx)
       },
     })
 

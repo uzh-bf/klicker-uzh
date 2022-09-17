@@ -65,6 +65,7 @@ export const AuthSchema = {
   Query: {
     '*': { __authz: { rules: ['Allow'] } },
     cockpitSession: { __authz: { rules: ['IsUserOrAdmin'] } },
+    evaluationSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },

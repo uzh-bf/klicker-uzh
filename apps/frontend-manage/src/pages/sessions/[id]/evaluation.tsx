@@ -4,10 +4,12 @@ import React, { useState } from 'react'
 
 import Chart from '../../../components/evaluation/Chart'
 // import FeedbackTableChart from '../../../components/interaction/feedbacks/FeedbackTableChart'
+import { useQuery } from '@apollo/client'
+import { GetEvaluationSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import EvaluationLayout from '../../../components/EvaluationLayout'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
-import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 
 export function reduceActiveInstances(
   allInstances: any[],
@@ -105,10 +107,19 @@ function Evaluation(): React.ReactElement {
   const router = useRouter()
 
   const isPublic = !!router.query.public
-  const sessionId: string = router.query.sessionId.toString()
+  const sessionId: string = router.query.id as string
 
   const [showFeedback, setShowFeedback] = useState(false)
   const [showConfusionTS, setShowConfusionTS] = useState(false)
+
+  const { data, loading } = useQuery(GetEvaluationSessionDocument, {
+    variables: { id: sessionId },
+    skip: !router.query.id
+  })
+
+  if (loading || !data) {
+    return <div>loading</div>
+  }
 
   return (
     <LoadSessionData isPublic={isPublic} sessionId={sessionId}>

@@ -1,0 +1,53 @@
+# import "./FQuestionData.graphql"
+
+query GetEvaluationSession($id: ID!) {
+  evaluationSession(id: $id) {
+    id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
+    namespace
+    name
+    displayName
+    status
+    startedAt
+    course {
+      displayName
+    }
+    blocks {
+      id
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      instances {
+        id
+        ...QuestionData
+      }
+    }
+    activeBlock {
+      id
+    }
+    confusionFeedbacks {
+      speed
+      difficulty
+    }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
+  }
+}
