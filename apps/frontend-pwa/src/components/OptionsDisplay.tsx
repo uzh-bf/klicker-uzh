@@ -152,7 +152,7 @@ function Options({
 
               return (
                 <div className="flex flex-col" key={choice.ix}>
-                  <div className="flex flex-row items-center justify-between p-2 border">
+                  <div className="flex flex-row items-center justify-between gap-4 p-2 border">
                     <div>
                       <Markdown content={choice.value} />
                     </div>
