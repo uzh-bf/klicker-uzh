@@ -4,7 +4,7 @@ mutation ChangeSessionSettings(
   $isModerationEnabled: Boolean
   $isGamificationEnabled: Boolean
 ) {
-  changeSessionSettings (
+  changeSessionSettings(
     id: $id
     isAudienceInteractionActive: $isAudienceInteractionActive
     isModerationEnabled: $isModerationEnabled

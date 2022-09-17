@@ -5,7 +5,6 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import getConfig from 'next/config'
 import Link from 'next/link'
 import React, { useState } from 'react'
-import { QRCode } from 'react-qrcode-logo'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -35,11 +34,13 @@ function QRPopup({ id }: Props): React.ReactElement {
     >
       <div>
         <div className="font-bold">
-          <Link href={`https://pwa.klicker.uzh.ch/session/${id}`}>{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
+          <Link
+            href={`https://pwa.klicker.uzh.ch/session/${id}`}
+          >{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
         </div>
 
         <div>
-          <QR path={`/session/${id}`} width={200}/>
+          <QR path={`/session/${id}`} width={200} />
         </div>
 
         <Link passHref href={`/qr/session/${id}`}>

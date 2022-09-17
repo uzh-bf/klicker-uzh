@@ -11,6 +11,7 @@ interface LayoutProps {
   children: React.ReactNode
   displayName?: string
   courseName?: string
+  courseColor?: string
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -26,6 +27,7 @@ interface LayoutProps {
 const defaultProps = {
   displayName: 'KlickerUZH',
   courseName: undefined,
+  courseColor: undefined,
   mobileMenuItems: undefined,
   className: '',
   pageNotFound: false,
@@ -35,6 +37,7 @@ function Layout({
   children,
   displayName,
   courseName,
+  courseColor,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -63,6 +66,7 @@ function Layout({
             participant={dataParticipant?.self || undefined}
             title={displayName}
             courseName={courseName}
+            courseColor={courseColor}
           />
         </div>
 

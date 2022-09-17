@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import EvaluationDisplay from '@components/EvaluationDisplay'
+import Layout from '@components/Layout'
 import OptionsDisplay from '@components/OptionsDisplay'
 import {
   GetLearningElementDocument,
@@ -10,7 +11,6 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import { useState } from 'react'
@@ -71,63 +71,51 @@ function LearningElement({ courseId, id }: Props) {
   }
 
   return (
-    <div className="flex flex-col max-w-6xl m-auto">
-      <div
-        className="flex flex-row items-center justify-between order-1 px-4 py-2 font-bold text-white border-b-8 bg-slate-800"
-        style={{ borderColor: data.learningElement.course.color ?? 'green' }}
-      >
-        <div className="">{data.learningElement.course.displayName}</div>
-        <div className="relative w-auto h-8 aspect-square">
-          <Image
-            className="rounded-full"
-            src={PLACEHOLDER_IMG}
-            alt="Participant Avatar"
-            layout="fill"
+    <Layout courseColor={data.learningElement.course.color}>
+      <div className="flex flex-col max-w-6xl gap-6 m-auto md:p-8 md:border md:rounded">
+        <div className="order-2 md:order-1">
+          {questionData && (
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="flex-1">
+                <div className="pb-2">
+                  <Markdown content={questionData.content} />
+                </div>
+                <OptionsDisplay
+                  isEvaluation={isEvaluation}
+                  evaluation={currentInstance.evaluation}
+                  response={response}
+                  onChangeResponse={setResponse}
+                  onSubmitResponse={
+                    isEvaluation ? handleNextQuestion : handleSubmitResponse
+                  }
+                  questionType={questionData.type}
+                  options={questionData.options}
+                />
+              </div>
+
+              {currentInstance.evaluation && (
+                <div className="flex-1 p-4 border rounded bg-gray-50">
+                  <EvaluationDisplay
+                    options={questionData.options}
+                    questionType={questionData.type}
+                    evaluation={currentInstance.evaluation}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="order-1 md:order-2">
+          <Progress
+            isMaxVisible
+            formatter={(v) => v}
+            value={currentIx}
+            max={data.learningElement?.instances?.length ?? 0}
           />
         </div>
       </div>
-
-      <div className="order-3 p-4 pt-0 md:border-l md:border-r md:pt-4 md:order-2">
-        {questionData && (
-          <div className="flex flex-col gap-4 md:flex-row">
-            <div className="flex-1">
-              <div className="pb-2">
-                <Markdown content={questionData.content} />
-              </div>
-              <OptionsDisplay
-                isEvaluation={isEvaluation}
-                evaluation={currentInstance.evaluation}
-                response={response}
-                onChangeResponse={setResponse}
-                onSubmitResponse={
-                  isEvaluation ? handleNextQuestion : handleSubmitResponse
-                }
-                questionType={questionData.type}
-                options={questionData.options}
-              />
-            </div>
-
-            {currentInstance.evaluation && (
-              <div className="flex-1 p-4 border rounded bg-gray-50">
-                <EvaluationDisplay
-                  options={questionData.options}
-                  questionType={questionData.type}
-                  evaluation={currentInstance.evaluation}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="order-2 p-4 border-0 md:pt-0 md:border md:border-t-0 md:order-3">
-        <Progress
-          formatter={(v) => v}
-          value={currentIx}
-          max={data.learningElement?.instances?.length ?? 0}
-        />
-      </div>
-    </div>
+    </Layout>
   )
 }
 

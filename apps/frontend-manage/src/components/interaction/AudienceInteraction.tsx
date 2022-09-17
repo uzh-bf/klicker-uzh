@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
@@ -11,8 +13,6 @@ import {
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { push } from '@socialgouv/matomo-next'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
@@ -67,7 +67,7 @@ function AudienceInteraction({
                 target="_blank"
               >
                 <Button className="h-10 px-4">
-                  <Button.Icon className='mr-1'>
+                  <Button.Icon className="mr-1">
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
                   <Button.Label>Dozierendenansicht</Button.Label>

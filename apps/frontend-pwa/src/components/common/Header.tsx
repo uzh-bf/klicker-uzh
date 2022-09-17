@@ -8,26 +8,34 @@ interface HeaderProps {
   participant?: Participant
   title?: string
   courseName?: string
+  courseColor?: string
 }
 
-const defaultProps = { title: undefined }
+const defaultProps = {
+  title: undefined,
+  courseColor: undefined,
+}
 
 function Header({
   participant,
   title,
   courseName,
+  courseColor,
 }: HeaderProps): React.ReactElement {
   return (
-    <div className="flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800">
+    <div
+      style={{ borderColor: courseColor ?? 'green' }}
+      className="flex flex-row items-center justify-between h-16 px-4 text-white border-b-8 bg-slate-800"
+    >
       {title && courseName && (
         <div>
-          <H1 className="m-0 text-sm font-normal text-uzh-grey-60">
-            {courseName}
-          </H1>
+          <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>
           <H2 className="m-0 text-base">{title}</H2>
         </div>
       )}
+
       {title && !courseName && <H1 className="text-lg">{title}</H1>}
+
       <div className="flex flex-row items-center gap-4">
         <Link href="/">
           <Button className="hidden text-white bg-slate-800 md:block">

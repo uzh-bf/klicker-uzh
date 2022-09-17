@@ -13,7 +13,6 @@ import { Field, Form, Formik } from 'formik'
 import localForage from 'localforage'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Oval } from 'react-loader-spinner'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -261,18 +260,7 @@ function FeedbackArea({
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <Button.Label>
-                    <Oval
-                      height={20}
-                      width={20}
-                      color="#0028a5"
-                      visible={true}
-                      ariaLabel="oval-loading"
-                      secondaryColor="#99a9db"
-                      strokeWidth={5}
-                      strokeWidthSecondary={5}
-                    />
-                  </Button.Label>
+                  <Button.Label>Loading...</Button.Label>
                 ) : (
                   <Button.Label>Absenden</Button.Label>
                 )}

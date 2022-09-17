@@ -53,7 +53,7 @@
     "@types/express": "^4.17.13",
     "@types/jest": "^29.0.0",
     "@types/validator": "^13.7.5",
-    "@uzh-bf/design-system": "0.0.39",
+    "@uzh-bf/design-system": "0.0.42",
     "husky": "8.0.1",
     "ioredis": "5.2.3",
     "jest": "29.0.3",

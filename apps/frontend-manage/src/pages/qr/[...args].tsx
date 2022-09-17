@@ -8,10 +8,10 @@ interface Props {
 }
 
 const defaultProps = {
-  width: 334
+  width: 334,
 }
 
-export function QR({ path , width }: Props): React.ReactElement {
+export function QR({ path, width }: Props): React.ReactElement {
   return (
     <QRCode
       logoHeight={width / 3.34}
@@ -30,7 +30,7 @@ export const getStaticProps: GetStaticProps = function ({ params }) {
 
   return {
     props: {
-      path: `/${args.join('/')}`
+      path: `/${args.join('/')}`,
     },
   }
 }
