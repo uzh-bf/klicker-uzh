@@ -431,9 +431,9 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  username       String @unique
+  username       String  @unique
   password       String
-  avatar         String @default("placeholder.png")
+  avatar         String?
   avatarSettings Json?
 
   lastLoginAt DateTime?
