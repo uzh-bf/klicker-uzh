@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2022-09-17)
+
+
+### Deployment
+
+* add initial HPA for new prod deployment ([e04a2eb](https://github.com/uzh-bf/klicker-uzh/commit/e04a2ebba0e1a7edfbd6bc2fd83c107a162dd0ef))
+* use double domains for production v2 deploy ([eda8b84](https://github.com/uzh-bf/klicker-uzh/commit/eda8b8471b76a9905099c95975f73195b7d8548d))
+
+
+### Enhancements
+
+* add dynamic redirect after login in PWA ([3cbce1c](https://github.com/uzh-bf/klicker-uzh/commit/3cbce1cbcaaf0284811e53255d5df39bbe4b1114))
+
 ## [2.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.28...v2.0.0-alpha.29) (2022-09-17)
 
 
