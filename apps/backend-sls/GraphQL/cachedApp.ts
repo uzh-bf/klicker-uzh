@@ -17,15 +17,15 @@ function getCachedApp() {
       tls: process.env.REDIS_TLS ? {} : undefined,
     })
 
-    const redisCache = new Redis({
-      family: 4,
-      host: process.env.REDIS_CACHE_HOST ?? 'localhost',
-      password: process.env.REDIS_CACHE_PASS ?? '',
-      port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
-      tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
-    })
+    // const redisCache = new Redis({
+    //   family: 4,
+    //   host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+    //   password: process.env.REDIS_CACHE_PASS ?? '',
+    //   port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    //   tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
+    // })
 
-    const app = prepareApp({ prisma, redisCache, redisExec })
+    const app = prepareApp({ prisma, redisExec })
 
     cachedServerlessExpress = serverlessExpress({ app })
   }

@@ -1,4 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { useParserCache } from '@envelop/parser-cache'
+import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import { createServer, Plugin } from '@graphql-yoga/node'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
@@ -73,8 +75,8 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       //     return ctx.user ? ctx.user.sub : null
       //   },
       // }),
-      // useValidationCache(),
-      // useParserCache(),
+      useValidationCache(),
+      useParserCache(),
       // // useGraphQlJit(),
       // process.env.HIVE_TOKEN
       //   ? useHive({
