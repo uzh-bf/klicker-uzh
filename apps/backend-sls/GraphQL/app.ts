@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useParserCache } from '@envelop/parser-cache'
-import { useResponseCache } from '@envelop/response-cache'
+import { Cache, useResponseCache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
@@ -14,7 +14,7 @@ import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './graphql/authorization'
 
 function prepareApp({ prisma, redisCache, redisExec }: any) {
-  let cache = undefined
+  let cache: Cache | undefined = undefined
   if (redisCache) {
     try {
       cache = createRedisCache({ redis: redisCache })

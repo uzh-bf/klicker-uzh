@@ -10,7 +10,7 @@ releases:
       - values.yaml
       - frontendPWA:
           image:
-            tag: v2.0.0-alpha.29
+            tag: v2.0.0-alpha.30
         frontendManage:
           image:
-            tag: v2.0.0-alpha.29
+            tag: v2.0.0-alpha.30
