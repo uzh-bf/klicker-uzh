@@ -1,0 +1,39 @@
+frontendPWA:
+  autoscaling:
+    enabled: true
+
+  hostname: pwa.klicker.uzh.ch
+
+  ingress:
+    hosts:
+      - host: pwa.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-pwa-tls
+        hosts:
+          - pwa.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
+
+frontendManage:
+  autoscaling:
+    enabled: true
+
+  hostname: manage.klicker.uzh.ch
+
+  ingress:
+    hosts:
+      - host: manage.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-manage-tls
+        hosts:
+          - manage.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
