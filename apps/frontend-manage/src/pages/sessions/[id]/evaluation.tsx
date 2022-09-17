@@ -12,7 +12,6 @@ interface Tab {
 
 function Evaluation() {
   const router = useRouter()
-  const [currentData, setCurrentData] = useState<any>(() => undefined)
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
