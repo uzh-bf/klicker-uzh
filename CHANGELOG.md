@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.27...v2.0.0-alpha.28) (2022-09-17)
+
+
+### Other
+
+* **packages/graphql:** improve queries to ensure ids are included ([30d9819](https://github.com/uzh-bf/klicker-uzh/commit/30d981941264d7cbacb2579829847a249a49be54))
+
+
+### Enhancements
+
+* **apps/frontend-*:** ensure all headers contain name, course name, color; update favicons ([ae6e68d](https://github.com/uzh-bf/klicker-uzh/commit/ae6e68d8caffb6de8927a6fa3b9379b40cd1579f))
+* **apps/frontend-pwa:** improve PWA layout and ensure course color is displayed ([137a288](https://github.com/uzh-bf/klicker-uzh/commit/137a2882ac5893847310641cd629d0b0623b44c4))
+
 ## [2.0.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.26...v2.0.0-alpha.27) (2022-09-17)
 
 
