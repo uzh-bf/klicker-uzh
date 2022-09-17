@@ -13,7 +13,7 @@ async function main() {
       AVATAR_OPTIONS.mouth.forEach((mouth) => {
         AVATAR_OPTIONS.hair.forEach((hair) => {
           AVATAR_OPTIONS.facialHair.forEach((facialHair) => {
-            AVATAR_OPTIONS.body.forEach((body) => {
+            ['dress', 'shirt', 'dressShirt'].forEach((clothing) => {
               AVATAR_OPTIONS.accessory.forEach((accessory) => {
                 AVATAR_OPTIONS.hairColor.forEach((hairColor) => {
                   AVATAR_OPTIONS.clothingColor.forEach((clothingColor) => {
@@ -23,7 +23,7 @@ async function main() {
                       mouth,
                       hair,
                       facialHair,
-                      body,
+                      body: 'chest',
                       accessory,
                       hairColor,
                       clothingColor,
@@ -31,7 +31,7 @@ async function main() {
                       faceMask: false,
                       lashes: false,
                       mask: false,
-                      clothing: 'shirt',
+                      clothing,
                       graphic: 'none',
                       hat: 'none',
                     } as any
@@ -42,27 +42,27 @@ async function main() {
                       React.createElement(BigHead, definition)
                     )
 
-                    const promises = Promise.all([
-                      sharp(Buffer.from(avatarString))
-                        .resize({
-                          height: 200,
-                        })
-                        .webp({
-                          lossless: true,
-                        })
-                        .toFile(`public/avatars/${hashedProps}.webp`),
-                      sharp(Buffer.from(avatarString))
-                        .resize({
-                          height: 50,
-                        })
-                        .webp({
-                          lossless: true,
-                        })
-                        .toFile(`public/avatars/${hashedProps}_small.webp`),
-                    ])
+                    // const promises = Promise.all([
+                    //   sharp(Buffer.from(avatarString))
+                    //     .resize({
+                    //       height: 200,
+                    //     })
+                    //     .webp({
+                    //       lossless: true,
+                    //     })
+                    //     .toFile(`public/avatars/${hashedProps}.webp`),
+                    //   sharp(Buffer.from(avatarString))
+                    //     .resize({
+                    //       height: 50,
+                    //     })
+                    //     .webp({
+                    //       lossless: true,
+                    //     })
+                    //     .toFile(`public/avatars/${hashedProps}_small.webp`),
+                    // ])
 
                     fs.writeFileSync(
-                      `public/avatars/${hashedProps}.svg`,
+                      `public/avatars3/${hashedProps}.svg`,
                       avatarString
                     )
 

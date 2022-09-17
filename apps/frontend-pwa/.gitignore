@@ -42,4 +42,4 @@ public/worker*.js
 
 src/testPush.js
 
-public/avatars
+public/avatars*
