@@ -1,6 +1,6 @@
 frontendPWA:
   autoscaling:
-    enabled: true
+    enabled: false
 
   hostname: pwa.klicker.uzh.ch
 
@@ -20,7 +20,7 @@ frontendPWA:
 
 frontendManage:
   autoscaling:
-    enabled: true
+    enabled: false
 
   hostname: manage.klicker.uzh.ch
 

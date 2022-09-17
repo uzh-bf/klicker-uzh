@@ -8,3 +8,9 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
+      - frontendPWA:
+          image:
+            tag: v2.0.0-alpha.29
+        frontendManage:
+          image:
+            tag: v2.0.0-alpha.29
