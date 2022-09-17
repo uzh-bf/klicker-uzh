@@ -11,7 +11,7 @@ interface LayoutProps {
   children: React.ReactNode
   displayName?: string
   courseName?: string
-  courseColor?: string
+  courseColor?: string | null
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string

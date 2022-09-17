@@ -1,15 +1,16 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
-import Image from 'next/image'
+import Image from 'next/future/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
   participant?: Participant
   title?: string
   courseName?: string
-  courseColor?: string
+  courseColor?: string | null
 }
 
 const defaultProps = {
@@ -26,9 +27,10 @@ function Header({
   const router = useRouter()
   return (
     <div
-      style={{ borderColor: courseColor ?? 'green' }}
-      className="flex flex-row items-center justify-between h-16 px-4 text-white border-b-8 bg-slate-800"
+      style={{ borderColor: courseColor || undefined }}
+      className={twMerge("flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800", courseColor && 'border-b-8')}
     >
+
       {title && courseName && (
         <div>
           <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>
@@ -36,7 +38,7 @@ function Header({
         </div>
       )}
 
-      {title && !courseName && <H1 className="text-lg">{title}</H1>}
+      {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
 
       <div className="flex flex-row items-center gap-4">
         {participant ? (

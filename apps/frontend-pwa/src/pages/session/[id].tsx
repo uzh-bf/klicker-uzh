@@ -108,6 +108,7 @@ function Index({
     <Layout
       displayName={displayName}
       courseName={course?.displayName}
+      courseColor={course?.color}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}

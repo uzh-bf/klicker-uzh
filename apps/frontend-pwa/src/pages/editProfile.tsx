@@ -128,6 +128,23 @@ const EditProfile: NextPageWithLayout = () => {
 
               <Form>
                 <div className="mt-4 space-y-2">
+                <div className="mb-4">
+                    <Button
+                      fluid
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      Save
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <UserNotification
+                      notificationType="error"
+                      message="Please choose a different username."
+                    />
+                  )}
+
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
                       <p className="font-bold">Benutzername</p>
@@ -292,22 +309,7 @@ const EditProfile: NextPageWithLayout = () => {
                     </div>
                   </div>
 
-                  <div className="pt-4">
-                    <Button
-                      fluid
-                      type="submit"
-                      disabled={isSubmitting || !isValid}
-                    >
-                      Save
-                    </Button>
-                  </div>
 
-                  {error && (
-                    <UserNotification
-                      notificationType="error"
-                      message="Please choose a different username."
-                    />
-                  )}
                 </div>
               </Form>
             </div>

@@ -41,7 +41,7 @@ function MicroSessionIntroduction() {
     <Layout
       displayName={data.microSession.displayName}
       courseName={data.microSession.course.displayName}
-      mobileMenuItems={[]}
+      courseColor={data.microSession.course.color}
     >
       <div className="flex flex-col w-full md:p-8 md:w-full md:border md:rounded md:max-w-3xl md:m-auto">
         <Prose className="max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current">

@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
+import Image from 'next/future/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 

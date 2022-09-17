@@ -84,7 +84,7 @@ function MicroSessionInstance() {
     <Layout
       displayName={data.microSession.displayName}
       courseName={data.microSession.course.displayName}
-      mobileMenuItems={[]}
+      courseColor={data.microSession.course.color}
     >
       <div className="flex flex-col md:max-w-5xl md:m-auto md:w-full">
         <div className="order-2 pt-0 md:p-8 md:border md:border-b-0 md:pt-8 md:order-2 md:rounded-t">
