@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.28...v2.0.0-alpha.29) (2022-09-17)
+
+
+### Deployment
+
+* create separate actions workflow for production and qa images ([1cef351](https://github.com/uzh-bf/klicker-uzh/commit/1cef3514879d833530421c5e676556117b0fadfc))
+* ensure that .env.qa in frontend-manage build action is renamed correctly ([4127e06](https://github.com/uzh-bf/klicker-uzh/commit/4127e06b128ead844210e09a5135ace8705955db))
+* improve restrictions on when actions are run ([1c94b3a](https://github.com/uzh-bf/klicker-uzh/commit/1c94b3ac26a69e39e70337141872d067abcd8b59))
+
 ## [2.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.27...v2.0.0-alpha.28) (2022-09-17)
 
 
