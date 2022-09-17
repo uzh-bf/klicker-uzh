@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.30...v2.0.0-alpha.31) (2022-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** always use chest as body type ([12b332e](https://github.com/uzh-bf/klicker-uzh/commit/12b332e1bdd3a85dbcf88aaef68190fe315d34e4))
+
+
+### Deployment
+
+* update tag for production deploy ([d7ba94d](https://github.com/uzh-bf/klicker-uzh/commit/d7ba94d01254eecec884a091e5e01b782ff01c6e))
+
+
+### Other
+
+* **apps/backend-sls:** improve tests with extended matchers ([222d6a7](https://github.com/uzh-bf/klicker-uzh/commit/222d6a777004c0f45e95ade5b02ef5aaaa1512be))
+* **apps/frontend-pwa:** replace body with clothing in avatar generation script ([71b723b](https://github.com/uzh-bf/klicker-uzh/commit/71b723b872ccbb6ef1c5573de03c321ca858db24))
+* lockfile maintenance ([ea0fe15](https://github.com/uzh-bf/klicker-uzh/commit/ea0fe150452be6e9be12639c542b390ba70e25df))
+
+
+### Enhancements
+
+* add JWT-based verification on LTI registration endpoint ([d1f9800](https://github.com/uzh-bf/klicker-uzh/commit/d1f98000b23c7a0e1a72927bc90f48d567f99927))
+* **apps/backend-responses:** return 200 on GET to the add response endpoint ([40cbf04](https://github.com/uzh-bf/klicker-uzh/commit/40cbf047cce8d6c8f7b97f5b2d46cb74c4dcf241))
+* **apps/backend-sls:** return 200 on GET to the add response endpoint ([d159ef9](https://github.com/uzh-bf/klicker-uzh/commit/d159ef9ef992140c962170b3db193e13bce87fa4))
+* **apps/frontend-pwa:** improve page data fetching logic and use participant token in embeddable pages ([390b4e3](https://github.com/uzh-bf/klicker-uzh/commit/390b4e3eda9d830e07bbf76796340c798ca43c55))
+* **packages/graphql:** improve logic for participant registration from LTI ([4da5ce0](https://github.com/uzh-bf/klicker-uzh/commit/4da5ce0428e993342882a196b3ddd0a6520239d9))
+
 ## [2.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2022-09-17)
 
 
