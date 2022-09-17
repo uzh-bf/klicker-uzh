@@ -31,6 +31,13 @@ const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ) {
+  // immediately return on GET -> healthcheck
+  if (req.method === 'GET') {
+    return {
+      status: 200,
+    }
+  }
+
   return cachedServerlessExpress(context, req, () => {})
 }
 
