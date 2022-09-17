@@ -15,7 +15,7 @@ import {
 
 const redisExec = new Redis({
   family: 4,
-  host: process.env.REDIS_HOST ?? 'localhost',
+  host: process.env.REDIS_HOST,
   password: process.env.REDIS_PASS ?? '',
   port: Number(process.env.REDIS_PORT) ?? 6379,
   tls: process.env.REDIS_TLS ? {} : undefined,

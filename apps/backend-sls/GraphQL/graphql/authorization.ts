@@ -76,6 +76,6 @@ export const AuthSchema = {
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
-    microSession: { __authz: { rules: ['IsParticipant'] } },
+    microSession: { __authz: { rules: ['Allow'] } },
   },
 }
