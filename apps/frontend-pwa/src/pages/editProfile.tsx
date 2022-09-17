@@ -29,7 +29,6 @@ const EditProfile: NextPageWithLayout = () => {
     <Layout>
       <Formik
         validationSchema={yup.object({
-          body: yup.string(),
           // TODO: min and max length of username
           name: yup.string().min(5),
         })}
@@ -63,7 +62,8 @@ const EditProfile: NextPageWithLayout = () => {
             mouth: values.mouth,
             hair: values.hair,
             facialHair: values.facialHair,
-            body: values.body,
+            // body: values.body,
+            body: 'chest',
             accessory: values.accessory,
             hairColor: values.hairColor,
             clothingColor: values.clothingColor,
@@ -137,7 +137,7 @@ const EditProfile: NextPageWithLayout = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-row items-center">
+                  {/* <div className="flex flex-row items-center">
                     <div className="flex-1">
                       <p className="font-bold">Geschlecht</p>
                     </div>
@@ -150,7 +150,7 @@ const EditProfile: NextPageWithLayout = () => {
                         ))}
                       </Field>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
