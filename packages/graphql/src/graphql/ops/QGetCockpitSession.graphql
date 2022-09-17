@@ -12,6 +12,7 @@ query GetCockpitSession($id: ID!) {
     status
     startedAt
     course {
+      id
       displayName
     }
     blocks {

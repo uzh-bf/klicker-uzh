@@ -11,5 +11,8 @@ mutation ChangeSessionSettings(
     isGamificationEnabled: $isGamificationEnabled
   ) {
     id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
   }
 }
