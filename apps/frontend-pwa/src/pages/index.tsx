@@ -23,7 +23,6 @@ import {
 } from '../utils/push'
 
 const Index = function () {
-  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const router = useRouter()
 
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
@@ -48,6 +47,8 @@ const Index = function () {
     skip: pushDisabled === null,
     variables: { endpoint: subscription?.endpoint },
   })
+
+  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
 
   const {
     courses,
@@ -113,7 +114,7 @@ const Index = function () {
           setSubscription(newSubscription)
           subscribeToPush({
             variables: {
-              subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
+              subscriptionObject: newSubscription,
               courseId,
             },
           })

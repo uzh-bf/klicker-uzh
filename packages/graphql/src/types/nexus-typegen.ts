@@ -237,7 +237,7 @@ export interface NexusGenObjects {
     min?: number | null; // Float
   }
   Participant: { // root type
-    avatar: string; // String!
+    avatar?: string | null; // String
     avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     username: string; // String!
@@ -479,7 +479,7 @@ export interface NexusGenFieldTypes {
     respondToFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
-    subscribeToPush: NexusGenRootTypes['PushSubscription'] | null; // PushSubscription
+    subscribeToPush: NexusGenRootTypes['Participation'] | null; // Participation
     updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
@@ -507,7 +507,7 @@ export interface NexusGenFieldTypes {
     min: number | null; // Float
   }
   Participant: { // field return type
-    avatar: string; // String!
+    avatar: string | null; // String
     avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     username: string; // String!
@@ -761,7 +761,7 @@ export interface NexusGenFieldTypeNames {
     respondToFeedback: 'Feedback'
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
-    subscribeToPush: 'PushSubscription'
+    subscribeToPush: 'Participation'
     updateParticipantProfile: 'Participant'
     upvoteFeedback: 'Feedback'
     voteFeedbackResponse: 'FeedbackResponse'

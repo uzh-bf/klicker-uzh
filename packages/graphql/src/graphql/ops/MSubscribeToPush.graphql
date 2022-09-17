@@ -7,9 +7,9 @@ mutation SubscribeToPush(
     subscriptionObject: $subscriptionObject
   ) {
     id
-    endpoint
-    expirationTime
-    p256dh
-    auth
+    subscriptions {
+      id
+      endpoint
+    }
   }
 }

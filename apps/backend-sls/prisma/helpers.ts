@@ -66,7 +66,6 @@ export async function prepareParticipant({
   const data = {
     ...args,
     password: hashedPassword,
-    avatar: '41b98856a8c221db667cf066f34b931eff048c32',
   }
 
   return {

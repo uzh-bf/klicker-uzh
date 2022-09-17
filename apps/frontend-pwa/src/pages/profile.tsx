@@ -55,7 +55,7 @@ const Profile = () => {
           fluid
           onClick={async () => {
             await logoutParticipant()
-            Router.push('https://www.klicker.uzh.ch')
+            Router.replace('/login')
           }}
           className="mt-2"
         >

@@ -2,6 +2,7 @@ import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React from 'react'
 
 interface HeaderProps {
@@ -22,6 +23,7 @@ function Header({
   courseName,
   courseColor,
 }: HeaderProps): React.ReactElement {
+  const router = useRouter()
   return (
     <div
       style={{ borderColor: courseColor ?? 'green' }}
@@ -38,11 +40,13 @@ function Header({
 
       <div className="flex flex-row items-center gap-4">
         {participant ? (
-          <Link href="/">
-            <Button className="hidden text-white bg-slate-800 md:block">
-              Home
-            </Button>
-          </Link>
+          router.pathname !== '/' && (
+            <Link href="/">
+              <Button className="hidden text-white bg-slate-800 md:block">
+                Home
+              </Button>
+            </Link>
+          )
         ) : (
           <Link href="/login">
             <Button className="text-white bg-slate-800">Login</Button>

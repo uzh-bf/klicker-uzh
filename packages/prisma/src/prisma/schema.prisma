@@ -444,8 +444,9 @@ model Participant {
   feedbacks         Feedback[]
   leaderboards      LeaderboardEntry[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  PushSubscription PushSubscription[]
 }
 
 model Participation {
@@ -507,7 +508,10 @@ model PushSubscription {
   participation   Participation @relation(fields: [participationId], references: [id])
   participationId Int
 
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+
   createdAt DateTime @default(now())
 
-  @@unique([courseId, endpoint])
+  @@unique([participantId, courseId, endpoint])
 }

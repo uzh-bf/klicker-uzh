@@ -345,11 +345,11 @@ export const Participant = objectType({
   definition(t) {
     t.nonNull.id('id')
 
-    t.nonNull.string('avatar')
+    t.nonNull.string('username')
+    t.string('avatar')
     t.field('avatarSettings', {
       type: 'JSONObject',
     })
-    t.nonNull.string('username')
   },
 })
 
@@ -1017,7 +1017,7 @@ export const Mutation = objectType({
     })
 
     t.field('subscribeToPush', {
-      type: PushSubscription,
+      type: Participation,
       args: {
         subscriptionObject: nonNull(SubscriptionObjectInput),
         courseId: nonNull(idArg()),

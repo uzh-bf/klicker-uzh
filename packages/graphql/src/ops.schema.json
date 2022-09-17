@@ -3058,7 +3058,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "PushSubscription",
+              "name": "Participation",
               "ofType": null
             },
             "isDeprecated": false,
@@ -3493,13 +3493,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
