@@ -28,6 +28,13 @@ const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ) {
+  // immediately return on GET -> healthcheck
+  if (req.method === 'GET') {
+    return {
+      status: 200,
+    }
+  }
+
   const sessionKey = `s:${req.body.sessionId}`
   const instanceKey = `${sessionKey}:i:${req.body.instanceId}`
   const responseTimestamp = Number(new Date())
