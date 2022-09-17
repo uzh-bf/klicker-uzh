@@ -1,6 +1,7 @@
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { RegisterParticipantFromLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
+import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config'
 import nookies from 'nookies'
@@ -34,13 +35,32 @@ export async function getParticipantToken({
     })
 
     if (request?.body?.lis_person_sourcedid) {
+      // send along a JWT to ensure only the next server is allowed to register participants from LTI
+      const token = JWT.sign(
+        {
+          sub: 'lti-admin',
+          role: 'ADMIN',
+        },
+        serverRuntimeConfig.APP_SECRET,
+        {
+          algorithm: 'HS256',
+          expiresIn: '1h',
+        }
+      )
       const result = await apolloClient.mutate({
         mutation: RegisterParticipantFromLtiDocument,
         variables: {
           courseId: query.courseId as string,
           participantId: request.body.lis_person_sourcedid,
         },
+        context: {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
       })
+
+      // TODO: if the avatar is undefined, the user was newly registered -> redirect to the welcome page after (set avatar and password)
 
       // if a JWT was received from the API, set a cookie in the participant browser
       if (result.data?.registerParticipantFromLTI?.participantToken) {

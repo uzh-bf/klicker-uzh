@@ -10,6 +10,7 @@ releases:
       - values.yaml
       - frontendPWA:
           replicaCount: 1
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
         frontendManage:
           replicaCount: 1

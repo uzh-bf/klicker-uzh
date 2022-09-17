@@ -41,6 +41,7 @@ const nextConfig = withPWA({
   },
   serverRuntimeConfig: {
     APP_DOMAIN: process.env.APP_DOMAIN,
+    APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
 })

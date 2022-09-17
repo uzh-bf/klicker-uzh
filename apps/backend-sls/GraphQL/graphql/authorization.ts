@@ -51,7 +51,7 @@ export const AuthSchema = {
     logoutParticipant: { __authz: { rules: ['IsParticipant'] } },
     pinFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     publishFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
-    registerParticipantFromLTI: { __authz: { rules: ['Allow'] } },
+    registerParticipantFromLTI: { __authz: { rules: ['IsAdmin'] } },
     createCourse: { __authz: { rules: ['IsUserOrAdmin'] } },
     createSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
