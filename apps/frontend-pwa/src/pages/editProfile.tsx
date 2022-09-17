@@ -116,7 +116,7 @@ const EditProfile: NextPageWithLayout = () => {
                 hat="none"
                 graphic="none"
                 accessory={values.accessory}
-                body={values.body}
+                body="chest"
                 skinTone={values.skinTone}
                 clothingColor={values.clothingColor}
                 eyes={values.eyes}
