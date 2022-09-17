@@ -6,12 +6,12 @@ on:
       - "v2"
     paths:
       - "apps/frontend-manage/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-manage**"
   pull_request:
     branches: [ "v2" ]
     paths:
       - "apps/frontend-manage/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-manage**"
 
 env:
   REGISTRY: ghcr.io

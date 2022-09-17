@@ -6,12 +6,12 @@ on:
       - "v2"
     paths:
       - "apps/frontend-pwa/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-pwa**"
   pull_request:
     branches: [ "v2" ]
     paths:
       - "apps/frontend-pwa/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-pwa**"
 
 env:
   REGISTRY: ghcr.io

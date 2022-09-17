@@ -5,7 +5,7 @@ on:
     tags: [ 'v*.*.*' ]
     paths:
       - "apps/frontend-manage/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-manage**"
 
 env:
   REGISTRY: ghcr.io

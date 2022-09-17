@@ -6,6 +6,7 @@ on:
       - v2
     paths:
       - "apps/frontend-manage/**"
+      - ".github/workflows/v2_frontend-manage**"
   workflow_dispatch:
 
 env:

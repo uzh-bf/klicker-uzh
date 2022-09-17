@@ -5,7 +5,7 @@ on:
     tags: [ 'v*.*.*' ]
     paths:
       - "apps/frontend-pwa/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_frontend-pwa**"
 
 env:
   REGISTRY: ghcr.io

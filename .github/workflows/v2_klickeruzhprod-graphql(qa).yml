@@ -6,7 +6,7 @@ on:
       - "v2"
     paths:
       - "apps/backend-sls/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_klickeruzhprod-graphql**"
   workflow_dispatch:
 
 env:
