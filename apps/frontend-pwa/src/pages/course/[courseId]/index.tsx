@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
+import Image from 'next/future/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -39,12 +39,13 @@ function Participant({
         className
       )}
     >
-      <div className="relative w-6 h-6 border rounded-full">
+      <div className="bg-white border rounded-full">
         <Image
           className="rounded-full"
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
           alt=""
-          layout="fill"
+          height={30}
+          width={30}
         />
       </div>
       <div>{pseudonym}</div>
@@ -97,68 +98,74 @@ function CourseOverview({ course, participation, participant }: any) {
   })
 
   return (
-    <Layout>
-      <div className="space-y-2">
-        <div className="flex flex-col gap-4 md:pt-4 md:items-end md:flex-row">
-          <div className="flex-1 order-2 h-24 border-b-2 md:order-1 bg-uzh-grey-20 border-uzh-blue-100">
-            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-              2.
+    <Layout
+      displayName="Leaderboard"
+      courseName={course.displayName}
+      courseColor={course.color}
+    >
+      <div className="md:m-auto md:max-w-6xl md:p-8 md:border md:rounded">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-4 md:items-end md:flex-row">
+            <div className="flex-1 order-2 h-28 md:border-b-2 md:order-1 bg-uzh-grey-20 md:border-uzh-blue-100">
+              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+                2.
+              </div>
+              <ParticipantOther
+                className="bg-white shadow border-uzh-red-100"
+                pseudonym={participant?.username}
+                avatar={participant?.avatar}
+                points={participation?.points}
+              />
             </div>
-            <ParticipantOther
-              className="bg-white shadow border-uzh-red-100"
-              pseudonym={participant?.username}
-              avatar={participant?.avatar}
-              points={participation?.points}
-            />
-          </div>
-          <div className="flex-1 order-1 border-b-2 md:order-2 h-28 bg-uzh-grey-20 border-uzh-blue-100">
-            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-              1.
+            <div className="flex-1 order-1 h-32 md:border-b-2 md:order-2 bg-uzh-grey-20 md:border-uzh-blue-100">
+              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+                1.
+              </div>
+              <ParticipantOther
+                className="bg-white shadow border-uzh-red-100"
+                pseudonym={participant?.username}
+                avatar={participant?.avatar}
+                points={participation?.points}
+              />
             </div>
-            <ParticipantOther
-              className="bg-white shadow border-uzh-red-100"
-              pseudonym={participant?.username}
-              avatar={participant?.avatar}
-              points={participation?.points}
-            />
-          </div>
-          <div className="flex-1 order-3 h-20 border-b-2 bg-uzh-grey-20 border-uzh-blue-100">
-            <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-              3.
+            <div className="flex-1 order-3 h-24 md:border-b-2 bg-uzh-grey-20 md:border-uzh-blue-100">
+              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
+                3.
+              </div>
+              <ParticipantOther
+                className="bg-white shadow border-uzh-red-100"
+                pseudonym={participant?.username}
+                avatar={participant?.avatar}
+                points={participation?.points}
+              />
             </div>
-            <ParticipantOther
-              className="bg-white shadow border-uzh-red-100"
-              pseudonym={participant?.username}
-              avatar={participant?.avatar}
-              points={participation?.points}
-            />
           </div>
-        </div>
 
-        <div className="pt-8 space-y-2">
-          <ParticipantOther
-            pseudonym={participant?.username}
-            avatar={participant?.avatar}
-            points={participation?.points}
-          />
-          <ParticipantOther
-            pseudonym={participant?.username}
-            avatar={participant?.avatar}
-            points={participation?.points}
-          />
-          <ParticipantSelf
-            isActive={participation?.isActive}
-            pseudonym={participant?.username}
-            avatar={participant?.avatar}
-            points={participation?.points}
-            onJoinCourse={joinCourse}
-            onLeaveCourse={leaveCourse}
-          />
-          <ParticipantOther
-            pseudonym={participant?.username}
-            avatar={participant?.avatar}
-            points={participation?.points}
-          />
+          <div className="pt-8 space-y-2">
+            <ParticipantOther
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+            <ParticipantOther
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+            <ParticipantSelf
+              isActive={participation?.isActive}
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+              onJoinCourse={joinCourse}
+              onLeaveCourse={leaveCourse}
+            />
+            <ParticipantOther
+              pseudonym={participant?.username}
+              avatar={participant?.avatar}
+              points={participation?.points}
+            />
+          </div>
         </div>
       </div>
     </Layout>

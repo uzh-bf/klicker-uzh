@@ -213,7 +213,7 @@ type Mutation {
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
-  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): PushSubscription
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -246,7 +246,7 @@ type NumericalSolutionRange {
 }
 
 type Participant {
-  avatar: String!
+  avatar: String
   avatarSettings: JSONObject
   id: ID!
   username: String!

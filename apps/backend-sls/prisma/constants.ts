@@ -206,7 +206,7 @@ export const MICRO_SESSIONS = [
     name: 'BF1 VL1',
     displayName: 'Banking und Finance I - VL1',
     scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
-    scheduledEndAt: new Date('2022-09-17:00:00.000Z'),
+    scheduledEndAt: new Date('2022-09-19:12:00.000Z'),
     description: `
 Diese Woche lernen wir...
 

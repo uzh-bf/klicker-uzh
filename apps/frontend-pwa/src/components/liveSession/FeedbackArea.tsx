@@ -13,7 +13,6 @@ import { Field, Form, Formik } from 'formik'
 import localForage from 'localforage'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Oval } from 'react-loader-spinner'
 
 import PublicFeedback from './PublicFeedback'
 
@@ -261,18 +260,7 @@ function FeedbackArea({
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <Button.Label>
-                    <Oval
-                      height={20}
-                      width={20}
-                      color="#0028a5"
-                      visible={true}
-                      ariaLabel="oval-loading"
-                      secondaryColor="#99a9db"
-                      strokeWidth={5}
-                      strokeWidthSecondary={5}
-                    />
-                  </Button.Label>
+                  <Button.Label>Loading...</Button.Label>
                 ) : (
                   <Button.Label>Absenden</Button.Label>
                 )}
@@ -282,41 +270,44 @@ function FeedbackArea({
         </Formik>
       </div>
 
-      <div className="mb-8 text-sm">
-        <H3 className="-mb-4">Speed</H3>
-        <div className="w-full mb-6">
-          <Slider
-            disabled={!isConfusionEnabled}
-            handleChange={(newValue: any): Promise<void> =>
-              onNewConfusionTS(newValue, 'speed')
-            }
-            icons={speedIcons}
-            labels={speedLabels}
-            value={confusionSpeed}
-            rangeColorMap={RANGE_COLOR_MAP}
-            borderColorMap={BORDER_COLOR_MAP}
-            min={-2}
-            max={2}
-            step={1}
-          />
+      <div className="mb-8 space-y-6 text-sm">
+        <div className="">
+          <H3 className="mb-0">Geschwindigkeit</H3>
+          <div className="w-full -mt-8">
+            <Slider
+              disabled={!isConfusionEnabled}
+              handleChange={(newValue: any): Promise<void> =>
+                onNewConfusionTS(newValue, 'speed')
+              }
+              icons={speedIcons}
+              labels={speedLabels}
+              value={confusionSpeed}
+              rangeColorMap={RANGE_COLOR_MAP}
+              borderColorMap={BORDER_COLOR_MAP}
+              min={-2}
+              max={2}
+              step={1}
+            />
+          </div>
         </div>
-
-        <H3 className="-mb-4">Difficulty</H3>
-        <div className="w-full mb-6">
-          <Slider
-            disabled={!isConfusionEnabled}
-            handleChange={(newValue: any): Promise<void> =>
-              onNewConfusionTS(newValue, 'difficulty')
-            }
-            icons={difficultyIcons}
-            labels={difficultyLabels}
-            value={confusionDifficulty}
-            rangeColorMap={RANGE_COLOR_MAP}
-            borderColorMap={BORDER_COLOR_MAP}
-            min={-2}
-            max={2}
-            step={1}
-          />
+        <div>
+          <H3 className="mb-0">Schwierigkeit</H3>
+          <div className="w-full -mt-5">
+            <Slider
+              disabled={!isConfusionEnabled}
+              handleChange={(newValue: any): Promise<void> =>
+                onNewConfusionTS(newValue, 'difficulty')
+              }
+              icons={difficultyIcons}
+              labels={difficultyLabels}
+              value={confusionDifficulty}
+              rangeColorMap={RANGE_COLOR_MAP}
+              borderColorMap={BORDER_COLOR_MAP}
+              min={-2}
+              max={2}
+              step={1}
+            />
+          </div>
         </div>
       </div>
 
@@ -324,7 +315,7 @@ function FeedbackArea({
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
-              <H3>Open Questions</H3>
+              <H3>Offene Fragen</H3>
               {openFeedbacks.map((feedback) =>
                 feedback ? (
                   <PublicFeedback
@@ -340,7 +331,7 @@ function FeedbackArea({
 
           {resolvedFeedbacks && resolvedFeedbacks.length > 0 && (
             <div className="mb-4">
-              <H3>Resolved Questions</H3>
+              <H3>Erledigte Fragen</H3>
               {resolvedFeedbacks
                 .sort((feedback1, feedback2) =>
                   feedback1 && feedback2

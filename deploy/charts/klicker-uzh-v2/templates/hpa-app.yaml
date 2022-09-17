@@ -1,0 +1,57 @@
+{{- if .Values.frontendPWA.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "chart.fullname" . }}-frontend-pwa
+  minReplicas: {{ .Values.frontendPWA.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.frontendPWA.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.frontendPWA.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.frontendPWA.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.frontendManage.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-manage
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "chart.fullname" . }}-frontend-manage
+  minReplicas: {{ .Values.frontendManage.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.frontendManage.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.frontendManage.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.frontendManage.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

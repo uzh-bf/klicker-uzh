@@ -1,4 +1,5 @@
 @import 'tailwindcss/src/css/preflight.css';
+@import '@uzh-bf/design-system/dist/fonts-thesans.css';
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @tailwind base;

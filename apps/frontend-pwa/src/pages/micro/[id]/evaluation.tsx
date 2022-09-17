@@ -19,7 +19,7 @@ function Evaluation() {
     <Layout
       displayName={data.microSession.displayName}
       courseName={data.microSession.course.displayName}
-      mobileMenuItems={[]}
+      courseColor={data.microSession.course.color}
     >
       <div className="md:max-w-5xl md:m-auto md:p-4 md:w-full md:border md:rounded">
         hello world

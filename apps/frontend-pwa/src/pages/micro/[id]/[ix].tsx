@@ -84,10 +84,10 @@ function MicroSessionInstance() {
     <Layout
       displayName={data.microSession.displayName}
       courseName={data.microSession.course.displayName}
-      mobileMenuItems={[]}
+      courseColor={data.microSession.course.color}
     >
-      <div className="md:max-w-5xl md:m-auto md:w-full">
-        <div className="order-2 pt-0 md:p-4 md:border md:border-b-0 md:pt-4 md:order-2 md:rounded-t">
+      <div className="flex flex-col md:max-w-5xl md:m-auto md:w-full">
+        <div className="order-2 pt-0 md:p-8 md:border md:border-b-0 md:pt-8 md:order-2 md:rounded-t">
           {questionData && (
             <div className="flex flex-col gap-4 md:flex-row">
               <div className="flex-1 basis-2/3">
@@ -121,7 +121,7 @@ function MicroSessionInstance() {
           )}
         </div>
 
-        <div className="order-1 pb-4 md:p-4 md:pt-0 md:border md:border-t-0 md:order-3 md:rounded-b">
+        <div className="order-1 pb-4 md:p-8 md:pt-0 md:border md:border-t-0 md:order-3 md:rounded-b">
           <Progress
             isMaxVisible
             formatter={(v) => v}

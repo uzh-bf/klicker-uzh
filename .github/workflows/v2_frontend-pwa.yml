@@ -1,4 +1,4 @@
-name: Build and deploy frontend-pwa to Vercel
+name: Build and deploy frontend-pwa to Vercel (Development)
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - v2
     paths:
       - "apps/frontend-pwa/**"
+      - ".github/workflows/v2_frontend-pwa**"
   workflow_dispatch:
 
 env:

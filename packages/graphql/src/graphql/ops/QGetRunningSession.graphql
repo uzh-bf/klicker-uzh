@@ -11,7 +11,9 @@ query GetRunningSession($id: ID!) {
     displayName
     status
     course {
+      id
       displayName
+      color
     }
     activeBlock {
       id

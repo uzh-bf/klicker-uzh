@@ -72,19 +72,17 @@ function Ellipsis({
   // return shortened content including tooltip with full content (if not explicitely disabled)
   return (
     <span>
-      {withoutPopup ? (
-        shortenedParsedContent
-      ) : (
-        // TODO: readd content with tooltip
-        // <CustomTooltip
-        //   tooltip={parsedContent}
-        //   tooltipStyle={'!opacity-100 text-sm max-w-[50%] md:max-w-[60%]'}
-        //   withArrow={false}
-        // >
-        //   {shortenedParsedContent}
-        // </CustomTooltip>
-        shortenedParsedContent
-      )}
+      {withoutPopup
+        ? shortenedParsedContent
+        : // TODO: readd content with tooltip
+          // <CustomTooltip
+          //   tooltip={parsedContent}
+          //   tooltipStyle={'!opacity-100 text-sm max-w-[50%] md:max-w-[60%]'}
+          //   withArrow={false}
+          // >
+          //   {shortenedParsedContent}
+          // </CustomTooltip>
+          shortenedParsedContent}
     </span>
   )
 }

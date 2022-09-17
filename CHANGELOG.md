@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2022-09-17)
+
+
+### Deployment
+
+* add initial HPA for new prod deployment ([e04a2eb](https://github.com/uzh-bf/klicker-uzh/commit/e04a2ebba0e1a7edfbd6bc2fd83c107a162dd0ef))
+* use double domains for production v2 deploy ([eda8b84](https://github.com/uzh-bf/klicker-uzh/commit/eda8b8471b76a9905099c95975f73195b7d8548d))
+
+
+### Enhancements
+
+* add dynamic redirect after login in PWA ([3cbce1c](https://github.com/uzh-bf/klicker-uzh/commit/3cbce1cbcaaf0284811e53255d5df39bbe4b1114))
+
+## [2.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.28...v2.0.0-alpha.29) (2022-09-17)
+
+
+### Deployment
+
+* create separate actions workflow for production and qa images ([1cef351](https://github.com/uzh-bf/klicker-uzh/commit/1cef3514879d833530421c5e676556117b0fadfc))
+* ensure that .env.qa in frontend-manage build action is renamed correctly ([4127e06](https://github.com/uzh-bf/klicker-uzh/commit/4127e06b128ead844210e09a5135ace8705955db))
+* improve restrictions on when actions are run ([1c94b3a](https://github.com/uzh-bf/klicker-uzh/commit/1c94b3ac26a69e39e70337141872d067abcd8b59))
+
+## [2.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.27...v2.0.0-alpha.28) (2022-09-17)
+
+
+### Other
+
+* **packages/graphql:** improve queries to ensure ids are included ([30d9819](https://github.com/uzh-bf/klicker-uzh/commit/30d981941264d7cbacb2579829847a249a49be54))
+
+
+### Enhancements
+
+* **apps/frontend-*:** ensure all headers contain name, course name, color; update favicons ([ae6e68d](https://github.com/uzh-bf/klicker-uzh/commit/ae6e68d8caffb6de8927a6fa3b9379b40cd1579f))
+* **apps/frontend-pwa:** improve PWA layout and ensure course color is displayed ([137a288](https://github.com/uzh-bf/klicker-uzh/commit/137a2882ac5893847310641cd629d0b0623b44c4))
+
+## [2.0.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.26...v2.0.0-alpha.27) (2022-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** add vapid public key to env ([4ee31c0](https://github.com/uzh-bf/klicker-uzh/commit/4ee31c08420cdbb1c77e272b776543e178370473))
+* **apps/frontend-pwa:** inject thesans font declarations and preload the fonts ([40bcd80](https://github.com/uzh-bf/klicker-uzh/commit/40bcd803be615cda5b0e85c3fa7d77dfdc1e08e8))
+
+
+### Other
+
+* **apps/backend-sls:** ensure seeded microlearning is active for testing ([12cc7f0](https://github.com/uzh-bf/klicker-uzh/commit/12cc7f03dbb41ed4003095e7b265ebcc79f01e3c))
+* **apps/frontend-pwa:** hardcoded chest for avatar ([7be0a84](https://github.com/uzh-bf/klicker-uzh/commit/7be0a8435481194b22f654a6ebd1af3221db4bd8))
+* lockfile maintenance ([ccde59c](https://github.com/uzh-bf/klicker-uzh/commit/ccde59cda4dedcdfb2670bf2e325147e10315e64))
+* upgrade design system and reformat ([6a8ab48](https://github.com/uzh-bf/klicker-uzh/commit/6a8ab48ea9bdaf1757bf538a4174d150babcdaf7))
+
+
+### Deployment
+
+* **env-prod-v2:** create initial deployment config for production env ([b649c1c](https://github.com/uzh-bf/klicker-uzh/commit/b649c1c1c055954277fb1d4d46b91374b7a9f2ab))
+
+
+### Dependencies
+
+* upgrade to latest design system package ([dd6aec1](https://github.com/uzh-bf/klicker-uzh/commit/dd6aec1f59b13e15ffcd94eb946a33303d0c7ded))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** miscellaneous layouting improvements ([b22de24](https://github.com/uzh-bf/klicker-uzh/commit/b22de24e8999e9c47434eeb96c3c290e0a7eb7fb))
+* improve logic for subscribe to push, make avatar optional ([7526810](https://github.com/uzh-bf/klicker-uzh/commit/7526810821aeb2c788c04f00abbd2c3e718c4fd4))
+* **packages/prisma:** make the avatar optional and unset per default ([658e9b6](https://github.com/uzh-bf/klicker-uzh/commit/658e9b6c9735fc8b31ca80e55871bd9e905a5bb6))
+
 ## [2.0.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.25...v2.0.0-alpha.26) (2022-09-16)
 
 

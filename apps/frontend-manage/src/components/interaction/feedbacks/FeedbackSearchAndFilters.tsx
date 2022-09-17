@@ -47,8 +47,8 @@ function FeedbackSearchAndFilters({
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
       <div className="flex flex-row items-center">
-        {withSearch &&
-          'INPUT'
+        {
+          withSearch && 'INPUT'
           // <Input
           //   className="order-1 w-full md:mr-2 md:w-64 md:order-0"
           //   placeholder="Suche..."

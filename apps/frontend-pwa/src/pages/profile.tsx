@@ -33,7 +33,11 @@ const Profile = () => {
 
         <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
           <Image
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`}
+            src={
+              data.self.avatar
+                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`
+                : '/placeholder.png'
+            }
             alt=""
             fill
           />
@@ -51,12 +55,21 @@ const Profile = () => {
           fluid
           onClick={async () => {
             await logoutParticipant()
-            Router.push('https://www.klicker.uzh.ch')
+            Router.replace('/login')
           }}
           className="mt-2"
         >
           Ausloggen
         </Button>
+
+        <div className="mt-8">
+          <Image
+            src="/KlickerLogo.png"
+            width={200}
+            height={60}
+            alt="KlickerUZH Logo"
+          />
+        </div>
       </div>
     </Layout>
   )

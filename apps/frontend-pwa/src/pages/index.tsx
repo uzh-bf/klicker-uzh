@@ -23,7 +23,6 @@ import {
 } from '../utils/push'
 
 const Index = function () {
-  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const router = useRouter()
 
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
@@ -33,6 +32,11 @@ const Index = function () {
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
+
+  const { data, loading, error } = useQuery(ParticipationsDocument, {
+    skip: pushDisabled === null,
+    variables: { endpoint: subscription?.endpoint },
+  })
 
   // This is necessary to make sure navigator is defined
   useEffect(() => {
@@ -44,10 +48,7 @@ const Index = function () {
     })
   }, [])
 
-  const { data, loading, error } = useQuery(ParticipationsDocument, {
-    skip: pushDisabled === null,
-    variables: { endpoint: subscription?.endpoint },
-  })
+  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
 
   const {
     courses,
@@ -113,7 +114,7 @@ const Index = function () {
           setSubscription(newSubscription)
           subscribeToPush({
             variables: {
-              subscriptionObject: JSON.parse(JSON.stringify(newSubscription)),
+              subscriptionObject: newSubscription,
               courseId,
             },
           })
@@ -148,7 +149,7 @@ const Index = function () {
 
   return (
     <Layout>
-      <div className="flex flex-col md:w-full md:max-w-md md:p-4 md:m-auto md:border md:rounded">
+      <div className="flex flex-col md:w-full md:max-w-lg md:p-8 md:m-auto md:border md:rounded">
         <H1 className="text-xl">Aktive Sessions</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}

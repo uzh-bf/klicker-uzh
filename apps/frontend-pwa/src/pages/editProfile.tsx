@@ -29,7 +29,6 @@ const EditProfile: NextPageWithLayout = () => {
     <Layout>
       <Formik
         validationSchema={yup.object({
-          body: yup.string(),
           // TODO: min and max length of username
           name: yup.string().min(5),
         })}
@@ -63,7 +62,8 @@ const EditProfile: NextPageWithLayout = () => {
             mouth: values.mouth,
             hair: values.hair,
             facialHair: values.facialHair,
-            body: values.body,
+            // body: values.body,
+            body: 'chest',
             accessory: values.accessory,
             hairColor: values.hairColor,
             clothingColor: values.clothingColor,
@@ -116,7 +116,7 @@ const EditProfile: NextPageWithLayout = () => {
                 hat="none"
                 graphic="none"
                 accessory={values.accessory}
-                body={values.body}
+                body="chest"
                 skinTone={values.skinTone}
                 clothingColor={values.clothingColor}
                 eyes={values.eyes}
@@ -128,6 +128,23 @@ const EditProfile: NextPageWithLayout = () => {
 
               <Form>
                 <div className="mt-4 space-y-2">
+                  <div className="mb-4">
+                    <Button
+                      fluid
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      Save
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <UserNotification
+                      notificationType="error"
+                      message="Please choose a different username."
+                    />
+                  )}
+
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
                       <p className="font-bold">Benutzername</p>
@@ -137,7 +154,7 @@ const EditProfile: NextPageWithLayout = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-row items-center">
+                  {/* <div className="flex flex-row items-center">
                     <div className="flex-1">
                       <p className="font-bold">Geschlecht</p>
                     </div>
@@ -150,7 +167,7 @@ const EditProfile: NextPageWithLayout = () => {
                         ))}
                       </Field>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
@@ -291,23 +308,6 @@ const EditProfile: NextPageWithLayout = () => {
                       </Field>
                     </div>
                   </div>
-
-                  <div className="pt-4">
-                    <Button
-                      fluid
-                      type="submit"
-                      disabled={isSubmitting || !isValid}
-                    >
-                      Save
-                    </Button>
-                  </div>
-
-                  {error && (
-                    <UserNotification
-                      notificationType="error"
-                      message="Please choose a different username."
-                    />
-                  )}
                 </div>
               </Form>
             </div>

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-responses",
-  "version": "2.0.0-alpha.26",
+  "version": "2.0.0-alpha.30",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "module": "dist/backend-responses.esm.js",
@@ -36,7 +36,7 @@
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
     "@types/supertest": "^2.0.12",
-    "@uzh-bf/design-system": "0.0.39",
+    "@uzh-bf/design-system": "0.0.43",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",
     "husky": "8.0.1",

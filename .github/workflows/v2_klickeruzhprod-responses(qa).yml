@@ -6,7 +6,7 @@ on:
       - "v2"
     paths:
       - "apps/backend-responses/**"
-      - ".github/workflows/**"
+      - ".github/workflows/v2_klickeruzhprod-responses**"
   workflow_dispatch:
 
 env:
