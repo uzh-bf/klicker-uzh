@@ -934,6 +934,7 @@ export async function getEvaluationSession(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  // TODO: maybe filter for blocks that have been executed / contain at least one answer as all others only fill up the evaluation screen
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {

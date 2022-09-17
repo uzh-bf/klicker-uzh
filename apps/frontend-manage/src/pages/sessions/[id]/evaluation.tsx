@@ -4,9 +4,8 @@ import React, { useState } from 'react'
 import Chart from '../../../components/evaluation/Chart'
 // import FeedbackTableChart from '../../../components/interaction/feedbacks/FeedbackTableChart'
 import { useQuery } from '@apollo/client'
-import { GetEvaluationSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetEvaluationSessionDocument, SessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import EvaluationLayout from '../../../components/EvaluationLayout'
-import { BlockList } from 'net'
 
 // export function reduceActiveInstances(
 //   allInstances: any[],
@@ -123,7 +122,8 @@ function Evaluation(): React.ReactElement {
   }
 
   if (activeTab < data.evaluationSession?.blocks.length) {
-    const { TODO } = data.evaluationSession?.blocks[activeTab].instances[activeInstance]
+    const { id, instances, timeLimit } =
+      data.evaluationSession?.blocks[activeTab] || {}
     setIsFeedbackVisible(false)
     setIsConfusionVisible(false)
   } else if (activeTab === data.evaluationSession?.blocks.length) {
@@ -133,7 +133,6 @@ function Evaluation(): React.ReactElement {
     setIsFeedbackVisible(false)
     setIsConfusionVisible(true)
   }
-
 
   const layoutProps = {
     activeInstances,
