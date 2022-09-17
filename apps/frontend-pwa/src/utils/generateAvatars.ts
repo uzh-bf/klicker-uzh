@@ -2,7 +2,6 @@ import fs from 'fs'
 import hash from 'object-hash'
 import React from 'react'
 import RDS from 'react-dom/server'
-import sharp from 'sharp'
 
 import { BigHead } from '@bigheads/core'
 import { AVATAR_OPTIONS } from '../constants.js'
@@ -13,7 +12,7 @@ async function main() {
       AVATAR_OPTIONS.mouth.forEach((mouth) => {
         AVATAR_OPTIONS.hair.forEach((hair) => {
           AVATAR_OPTIONS.facialHair.forEach((facialHair) => {
-            ['dress', 'shirt', 'dressShirt'].forEach((clothing) => {
+            ;['dress', 'shirt', 'dressShirt'].forEach((clothing) => {
               AVATAR_OPTIONS.accessory.forEach((accessory) => {
                 AVATAR_OPTIONS.hairColor.forEach((hairColor) => {
                   AVATAR_OPTIONS.clothingColor.forEach((clothingColor) => {

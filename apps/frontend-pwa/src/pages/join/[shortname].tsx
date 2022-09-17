@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
@@ -58,7 +59,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  if (!result) {
+  if (!result?.data?.runningSessions) {
     return {
       props: {
         isInactive: true,
@@ -67,7 +68,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 
   // if only a single session is running, redirect directly to the corresponding session page
-  if (result.data.runningSessions?.length === 1) {
+  if (result.data.runningSessions.length === 1) {
     return {
       redirect: {
         destination: `/session/${result.data.runningSessions[0].id}`,
@@ -75,6 +76,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     }
   }
+
+  const participantToken = await getParticipantToken({ apolloClient, ctx })
 
   return addApolloState(apolloClient, {
     props: {

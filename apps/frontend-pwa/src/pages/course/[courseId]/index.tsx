@@ -1,17 +1,21 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
+  GetCourseOverviewDataDocument,
   JoinCourseDocument,
   LeaveCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
+import getConfig from 'next/config'
 import Image from 'next/future/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import Layout from '@components/Layout'
-import { addApolloState } from '@lib/apollo'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
+
+const { serverRuntimeConfig } = getConfig()
 
 const PLACEHOLDER_IMG =
   'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
@@ -89,13 +93,23 @@ function ParticipantSelf(props: ParticipantSelfProps) {
   )
 }
 
-function CourseOverview({ course, participation, participant }: any) {
+function CourseOverview({ courseId }: any) {
+  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
+    variables: { courseId },
+  })
+
   const [joinCourse] = useMutation(JoinCourseDocument, {
-    variables: { courseId: course.id },
+    variables: { courseId },
   })
+
   const [leaveCourse] = useMutation(LeaveCourseDocument, {
-    variables: { courseId: course.id },
+    variables: { courseId },
   })
+
+  if (!data?.getCourseOverviewData || loading) return <div>Loading...</div>
+  if (error) return <p>Oh no... {error.message}</p>
+
+  const { course, participant, participation } = data.getCourseOverviewData
 
   return (
     <Layout
@@ -173,11 +187,45 @@ function CourseOverview({ course, participation, participant }: any) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const withNewParticipantToken = await getParticipantToken(ctx)
+  if (typeof ctx.params?.courseId !== 'string') {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
-  return addApolloState(withNewParticipantToken.apolloClient, {
+  const apolloClient = initializeApollo()
+
+  const participantToken = await getParticipantToken({ apolloClient, ctx })
+
+  const result = await apolloClient.query({
+    query: GetCourseOverviewDataDocument,
+    variables: {
+      courseId: ctx.params.courseId as string,
+    },
+    context: participantToken
+      ? {
+          headers: {
+            authorization: `Bearer ${participantToken}`,
+          },
+        }
+      : undefined,
+  })
+
+  if (!result.data.getCourseOverviewData) {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
+
+  return addApolloState(apolloClient, {
     props: {
-      ...withNewParticipantToken.result,
+      courseId: ctx.params.courseId,
     },
   })
 }

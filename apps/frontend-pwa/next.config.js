@@ -3,10 +3,18 @@
 const withPWA = require('next-pwa')({
   dest: 'public',
   skipWaiting: true,
+  dynamicStartUrlRedirect: '/login',
   // disable: process.env.NODE_ENV === 'development',
 })
 
 const nextConfig = withPWA({
+  experimental: {
+    modularizeImports: {
+      ramda: {
+        transform: 'ramda/es/{{member}}',
+      },
+    },
+  },
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,

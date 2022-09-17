@@ -8,11 +8,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import nookies from 'nookies'
 import { useState } from 'react'
 
 const PLACEHOLDER_IMG =
@@ -136,24 +136,23 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  const cookies = nookies.get(ctx)
-
   const apolloClient = initializeApollo()
 
-  try {
-    await apolloClient.query({
-      query: GetLearningElementDocument,
-      variables: { id: ctx.params.id },
-      context: cookies['participant_token']
-        ? {
-            headers: {
-              authorization: `Bearer ${cookies['participant_token']}`,
-            },
-          }
-        : undefined,
-    })
-  } catch (e) {
-    console.error(e)
+  const participantToken = await getParticipantToken({ apolloClient, ctx })
+
+  const result = await apolloClient.query({
+    query: GetLearningElementDocument,
+    variables: { id: ctx.params.id },
+    context: participantToken
+      ? {
+          headers: {
+            authorization: `Bearer ${participantToken}`,
+          },
+        }
+      : undefined,
+  })
+
+  if (!result.data.learningElement) {
     return {
       redirect: {
         destination: '/404',
