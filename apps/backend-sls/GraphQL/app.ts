@@ -1,10 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { useParserCache } from '@envelop/parser-cache'
-import { Cache, useResponseCache } from '@envelop/response-cache'
-import { createRedisCache } from '@envelop/response-cache-redis'
-import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
-import { useHive } from '@graphql-hive/client'
 import { createServer, Plugin } from '@graphql-yoga/node'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
@@ -14,14 +9,14 @@ import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './graphql/authorization'
 
 function prepareApp({ prisma, redisCache, redisExec }: any) {
-  let cache: Cache | undefined = undefined
-  if (redisCache) {
-    try {
-      cache = createRedisCache({ redis: redisCache })
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  // let cache: Cache | undefined = undefined
+  // if (redisCache) {
+  //   try {
+  //     cache = createRedisCache({ redis: redisCache })
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }
 
   const app = express()
 
@@ -64,31 +59,31 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
         rules: Rules,
         authSchema: AuthSchema,
       }),
-      useResponseCache({
-        // set the TTL to 0 to disable response caching by default
-        ttl: process.env.NODE_ENV === 'development' ? 0 : undefined,
-        ttlPerType: {
-          Participant: 60000,
-          // Course: 60000,
-          // LearningElement: 60000,
-          // QuestionInstance: 60000,
-        },
-        cache,
-        session(ctx) {
-          return ctx.user ? ctx.user.sub : null
-        },
-      }),
-      useValidationCache(),
-      useParserCache(),
-      // useGraphQlJit(),
-      process.env.HIVE_TOKEN
-        ? useHive({
-            enabled: true,
-            debug: true,
-            token: process.env.HIVE_TOKEN,
-            usage: true,
-          })
-        : null,
+      // useResponseCache({
+      //   // set the TTL to 0 to disable response caching by default
+      //   ttl: process.env.NODE_ENV === 'development' ? 0 : undefined,
+      //   ttlPerType: {
+      //     Participant: 60000,
+      //     // Course: 60000,
+      //     // LearningElement: 60000,
+      //     // QuestionInstance: 60000,
+      //   },
+      //   cache,
+      //   session(ctx) {
+      //     return ctx.user ? ctx.user.sub : null
+      //   },
+      // }),
+      // useValidationCache(),
+      // useParserCache(),
+      // // useGraphQlJit(),
+      // process.env.HIVE_TOKEN
+      //   ? useHive({
+      //       enabled: true,
+      //       debug: true,
+      //       token: process.env.HIVE_TOKEN,
+      //       usage: true,
+      //     })
+      //   : null,
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec }),
     logging: true,
