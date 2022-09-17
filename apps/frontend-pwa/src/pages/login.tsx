@@ -4,7 +4,7 @@ import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/future/image'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -25,11 +25,23 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function LoginForm() {
+  const router = useRouter()
+
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
   const [oniOS, setOniOS] = useState(false)
   const [onChrome, setOnChrome] = useState(false)
   const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
+
+  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window?.location?.search)
+    const redirectTo = urlParams?.get('redirect_to')
+    if (redirectTo) {
+      setDecodedRedirectPath(decodeURIComponent(redirectTo))
+    }
+  }, [])
 
   useEffect(() => {
     // Check if event is supported
@@ -62,7 +74,9 @@ function LoginForm() {
         resetForm()
       } else {
         console.log('Login successful!', userID)
-        Router.push('/')
+
+        // redirect to the specified redirect path (default: question pool)
+        router.push(decodedRedirectPath)
       }
     } catch (e) {
       console.error(e)

@@ -128,7 +128,7 @@ const EditProfile: NextPageWithLayout = () => {
 
               <Form>
                 <div className="mt-4 space-y-2">
-                <div className="mb-4">
+                  <div className="mb-4">
                     <Button
                       fluid
                       type="submit"
@@ -308,8 +308,6 @@ const EditProfile: NextPageWithLayout = () => {
                       </Field>
                     </div>
                   </div>
-
-
                 </div>
               </Form>
             </div>

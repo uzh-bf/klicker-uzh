@@ -71,7 +71,11 @@ function LearningElement({ courseId, id }: Props) {
   }
 
   return (
-    <Layout displayName={data.learningElement.displayName} courseName={data.learningElement.course.displayName} courseColor={data.learningElement.course.color}>
+    <Layout
+      displayName={data.learningElement.displayName}
+      courseName={data.learningElement.course.displayName}
+      courseColor={data.learningElement.course.color}
+    >
       <div className="flex flex-col max-w-6xl gap-6 m-auto md:p-8 md:border md:rounded">
         <div className="order-2 md:order-1">
           {questionData && (

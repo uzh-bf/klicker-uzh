@@ -9,6 +9,7 @@ import { onError } from '@apollo/client/link/error'
 import { concatPagination } from '@apollo/client/utilities'
 import merge from 'deepmerge'
 import getConfig from 'next/config'
+import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
@@ -22,7 +23,7 @@ const { publicRuntimeConfig } = getConfig()
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
     graphQLErrors.forEach(
-      ({ message, locations, path, extensions, originalError }) =>
+      ({ message, locations, path, extensions, originalError }) => {
         console.log(
           `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
             locations,
@@ -36,6 +37,18 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
             true
           )}, Original: ${originalError}`
         )
+
+        // redirect the user to the login page on errors
+        if (typeof window !== 'undefined' && message === 'Unauthorized!') {
+          Router.push(
+            `/login?expired=true&redirect_to=${
+              encodeURIComponent(
+                window?.location?.pathname + (window?.location?.search ?? '')
+              ) ?? '/'
+            }`
+          )
+        }
+      }
     )
   if (networkError) console.log(`[Network error]: ${networkError}`)
 })

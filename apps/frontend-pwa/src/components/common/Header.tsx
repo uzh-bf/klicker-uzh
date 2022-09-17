@@ -28,9 +28,11 @@ function Header({
   return (
     <div
       style={{ borderColor: courseColor || undefined }}
-      className={twMerge("flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800", courseColor && 'border-b-8')}
+      className={twMerge(
+        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800',
+        courseColor && 'border-b-8'
+      )}
     >
-
       {title && courseName && (
         <div>
           <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>

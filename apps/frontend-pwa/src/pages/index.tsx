@@ -33,6 +33,11 @@ const Index = function () {
     null
   )
 
+  const { data, loading, error } = useQuery(ParticipationsDocument, {
+    skip: pushDisabled === null,
+    variables: { endpoint: subscription?.endpoint },
+  })
+
   // This is necessary to make sure navigator is defined
   useEffect(() => {
     determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
@@ -42,11 +47,6 @@ const Index = function () {
       setSubscription(sub)
     })
   }, [])
-
-  const { data, loading, error } = useQuery(ParticipationsDocument, {
-    skip: pushDisabled === null,
-    variables: { endpoint: subscription?.endpoint },
-  })
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
 

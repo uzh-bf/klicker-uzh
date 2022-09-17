@@ -62,15 +62,14 @@ const Profile = () => {
           Ausloggen
         </Button>
 
-<div className="mt-8">
-<Image
-                  src="/KlickerLogo.png"
-                  width={200}
-                  height={60}
-                  alt="KlickerUZH Logo"
-                />
-</div>
-
+        <div className="mt-8">
+          <Image
+            src="/KlickerLogo.png"
+            width={200}
+            height={60}
+            alt="KlickerUZH Logo"
+          />
+        </div>
       </div>
     </Layout>
   )
