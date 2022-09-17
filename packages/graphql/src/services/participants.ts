@@ -213,14 +213,14 @@ export async function registerParticipantFromLTI(
   { courseId, participantId }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
-  const course = await ctx.prisma.course.findUnique({ where: { id: courseId } })
+  if (!courseId) return null
 
-  if (!course) return null
-
-  let participant = await ctx.prisma.participantAccount.findFirst({
+  let participant = await ctx.prisma.participantAccount.findUnique({
     where: {
-      ssoType: SSOType.LTI,
-      ssoId: participantId,
+      ssoType_ssoId: {
+        ssoType: SSOType.LTI,
+        ssoId: participantId,
+      },
     },
     include: {
       participant: true,
@@ -234,25 +234,20 @@ export async function registerParticipantFromLTI(
   if (!participant) {
     let username
     let password
-    if (process.env.NODE_ENV === 'development') {
-      username = 'tester'
-      password = 'abcd'
-    } else {
-      // generate a random username that can be changed later on
-      username = generatePassword.generate({
-        length: 8,
-        uppercase: true,
-        symbols: false,
-        numbers: true,
-      })
-      // generate a random password that can be changed later on
-      password = generatePassword.generate({
-        length: 16,
-        uppercase: true,
-        symbols: true,
-        numbers: true,
-      })
-    }
+    // generate a random username that can be changed later on
+    username = generatePassword.generate({
+      length: 8,
+      uppercase: true,
+      symbols: false,
+      numbers: true,
+    })
+    // generate a random password that can be changed later on
+    password = generatePassword.generate({
+      length: 16,
+      uppercase: true,
+      symbols: true,
+      numbers: true,
+    })
 
     const hash = await bcrypt.hash(password, 12)
 
@@ -264,6 +259,16 @@ export async function registerParticipantFromLTI(
           create: {
             password: hash,
             username,
+            participations: {
+              create: {
+                isActive: false,
+                course: {
+                  connect: {
+                    id: courseId,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -272,11 +277,27 @@ export async function registerParticipantFromLTI(
       },
     })
   } else {
-    participation = await ctx.prisma.participation.findFirst({
+    participation = await ctx.prisma.participation.upsert({
       where: {
-        courseId,
-        participantId: participant.participantId,
+        courseId_participantId: {
+          courseId,
+          participantId: participant.participantId,
+        },
       },
+      create: {
+        isActive: false,
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participant: {
+          connect: {
+            id: participant.participantId,
+          },
+        },
+      },
+      update: {},
     })
   }
 
@@ -287,6 +308,5 @@ export async function registerParticipantFromLTI(
     participantToken: jwt,
     participant: participant.participant,
     participation,
-    course,
   }
 }
