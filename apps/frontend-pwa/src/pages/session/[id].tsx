@@ -115,7 +115,7 @@ function Index({
       <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
         <div
           className={twMerge(
-            'md:p-4 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden md:overflow-scroll',
+            'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
             isAudienceInteractionActive && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block'
           )}
@@ -155,7 +155,7 @@ function Index({
         {isGamificationEnabled && (
           <div
             className={twMerge(
-              'bg-white hidden min-h-full flex-1 md:p-4',
+              'bg-white hidden min-h-full flex-1 md:p-8',
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
@@ -166,7 +166,7 @@ function Index({
         {isAudienceInteractionActive && (
           <div
             className={twMerge(
-              'md:p-4 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:overflow-scroll md:rounded-lg',
+              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block d:rounded-lg',
               activeMobilePage === 'feedbacks' && 'block'
             )}
           >

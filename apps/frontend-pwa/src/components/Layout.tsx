@@ -60,7 +60,7 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className={twMerge('pt-16 pb-16 md:pb-0 md:h-screen', className)}>
+      <div className={twMerge('pt-16 pb-16 md:pb-0', className)}>
         <div className="fixed top-0 z-10 w-full">
           <Header
             participant={dataParticipant?.self || undefined}

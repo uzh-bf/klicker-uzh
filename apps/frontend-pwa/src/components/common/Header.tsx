@@ -37,29 +37,39 @@ function Header({
       {title && !courseName && <H1 className="text-lg">{title}</H1>}
 
       <div className="flex flex-row items-center gap-4">
-        <Link href="/">
-          <Button className="hidden text-white bg-slate-800 md:block">
-            Home
-          </Button>
-        </Link>
-        {participant?.avatar ? (
+        {participant ? (
+          <Link href="/">
+            <Button className="hidden text-white bg-slate-800 md:block">
+              Home
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/login">
+            <Button className="text-white bg-slate-800">Login</Button>
+          </Link>
+        )}
+        {participant ? (
           <Link href="/profile" className="">
             <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`}
+              src={
+                participant?.avatar
+                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
+                  : '/placeholder.png'
+              }
               alt=""
               width="45"
               height="45"
-              className="bg-white rounded-full cursor-pointer"
+              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
             />
           </Link>
         ) : (
-          <Link href="/login" className="cursor-pointer">
+          <Link href="/login" className="">
             <Image
-              src={'/placeholder.png'}
+              src="/placeholder.png"
               alt=""
               width="45"
               height="45"
-              className="bg-white rounded-full cursor-pointer"
+              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
             />
           </Link>
         )}
