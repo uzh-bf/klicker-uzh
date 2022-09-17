@@ -174,6 +174,14 @@ export interface NexusGenObjects {
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
   }
+  InstanceResults: { // root type
+    blockIx: number; // Int!
+    id: string; // ID!
+    instanceIx: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    results: NexusGenScalars['JSONObject']; // JSONObject!
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+  }
   LeaderboardEntry: { // root type
     avatar?: string | null; // String
     id: string; // ID!
@@ -302,6 +310,10 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
   }
+  SessionEvaluation: { // root type
+    id: string; // ID!
+    instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+  }
   Subscription: { // root type
     endpoint: string; // String!
     id: string; // ID!
@@ -415,6 +427,14 @@ export interface NexusGenFieldTypes {
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
+  }
+  InstanceResults: { // field return type
+    blockIx: number; // Int!
+    id: string; // ID!
+    instanceIx: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    results: NexusGenScalars['JSONObject']; // JSONObject!
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
   LeaderboardEntry: { // field return type
     avatar: string | null; // String
@@ -544,6 +564,7 @@ export interface NexusGenFieldTypes {
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
+    sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
@@ -585,6 +606,10 @@ export interface NexusGenFieldTypes {
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
+  }
+  SessionEvaluation: { // field return type
+    id: string; // ID!
+    instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
   Subscription: { // field return type
     endpoint: string; // String!
@@ -697,6 +722,14 @@ export interface NexusGenFieldTypeNames {
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
+  }
+  InstanceResults: { // field return type name
+    blockIx: 'Int'
+    id: 'ID'
+    instanceIx: 'Int'
+    questionData: 'QuestionData'
+    results: 'JSONObject'
+    status: 'SessionBlockStatus'
   }
   LeaderboardEntry: { // field return type name
     avatar: 'String'
@@ -826,6 +859,7 @@ export interface NexusGenFieldTypeNames {
     runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
+    sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     userProfile: 'User'
     userSessions: 'Session'
@@ -867,6 +901,10 @@ export interface NexusGenFieldTypeNames {
     randomSelection: 'Boolean'
     status: 'SessionBlockStatus'
     timeLimit: 'Int'
+  }
+  SessionEvaluation: { // field return type name
+    id: 'ID'
+    instanceResults: 'InstanceResults'
   }
   Subscription: { // field return type name
     endpoint: 'String'
@@ -1022,6 +1060,9 @@ export interface NexusGenArgTypes {
       shortname: string; // String!
     }
     session: { // args
+      id: string; // ID!
+    }
+    sessionEvaluation: { // args
       id: string; // ID!
     }
     sessionLeaderboard: { // args

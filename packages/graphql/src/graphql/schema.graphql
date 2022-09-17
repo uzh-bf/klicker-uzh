@@ -141,6 +141,15 @@ type InstanceEvaluation {
   feedbacks: [QuestionFeedback!]
 }
 
+type InstanceResults {
+  blockIx: Int!
+  id: ID!
+  instanceIx: Int!
+  questionData: QuestionData!
+  results: JSONObject!
+  status: SessionBlockStatus!
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -287,6 +296,7 @@ type Query {
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
+  sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   userProfile: User
   userSessions: [Session!]
@@ -353,6 +363,11 @@ enum SessionBlockStatus {
   ACTIVE
   EXECUTED
   SCHEDULED
+}
+
+type SessionEvaluation {
+  id: ID!
+  instanceResults: [InstanceResults!]
 }
 
 enum SessionStatus {

@@ -1,0 +1,55 @@
+query GetSessionEvaluation($id: ID!) {
+  sessionEvaluation(id: $id) {
+    id
+    instanceResults {
+      id
+
+      blockIx
+      instanceIx
+      status
+
+      questionData {
+        id
+        name
+        type
+        content
+        contentPlain
+
+        ... on ChoicesQuestionData {
+          options {
+            choices {
+              ix
+              correct
+              feedback
+              value
+            }
+          }
+        }
+
+        ... on NumericalQuestionData {
+          options {
+            restrictions {
+              min
+              max
+            }
+            solutionRanges {
+              min
+              max
+            }
+          }
+        }
+
+        ... on FreeTextQuestionData {
+          options {
+            restrictions {
+              maxLength
+            }
+            solutions
+          }
+        }
+      }
+
+      results
+    }
+  }
+}

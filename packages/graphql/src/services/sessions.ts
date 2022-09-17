@@ -929,3 +929,40 @@ export async function getPinnedFeedbacks(
 
   return reducedSession
 }
+
+export async function getSessionEvaluation(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        where: {
+          status: {
+            in: ['EXECUTED', 'ACTIVE'],
+          },
+        },
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!session) return null
+
+  return {
+    id: `${id}-eval`,
+    instanceResults: session.blocks.flatMap((block, blockIx) =>
+      block.instances.map((instance, instanceIx) => ({
+        id: `${instance.id}-eval`,
+        blockIx,
+        instanceIx,
+        status: block.status,
+        questionData: instance.questionData,
+        results: instance.results,
+      }))
+    ),
+  }
+}

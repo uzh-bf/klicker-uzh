@@ -141,7 +141,7 @@ describe('API', () => {
       .send({
         query: `
         mutation {
-            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [5, 6, 7] }, { questionIds: [8, 9] }]) {
+            createSession(name: "Test Session", courseId: "${courseId}", blocks: [{ questionIds: [9, 5, 6] }, { questionIds: [9] }]) {
                 id
                 status
                 activeBlock {
@@ -325,12 +325,6 @@ describe('API', () => {
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {
-                    "type": "NUMERICAL",
-                  },
-                },
-                Object {
-                  "id": Any<Number>,
-                  "questionData": Object {
                     "type": "FREE_TEXT",
                   },
                 },
@@ -338,6 +332,12 @@ describe('API', () => {
                   "id": Any<Number>,
                   "questionData": Object {
                     "type": "NUMERICAL",
+                  },
+                },
+                Object {
+                  "id": Any<Number>,
+                  "questionData": Object {
+                    "type": "SC",
                   },
                 },
               ],
@@ -593,17 +593,17 @@ describe('API', () => {
           headers: { cookie: `participant_token=${jwt}` },
         }
       )
-      axios.post(
-        process.env.ADD_RESPONSE_URL as string,
-        {
-          instanceId: instances['KPRIM' as any],
-          sessionId: session.id,
-          response: { choices: [2] },
-        },
-        {
-          headers: { cookie: `participant_token=${jwt}` },
-        }
-      )
+      // axios.post(
+      //   process.env.ADD_RESPONSE_URL as string,
+      //   {
+      //     instanceId: instances['KPRIM' as any],
+      //     sessionId: session.id,
+      //     response: { choices: [2] },
+      //   },
+      //   {
+      //     headers: { cookie: `participant_token=${jwt}` },
+      //   }
+      // )
       axios.post(
         process.env.ADD_RESPONSE_URL as string,
         {
@@ -719,7 +719,7 @@ describe('API', () => {
             id: expect.any(String),
             activeBlock: {
               id: expect.any(Number),
-              instances: new Array(2).fill({
+              instances: new Array(1).fill({
                 id: expect.any(Number),
               }),
             },
@@ -739,12 +739,6 @@ describe('API', () => {
                   "id": Any<Number>,
                   "questionData": Object {
                     "type": "SC",
-                  },
-                },
-                Object {
-                  "id": Any<Number>,
-                  "questionData": Object {
-                    "type": "KPRIM",
                   },
                 },
               ],

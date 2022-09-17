@@ -542,6 +542,39 @@ export const Session = objectType({
   },
 })
 
+export const InstanceResults = objectType({
+  name: 'InstanceResults',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.int('blockIx')
+    t.nonNull.int('instanceIx')
+
+    t.nonNull.field('status', {
+      type: SessionBlockStatus,
+    })
+
+    t.nonNull.field('questionData', {
+      type: QuestionData,
+    })
+
+    t.nonNull.field('results', {
+      type: 'JSONObject',
+    })
+  },
+})
+
+export const SessionEvaluation = objectType({
+  name: 'SessionEvaluation',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.list.nonNull.field('instanceResults', {
+      type: InstanceResults,
+    })
+  },
+})
+
 export const LecturerSession = objectType({
   name: 'LecturerSession',
   definition(t) {
@@ -658,6 +691,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.getRunningSession(args, ctx)
+      },
+    })
+
+    t.field('sessionEvaluation', {
+      type: SessionEvaluation,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getSessionEvaluation(args, ctx)
       },
     })
 
