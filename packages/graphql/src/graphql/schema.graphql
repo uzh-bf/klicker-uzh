@@ -153,6 +153,7 @@ scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publicati
 type LeaderboardEntry {
   avatar: String
   id: ID!
+  isSelf: Boolean
   score: Float!
   username: String!
 }
@@ -206,8 +207,8 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): FeedbackResponse
   endSession(id: ID!): Session
-  joinCourse(courseId: ID!): Participation
-  leaveCourse(courseId: ID!): Participation
+  joinCourse(courseId: ID!): ParticipantLearningData
+  leaveCourse(courseId: ID!): ParticipantLearningData
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID

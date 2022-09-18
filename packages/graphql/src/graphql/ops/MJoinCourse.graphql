@@ -1,6 +1,9 @@
 mutation JoinCourse($courseId: ID!) {
   joinCourse(courseId: $courseId) {
     id
-    isActive
+    participation {
+      id
+      isActive
+    }
   }
 }

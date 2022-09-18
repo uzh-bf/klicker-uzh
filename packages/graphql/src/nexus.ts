@@ -394,6 +394,8 @@ export const LeaderboardEntry = objectType({
     t.string('avatar')
 
     t.nonNull.float('score')
+
+    t.boolean('isSelf')
   },
 })
 
@@ -797,7 +799,7 @@ export const Mutation = objectType({
     })
 
     t.field('joinCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },
@@ -807,7 +809,7 @@ export const Mutation = objectType({
     })
 
     t.field('leaveCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },

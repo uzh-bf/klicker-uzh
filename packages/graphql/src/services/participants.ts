@@ -140,7 +140,7 @@ export async function joinCourse(
   { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.participation.upsert({
+  const participation = ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
         courseId,
@@ -164,6 +164,25 @@ export async function joinCourse(
       isActive: true,
     },
   })
+
+  return {
+    id: `${courseId}-${ctx.user.sub}`,
+    participation,
+    // leaderboard: [
+    //   ...top3Entries
+    //     .filter((entry) => entry.participantId !== ctx.user!.sub)
+    //     .map(mapper),
+    //   ...followedEntries.map(mapper),
+    //   participation.isActive &&
+    //     participation.courseLeaderboard?.id && {
+    //       id: participation.courseLeaderboard?.id,
+    //       score: participation.courseLeaderboard?.score,
+    //       username: participation.participant.username,
+    //       avatar: participation.participant.avatar,
+    //       isSelf: true,
+    //     },
+    // ].filter(Boolean),
+  }
 }
 
 interface LeaveCourseArgs {
@@ -174,7 +193,7 @@ export async function leaveCourse(
   { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.participation.update({
+  const participation = ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
@@ -185,6 +204,11 @@ export async function leaveCourse(
       isActive: false,
     },
   })
+
+  return {
+    id: `${courseId}-${ctx.user.sub}`,
+    participation,
+  }
 }
 
 interface GetCourseOverviewDataArgs {
@@ -206,6 +230,7 @@ export async function getCourseOverviewData(
       include: {
         course: true,
         participant: true,
+        courseLeaderboard: true,
       },
     })
 
@@ -221,13 +246,31 @@ export async function getCourseOverviewData(
           in: [],
         },
       },
+      include: {
+        participant: true,
+      },
     })
 
     const top3Entries = await course.leaderboard({
+      where: {
+        participation: {
+          isActive: true,
+        },
+      },
+      include: {
+        participant: true,
+      },
       orderBy: {
         score: 'desc',
       },
       take: 3,
+    })
+
+    const mapper = (entry) => ({
+      id: entry.id,
+      score: entry.score,
+      username: entry.participant.username,
+      avatar: entry.participant.avatar,
     })
 
     if (participation) {
@@ -236,7 +279,20 @@ export async function getCourseOverviewData(
         course: participation.course,
         participant: participation.participant,
         participation,
-        leaderboard: [...top3Entries, ...followedEntries],
+        leaderboard: [
+          ...top3Entries
+            .filter((entry) => entry.participantId !== ctx.user!.sub)
+            .map(mapper),
+          ...followedEntries.map(mapper),
+          participation.isActive &&
+            participation.courseLeaderboard?.id && {
+              id: participation.courseLeaderboard?.id,
+              score: participation.courseLeaderboard?.score,
+              username: participation.participant.username,
+              avatar: participation.participant.avatar,
+              isSelf: true,
+            },
+        ].filter(Boolean),
       }
     }
   }

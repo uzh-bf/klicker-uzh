@@ -296,6 +296,14 @@ export async function respondToQuestionInstance(
                 id: courseId,
               },
             },
+            participation: {
+              connect: {
+                courseId_participantId: {
+                  courseId,
+                  participantId: ctx.user.sub,
+                },
+              },
+            },
           },
           update: {
             score: {

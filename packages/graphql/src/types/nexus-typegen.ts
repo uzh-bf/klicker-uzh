@@ -181,6 +181,7 @@ export interface NexusGenObjects {
   LeaderboardEntry: { // root type
     avatar?: string | null; // String
     id: string; // ID!
+    isSelf?: boolean | null; // Boolean
     score: number; // Float!
     username: string; // String!
   }
@@ -430,6 +431,7 @@ export interface NexusGenFieldTypes {
   LeaderboardEntry: { // field return type
     avatar: string | null; // String
     id: string; // ID!
+    isSelf: boolean | null; // Boolean
     score: number; // Float!
     username: string; // String!
   }
@@ -479,8 +481,8 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
     endSession: NexusGenRootTypes['Session'] | null; // Session
-    joinCourse: NexusGenRootTypes['Participation'] | null; // Participation
-    leaveCourse: NexusGenRootTypes['Participation'] | null; // Participation
+    joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
@@ -719,6 +721,7 @@ export interface NexusGenFieldTypeNames {
   LeaderboardEntry: { // field return type name
     avatar: 'String'
     id: 'ID'
+    isSelf: 'Boolean'
     score: 'Float'
     username: 'String'
   }
@@ -768,8 +771,8 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'FeedbackResponse'
     endSession: 'Session'
-    joinCourse: 'Participation'
-    leaveCourse: 'Participation'
+    joinCourse: 'ParticipantLearningData'
+    leaveCourse: 'ParticipantLearningData'
     loginParticipant: 'ID'
     loginUser: 'ID'
     logoutParticipant: 'ID'

@@ -21,6 +21,7 @@ query GetCourseOverviewData($courseId: ID!) {
       username
       avatar
       score
+      isSelf
     }
   }
 }
