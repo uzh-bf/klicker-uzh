@@ -48,8 +48,8 @@ const EditProfile: NextPageWithLayout = () => {
             data.self.avatarSettings?.accessory ?? AVATAR_OPTIONS.accessory[0],
           hairColor:
             data.self.avatarSettings?.hairColor ?? AVATAR_OPTIONS.hairColor[0],
-          clothing: data.self.avatarSettings?.clothing ??
-          AVATAR_OPTIONS.clothing[0],
+          clothing:
+            data.self.avatarSettings?.clothing ?? AVATAR_OPTIONS.clothing[0],
           clothingColor:
             data.self.avatarSettings?.clothingColor ??
             AVATAR_OPTIONS.clothingColor[0],

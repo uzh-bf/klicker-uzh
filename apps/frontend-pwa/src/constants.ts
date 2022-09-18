@@ -58,7 +58,7 @@ export const AVATAR_LABELS = {
   wink: 'Zwinkern',
   shirt: 'Shirt',
   dressShirt: 'Anzug',
-  dress: 'Kleid'
+  dress: 'Kleid',
 }
 
 export const QUESTION_GROUPS = {

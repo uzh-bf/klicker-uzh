@@ -68,7 +68,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 
   // if only a single session is running, redirect directly to the corresponding session page
+  // or if linkTo is set, redirect to the specified link
   if (result.data.runningSessions.length === 1) {
+    if (result.data.runningSessions[0].linkTo) {
+      return {
+        redirect: {
+          destination: result.data.runningSessions[0].linkTo,
+          permanent: false,
+        },
+      }
+    }
+
     return {
       redirect: {
         destination: `/session/${result.data.runningSessions[0].id}`,
