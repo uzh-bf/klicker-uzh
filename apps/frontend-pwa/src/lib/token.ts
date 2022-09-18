@@ -29,7 +29,7 @@ export async function getParticipantToken({
     const { request }: any = await new Promise((resolve) => {
       bodyParser.urlencoded({ extended: true })(req, res, () => {
         bodyParser.json()(req, res, () => {
-          resolve({ request: ctx })
+          resolve({ request: req })
         })
       })
     })
@@ -47,6 +47,7 @@ export async function getParticipantToken({
           expiresIn: '1h',
         }
       )
+
       const result = await apolloClient.mutate({
         mutation: RegisterParticipantFromLtiDocument,
         variables: {
