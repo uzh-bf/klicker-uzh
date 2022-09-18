@@ -83,6 +83,5 @@ export async function getParticipantToken({
     console.error(e)
   }
 
-
   return participantToken
 }

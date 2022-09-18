@@ -1,42 +1,40 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { useParserCache } from "@envelop/parser-cache";
-import { useResponseCache } from "@envelop/response-cache";
-import { createRedisCache } from "@envelop/response-cache-redis";
-import { useValidationCache } from "@envelop/validation-cache";
-import { authZEnvelopPlugin } from "@graphql-authz/envelop-plugin";
-import { useHive } from "@graphql-hive/client";
-import { createServer, Plugin } from "@graphql-yoga/node";
-import { enhanceContext, schema } from "@klicker-uzh/graphql";
-import cookieParser from "cookie-parser";
-import express from "express";
-import passport from "passport";
-import { Strategy as JWTStrategy } from "passport-jwt";
-import { AuthSchema, Rules } from "./authorization";
+import { useParserCache } from '@envelop/parser-cache'
+import { useResponseCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
+import { useValidationCache } from '@envelop/validation-cache'
+import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { useHive } from '@graphql-hive/client'
+import { createServer, Plugin } from '@graphql-yoga/node'
+import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import cookieParser from 'cookie-parser'
+import express from 'express'
+import passport from 'passport'
+import { Strategy as JWTStrategy } from 'passport-jwt'
+import { AuthSchema, Rules } from './authorization'
 
 function prepareApp({ prisma, redisCache, redisExec }: any) {
-  let cache = undefined;
+  let cache = undefined
   if (redisCache) {
     try {
-      cache = createRedisCache({ redis: redisCache });
+      cache = createRedisCache({ redis: redisCache })
     } catch (e) {
-      console.error(e);
+      console.error(e)
     }
   }
 
-  const app = express();
+  const app = express()
 
   passport.use(
     new JWTStrategy(
       {
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         jwtFromRequest(req) {
-          if (req.headers?.["authorization"])
-            return req.headers["authorization"]?.replace("Bearer ", "");
+          if (req.headers?.['authorization'])
+            return req.headers['authorization']?.replace('Bearer ', '')
           if (req.cookies)
-            return (
-              req.cookies["user_token"] || req.cookies["participant_token"]
-            );
-          return null;
+            return req.cookies['user_token'] || req.cookies['participant_token']
+          return null
         },
         secretOrKey: process.env.APP_SECRET,
         // issuer: 'abcd',
@@ -46,18 +44,18 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
         // TODO: if there is a user matching the JWT, return it
         // TODO: if there was an error, return it
         // TODO: if there was no user and no error, return
-        return done(null, jwt);
+        return done(null, jwt)
       }
     )
-  );
+  )
 
-  app.use(cookieParser());
+  app.use(cookieParser())
   app.use((req: any, res, next) =>
-    passport.authenticate("jwt", { session: false }, (err, user) => {
-      req.locals = { user };
-      next();
+    passport.authenticate('jwt', { session: false }, (err, user) => {
+      req.locals = { user }
+      next()
     })(req, res, next)
-  );
+  )
 
   const graphQLServer = createServer({
     schema,
@@ -68,7 +66,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useResponseCache({
         // set the TTL to 0 to disable response caching by default
-        ttl: process.env.NODE_ENV === "development" ? 0 : undefined,
+        ttl: process.env.NODE_ENV === 'development' ? 0 : undefined,
         ttlPerType: {
           Participant: 60000,
           // Course: 60000,
@@ -77,7 +75,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
         },
         cache,
         session(ctx) {
-          return ctx.user ? ctx.user.sub : null;
+          return ctx.user ? ctx.user.sub : null
         },
       }),
       useValidationCache(),
@@ -95,21 +93,21 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
     context: enhanceContext({ prisma, redisExec }),
     logging: true,
     cors(request) {
-      const requestOrigin = request.headers.get("origin") as string;
+      const requestOrigin = request.headers.get('origin') as string
       return {
         origin: requestOrigin,
         credentials: true,
-      };
+      }
     },
-  });
+  })
 
-  app.use("/healthz", function (req, res) {
-    res.send("OK");
-  });
+  app.use('/healthz', function (req, res) {
+    res.send('OK')
+  })
 
-  app.use("/api/graphql", graphQLServer);
+  app.use('/api/graphql', graphQLServer)
 
-  return app;
+  return app
 }
 
-export default prepareApp;
+export default prepareApp
