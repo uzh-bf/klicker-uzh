@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.31...v2.0.0-alpha.32) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure api is under /api/graphql ([e312b07](https://github.com/uzh-bf/klicker-uzh/commit/e312b078ae85ac062b88aa78491180749e3c3026))
+* **apps/backend-responses:** add get to methods that should be handled ([66bde66](https://github.com/uzh-bf/klicker-uzh/commit/66bde66df7b94f7cbd9d69250d9c5e976b1ebaeb))
+* **apps/backend-sls:** add get to methods that should be handled ([019eb2c](https://github.com/uzh-bf/klicker-uzh/commit/019eb2cf59c9efcb7bf07c4ee3cbda2bb14d1af6))
+
+
+### Deployment
+
+* **apps/backend-docker:** extend chart for v2 deployment with doppler-based config ([48cc293](https://github.com/uzh-bf/klicker-uzh/commit/48cc2935b6b2933d5a036b74d354733908c7aed8))
+
+
+### Other
+
+* add docker backend to docker-compose definition for local testing ([4e46b20](https://github.com/uzh-bf/klicker-uzh/commit/4e46b20b81776bc17a14060534f1586553d72627))
+* **apps/backend-*:** move singleton initializers out of handler function ([6467b67](https://github.com/uzh-bf/klicker-uzh/commit/6467b6799942a9d3aa23ac96f5da04358c3eb8bd))
+* **apps/backend-docker:** add initial alternative backend with docker-based express ([811e5dc](https://github.com/uzh-bf/klicker-uzh/commit/811e5dce2243afac7deee8fef16274aef28b7b9b))
+* **apps/backend-responses:** evaluate getRedis approach ([23b2dde](https://github.com/uzh-bf/klicker-uzh/commit/23b2dde58f9e97d32717c120488c15bb43d9770e))
+* **apps/backend-sls:** add console logging in host.json ([ea63b19](https://github.com/uzh-bf/klicker-uzh/commit/ea63b198d7cf61324f7e0b4cc519d8dd42f6a2c1))
+* **apps/backend-sls:** evaluate disabling all envelop plugins ([1378047](https://github.com/uzh-bf/klicker-uzh/commit/13780477d89786aa41b8953cdda88b2485c4525c))
+* **apps/backend-sls:** investigate singleton-based approach for cached app ([c928123](https://github.com/uzh-bf/klicker-uzh/commit/c9281233c88973f05287cddc333300812948d289))
+* **apps/backend-sls:** use only parser and validation cache and no redis response cache ([2ef84bf](https://github.com/uzh-bf/klicker-uzh/commit/2ef84bff2355565853675bda29955a8a78dbe56e))
+* **packages/prisma:** switch to musl prisma client ([c41573a](https://github.com/uzh-bf/klicker-uzh/commit/c41573a852e35faf15db113569721a918678eb4f))
+
 ## [2.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.30...v2.0.0-alpha.31) (2022-09-17)
 
 
