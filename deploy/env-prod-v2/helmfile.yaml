@@ -10,7 +10,18 @@ releases:
       - values.yaml
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
+        frontendPWA:
+          image:
+            tag: v2.0.0-alpha.35
+
+        frontendManage:
+          image:
+            tag: v2.0.0-alpha.35
+
         backendGraphql:
+          image:
+            tag: v2.0.0-alpha.35
+
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
@@ -27,11 +38,3 @@ releases:
             port: '{{ requiredEnv "REDIS_PORT" }}'
             tls: '{{ requiredEnv "REDIS_TLS" }}'
             pass: '{{ requiredEnv "REDIS_PASS" }}'
-
-      - frontendPWA:
-          image:
-            tag: v2.0.0-alpha.30
-
-        frontendManage:
-          image:
-            tag: v2.0.0-alpha.30
