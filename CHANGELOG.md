@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.38...v2.0.0-alpha.39) (2022-09-18)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** profile update and dynamic redirect if avatar is unset, hide buttons when in frames ([70e9de5](https://github.com/uzh-bf/klicker-uzh/commit/70e9de5c7e1d9a585cee8177368eadc234639152))
+* **packages/graphql:** basic password update via profile ([32637c1](https://github.com/uzh-bf/klicker-uzh/commit/32637c1ffec62ae3e02555fd9e002d0b5a1170fb))
+
 ## [2.0.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.37...v2.0.0-alpha.38) (2022-09-18)
 
 
