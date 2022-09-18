@@ -300,6 +300,7 @@ model Session {
   displayName String
   startedAt   DateTime?
   finishedAt  DateTime?
+  linkTo      String?
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus @default(PREPARED)
