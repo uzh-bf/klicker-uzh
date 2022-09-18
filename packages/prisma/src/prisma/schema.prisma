@@ -2,7 +2,7 @@ generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
   output          = "../client"
-  binaryTargets   = ["native", "windows", "debian-openssl-1.1.x"]
+  binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
 
 generator erd {
