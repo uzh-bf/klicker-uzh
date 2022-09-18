@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    modularizeImports: {
+      ramda: {
+        transform: 'ramda/es/{{member}}',
+      },
+    },
+  },
+  // disable compression as it is done on the ingress
+  compress: false,
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
