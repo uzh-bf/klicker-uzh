@@ -49,31 +49,53 @@ function Evaluation() {
   }
 
   function getAnswers(currentData: any): {
-    answers: { value: String; correct: Boolean }[]
+    answers: {
+      value: String | { min: number; max: number }
+      correct?: Boolean
+    }[]
     type: String
   }[] {
     const answerArray: {
-      answers: { value: String; correct: Boolean }[]
+      answers: {
+        value: String | { min: number; max: number }
+        correct?: Boolean
+      }[]
       type: String
     }[] = []
-    currentData.sessionEvaluation.instanceResults.map(
-      (instance: any) => {
-        const innerArray: { value: String; correct: Boolean }[] = []
-        if (
-          instance.questionData.type === 'SC' ||
-          instance.questionData.type === 'MC' ||
-          instance.questionData.type === 'KPRIM'
-        ) {
-          instance.questionData.options.choices.map((choice: any) => {
-            innerArray.push({ value: choice.value, correct: choice.correct })
-          })
-        }
-        answerArray.push({
-          answers: innerArray,
-          type: instance.questionData.type,
+    currentData.sessionEvaluation.instanceResults.map((instance: any) => {
+      const innerArray: {
+        value: String | { min: number; max: number }
+        correct?: Boolean
+      }[] = []
+      if (
+        instance.questionData.type === 'SC' ||
+        instance.questionData.type === 'MC' ||
+        instance.questionData.type === 'KPRIM'
+      ) {
+        // answerArray should include both all answer possibilities as well as a correct / false attribute for them
+        instance.questionData.options.choices.map((choice: any) => {
+          innerArray.push({ value: choice.value, correct: choice.correct })
         })
+      } else if (instance.questionData.type === 'NUMERICAL') {
+        // answerArray should include the correct answer ranges with correct attribute and the restrictions with an undefined correct attribute
+        innerArray.push({
+          value: instance.questionData.options.restrictions,
+          correct: undefined,
+        })
+        instance.questionData.options.solutionRanges.forEach(
+          (range: { min: number; max: number }) => {
+            innerArray.push({
+              value: range,
+              correct: true,
+            })
+          }
+        )
       }
-    )
+      answerArray.push({
+        answers: innerArray,
+        type: instance.questionData.type,
+      })
+    })
     return answerArray
   }
 
@@ -129,7 +151,10 @@ function Evaluation() {
                     answerCollection[index].type === 'KPRIM') &&
                     answerCollection[index].answers.map(
                       (
-                        answer: { value: String; correct: Boolean },
+                        answer: {
+                          value: String | { min: number; max: number }
+                          correct?: Boolean
+                        },
                         innerIndex: number
                       ) => (
                         <div key={innerIndex} className="flex flex-row">
@@ -145,6 +170,38 @@ function Evaluation() {
                         </div>
                       )
                     )}
+                  {answerCollection[index].type === 'NUMERICAL' && (
+                    <div>
+                      <div className="mb-3">
+                        {answerCollection[index].answers
+                          .filter(
+                            (answer: any) =>
+                              typeof answer.correct === 'undefined'
+                          )
+                          .map((answer: any, index: number) => (
+                            <div key={index}>
+                              Einschränkungen: Wert zwischen {answer.value.min}{' '}
+                              und {answer.value.max}
+                            </div>
+                          ))}
+                      </div>
+                      <div className="font-bold">Korrekte Antwortbereiche:</div>
+                      {answerCollection[index].answers.map(
+                        (
+                          answer: {
+                            value: String | { min: number; max: number }
+                            correct?: Boolean
+                          },
+                          innerIndex: number
+                        ) => (
+                          <div key={innerIndex}>
+                            [{answer.value.min || '-∞'},
+                            {answer.value.max || '+∞'}]
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </span>
             </div>
