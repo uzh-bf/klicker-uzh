@@ -23,6 +23,8 @@ function Evaluation() {
   if (error) return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
+  console.log(data?.sessionEvaluation)
+
   function getTabs(currentData: any): Tab[] {
     const tabArray: Tab[] = []
     currentData.sessionEvaluation.instanceResults.map(
@@ -46,21 +48,39 @@ function Evaluation() {
     return questionArray
   }
 
-  function getAnswers(currentData: any): String[][] {
-    const answerArray: String[][] = []
+  function getAnswers(currentData: any): {
+    answers: { value: String; correct: Boolean }[]
+    type: String
+  }[] {
+    const answerArray: {
+      answers: { value: String; correct: Boolean }[]
+      type: String
+    }[] = []
     currentData.sessionEvaluation.instanceResults.map(
-      (instance: any, index: number) => {
-        const innerArray: String[] = []
-        if (instance.questionData.type === 'SC') {
+      (instance: any) => {
+        const innerArray: { value: String; correct: Boolean }[] = []
+        if (
+          instance.questionData.type === 'SC' ||
+          instance.questionData.type === 'MC' ||
+          instance.questionData.type === 'KPRIM'
+        ) {
           instance.questionData.options.choices.map((choice: any) => {
-            innerArray.push(choice.value)
+            innerArray.push({ value: choice.value, correct: choice.correct })
           })
         }
-        answerArray.push(innerArray)
+        answerArray.push({
+          answers: innerArray,
+          type: instance.questionData.type,
+        })
       }
     )
     return answerArray
   }
+
+  const tabs = getTabs(data)
+  const questions = getQuestions(data)
+  const answerCollection = getAnswers(data)
+  console.log(answerCollection)
 
   return (
     <div className="mx-4 mt-2">
@@ -68,7 +88,7 @@ function Evaluation() {
         <TabsPrimitive.List
           className={twMerge('flex w-full rounded-t-lg bg-uzh-grey-20')}
         >
-          {getTabs(data).map((instance: any, index: number) => (
+          {tabs.map((instance: any, index: number) => (
             <TabsPrimitive.Trigger
               key={`tab-trigger-${index}`}
               value={'tab' + index}
@@ -90,7 +110,7 @@ function Evaluation() {
             </TabsPrimitive.Trigger>
           ))}
         </TabsPrimitive.List>
-        {getQuestions(data).map((question: any, index: number) => (
+        {questions.map((question: any, index: number) => (
           <TabsPrimitive.Content
             key={`tab-content-${index}`}
             value={'tab' + index}
@@ -103,10 +123,28 @@ function Evaluation() {
             <div>
               <span className="flex">Chart goes here</span>
               <span className="flex justify-end">
-                <div>
-                  {getAnswers(data)[index].map((answers, innerIndex) => (
-                    <Markdown key={innerIndex} content={answers} />
-                  ))}
+                <div className="flex flex-col gap-2">
+                  {(answerCollection[index].type === 'SC' ||
+                    answerCollection[index].type === 'MC' ||
+                    answerCollection[index].type === 'KPRIM') &&
+                    answerCollection[index].answers.map(
+                      (
+                        answer: { value: String; correct: Boolean },
+                        innerIndex: number
+                      ) => (
+                        <div key={innerIndex} className="flex flex-row">
+                          <div
+                            className={twMerge(
+                              'flex flex-col justify-center mr-2 text-center rounded-md w-7 h-7 bg-uzh-blue-80 text-white font-bold',
+                              answer.correct && 'bg-green-500 text-black'
+                            )}
+                          >
+                            {innerIndex}
+                          </div>
+                          <Markdown content={answer.value} />
+                        </div>
+                      )
+                    )}
                 </div>
               </span>
             </div>
