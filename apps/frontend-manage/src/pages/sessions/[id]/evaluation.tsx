@@ -1,13 +1,13 @@
-import { useQuery } from "@apollo/client"
-import { GetSessionEvaluationDocument } from "@klicker-uzh/graphql/dist/ops"
+import { useQuery } from '@apollo/client'
+import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import Markdown from '@klicker-uzh/markdown'
+import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
-import * as TabsPrimitive from "@radix-ui/react-tabs"
-import React, { useEffect, useState } from "react"
-import { twMerge } from "tailwind-merge"
+import { twMerge } from 'tailwind-merge'
 
 interface Tab {
-  title: string;
-  value: string;
+  title: string
+  value: string
 }
 
 function Evaluation() {
@@ -25,31 +25,40 @@ function Evaluation() {
 
   function getTabs(currentData: any): Tab[] {
     const tabArray: Tab[] = []
-    currentData.sessionEvaluation.instanceResults.map((instance: any, index: number) => {
-      tabArray.push({value: "tab" + index, title: instance.questionData.name})
-    })  
+    currentData.sessionEvaluation.instanceResults.map(
+      (instance: any, index: number) => {
+        tabArray.push({
+          value: 'tab' + index,
+          title: instance.questionData.name,
+        })
+      }
+    )
     return tabArray
   }
 
   function getQuestions(currentData: any): String[] {
     const questionArray: String[] = []
-    currentData.sessionEvaluation.instanceResults.map((instance: any, index: number) => {
-      questionArray.push(instance.questionData.contentPlain)
-    })
+    currentData.sessionEvaluation.instanceResults.map(
+      (instance: any, index: number) => {
+        questionArray.push(instance.questionData.content)
+      }
+    )
     return questionArray
   }
 
   function getAnswers(currentData: any): String[][] {
     const answerArray: String[][] = []
-    currentData.sessionEvaluation.instanceResults.map((instance: any, index: number) => {
-      const innerArray: String[] = []
-      if (instance.questionData.type === "SC") {
-        instance.questionData.options.choices.map((choice: any) => {
-          innerArray.push(choice.value)
-        })
+    currentData.sessionEvaluation.instanceResults.map(
+      (instance: any, index: number) => {
+        const innerArray: String[] = []
+        if (instance.questionData.type === 'SC') {
+          instance.questionData.options.choices.map((choice: any) => {
+            innerArray.push(choice.value)
+          })
+        }
+        answerArray.push(innerArray)
       }
-      answerArray.push(innerArray)
-    })
+    )
     return answerArray
   }
 
@@ -57,53 +66,58 @@ function Evaluation() {
     <div className="mx-4 mt-2">
       <TabsPrimitive.Root defaultValue="tab0">
         <TabsPrimitive.List
-          className={twMerge("flex w-full rounded-t-lg bg-uzh-grey-20")}
+          className={twMerge('flex w-full rounded-t-lg bg-uzh-grey-20')}
         >
           {getTabs(data).map((instance: any, index: number) => (
             <TabsPrimitive.Trigger
               key={`tab-trigger-${index}`}
-              value={"tab" + index}
+              value={'tab' + index}
               className={twMerge(
-                "group",
-                "first:rounded-tl-lg last:rounded-tr-lg",
-                "border border-slate-600 border-b first:border-r-0 last:border-l-0",
-                "border-slate-600",
-                "rdx-state-active:border-b-slate-600 focus-visible:rdx-state-active:border-b-transparent rdx-state-inactive:bg-white",
-                "flex-1 px-3 py-2.5 rdx-state-active:border-b-0",
-                "focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-opacity-75"
+                'group',
+                'first:rounded-tl-lg last:rounded-tr-lg',
+                'border border-slate-600 border-b first:border-r-0 last:border-l-0',
+                'border-slate-600',
+                'rdx-state-active:border-b-slate-600 focus-visible:rdx-state-active:border-b-transparent rdx-state-inactive:bg-white',
+                'flex-1 px-3 py-2.5 rdx-state-active:border-b-0',
+                'focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-opacity-75'
               )}
             >
               <span
-                className={twMerge(
-                  "text-sm font-medium",
-                  "text-slate-800"
-                )}
+                className={twMerge('text-sm font-medium', 'text-slate-800')}
               >
                 {instance.title}
               </span>
             </TabsPrimitive.Trigger>
           ))}
         </TabsPrimitive.List>
-        {getQuestions(data).map((instance: any, index: number) => (
+        {getQuestions(data).map((question: any, index: number) => (
           <TabsPrimitive.Content
             key={`tab-content-${index}`}
-            value={"tab" + index}
-            className={twMerge("rounded-b-lg bg-white")}
+            value={'tab' + index}
+            className={twMerge('rounded-b-lg bg-white')}
           >
-            <div className="flex flex-row content-between p-2 mb-10 border-slate-800 bg-uzh-grey-20">{instance}</div>
-            <div><span className="flex">Chart goes here</span>
+            <Markdown
+              className="flex flex-row content-between p-2 mb-10 border-slate-800 bg-uzh-grey-20"
+              content={question}
+            />
+            <div>
+              <span className="flex">Chart goes here</span>
               <span className="flex justify-end">
-                <div>{getAnswers(data)[index].map((answers, innerIndex) => (<div key={innerIndex}>{answers}</div>))}</div>
+                <div>
+                  {getAnswers(data)[index].map((answers, innerIndex) => (
+                    <Markdown key={innerIndex} content={answers} />
+                  ))}
+                </div>
               </span>
             </div>
           </TabsPrimitive.Content>
         ))}
-      </TabsPrimitive.Root></div>
+      </TabsPrimitive.Root>
+    </div>
   )
 }
 
 export default Evaluation
-
 
 // Example object
 // {
