@@ -139,6 +139,10 @@ type FreeTextRestrictions {
 type InstanceEvaluation {
   choices: JSONObject!
   feedbacks: [QuestionFeedback!]
+  newPointsFrom: DateTime
+  percentile: Float
+  pointsAwarded: Float
+  score: Float!
 }
 
 """
@@ -257,6 +261,7 @@ type Participant {
 type ParticipantLearningData {
   course: Course
   id: ID!
+  leaderboard: [LeaderboardEntry!]
   participant: Participant
   participantToken: String
   participation: Participation
@@ -266,7 +271,6 @@ type Participation {
   course: Course
   id: Int!
   isActive: Boolean!
-  points: Int!
   subscriptions: [Subscription!]
 }
 
@@ -312,7 +316,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [Attachment]!
+  attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!

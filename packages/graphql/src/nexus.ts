@@ -226,6 +226,10 @@ export const InstanceEvaluation = objectType({
     t.nonNull.field('choices', {
       type: 'JSONObject',
     })
+    t.nonNull.float('score')
+    t.float('pointsAwarded')
+    t.float('percentile')
+    t.date('newPointsFrom')
   },
 })
 
@@ -262,7 +266,7 @@ export const QuestionInstance = objectType({
       type: InstanceEvaluation,
     })
 
-    t.nonNull.list.field('attachments', { type: Attachment })
+    t.list.field('attachments', { type: Attachment })
   },
 })
 
@@ -371,7 +375,6 @@ export const Participation = objectType({
     t.nonNull.int('id')
 
     t.nonNull.boolean('isActive')
-    t.nonNull.int('points')
 
     t.field('course', {
       type: Course,
@@ -379,6 +382,18 @@ export const Participation = objectType({
     t.list.nonNull.field('subscriptions', {
       type: Subscription,
     })
+  },
+})
+
+export const LeaderboardEntry = objectType({
+  name: 'LeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('username')
+    t.string('avatar')
+
+    t.nonNull.float('score')
   },
 })
 
@@ -400,18 +415,10 @@ export const ParticipantLearningData = objectType({
     t.field('course', {
       type: Course,
     })
-  },
-})
 
-export const LeaderboardEntry = objectType({
-  name: 'LeaderboardEntry',
-  definition(t) {
-    t.nonNull.id('id')
-
-    t.nonNull.string('username')
-    t.string('avatar')
-
-    t.nonNull.float('score')
+    t.list.nonNull.field('leaderboard', {
+      type: LeaderboardEntry,
+    })
   },
 })
 

@@ -16,6 +16,8 @@ export async function getParticipantProfile(
   { id }: GetParticipantProfileArgs,
   ctx: ContextWithOptionalUser
 ) {
+  if (!ctx.user?.sub) return null
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
     select: { id: true, avatar: true, avatarSettings: true, username: true },
@@ -207,12 +209,34 @@ export async function getCourseOverviewData(
       },
     })
 
+    const course = ctx.prisma.course.findUnique({
+      where: {
+        id: courseId,
+      },
+    })
+
+    const followedEntries = await course.leaderboard({
+      where: {
+        participantId: {
+          in: [],
+        },
+      },
+    })
+
+    const top3Entries = await course.leaderboard({
+      orderBy: {
+        score: 'desc',
+      },
+      take: 3,
+    })
+
     if (participation) {
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
+        leaderboard: [...top3Entries, ...followedEntries],
       }
     }
   }
@@ -235,6 +259,7 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
+    leaderboard: [],
   }
 }
 

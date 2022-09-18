@@ -2,6 +2,5 @@ mutation LeaveCourse($courseId: ID!) {
   leaveCourse(courseId: $courseId) {
     id
     isActive
-    points
   }
 }

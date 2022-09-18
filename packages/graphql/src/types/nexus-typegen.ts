@@ -173,6 +173,10 @@ export interface NexusGenObjects {
   InstanceEvaluation: { // root type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
+    newPointsFrom?: NexusGenScalars['DateTime'] | null; // DateTime
+    percentile?: number | null; // Float
+    pointsAwarded?: number | null; // Float
+    score: number; // Float!
   }
   LeaderboardEntry: { // root type
     avatar?: string | null; // String
@@ -247,6 +251,7 @@ export interface NexusGenObjects {
   ParticipantLearningData: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: string; // ID!
+    leaderboard?: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken?: string | null; // String
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
@@ -255,7 +260,6 @@ export interface NexusGenObjects {
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    points: number; // Int!
     subscriptions?: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
   }
   PushSubscription: { // root type
@@ -273,7 +277,7 @@ export interface NexusGenObjects {
     value: string; // String!
   }
   QuestionInstance: { // root type
-    attachments: Array<NexusGenRootTypes['Attachment'] | null>; // [Attachment]!
+    attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -418,6 +422,10 @@ export interface NexusGenFieldTypes {
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
+    newPointsFrom: NexusGenScalars['DateTime'] | null; // DateTime
+    percentile: number | null; // Float
+    pointsAwarded: number | null; // Float
+    score: number; // Float!
   }
   LeaderboardEntry: { // field return type
     avatar: string | null; // String
@@ -520,6 +528,7 @@ export interface NexusGenFieldTypes {
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
     id: string; // ID!
+    leaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken: string | null; // String
     participation: NexusGenRootTypes['Participation'] | null; // Participation
@@ -528,7 +537,6 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    points: number; // Int!
     subscriptions: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
   }
   PushSubscription: { // field return type
@@ -560,7 +568,7 @@ export interface NexusGenFieldTypes {
     value: string; // String!
   }
   QuestionInstance: { // field return type
-    attachments: Array<NexusGenRootTypes['Attachment'] | null>; // [Attachment]!
+    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
@@ -703,6 +711,10 @@ export interface NexusGenFieldTypeNames {
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
+    newPointsFrom: 'DateTime'
+    percentile: 'Float'
+    pointsAwarded: 'Float'
+    score: 'Float'
   }
   LeaderboardEntry: { // field return type name
     avatar: 'String'
@@ -805,6 +817,7 @@ export interface NexusGenFieldTypeNames {
   ParticipantLearningData: { // field return type name
     course: 'Course'
     id: 'ID'
+    leaderboard: 'LeaderboardEntry'
     participant: 'Participant'
     participantToken: 'String'
     participation: 'Participation'
@@ -813,7 +826,6 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
-    points: 'Int'
     subscriptions: 'Subscription'
   }
   PushSubscription: { // field return type name

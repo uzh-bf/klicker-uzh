@@ -16,6 +16,10 @@ mutation ResponseToQuestionInstance(
         value
       }
       choices
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
     }
   }
 }
