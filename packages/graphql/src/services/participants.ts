@@ -298,6 +298,9 @@ export async function registerParticipantFromLTI(
         },
       },
       update: {},
+      include: {
+        participant: true,
+      },
     })
   }
 
@@ -306,7 +309,7 @@ export async function registerParticipantFromLTI(
   return {
     id: `${courseId}-${participant.participant.id}`,
     participantToken: jwt,
-    participant: participant.participant,
+    participant: participant.participant ?? participation?.participant,
     participation,
   }
 }

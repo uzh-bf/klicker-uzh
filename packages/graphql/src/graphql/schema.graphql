@@ -253,11 +253,11 @@ type Participant {
 }
 
 type ParticipantLearningData {
-  course: Course!
+  course: Course
   id: ID!
-  participant: Participant!
-  participantToken: String!
-  participation: Participation!
+  participant: Participant
+  participantToken: String
+  participation: Participation
 }
 
 type Participation {

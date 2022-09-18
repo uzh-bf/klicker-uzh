@@ -437,11 +437,11 @@ export type Participant = {
 
 export type ParticipantLearningData = {
   __typename?: 'ParticipantLearningData';
-  course: Course;
+  course?: Maybe<Course>;
   id: Scalars['ID'];
-  participant: Participant;
-  participantToken: Scalars['String'];
-  participation: Participation;
+  participant?: Maybe<Participant>;
+  participantToken?: Maybe<Scalars['String']>;
+  participation?: Maybe<Participation>;
 };
 
 export type Participation = {
@@ -759,7 +759,7 @@ export type RegisterParticipantFromLtiMutationVariables = Exact<{
 }>;
 
 
-export type RegisterParticipantFromLtiMutation = { __typename?: 'Mutation', registerParticipantFromLTI?: { __typename?: 'ParticipantLearningData', id: string, participantToken: string, participant: { __typename?: 'Participant', id: string, avatar?: string | null, username: string }, participation: { __typename?: 'Participation', id: number, isActive: boolean, points: number }, course: { __typename?: 'Course', id: string, name: string, displayName: string } } | null };
+export type RegisterParticipantFromLtiMutation = { __typename?: 'Mutation', registerParticipantFromLTI?: { __typename?: 'ParticipantLearningData', id: string, participantToken?: string | null, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean, points: number } | null, course?: { __typename?: 'Course', id: string, name: string, displayName: string } | null } | null };
 
 export type ResolveFeedbackMutationVariables = Exact<{
   id: Scalars['Int'];
@@ -839,7 +839,7 @@ export type GetCourseOverviewDataQueryVariables = Exact<{
 }>;
 
 
-export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant: { __typename?: 'Participant', id: string, avatar?: string | null, username: string }, participation: { __typename?: 'Participation', id: number, isActive: boolean, points: number }, course: { __typename?: 'Course', id: string, name: string, displayName: string, color?: string | null } } | null };
+export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean, points: number } | null, course?: { __typename?: 'Course', id: string, name: string, displayName: string, color?: string | null } | null } | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1322,11 +1322,11 @@ export type ParticipantResolvers<ContextType = any, ParentType extends Resolvers
 };
 
 export type ParticipantLearningDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['ParticipantLearningData'] = ResolversParentTypes['ParticipantLearningData']> = {
-  course?: Resolver<ResolversTypes['Course'], ParentType, ContextType>;
+  course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  participant?: Resolver<ResolversTypes['Participant'], ParentType, ContextType>;
-  participantToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  participation?: Resolver<ResolversTypes['Participation'], ParentType, ContextType>;
+  participant?: Resolver<Maybe<ResolversTypes['Participant']>, ParentType, ContextType>;
+  participantToken?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  participation?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

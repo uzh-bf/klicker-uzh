@@ -384,17 +384,17 @@ export const ParticipantLearningData = objectType({
   definition(t) {
     t.nonNull.id('id')
 
-    t.nonNull.string('participantToken')
+    t.string('participantToken')
 
-    t.nonNull.field('participant', {
+    t.field('participant', {
       type: Participant,
     })
 
-    t.nonNull.field('participation', {
+    t.field('participation', {
       type: Participation,
     })
 
-    t.nonNull.field('course', {
+    t.field('course', {
       type: Course,
     })
   },

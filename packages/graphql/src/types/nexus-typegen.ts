@@ -243,11 +243,11 @@ export interface NexusGenObjects {
     username: string; // String!
   }
   ParticipantLearningData: { // root type
-    course: NexusGenRootTypes['Course']; // Course!
+    course?: NexusGenRootTypes['Course'] | null; // Course
     id: string; // ID!
-    participant: NexusGenRootTypes['Participant']; // Participant!
-    participantToken: string; // String!
-    participation: NexusGenRootTypes['Participation']; // Participation!
+    participant?: NexusGenRootTypes['Participant'] | null; // Participant
+    participantToken?: string | null; // String
+    participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -513,11 +513,11 @@ export interface NexusGenFieldTypes {
     username: string; // String!
   }
   ParticipantLearningData: { // field return type
-    course: NexusGenRootTypes['Course']; // Course!
+    course: NexusGenRootTypes['Course'] | null; // Course
     id: string; // ID!
-    participant: NexusGenRootTypes['Participant']; // Participant!
-    participantToken: string; // String!
-    participation: NexusGenRootTypes['Participation']; // Participation!
+    participant: NexusGenRootTypes['Participant'] | null; // Participant
+    participantToken: string | null; // String
+    participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
