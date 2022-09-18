@@ -80,6 +80,7 @@ export async function getParticipantToken({
             httpOnly: true,
             maxAge: 60 * 60 * 24 * 6,
             secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
           })
         }
 
