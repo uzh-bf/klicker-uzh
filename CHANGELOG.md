@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.36...v2.0.0-alpha.37) (2022-09-18)
+
+
+### Other
+
+* cleanup docker files, add docker compose for frontends ([5e7d624](https://github.com/uzh-bf/klicker-uzh/commit/5e7d624b707fd991b28b2691d6cfb9ed05d34f9c))
+* lockfile maintenance ([49ea727](https://github.com/uzh-bf/klicker-uzh/commit/49ea727b5bc4deb6d36a5c9cebca57b69607372b))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** disable compression on nextjs side, add modularize imports for ramda ([2746172](https://github.com/uzh-bf/klicker-uzh/commit/2746172827375cfa18131f24c58193dbd42a1c36))
+* **apps/frontend-pwa:** improve LTI flow with welcome page redirect, APP_SECRET from process.env ([4508000](https://github.com/uzh-bf/klicker-uzh/commit/4508000e25bebb5c415a4d1b695538463fbe12fa))
+* **packages/prisma:** add cascade delete on push subscription ([7daf62e](https://github.com/uzh-bf/klicker-uzh/commit/7daf62ea9e3b0f94b86442462b1732b7466ef6ac))
+* rework docker-based deployment approach with build arguments and SSR api urls ([a76f0ca](https://github.com/uzh-bf/klicker-uzh/commit/a76f0ca4d7f3efef2421c0cb27750f66fbc81553))
+
 ## [2.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.35...v2.0.0-alpha.36) (2022-09-18)
 
 
