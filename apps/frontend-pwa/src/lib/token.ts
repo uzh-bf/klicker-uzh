@@ -37,18 +37,22 @@ export async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        const secret = process.env.APP_SECRET ?? serverRuntimeConfig.APP_SECRET
+
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
         const token = JWT.sign(
           {
             sub: 'lti-admin',
             role: 'ADMIN',
           },
-          process.env.APP_SECRET ?? serverRuntimeConfig.APP_SECRET,
+          secret,
           {
             algorithm: 'HS256',
             expiresIn: '1h',
           }
         )
+
+        console.log('token', token)
 
         const result = await apolloClient.mutate({
           mutation: RegisterParticipantFromLtiDocument,
@@ -62,6 +66,8 @@ export async function getParticipantToken({
             },
           },
         })
+
+        console.log('result', result)
 
         // if a JWT was received from the API, set a cookie in the participant browser
         if (result.data?.registerParticipantFromLTI?.participantToken) {

@@ -144,6 +144,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   })
 
   if (participant && !participant.avatar) {
+    console.warn('no avatar')
     return {
       redirect: {
         destination: '/welcome',

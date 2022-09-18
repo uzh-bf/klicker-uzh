@@ -16,6 +16,8 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+ARG NODE_ENV production
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -27,7 +29,7 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
+ARG NODE_ENV production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

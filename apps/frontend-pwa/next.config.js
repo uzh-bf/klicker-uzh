@@ -42,6 +42,7 @@ const nextConfig = withPWA({
     ADD_RESPONSE_URL: process.env.NEXT_PUBLIC_ADD_RESPONSE_URL,
   },
   serverRuntimeConfig: {
+    API_URL_SSR: process.env.NEXT_PUBLIC_API_URL_SSR,
     APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
