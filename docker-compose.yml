@@ -1,4 +1,23 @@
 services:
+  backend:
+    profiles:
+      - full
+    build: apps/backend-docker
+    environment:
+      NODE_ENV: 'development'
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      APP_SECRET: 'abcd'
+      REDIS_HOST: 'redis_exec'
+      REDIS_PORT: 6379
+      REDIS_CACHE_HOST: 'redis_cache'
+      REDIS_CACHE_PORT: 6379
+      API_DOMAIN: '127.0.0.1'
+      COOKIE_DOMAIN: '127.0.0.1'
+    ports:
+      - 3000:3000
+    networks:
+      - klicker-dev
+
   # main database
   postgres:
     image: postgres:14.3
