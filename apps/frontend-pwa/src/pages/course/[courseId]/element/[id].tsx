@@ -146,7 +146,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (participant && !participant.avatar) {
     return {
       redirect: {
-        destination: '/welcome',
+        destination: `/editProfile?redirect_to=${encodeURIComponent(
+          `/course/${ctx.params.courseId}/element/${ctx.params.id}`
+        )}`,
         statusCode: 302,
       },
     }

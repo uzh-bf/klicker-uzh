@@ -25,6 +25,9 @@ function Header({
   courseColor,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
+
+  const pageInFrame = window && window?.location !== window?.parent.location
+
   return (
     <div
       style={{ borderColor: courseColor || undefined }}
@@ -44,13 +47,21 @@ function Header({
 
       <div className="flex flex-row items-center gap-4">
         {participant ? (
-          router.pathname !== '/' && (
+          router.pathname !== '/' &&
+          (pageInFrame ? (
+            <Button
+              className="hidden text-white bg-slate-800 md:block"
+              onClick={() => router.back()}
+            >
+              Zurück
+            </Button>
+          ) : (
             <Link href="/">
               <Button className="hidden text-white bg-slate-800 md:block">
                 Home
               </Button>
             </Link>
-          )
+          ))
         ) : (
           <Link href="/login">
             <Button className="text-white bg-slate-800">Login</Button>
