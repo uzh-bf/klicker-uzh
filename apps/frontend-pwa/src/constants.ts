@@ -13,7 +13,7 @@ export const AVATAR_OPTIONS = {
   mouth: ['grin', 'openSmile', 'serious'],
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   facialHair: ['none', 'stubble', 'mediumBeard'],
-  clothing: ['shirt'],
+  clothing: ['shirt', 'dress', 'dressShirt'],
   accessory: ['none', 'roundGlasses', 'tinyGlasses', 'shades'],
   graphic: ['none'],
   hat: ['none'],
@@ -56,6 +56,9 @@ export const AVATAR_LABELS = {
   stubble: 'Stoppeln',
   mediumBeard: 'Bart',
   wink: 'Zwinkern',
+  shirt: 'Shirt',
+  dressShirt: 'Anzug',
+  dress: 'Kleid'
 }
 
 export const QUESTION_GROUPS = {

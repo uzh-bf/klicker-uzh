@@ -44,11 +44,12 @@ const EditProfile: NextPageWithLayout = () => {
           facialHair:
             data.self.avatarSettings?.facialHair ??
             AVATAR_OPTIONS.facialHair[0],
-          body: data.self.avatarSettings?.body ?? AVATAR_OPTIONS.body[0],
           accessory:
             data.self.avatarSettings?.accessory ?? AVATAR_OPTIONS.accessory[0],
           hairColor:
             data.self.avatarSettings?.hairColor ?? AVATAR_OPTIONS.hairColor[0],
+          clothing: data.self.avatarSettings?.clothing ??
+          AVATAR_OPTIONS.clothing[0],
           clothingColor:
             data.self.avatarSettings?.clothingColor ??
             AVATAR_OPTIONS.clothingColor[0],
@@ -62,7 +63,6 @@ const EditProfile: NextPageWithLayout = () => {
             mouth: values.mouth,
             hair: values.hair,
             facialHair: values.facialHair,
-            // body: values.body,
             body: 'chest',
             accessory: values.accessory,
             hairColor: values.hairColor,
@@ -71,7 +71,7 @@ const EditProfile: NextPageWithLayout = () => {
             faceMask: false,
             lashes: false,
             mask: false,
-            clothing: 'shirt',
+            clothing: values.clothing,
             graphic: 'none',
             hat: 'none',
           }
@@ -84,12 +84,12 @@ const EditProfile: NextPageWithLayout = () => {
               avatar: avatarHash,
               avatarSettings: pick(
                 [
-                  'body',
                   'skinTone',
                   'eyes',
                   'mouth',
                   'hair',
                   'clothingColor',
+                  'clothing',
                   'accessory',
                   'hairColor',
                   'facialHair',
@@ -112,7 +112,7 @@ const EditProfile: NextPageWithLayout = () => {
                 faceMask={false}
                 lashes={false}
                 mask={false}
-                clothing="shirt"
+                clothing={values.clothing}
                 hat="none"
                 graphic="none"
                 accessory={values.accessory}
@@ -273,6 +273,25 @@ const EditProfile: NextPageWithLayout = () => {
 
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
+                      <p className="font-bold">Kleidungsstil</p>
+                    </div>
+                    <div className="flex-1">
+                      <Field
+                        as="select"
+                        name="clothing"
+                        style={{ width: '100%' }}
+                      >
+                        {AVATAR_OPTIONS.clothing.map((value) => (
+                          <option key={value} value={value}>
+                            {AVATAR_LABELS[value]}
+                          </option>
+                        ))}
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-row items-center">
+                    <div className="flex-1">
                       <p className="font-bold">Kleiderfarbe</p>
                     </div>
                     <div className="flex-1">
@@ -292,7 +311,7 @@ const EditProfile: NextPageWithLayout = () => {
 
                   <div className="flex flex-row items-center">
                     <div className="flex-1">
-                      <p className="font-bold">Hautfarbe</p>
+                      <p className="font-bold">Hautton</p>
                     </div>
                     <div className="flex-1">
                       <Field
