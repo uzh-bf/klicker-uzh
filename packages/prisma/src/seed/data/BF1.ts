@@ -184,7 +184,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 10,
+    id: 5,
     name: 'Microlearning 1.1',
     content:
       'Welche der folgenden Aussagen zur **Interaktion zwischen Kapitalnehmer:innen und Kapitalgeber:innen** ist korrekt?',
@@ -223,7 +223,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 11,
+    id: 6,
     name: 'Microlearning 1.2',
     content:
       'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil in der **Corporate Finance**?',
@@ -260,7 +260,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 12,
+    id: 7,
     name: 'Microlearning 1.3',
     content:
       'Welche der folgenden Aussagen zum Aufbau einer **Bilanz** ist **korrekt**?',
@@ -298,7 +298,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 13,
+    id: 8,
     name: 'Microlearning 1.4',
     content:
       'Welche der folgenden Aussagen bezüglich des **finanzwirtschaftlichen Zieldreiecks** ist **korrekt**?',
@@ -337,7 +337,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 14,
+    id: 9,
     name: 'Jodel Woche 01',
     content: 'Wie oft benutzt du Jodel?',
     contentPlain: 'Wie oft benutzt du Jodel?',
@@ -377,7 +377,8 @@ export const SESSIONS = [
     name: 'BF1 VL Woche 01',
     displayName: 'BF1 - Woche 01',
     status: SessionStatus.PREPARED,
-    blocks: [{ questions: [14] }],
+    blocks: [{ questions: [9] }],
+    linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
   },
 ]
 
@@ -397,6 +398,6 @@ Was ist Corporate Finance? Gemäss Damodaran umfasst die Corporate Finance alle 
 
 Du lernst zudem das finanzwirtschaftliche Zieldreieck kennen, bei dem sich die Rentabilität, Liquidität und Sicherheit einander gegenüber stehen. Zudem lernst du das oberste Ziel der unternehmerischen Tätigkeit kennen, nämlich die langfristige Maximierung des Unternehmenswertes.
 `,
-    questions: [10, 11, 12, 13],
+    questions: [5, 6, 7, 8],
   },
 ]
