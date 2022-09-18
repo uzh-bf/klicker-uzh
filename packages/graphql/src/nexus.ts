@@ -316,6 +316,9 @@ export const MicroSession = objectType({
     t.nonNull.string('displayName')
     t.string('description')
 
+    t.nonNull.date('scheduledStartAt')
+    t.nonNull.date('scheduledEndAt')
+
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
@@ -518,6 +521,7 @@ export const Session = objectType({
     t.nonNull.string('namespace')
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('linkTo')
 
     t.nonNull.field('status', {
       type: SessionStatus,

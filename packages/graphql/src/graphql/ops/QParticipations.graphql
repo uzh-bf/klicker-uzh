@@ -12,10 +12,13 @@ query Participations($endpoint: String) {
       microSessions {
         id
         displayName
+        scheduledStartAt
+        scheduledEndAt
       }
       sessions {
         id
         displayName
+        linkTo
       }
     }
   }

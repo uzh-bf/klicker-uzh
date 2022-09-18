@@ -75,6 +75,8 @@ export async function getParticipations(
                 select: {
                   id: true,
                   displayName: true,
+                  scheduledStartAt: true,
+                  scheduledEndAt: true,
                 },
               },
               sessions: {
@@ -82,6 +84,7 @@ export async function getParticipations(
                 select: {
                   id: true,
                   displayName: true,
+                  linkTo: true,
                 },
               },
             },

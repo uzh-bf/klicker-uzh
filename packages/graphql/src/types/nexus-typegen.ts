@@ -212,6 +212,8 @@ export interface NexusGenObjects {
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
+    scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
+    scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
   Mutation: {};
   NumericalQuestionData: { // root type
@@ -289,6 +291,7 @@ export interface NexusGenObjects {
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
+    linkTo?: string | null; // String
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -454,6 +457,8 @@ export interface NexusGenFieldTypes {
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
+    scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
+    scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
@@ -573,6 +578,7 @@ export interface NexusGenFieldTypes {
     isAudienceInteractionActive: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
+    linkTo: string | null; // String
     name: string; // String!
     namespace: string; // String!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -736,6 +742,8 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     instances: 'QuestionInstance'
     name: 'String'
+    scheduledEndAt: 'DateTime'
+    scheduledStartAt: 'DateTime'
   }
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
@@ -855,6 +863,7 @@ export interface NexusGenFieldTypeNames {
     isAudienceInteractionActive: 'Boolean'
     isGamificationEnabled: 'Boolean'
     isModerationEnabled: 'Boolean'
+    linkTo: 'String'
     name: 'String'
     namespace: 'String'
     status: 'SessionStatus'

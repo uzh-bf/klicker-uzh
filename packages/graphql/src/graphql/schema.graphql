@@ -187,6 +187,8 @@ type MicroSession {
   id: ID!
   instances: [QuestionInstance!]!
   name: String!
+  scheduledEndAt: DateTime!
+  scheduledStartAt: DateTime!
 }
 
 type Mutation {
@@ -334,6 +336,7 @@ type Session {
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
+  linkTo: String
   name: String!
   namespace: String!
   status: SessionStatus!
