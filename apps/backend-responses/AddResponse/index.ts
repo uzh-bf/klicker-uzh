@@ -17,6 +17,8 @@ import getRedis from './redis'
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the question options
 
+const redisExec = getRedis()
+
 const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
@@ -27,8 +29,6 @@ const httpTrigger: AzureFunction = async function (
       status: 200,
     }
   }
-
-  const redisExec = getRedis()
 
   const sessionKey = `s:${req.body.sessionId}`
   const instanceKey = `${sessionKey}:i:${req.body.instanceId}`
