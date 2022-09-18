@@ -101,7 +101,11 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
     },
   })
 
-  app.use('/graphql', graphQLServer)
+  app.use('/healthz', function (req, res) {
+    res.send('OK')
+  })
+
+  app.use('/api/graphql', graphQLServer)
 
   return app
 }
