@@ -11,6 +11,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -56,7 +57,8 @@ function LearningElement({ courseId, id }: Props) {
         id: currentInstance?.id as number,
         response:
           questionData?.type === QuestionType.SC ||
-          questionData?.type === QuestionType.MC
+          questionData?.type === QuestionType.MC ||
+          questionData?.type === QuestionType.KPRIM
             ? {
                 choices: response as number[],
               }
@@ -98,12 +100,35 @@ function LearningElement({ courseId, id }: Props) {
               </div>
 
               {currentInstance.evaluation && (
-                <div className="flex-1 p-4 border rounded bg-gray-50">
+                <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
+                  <div className="flex flex-row gap-8">
+                    <div>
+                      <div className="font-bold">Punkte (berechnet)</div>
+                      <div>{currentInstance.evaluation.score} Punkte</div>
+                    </div>
+
+                    <div>
+                      <div className="font-bold">Punkte (gesammelt)</div>
+                      <div>
+                        {currentInstance.evaluation.pointsAwarded} Punkte
+                      </div>
+                    </div>
+                  </div>
+
                   <EvaluationDisplay
                     options={questionData.options}
                     questionType={questionData.type}
                     evaluation={currentInstance.evaluation}
                   />
+
+                  <div>
+                    <div className="font-bold">Sammle wieder Punkte ab:</div>
+                    <div>
+                      {dayjs(currentInstance.evaluation.newPointsFrom).format(
+                        'DD.MM.YYYY HH:mm'
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
