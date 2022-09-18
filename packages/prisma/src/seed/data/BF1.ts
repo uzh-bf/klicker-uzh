@@ -228,9 +228,9 @@ export const QUESTIONS = [
     id: 6,
     name: 'Microlearning 1.2',
     content:
-      'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil in der **Corporate Finance**?',
+      'Welcher der folgenden Entscheidungsbereiche ist **nicht** Teil der **Corporate Finance**?',
     contentPlain:
-      'Welcher der folgenden Entscheidungsbereiche ist nicht Teil in der Corporate Finance?',
+      'Welcher der folgenden Entscheidungsbereiche ist nicht Teil der Corporate Finance?',
     type: QuestionType.SC,
     choices: [
       {

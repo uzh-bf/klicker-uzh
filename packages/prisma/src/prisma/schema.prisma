@@ -481,9 +481,10 @@ model Participation {
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
-  trialsCount        Int   @default(0)
-  totalScore         Float @default(0)
-  totalPointsAwarded Float @default(0)
+  trialsCount        Int       @default(0)
+  totalScore         Float     @default(0)
+  totalPointsAwarded Float     @default(0)
+  lastAwardedAt      DateTime?
 
   response Json
 
