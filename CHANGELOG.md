@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.37...v2.0.0-alpha.38) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** use status code for server side redirects ([d1732d3](https://github.com/uzh-bf/klicker-uzh/commit/d1732d3cbff71edaacd5de9674869360e1dbfb91))
+
 ## [2.0.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.36...v2.0.0-alpha.37) (2022-09-18)
 
 
