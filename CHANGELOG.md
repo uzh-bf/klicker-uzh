@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.40...v2.0.0-alpha.41) (2022-09-18)
+
+
+### Features
+
+* **packages/graphql:** implement logic for points award in learning elements ([122b501](https://github.com/uzh-bf/klicker-uzh/commit/122b5011d1b927ab8d3a87172177575132894841))
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure that self query is public, update caching logic ([dd5899c](https://github.com/uzh-bf/klicker-uzh/commit/dd5899c6b9f9de1889303601c393e1df3db82e2c))
+
+
+### Deployment
+
+* build docker backend on tags ([b38c43b](https://github.com/uzh-bf/klicker-uzh/commit/b38c43b6c2211220729136790d94a73fd99a39c6))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add initial display of points awarded ([d10e521](https://github.com/uzh-bf/klicker-uzh/commit/d10e521bf05f35c925748c30fb46d5fef208c6a7))
+* **packages/prisma:** add lastAwardedAt timestamp for question responses ([3fe6f33](https://github.com/uzh-bf/klicker-uzh/commit/3fe6f33b11e856a148c9980f9c2977e3de06c575))
+* **packages/prisma:** improve data model for points logic ([4cb5a18](https://github.com/uzh-bf/klicker-uzh/commit/4cb5a18c8c3a96e6c5d791b017f3e54a27390754))
+
 ## [2.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.39...v2.0.0-alpha.40) (2022-09-18)
 
 
