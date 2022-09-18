@@ -730,6 +730,7 @@ export const Mutation = objectType({
     t.field('updateParticipantProfile', {
       type: Participant,
       args: {
+        password: stringArg(),
         username: stringArg(),
         avatar: stringArg(),
         avatarSettings: arg({

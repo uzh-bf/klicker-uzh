@@ -993,6 +993,7 @@ export interface NexusGenArgTypes {
     updateParticipantProfile: { // args
       avatar?: string | null; // String
       avatarSettings?: NexusGenInputs['AvatarSettingsInput'] | null; // AvatarSettingsInput
+      password?: string | null; // String
       username?: string | null; // String
     }
     upvoteFeedback: { // args

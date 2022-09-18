@@ -25,18 +25,49 @@ export async function getParticipantProfile(
 }
 
 interface UpdateParticipantProfileArgs {
+  password?: string
   username?: string
   avatar?: string
   avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
-  { username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
+  { password, username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
+  if (typeof username === 'string') {
+    if (username.length < 5 || username.length > 10) {
+      // TODO: return error
+    }
+  }
+
+  if (typeof password === 'string') {
+    if (password.length >= 8) {
+      const hashedPassword = await bcrypt.hash(password, 12)
+      return ctx.prisma.participant.update({
+        where: { id: ctx.user.sub },
+        data: { password: hashedPassword, username, avatar, avatarSettings },
+        select: {
+          id: true,
+          avatar: true,
+          avatarSettings: true,
+          username: true,
+        },
+      })
+    } else {
+      // TODO: return error
+    }
+  }
+
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: { username, avatar, avatarSettings },
+    select: {
+      id: true,
+      avatar: true,
+      avatarSettings: true,
+      username: true,
+    },
   })
 
   return participant

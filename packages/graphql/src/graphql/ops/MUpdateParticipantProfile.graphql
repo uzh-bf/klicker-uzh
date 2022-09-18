@@ -2,11 +2,13 @@ mutation UpdateParticipantProfile(
   $avatar: String
   $avatarSettings: AvatarSettingsInput
   $username: String
+  $password: String
 ) {
   updateParticipantProfile(
     avatar: $avatar
     avatarSettings: $avatarSettings
     username: $username
+    password: $password
   ) {
     id
     username
