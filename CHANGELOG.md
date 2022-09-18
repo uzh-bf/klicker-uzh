@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.35...v2.0.0-alpha.36) (2022-09-18)
+
+
+### Bug Fixes
+
+* **packages/graphql:** fix type issues and add logging in LTI participant ([d224352](https://github.com/uzh-bf/klicker-uzh/commit/d2243526a572e28e82a4c146e812a8547494cb9d))
+
+
+### Deployment
+
+* add basic rollout script for QA environment ([746e4f9](https://github.com/uzh-bf/klicker-uzh/commit/746e4f9209fc266759c52ab52ec29db74eab47ff))
+
+
+### Other
+
+* add prettierrc in all directories, remove design system dependency ([f9154bd](https://github.com/uzh-bf/klicker-uzh/commit/f9154bde3e53fc69d7a78c4266fe1b1b7d9a940d))
+* lockfile maintenance ([5258d6c](https://github.com/uzh-bf/klicker-uzh/commit/5258d6c60d0efeb8c100cbe5dbe722c505a8a13e))
+* modify prettierrc in markdown package for cjs, reformat everything ([31648ce](https://github.com/uzh-bf/klicker-uzh/commit/31648ce7cb9d9434b6a7b751e97aa7cce29b2241))
+* move seeding to the prisma package ([ad02533](https://github.com/uzh-bf/klicker-uzh/commit/ad02533b27d259d738ae6fbd27cd129a4f2aaaac))
+* **packages/prisma:** update seed for learning elements (module 2) ([8059a35](https://github.com/uzh-bf/klicker-uzh/commit/8059a359818ac62a88241f3106d94b80da7ffd83))
+
 ## [2.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2022-09-18)
 
 
