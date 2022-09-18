@@ -35,7 +35,7 @@
     "build": "turbo run build",
     "publish": "turbo run publish",
     "format": "turbo run format",
-    "release": "standard-version --no-verify",
+    "release": "standard-version --dry-run",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
