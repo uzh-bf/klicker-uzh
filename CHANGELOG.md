@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.39...v2.0.0-alpha.40) (2022-09-18)
+
+
+### Bug Fixes
+
+* add sameSite none to cookies ([204f02c](https://github.com/uzh-bf/klicker-uzh/commit/204f02cfcf90f65607638ec5282012eca9293c2e))
+* **apps/frontend-pwa:** ensure window is used from optional global ([a037f68](https://github.com/uzh-bf/klicker-uzh/commit/a037f68135cd1a5b763b50d3da7101c6dc72fb05))
+
 ## [2.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.38...v2.0.0-alpha.39) (2022-09-18)
 
 
