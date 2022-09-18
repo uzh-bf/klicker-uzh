@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.32...v2.0.0-alpha.33) (2022-09-18)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make everything in ParticipantLearningData optional ([cf2c47e](https://github.com/uzh-bf/klicker-uzh/commit/cf2c47e6b6e40d2b470f0e81f70b7266b17fbe8e))
+
+
+### Other
+
+* lockfile maintenance ([acb4039](https://github.com/uzh-bf/klicker-uzh/commit/acb40393ae4bb8f13e6cca99bbd925120e419a56))
+
+
+### Deployment
+
+* add extended config for production deployment with backend-docker ([0f243f9](https://github.com/uzh-bf/klicker-uzh/commit/0f243f9642ba6dbd92fd865ab62ed30800bd8926))
+
 ## [2.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.31...v2.0.0-alpha.32) (2022-09-18)
 
 
