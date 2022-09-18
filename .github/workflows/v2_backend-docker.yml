@@ -2,6 +2,7 @@ name: Build Docker image for backend-docker
 
 on:
   push:
+    tags: [ 'v*.*.*' ]
     branches:
       - "v2"
     paths:
