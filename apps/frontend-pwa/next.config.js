@@ -15,6 +15,8 @@ const nextConfig = withPWA({
       },
     },
   },
+  // disable compression as it is done on the ingress
+  compress: false,
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
@@ -40,7 +42,6 @@ const nextConfig = withPWA({
     ADD_RESPONSE_URL: process.env.NEXT_PUBLIC_ADD_RESPONSE_URL,
   },
   serverRuntimeConfig: {
-    APP_DOMAIN: process.env.APP_DOMAIN,
     APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },

@@ -9,4 +9,4 @@ README.md
 .turbo/
 .env.local
 .env.local.template
-public/avatars/
+public/avatars*

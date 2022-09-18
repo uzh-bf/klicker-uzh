@@ -87,7 +87,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  const participantToken = await getParticipantToken({ apolloClient, ctx })
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
 
   return addApolloState(apolloClient, {
     props: {

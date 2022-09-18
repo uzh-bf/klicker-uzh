@@ -197,15 +197,13 @@ const Index = function () {
                   <FontAwesomeIcon icon={faBookOpenReader} />
                 </Button.Icon>
                 <Button.Label className="flex-1 text-left">
-                  <div className="flex flex-row items-center justify-between">
-                    <div>
-                      <div>{micro.displayName}</div>
-                      <div className="text-sm">
-                        {dayjs(micro.scheduledStartAt).format('D.M.YYYY HH:mm')}{' '}
-                        - {dayjs(micro.scheduledEndAt).format('D.M.YYYY HH:mm')}
-                      </div>
+                  <div>{micro.displayName}</div>
+                  <div className="flex flex-row items-end justify-between">
+                    <div className="text-xs">
+                      {dayjs(micro.scheduledStartAt).format('D.M.YYYY HH:mm')} -{' '}
+                      {dayjs(micro.scheduledEndAt).format('D.M.YYYY HH:mm')}
                     </div>
-                    <div className="text-sm">{micro.courseName}</div>
+                    <div className="text-xs">{micro.courseName}</div>
                   </div>
                 </Button.Label>
               </Button>

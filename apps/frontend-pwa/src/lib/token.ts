@@ -24,7 +24,7 @@ export async function getParticipantToken({
   let participantToken = cookies['participant_token']
 
   try {
-    if (!participantToken) {
+    if (!participantToken && req.method === 'POST') {
       // extract the body from the LTI request
       // if there is a body, request a participant token
       // TODO: verify that there is an LTI body and that it is valid
@@ -43,7 +43,7 @@ export async function getParticipantToken({
             sub: 'lti-admin',
             role: 'ADMIN',
           },
-          serverRuntimeConfig.APP_SECRET,
+          process.env.APP_SECRET ?? serverRuntimeConfig.APP_SECRET,
           {
             algorithm: 'HS256',
             expiresIn: '1h',
@@ -63,19 +63,23 @@ export async function getParticipantToken({
           },
         })
 
-        // TODO: if the avatar is undefined, the user was newly registered -> redirect to the welcome page after (set avatar and password)
-
         // if a JWT was received from the API, set a cookie in the participant browser
         if (result.data?.registerParticipantFromLTI?.participantToken) {
           participantToken =
             result.data.registerParticipantFromLTI.participantToken
           nookies.set(ctx, 'participant_token', participantToken, {
-            domain: serverRuntimeConfig.COOKIE_DOMAIN,
+            domain:
+              process.env.COOKIE_DOMAIN ?? serverRuntimeConfig.COOKIE_DOMAIN,
             path: '/',
             httpOnly: true,
             maxAge: 60 * 60 * 24 * 6,
             secure: process.env.NODE_ENV === 'production',
           })
+        }
+
+        return {
+          participantToken,
+          participant: result.data?.registerParticipantFromLTI?.participant,
         }
       }
     }
@@ -83,5 +87,7 @@ export async function getParticipantToken({
     console.error(e)
   }
 
-  return participantToken
+  return {
+    participantToken,
+  }
 }

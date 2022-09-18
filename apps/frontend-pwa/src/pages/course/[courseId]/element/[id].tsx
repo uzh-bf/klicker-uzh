@@ -138,7 +138,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const apolloClient = initializeApollo()
 
-  const participantToken = await getParticipantToken({ apolloClient, ctx })
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  if (participant && !participant.avatar) {
+    return {
+      redirect: {
+        destination: '/welcome',
+        permanent: false,
+      },
+    }
+  }
 
   const result = await apolloClient.query({
     query: GetLearningElementDocument,
