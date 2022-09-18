@@ -53,7 +53,7 @@ export enum AttachmentType {
 
 export type AvatarSettingsInput = {
   accessory: Scalars['String'];
-  body: Scalars['String'];
+  clothing: Scalars['String'];
   clothingColor: Scalars['String'];
   eyes: Scalars['String'];
   facialHair: Scalars['String'];

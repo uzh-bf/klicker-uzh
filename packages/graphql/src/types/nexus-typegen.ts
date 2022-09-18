@@ -38,7 +38,7 @@ declare global {
 export interface NexusGenInputs {
   AvatarSettingsInput: { // input type
     accessory: string; // String!
-    body: string; // String!
+    clothing: string; // String!
     clothingColor: string; // String!
     eyes: string; // String!
     facialHair: string; // String!

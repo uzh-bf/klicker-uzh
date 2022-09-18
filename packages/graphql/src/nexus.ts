@@ -33,13 +33,13 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const AvatarSettingsInput = inputObjectType({
   name: 'AvatarSettingsInput',
   definition(t) {
-    t.nonNull.string('body')
     t.nonNull.string('skinTone')
     t.nonNull.string('eyes')
     t.nonNull.string('mouth')
     t.nonNull.string('hair')
     t.nonNull.string('accessory')
     t.nonNull.string('hairColor')
+    t.nonNull.string('clothing')
     t.nonNull.string('clothingColor')
     t.nonNull.string('facialHair')
   },

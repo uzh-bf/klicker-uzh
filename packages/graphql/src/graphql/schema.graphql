@@ -34,7 +34,7 @@ enum AttachmentType {
 
 input AvatarSettingsInput {
   accessory: String!
-  body: String!
+  clothing: String!
   clothingColor: String!
   eyes: String!
   facialHair: String!

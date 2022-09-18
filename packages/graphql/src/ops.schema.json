@@ -273,7 +273,7 @@
             "deprecationReason": null
           },
           {
-            "name": "body",
+            "name": "clothing",
             "description": null,
             "type": {
               "kind": "NON_NULL",
