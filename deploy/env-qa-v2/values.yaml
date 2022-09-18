@@ -13,7 +13,7 @@ frontendPWA:
           - pwa.klicker-qa.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    type: Recreate
 
 frontendManage:
   hostname: manage.klicker-qa.bf-app.ch
@@ -30,7 +30,7 @@ frontendManage:
           - manage.klicker-qa.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    type: Recreate
 
 backendGraphql:
   hostname: backend-sls.klicker-qa.bf-app.ch
@@ -47,4 +47,4 @@ backendGraphql:
           - backend-sls.klicker-qa.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    type: Recreate
