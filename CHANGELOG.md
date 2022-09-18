@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.41...v2.0.0-alpha.42) (2022-09-18)
+
+
+### Other
+
+* lockfile maintenance ([84c6a09](https://github.com/uzh-bf/klicker-uzh/commit/84c6a095c529125291c71d8cbcf599b6ea639d40))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** extend leaderboard for real data ([8a0a63e](https://github.com/uzh-bf/klicker-uzh/commit/8a0a63ec4c0bd2717f5968e41a2e289ca3f74e70))
+* **packages/graphql:** implement logic for leaderboard ([810dcfd](https://github.com/uzh-bf/klicker-uzh/commit/810dcfd4126d33395d93c9b65f754d5302ec9090))
+
 ## [2.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.40...v2.0.0-alpha.41) (2022-09-18)
 
 
