@@ -66,12 +66,16 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useResponseCache({
         // set the TTL to 0 to disable response caching by default
-        ttl: process.env.NODE_ENV === 'development' ? 0 : undefined,
+        ttl: 0,
+        // set caching for each type individually
         ttlPerType: {
           Participant: 60000,
-          // Course: 60000,
-          // LearningElement: 60000,
-          // QuestionInstance: 60000,
+          Course: 60000,
+          LearningElement: 60000,
+          MicroSession: 60000,
+          QuestionInstance: 60000,
+          Participation: 0,
+          LeaderboardEntry: 10000,
         },
         cache,
         session(ctx) {
@@ -80,7 +84,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useValidationCache(),
       useParserCache(),
-      // // useGraphQlJit(),
+      // useGraphQlJit(),
       process.env.HIVE_TOKEN
         ? useHive({
             enabled: true,

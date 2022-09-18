@@ -61,6 +61,7 @@ export const AuthSchema = {
     resolveFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     respondToFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
+    respondToQuestionInstance: { __authz: { rules: ['Allow'] } },
   },
 
   Query: {
@@ -71,7 +72,7 @@ export const AuthSchema = {
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     participations: { __authz: { rules: ['IsParticipant'] } },
     pinnedFeedbacks: { __authz: { rules: ['IsUserOrAdmin'] } },
-    self: { __authz: { rules: ['IsParticipant'] } },
+    self: { __authz: { rules: ['Allow'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
