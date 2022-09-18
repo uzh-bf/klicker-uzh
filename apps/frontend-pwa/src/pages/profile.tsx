@@ -23,11 +23,9 @@ const Profile = () => {
 
         <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
           <Image
-            src={
-              data.self.avatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`
-                : '/placeholder.png'
-            }
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              data.self.avatar ?? 'placeholder'
+            }.svg`}
             alt=""
             fill
           />

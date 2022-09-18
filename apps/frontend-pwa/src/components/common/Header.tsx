@@ -72,11 +72,9 @@ function Header({
         {participant ? (
           <Link href="/profile" className="">
             <Image
-              src={
-                participant?.avatar
-                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
-                  : '/placeholder.png'
-              }
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+                participant?.avatar ?? 'placeholder'
+              }.svg`}
               alt=""
               width="45"
               height="45"
