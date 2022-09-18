@@ -23,8 +23,6 @@ function Evaluation() {
   if (error) return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  console.log(data?.sessionEvaluation)
-
   function getTabs(currentData: any): Tab[] {
     const tabArray: Tab[] = []
     currentData.sessionEvaluation.instanceResults.map(
@@ -90,6 +88,14 @@ function Evaluation() {
             })
           }
         )
+      } else if (instance.questionData.type === 'FREE_TEXT') {
+        // answerArray should include the correct keywords together with a correct: true attribute
+        instance.questionData.options.solutions.forEach((solution: string) => {
+          innerArray.push({
+            value: solution,
+            correct: true,
+          })
+        })
       }
       answerArray.push({
         answers: innerArray,
@@ -102,7 +108,6 @@ function Evaluation() {
   const tabs = getTabs(data)
   const questions = getQuestions(data)
   const answerCollection = getAnswers(data)
-  console.log(answerCollection)
 
   return (
     <div className="mx-4 mt-2">
@@ -198,6 +203,22 @@ function Evaluation() {
                             [{answer.value.min || '-∞'},
                             {answer.value.max || '+∞'}]
                           </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                  {answerCollection[index].type === 'FREE_TEXT' && (
+                    <div className="flex flex-row">
+                      Schlüsselwörter:{' '}
+                      {answerCollection[index].answers.map(
+                        (
+                          answer: {
+                            value: String | { min: number; max: number }
+                            correct?: Boolean
+                          },
+                          innerIndex: number
+                        ) => (
+                          <div key={innerIndex}>{answer.value}</div>
                         )
                       )}
                     </div>
