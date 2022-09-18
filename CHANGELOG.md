@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** add clothing avatar options ([0d6e2ae](https://github.com/uzh-bf/klicker-uzh/commit/0d6e2ae685c7532b2b4200dc266e7ba8381124c4))
+* **packages/graphql:** add option for avatar clothing ([eff19ab](https://github.com/uzh-bf/klicker-uzh/commit/eff19ab32d63d05c9395d5b29a7b6df0747d65bd))
+
+
+### Other
+
+* add linkTo for BF1 seeded sessions ([8192182](https://github.com/uzh-bf/klicker-uzh/commit/8192182129086781780a17bd01e4f285af963081))
+* **apps/backend-docker:** add local dev mode ([28944f6](https://github.com/uzh-bf/klicker-uzh/commit/28944f64c29d7b2c177b7bd4ebb0d0f616554926))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve index page display, add error handlin in participant token fetcher ([e0dc902](https://github.com/uzh-bf/klicker-uzh/commit/e0dc902b5021987d81982e8dacbcf265fddddc27))
+* **packages/graphql:** add linkTo and micro session start and end date to graphql schema ([258675b](https://github.com/uzh-bf/klicker-uzh/commit/258675b14cfac959f18c47f0561d96cd59dd911b))
+* **packages/prisma:** add linkTo to datamodel of sessions ([b0dd219](https://github.com/uzh-bf/klicker-uzh/commit/b0dd219f2cf90eaf07ce89637c27a67a894d3400))
+
 ## [2.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.33...v2.0.0-alpha.34) (2022-09-18)
 
 
