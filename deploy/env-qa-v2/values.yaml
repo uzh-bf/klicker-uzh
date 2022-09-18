@@ -31,3 +31,20 @@ frontendManage:
 
   strategy:
     type: RollingUpdate
+
+backendGraphql:
+  hostname: backend-sls.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: backend-sls.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-backend-graphql-tls
+        hosts:
+          - backend-sls.klicker-qa.bf-app.ch
+
+  strategy:
+    type: RollingUpdate

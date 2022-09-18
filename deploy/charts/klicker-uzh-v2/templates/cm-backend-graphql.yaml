@@ -1,0 +1,17 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-backend-graphql
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
+  COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  NODE_ENV: development
+  REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
+  REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
