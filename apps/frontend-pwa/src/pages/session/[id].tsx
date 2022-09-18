@@ -190,7 +190,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
       redirect: {
         destination: '/404',
-        permanent: false,
+        statusCode: 302,
       },
     }
   }

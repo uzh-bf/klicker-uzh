@@ -43,8 +43,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (typeof ctx.params?.shortname !== 'string') {
     return {
       redirect: {
-        destination: `/404`,
-        permanent: false,
+        destination: '/404',
+        statusCode: 302,
       },
     }
   }

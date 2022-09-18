@@ -19,6 +19,7 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 let apolloClient: any
 
 const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
+
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
     graphQLErrors.forEach(

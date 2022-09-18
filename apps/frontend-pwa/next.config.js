@@ -15,8 +15,8 @@ const nextConfig = withPWA({
       },
     },
   },
-  // disable compression as it is done on the ingress
-  compress: false,
+  // TODO: disable compression if it is done on the ingress
+  compress: true,
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
