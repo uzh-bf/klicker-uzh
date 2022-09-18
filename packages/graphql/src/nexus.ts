@@ -359,7 +359,7 @@ export const Participant = objectType({
 export const Subscription = objectType({
   name: 'Subscription',
   definition(t) {
-    t.nonNull.id('id')
+    t.nonNull.int('id')
 
     t.nonNull.string('endpoint')
   },
@@ -373,7 +373,7 @@ export const Participation = objectType({
     t.nonNull.boolean('isActive')
     t.nonNull.int('points')
 
-    t.nonNull.field('course', {
+    t.field('course', {
       type: Course,
     })
     t.list.nonNull.field('subscriptions', {

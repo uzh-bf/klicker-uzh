@@ -448,7 +448,7 @@ export type ParticipantLearningData = {
 
 export type Participation = {
   __typename?: 'Participation';
-  course: Course;
+  course?: Maybe<Course>;
   id: Scalars['Int'];
   isActive: Scalars['Boolean'];
   points: Scalars['Int'];
@@ -609,7 +609,7 @@ export enum SessionStatus {
 export type Subscription = {
   __typename?: 'Subscription';
   endpoint: Scalars['String'];
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type SubscriptionKeys = {
@@ -802,7 +802,7 @@ export type SubscribeToPushMutationVariables = Exact<{
 }>;
 
 
-export type SubscribeToPushMutation = { __typename?: 'Mutation', subscribeToPush?: { __typename?: 'Participation', id: number, subscriptions?: Array<{ __typename?: 'Subscription', id: string, endpoint: string }> | null } | null };
+export type SubscribeToPushMutation = { __typename?: 'Mutation', subscribeToPush?: { __typename?: 'Participation', id: number, subscriptions?: Array<{ __typename?: 'Subscription', id: number, endpoint: string }> | null } | null };
 
 export type UpdateParticipantProfileMutationVariables = Exact<{
   avatar?: InputMaybe<Scalars['String']>;
@@ -903,7 +903,7 @@ export type ParticipationsQueryVariables = Exact<{
 }>;
 
 
-export type ParticipationsQuery = { __typename?: 'Query', participations?: Array<{ __typename?: 'Participation', id: number, points: number, subscriptions?: Array<{ __typename?: 'Subscription', id: string, endpoint: string }> | null, course: { __typename?: 'Course', id: string, displayName: string, microSessions: Array<{ __typename?: 'MicroSession', id: string, displayName: string, scheduledStartAt: any, scheduledEndAt: any }>, sessions: Array<{ __typename?: 'Session', id: string, displayName: string, linkTo?: string | null }> } }> | null };
+export type ParticipationsQuery = { __typename?: 'Query', participations?: Array<{ __typename?: 'Participation', id: number, points: number, subscriptions?: Array<{ __typename?: 'Subscription', id: number, endpoint: string }> | null, course?: { __typename?: 'Course', id: string, displayName: string, microSessions: Array<{ __typename?: 'MicroSession', id: string, displayName: string, scheduledStartAt: any, scheduledEndAt: any }>, sessions: Array<{ __typename?: 'Session', id: string, displayName: string, linkTo?: string | null }> } | null }> | null };
 
 export type SelfQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1336,7 +1336,7 @@ export type ParticipantLearningDataResolvers<ContextType = any, ParentType exten
 };
 
 export type ParticipationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Participation'] = ResolversParentTypes['Participation']> = {
-  course?: Resolver<ResolversTypes['Course'], ParentType, ContextType>;
+  course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   isActive?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   points?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1429,7 +1429,7 @@ export type SessionBlockResolvers<ContextType = any, ParentType extends Resolver
 
 export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
   endpoint?: SubscriptionResolver<ResolversTypes['String'], "endpoint", ParentType, ContextType>;
-  id?: SubscriptionResolver<ResolversTypes['ID'], "id", ParentType, ContextType>;
+  id?: SubscriptionResolver<ResolversTypes['Int'], "id", ParentType, ContextType>;
 };
 
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {

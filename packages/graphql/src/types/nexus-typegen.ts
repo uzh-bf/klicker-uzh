@@ -252,7 +252,7 @@ export interface NexusGenObjects {
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
-    course: NexusGenRootTypes['Course']; // Course!
+    course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
     points: number; // Int!
@@ -307,7 +307,7 @@ export interface NexusGenObjects {
   }
   Subscription: { // root type
     endpoint: string; // String!
-    id: string; // ID!
+    id: number; // Int!
   }
   User: { // root type
     description?: string | null; // String
@@ -525,7 +525,7 @@ export interface NexusGenFieldTypes {
     participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
-    course: NexusGenRootTypes['Course']; // Course!
+    course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
     points: number; // Int!
@@ -594,7 +594,7 @@ export interface NexusGenFieldTypes {
   }
   Subscription: { // field return type
     endpoint: string; // String!
-    id: string; // ID!
+    id: number; // Int!
   }
   User: { // field return type
     description: string | null; // String
@@ -879,7 +879,7 @@ export interface NexusGenFieldTypeNames {
   }
   Subscription: { // field return type name
     endpoint: 'String'
-    id: 'ID'
+    id: 'Int'
   }
   User: { // field return type name
     description: 'String'

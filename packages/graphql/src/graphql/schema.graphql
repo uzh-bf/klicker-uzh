@@ -263,7 +263,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
-  course: Course!
+  course: Course
   id: Int!
   isActive: Boolean!
   points: Int!
@@ -367,7 +367,7 @@ enum SessionStatus {
 
 type Subscription {
   endpoint: String!
-  id: ID!
+  id: Int!
 }
 
 input SubscriptionKeys {

@@ -216,103 +216,119 @@ export async function registerParticipantFromLTI(
   { courseId, participantId }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
+  console.log('args', courseId, participantId)
+
   if (!courseId) return null
 
-  let participant = await ctx.prisma.participantAccount.findUnique({
-    where: {
-      ssoType_ssoId: {
-        ssoType: SSOType.LTI,
-        ssoId: participantId,
+  try {
+    let participant = await ctx.prisma.participantAccount.findUnique({
+      where: {
+        ssoType_ssoId: {
+          ssoType: SSOType.LTI,
+          ssoId: participantId,
+        },
       },
-    },
-    include: {
-      participant: true,
-    },
-  })
-
-  let participation = null
-
-  // if there is no participant matching the SSO id from LTI
-  // create a new participant and participant account
-  if (!participant) {
-    let username
-    let password
-    // generate a random username that can be changed later on
-    username = generatePassword.generate({
-      length: 8,
-      uppercase: true,
-      symbols: false,
-      numbers: true,
-    })
-    // generate a random password that can be changed later on
-    password = generatePassword.generate({
-      length: 16,
-      uppercase: true,
-      symbols: true,
-      numbers: true,
+      include: {
+        participant: true,
+      },
     })
 
-    const hash = await bcrypt.hash(password, 12)
+    console.log('participant', participant)
 
-    participant = await ctx.prisma.participantAccount.create({
-      data: {
-        ssoType: SSOType.LTI,
-        ssoId: participantId,
-        participant: {
-          create: {
-            password: hash,
-            username,
-            participations: {
-              create: {
-                isActive: false,
-                course: {
-                  connect: {
-                    id: courseId,
+    let participation = null
+
+    // if there is no participant matching the SSO id from LTI
+    // create a new participant and participant account
+    if (!participant) {
+      let username
+      let password
+      // generate a random username that can be changed later on
+      username = generatePassword.generate({
+        length: 8,
+        uppercase: true,
+        symbols: false,
+        numbers: true,
+      })
+      // generate a random password that can be changed later on
+      password = generatePassword.generate({
+        length: 16,
+        uppercase: true,
+        symbols: true,
+        numbers: true,
+      })
+
+      console.log('login', username, password)
+
+      const hash = await bcrypt.hash(password, 12)
+
+      participant = await ctx.prisma.participantAccount.create({
+        data: {
+          ssoType: SSOType.LTI,
+          ssoId: participantId,
+          participant: {
+            create: {
+              password: hash,
+              username,
+              participations: {
+                create: {
+                  isActive: false,
+                  course: {
+                    connect: {
+                      id: courseId,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-      include: {
-        participant: true,
-      },
-    })
-  } else {
-    participation = await ctx.prisma.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: participant.participantId,
+        include: {
+          participant: true,
         },
-      },
-      create: {
-        isActive: false,
-        course: {
-          connect: {
-            id: courseId,
+      })
+
+      console.log('new participant', participant)
+    } else {
+      participation = await ctx.prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: participant.participantId,
           },
         },
-        participant: {
-          connect: {
-            id: participant.participantId,
+        create: {
+          isActive: false,
+          course: {
+            connect: {
+              id: courseId,
+            },
+          },
+          participant: {
+            connect: {
+              id: participant.participantId,
+            },
           },
         },
-      },
-      update: {},
-      include: {
-        participant: true,
-      },
-    })
-  }
+        update: {},
+        include: {
+          participant: true,
+        },
+      })
 
-  const jwt = createParticipantToken(participant.participant.id)
+      console.log('new participation', participation)
+    }
 
-  return {
-    id: `${courseId}-${participant.participant.id}`,
-    participantToken: jwt,
-    participant: participant.participant ?? participation?.participant,
-    participation,
+    const jwt = createParticipantToken(participant.participant.id)
+
+    return {
+      id: `${courseId}-${participant.participant.id}`,
+      participantToken: jwt,
+      participant: participant.participant ?? participation?.participant,
+      participation,
+      course: null,
+    }
+  } catch (e) {
+    console.error(e)
+    return null
   }
 }
