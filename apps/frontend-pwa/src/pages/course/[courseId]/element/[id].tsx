@@ -104,12 +104,14 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex flex-row gap-8">
                     <div>
                       <div className="font-bold">Punkte (berechnet)</div>
-                      <div>{currentInstance.evaluation.score} Punkte</div>
+                      <div className="text-xl">
+                        {currentInstance.evaluation.score} Punkte
+                      </div>
                     </div>
 
                     <div>
                       <div className="font-bold">Punkte (gesammelt)</div>
-                      <div>
+                      <div className="text-xl">
                         {currentInstance.evaluation.pointsAwarded} Punkte
                       </div>
                     </div>
