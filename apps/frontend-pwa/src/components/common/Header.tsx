@@ -26,7 +26,9 @@ function Header({
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
 
-  const pageInFrame = window && window?.location !== window?.parent.location
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
 
   return (
     <div
