@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.33...v2.0.0-alpha.34) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure request from lti is passed correctly ([5132fcc](https://github.com/uzh-bf/klicker-uzh/commit/5132fcc9328eaa79b623b9563a96fc0a57c59139))
+
+
+### Other
+
+* move backend-sls workflows to drafts ([1820037](https://github.com/uzh-bf/klicker-uzh/commit/18200374ebfa09fa330ca05b56174c323f023919))
+* reformat ([4fccddb](https://github.com/uzh-bf/klicker-uzh/commit/4fccddb53360dc7897a534d5fdf41cc51d12fa64))
+
 ## [2.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.32...v2.0.0-alpha.33) (2022-09-18)
 
 
