@@ -8,10 +8,30 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
+      - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        backendGraphql:
+          apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
+          cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
+          databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
+          hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
+
+          redisCache:
+            host: '{{ requiredEnv "REDIS_CACHE_HOST" }}'
+            port: '{{ requiredEnv "REDIS_CACHE_PORT" }}'
+            tls: '{{ requiredEnv "REDIS_CACHE_TLS" }}'
+            pass: '{{ requiredEnv "REDIS_CACHE_PASS" }}'
+
+          redisExec:
+            host: '{{ requiredEnv "REDIS_HOST" }}'
+            port: '{{ requiredEnv "REDIS_PORT" }}'
+            tls: '{{ requiredEnv "REDIS_TLS" }}'
+            pass: '{{ requiredEnv "REDIS_PASS" }}'
+
       - frontendPWA:
-          appSecret: '{{ requiredEnv "APP_SECRET" }}'
           image:
             tag: v2.0.0-alpha.30
+
         frontendManage:
           image:
             tag: v2.0.0-alpha.30
