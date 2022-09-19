@@ -13,17 +13,17 @@ releases:
         frontendPWA:
           replicaCount: 3
           image:
-            tag: v2.0.0-alpha.42
+            tag: v2.0.0-alpha.43
 
         frontendManage:
           replicaCount: 1
           image:
-            tag: v2.0.0-alpha.42
+            tag: v2.0.0-alpha.43
 
         backendGraphql:
           replicaCount: 3
           image:
-            tag: v2.0.0-alpha.42
+            tag: v2.0.0-alpha.43
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
