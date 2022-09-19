@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.44...v2.0.0-alpha.45) (2022-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure a message is displayed on the learning element evaluation ([3772295](https://github.com/uzh-bf/klicker-uzh/commit/3772295837b88ddae30dd979d033eba0f784d0a6))
+
 ## [2.0.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.43...v2.0.0-alpha.44) (2022-09-19)
 
 
