@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.47...v2.0.0-alpha.48) (2022-09-19)
+
+
+### Other
+
+* add templates for SC and KPRIM ([144898f](https://github.com/uzh-bf/klicker-uzh/commit/144898ffe3dad0b256c1d3715bb85a12464cfe11))
+* lockfile maintenance ([cb79507](https://github.com/uzh-bf/klicker-uzh/commit/cb79507a9b348802fc94868dedda18d3c52f23bf))
+* **packages/graphql:** prepare basic web push example script ([9bd480d](https://github.com/uzh-bf/klicker-uzh/commit/9bd480dfdc2f6d10396acd7bc42062ac9c698833))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve layout across micro session and learning element, improve consistency, add markdown for feedbacks on options ([88afc13](https://github.com/uzh-bf/klicker-uzh/commit/88afc13982e5499d31bb28847183fd8be5e7f6ce))
+* mark micro sessions as completed, show evaluation screen ([40922be](https://github.com/uzh-bf/klicker-uzh/commit/40922be4c8d5fd228a266c35d77cf3c100f0b89b))
+
 ## [2.0.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.46...v2.0.0-alpha.47) (2022-09-19)
 
 
