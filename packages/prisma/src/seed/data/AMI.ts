@@ -7,40 +7,40 @@ export const ATTACHMENTS = []
 
 export const QUESTIONS = [
   {
-    name: 'Modul 1 Zieldreieck',
-    content: 'Welche der folgenden Aussagen ist **falsch**?',
-    contentPlain: 'Welche der folgenden Aussagen ist falsch?',
-    type: QuestionType.SC,
+    name: 'Modul 1 Finanz- und Realanlagen',
+    content: 'Welche der folgenden Aussagen zu den *Finanz- und Realanlagen* ist *richtig*?',
+    contentPlain: 'Welche der folgenden Aussagen zu den Finanz- und Realanlagen ist richtig?',
+    type: QuestionType.SC,sss
     choices: [
       {
         feedback:
-          'Falsch! Zwischen den Zielsetzungen des klassischen finanziellen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+          'Falsch! Finanzanlagen tragen nur indirekt zur Produktionsleistung bei, beispielsweise bei einem Kauf von Sachwerten.',
         value:
-          'Zwischen den Zielsetzungen des klassischen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+          'Finanzanlagen tragen sowohl direkt als auch indirekt zur Produktionsleistung eines Landes bei.',
       },
       {
         feedback:
-          'Korrekt! Je höher die angestrebte Sicherheit, desto weniger Risiko wird eingegangen, was wiederum die Rentabilität senkt.',
+          'Falsch! Das Patent ist ein Beispiel für eine Realanlage.',
         correct: true,
         value:
-          'Das Ziel einer hohen Rentabilität erhöht auch die Sicherheit eines Unternehmens.',
+          'Patente, Aktien und Obligationen sind Beispiele für Finanzanlagen.',
       },
       {
         feedback:
-          'Falsch! Die Unabhängigkeit ist kein Ziel des klassischen Zieldreiecks.',
-        value: 'Unabhängigkeit ist *kein* Ziel des klassischen Zieldreiecks.',
+          'Korrekt!',
+        value: 'Wissen, Maschinen und Gebäude sind Beispiele für Realanlagen.',
       },
       {
         feedback:
-          'Falsch! Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+          'Falsch! Nur Realanlagen generieren das Nettoeinkommen einer Volkswirtschaft. Der finanzielle Wohlstand einer Gesellschaft ist abhängig von Sach- und nicht von den finanziellen Werten.',
         value:
-          'Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+          'Real- und Finanzanlagen generieren das Nettoeinkommen einer Volkswirtschaft.',
       },
       {
         feedback:
-          'Falsch! Der Shareholder Value ist kein Ziel des klassischen Zieldreiecks.',
+          'Falsch! Bei der Berechnung von Indizes wird zwischen Preisgewichteter und Marktwertgewichteter Index unterschieden. Kurs- und Performanceindex stellen lediglich Arten von Indizes dar.',
         value:
-          'Der Shareholder Value ist *kein* Ziel des klassischen Zieldreiecks.',
+          'Die Berechnung der Aktienindizes wird anhand von Kurs- und Performanceindex getätigt.',
       },
     ],
   },
