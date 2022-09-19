@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.43...v2.0.0-alpha.44) (2022-09-19)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** evaluate ARG ENV approach for NODE_ENV ([b09dbf4](https://github.com/uzh-bf/klicker-uzh/commit/b09dbf4f680fb8832351c245e74eb66d0e499c93))
+* ensure leaderboard entries are not cached ([8f72ea8](https://github.com/uzh-bf/klicker-uzh/commit/8f72ea8c0d68b11eb296238530e413c5d0d10c20))
+* use dynamic start url redirect ([f90e585](https://github.com/uzh-bf/klicker-uzh/commit/f90e585d5d622225293a25a94360f6ce8af3323c))
+
+
+### Other
+
+* release update ([7a47e50](https://github.com/uzh-bf/klicker-uzh/commit/7a47e5095c0023618136b1edeebd7645d4308789))
+
+
+### Enhancements
+
+* quick wins and sorting of leaderboard ([dc6099f](https://github.com/uzh-bf/klicker-uzh/commit/dc6099f28eadc2471d62796cfb414c5cc2a73de1))
+
 ## [2.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.42...v2.0.0-alpha.43) (2022-09-19)
 
 
