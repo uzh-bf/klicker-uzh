@@ -253,6 +253,123 @@ export const QUESTIONS = [
             correct: true,
           value: 'Die Nachfrage des Staates nach Steuergeldern.',
         },
+        {
+      name: 'Modul 1 Treiber für Zinsen',
+      content: 'Welcher der folgenden Faktoren hat *keinen direkten Einfluss* auf das *Zinsniveau*?',
+      contentPlain: 'Welcher der folgenden Faktoren hat keinen direkten Einfluss auf das Zinsniveau?',
+      type: QuestionType.SC,sss
+      choices: [
+        {
+          feedback:
+            'Falsch! Das Angebot von Finanzierungsmitteln durch die Zentralbank hat einen direkten Einfluss auf das Zinsniveau.',
+          value:
+            'Das Angebot von Finanzierungsmitteln durch die Zentralbank.',
+        },
+        {
+          feedback:
+            'Falsch! Die Nachfrage nach liquiden Mitteln durch die Zentralbank hat einen direkten Einfluss auf das Zinsniveau.',
+          value:
+            'Die Nachfrage nach liquiden Mitteln durch die Zentralbank.',
+        },
+        {
+          feedback:
+            'Falsch! Die Nachfrage der Industrie nach Finanzierungsmitteln für geplante Investitionen hat einen direkten Einfluss auf das Zinsniveau.',
+          value:
+            'Die Nachfrage der Industrie nach Finanzierungsmitteln für geplante Investitionen.',
+        },
+        {
+          feedback:
+            'Falsch! Die von Sparern auf Bankkonten gehaltenen Gelder haben einen direkten Einfluss auf das Zinsniveau.',
+          value:
+            'Die von Sparern auf Bankkonten gehaltenen Gelder.',
+        },
+        {
+          feedback:
+            'Korrekt!  Die von Staat erhobenen Steuern können zwar von der Zinskurve abhängig sein, aber nicht umgekehrt. Wenn das Staatsdefizit günstig über den Kapitalmarkt ausgeglichen werden kann, hat der Staat keinen Anreiz die Steuern massiv zu erhöhen. Ist die Überbrückung des Staatsdefizites aufgrund der Zinslage teuer, wird der Staat zwar eher die Steuern erhöhen (um das Staatsdefizit nicht über den Kapitalmarkt finanzieren zu müssen), jedoch hat ein Land mit höheren Steuern nicht unbedingt höhere Zinsen.',
+            correct: true,
+          value: 'Die Nachfrage des Staates nach Steuergeldern.',
+        },
+        {
+          name: 'Modul 1 Effective Annual Rate (EAR) I',
+          content: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen:
+                    (Bild Modul 1 Effective Annual Rate (EAR) I
+                    Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
+          contentPlain: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen:
+          (Bild Modul 1 Effective Annual Rate (EAR) I
+          Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
+          type: QuestionType.SC,sss
+          choices: [
+            {
+              feedback:
+                'Falsch!',
+              value:
+                ' A: 4.5%, B: 4.9%',
+            },
+            {
+              feedback:
+                'Korrekt! Total Return_A = \frac{100}{70.30}-1 = 42.2 \% \ ; \ EAR_A= (1+0.422)^{(\frac{1}{8}) }-1 = 4.5\% \\ Total Return_B = \frac{100}{98.787}-1=1.23\% \ ; \ EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0\%',
+                correct: true,
+                value:
+                ' A: 4.5%, B: 5.0%',
+            },
+            {
+              feedback:
+                'Falsch!',
+              value:
+                'A: 5.3%, B: 4.9%',
+            },
+            {
+              feedback:
+                'Falsch!',
+              value:
+                'A: 5.3%, B: 5.0%',
+            },
+            {
+              feedback:
+                'Falsch!',
+              value: 'Keine der genannten Aussagen ist richtig.',
+            },
+            {
+              name: 'Modul 1 Effective Annual Rate (EAR) II',
+              content: 'Du hast die folgende Zero-Coupon Staatsanleihe:
+                        (Bild Modul 1 Effective Annual Rate (EAR) II)
+                        Der Bond zahlt am Laufzeitende $100.
+                        Berechne die Effective Annual Rate (EAR).',
+              contentPlain: 'Du hast die folgende Zero-Coupon Staatsanleihe:
+              (Bild Modul 1 Effective Annual Rate (EAR) II)
+              Der Bond zahlt am Laufzeitende $100.
+              Berechne die Effective Annual Rate (EAR).',
+              type: QuestionType.SC,sss
+              choices: [
+                {
+                  feedback:
+                    'Falsch!',
+                  value:
+                    'EAR: 5.90%',
+                },
+                {
+                  feedback:
+                    'Falsch!',
+                    value:
+                    'EAR: 6.03%',
+                },
+                {
+                  feedback:
+                    'Falsch!',
+                  value:
+                    'EAR: 6.03%',
+                },
+                {
+                  feedback:
+                    'Falsch!',
+                  value:
+                    'EAR: 6.70%',
+                },
+                {
+                  feedback: 'Korrekt! Total Return = \frac{100}{99.5}-1 =0.5\% \\ EAR = (1+0.005)^{(\frac{1}{\frac{1}{12}})} -1 = 6.20\% ',
+                    correct: true,
+                  value: 'EAR: 6.20%',
+                },
   ],
 },
   {},
