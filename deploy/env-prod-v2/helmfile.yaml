@@ -11,16 +11,19 @@ releases:
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
         frontendPWA:
+          replicaCount: 3
           image:
-            tag: v2.0.0-alpha.35
+            tag: v2.0.0-alpha.42
 
         frontendManage:
+          replicaCount: 1
           image:
-            tag: v2.0.0-alpha.35
+            tag: v2.0.0-alpha.42
 
         backendGraphql:
+          replicaCount: 3
           image:
-            tag: v2.0.0-alpha.35
+            tag: v2.0.0-alpha.42
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'

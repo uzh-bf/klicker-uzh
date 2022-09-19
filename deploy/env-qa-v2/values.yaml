@@ -15,6 +15,14 @@ frontendPWA:
   strategy:
     type: Recreate
 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 frontendManage:
   hostname: manage.klicker-qa.bf-app.ch
 
@@ -32,6 +40,14 @@ frontendManage:
   strategy:
     type: Recreate
 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 backendGraphql:
   hostname: backend-sls.klicker-qa.bf-app.ch
 
@@ -48,3 +64,11 @@ backendGraphql:
 
   strategy:
     type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi

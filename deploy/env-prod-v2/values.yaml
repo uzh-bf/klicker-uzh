@@ -25,6 +25,14 @@ frontendPWA:
   strategy:
     type: RollingUpdate
 
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 frontendManage:
   autoscaling:
     enabled: false
@@ -50,6 +58,14 @@ frontendManage:
   strategy:
     type: RollingUpdate
 
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 backendGraphql:
   autoscaling:
     enabled: false
@@ -74,3 +90,11 @@ backendGraphql:
 
   strategy:
     type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
