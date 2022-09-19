@@ -177,7 +177,7 @@ function CourseOverview({ courseId }: any) {
           </div>
 
           <div className="pt-8 space-y-2">
-            {!participation.isActive && (
+            {!participation?.isActive && (
               <ParticipantSelf
                 key={participant?.id}
                 isActive={false}
@@ -193,7 +193,7 @@ function CourseOverview({ courseId }: any) {
                 return (
                   <ParticipantSelf
                     key={entry.id}
-                    isActive={participation.isActive}
+                    isActive={participation?.isActive ?? false}
                     pseudonym={entry.username}
                     avatar={entry.avatar}
                     points={entry.score}
