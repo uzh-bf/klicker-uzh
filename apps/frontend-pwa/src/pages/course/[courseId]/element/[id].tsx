@@ -80,7 +80,16 @@ function LearningElement({ courseId, id }: Props) {
       courseColor={data.learningElement.course.color}
     >
       <div className="flex flex-col gap-6 md:max-w-6xl md:m-auto md:mb-4 md:p-8 md:border md:rounded">
-        {!currentInstance && <div></div>}
+        {!currentInstance && (
+          <div>
+            <div className="mb-2 font-bold">Gratulation!</div>
+            Du hast das Lernelement{' '}
+            <span className="italic">
+              {data.learningElement.displayName}
+            </span>{' '}
+            erfolgreich absolviert.
+          </div>
+        )}
 
         {currentInstance && (
           <div className="order-2 md:order-1">
