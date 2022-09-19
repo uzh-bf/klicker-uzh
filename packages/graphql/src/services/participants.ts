@@ -1,6 +1,7 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
+import { sortBy } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -251,7 +252,7 @@ export async function getCourseOverviewData(
       },
     })
 
-    const top3Entries = await course.leaderboard({
+    const top10Entries = await course.leaderboard({
       where: {
         participation: {
           isActive: true,
@@ -263,7 +264,7 @@ export async function getCourseOverviewData(
       orderBy: {
         score: 'desc',
       },
-      take: 3,
+      take: 10,
     })
 
     const mapper = (entry) => ({
@@ -271,6 +272,7 @@ export async function getCourseOverviewData(
       score: entry.score,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
+      
     })
 
     if (participation) {
@@ -279,20 +281,22 @@ export async function getCourseOverviewData(
         course: participation.course,
         participant: participation.participant,
         participation,
-        leaderboard: [
-          ...top3Entries
-            .filter((entry) => entry.participantId !== ctx.user!.sub)
-            .map(mapper),
-          ...followedEntries.map(mapper),
-          participation.isActive &&
-            participation.courseLeaderboard?.id && {
+        leaderboard: sortBy(
+          (item) => item.score,
+          [
+            ...top10Entries
+              .filter((entry) => entry.participantId !== ctx.user!.sub)
+              .map(mapper),
+            ...followedEntries.map(mapper),
+            participation?.courseLeaderboard?.id && {
               id: participation.courseLeaderboard?.id,
               score: participation.courseLeaderboard?.score,
               username: participation.participant.username,
               avatar: participation.participant.avatar,
               isSelf: true,
             },
-        ].filter(Boolean),
+          ].filter(Boolean)
+        ),
       }
     }
   }

@@ -8,7 +8,6 @@ metadata:
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
-  NODE_ENV: {{ .Values.nodeEnv | default "production" | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}

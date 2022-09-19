@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import Footer from '@components/common/Footer'
 import EvaluationDisplay from '@components/EvaluationDisplay'
 import Layout from '@components/Layout'
 import OptionsDisplay from '@components/OptionsDisplay'
@@ -78,74 +79,84 @@ function LearningElement({ courseId, id }: Props) {
       courseName={data.learningElement.course.displayName}
       courseColor={data.learningElement.course.color}
     >
-      <div className="flex flex-col max-w-6xl gap-6 m-auto md:p-8 md:border md:rounded">
-        <div className="order-2 md:order-1">
-          {questionData && (
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="flex-1">
-                <div className="pb-2">
-                  <Markdown content={questionData.content} />
-                </div>
-                <OptionsDisplay
-                  isEvaluation={isEvaluation}
-                  evaluation={currentInstance.evaluation}
-                  response={response}
-                  onChangeResponse={setResponse}
-                  onSubmitResponse={
-                    isEvaluation ? handleNextQuestion : handleSubmitResponse
-                  }
-                  questionType={questionData.type}
-                  options={questionData.options}
-                />
-              </div>
+      <div className="flex flex-col gap-6 md:max-w-6xl md:m-auto md:mb-4 md:p-8 md:border md:rounded">
+        {!currentInstance && <div></div>}
 
-              {currentInstance.evaluation && (
-                <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
-                  <div className="flex flex-row gap-8">
-                    <div>
-                      <div className="font-bold">Punkte (berechnet)</div>
-                      <div className="text-xl">
-                        {currentInstance.evaluation.score} Punkte
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="font-bold">Punkte (gesammelt)</div>
-                      <div className="text-xl">
-                        {currentInstance.evaluation.pointsAwarded} Punkte
-                      </div>
-                    </div>
+        {currentInstance && (
+          <div className="order-2 md:order-1">
+            {questionData && (
+              <div className="flex flex-col gap-4 md:flex-row">
+                <div className="flex-1">
+                  <div className="pb-2">
+                    <Markdown content={questionData.content} />
                   </div>
-
-                  <EvaluationDisplay
-                    options={questionData.options}
-                    questionType={questionData.type}
+                  <OptionsDisplay
+                    isEvaluation={isEvaluation}
                     evaluation={currentInstance.evaluation}
+                    response={response}
+                    onChangeResponse={setResponse}
+                    onSubmitResponse={
+                      isEvaluation ? handleNextQuestion : handleSubmitResponse
+                    }
+                    questionType={questionData.type}
+                    options={questionData.options}
                   />
+                </div>
 
-                  <div>
-                    <div className="font-bold">Sammle wieder Punkte ab:</div>
+                {currentInstance.evaluation && (
+                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
+                    <div className="flex flex-row gap-8">
+                      <div>
+                        <div className="font-bold">Punkte (berechnet)</div>
+                        <div className="text-xl">
+                          {currentInstance.evaluation.score} Punkte
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-bold">Punkte (gesammelt)</div>
+                        <div className="text-xl">
+                          {currentInstance.evaluation.pointsAwarded} Punkte
+                        </div>
+                      </div>
+                    </div>
+
+                    <EvaluationDisplay
+                      options={questionData.options}
+                      questionType={questionData.type}
+                      evaluation={currentInstance.evaluation}
+                    />
+
                     <div>
-                      {dayjs(currentInstance.evaluation.newPointsFrom).format(
-                        'DD.MM.YYYY HH:mm'
-                      )}
+                      <div className="font-bold">Sammle wieder Punkte ab:</div>
+                      <div>
+                        {dayjs(currentInstance.evaluation.newPointsFrom).format(
+                          'DD.MM.YYYY HH:mm'
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="order-1 md:order-2">
-          <Progress
-            isMaxVisible
-            formatter={(v) => v}
-            value={currentIx}
-            max={data.learningElement?.instances?.length ?? 0}
-          />
-        </div>
+        {currentInstance && (
+          <div className="order-1 md:order-2">
+            <Progress
+              isMaxVisible
+              formatter={(v) => v}
+              value={currentIx}
+              max={data.learningElement?.instances?.length ?? 0}
+            />
+          </div>
+        )}
       </div>
+
+      <Footer
+        browserLink={`https://pwa.klicker.uzh.ch/course/${courseId}/element/${id}`}
+      />
     </Layout>
   )
 }

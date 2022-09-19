@@ -23,6 +23,7 @@ const Profile = () => {
 
         <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
           <Image
+            className="bg-white"
             src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
               data.self.avatar ?? 'placeholder'
             }.svg`}
@@ -33,7 +34,7 @@ const Profile = () => {
 
         <Button
           fluid
-          onClick={() => Router.push('/editProfile')}
+          onClick={() => Router.replace('/editProfile')}
           className="mt-7"
         >
           Profil editieren
