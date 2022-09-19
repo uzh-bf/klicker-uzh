@@ -57,9 +57,11 @@ function Participant({
         <div>{pseudonym}</div>
         <div className="flex-1">{children}</div>
       </div>
-      <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
-        {points}
-      </div>
+      {typeof points === 'number' && (
+        <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
+          {points}
+        </div>
+      )}
     </div>
   )
 }
@@ -177,18 +179,7 @@ function CourseOverview({ courseId }: any) {
           </div>
 
           <div className="pt-8 space-y-2">
-            {!participation?.isActive && (
-              <ParticipantSelf
-                key={participant?.id}
-                isActive={false}
-                pseudonym={participant?.username}
-                avatar={participant?.avatar}
-                points={0}
-                onJoinCourse={joinCourse}
-                onLeaveCourse={leaveCourse}
-              />
-            )}
-            {leaderboard?.map((entry) => {
+            {leaderboard?.flatMap((entry) => {
               if (entry.isSelf) {
                 return (
                   <ParticipantSelf
@@ -212,6 +203,18 @@ function CourseOverview({ courseId }: any) {
                 />
               )
             })}
+
+            {!participation?.isActive && (
+              <ParticipantSelf
+                key={participant?.id}
+                isActive={false}
+                pseudonym={participant?.username}
+                avatar={participant?.avatar}
+                points={null}
+                onJoinCourse={joinCourse}
+                onLeaveCourse={leaveCourse}
+              />
+            )}
           </div>
         </div>
       </div>

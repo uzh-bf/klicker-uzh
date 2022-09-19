@@ -1,7 +1,7 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { sortBy } from 'ramda'
+import { descend, prop, sortBy } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -272,7 +272,6 @@ export async function getCourseOverviewData(
       score: entry.score,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
-      
     })
 
     if (participation) {
@@ -282,19 +281,20 @@ export async function getCourseOverviewData(
         participant: participation.participant,
         participation,
         leaderboard: sortBy(
-          (item) => item.score,
+          descend(prop('score')),
           [
             ...top10Entries
               .filter((entry) => entry.participantId !== ctx.user!.sub)
               .map(mapper),
             ...followedEntries.map(mapper),
-            participation?.courseLeaderboard?.id && {
-              id: participation.courseLeaderboard?.id,
-              score: participation.courseLeaderboard?.score,
-              username: participation.participant.username,
-              avatar: participation.participant.avatar,
-              isSelf: true,
-            },
+            participation?.isActive &&
+              participation.courseLeaderboard?.id && {
+                id: participation.courseLeaderboard?.id,
+                score: participation.courseLeaderboard?.score,
+                username: participation.participant.username,
+                avatar: participation.participant.avatar,
+                isSelf: true,
+              },
           ].filter(Boolean)
         ),
       }
