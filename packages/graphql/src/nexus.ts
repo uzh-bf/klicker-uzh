@@ -33,13 +33,13 @@ export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
 export const AvatarSettingsInput = inputObjectType({
   name: 'AvatarSettingsInput',
   definition(t) {
-    t.nonNull.string('body')
     t.nonNull.string('skinTone')
     t.nonNull.string('eyes')
     t.nonNull.string('mouth')
     t.nonNull.string('hair')
     t.nonNull.string('accessory')
     t.nonNull.string('hairColor')
+    t.nonNull.string('clothing')
     t.nonNull.string('clothingColor')
     t.nonNull.string('facialHair')
   },
@@ -226,6 +226,10 @@ export const InstanceEvaluation = objectType({
     t.nonNull.field('choices', {
       type: 'JSONObject',
     })
+    t.nonNull.float('score')
+    t.float('pointsAwarded')
+    t.float('percentile')
+    t.date('newPointsFrom')
   },
 })
 
@@ -262,7 +266,7 @@ export const QuestionInstance = objectType({
       type: InstanceEvaluation,
     })
 
-    t.nonNull.list.field('attachments', { type: Attachment })
+    t.list.field('attachments', { type: Attachment })
   },
 })
 
@@ -316,6 +320,9 @@ export const MicroSession = objectType({
     t.nonNull.string('displayName')
     t.string('description')
 
+    t.nonNull.date('scheduledStartAt')
+    t.nonNull.date('scheduledEndAt')
+
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
@@ -356,7 +363,7 @@ export const Participant = objectType({
 export const Subscription = objectType({
   name: 'Subscription',
   definition(t) {
-    t.nonNull.id('id')
+    t.nonNull.int('id')
 
     t.nonNull.string('endpoint')
   },
@@ -368,34 +375,12 @@ export const Participation = objectType({
     t.nonNull.int('id')
 
     t.nonNull.boolean('isActive')
-    t.nonNull.int('points')
 
-    t.nonNull.field('course', {
+    t.field('course', {
       type: Course,
     })
     t.list.nonNull.field('subscriptions', {
       type: Subscription,
-    })
-  },
-})
-
-export const ParticipantLearningData = objectType({
-  name: 'ParticipantLearningData',
-  definition(t) {
-    t.nonNull.id('id')
-
-    t.nonNull.string('participantToken')
-
-    t.nonNull.field('participant', {
-      type: Participant,
-    })
-
-    t.nonNull.field('participation', {
-      type: Participation,
-    })
-
-    t.nonNull.field('course', {
-      type: Course,
     })
   },
 })
@@ -409,6 +394,33 @@ export const LeaderboardEntry = objectType({
     t.string('avatar')
 
     t.nonNull.float('score')
+
+    t.boolean('isSelf')
+  },
+})
+
+export const ParticipantLearningData = objectType({
+  name: 'ParticipantLearningData',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.string('participantToken')
+
+    t.field('participant', {
+      type: Participant,
+    })
+
+    t.field('participation', {
+      type: Participation,
+    })
+
+    t.field('course', {
+      type: Course,
+    })
+
+    t.list.nonNull.field('leaderboard', {
+      type: LeaderboardEntry,
+    })
   },
 })
 
@@ -518,6 +530,7 @@ export const Session = objectType({
     t.nonNull.string('namespace')
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('linkTo')
 
     t.nonNull.field('status', {
       type: SessionStatus,
@@ -769,6 +782,7 @@ export const Mutation = objectType({
     t.field('updateParticipantProfile', {
       type: Participant,
       args: {
+        password: stringArg(),
         username: stringArg(),
         avatar: stringArg(),
         avatarSettings: arg({
@@ -828,7 +842,7 @@ export const Mutation = objectType({
     })
 
     t.field('joinCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },
@@ -838,7 +852,7 @@ export const Mutation = objectType({
     })
 
     t.field('leaveCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },

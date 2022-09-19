@@ -1,13 +1,13 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { GetRunningSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
+import { useQuery } from '@apollo/client'
 import { addApolloState } from '@lib/apollo'
 import { getRunningSessionData } from '@lib/joinData'
 import getConfig from 'next/config'
@@ -18,21 +18,30 @@ import QuestionArea from '../../components/liveSession/QuestionArea'
 
 const { publicRuntimeConfig } = getConfig()
 
-function Index({
-  activeBlock,
-  displayName,
-  id,
-  isAudienceInteractionActive,
-  isModerationEnabled,
-  isGamificationEnabled,
-  name,
-  namespace,
-  status,
-  course,
-}: Session) {
-  const router = useRouter()
-  const sessionId = router.query.id as string
+interface Props {
+  id: string
+}
+
+function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
+
+  const { data } = useQuery(GetRunningSessionDocument, {
+    variables: { id },
+  })
+
+  if (!data?.session) return <p>Loading...</p>
+
+  const {
+    activeBlock,
+    displayName,
+    isAudienceInteractionActive,
+    isModerationEnabled,
+    isGamificationEnabled,
+    name,
+    namespace,
+    status,
+    course,
+  } = data.session
 
   const handleNewResponse = async (
     type: string,
@@ -124,10 +133,7 @@ function Index({
           {!activeBlock ? (
             isGamificationEnabled ? (
               <div className={twMerge('w-full bg-white min-h-full')}>
-                <Leaderboard
-                  sessionId={sessionId}
-                  className="hidden md:block"
-                />
+                <Leaderboard sessionId={id} className="hidden md:block" />
                 <div className="md:hidden">Keine Frage aktiv.</div>
               </div>
             ) : (
@@ -146,7 +152,7 @@ function Index({
                 }) || []
               }
               handleNewResponse={handleNewResponse}
-              sessionId={sessionId}
+              sessionId={id}
               timeLimit={activeBlock?.timeLimit as number}
               execution={activeBlock?.execution || 0}
             />
@@ -160,7 +166,7 @@ function Index({
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <Leaderboard sessionId={sessionId} />
+            <Leaderboard sessionId={id} />
           </div>
         )}
 
@@ -180,11 +186,20 @@ function Index({
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  if (typeof ctx.params?.id !== 'string') {
+    return {
+      redirect: {
+        destination: '/404',
+        statusCode: 302,
+      },
+    }
+  }
+
   const withNewSessionData = await getRunningSessionData(ctx)
 
   return addApolloState(withNewSessionData.apolloClient, {
     props: {
-      ...withNewSessionData.result,
+      id: ctx.params.id,
     },
   })
 }

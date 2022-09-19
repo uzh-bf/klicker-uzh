@@ -16,6 +16,14 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+ARG NODE_ENV production
+ARG COOKIE_DOMAIN
+ARG API_DOMAIN
+ARG S3_PATHNAME
+ARG S3_HOSTNAME
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL_SSR
+
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -29,7 +37,7 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
+ARG NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN addgroup --system --gid 1001 nodejs

@@ -290,6 +290,7 @@ export function prepareSession({
   isModerationEnabled?: boolean
   isAudienceInteractionActive?: boolean
   isGamificationEnabled?: boolean
+  linkTo?: string
 }) {
   return {
     where: {

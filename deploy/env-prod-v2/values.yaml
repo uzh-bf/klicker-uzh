@@ -1,3 +1,5 @@
+nodeEnv: production
+
 frontendPWA:
   autoscaling:
     enabled: false
@@ -23,6 +25,14 @@ frontendPWA:
   strategy:
     type: RollingUpdate
 
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 frontendManage:
   autoscaling:
     enabled: false
@@ -47,3 +57,44 @@ frontendManage:
 
   strategy:
     type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+backendGraphql:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: backend-sls.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: backend-sls.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-backend-graphql-tls-uzh
+        hosts:
+          - backend-sls.klicker.uzh.ch
+      - secretName: klicker-prod-backend-graphql-tls
+        hosts:
+          - backend-sls.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi

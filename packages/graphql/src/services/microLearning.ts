@@ -14,7 +14,11 @@ export async function getMicroSessionData(
     where: { id },
     include: {
       course: true,
-      instances: true,
+      instances: {
+        orderBy: {
+          questionId: 'asc',
+        },
+      },
     },
   })
 

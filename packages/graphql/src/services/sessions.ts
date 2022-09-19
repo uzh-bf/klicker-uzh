@@ -182,7 +182,11 @@ export async function startSession(
       ownerId: ctx.user.sub,
     },
     include: {
-      blocks: true,
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
     },
   })
 
@@ -244,7 +248,11 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       ownerId: ctx.user.sub,
     },
     include: {
-      blocks: true,
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
     },
   })
 
@@ -285,7 +293,13 @@ export async function activateSessionBlock(
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: { id: sessionId },
-    include: { blocks: true },
+    include: {
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
+    },
   })
 
   if (!session || session.ownerId !== ctx.user.sub) return null
@@ -400,7 +414,11 @@ export async function deactivateSessionBlock(
       id: sessionId,
     },
     include: {
-      blocks: true,
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
       activeBlock: {
         include: { instances: true },
       },
@@ -575,7 +593,11 @@ export async function deactivateSessionBlock(
       },
     },
     include: {
-      blocks: true,
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
     },
   })
 
@@ -781,6 +803,9 @@ export async function getUserSessions(
         include: {
           course: true,
           blocks: {
+            orderBy: {
+              id: 'asc',
+            },
             include: {
               instances: {
                 select: {
@@ -845,6 +870,9 @@ export async function getCockpitSession(
     include: {
       activeBlock: true,
       blocks: {
+        orderBy: {
+          id: 'asc',
+        },
         include: {
           instances: true,
         },

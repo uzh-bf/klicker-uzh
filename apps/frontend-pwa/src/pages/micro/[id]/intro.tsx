@@ -1,11 +1,12 @@
 import { useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, Prose } from '@uzh-bf/design-system'
+import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
 import { default as NextImage } from 'next/future/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 
 const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
   ssr: false,
@@ -26,12 +27,13 @@ function Image({ alt, src }: ImageProps) {
   )
 }
 
-function MicroSessionIntroduction() {
-  const router = useRouter()
+interface Props {
+  id: string
+}
 
+function MicroSessionIntroduction({ id }: Props) {
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
-    variables: { id: router.query.id as string },
-    skip: !router.query.id,
+    variables: { id },
   })
 
   if (loading || !data?.microSession) return <p>Loading...</p>
@@ -62,46 +64,46 @@ function MicroSessionIntroduction() {
   )
 }
 
-// export const getStaticProps: GetStaticProps = async (ctx) => {
-//   if (typeof ctx.params?.id !== 'string') {
-//     return {
-//       redirect: {
-//         destination: '/404',
-//         permanent: false,
-//       },
-//     }
-//   }
+export const getStaticProps: GetStaticProps = async (ctx) => {
+  if (typeof ctx.params?.id !== 'string') {
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
-//   const apolloClient = initializeApollo()
+  const apolloClient = initializeApollo()
 
-//   try {
-//     await apolloClient.query({
-//       query: GetMicroSessionDocument,
-//       variables: { id: ctx.params.id },
-//     })
-//   } catch (e) {
-//     console.error(e)
-//     // return {
-//     //   redirect: {
-//     //     destination: '/404',
-//     //     permanent: false,
-//     //   },
-//     // }
-//   }
+  try {
+    await apolloClient.query({
+      query: GetMicroSessionDocument,
+      variables: { id: ctx.params.id },
+    })
+  } catch (e) {
+    console.error(e)
+    return {
+      redirect: {
+        destination: '/404',
+        permanent: false,
+      },
+    }
+  }
 
-//   return addApolloState(apolloClient, {
-//     props: {
-//       id: ctx.params.id,
-//     },
-//     revalidate: 1,
-//   })
-// }
+  return addApolloState(apolloClient, {
+    props: {
+      id: ctx.params.id,
+    },
+    revalidate: 60,
+  })
+}
 
-// export const getStaticPaths: GetStaticPaths = async () => {
-//   return {
-//     paths: [],
-//     fallback: 'blocking',
-//   }
-// }
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
 
 export default MicroSessionIntroduction

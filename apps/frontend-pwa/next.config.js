@@ -3,10 +3,20 @@
 const withPWA = require('next-pwa')({
   dest: 'public',
   skipWaiting: true,
+  dynamicStartUrlRedirect: '/login',
   // disable: process.env.NODE_ENV === 'development',
 })
 
 const nextConfig = withPWA({
+  experimental: {
+    modularizeImports: {
+      ramda: {
+        transform: 'ramda/es/{{member}}',
+      },
+    },
+  },
+  // TODO: disable compression if it is done on the ingress
+  compress: true,
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
@@ -32,7 +42,8 @@ const nextConfig = withPWA({
     ADD_RESPONSE_URL: process.env.NEXT_PUBLIC_ADD_RESPONSE_URL,
   },
   serverRuntimeConfig: {
-    APP_DOMAIN: process.env.APP_DOMAIN,
+    API_URL_SSR: process.env.NEXT_PUBLIC_API_URL_SSR,
+    APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
 })

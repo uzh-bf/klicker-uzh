@@ -1,4 +1,3 @@
-import Redis from 'ioredis'
 import JWT from 'jsonwebtoken'
 import md5 from 'md5'
 
@@ -13,21 +12,24 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 
-const redisExec = new Redis({
-  family: 4,
-  host: process.env.REDIS_HOST ?? 'localhost',
-  password: process.env.REDIS_PASS ?? '',
-  port: Number(process.env.REDIS_PORT) ?? 6379,
-  tls: process.env.REDIS_TLS ? {} : undefined,
-})
+import getRedis from './redis'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the question options
+
+const redisExec = getRedis()
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ) {
+  // immediately return on GET -> healthcheck
+  if (req.method === 'GET') {
+    return {
+      status: 200,
+    }
+  }
+
   const sessionKey = `s:${req.body.sessionId}`
   const instanceKey = `${sessionKey}:i:${req.body.instanceId}`
   const responseTimestamp = Number(new Date())

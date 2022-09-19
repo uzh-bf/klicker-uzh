@@ -7,24 +7,14 @@ import {
 import { Button, H1 } from '@uzh-bf/design-system'
 import Image from 'next/future/image'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
 
 const Profile = () => {
   const { data, loading } = useQuery(SelfDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
-  const [pageInIframe, setPageInIframe] = useState(false)
-
-  // detect if the page is currently shown as an iframe (i.e. in OLAT) -> hide the logout button in this case
-  useEffect(() => {
-    if (window.location !== window.parent.location) {
-      setPageInIframe(true)
-    } else {
-      setPageInIframe(false)
-    }
-  }, [])
-
   if (loading || !data?.self) return <div>loading...</div>
+
+  const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
     <Layout>
@@ -33,11 +23,9 @@ const Profile = () => {
 
         <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
           <Image
-            src={
-              data.self.avatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${data.self.avatar}.svg`
-                : '/placeholder.png'
-            }
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              data.self.avatar ?? 'placeholder'
+            }.svg`}
             alt=""
             fill
           />
@@ -51,16 +39,18 @@ const Profile = () => {
           Profil editieren
         </Button>
 
-        <Button
-          fluid
-          onClick={async () => {
-            await logoutParticipant()
-            Router.replace('/login')
-          }}
-          className="mt-2"
-        >
-          Ausloggen
-        </Button>
+        {!pageInFrame && (
+          <Button
+            fluid
+            onClick={async () => {
+              await logoutParticipant()
+              Router.replace('/login')
+            }}
+            className="mt-2"
+          >
+            Ausloggen
+          </Button>
+        )}
 
         <div className="mt-8">
           <Image

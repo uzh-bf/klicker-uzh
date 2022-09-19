@@ -1,0 +1,3 @@
+setup:
+  project: v2
+  config: stg

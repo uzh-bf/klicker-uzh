@@ -8,11 +8,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import nookies from 'nookies'
 import { useState } from 'react'
 
 const PLACEHOLDER_IMG =
@@ -56,7 +57,8 @@ function LearningElement({ courseId, id }: Props) {
         id: currentInstance?.id as number,
         response:
           questionData?.type === QuestionType.SC ||
-          questionData?.type === QuestionType.MC
+          questionData?.type === QuestionType.MC ||
+          questionData?.type === QuestionType.KPRIM
             ? {
                 choices: response as number[],
               }
@@ -98,12 +100,37 @@ function LearningElement({ courseId, id }: Props) {
               </div>
 
               {currentInstance.evaluation && (
-                <div className="flex-1 p-4 border rounded bg-gray-50">
+                <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
+                  <div className="flex flex-row gap-8">
+                    <div>
+                      <div className="font-bold">Punkte (berechnet)</div>
+                      <div className="text-xl">
+                        {currentInstance.evaluation.score} Punkte
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="font-bold">Punkte (gesammelt)</div>
+                      <div className="text-xl">
+                        {currentInstance.evaluation.pointsAwarded} Punkte
+                      </div>
+                    </div>
+                  </div>
+
                   <EvaluationDisplay
                     options={questionData.options}
                     questionType={questionData.type}
                     evaluation={currentInstance.evaluation}
                   />
+
+                  <div>
+                    <div className="font-bold">Sammle wieder Punkte ab:</div>
+                    <div>
+                      {dayjs(currentInstance.evaluation.newPointsFrom).format(
+                        'DD.MM.YYYY HH:mm'
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -131,33 +158,46 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
       redirect: {
         destination: '/404',
-        permanent: false,
+        statusCode: 302,
       },
     }
   }
 
-  const cookies = nookies.get(ctx)
-
   const apolloClient = initializeApollo()
 
-  try {
-    await apolloClient.query({
-      query: GetLearningElementDocument,
-      variables: { id: ctx.params.id },
-      context: cookies['participant_token']
-        ? {
-            headers: {
-              authorization: `Bearer ${cookies['participant_token']}`,
-            },
-          }
-        : undefined,
-    })
-  } catch (e) {
-    console.error(e)
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  if (participant && !participant.avatar) {
+    return {
+      redirect: {
+        destination: `/editProfile?redirect_to=${encodeURIComponent(
+          `/course/${ctx.params.courseId}/element/${ctx.params.id}`
+        )}`,
+        statusCode: 302,
+      },
+    }
+  }
+
+  const result = await apolloClient.query({
+    query: GetLearningElementDocument,
+    variables: { id: ctx.params.id },
+    context: participantToken
+      ? {
+          headers: {
+            authorization: `Bearer ${participantToken}`,
+          },
+        }
+      : undefined,
+  })
+
+  if (!result.data.learningElement) {
     return {
       redirect: {
         destination: '/404',
-        permanent: false,
+        statusCode: 302,
       },
     }
   }

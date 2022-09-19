@@ -13,7 +13,6 @@ mutation RegisterParticipantFromLTI($courseId: ID!, $participantId: ID!) {
     participation {
       id
       isActive
-      points
     }
     course {
       id

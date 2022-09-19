@@ -3,5 +3,6 @@ query GetRunningSessions($shortname: String!) {
     id
     name
     displayName
+    linkTo
   }
 }

@@ -2,6 +2,227 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.42...v2.0.0-alpha.43) (2022-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that participation can be undefined ([7226eee](https://github.com/uzh-bf/klicker-uzh/commit/7226eeee4d30ca03271348cfbc2b59fe5feb418b))
+* **apps/frontend-pwa:** use placeholder svg avatar from s3 ([1ab3069](https://github.com/uzh-bf/klicker-uzh/commit/1ab3069ef3bdc9d76cc6d71cb5aee30a03659350))
+
+
+### Other
+
+* **packages/prisma:** rename BF1 stuff to BFI ([6c896dd](https://github.com/uzh-bf/klicker-uzh/commit/6c896ddf61ee5d6c292d83cc969742ddbbdcd785))
+
+
+### Deployment
+
+* update params for deployments of v2 ([9778d7e](https://github.com/uzh-bf/klicker-uzh/commit/9778d7e5a52ed99a0dc51a306801cbf89b118b41))
+
+## [2.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.41...v2.0.0-alpha.42) (2022-09-18)
+
+
+### Other
+
+* lockfile maintenance ([84c6a09](https://github.com/uzh-bf/klicker-uzh/commit/84c6a095c529125291c71d8cbcf599b6ea639d40))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** extend leaderboard for real data ([8a0a63e](https://github.com/uzh-bf/klicker-uzh/commit/8a0a63ec4c0bd2717f5968e41a2e289ca3f74e70))
+* **packages/graphql:** implement logic for leaderboard ([810dcfd](https://github.com/uzh-bf/klicker-uzh/commit/810dcfd4126d33395d93c9b65f754d5302ec9090))
+
+## [2.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.40...v2.0.0-alpha.41) (2022-09-18)
+
+
+### Features
+
+* **packages/graphql:** implement logic for points award in learning elements ([122b501](https://github.com/uzh-bf/klicker-uzh/commit/122b5011d1b927ab8d3a87172177575132894841))
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure that self query is public, update caching logic ([dd5899c](https://github.com/uzh-bf/klicker-uzh/commit/dd5899c6b9f9de1889303601c393e1df3db82e2c))
+
+
+### Deployment
+
+* build docker backend on tags ([b38c43b](https://github.com/uzh-bf/klicker-uzh/commit/b38c43b6c2211220729136790d94a73fd99a39c6))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add initial display of points awarded ([d10e521](https://github.com/uzh-bf/klicker-uzh/commit/d10e521bf05f35c925748c30fb46d5fef208c6a7))
+* **packages/prisma:** add lastAwardedAt timestamp for question responses ([3fe6f33](https://github.com/uzh-bf/klicker-uzh/commit/3fe6f33b11e856a148c9980f9c2977e3de06c575))
+* **packages/prisma:** improve data model for points logic ([4cb5a18](https://github.com/uzh-bf/klicker-uzh/commit/4cb5a18c8c3a96e6c5d791b017f3e54a27390754))
+
+## [2.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.39...v2.0.0-alpha.40) (2022-09-18)
+
+
+### Bug Fixes
+
+* add sameSite none to cookies ([204f02c](https://github.com/uzh-bf/klicker-uzh/commit/204f02cfcf90f65607638ec5282012eca9293c2e))
+* **apps/frontend-pwa:** ensure window is used from optional global ([a037f68](https://github.com/uzh-bf/klicker-uzh/commit/a037f68135cd1a5b763b50d3da7101c6dc72fb05))
+
+## [2.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.38...v2.0.0-alpha.39) (2022-09-18)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** profile update and dynamic redirect if avatar is unset, hide buttons when in frames ([70e9de5](https://github.com/uzh-bf/klicker-uzh/commit/70e9de5c7e1d9a585cee8177368eadc234639152))
+* **packages/graphql:** basic password update via profile ([32637c1](https://github.com/uzh-bf/klicker-uzh/commit/32637c1ffec62ae3e02555fd9e002d0b5a1170fb))
+
+## [2.0.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.37...v2.0.0-alpha.38) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** use status code for server side redirects ([d1732d3](https://github.com/uzh-bf/klicker-uzh/commit/d1732d3cbff71edaacd5de9674869360e1dbfb91))
+
+## [2.0.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.36...v2.0.0-alpha.37) (2022-09-18)
+
+
+### Other
+
+* cleanup docker files, add docker compose for frontends ([5e7d624](https://github.com/uzh-bf/klicker-uzh/commit/5e7d624b707fd991b28b2691d6cfb9ed05d34f9c))
+* lockfile maintenance ([49ea727](https://github.com/uzh-bf/klicker-uzh/commit/49ea727b5bc4deb6d36a5c9cebca57b69607372b))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** disable compression on nextjs side, add modularize imports for ramda ([2746172](https://github.com/uzh-bf/klicker-uzh/commit/2746172827375cfa18131f24c58193dbd42a1c36))
+* **apps/frontend-pwa:** improve LTI flow with welcome page redirect, APP_SECRET from process.env ([4508000](https://github.com/uzh-bf/klicker-uzh/commit/4508000e25bebb5c415a4d1b695538463fbe12fa))
+* **packages/prisma:** add cascade delete on push subscription ([7daf62e](https://github.com/uzh-bf/klicker-uzh/commit/7daf62ea9e3b0f94b86442462b1732b7466ef6ac))
+* rework docker-based deployment approach with build arguments and SSR api urls ([a76f0ca](https://github.com/uzh-bf/klicker-uzh/commit/a76f0ca4d7f3efef2421c0cb27750f66fbc81553))
+
+## [2.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.35...v2.0.0-alpha.36) (2022-09-18)
+
+
+### Bug Fixes
+
+* **packages/graphql:** fix type issues and add logging in LTI participant ([d224352](https://github.com/uzh-bf/klicker-uzh/commit/d2243526a572e28e82a4c146e812a8547494cb9d))
+
+
+### Deployment
+
+* add basic rollout script for QA environment ([746e4f9](https://github.com/uzh-bf/klicker-uzh/commit/746e4f9209fc266759c52ab52ec29db74eab47ff))
+
+
+### Other
+
+* add prettierrc in all directories, remove design system dependency ([f9154bd](https://github.com/uzh-bf/klicker-uzh/commit/f9154bde3e53fc69d7a78c4266fe1b1b7d9a940d))
+* lockfile maintenance ([5258d6c](https://github.com/uzh-bf/klicker-uzh/commit/5258d6c60d0efeb8c100cbe5dbe722c505a8a13e))
+* modify prettierrc in markdown package for cjs, reformat everything ([31648ce](https://github.com/uzh-bf/klicker-uzh/commit/31648ce7cb9d9434b6a7b751e97aa7cce29b2241))
+* move seeding to the prisma package ([ad02533](https://github.com/uzh-bf/klicker-uzh/commit/ad02533b27d259d738ae6fbd27cd129a4f2aaaac))
+* **packages/prisma:** update seed for learning elements (module 2) ([8059a35](https://github.com/uzh-bf/klicker-uzh/commit/8059a359818ac62a88241f3106d94b80da7ffd83))
+
+## [2.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** add clothing avatar options ([0d6e2ae](https://github.com/uzh-bf/klicker-uzh/commit/0d6e2ae685c7532b2b4200dc266e7ba8381124c4))
+* **packages/graphql:** add option for avatar clothing ([eff19ab](https://github.com/uzh-bf/klicker-uzh/commit/eff19ab32d63d05c9395d5b29a7b6df0747d65bd))
+
+
+### Other
+
+* add linkTo for BF1 seeded sessions ([8192182](https://github.com/uzh-bf/klicker-uzh/commit/8192182129086781780a17bd01e4f285af963081))
+* **apps/backend-docker:** add local dev mode ([28944f6](https://github.com/uzh-bf/klicker-uzh/commit/28944f64c29d7b2c177b7bd4ebb0d0f616554926))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve index page display, add error handlin in participant token fetcher ([e0dc902](https://github.com/uzh-bf/klicker-uzh/commit/e0dc902b5021987d81982e8dacbcf265fddddc27))
+* **packages/graphql:** add linkTo and micro session start and end date to graphql schema ([258675b](https://github.com/uzh-bf/klicker-uzh/commit/258675b14cfac959f18c47f0561d96cd59dd911b))
+* **packages/prisma:** add linkTo to datamodel of sessions ([b0dd219](https://github.com/uzh-bf/klicker-uzh/commit/b0dd219f2cf90eaf07ce89637c27a67a894d3400))
+
+## [2.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.33...v2.0.0-alpha.34) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure request from lti is passed correctly ([5132fcc](https://github.com/uzh-bf/klicker-uzh/commit/5132fcc9328eaa79b623b9563a96fc0a57c59139))
+
+
+### Other
+
+* move backend-sls workflows to drafts ([1820037](https://github.com/uzh-bf/klicker-uzh/commit/18200374ebfa09fa330ca05b56174c323f023919))
+* reformat ([4fccddb](https://github.com/uzh-bf/klicker-uzh/commit/4fccddb53360dc7897a534d5fdf41cc51d12fa64))
+
+## [2.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.32...v2.0.0-alpha.33) (2022-09-18)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make everything in ParticipantLearningData optional ([cf2c47e](https://github.com/uzh-bf/klicker-uzh/commit/cf2c47e6b6e40d2b470f0e81f70b7266b17fbe8e))
+
+
+### Other
+
+* lockfile maintenance ([acb4039](https://github.com/uzh-bf/klicker-uzh/commit/acb40393ae4bb8f13e6cca99bbd925120e419a56))
+
+
+### Deployment
+
+* add extended config for production deployment with backend-docker ([0f243f9](https://github.com/uzh-bf/klicker-uzh/commit/0f243f9642ba6dbd92fd865ab62ed30800bd8926))
+
+## [2.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.31...v2.0.0-alpha.32) (2022-09-18)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure api is under /api/graphql ([e312b07](https://github.com/uzh-bf/klicker-uzh/commit/e312b078ae85ac062b88aa78491180749e3c3026))
+* **apps/backend-responses:** add get to methods that should be handled ([66bde66](https://github.com/uzh-bf/klicker-uzh/commit/66bde66df7b94f7cbd9d69250d9c5e976b1ebaeb))
+* **apps/backend-sls:** add get to methods that should be handled ([019eb2c](https://github.com/uzh-bf/klicker-uzh/commit/019eb2cf59c9efcb7bf07c4ee3cbda2bb14d1af6))
+
+
+### Deployment
+
+* **apps/backend-docker:** extend chart for v2 deployment with doppler-based config ([48cc293](https://github.com/uzh-bf/klicker-uzh/commit/48cc2935b6b2933d5a036b74d354733908c7aed8))
+
+
+### Other
+
+* add docker backend to docker-compose definition for local testing ([4e46b20](https://github.com/uzh-bf/klicker-uzh/commit/4e46b20b81776bc17a14060534f1586553d72627))
+* **apps/backend-*:** move singleton initializers out of handler function ([6467b67](https://github.com/uzh-bf/klicker-uzh/commit/6467b6799942a9d3aa23ac96f5da04358c3eb8bd))
+* **apps/backend-docker:** add initial alternative backend with docker-based express ([811e5dc](https://github.com/uzh-bf/klicker-uzh/commit/811e5dce2243afac7deee8fef16274aef28b7b9b))
+* **apps/backend-responses:** evaluate getRedis approach ([23b2dde](https://github.com/uzh-bf/klicker-uzh/commit/23b2dde58f9e97d32717c120488c15bb43d9770e))
+* **apps/backend-sls:** add console logging in host.json ([ea63b19](https://github.com/uzh-bf/klicker-uzh/commit/ea63b198d7cf61324f7e0b4cc519d8dd42f6a2c1))
+* **apps/backend-sls:** evaluate disabling all envelop plugins ([1378047](https://github.com/uzh-bf/klicker-uzh/commit/13780477d89786aa41b8953cdda88b2485c4525c))
+* **apps/backend-sls:** investigate singleton-based approach for cached app ([c928123](https://github.com/uzh-bf/klicker-uzh/commit/c9281233c88973f05287cddc333300812948d289))
+* **apps/backend-sls:** use only parser and validation cache and no redis response cache ([2ef84bf](https://github.com/uzh-bf/klicker-uzh/commit/2ef84bff2355565853675bda29955a8a78dbe56e))
+* **packages/prisma:** switch to musl prisma client ([c41573a](https://github.com/uzh-bf/klicker-uzh/commit/c41573a852e35faf15db113569721a918678eb4f))
+
+## [2.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.30...v2.0.0-alpha.31) (2022-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** always use chest as body type ([12b332e](https://github.com/uzh-bf/klicker-uzh/commit/12b332e1bdd3a85dbcf88aaef68190fe315d34e4))
+
+
+### Deployment
+
+* update tag for production deploy ([d7ba94d](https://github.com/uzh-bf/klicker-uzh/commit/d7ba94d01254eecec884a091e5e01b782ff01c6e))
+
+
+### Other
+
+* **apps/backend-sls:** improve tests with extended matchers ([222d6a7](https://github.com/uzh-bf/klicker-uzh/commit/222d6a777004c0f45e95ade5b02ef5aaaa1512be))
+* **apps/frontend-pwa:** replace body with clothing in avatar generation script ([71b723b](https://github.com/uzh-bf/klicker-uzh/commit/71b723b872ccbb6ef1c5573de03c321ca858db24))
+* lockfile maintenance ([ea0fe15](https://github.com/uzh-bf/klicker-uzh/commit/ea0fe150452be6e9be12639c542b390ba70e25df))
+
+
+### Enhancements
+
+* add JWT-based verification on LTI registration endpoint ([d1f9800](https://github.com/uzh-bf/klicker-uzh/commit/d1f98000b23c7a0e1a72927bc90f48d567f99927))
+* **apps/backend-responses:** return 200 on GET to the add response endpoint ([40cbf04](https://github.com/uzh-bf/klicker-uzh/commit/40cbf047cce8d6c8f7b97f5b2d46cb74c4dcf241))
+* **apps/backend-sls:** return 200 on GET to the add response endpoint ([d159ef9](https://github.com/uzh-bf/klicker-uzh/commit/d159ef9ef992140c962170b3db193e13bce87fa4))
+* **apps/frontend-pwa:** improve page data fetching logic and use participant token in embeddable pages ([390b4e3](https://github.com/uzh-bf/klicker-uzh/commit/390b4e3eda9d830e07bbf76796340c798ca43c55))
+* **packages/graphql:** improve logic for participant registration from LTI ([4da5ce0](https://github.com/uzh-bf/klicker-uzh/commit/4da5ce0428e993342882a196b3ddd0a6520239d9))
+
 ## [2.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.29...v2.0.0-alpha.30) (2022-09-17)
 
 

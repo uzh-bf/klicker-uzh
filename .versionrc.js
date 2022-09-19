@@ -8,6 +8,7 @@ module.exports = {
   bumpFiles: [
     '',
     'docs/',
+    'apps/backend-docker/',
     'apps/backend-responses/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
