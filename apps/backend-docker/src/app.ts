@@ -75,7 +75,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
           MicroSession: 60000,
           QuestionInstance: 60000,
           Participation: 0,
-          LeaderboardEntry: 10000,
+          LeaderboardEntry: 0,
         },
         cache,
         session(ctx) {
