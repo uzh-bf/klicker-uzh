@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.42...v2.0.0-alpha.43) (2022-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that participation can be undefined ([7226eee](https://github.com/uzh-bf/klicker-uzh/commit/7226eeee4d30ca03271348cfbc2b59fe5feb418b))
+* **apps/frontend-pwa:** use placeholder svg avatar from s3 ([1ab3069](https://github.com/uzh-bf/klicker-uzh/commit/1ab3069ef3bdc9d76cc6d71cb5aee30a03659350))
+
+
+### Other
+
+* **packages/prisma:** rename BF1 stuff to BFI ([6c896dd](https://github.com/uzh-bf/klicker-uzh/commit/6c896ddf61ee5d6c292d83cc969742ddbbdcd785))
+
+
+### Deployment
+
+* update params for deployments of v2 ([9778d7e](https://github.com/uzh-bf/klicker-uzh/commit/9778d7e5a52ed99a0dc51a306801cbf89b118b41))
+
 ## [2.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.41...v2.0.0-alpha.42) (2022-09-18)
 
 
