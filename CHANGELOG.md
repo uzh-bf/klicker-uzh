@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.45...v2.0.0-alpha.46) (2022-09-19)
+
+
+### Enhancements
+
+* improve leaderboard logic for removal of self on leave ([82cf837](https://github.com/uzh-bf/klicker-uzh/commit/82cf8372f97565fe4a05b577c791a80deefb5f32))
+
 ## [2.0.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.44...v2.0.0-alpha.45) (2022-09-19)
 
 
