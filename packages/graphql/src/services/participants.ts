@@ -39,7 +39,7 @@ export async function updateParticipantProfile(
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {
-      // TODO: return error
+      return null
     }
   }
 

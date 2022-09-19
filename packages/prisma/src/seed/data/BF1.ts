@@ -107,8 +107,8 @@ export const QUESTIONS = [
         value: 'Fremdkapitalgeber',
       },
       {
-        feedback: 'Kunden',
-        value: 'Falsch! Bei den Kunden handelt es sich um Stakeholder.',
+        feedback: 'Falsch! Bei den Kunden handelt es sich um Stakeholder.',
+        value: 'Kunden',
       },
       {
         feedback: 'Korrekt! Alle genannten Personen/Gruppen sind Stakeholder.',
