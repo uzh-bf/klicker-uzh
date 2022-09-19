@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.46...v2.0.0-alpha.47) (2022-09-19)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** finalize sorting logic for leaderboard ([e0490cf](https://github.com/uzh-bf/klicker-uzh/commit/e0490cfe6d7a76567db513f4cc8b430e46075c19))
+
 ## [2.0.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.45...v2.0.0-alpha.46) (2022-09-19)
 
 
