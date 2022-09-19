@@ -11,14 +11,11 @@ import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
-import { Progress } from '@uzh-bf/design-system'
+import { H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-
-const PLACEHOLDER_IMG =
-  'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
+import { useEffect, useState } from 'react'
 
 interface Props {
   courseId: string
@@ -37,15 +34,31 @@ function LearningElement({ courseId, id }: Props) {
     variables: { id },
   })
 
+  const currentInstance = data?.learningElement?.instances?.[currentIx]
+  const questionData = currentInstance?.questionData
+
+  useEffect(() => {
+    if (questionData?.type) {
+      if (
+        questionData.type === QuestionType.SC ||
+        questionData.type === QuestionType.MC ||
+        questionData.type === QuestionType.KPRIM
+      ) {
+        setResponse([])
+      } else {
+        setResponse('')
+      }
+    } else {
+      setResponse(null)
+    }
+  }, [questionData?.type, currentIx])
+
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
   )
 
   if (loading || !data?.learningElement) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
-
-  const currentInstance = data.learningElement?.instances?.[currentIx]
-  const questionData = currentInstance?.questionData
 
   const isEvaluation = !!currentInstance?.evaluation
 
@@ -79,7 +92,7 @@ function LearningElement({ courseId, id }: Props) {
       courseName={data.learningElement.course.displayName}
       courseColor={data.learningElement.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-6xl md:m-auto md:mb-4 md:p-8 md:border md:rounded">
+      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {!currentInstance && (
           <div>
             <div className="mb-2 font-bold">Gratulation!</div>
@@ -94,8 +107,13 @@ function LearningElement({ courseId, id }: Props) {
         {currentInstance && (
           <div className="order-2 md:order-1">
             {questionData && (
-              <div className="flex flex-col gap-4 md:flex-row">
-                <div className="flex-1">
+              <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
+                <div className="flex-1 basis-2/3">
+                  <div className="flex flex-row items-end justify-between mb-4 border-b">
+                    <H3 className="mb-0">{questionData.name}</H3>
+                    <div className="text-slate-500">{questionData.type}</div>
+                  </div>
+
                   <div className="pb-2">
                     <Markdown content={questionData.content} />
                   </div>
@@ -113,7 +131,7 @@ function LearningElement({ courseId, id }: Props) {
                 </div>
 
                 {currentInstance.evaluation && (
-                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
+                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
                     <div className="flex flex-row gap-8">
                       <div>
                         <div className="font-bold">Punkte (berechnet)</div>
@@ -137,7 +155,7 @@ function LearningElement({ courseId, id }: Props) {
                     />
 
                     <div>
-                      <div className="font-bold">Sammle wieder Punkte ab:</div>
+                      <div className="font-bold">Erneute Punkte ab:</div>
                       <div>
                         {dayjs(currentInstance.evaluation.newPointsFrom).format(
                           'DD.MM.YYYY HH:mm'

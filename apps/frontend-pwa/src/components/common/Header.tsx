@@ -48,6 +48,7 @@ function Header({
       {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
 
       <div className="flex flex-row items-center gap-4">
+        {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
           router.pathname !== '/' &&
           (pageInFrame ? (
