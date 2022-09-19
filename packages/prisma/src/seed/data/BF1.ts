@@ -1081,14 +1081,14 @@ export const QUESTIONS = [
 export const LEARNING_ELEMENTS = [
   {
     id: '1f8178ab-a69a-4994-b292-5c56bea6defa',
-    name: 'BF1 MC 1',
-    displayName: 'BF1 Modul 1 - Lernfragen',
+    name: 'BFI MC 1',
+    displayName: 'BFI Modul 1 - Lernfragen',
     questions: [0, 1, 2, 3, 4],
   },
   {
     id: 'c35cf70c-2ff0-4568-84b3-00dbadadd68b',
-    name: 'BF1 MC 2',
-    displayName: 'BF1 Modul 2 - Lernfragen',
+    name: 'BFI MC 2',
+    displayName: 'BFI Modul 2 - Lernfragen',
     questions: range(10, 30),
   },
 ]
@@ -1096,10 +1096,10 @@ export const LEARNING_ELEMENTS = [
 export const SESSIONS = [
   {
     id: 'd18dfa3b-a965-4dc3-985f-6695e8a43113',
-    name: 'BF1 VL Woche 01',
-    displayName: 'BF1 Vorlesung - Woche 01',
-    status: SessionStatus.PREPARED,
-    blocks: [{ questions: [9] }],
+    name: 'BFI VL Woche 01',
+    displayName: 'BFI Vorlesung - Woche 01',
+    status: SessionStatus.RUNNING,
+    blocks: [],
     linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
   },
 ]
@@ -1107,9 +1107,9 @@ export const SESSIONS = [
 export const MICRO_SESSIONS = [
   {
     id: 'e3c71b0b-a8cf-43e9-8373-85a31673b178',
-    name: 'BF1 Micro Woche 01',
-    displayName: 'BF1 Microlearning - Woche 01',
-    scheduledStartAt: new Date('2022-09-14T07:00:00.000Z'),
+    name: 'BFI Micro Woche 01',
+    displayName: 'BFI Microlearning - Woche 01',
+    scheduledStartAt: new Date('2022-09-21T07:00:00.000Z'),
     scheduledEndAt: new Date('2022-09-22T09:00:00.000Z'),
     description: `
 ### Einführung

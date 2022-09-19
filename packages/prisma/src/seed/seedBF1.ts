@@ -25,8 +25,8 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
   const courseBF1 = await prisma.course.upsert(
     prepareCourse({
       id: '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2',
-      name: 'Banking und Finance 1',
-      displayName: 'Banking und Finance 1',
+      name: 'Banking and Finance I',
+      displayName: 'Banking and Finance I',
       ownerId: userBF1.id,
     })
   )
