@@ -8,27 +8,24 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
 import { H3, Progress } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-interface Props {
-  id: string
-  ix: number
-}
-
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
-function MicroSessionInstance({ id, ix }: Props) {
+function MicroSessionInstance() {
   const [response, setResponse] = useState<number[] | string | null>(null)
 
   const router = useRouter()
 
+  const ix = router.query.ix as string
+  const id = router.query.id as string
+
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id },
+    skip: !id,
   })
 
   const currentInstance = data?.microSession?.instances?.[Number(ix)]
@@ -94,7 +91,7 @@ function MicroSessionInstance({ id, ix }: Props) {
     >
       <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {questionData && (
-          <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
+          <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
             <div className="flex-1 basis-2/3">
               <div className="flex flex-row items-end justify-between mb-4 border-b">
                 <H3 className="mb-0">{questionData.name}</H3>
@@ -154,49 +151,6 @@ function MicroSessionInstance({ id, ix }: Props) {
       <Footer />
     </Layout>
   )
-}
-
-export const getStaticProps: GetStaticProps = async (ctx) => {
-  if (typeof ctx.params?.id !== 'string') {
-    return {
-      redirect: {
-        destination: '/404',
-        permanent: false,
-      },
-    }
-  }
-
-  const apolloClient = initializeApollo()
-
-  try {
-    await apolloClient.query({
-      query: GetMicroSessionDocument,
-      variables: { id: ctx.params.id },
-      fetchPolicy: 'cache-first',
-    })
-  } catch (e) {
-    return {
-      redirect: {
-        destination: '/404',
-        permanent: false,
-      },
-    }
-  }
-
-  return addApolloState(apolloClient, {
-    props: {
-      id: ctx.params.id,
-      ix: ctx.params.ix,
-    },
-    revalidate: 60,
-  })
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
 }
 
 export default MicroSessionInstance

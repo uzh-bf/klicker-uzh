@@ -15,7 +15,7 @@ import { H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface Props {
   courseId: string
@@ -57,6 +57,14 @@ function LearningElement({ courseId, id }: Props) {
     ResponseToQuestionInstanceDocument
   )
 
+  const totalPointsAwarded = useMemo(() => {
+    if (!data?.learningElement) return 0
+    return data.learningElement.instances.reduce(
+      (acc, instance) => acc + instance.evaluation?.pointsAwarded,
+      0
+    )
+  }, [data?.learningElement?.instances])
+
   if (loading || !data?.learningElement) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
 
@@ -94,13 +102,38 @@ function LearningElement({ courseId, id }: Props) {
     >
       <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {!currentInstance && (
-          <div>
-            <div className="mb-2 font-bold">Gratulation!</div>
-            Du hast das Lernelement{' '}
-            <span className="italic">
-              {data.learningElement.displayName}
-            </span>{' '}
-            erfolgreich absolviert.
+          <div className="space-y-3">
+            <div>
+              <H3>Gratulation!</H3>
+              <p>
+                Du hast das Lernelement{' '}
+                <span className="italic">
+                  {data.learningElement.displayName}
+                </span>{' '}
+                erfolgreich absolviert.
+              </p>
+            </div>
+            <div>
+              <div className="flex flex-row items-center justify-between">
+                <H3 className="flex flex-row justify-between">Auswertung</H3>
+                <H3>Punkte (gesammelt/berechnet)</H3>
+              </div>
+              <div>
+                {data.learningElement.instances.map((instance) => (
+                  <div className="flex flex-row justify-between">
+                    <div>{instance.questionData.name}</div>
+                    <div>
+                      {instance.evaluation.pointsAwarded}/
+                      {instance.evaluation.score}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <H3 className="mt-4 text-right">
+                Total Punkte (gesammelt): {totalPointsAwarded}
+              </H3>
+            </div>
           </div>
         )}
 

@@ -469,8 +469,9 @@ model Participation {
   courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
   courseLeaderboardId Int?              @unique
 
-  responses     QuestionResponse[]
-  subscriptions PushSubscription[]
+  responses              QuestionResponse[]
+  subscriptions          PushSubscription[]
+  completedMicroSessions String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

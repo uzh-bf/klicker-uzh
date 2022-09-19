@@ -17,9 +17,6 @@ import { getParticipantToken } from '@lib/token'
 
 const { serverRuntimeConfig } = getConfig()
 
-const PLACEHOLDER_IMG =
-  'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
-
 interface ParticipantProps {
   avatar?: string
   pseudonym: string
@@ -48,7 +45,7 @@ function Participant({
         <div className="bg-white border rounded-full">
           <Image
             className="rounded-full"
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar ?? 'placeholder'}.svg`}
             alt=""
             height={30}
             width={30}
@@ -148,7 +145,7 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank2.username ?? 'Frei'}
-                avatar={rank2.avatar ?? 'placeholder'}
+                avatar={rank2.avatar}
                 points={rank2.score ?? 0}
               />
             </div>
@@ -160,7 +157,7 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank1.username ?? 'Frei'}
-                avatar={rank1.avatar ?? 'placeholder'}
+                avatar={rank1.avatar}
                 points={rank1.score ?? 0}
               />
             </div>
@@ -172,7 +169,7 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank3.username ?? 'Frei'}
-                avatar={rank3.avatar ?? 'placeholder'}
+                avatar={rank3.avatar}
                 points={rank3.score ?? 0}
               />
             </div>
@@ -186,7 +183,7 @@ function CourseOverview({ courseId }: any) {
                     key={entry.id}
                     isActive={participation?.isActive ?? false}
                     pseudonym={entry.username}
-                    avatar={entry.avatar}
+                    avatar={entry.avatar __ ä}
                     points={entry.score}
                     onJoinCourse={joinCourse}
                     onLeaveCourse={leaveCourse}
