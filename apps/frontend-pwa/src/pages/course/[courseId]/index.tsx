@@ -45,7 +45,9 @@ function Participant({
         <div className="bg-white border rounded-full">
           <Image
             className="rounded-full"
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar ?? 'placeholder'}.svg`}
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              avatar ?? 'placeholder'
+            }.svg`}
             alt=""
             height={30}
             width={30}
@@ -183,7 +185,7 @@ function CourseOverview({ courseId }: any) {
                     key={entry.id}
                     isActive={participation?.isActive ?? false}
                     pseudonym={entry.username}
-                    avatar={entry.avatar __ ä}
+                    avatar={entry.avatar}
                     points={entry.score}
                     onJoinCourse={joinCourse}
                     onLeaveCourse={leaveCourse}
