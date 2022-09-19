@@ -28,6 +28,7 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
       name: 'Banking and Finance I',
       displayName: 'Banking and Finance I',
       ownerId: userBF1.id,
+      color: '#016272',
     })
   )
 

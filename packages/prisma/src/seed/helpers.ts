@@ -34,6 +34,7 @@ export function prepareCourse({
   name: string
   displayName: string
   ownerId: string
+  color?: string
 }) {
   const data = {
     ...args,

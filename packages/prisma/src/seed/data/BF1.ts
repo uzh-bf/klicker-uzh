@@ -1109,7 +1109,7 @@ export const MICRO_SESSIONS = [
     id: 'e3c71b0b-a8cf-43e9-8373-85a31673b178',
     name: 'BFI Micro Woche 01',
     displayName: 'BFI Microlearning - Woche 01',
-    scheduledStartAt: new Date('2022-09-21T07:00:00.000Z'),
+    scheduledStartAt: new Date('2022-09-19T07:00:00.000Z'),
     scheduledEndAt: new Date('2022-09-22T09:00:00.000Z'),
     description: `
 ### Einführung
