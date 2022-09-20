@@ -20,9 +20,9 @@
     "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
     "prisma:reset": "prisma reset --schema=src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
-    "seed:test": "ts-node --esm src/seed/seedTEST.ts",
-    "seed:bf1": "ts-node --esm src/seed/seedBF1.ts",
-    "seed:ami": "ts-node --esm src/seed/seedAMI.ts",
+    "seed:test": "ts-node --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
+    "seed:bf1": "ts-node --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
+    "seed:ami": "ts-node --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
     "size": "size-limit"
   },
   "engines": {
