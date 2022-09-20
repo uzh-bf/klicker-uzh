@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.48...v2.0.0-alpha.49) (2022-09-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** issue in courseID index ([1727795](https://github.com/uzh-bf/klicker-uzh/commit/17277955ec018882f7e86338ac4af8ec87a438be))
+
+
+### Other
+
+* move frontend .env to klicker.uzh.ch ([b12d7b8](https://github.com/uzh-bf/klicker-uzh/commit/b12d7b8be6cf0623931f5c768595a7590e599d0a))
+* update BF seed for micro testing ([63a9264](https://github.com/uzh-bf/klicker-uzh/commit/63a92640e6658b0debfbdd74c4883eb446164405))
+
 ## [2.0.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.47...v2.0.0-alpha.48) (2022-09-19)
 
 
