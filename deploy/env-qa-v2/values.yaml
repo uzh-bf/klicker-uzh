@@ -72,3 +72,8 @@ backendGraphql:
     limits:
       cpu: 200m
       memory: 200Mi
+
+redis:
+  architecture: standalone
+  auth:
+    enabled: false

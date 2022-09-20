@@ -10,7 +10,9 @@ data:
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  {{ end }}
   REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
   REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
   REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}

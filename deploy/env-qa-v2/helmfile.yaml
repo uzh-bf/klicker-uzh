@@ -1,3 +1,7 @@
+repositories:
+- name: bitnami
+  url: https://charts.bitnami.com/bitnami
+
 releases:
   - name: klicker-v2-qa
     namespace: klicker-v2-qa
@@ -25,10 +29,9 @@ releases:
           hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
 
           redisCache:
-            host: '{{ requiredEnv "REDIS_CACHE_HOST" }}'
-            port: '{{ requiredEnv "REDIS_CACHE_PORT" }}'
-            tls: '{{ requiredEnv "REDIS_CACHE_TLS" }}'
-            pass: '{{ requiredEnv "REDIS_CACHE_PASS" }}'
+            host: klicker-v2-qa-redis-headless
+            port: 6379
+            pass: ''
 
           redisExec:
             host: '{{ requiredEnv "REDIS_HOST" }}'
