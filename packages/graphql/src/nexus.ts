@@ -391,6 +391,7 @@ export const LeaderboardEntry = objectType({
   name: 'LeaderboardEntry',
   definition(t) {
     t.nonNull.id('id')
+    t.nonNull.id('participantId')
 
     t.nonNull.string('username')
     t.string('avatar')

@@ -155,6 +155,7 @@ type LeaderboardEntry {
   avatar: String
   id: ID!
   isSelf: Boolean
+  participantId: ID!
   score: Float!
   username: String!
 }

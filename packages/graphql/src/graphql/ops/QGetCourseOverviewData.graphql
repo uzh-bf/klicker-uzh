@@ -18,6 +18,7 @@ query GetCourseOverviewData($courseId: ID!) {
     }
     leaderboard {
       id
+      participantId
       username
       avatar
       score

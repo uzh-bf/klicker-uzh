@@ -183,6 +183,7 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
+    participantId: string; // ID!
     score: number; // Float!
     username: string; // String!
   }
@@ -435,6 +436,7 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     id: string; // ID!
     isSelf: boolean | null; // Boolean
+    participantId: string; // ID!
     score: number; // Float!
     username: string; // String!
   }
@@ -728,6 +730,7 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     id: 'ID'
     isSelf: 'Boolean'
+    participantId: 'ID'
     score: 'Float'
     username: 'String'
   }
