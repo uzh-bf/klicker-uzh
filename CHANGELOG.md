@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.51...v2.0.0-alpha.52) (2022-09-20)
+
+
+### Enhancements
+
+* **apps/backend-docker:** setup sentry with envelop integration ([b9abfd2](https://github.com/uzh-bf/klicker-uzh/commit/b9abfd29e8d27e008c1ee4dd6c94386d989e5f00))
+
 ## [2.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.50...v2.0.0-alpha.51) (2022-09-20)
 
 
