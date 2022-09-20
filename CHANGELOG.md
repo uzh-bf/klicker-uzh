@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.53...v2.0.0-alpha.54) (2022-09-20)
+
+
+### Other
+
+* lockfile maintenance ([3309ed9](https://github.com/uzh-bf/klicker-uzh/commit/3309ed90b0511fda8171c213332c39b098cc5273))
+
 ## [2.0.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.52...v2.0.0-alpha.53) (2022-09-20)
 
 
