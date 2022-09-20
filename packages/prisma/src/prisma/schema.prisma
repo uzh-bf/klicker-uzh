@@ -159,8 +159,17 @@ model Tag {
   updatedAt DateTime @updatedAt
 }
 
+enum QuestionInstanceType {
+  UNSET
+  SESSION
+  MICRO_SESSION
+  LEARNING_ELEMENT
+}
+
 model QuestionInstance {
   id Int @id @default(autoincrement())
+
+  type QuestionInstanceType?
 
   questionData Json
   participants Int                @default(0)

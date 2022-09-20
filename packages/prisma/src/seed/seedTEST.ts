@@ -53,7 +53,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id: PARTICIPANT_IDS[ix],
           password: 'testing',
           username: `testuser${ix + 1}`,
-          courseId: courseTesting.id,
+          courseIds: [courseTesting.id, '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2'],
         })
       )
     })
