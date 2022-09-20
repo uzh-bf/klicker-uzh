@@ -5,3 +5,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.markdown p:not(:last-child) {
+  @apply mb-2;
+}
