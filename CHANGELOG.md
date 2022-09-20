@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.54...v2.0.0-alpha.55) (2022-09-20)
+
+
+### Bug Fixes
+
+* show all participations (not only active), show all leaderboard entries ([9206cb1](https://github.com/uzh-bf/klicker-uzh/commit/9206cb1fe907051dafaf02d3652c7644634c1790))
+
+
+### Other
+
+* **packages/prisma:** update seed ([387d237](https://github.com/uzh-bf/klicker-uzh/commit/387d23777626c4f9d938f8eaaead25501815b647))
+
 ## [2.0.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.53...v2.0.0-alpha.54) (2022-09-20)
 
 
