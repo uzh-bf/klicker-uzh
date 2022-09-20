@@ -5,10 +5,9 @@ const prisma = new PrismaClient()
 
 if (process.env.SENTRY_DSN) {
   const Tracing = require('@sentry/tracing')
-  const Sentry = reuqire('@sentry/node')
+  const Sentry = require('@sentry/node')
 
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE ?? 1.0,
   })
 }
