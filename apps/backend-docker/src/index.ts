@@ -1,4 +1,5 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
+import '@sentry/tracing'
 import Redis from 'ioredis'
 import prepareApp from './app'
 
