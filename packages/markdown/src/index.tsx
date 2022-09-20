@@ -56,7 +56,9 @@ function Markdown({
                 ],
               },
             })
-            .use(katex)
+            .use(katex, {
+              throwOnError: false,
+            })
             .use(rehype2react, {
               createElement: React.createElement,
               components,
@@ -69,7 +71,7 @@ function Markdown({
     }
   }, [content, description])
 
-  return <div className={className}>{parsedContent}</div>
+  return <div className={`markdown ${className ?? ''}`}>{parsedContent}</div>
 }
 
 Markdown.defaultProps = defaultProps
