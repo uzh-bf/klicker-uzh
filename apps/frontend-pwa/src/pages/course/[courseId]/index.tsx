@@ -14,6 +14,7 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '@components/Layout'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
+import { any } from 'ramda'
 
 const { serverRuntimeConfig } = getConfig()
 
@@ -110,7 +111,7 @@ function CourseOverview({ courseId }: any) {
     ],
   })
 
-  const { rank1, rank2, rank3 } = useMemo(() => {
+  const { rank1, rank2, rank3, isSelfContained } = useMemo(() => {
     if (!data?.getCourseOverviewData?.leaderboard) return {}
     return {
       rank1:
@@ -122,6 +123,11 @@ function CourseOverview({ courseId }: any) {
       rank3:
         data.getCourseOverviewData.leaderboard.length >= 3 &&
         data.getCourseOverviewData.leaderboard[2],
+      isSelfContained: any(
+        (item) =>
+          item.participantId === data.getCourseOverviewData?.participant.id,
+        data.getCourseOverviewData.leaderboard
+      ),
     }
   }, [data?.getCourseOverviewData?.leaderboard])
 
@@ -178,7 +184,7 @@ function CourseOverview({ courseId }: any) {
           </div>
 
           <div className="pt-8 space-y-2">
-            {leaderboard?.flatMap((entry) => {
+            {leaderboard?.slice(3).flatMap((entry) => {
               if (entry.isSelf) {
                 return (
                   <ParticipantSelf
@@ -203,10 +209,10 @@ function CourseOverview({ courseId }: any) {
               )
             })}
 
-            {!participation?.isActive && (
+            {(!participation?.isActive || !isSelfContained) && (
               <ParticipantSelf
                 key={participant?.id}
-                isActive={false}
+                isActive={participation.isActive}
                 pseudonym={participant?.username}
                 avatar={participant?.avatar}
                 points={null}

@@ -79,7 +79,7 @@ function Evaluation() {
                   id,
                 },
               })
-              router.push('/')
+              router.replace('/')
             }}
           >
             Abschliessen
