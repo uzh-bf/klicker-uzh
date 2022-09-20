@@ -25,23 +25,17 @@ export const QUESTIONS = [
         value: 'Patente, Aktien und Obligationen sind Beispiele für Finanzanlagen.',
       },
       {
-        feedback:
-          'Korrekt!',
+        feedback: 'Korrekt!',
         correct: true,
-        value:
-          'Wissen, Maschinen und Gebäude sind Beispiele für Realanlagen.',
+        value: 'Wissen, Maschinen und Gebäude sind Beispiele für Realanlagen.',
       },
       {
-        feedback:
-          'Falsch! Nur Realanlagen generieren das Nettoeinkommen einer Volkswirtschaft. Der finanzielle Wohlstand einer Gesellschaft ist abhängig von Sach- und nicht von den finanziellen Werten.',
-        value:
-          'Real- und Finanzanlagen generieren das Nettoeinkommen einer Volkswirtschaft.',
+        feedback: 'Falsch! Nur Realanlagen generieren das Nettoeinkommen einer Volkswirtschaft. Der finanzielle Wohlstand einer Gesellschaft ist abhängig von Sach- und nicht von den finanziellen Werten.',
+        value: 'Real- und Finanzanlagen generieren das Nettoeinkommen einer Volkswirtschaft.',
       },
       {
-        feedback:
-          'Falsch! Bei der Berechnung von Indizes wird zwischen Preisgewichteter und Marktwertgewichteter Index unterschieden. Kurs- und Performanceindex stellen lediglich Arten von Indizes dar.',
-        value:
-          'Die Berechnung der Aktienindizes wird anhand von Kurs- und Performanceindex getätigt.',
+        feedback: 'Falsch! Bei der Berechnung von Indizes wird zwischen Preisgewichteter und Marktwertgewichteter Index unterschieden. Kurs- und Performanceindex stellen lediglich Arten von Indizes dar.',
+        value: 'Die Berechnung der Aktienindizes wird anhand von Kurs- und Performanceindex getätigt.',
       },
     ],
   },
@@ -53,34 +47,25 @@ export const QUESTIONS = [
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value:
-          'Mit der Strategischen Asset Allocation wird entschieden, in welche Anlageklassen (Aktien, Bonds, Rohstoffe, etc.) welcher Anteil des Vermögens investiert wird.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value: 'Mit der Strategischen Asset Allocation wird entschieden, in welche Anlageklassen (Aktien, Bonds, Rohstoffe, etc.) welcher Anteil des Vermögens investiert wird.',
       },
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
         value: 'Im Security Selection Prozess werden innerhalb der Anlageklassen die einzelnen Anlageinstrumente ausgewählt und das Portfolio erstellt.',
       },
       {
-        feedback:
-          'Korrekt! Die "Top-down" Portfoliokonstruktion beginnt mit der Asset Allocation und die "Bottom-up" mit der Titelselektion.',
+        feedback: 'Korrekt! Die "Top-down" Portfoliokonstruktion beginnt mit der Asset Allocation und die "Bottom-up" mit der Titelselektion.',
         correct: true,
-        value:
-          'Die "Bottom-up" Portfoliobildung startet mit der Strategischen Asset Allocation.',
+        value: 'Die "Bottom-up" Portfoliobildung startet mit der Strategischen Asset Allocation.',
       },
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value:
-          'Die "Top-down" Portfoliobildung beinhaltet die Strategische und Taktische Asset Allocation gefolgt vom Security Selection Prozess.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value: 'Die "Top-down" Portfoliobildung beinhaltet die Strategische und Taktische Asset Allocation gefolgt vom Security Selection Prozess.',
       },
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value:
-          'Ein Nachteil der "Bottom-up" Strategie kann die fehlende Diversifikation eines Portfolios und das daraus erwachsende unsystematische Risiko sein.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value: 'Ein Nachteil der "Bottom-up" Strategie kann die fehlende Diversifikation eines Portfolios und das daraus erwachsende unsystematische Risiko sein.',
       },
     ],
   },
@@ -92,34 +77,25 @@ export const QUESTIONS = [
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Korrekt! ($40+$70+$10)/3=$40.',
+        feedback: 'Korrekt! ($40+$70+$10)/3=$40.',
         correct: true,
-        value:
-          'Der Preis-gewichtete Index der drei Aktien beträgt $40.',
+        value: 'Der Preis-gewichtete Index der drei Aktien beträgt $40.',
       },
       {
-        feedback:
-          'Falsch! Dies entspricht dem nach Marktwert gewichtetem Index.',
+        feedback: 'Falsch! Dies entspricht dem nach Marktwert gewichtetem Index.',
         value: 'Der Preis-gewichtete Index der drei Aktien beträgt $49`000.',
       },
       {
-        feedback:
-          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
-        value:
-          'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`200.',
+        feedback: 'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
+        value: 'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`200.',
       },
       {
-        feedback:
-          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
-        value:
-          'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`300.',
+        feedback: 'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
+        value: 'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`300.',
       },
       {
-        feedback:
-          'Falsch!',
-        value:
-          'Keine der genannten Aussagen ist richtig.',
+        feedback: 'Falsch!',
+        value: 'Keine der genannten Aussagen ist richtig.',
       },
     ],
   },
