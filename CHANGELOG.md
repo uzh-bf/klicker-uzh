@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.49...v2.0.0-alpha.50) (2022-09-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** show self entry on leaderboard even when not included ([feefaee](https://github.com/uzh-bf/klicker-uzh/commit/feefaee38eb444f19e0c5a54ff0f8f15552f82d7))
+
+
+### Deployment
+
+* setup local redis cache for the QA environment ([0ac8855](https://github.com/uzh-bf/klicker-uzh/commit/0ac88552bfb7e4d2469d535b8fb4b9480b93d64b))
+
+
+### Enhancements
+
+* **packages/graphql:** return the participant id on leaderboard entries ([3b2fbac](https://github.com/uzh-bf/klicker-uzh/commit/3b2fbac52bb696ffd5d94e3812b657e6cd593e28))
+* **packages/prisma:** add question instance type ([32ca9b3](https://github.com/uzh-bf/klicker-uzh/commit/32ca9b302b7738cec9249b9756ed59102fabf96c))
+
+
+### Other
+
+* lockfile maintenance ([f052e83](https://github.com/uzh-bf/klicker-uzh/commit/f052e832d6e84f935061caf70c216048d32de2b1))
+* lockfile maintenance ([4bab93f](https://github.com/uzh-bf/klicker-uzh/commit/4bab93f1bc32e518fb9169a211358115ccff02b2))
+
 ## [2.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.48...v2.0.0-alpha.49) (2022-09-20)
 
 
