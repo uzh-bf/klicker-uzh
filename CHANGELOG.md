@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.50...v2.0.0-alpha.51) (2022-09-20)
+
+
+### Enhancements
+
+* improve layout of formulas in feedbacks ([d4b7ac1](https://github.com/uzh-bf/klicker-uzh/commit/d4b7ac1759144104c43ee5e36770227ee3ab2824))
+
 ## [2.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.49...v2.0.0-alpha.50) (2022-09-20)
 
 
