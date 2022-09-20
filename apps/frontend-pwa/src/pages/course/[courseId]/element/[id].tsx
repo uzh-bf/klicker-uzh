@@ -16,10 +16,6 @@ import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-
-const PLACEHOLDER_IMG =
-  'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
-
 interface Props {
   courseId: string
   id: string
