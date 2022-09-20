@@ -1,9 +1,17 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
-import '@sentry/tracing'
 import Redis from 'ioredis'
 import prepareApp from './app'
-
 const prisma = new PrismaClient()
+
+if (process.env.SENTRY_DSN) {
+  const Tracing = require('@sentry/tracing')
+  const Sentry = reuqire('@sentry/node')
+
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: process.env.SENTRY_SAMPLE_RATE ?? 1.0,
+  })
+}
 
 const redisExec = new Redis({
   family: 4,
