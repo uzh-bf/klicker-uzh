@@ -16,3 +16,12 @@ data:
   REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
   REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
   REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
+  {{- if .Values.backendGraphql.sentryDSN }}
+  SENTRY_DSN: {{ .Values.backendGraphql.sentryDSN | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.sentryEnv }}
+  SENTRY_ENVIRONMENT: {{ .Values.backendGraphql.sentryEnv | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.sentryRelease }}
+  SENTRY_RELEASE: {{ .Values.backendGraphql.sentryRelease | quote }}
+  {{ end }}

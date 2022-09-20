@@ -96,3 +96,7 @@ backendGraphql:
     limits:
       cpu: 1000m
       memory: 1000Mi
+
+redis:
+  auth:
+    enabled: false

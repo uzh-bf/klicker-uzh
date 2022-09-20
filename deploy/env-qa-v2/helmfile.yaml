@@ -38,3 +38,7 @@ releases:
             port: '{{ requiredEnv "REDIS_PORT" }}'
             tls: '{{ requiredEnv "REDIS_TLS" }}'
             pass: '{{ requiredEnv "REDIS_PASS" }}'
+
+          sentryEnv: qa
+          sentryDSN: '{{ env "SENTRY_DSN" }}'
+          sentryRelease: '{{ env "CHART_VERSION" | default "0.1.0" }}'
