@@ -184,7 +184,7 @@ function CourseOverview({ courseId }: any) {
           </div>
 
           <div className="pt-8 space-y-2">
-            {leaderboard?.slice(3).flatMap((entry) => {
+            {leaderboard?.flatMap((entry) => {
               if (entry.isSelf) {
                 return (
                   <ParticipantSelf

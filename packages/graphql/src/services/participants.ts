@@ -88,7 +88,6 @@ export async function getParticipations(
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: { isActive: true },
         include: {
           subscriptions: endpoint
             ? {
