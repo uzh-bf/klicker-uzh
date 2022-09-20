@@ -482,7 +482,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 15,
+    id: 16,
     name: 'Modul 1 Statistische Kennzahlen',
     content: 'Überprüfe die folgenden Aussagen zu den *statistischen Kennzahlen* auf ihre *Richtigkeit*.',
     contentPlain: 'Überprüfe die folgenden Aussagen zu den statistischen Kennzahlen auf ihre Richtigkeit.',
@@ -509,7 +509,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 16,
+    id: 17,
     name: 'Modul 1 Capital Allocation Line',
     content: 'Überprüfe die folgenden Aussagen zur *Indifferenzkurve* und zur *Capital Allocation Line (CAL)* auf ihre *Richtigkeit*.',
     contentPlain: 'Überprüfe die folgenden Aussagen zur Indifferenzkurve und zur Capital Allocation Line (CAL) auf ihre Richtigkeit.',
