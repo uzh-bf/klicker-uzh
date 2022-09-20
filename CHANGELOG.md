@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.52...v2.0.0-alpha.53) (2022-09-20)
+
+
+### Other
+
+* **apps/backend-docker:** ensure SENTRY env variables are read implicitly ([3529e82](https://github.com/uzh-bf/klicker-uzh/commit/3529e8253a506435891e7ab6282d10e8fa49d25f))
+
 ## [2.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.51...v2.0.0-alpha.52) (2022-09-20)
 
 
