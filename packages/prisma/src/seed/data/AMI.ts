@@ -205,7 +205,361 @@ export const QUESTIONS = [
       },
     ],
   },
-  
+  {
+    id: 6,
+    name: 'Modul 1 Investitionsprozess',
+    content: 'Welcher der folgenden Faktoren hat *keinen direkten Einfluss* auf das *Zinsniveau*?',
+    contentPlain: 'Welcher der folgenden Faktoren hat keinen direkten Einfluss auf das Zinsniveau?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch! Das Angebot von Finanzierungsmitteln durch die Zentralbank hat einen direkten Einfluss auf das Zinsniveau.',
+        value: 'Das Angebot von Finanzierungsmitteln durch die Zentralbank.',
+      },
+      {
+        feedback: 'Falsch! Die Nachfrage nach liquiden Mitteln durch die Zentralbank hat einen direkten Einfluss auf das Zinsniveau.',
+        value: 'Die Nachfrage nach liquiden Mitteln durch die Zentralbank.',
+      },
+      {
+        feedback: 'Falsch! Die Nachfrage der Industrie nach Finanzierungsmitteln für geplante Investitionen hat einen direkten Einfluss auf das Zinsniveau.',
+        value: 'Die Nachfrage der Industrie nach Finanzierungsmitteln für geplante Investitionen.',
+      },
+      {
+        feedback: 'Falsch! Die von Sparern auf Bankkonten gehaltenen Gelder haben einen direkten Einfluss auf das Zinsniveau.',
+        value: 'Die von Sparern auf Bankkonten gehaltenen Gelder.',
+      },
+      {
+        feedback: 'Korrekt! Die von Staat erhobenen Steuern können zwar von der Zinskurve abhängig sein, aber nicht umgekehrt. Wenn das Staatsdefizit günstig über den Kapitalmarkt ausgeglichen werden kann, hat der Staat keinen Anreiz die Steuern massiv zu erhöhen. Ist die Überbrückung des Staatsdefizites aufgrund der Zinslage teuer, wird der Staat zwar eher die Steuern erhöhen (um das Staatsdefizit nicht über den Kapitalmarkt finanzieren zu müssen), jedoch hat ein Land mit höheren Steuern nicht unbedingt höhere Zinsen.',
+        correct: true,
+        value: 'Die Nachfrage des Staates nach Steuergeldern.',
+      },
+    ],
+  },
+  {
+    id: 7,
+    name: 'Modul 1 Effective Annual Rate (EAR) I',
+    content: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen: (Bild Modul 1 Effective Annual Rate (EAR) I) Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
+    contentPlain: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen: (Bild Modul 1 Effective Annual Rate (EAR) I) Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: 'A: 4.5%, B: 4.9%',
+      },
+      {
+        feedback: 'Korrekt! $$Total Return_A = \frac{100}{70.30}-1 = 42.2 \% \ ; \ EAR_A= (1+0.422)^{(\frac{1}{8}) }-1 = 4.5\% \\ Total Return_B = \frac{100}{98.787}-1=1.23\% \ ; \ EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0\%$$',
+        correct: true,
+        value: 'A: 4.5%, B: 5.0%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'A: 5.3%, B: 4.9%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'A: 5.3%, B: 5.0%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Keine der genannten Aussagen ist richtig.',
+      },
+    ],
+  },
+  {
+    id: 8,
+    name: 'Modul 1 Effective Annual Rate (EAR) II',
+    content: 'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Effective Annual Rate (EAR) II) Der Bond zahlt am Laufzeitende $100. Berechne die Effective Annual Rate (EAR).',
+    contentPlain: 'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Effective Annual Rate (EAR) II) Der Bond zahlt am Laufzeitende $100. Berechne die Effective Annual Rate (EAR).',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: 'EAR: 5.90%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'EAR: 6.03%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'EAR: 6.03%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'EAR: 6.70%',
+      },
+      {
+        feedback: 'Korrekt! $$Total Return = \frac{100}{99.5}-1 =0.5\% \\ EAR = (1+0.005)^{(\frac{1}{\frac{1}{12}})} -1 = 6.20\% $$',
+        correct: true,
+        value: 'EAR: 6.20%',
+      },
+    ],
+  },
+  {
+    id: 9,
+    name: 'Modul 1 Continuous Compounding',
+    content: 'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Continuous Compounding) Der Bond zahlt am Laufzeitende $100. Berechne die Continuously Compounded Rate (CCR).',
+    contentPlain: 'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Continuous Compounding) Der Bond zahlt am Laufzeitende $100. Berechne die Continuously Compounded Rate (CCR).',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Korrekt! $$Total Return = \frac{100}{98}-1 = 2.04\% \\ EAR = (1+0.0204)^{(\frac{1}{\frac{1}{4}})}-1 = 8.4\% \\ CCR = ln(1+0.084) = 8.1\%$$',
+        correct: true,
+        value: 'CCR: 8.1%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'CCR: 8.2%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'CCR: 8.3%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'CCR: 8.4%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'CCR: 8.5%',
+      },
+    ],
+  },
+  {
+    id: 10,
+    name: 'Modul 1 Varianz',
+    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3). Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
+    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Korrekt! Die entsprechenden Aktienrenditen lassen sich wie folgt kalkulieren: (65.9 – 55.4) / 55.4 = 0.1895; (46.6 – 65.9) / 65.9 = -0.2929; (14.8 – 46.6) / 46.6 = -0.6824 Und die durchschnittliche Aktienrendite lautet: (0.1895 - 0.2929 - 0.6824) / 3 = -0.2619 $$E(r) = - 0.26; \ Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^2]=12.72\%$$ ',
+        correct: true,
+        value: '$$σ^2_x = 12.72\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ^2_x = 19.08\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ^2_x = 35.66\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ^2_x = 364.44$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ^2_x = 485.92$$',
+      },
+    ],
+  },
+  {
+    id: 11,
+    name: 'Modul 1 Standardabweichung',
+    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
+    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: '$$σ_x = 16.18\%$$',
+      },
+      {
+        feedback: 'Korrekt! $$Standardabweichung = \sqrt{0.1272} = 35.67\%$$',
+        correct: true,
+        value: '$$σ_x = 35.67\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ_x = 43.68\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ_x = 83.8\%$$',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '$$σ_x = 1.618\%$$',
+      },
+    ],
+  },
+  {
+    id: 12,
+    name: 'Modul 1 Wochenvolatilität',
+    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)',
+    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: 'Wochenvolatilität = 2.26%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Wochenvolatilität = 2.52%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Wochenvolatilität = 3.09%',
+      },
+      {
+        feedback: 'Korrekt! $$Wochenvolatilität = \frac{Jahresvolatilität}{\sqrt{50}} = 5.04\%$$',
+        correct: true,
+        value: 'Wochenvolatilität = 5.04%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Wochenvolatilität = 6.18%',
+      },
+    ],
+  },
+  {
+    id: 13,
+    name: 'Modul 1 Geometric (Time-weighted) Average Return',
+    content: 'Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. (Bild Modul 1 Geometric (Time-weighted) Average Return) Wie gross ist der geometrische Durchschnitt dieser Investition?',
+    contentPlain: 'Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. (Bild Modul 1 Geometric (Time-weighted) Average Return) Wie gross ist der geometrische Durchschnitt dieser Investition?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: '0.0%',
+      },
+      {
+        feedback: 'Korrekt! Terminal Value=(1+0.25)*(1+0.10)*(1-0.15)=1.169 ; Geometric Average Return=1.169^(1/3)-1=5.3%',
+        correct: true,
+        value: '5.3%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '7.0%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '12.5%',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '16.8%',
+      },
+    ],
+  },
+  {
+    id: 14,
+    name: 'Modul 1 Risikoaversion',
+    content: 'Welche der folgenden Aussagen ist *richtig*? (A = Index für Risikoaversion)',
+    contentPlain: 'Welche der folgenden Aussagen ist richtig? (A = Index für Risikoaversion)',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch! Sie gehen risikolose und spekulative Investitionen ein. Sie verlangen aber für die spekulativen Investitionen eine entsprechend höhere Risikoprämie.',
+        value: 'Risikoaverse Investoren gehen nur risikolose Investitionen ein.',
+      },
+      {
+        feedback: 'Falsch! Je risikoaverser ein Investor, desto grösser wird A.',
+        value: 'Je risikoaverser ein Investor, desto kleiner wird das A.',
+      },
+      {
+        feedback: 'Falsch! Bei risikofreudigen Investoren gilt A<0.',
+        value: 'Risikofreudige Investoren sind durch ein A>0 charakterisiert.',
+      },
+      {
+        feedback: 'Korrekt!',
+        correct: true,
+        value: 'Risikoneutrale Investoren beurteilen risikolose und risikoreiche Investitionen nur anhand der erwarteten Rendite (A=0).',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Keine der genannten Aussagen ist richtig.',
+      },
+    ],
+  },
+  {
+    id: 15,
+    name: 'Modul 1 Nutzenfunktionen',
+    content: 'Gehe von folgender Ausgangssituation aus: (Bild Modul 1 Nutzenfunktionen) Die Nutzenfunktion des Investors beträgt U=E(r)-(A/2)*SD^2, wobei A=4.0 ist. Welches Investment wird der Anleger tätigen?',
+    contentPlain: 'Gehe von folgender Ausgangssituation aus: (Bild Modul 1 Nutzenfunktionen) Die Nutzenfunktion des Investors beträgt U=E(r)-(A/2)*SD^2, wobei A=4.0 ist. Welches Investment wird der Anleger tätigen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        feedback: 'Falsch!',
+        value: '1',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '2',
+      },
+      {
+        feedback: 'Korrekt! U(3)=0.21-(4/2)*0.16^2=15.88',
+        correct: true,
+        value: '3',
+      },
+      {
+        feedback: 'Falsch!',
+        value: '4',
+      },
+      {
+        feedback: 'Falsch!',
+        value: 'Die Angaben reichen für die Berechnung nicht aus.',
+      },
+    ],
+  },
+  {
+    id: 15,
+    name: 'Modul 1 Statistische Kennzahlen',
+    content: 'Überprüfe die folgenden Aussagen zu den *statistischen Kennzahlen* auf ihre *Richtigkeit*.',
+    contentPlain: 'Überprüfe die folgenden Aussagen zu den statistischen Kennzahlen auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback: 'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Statistische Kennzahlen basieren auf vergangenheitsorientierten Daten.',
+      },
+      {
+        feedback:'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'In der klassischen Finance-Theorie wird davon ausgegangen, dass Aktienrenditen normalverteilt sind.',
+      },
+      {
+        feedback: 'Diese Aussage ist nicht korrekt! Bei der Normalverteilung werden «Fat Tails» nicht berücksichtigt.',
+        value: 'Bei der Normalverteilung werden „Fat Tails“ berücksichtigt.',
+      },
+      {
+        feedback: 'Diese Aussage ist nicht korrekt! Die Schiefe einer Normalverteilung beträgt null.',
+        value: 'Die Schiefe einer Normalverteilung beträgt eins.',
+      },
+    ],
+  },
+  {
+    id: 16,
+    name: 'Modul 1 Capital Allocation Line',
+    content: 'Überprüfe die folgenden Aussagen zur *Indifferenzkurve* und zur *Capital Allocation Line (CAL)* auf ihre *Richtigkeit*.',
+    contentPlain: 'Überprüfe die folgenden Aussagen zur Indifferenzkurve und zur Capital Allocation Line (CAL) auf ihre Richtigkeit.',
+    type: QuestionType.KPRIM,
+    choices: [
+      {
+        feedback: 'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Die Indifferenzkurve stellt die Risikoneigung des Investors dar.',
+      },
+      {
+        feedback:'Diese Aussage ist nicht korrekt!',
+        value: 'Je höher die Risikoaversion des Investors ist, desto flacher ist die entsprechende Indifferenzkurve.',
+      },
+      {
+        feedback: 'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Auf der Capital Allocation Line (CAL) befinden sich alle optimalen Kombinationen von risikobehafteten und risikofreien Anlagen (Annahme: maximierte Sharp Ratio).',
+      },
+      {
+        feedback: 'Diese Aussage ist korrekt!',
+        correct: true,
+        value: 'Mithilfe der Indifferenzkurve und der Capital Allocation Line (CAL) kann der Investor sein optimales Portfolio bestimmen (Annahme: maximierte Sharp Ratio).',
+      },
+    ],
+  },
 ]
 
 export const LEARNING_ELEMENTS = []
