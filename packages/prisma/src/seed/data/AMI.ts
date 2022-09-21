@@ -94,7 +94,7 @@ export const QUESTIONS = [
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Korrekt! $$\frac{(\$40+\$70+\$10)}{3}=$\40$$.',
+        feedback: String.raw`Korrekt! $$ \frac{(\$40+\$70+\$10)}{3}=\$40 $$.`,
         correct: true,
         value: 'Der Preis-gewichtete Index der drei Aktien beträgt $40.',
       },
@@ -104,14 +104,12 @@ export const QUESTIONS = [
         value: "Der Preis-gewichtete Index der drei Aktien beträgt $49'000.",
       },
       {
-        feedback:
-          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$\$40*200+\$70*500+\$10*600=\$49'000$$.",
+        feedback: String.raw`Falsch! Der nach Marktwert gewichtete Index beträgt: $$ \$40*200+\$70*500+\$10*600=\$49'000 $$.`,
         value:
           "Der nach Marktwert gewichtete Index der drei Aktien beträgt $1'200.",
       },
       {
-        feedback:
-          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$\$40*200+\$70*500+\$10*600=\$49'000 $$.",
+        feedback: String.raw`Falsch! Der nach Marktwert gewichtete Index beträgt: $$ \$40*200+\$70*500+\$10*600=\$49'000 $$.`,
         value:
           "Der nach Marktwert gewichtete Index der drei Aktien beträgt $1'300.",
       },
@@ -124,7 +122,7 @@ export const QUESTIONS = [
   {
     id: 33,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
@@ -156,7 +154,7 @@ export const QUESTIONS = [
   {
     id: 34,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
-    content: "",
+    content: '',
     contentPlain:
       'Beurteile folgende Aussagen zum Leerverkauf auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -190,7 +188,7 @@ export const QUESTIONS = [
   {
     id: 35,
     name: 'Modul 1 Anlageprozess',
-    content: "",
+    content: '',
     contentPlain:
       'Überprüfe die folgenden Aussagen zum Anlageprozess auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -421,23 +419,23 @@ $$E(r) = - 0.26$$
 $$Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^2]=12.72\%$$
 `,
         correct: true,
-        value: '$$σ^2_x = 12.72\%$$',
+        value: '$$σ^2_x = 12.72%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 19.08\%$$',
+        value: '$$σ^2_x = 19.08%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 35.66\%$$',
+        value: '$$σ^2_x = 35.66%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 364.44\%$$',
+        value: '$$σ^2_x = 364.44%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 485.92\%$$',
+        value: '$$σ^2_x = 485.92%$$',
       },
     ],
   },
@@ -460,7 +458,7 @@ erechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitra
     choices: [
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 16.18\%$$',
+        value: '$$σ_x = 16.18%$$',
       },
       {
         feedback: String.raw`
@@ -469,19 +467,19 @@ Korrekt!
 $$Standardabweichung = \sqrt{0.1272} = 35.67\%$$
 `,
         correct: true,
-        value: '$$σ_x = 35.67\%$$',
+        value: '$$σ_x = 35.67%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 43.68\%$$',
+        value: '$$σ_x = 43.68%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 83.8\%$$',
+        value: '$$σ_x = 83.8%$$',
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 1.618\%$$',
+        value: '$$σ_x = 1.618%$$',
       },
     ],
   },
@@ -608,11 +606,11 @@ $$Geometric Average Return=1.169^\frac{1}{3}-1=5.3\%$$
   {
     id: 45,
     name: 'Modul 1 Nutzenfunktionen',
-    content: `Gehe von folgender Ausgangssituation aus:
+    content: String.raw`Gehe von folgender Ausgangssituation aus:
 ![Nutzenfunktionen](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_nutzenfunktion.png)
 Die Nutzenfunktion des Investors beträgt U=E(r)-$$\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
 Welches Investment wird der Anleger tätigen?`,
-    contentPlain: `Gehe von folgender Ausgangssituation aus:
+    contentPlain: String.raw`Gehe von folgender Ausgangssituation aus:
 BILD
 Die Nutzenfunktion des Investors beträgt U=E(r)-$$\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
 Welches Investment wird der Anleger tätigen?`,
@@ -627,7 +625,7 @@ Welches Investment wird der Anleger tätigen?`,
         value: '2',
       },
       {
-        feedback: 'Korrekt! U(3)=0.21-$$\frac{4}{2}*0.16^2=15.88$$',
+        feedback: String.raw`Korrekt! U(3)=0.21-$$\frac{4}{2}*0.16^2=15.88$$`,
         correct: true,
         value: '3',
       },
@@ -644,7 +642,7 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 46,
     name: 'Modul 1 Statistische Kennzahlen',
-    content: "",
+    content: '',
     contentPlain:
       'Überprüfe die folgenden Aussagen zu den statistischen Kennzahlen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -676,7 +674,7 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 47,
     name: 'Modul 1 Capital Allocation Line',
-    content: "",
+    content: '',
     contentPlain:
       'Überprüfe die folgenden Aussagen zur Indifferenzkurve und zur Capital Allocation Line (CAL) auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -688,7 +686,8 @@ Welches Investment wird der Anleger tätigen?`,
           'Die Indifferenzkurve stellt die Risikoneigung des Investors dar.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Es ist genau umgekehrt: Je höher die Risikoaversion des Investors ist, desto steiler ist die entsprechende Indifferenzkurve.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Es ist genau umgekehrt: Je höher die Risikoaversion des Investors ist, desto steiler ist die entsprechende Indifferenzkurve.',
         value:
           'Je höher die Risikoaversion des Investors ist, desto flacher ist die entsprechende Indifferenzkurve.',
       },

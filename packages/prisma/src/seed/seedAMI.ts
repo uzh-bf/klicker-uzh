@@ -68,7 +68,6 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
       prisma.session.upsert(
         prepareSession({
           ...data,
-          linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
           blocks: data.blocks.map((block, ix) => ({
             ...block,
             order: ix,
