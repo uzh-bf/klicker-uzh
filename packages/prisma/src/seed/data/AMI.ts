@@ -1,3 +1,4 @@
+// prettier
 import Prisma from '@klicker-uzh/prisma'
 import { range } from 'ramda'
 const { AttachmentType, QuestionType, SessionStatus } = Prisma
@@ -324,7 +325,7 @@ Berechne die Effective Annual Rate (EAR).`,
       },
       {
         feedback: 'Falsch!',
-        value: 'EAR: 6.03%',
+        value: 'EAR: 6.30%',
       },
       {
         feedback: 'Falsch!',
@@ -419,23 +420,28 @@ $$E(r) = - 0.26$$
 $$Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^2]=12.72\%$$
 `,
         correct: true,
-        value: '$$σ^2_x = 12.72%$$',
+        // prettier-ignore
+        value: String.raw`$$σ^2_x = 12.72\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 19.08%$$',
+        // prettier-ignore
+        value: String.raw`$$σ^2_x = 19.08\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 35.66%$$',
+        // prettier-ignore
+        value: String.raw`$$σ^2_x = 35.66\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 364.44%$$',
+        // prettier-ignore
+        value: String.raw`$$σ^2_x = 364.44\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ^2_x = 485.92%$$',
+        // prettier-ignore
+        value: String.raw`$$σ^2_x = 485.92\%$$`,
       },
     ],
   },
@@ -458,7 +464,8 @@ erechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitra
     choices: [
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 16.18%$$',
+        // prettier-ignore
+        value: String.raw`$$σ_x = 16.18\%$$`,
       },
       {
         feedback: String.raw`
@@ -467,19 +474,23 @@ Korrekt!
 $$Standardabweichung = \sqrt{0.1272} = 35.67\%$$
 `,
         correct: true,
-        value: '$$σ_x = 35.67%$$',
+        // prettier-ignore
+        value: String.raw`$$σ_x = 35.67\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 43.68%$$',
+        // prettier-ignore
+        value: String.raw`$$σ_x = 43.68\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 83.8%$$',
+        // prettier-ignore
+        value: String.raw`$$σ_x = 83.8\%$$`,
       },
       {
         feedback: 'Falsch!',
-        value: '$$σ_x = 1.618%$$',
+        // prettier-ignore
+        value: String.raw`$$σ_x = 1.618\%$$`,
       },
     ],
   },
