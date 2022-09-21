@@ -3,7 +3,9 @@
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @tailwind base;
+
 @tailwind components;
+
 @tailwind utilities;
 
 .markdown p:not(:last-child) {
