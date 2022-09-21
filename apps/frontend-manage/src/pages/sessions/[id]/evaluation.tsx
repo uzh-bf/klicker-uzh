@@ -1,9 +1,12 @@
 import { useQuery } from '@apollo/client'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import { QuestionType } from '@klicker-uzh/prisma'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Chart from '../../../components/evaluation/Chart'
 
 interface Tab {
   title: string
@@ -12,6 +15,69 @@ interface Tab {
 
 function Evaluation() {
   const router = useRouter()
+  // TODO: replace with corresponding database field and query
+  const [showSolution, setShowSolution] = useState(true)
+
+  // TODO: replace dummy data with actual results from DB
+  const dummyData: {
+    questionType: QuestionType
+    data: { value: string | number; correct: boolean; votes: number }[]
+  }[] = [
+    {
+      questionType: 'NUMERICAL',
+      data: [
+        { value: 3, correct: true, votes: 10 },
+        { value: 5, correct: true, votes: 12 },
+        { value: 17, correct: false, votes: 3 },
+        { value: 92, correct: true, votes: 1 },
+        { value: 11, correct: false, votes: 30 },
+      ],
+    },
+    {
+      questionType: 'FREE_TEXT',
+      data: [
+        { value: 'Answer 1', correct: true, votes: 2 },
+        { value: 'Answer 2', correct: false, votes: 6 },
+        { value: 'Answer 3', correct: true, votes: 12 },
+        { value: 'Answer 4', correct: false, votes: 4 },
+      ],
+    },
+    {
+      questionType: 'NUMERICAL',
+      data: [
+        { value: 3, correct: true, votes: 10 },
+        { value: 1, correct: true, votes: 12 },
+        { value: 7, correct: false, votes: 3 },
+        { value: 2, correct: true, votes: 1 },
+        { value: 1, correct: false, votes: 30 },
+        { value: 1.5, correct: false, votes: 4 },
+      ],
+    },
+    {
+      questionType: 'SC',
+      data: [
+        { value: 'A', votes: 10, correct: true },
+        { value: 'B', votes: 1, correct: false },
+        { value: 'C', votes: 20, correct: true },
+        { value: 'D', votes: 10, correct: false },
+        { value: 'E', votes: 11, correct: false },
+      ],
+    },
+    {
+      questionType: 'NUMERICAL',
+      data: [
+        { value: 3, correct: true, votes: 10 },
+        { value: 1, correct: true, votes: 12 },
+        { value: 7, correct: false, votes: 3 },
+        { value: 2, correct: true, votes: 1 },
+        { value: 1, correct: false, votes: 30 },
+        { value: 1.5, correct: false, votes: 4 },
+        { value: 100, correct: false, votes: 30 },
+        { value: 18, correct: false, votes: 20 },
+        { value: 61, correct: false, votes: 30 },
+      ],
+    },
+  ]
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
@@ -105,9 +171,16 @@ function Evaluation() {
     return answerArray
   }
 
+  function getChartData(data: any) {
+    // TODO: implement
+    // console.log(data?.sessionEvaluation?.instanceResults)
+    return data?.sessionEvaluation?.instanceResults
+  }
+
   const tabs = getTabs(data)
   const questions = getQuestions(data)
   const answerCollection = getAnswers(data)
+  const chartData = dummyData // TODO: replace with getChartData(data)
 
   return (
     <div className="mx-4 mt-2">
@@ -147,9 +220,15 @@ function Evaluation() {
               className="flex flex-row content-between p-2 mb-10 border-slate-800 bg-uzh-grey-20"
               content={question}
             />
-            <div>
-              <span className="flex">Chart goes here</span>
-              <span className="flex justify-end">
+            <div className="flex flex-row">
+              <div className="w-2/3">
+                <Chart
+                  questionType={dummyData[index]?.questionType}
+                  data={chartData[index]?.data}
+                  showSolution={showSolution}
+                />
+              </div>
+              <div className="flex-1">
                 <div className="flex flex-col gap-2">
                   {(answerCollection[index].type === 'SC' ||
                     answerCollection[index].type === 'MC' ||
@@ -162,16 +241,22 @@ function Evaluation() {
                         },
                         innerIndex: number
                       ) => (
-                        <div key={innerIndex} className="flex flex-row">
+                        <div
+                          key={chartData[index].data[innerIndex].value}
+                          className="flex flex-row"
+                        >
                           <div
                             className={twMerge(
-                              'flex flex-col justify-center mr-2 text-center rounded-md w-7 h-7 bg-uzh-blue-80 text-white font-bold',
+                              'mr-2 text-center rounded-md w-7 h-7 bg-uzh-blue-80 text-white font-bold',
                               answer.correct && 'bg-green-500 text-black'
                             )}
                           >
-                            {innerIndex}
+                            <div>{chartData[index].data[innerIndex].value}</div>
                           </div>
-                          <Markdown content={answer.value} />
+                          <Markdown
+                            content={answer.value}
+                            className="w-[calc(100%-3rem)]"
+                          />
                         </div>
                       )
                     )}
@@ -224,7 +309,7 @@ function Evaluation() {
                     </div>
                   )}
                 </div>
-              </span>
+              </div>
             </div>
           </TabsPrimitive.Content>
         ))}
