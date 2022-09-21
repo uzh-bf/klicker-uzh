@@ -70,7 +70,7 @@ function Header({
             <Button className="text-white bg-slate-800">Login</Button>
           </Link>
         )}
-        {!participant?.avatar && (
+        {participant && !participant?.avatar && (
           <Link href="/editProfile">
             <Button className="text-white bg-uzh-red-100 border-uzh-red-100">
               Profil einrichten
