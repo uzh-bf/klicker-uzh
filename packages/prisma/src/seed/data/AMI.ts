@@ -94,7 +94,7 @@ export const QUESTIONS = [
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Korrekt! $$\frac{($40+$70+$10)}{3}=$40$$.',
+        feedback: 'Korrekt! $$\frac{(\$40+\$70+\$10)}{3}=$\40$$.',
         correct: true,
         value: 'Der Preis-gewichtete Index der drei Aktien beträgt $40.',
       },
@@ -105,13 +105,13 @@ export const QUESTIONS = [
       },
       {
         feedback:
-          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$$40*200+$70*500+$10*600=$49'000$$.",
+          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$\$40*200+\$70*500+\$10*600=\$49'000$$.",
         value:
           "Der nach Marktwert gewichtete Index der drei Aktien beträgt $1'200.",
       },
       {
         feedback:
-          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$$40*200+$70*500+$10*600=$49'000$$.",
+          "Falsch! Der nach Marktwert gewichtete Index beträgt: $$\$40*200+\$70*500+\$10*600=\$49'000 $$.",
         value:
           "Der nach Marktwert gewichtete Index der drei Aktien beträgt $1'300.",
       },
@@ -418,7 +418,7 @@ $$\frac{(14.8 – 46.6)}{46.6} = -0.6824$$
 
 $$E(r) = - 0.26$$
 
-$$Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^2]=12.72%$$
+$$Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^2]=12.72\%$$
 `,
         correct: true,
         value: '$$σ^2_x = 12.72\%$$',
@@ -610,11 +610,11 @@ $$Geometric Average Return=1.169^\frac{1}{3}-1=5.3\%$$
     name: 'Modul 1 Nutzenfunktionen',
     content: `Gehe von folgender Ausgangssituation aus:
 ![Nutzenfunktionen](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_nutzenfunktion.png)
-Die Nutzenfunktion des Investors beträgt $$U=E(r)-{\frac{A}{2}*SD^2$$}, wobei A=4.0 ist.
+Die Nutzenfunktion des Investors beträgt U=E(r)-$$\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
 Welches Investment wird der Anleger tätigen?`,
     contentPlain: `Gehe von folgender Ausgangssituation aus:
 BILD
-Die Nutzenfunktion des Investors beträgt $$U=E(r)-{\frac{A}{2}*SD^2}$$, wobei A=4.0 ist.
+Die Nutzenfunktion des Investors beträgt U=E(r)-$$\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
 Welches Investment wird der Anleger tätigen?`,
     type: QuestionType.SC,
     choices: [
@@ -627,7 +627,7 @@ Welches Investment wird der Anleger tätigen?`,
         value: '2',
       },
       {
-        feedback: 'Korrekt! $$U(3)=0.21-{\frac{4}{2}*0.16^2=15.88}$$',
+        feedback: 'Korrekt! U(3)=0.21-$$\frac{4}{2}*0.16^2=15.88$$',
         correct: true,
         value: '3',
       },
