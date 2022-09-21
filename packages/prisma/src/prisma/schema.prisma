@@ -159,8 +159,17 @@ model Tag {
   updatedAt DateTime @updatedAt
 }
 
+enum QuestionInstanceType {
+  UNSET
+  SESSION
+  MICRO_SESSION
+  LEARNING_ELEMENT
+}
+
 model QuestionInstance {
   id Int @id @default(autoincrement())
+
+  type QuestionInstanceType?
 
   questionData Json
   participants Int                @default(0)
@@ -469,8 +478,9 @@ model Participation {
   courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
   courseLeaderboardId Int?              @unique
 
-  responses     QuestionResponse[]
-  subscriptions PushSubscription[]
+  responses              QuestionResponse[]
+  subscriptions          PushSubscription[]
+  completedMicroSessions String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

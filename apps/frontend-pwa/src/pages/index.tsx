@@ -5,6 +5,7 @@ import UserNotification from '@components/UserNotification'
 import {
   faBookOpenReader,
   faChalkboard,
+  faCheck,
   faLink,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -19,6 +20,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -59,7 +61,10 @@ const Index = function () {
   }: {
     courses: { id: string; displayName: string; isSubscribed: boolean }[]
     activeSessions: (Session & { courseName: string })[]
-    activeMicrolearning: (MicroSession & { courseName: string })[]
+    activeMicrolearning: (MicroSession & {
+      courseName: string
+      isCompleted: boolean
+    })[]
   } = useMemo(() => {
     const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
     if (!data?.participations) return obj
@@ -87,6 +92,9 @@ const Index = function () {
           ...participation.course?.microSessions.map((session) => ({
             ...session,
             courseName: participation.course.displayName,
+            isCompleted: participation.completedMicroSessions?.includes(
+              session.id
+            ),
           })),
         ],
       }
@@ -184,17 +192,25 @@ const Index = function () {
         </div>
 
         <H1 className="text-xl">
-          Verfügbares Microlearning ({activeMicrolearning.length})
+          Aktives Microlearning ({activeMicrolearning.length})
         </H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeMicrolearning.length === 0 && (
             <div>Kein aktives Microlearning.</div>
           )}
           {activeMicrolearning.map((micro) => (
-            <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
-              <Button className="gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+            <Link href={`/micro/${micro.id}/`} key={micro.id}>
+              <Button
+                disabled={micro.isCompleted}
+                className={twMerge(
+                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
+                  micro.isCompleted && 'hover:bg-unset'
+                )}
+              >
                 <Button.Icon>
-                  <FontAwesomeIcon icon={faBookOpenReader} />
+                  <FontAwesomeIcon
+                    icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  />
                 </Button.Icon>
                 <Button.Label className="flex-1 text-left">
                   <div>{micro.displayName}</div>

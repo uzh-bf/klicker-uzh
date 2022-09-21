@@ -1,0 +1,6 @@
+mutation MarkMicroSessionCompleted($courseId: ID!, $id: ID!) {
+  markMicroSessionCompleted(courseId: $courseId, id: $id) {
+    id
+    completedMicroSessions
+  }
+}

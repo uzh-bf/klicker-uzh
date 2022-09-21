@@ -2,6 +2,98 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.54...v2.0.0-alpha.55) (2022-09-20)
+
+
+### Bug Fixes
+
+* show all participations (not only active), show all leaderboard entries ([9206cb1](https://github.com/uzh-bf/klicker-uzh/commit/9206cb1fe907051dafaf02d3652c7644634c1790))
+
+
+### Other
+
+* **packages/prisma:** update seed ([387d237](https://github.com/uzh-bf/klicker-uzh/commit/387d23777626c4f9d938f8eaaead25501815b647))
+
+## [2.0.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.53...v2.0.0-alpha.54) (2022-09-20)
+
+
+### Other
+
+* lockfile maintenance ([3309ed9](https://github.com/uzh-bf/klicker-uzh/commit/3309ed90b0511fda8171c213332c39b098cc5273))
+
+## [2.0.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.52...v2.0.0-alpha.53) (2022-09-20)
+
+
+### Other
+
+* **apps/backend-docker:** ensure SENTRY env variables are read implicitly ([3529e82](https://github.com/uzh-bf/klicker-uzh/commit/3529e8253a506435891e7ab6282d10e8fa49d25f))
+
+## [2.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.51...v2.0.0-alpha.52) (2022-09-20)
+
+
+### Enhancements
+
+* **apps/backend-docker:** setup sentry with envelop integration ([b9abfd2](https://github.com/uzh-bf/klicker-uzh/commit/b9abfd29e8d27e008c1ee4dd6c94386d989e5f00))
+
+## [2.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.50...v2.0.0-alpha.51) (2022-09-20)
+
+
+### Enhancements
+
+* improve layout of formulas in feedbacks ([d4b7ac1](https://github.com/uzh-bf/klicker-uzh/commit/d4b7ac1759144104c43ee5e36770227ee3ab2824))
+
+## [2.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.49...v2.0.0-alpha.50) (2022-09-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** show self entry on leaderboard even when not included ([feefaee](https://github.com/uzh-bf/klicker-uzh/commit/feefaee38eb444f19e0c5a54ff0f8f15552f82d7))
+
+
+### Deployment
+
+* setup local redis cache for the QA environment ([0ac8855](https://github.com/uzh-bf/klicker-uzh/commit/0ac88552bfb7e4d2469d535b8fb4b9480b93d64b))
+
+
+### Enhancements
+
+* **packages/graphql:** return the participant id on leaderboard entries ([3b2fbac](https://github.com/uzh-bf/klicker-uzh/commit/3b2fbac52bb696ffd5d94e3812b657e6cd593e28))
+* **packages/prisma:** add question instance type ([32ca9b3](https://github.com/uzh-bf/klicker-uzh/commit/32ca9b302b7738cec9249b9756ed59102fabf96c))
+
+
+### Other
+
+* lockfile maintenance ([f052e83](https://github.com/uzh-bf/klicker-uzh/commit/f052e832d6e84f935061caf70c216048d32de2b1))
+* lockfile maintenance ([4bab93f](https://github.com/uzh-bf/klicker-uzh/commit/4bab93f1bc32e518fb9169a211358115ccff02b2))
+
+## [2.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.48...v2.0.0-alpha.49) (2022-09-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** issue in courseID index ([1727795](https://github.com/uzh-bf/klicker-uzh/commit/17277955ec018882f7e86338ac4af8ec87a438be))
+
+
+### Other
+
+* move frontend .env to klicker.uzh.ch ([b12d7b8](https://github.com/uzh-bf/klicker-uzh/commit/b12d7b8be6cf0623931f5c768595a7590e599d0a))
+* update BF seed for micro testing ([63a9264](https://github.com/uzh-bf/klicker-uzh/commit/63a92640e6658b0debfbdd74c4883eb446164405))
+
+## [2.0.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.47...v2.0.0-alpha.48) (2022-09-19)
+
+
+### Other
+
+* add templates for SC and KPRIM ([144898f](https://github.com/uzh-bf/klicker-uzh/commit/144898ffe3dad0b256c1d3715bb85a12464cfe11))
+* lockfile maintenance ([cb79507](https://github.com/uzh-bf/klicker-uzh/commit/cb79507a9b348802fc94868dedda18d3c52f23bf))
+* **packages/graphql:** prepare basic web push example script ([9bd480d](https://github.com/uzh-bf/klicker-uzh/commit/9bd480dfdc2f6d10396acd7bc42062ac9c698833))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve layout across micro session and learning element, improve consistency, add markdown for feedbacks on options ([88afc13](https://github.com/uzh-bf/klicker-uzh/commit/88afc13982e5499d31bb28847183fd8be5e7f6ce))
+* mark micro sessions as completed, show evaluation screen ([40922be](https://github.com/uzh-bf/klicker-uzh/commit/40922be4c8d5fd228a266c35d77cf3c100f0b89b))
+
 ## [2.0.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.46...v2.0.0-alpha.47) (2022-09-19)
 
 

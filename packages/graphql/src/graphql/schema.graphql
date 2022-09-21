@@ -53,6 +53,7 @@ input BlockInput {
 type Choice {
   correct: Boolean
   feedback: String
+  id: ID!
   ix: Int!
   value: String!
 }
@@ -154,6 +155,7 @@ type LeaderboardEntry {
   avatar: String
   id: ID!
   isSelf: Boolean
+  participantId: ID!
   score: Float!
   username: String!
 }
@@ -213,6 +215,7 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
@@ -269,6 +272,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
+  completedMicroSessions: [String]
   course: Course
   id: Int!
   isActive: Boolean!

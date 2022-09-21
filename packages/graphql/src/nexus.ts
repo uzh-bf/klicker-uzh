@@ -113,6 +113,7 @@ export const QuestionData = interfaceType({
 export const Choice = objectType({
   name: 'Choice',
   definition(t) {
+    t.nonNull.id('id')
     t.nonNull.int('ix')
     t.nonNull.string('value')
     t.boolean('correct')
@@ -382,6 +383,7 @@ export const Participation = objectType({
     t.list.nonNull.field('subscriptions', {
       type: Subscription,
     })
+    t.list.string('completedMicroSessions')
   },
 })
 
@@ -389,6 +391,7 @@ export const LeaderboardEntry = objectType({
   name: 'LeaderboardEntry',
   definition(t) {
     t.nonNull.id('id')
+    t.nonNull.id('participantId')
 
     t.nonNull.string('username')
     t.string('avatar')
@@ -1038,6 +1041,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return NotificationService.subscribeToPush(args, ctx)
+      },
+    })
+
+    t.field('markMicroSessionCompleted', {
+      type: Participation,
+      args: {
+        courseId: nonNull(idArg()),
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.markMicroSessionCompleted(args, ctx)
       },
     })
   },

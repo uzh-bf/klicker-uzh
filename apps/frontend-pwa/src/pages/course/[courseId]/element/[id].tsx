@@ -11,11 +11,12 @@ import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
-import { Progress } from '@uzh-bf/design-system'
+import { H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+
 interface Props {
   courseId: string
   id: string
@@ -33,15 +34,39 @@ function LearningElement({ courseId, id }: Props) {
     variables: { id },
   })
 
+  const currentInstance = data?.learningElement?.instances?.[currentIx]
+  const questionData = currentInstance?.questionData
+
+  useEffect(() => {
+    if (questionData?.type) {
+      if (
+        questionData.type === QuestionType.SC ||
+        questionData.type === QuestionType.MC ||
+        questionData.type === QuestionType.KPRIM
+      ) {
+        setResponse([])
+      } else {
+        setResponse('')
+      }
+    } else {
+      setResponse(null)
+    }
+  }, [questionData?.type, currentIx])
+
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
   )
 
+  const totalPointsAwarded = useMemo(() => {
+    if (!data?.learningElement) return 0
+    return data.learningElement.instances.reduce(
+      (acc, instance) => acc + instance.evaluation?.pointsAwarded,
+      0
+    )
+  }, [data?.learningElement?.instances])
+
   if (loading || !data?.learningElement) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
-
-  const currentInstance = data.learningElement?.instances?.[currentIx]
-  const questionData = currentInstance?.questionData
 
   const isEvaluation = !!currentInstance?.evaluation
 
@@ -75,23 +100,53 @@ function LearningElement({ courseId, id }: Props) {
       courseName={data.learningElement.course.displayName}
       courseColor={data.learningElement.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-6xl md:m-auto md:mb-4 md:p-8 md:border md:rounded">
+      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {!currentInstance && (
-          <div>
-            <div className="mb-2 font-bold">Gratulation!</div>
-            Du hast das Lernelement{' '}
-            <span className="italic">
-              {data.learningElement.displayName}
-            </span>{' '}
-            erfolgreich absolviert.
+          <div className="space-y-3">
+            <div>
+              <H3>Gratulation!</H3>
+              <p>
+                Du hast das Lernelement{' '}
+                <span className="italic">
+                  {data.learningElement.displayName}
+                </span>{' '}
+                erfolgreich absolviert.
+              </p>
+            </div>
+            <div>
+              <div className="flex flex-row items-center justify-between">
+                <H3 className="flex flex-row justify-between">Auswertung</H3>
+                <H3>Punkte (gesammelt/berechnet)</H3>
+              </div>
+              <div>
+                {data.learningElement.instances.map((instance) => (
+                  <div className="flex flex-row justify-between">
+                    <div>{instance.questionData.name}</div>
+                    <div>
+                      {instance.evaluation.pointsAwarded}/
+                      {instance.evaluation.score}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <H3 className="mt-4 text-right">
+                Total Punkte (gesammelt): {totalPointsAwarded}
+              </H3>
+            </div>
           </div>
         )}
 
         {currentInstance && (
           <div className="order-2 md:order-1">
             {questionData && (
-              <div className="flex flex-col gap-4 md:flex-row">
-                <div className="flex-1">
+              <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
+                <div className="flex-1 basis-2/3">
+                  <div className="flex flex-row items-end justify-between mb-4 border-b">
+                    <H3 className="mb-0">{questionData.name}</H3>
+                    <div className="text-slate-500">{questionData.type}</div>
+                  </div>
+
                   <div className="pb-2">
                     <Markdown content={questionData.content} />
                   </div>
@@ -109,7 +164,7 @@ function LearningElement({ courseId, id }: Props) {
                 </div>
 
                 {currentInstance.evaluation && (
-                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50">
+                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
                     <div className="flex flex-row gap-8">
                       <div>
                         <div className="font-bold">Punkte (berechnet)</div>
@@ -133,7 +188,7 @@ function LearningElement({ courseId, id }: Props) {
                     />
 
                     <div>
-                      <div className="font-bold">Sammle wieder Punkte ab:</div>
+                      <div className="font-bold">Erneute Punkte ab:</div>
                       <div>
                         {dayjs(currentInstance.evaluation.newPointsFrom).format(
                           'DD.MM.YYYY HH:mm'

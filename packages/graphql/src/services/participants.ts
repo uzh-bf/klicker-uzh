@@ -88,7 +88,6 @@ export async function getParticipations(
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: { isActive: true },
         include: {
           subscriptions: endpoint
             ? {
@@ -272,6 +271,7 @@ export async function getCourseOverviewData(
       score: entry.score,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
+      participantId: entry.participant.id,
     })
 
     if (participation) {
@@ -282,6 +282,7 @@ export async function getCourseOverviewData(
         ...followedEntries.map(mapper),
         participation?.isActive &&
           participation.courseLeaderboard?.id && {
+            participantId: participation.participant.id,
             id: participation.courseLeaderboard?.id,
             score: participation.courseLeaderboard?.score,
             username: participation.participant.username,

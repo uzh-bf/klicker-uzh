@@ -278,7 +278,11 @@ function OptionsDisplay({
       <div className="self-end mt-4">
         <Button
           className="text-lg"
-          disabled={!isEvaluation && response?.length === 0}
+          disabled={
+            !isEvaluation &&
+            questionType !== QuestionType.KPRIM &&
+            response?.length === 0
+          }
           onClick={onSubmitResponse}
         >
           {isEvaluation ? 'Weiter' : 'Antwort absenden'}

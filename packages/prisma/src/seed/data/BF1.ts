@@ -1098,7 +1098,7 @@ export const SESSIONS = [
     id: 'd18dfa3b-a965-4dc3-985f-6695e8a43113',
     name: 'BFI VL Woche 01',
     displayName: 'BFI Vorlesung - Woche 01',
-    status: SessionStatus.RUNNING,
+    status: SessionStatus.PREPARED,
     blocks: [],
     linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
   },
@@ -1109,8 +1109,8 @@ export const MICRO_SESSIONS = [
     id: 'e3c71b0b-a8cf-43e9-8373-85a31673b178',
     name: 'BFI Micro Woche 01',
     displayName: 'BFI Microlearning - Woche 01',
-    scheduledStartAt: new Date('2022-09-21T07:00:00.000Z'),
-    scheduledEndAt: new Date('2022-09-22T09:00:00.000Z'),
+    scheduledStartAt: new Date('2022-09-21T05:00:00.000Z'),
+    scheduledEndAt: new Date('2022-09-22T07:00:00.000Z'),
     description: `
 ### Einführung
 
