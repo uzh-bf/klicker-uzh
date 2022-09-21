@@ -706,6 +706,180 @@ Welches Investment wird der Anleger tätigen?`,
       },
     ],
   },
+  {
+    id: 48,
+    name: 'Geldmarkt',
+    content: 'Wie viel würdest du im Geldmarkt anlegen?',
+    contentPlain: 'Wie viel würdest du im Geldmarkt anlegen?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 49,
+    name: 'Obligationen',
+    content: 'Wie viel würdest du in Obligationen anlegen?',
+    contentPlain: 'Wie viel würdest du in Obligationen anlegen?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 50,
+    name: 'Aktien',
+    content: 'Wie viel würdest du in Aktien anlegen?',
+    contentPlain: 'Wie viel würdest du in Aktien anlegen?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 51,
+    name: 'Alternative Anlagen',
+    content:
+      'Wie viel würdest du in Alternative Anlagen (z.B., Rohstoffe oder Edelmetalle) anlegen?',
+    contentPlain:
+      'Wie viel würdest du in Alternative Anlagen (z.B., Rohstoffe oder Edelmetalle) anlegen?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 52,
+    name: 'Rendite YTD Swiss Bond Index',
+    content:
+      'Welche Rendite hat der Swiss Bond Index year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    contentPlain:
+      'Welche Rendite hat der Swiss Bond Index year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
+      },
+    },
+  },
+  {
+    id: 53,
+    name: 'Rendite YTD Swiss Performance Index',
+    content:
+      'Welche Rendite hat der Swiss Performance Index year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    contentPlain:
+      'Welche Rendite hat der Swiss Performance Index year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
+      },
+    },
+  },
+  {
+    id: 54,
+    name: 'Rendite YTD S&P 500',
+    content:
+      'Welche Rendite hat der S&P 500 year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    contentPlain:
+      'Welche Rendite hat der S&P 500 year-to-date erzielt? (Angabe in ganzen Zahlen, ohne Prozentzeichen)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
+      },
+    },
+  },
+  {
+    id: 55,
+    name: 'Relevanz SAA',
+    content:
+      'Welche Relevanz hat die Strategische Asset Allocation auf die Rendite des Portfolios? Gib deine Antwort in %-Werten der erzielten Rendite an. 0% bedeutet, dass die Strategie keinen Einfluss auf die Rendite hat und 100%, dass die Rendite durch die Strategie getrieben wird.',
+    contentPlain:
+      'Welche Relevanz hat die Strategische Asset Allocation auf die Rendite des Portfolios? Gib deine Antwort in %-Werten der erzielten Rendite an. 0% bedeutet, dass die Strategie keinen Einfluss auf die Rendite hat und 100%, dass die Rendite durch die Strategie getrieben wird.',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
+      },
+    },
+  },
+  {
+    id: 56,
+    name: 'Rendite von Obligationen',
+    content:
+      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Obligationen in der Schweiz seit 1926 ein? (Angabe in %)',
+    contentPlain:
+      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Obligationen in der Schweiz seit 1926 ein? (Angabe in %)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 57,
+    name: 'Rendite von Aktien',
+    content:
+      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Aktien in der Schweiz seit 1926 ein? (Angabe in %)',
+    contentPlain:
+      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Aktien in der Schweiz seit 1926 ein? (Angabe in %)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 58,
+    name: 'Risiko von Obligationen',
+    content:
+      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Obligationen in der Schweiz ein? (Angabe in %)',
+    contentPlain:
+      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Obligationen in der Schweiz ein? (Angabe in %)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
+  {
+    id: 59,
+    name: 'Risiko von Aktien',
+    content:
+      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Aktien in der Schweiz ein? (Angabe in %)',
+    contentPlain:
+      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Aktien in der Schweiz ein? (Angabe in %)',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: 0,
+        max: 100,
+      },
+    },
+  },
 ]
 
 export const LEARNING_ELEMENTS = [
@@ -717,6 +891,27 @@ export const LEARNING_ELEMENTS = [
   },
 ]
 
-export const SESSIONS = []
+export const SESSIONS = [
+  {
+    id: '02df291b-f4cd-46f2-8dbf-bea738aa7a7f',
+    name: 'AMI VL Woche 01',
+    displayName: 'AMI Vorlesung - Woche 01',
+    status: SessionStatus.PREPARED,
+    blocks: [
+      {
+        questions: range(48, 52),
+      },
+      {
+        questions: range(52, 55),
+      },
+      {
+        questions: [55],
+      },
+      {
+        questions: range(56, 60),
+      },
+    ],
+  },
+]
 
 export const MICRO_SESSIONS = []

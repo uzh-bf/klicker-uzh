@@ -175,11 +175,14 @@ export function prepareQuestion({
 export function prepareQuestionInstance({
   question,
   type,
+  order,
 }: {
   question: Partial<Prisma.Question>
   type: QuestionInstanceType
+  order?: number
 }): any {
   const common = {
+    order,
     type,
     questionData: omit(['createdAt', 'updatedAt', 'attachments'], question),
     question: {
@@ -221,19 +224,13 @@ export function prepareQuestionInstance({
       }
     }
 
-    case Prisma.QuestionType.NUMERICAL: {
+    case Prisma.QuestionType.NUMERICAL:
+    case Prisma.QuestionType.FREE_TEXT: {
       return {
         ...common,
         results: {
           answers: [],
         },
-      }
-    }
-
-    case Prisma.QuestionType.FREE_TEXT: {
-      return {
-        ...common,
-        results: {},
       }
     }
   }
@@ -259,8 +256,9 @@ export function prepareLearningElement({
   courseId: string
   questions: BaseQuestionData[]
 }) {
-  const preparedInstances = questions.map((question) =>
+  const preparedInstances = questions.map((question, ix) =>
     prepareQuestionInstance({
+      order: ix,
       question,
       type: QuestionInstanceType.LEARNING_ELEMENT,
     })
@@ -308,8 +306,9 @@ export function prepareSession({
       ...args,
       blocks: {
         create: blocks.map(({ questions }) => {
-          const preparedInstances = questions.map((question) =>
+          const preparedInstances = questions.map((question, ix) =>
             prepareQuestionInstance({
+              order: ix,
               question,
               type: QuestionInstanceType.SESSION,
             })
@@ -341,8 +340,9 @@ export function prepareMicroSession({
   ownerId: string
   questions: BaseQuestionData[]
 }) {
-  const preparedInstances = questions.map((question) =>
+  const preparedInstances = questions.map((question, ix) =>
     prepareQuestionInstance({
+      order: ix,
       question,
       type: QuestionInstanceType.MICRO_SESSION,
     })
