@@ -34,7 +34,7 @@ function Chart({
       />
     )
   } else if (questionType === 'NUMERICAL') {
-    return <Histogram data={data} />
+    return <Histogram data={data} numBins={20} />
   } else if (questionType === 'FREE_TEXT') {
     return <Wordcloud data={data} />
   } else {
