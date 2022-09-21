@@ -234,6 +234,12 @@ class MyDocument extends Document {
             href="/apple-splash-1136-640.jpg"
             media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
           />
+          <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/katex.min.css"
+            integrity="sha384-bYdxxUwYipFNohQlHt0bjN/LCpueqWz13HufFEV1SUatKs1cm4L6fFgCi1jT643X"
+            crossorigin="anonymous"
+          />
         </Head>
         <body>
           <Main />

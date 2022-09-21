@@ -102,6 +102,7 @@ export interface NexusGenObjects {
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
+    id: string; // ID!
     ix: number; // Int!
     value: string; // String!
   }
@@ -190,6 +191,7 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
+    participantId: string; // ID!
     score: number; // Float!
     username: string; // String!
   }
@@ -266,6 +268,7 @@ export interface NexusGenObjects {
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // root type
+    completedMicroSessions?: Array<string | null> | null; // [String]
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
@@ -364,6 +367,7 @@ export interface NexusGenFieldTypes {
   Choice: { // field return type
     correct: boolean | null; // Boolean
     feedback: string | null; // String
+    id: string; // ID!
     ix: number; // Int!
     value: string; // String!
   }
@@ -452,6 +456,7 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     id: string; // ID!
     isSelf: boolean | null; // Boolean
+    participantId: string; // ID!
     score: number; // Float!
     username: string; // String!
   }
@@ -507,6 +512,7 @@ export interface NexusGenFieldTypes {
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
     logoutUser: string | null; // ID
+    markMicroSessionCompleted: NexusGenRootTypes['Participation'] | null; // Participation
     pinFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     publishFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     registerParticipantFromLTI: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -556,6 +562,7 @@ export interface NexusGenFieldTypes {
     participation: NexusGenRootTypes['Participation'] | null; // Participation
   }
   Participation: { // field return type
+    completedMicroSessions: Array<string | null> | null; // [String]
     course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
@@ -667,6 +674,7 @@ export interface NexusGenFieldTypeNames {
   Choice: { // field return type name
     correct: 'Boolean'
     feedback: 'String'
+    id: 'ID'
     ix: 'Int'
     value: 'String'
   }
@@ -755,6 +763,7 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     id: 'ID'
     isSelf: 'Boolean'
+    participantId: 'ID'
     score: 'Float'
     username: 'String'
   }
@@ -810,6 +819,7 @@ export interface NexusGenFieldTypeNames {
     loginUser: 'ID'
     logoutParticipant: 'ID'
     logoutUser: 'ID'
+    markMicroSessionCompleted: 'Participation'
     pinFeedback: 'Feedback'
     publishFeedback: 'Feedback'
     registerParticipantFromLTI: 'ParticipantLearningData'
@@ -859,6 +869,7 @@ export interface NexusGenFieldTypeNames {
     participation: 'Participation'
   }
   Participation: { // field return type name
+    completedMicroSessions: 'String'
     course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
@@ -1010,6 +1021,10 @@ export interface NexusGenArgTypes {
     loginUser: { // args
       email: string; // String!
       password: string; // String!
+    }
+    markMicroSessionCompleted: { // args
+      courseId: string; // ID!
+      id: string; // ID!
     }
     pinFeedback: { // args
       id: number; // Int!

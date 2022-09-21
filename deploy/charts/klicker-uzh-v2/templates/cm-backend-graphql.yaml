@@ -8,10 +8,20 @@ metadata:
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
-  NODE_ENV: {{ .Values.nodeEnv | default "development" | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  {{ end }}
   REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
   REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
   REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
+  {{- if .Values.backendGraphql.sentryDSN }}
+  SENTRY_DSN: {{ .Values.backendGraphql.sentryDSN | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.sentryEnv }}
+  SENTRY_ENVIRONMENT: {{ .Values.backendGraphql.sentryEnv | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.sentryRelease }}
+  SENTRY_RELEASE: {{ .Values.backendGraphql.sentryRelease | quote }}
+  {{ end }}

@@ -64,3 +64,27 @@ export async function getMicroSessionData(
     instances: instancesWithoutSolution,
   }
 }
+
+interface MarkMicroSessionCompletedArgs {
+  courseId: string
+  id: string
+}
+
+export async function markMicroSessionCompleted(
+  { courseId, id }: MarkMicroSessionCompletedArgs,
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    data: {
+      completedMicroSessions: {
+        push: id,
+      },
+    },
+  })
+}

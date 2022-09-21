@@ -14,11 +14,9 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '@components/Layout'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
+import { any } from 'ramda'
 
 const { serverRuntimeConfig } = getConfig()
-
-const PLACEHOLDER_IMG =
-  'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/placeholder.png'
 
 interface ParticipantProps {
   avatar?: string
@@ -48,7 +46,9 @@ function Participant({
         <div className="bg-white border rounded-full">
           <Image
             className="rounded-full"
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              avatar ?? 'placeholder'
+            }.svg`}
             alt=""
             height={30}
             width={30}
@@ -57,9 +57,11 @@ function Participant({
         <div>{pseudonym}</div>
         <div className="flex-1">{children}</div>
       </div>
-      <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
-        {points}
-      </div>
+      {typeof points === 'number' && (
+        <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
+          {points}
+        </div>
+      )}
     </div>
   )
 }
@@ -109,7 +111,7 @@ function CourseOverview({ courseId }: any) {
     ],
   })
 
-  const { rank1, rank2, rank3 } = useMemo(() => {
+  const { rank1, rank2, rank3, isSelfContained } = useMemo(() => {
     if (!data?.getCourseOverviewData?.leaderboard) return {}
     return {
       rank1:
@@ -121,6 +123,11 @@ function CourseOverview({ courseId }: any) {
       rank3:
         data.getCourseOverviewData.leaderboard.length >= 3 &&
         data.getCourseOverviewData.leaderboard[2],
+      isSelfContained: any(
+        (item) =>
+          item.participantId === data.getCourseOverviewData?.participant.id,
+        data.getCourseOverviewData.leaderboard
+      ),
     }
   }, [data?.getCourseOverviewData?.leaderboard])
 
@@ -146,7 +153,7 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank2.username ?? 'Frei'}
-                avatar={rank2.avatar ?? 'placeholder'}
+                avatar={rank2.avatar}
                 points={rank2.score ?? 0}
               />
             </div>
@@ -158,7 +165,7 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank1.username ?? 'Frei'}
-                avatar={rank1.avatar ?? 'placeholder'}
+                avatar={rank1.avatar}
                 points={rank1.score ?? 0}
               />
             </div>
@@ -170,25 +177,14 @@ function CourseOverview({ courseId }: any) {
               <ParticipantOther
                 className="bg-white shadow outline-uzh-red-100"
                 pseudonym={rank3.username ?? 'Frei'}
-                avatar={rank3.avatar ?? 'placeholder'}
+                avatar={rank3.avatar}
                 points={rank3.score ?? 0}
               />
             </div>
           </div>
 
           <div className="pt-8 space-y-2">
-            {!participation?.isActive && (
-              <ParticipantSelf
-                key={participant?.id}
-                isActive={false}
-                pseudonym={participant?.username}
-                avatar={participant?.avatar}
-                points={0}
-                onJoinCourse={joinCourse}
-                onLeaveCourse={leaveCourse}
-              />
-            )}
-            {leaderboard?.map((entry) => {
+            {leaderboard?.flatMap((entry) => {
               if (entry.isSelf) {
                 return (
                   <ParticipantSelf
@@ -212,6 +208,18 @@ function CourseOverview({ courseId }: any) {
                 />
               )
             })}
+
+            {(!participation?.isActive || !isSelfContained) && (
+              <ParticipantSelf
+                key={participant?.id}
+                isActive={participation.isActive}
+                pseudonym={participant?.username}
+                avatar={participant?.avatar}
+                points={null}
+                onJoinCourse={joinCourse}
+                onLeaveCourse={leaveCourse}
+              />
+            )}
           </div>
         </div>
       </div>

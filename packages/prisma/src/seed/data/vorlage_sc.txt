@@ -1,0 +1,38 @@
+{
+  name: 'Modul 1 Zieldreieck',
+  content: 'Welche der folgenden Aussagen ist **falsch**?',
+  contentPlain: 'Welche der folgenden Aussagen ist falsch?',
+  type: QuestionType.SC,
+  choices: [
+    {
+      feedback:
+        'Falsch! Zwischen den Zielsetzungen des klassischen finanziellen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+      value:
+        'Zwischen den Zielsetzungen des klassischen Zieldreiecks gibt es sowohl Zielkonflikte als auch Zielharmonien.',
+    },
+    {
+      feedback:
+        'Korrekt! Je höher die angestrebte Sicherheit, desto weniger Risiko wird eingegangen, was wiederum die Rentabilität senkt.',
+      correct: true,
+      value:
+        'Das Ziel einer hohen Rentabilität erhöht auch die Sicherheit eines Unternehmens.',
+    },
+    {
+      feedback:
+        'Falsch! Die Unabhängigkeit ist kein Ziel des klassischen Zieldreiecks.',
+      value: 'Unabhängigkeit ist *kein* Ziel des klassischen Zieldreiecks.',
+    },
+    {
+      feedback:
+        'Falsch! Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+      value:
+        'Eine hohe Liquidität steht im Zielkonflikt mit der Rentabilität, da Liquidität meist teuer ist.',
+    },
+    {
+      feedback:
+        'Falsch! Der Shareholder Value ist kein Ziel des klassischen Zieldreiecks.',
+      value:
+        'Der Shareholder Value ist *kein* Ziel des klassischen Zieldreiecks.',
+    },
+  ],
+}

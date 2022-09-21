@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import Footer from '@components/common/Footer'
 import EvaluationDisplay from '@components/EvaluationDisplay'
 import Layout from '@components/Layout'
 import OptionsDisplay from '@components/OptionsDisplay'
@@ -7,27 +8,24 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import { QuestionType } from '@type/app'
-import { Progress } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-interface Props {
-  id: string
-  ix: number
-}
-
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
-function MicroSessionInstance({ id, ix }: Props) {
+function MicroSessionInstance() {
   const [response, setResponse] = useState<number[] | string | null>(null)
 
   const router = useRouter()
 
+  const ix = router.query.ix as string
+  const id = router.query.id as string
+
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id },
+    skip: !id,
   })
 
   const currentInstance = data?.microSession?.instances?.[Number(ix)]
@@ -37,7 +35,8 @@ function MicroSessionInstance({ id, ix }: Props) {
     if (questionData?.type) {
       if (
         questionData.type === QuestionType.SC ||
-        questionData.type === QuestionType.MC
+        questionData.type === QuestionType.MC ||
+        questionData.type === QuestionType.KPRIM
       ) {
         setResponse([])
       } else {
@@ -90,95 +89,68 @@ function MicroSessionInstance({ id, ix }: Props) {
       courseName={data.microSession.course.displayName}
       courseColor={data.microSession.course.color}
     >
-      <div className="flex flex-col md:max-w-5xl md:m-auto md:w-full">
-        <div className="order-2 pt-0 md:p-8 md:border md:border-b-0 md:pt-8 md:order-2 md:rounded-t">
-          {questionData && (
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="flex-1 basis-2/3">
-                <div className="pb-2">
-                  <Markdown content={questionData.content} />
-                </div>
-
-                <OptionsDisplay
-                  isEvaluation={isEvaluation}
-                  evaluation={currentInstance.evaluation}
-                  response={response}
-                  onChangeResponse={setResponse}
-                  onSubmitResponse={
-                    isEvaluation ? handleNextQuestion : handleSubmitResponse
-                  }
-                  questionType={questionData.type as QuestionType}
-                  options={questionData.options}
-                />
+      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+        {questionData && (
+          <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
+            <div className="flex-1 basis-2/3">
+              <div className="flex flex-row items-end justify-between mb-4 border-b">
+                <H3 className="mb-0">{questionData.name}</H3>
+                <div className="text-slate-500">{questionData.type}</div>
               </div>
 
-              {currentInstance.evaluation && (
-                <div className="flex-1 p-4 border rounded basis-1/3 bg-gray-50">
-                  <EvaluationDisplay
-                    options={questionData.options}
-                    questionType={questionData.type}
-                    evaluation={currentInstance.evaluation}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+              <div className="pb-2">
+                <Markdown content={questionData.content} />
+              </div>
 
-        <div className="order-1 pb-4 md:p-8 md:pt-0 md:border md:border-t-0 md:order-3 md:rounded-b">
-          <Progress
-            isMaxVisible
-            formatter={(v) => v}
-            value={isEvaluation ? Number(ix) + 1 : Number(ix)}
-            max={data.microSession?.instances?.length ?? 0}
-          />
-        </div>
+              <OptionsDisplay
+                isEvaluation={isEvaluation}
+                evaluation={currentInstance.evaluation}
+                response={response}
+                onChangeResponse={setResponse}
+                onSubmitResponse={
+                  isEvaluation ? handleNextQuestion : handleSubmitResponse
+                }
+                questionType={questionData.type as QuestionType}
+                options={questionData.options}
+              />
+            </div>
+
+            {currentInstance.evaluation && (
+              <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
+                <div className="flex flex-row gap-8">
+                  <div>
+                    <div className="font-bold">Punkte (gesammelt)</div>
+                    <div className="text-xl">
+                      {currentInstance.evaluation.pointsAwarded} Punkte
+                    </div>
+                  </div>
+                </div>
+
+                <EvaluationDisplay
+                  options={questionData.options}
+                  questionType={questionData.type}
+                  evaluation={currentInstance.evaluation}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentInstance && (
+          <div className="order-1 md:order-2">
+            <Progress
+              isMaxVisible
+              formatter={(v) => v}
+              value={ix}
+              max={data.microSession?.instances?.length ?? 0}
+            />
+          </div>
+        )}
       </div>
+
+      <Footer />
     </Layout>
   )
-}
-
-export const getStaticProps: GetStaticProps = async (ctx) => {
-  if (typeof ctx.params?.id !== 'string') {
-    return {
-      redirect: {
-        destination: '/404',
-        permanent: false,
-      },
-    }
-  }
-
-  const apolloClient = initializeApollo()
-
-  try {
-    await apolloClient.query({
-      query: GetMicroSessionDocument,
-      variables: { id: ctx.params.id },
-      fetchPolicy: 'cache-first',
-    })
-  } catch (e) {
-    return {
-      redirect: {
-        destination: '/404',
-        permanent: false,
-      },
-    }
-  }
-
-  return addApolloState(apolloClient, {
-    props: {
-      id: ctx.params.id,
-      ix: ctx.params.ix,
-    },
-    revalidate: 60,
-  })
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
 }
 
 export default MicroSessionInstance

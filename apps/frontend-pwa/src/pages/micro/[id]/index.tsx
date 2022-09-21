@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { Button, Prose } from '@uzh-bf/design-system'
+import { Button, H3, Prose } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
 import { default as NextImage } from 'next/future/image'
@@ -45,7 +45,8 @@ function MicroSessionIntroduction({ id }: Props) {
       courseName={data.microSession.course.displayName}
       courseColor={data.microSession.course.color}
     >
-      <div className="flex flex-col w-full md:p-8 md:w-full md:border md:rounded md:max-w-3xl md:m-auto">
+      <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:m-auto">
+        <H3>{data.microSession.displayName}</H3>
         <Prose className="max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current">
           <DynamicMarkdown
             content={data.microSession.description}

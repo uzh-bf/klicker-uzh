@@ -244,7 +244,6 @@ export async function respondToQuestionInstance(
       newPointsFrom = dayjs(lastAwardedAt)
         .add(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
-      console.warn(newPointsFrom)
 
       promises.push(
         ctx.prisma.questionResponse.create({
@@ -273,7 +272,7 @@ export async function respondToQuestionInstance(
       )
     }
 
-    if (typeof pointsAwarded === 'number' && pointsAwarded > 0) {
+    if (typeof pointsAwarded === 'number') {
       promises.push(
         ctx.prisma.leaderboardEntry.upsert({
           where: {

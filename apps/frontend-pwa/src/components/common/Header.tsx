@@ -48,6 +48,7 @@ function Header({
       {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
 
       <div className="flex flex-row items-center gap-4">
+        {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
           router.pathname !== '/' &&
           (pageInFrame ? (
@@ -69,29 +70,24 @@ function Header({
             <Button className="text-white bg-slate-800">Login</Button>
           </Link>
         )}
-        {participant ? (
-          <Link href="/profile" className="">
-            <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                participant?.avatar ?? 'placeholder'
-              }.svg`}
-              alt=""
-              width="45"
-              height="45"
-              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
-            />
-          </Link>
-        ) : (
-          <Link href="/login" className="">
-            <Image
-              src="/placeholder.png"
-              alt=""
-              width="45"
-              height="45"
-              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
-            />
+        {participant && !participant?.avatar && (
+          <Link href="/editProfile">
+            <Button className="text-white bg-uzh-red-100 border-uzh-red-100">
+              Profil einrichten
+            </Button>
           </Link>
         )}
+        <Link href={participant ? '/profile' : '/login'} className="">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              participant?.avatar ?? 'placeholder'
+            }.svg`}
+            alt=""
+            width="45"
+            height="45"
+            className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
+          />
+        </Link>
       </div>
     </div>
   )

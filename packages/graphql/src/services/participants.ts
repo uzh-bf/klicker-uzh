@@ -1,6 +1,7 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
+import { descend, prop, sort } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -39,7 +40,7 @@ export async function updateParticipantProfile(
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {
-      // TODO: return error
+      return null
     }
   }
 
@@ -87,7 +88,6 @@ export async function getParticipations(
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: { isActive: true },
         include: {
           subscriptions: endpoint
             ? {
@@ -251,7 +251,7 @@ export async function getCourseOverviewData(
       },
     })
 
-    const top3Entries = await course.leaderboard({
+    const top10Entries = await course.leaderboard({
       where: {
         participation: {
           isActive: true,
@@ -263,7 +263,7 @@ export async function getCourseOverviewData(
       orderBy: {
         score: 'desc',
       },
-      take: 3,
+      take: 10,
     })
 
     const mapper = (entry) => ({
@@ -271,28 +271,32 @@ export async function getCourseOverviewData(
       score: entry.score,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
+      participantId: entry.participant.id,
     })
 
     if (participation) {
+      const allEntries = [
+        ...top10Entries
+          .filter((entry) => entry.participantId !== ctx.user!.sub)
+          .map(mapper),
+        ...followedEntries.map(mapper),
+        participation?.isActive &&
+          participation.courseLeaderboard?.id && {
+            participantId: participation.participant.id,
+            id: participation.courseLeaderboard?.id,
+            score: participation.courseLeaderboard?.score,
+            username: participation.participant.username,
+            avatar: participation.participant.avatar,
+            isSelf: true,
+          },
+      ].filter(Boolean)
+
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
-        leaderboard: [
-          ...top3Entries
-            .filter((entry) => entry.participantId !== ctx.user!.sub)
-            .map(mapper),
-          ...followedEntries.map(mapper),
-          participation.isActive &&
-            participation.courseLeaderboard?.id && {
-              id: participation.courseLeaderboard?.id,
-              score: participation.courseLeaderboard?.score,
-              username: participation.participant.username,
-              avatar: participation.participant.avatar,
-              isSelf: true,
-            },
-        ].filter(Boolean),
+        leaderboard: sort(descend(prop('score')), allEntries),
       }
     }
   }

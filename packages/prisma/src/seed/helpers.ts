@@ -1,6 +1,7 @@
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import { omit } from 'ramda'
+import { QuestionInstanceType } from '../client'
 
 export async function prepareUser({
   password,
@@ -34,6 +35,7 @@ export function prepareCourse({
   name: string
   displayName: string
   ownerId: string
+  color?: string
 }) {
   const data = {
     ...args,
@@ -53,13 +55,13 @@ export function prepareCourse({
 
 export async function prepareParticipant({
   password,
-  courseId,
+  courseIds,
   ...args
 }: {
   id: string
   password: string
   username: string
-  courseId: string
+  courseIds: string[]
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -73,13 +75,13 @@ export async function prepareParticipant({
     create: {
       ...data,
       participations: {
-        create: {
+        create: courseIds.map((id) => ({
           course: {
             connect: {
-              id: courseId,
+              id,
             },
           },
-        },
+        })),
       },
     },
     update: data,
@@ -172,10 +174,16 @@ export function prepareQuestion({
 
 export function prepareQuestionInstance({
   question,
+  type,
+  order,
 }: {
   question: Partial<Prisma.Question>
+  type: QuestionInstanceType
+  order?: number
 }): any {
   const common = {
+    order,
+    type,
     questionData: omit(['createdAt', 'updatedAt', 'attachments'], question),
     question: {
       connect: {
@@ -216,19 +224,13 @@ export function prepareQuestionInstance({
       }
     }
 
-    case Prisma.QuestionType.NUMERICAL: {
+    case Prisma.QuestionType.NUMERICAL:
+    case Prisma.QuestionType.FREE_TEXT: {
       return {
         ...common,
         results: {
           answers: [],
         },
-      }
-    }
-
-    case Prisma.QuestionType.FREE_TEXT: {
-      return {
-        ...common,
-        results: {},
       }
     }
   }
@@ -254,8 +256,12 @@ export function prepareLearningElement({
   courseId: string
   questions: BaseQuestionData[]
 }) {
-  const preparedInstances = questions.map((question) =>
-    prepareQuestionInstance({ question })
+  const preparedInstances = questions.map((question, ix) =>
+    prepareQuestionInstance({
+      order: ix,
+      question,
+      type: QuestionInstanceType.LEARNING_ELEMENT,
+    })
   )
 
   return {
@@ -300,8 +306,12 @@ export function prepareSession({
       ...args,
       blocks: {
         create: blocks.map(({ questions }) => {
-          const preparedInstances = questions.map((question) =>
-            prepareQuestionInstance({ question })
+          const preparedInstances = questions.map((question, ix) =>
+            prepareQuestionInstance({
+              order: ix,
+              question,
+              type: QuestionInstanceType.SESSION,
+            })
           )
 
           return {
@@ -330,8 +340,12 @@ export function prepareMicroSession({
   ownerId: string
   questions: BaseQuestionData[]
 }) {
-  const preparedInstances = questions.map((question) =>
-    prepareQuestionInstance({ question })
+  const preparedInstances = questions.map((question, ix) =>
+    prepareQuestionInstance({
+      order: ix,
+      question,
+      type: QuestionInstanceType.MICRO_SESSION,
+    })
   )
 
   return {

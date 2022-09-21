@@ -133,7 +133,7 @@ const EditProfile: NextPageWithLayout = () => {
             },
           })
 
-          Router.push(decodedRedirectPath)
+          Router.replace(decodedRedirectPath)
         }}
       >
         {({ values, errors, isSubmitting, isValid }) => {

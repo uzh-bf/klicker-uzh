@@ -13,6 +13,8 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './authorization'
 
+import { useSentry } from '@envelop/sentry'
+
 function prepareApp({ prisma, redisCache, redisExec }: any) {
   let cache = undefined
   if (redisCache) {
@@ -75,7 +77,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
           MicroSession: 60000,
           QuestionInstance: 60000,
           Participation: 0,
-          LeaderboardEntry: 10000,
+          LeaderboardEntry: 0,
         },
         cache,
         session(ctx) {
@@ -84,6 +86,15 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useValidationCache(),
       useParserCache(),
+      process.env.SENTRY_ENABLED &&
+        useSentry({
+          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+          // skip: executionArgs => {} // if you wish to modify the skip specific operations
+        }),
       // useGraphQlJit(),
       process.env.HIVE_TOKEN
         ? useHive({
