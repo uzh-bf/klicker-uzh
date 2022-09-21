@@ -9,13 +9,20 @@ query GetCourseOverviewData($courseId: ID!) {
     participation {
       id
       isActive
-      points
     }
     course {
       id
       name
       displayName
       color
+    }
+    leaderboard {
+      id
+      participantId
+      username
+      avatar
+      score
+      isSelf
     }
   }
 }

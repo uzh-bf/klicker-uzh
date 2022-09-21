@@ -8,6 +8,7 @@ module.exports = {
   bumpFiles: [
     '',
     'docs/',
+    'apps/backend-docker/',
     'apps/backend-responses/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
@@ -29,6 +30,10 @@ module.exports = {
       {
         filename: `package-lock.json`,
         type: 'json',
+      },
+      {
+        filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+        updater: 'util/yaml-updater.js',
       },
     ]
   ),

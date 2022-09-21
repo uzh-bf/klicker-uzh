@@ -46,7 +46,8 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       )
     }
 
-    case QuestionType.MC: {
+    case QuestionType.MC:
+    case QuestionType.KPRIM: {
       const sum = Object.values(
         evaluation.choices as Record<string, number>
       ).reduce((acc, choice) => acc + choice, 0)

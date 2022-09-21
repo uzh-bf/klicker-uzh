@@ -5,6 +5,8 @@ import UserNotification from '@components/UserNotification'
 import {
   faBookOpenReader,
   faChalkboard,
+  faCheck,
+  faLink,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -14,9 +16,11 @@ import {
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -55,9 +59,12 @@ const Index = function () {
     activeSessions,
     activeMicrolearning,
   }: {
-    courses: { id: string; displayName: string }[]
-    activeSessions: Session[]
-    activeMicrolearning: MicroSession[]
+    courses: { id: string; displayName: string; isSubscribed: boolean }[]
+    activeSessions: (Session & { courseName: string })[]
+    activeMicrolearning: (MicroSession & {
+      courseName: string
+      isCompleted: boolean
+    })[]
   } = useMemo(() => {
     const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
     if (!data?.participations) return obj
@@ -75,11 +82,20 @@ const Index = function () {
         ],
         activeSessions: [
           ...acc.activeSessions,
-          ...participation.course?.sessions,
+          ...participation.course.sessions?.map((session) => ({
+            ...session,
+            courseName: participation.course.displayName,
+          })),
         ],
         activeMicrolearning: [
           ...acc.activeMicrolearning,
-          ...participation.course?.microSessions,
+          ...participation.course?.microSessions.map((session) => ({
+            ...session,
+            courseName: participation.course.displayName,
+            isCompleted: participation.completedMicroSessions?.includes(
+              session.id
+            ),
+          })),
         ],
       }
     }, obj)
@@ -150,41 +166,71 @@ const Index = function () {
   return (
     <Layout>
       <div className="flex flex-col md:w-full md:max-w-lg md:p-8 md:m-auto md:border md:rounded">
-        <H1 className="text-xl">Aktive Sessions</H1>
+        <H1 className="text-xl">Aktive Sessions ({activeSessions.length})</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
           {activeSessions.map((session) => (
-            <Link href={`/session/${session.id}`} key={session.id}>
-              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+            <Link
+              href={session.linkTo || `/session/${session.id}`}
+              key={session.id}
+            >
+              <Button className="gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
                 <Button.Icon>
-                  <FontAwesomeIcon icon={faChalkboard} />
+                  <FontAwesomeIcon
+                    icon={session.linkTo ? faLink : faChalkboard}
+                  />
                 </Button.Icon>
-                <Button.Label>{session.displayName}</Button.Label>
+                <Button.Label className="flex-1">
+                  <div className="flex flex-row items-center justify-between">
+                    <div>{session.displayName}</div>
+                    <div className="text-sm">{session.courseName}</div>
+                  </div>
+                </Button.Label>
               </Button>
             </Link>
           ))}
         </div>
 
-        <H1 className="text-xl">Verfügbares Microlearning</H1>
+        <H1 className="text-xl">
+          Aktives Microlearning ({activeMicrolearning.length})
+        </H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeMicrolearning.length === 0 && (
             <div>Kein aktives Microlearning.</div>
           )}
-          {activeMicrolearning.map((micro: any) => (
-            <Link href={`/micro/${micro.id}/intro`} key={micro.id}>
-              <Button className="gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+          {activeMicrolearning.map((micro) => (
+            <Link href={`/micro/${micro.id}/`} key={micro.id}>
+              <Button
+                disabled={micro.isCompleted}
+                className={twMerge(
+                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
+                  micro.isCompleted && 'hover:bg-unset'
+                )}
+              >
                 <Button.Icon>
-                  <FontAwesomeIcon icon={faBookOpenReader} />
+                  <FontAwesomeIcon
+                    icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  />
                 </Button.Icon>
-                <Button.Label>{micro.displayName}</Button.Label>
+                <Button.Label className="flex-1 text-left">
+                  <div>{micro.displayName}</div>
+                  <div className="flex flex-row items-end justify-between">
+                    <div className="text-xs">
+                      {dayjs(micro.scheduledStartAt).format('D.M.YYYY HH:mm')} -{' '}
+                      {dayjs(micro.scheduledEndAt).format('D.M.YYYY HH:mm')}
+                    </div>
+                    <div className="text-xs">{micro.courseName}</div>
+                  </div>
+                </Button.Label>
               </Button>
             </Link>
           ))}
         </div>
 
-        <H1 className="text-xl">Meine Kurse</H1>
+        <H1 className="text-xl">Meine Kurse ({courses.length})</H1>
         <div className="flex flex-col gap-2 mt-2">
-          {courses.map((course: any) => (
+          {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
+          {courses.map((course) => (
             <CourseElement
               disabled={!!pushDisabled}
               key={course.id}

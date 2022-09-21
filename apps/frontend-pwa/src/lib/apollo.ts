@@ -18,7 +18,7 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: any
 
-const { publicRuntimeConfig } = getConfig()
+const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
@@ -54,7 +54,10 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 })
 
 const httpLink = new HttpLink({
-  uri: publicRuntimeConfig.API_URL,
+  uri:
+    typeof window !== 'undefined'
+      ? publicRuntimeConfig.API_URL
+      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
   credentials: 'include',
 })
 

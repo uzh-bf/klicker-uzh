@@ -64,7 +64,7 @@ function ChoiceOptions({
                 />
               </div>
               <div className="py-2 text-gray-700">
-                {feedbacks[choice.ix].feedback}
+                <Markdown content={feedbacks[choice.ix].feedback} />
               </div>
             </div>
           )}
@@ -224,7 +224,7 @@ function Options({
                           />
                         </div> */}
                       <div className="p-2 text-gray-700">
-                        {feedbacks[choice.ix].feedback}
+                        <Markdown content={feedbacks[choice.ix].feedback} />
                       </div>
                     </div>
                   )}
@@ -278,7 +278,11 @@ function OptionsDisplay({
       <div className="self-end mt-4">
         <Button
           className="text-lg"
-          disabled={!isEvaluation && response?.length === 0}
+          disabled={
+            !isEvaluation &&
+            questionType !== QuestionType.KPRIM &&
+            response?.length === 0
+          }
           onClick={onSubmitResponse}
         >
           {isEvaluation ? 'Weiter' : 'Antwort absenden'}

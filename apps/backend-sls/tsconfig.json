@@ -7,11 +7,6 @@
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
-      "prisma/constants.ts": "esm",
-      "prisma/dataBF1.ts": "esm",
-      "prisma/dataAMI.ts": "esm",
-      "prisma/helpers.ts": "esm",
-      "prisma/seed.ts": "esm",
       "test/integration.test.ts": "esm"
     }
   }

@@ -34,7 +34,7 @@ enum AttachmentType {
 
 input AvatarSettingsInput {
   accessory: String!
-  body: String!
+  clothing: String!
   clothingColor: String!
   eyes: String!
   facialHair: String!
@@ -53,6 +53,7 @@ input BlockInput {
 type Choice {
   correct: Boolean
   feedback: String
+  id: ID!
   ix: Int!
   value: String!
 }
@@ -139,6 +140,10 @@ type FreeTextRestrictions {
 type InstanceEvaluation {
   choices: JSONObject!
   feedbacks: [QuestionFeedback!]
+  newPointsFrom: DateTime
+  percentile: Float
+  pointsAwarded: Float
+  score: Float!
 }
 
 """
@@ -149,6 +154,8 @@ scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publicati
 type LeaderboardEntry {
   avatar: String
   id: ID!
+  isSelf: Boolean
+  participantId: ID!
   score: Float!
   username: String!
 }
@@ -187,6 +194,8 @@ type MicroSession {
   id: ID!
   instances: [QuestionInstance!]!
   name: String!
+  scheduledEndAt: DateTime!
+  scheduledStartAt: DateTime!
 }
 
 type Mutation {
@@ -200,12 +209,13 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): FeedbackResponse
   endSession(id: ID!): Session
-  joinCourse(courseId: ID!): Participation
-  leaveCourse(courseId: ID!): Participation
+  joinCourse(courseId: ID!): ParticipantLearningData
+  leaveCourse(courseId: ID!): ParticipantLearningData
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
@@ -214,7 +224,7 @@ type Mutation {
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, username: String): Participant
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -253,18 +263,19 @@ type Participant {
 }
 
 type ParticipantLearningData {
-  course: Course!
+  course: Course
   id: ID!
-  participant: Participant!
-  participantToken: String!
-  participation: Participation!
+  leaderboard: [LeaderboardEntry!]
+  participant: Participant
+  participantToken: String
+  participation: Participation
 }
 
 type Participation {
-  course: Course!
+  completedMicroSessions: [String]
+  course: Course
   id: Int!
   isActive: Boolean!
-  points: Int!
   subscriptions: [Subscription!]
 }
 
@@ -311,7 +322,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [Attachment]!
+  attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!
@@ -336,6 +347,7 @@ type Session {
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
+  linkTo: String
   name: String!
   namespace: String!
   startedAt: DateTime
@@ -367,7 +379,7 @@ enum SessionStatus {
 
 type Subscription {
   endpoint: String!
-  id: ID!
+  id: Int!
 }
 
 input SubscriptionKeys {

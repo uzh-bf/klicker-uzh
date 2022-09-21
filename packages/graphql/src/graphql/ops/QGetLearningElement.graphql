@@ -20,6 +20,10 @@ query GetLearningElement($id: ID!) {
           value
         }
         choices
+        score
+        pointsAwarded
+        percentile
+        newPointsFrom
       }
     }
   }

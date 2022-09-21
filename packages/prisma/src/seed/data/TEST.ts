@@ -18,7 +18,7 @@ export const ATTACHMENTS = [
 
 export const QUESTIONS = [
   {
-    id: 5,
+    id: 0,
     name: 'Numerische Testfrage',
     content: 'Was ist richtig?',
     contentPlain: 'Was ist richtig?',
@@ -49,7 +49,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 6,
+    id: 1,
     name: 'Freitext Testfrage',
     content: 'Was ist richtig?',
     contentPlain: 'Was ist richtig?',
@@ -62,7 +62,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 7,
+    id: 2,
     name: 'RDWachstum',
     content:
       'Wie hoch schätzt du das durchschnittliche Wachstum der Forschung- und Entwicklungskosten in den nächsten fünf Jahren?',
@@ -87,7 +87,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 8,
+    id: 3,
     name: 'Bilanz',
     content:
       'Beurteile die folgenden Aussagen zur Bilanz auf ihre Richtigkeit:',
@@ -120,7 +120,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 9,
+    id: 4,
     name: 'Zieldreieck',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -165,7 +165,7 @@ export const LEARNING_ELEMENTS = [
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c08',
     name: 'Test Learning Element 1',
     displayName: 'Test Learning Element 1',
-    questions: [9, 8],
+    questions: [4, 3],
   },
 ]
 
@@ -175,7 +175,7 @@ export const SESSIONS = [
     name: 'BF1 VL1',
     displayName: 'Banking und Finance I - VL1',
     status: SessionStatus.PREPARED,
-    blocks: [{ questions: [6, 7, 8] }, { questions: [9, 5] }],
+    blocks: [{ questions: [0, 1, 2] }, { questions: [4, 2] }],
   },
   {
     id: 'a3bb4ae9-5acc-4e66-99d9-a9df1d4d0c09',
@@ -187,12 +187,12 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [6, 7, 8, 9],
+        questions: [0, 1, 2, 4],
         expiresAt: new Date('2022-12-31T23:59:59.999Z'),
         timeLimit: 20,
       },
       {
-        questions: [6, 7, 8, 9],
+        questions: [4, 2, 1, 0],
         expiresAt: new Date('2022-12-31T23:59:59.999Z'),
         timeLimit: 30,
       },
@@ -214,6 +214,6 @@ Diese Woche lernen wir...
 
 Mehr bla bla...
 `,
-    questions: [9, 8],
+    questions: [4, 3],
   },
 ]

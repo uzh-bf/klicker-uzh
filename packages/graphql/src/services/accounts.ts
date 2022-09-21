@@ -57,6 +57,7 @@ export async function loginUser(
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 6,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
   })
 
   return user.id
@@ -69,6 +70,7 @@ export async function logoutUser(_, ctx: ContextWithUser) {
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
   })
 
   return ctx.user.sub
@@ -133,6 +135,7 @@ export async function loginParticipant(
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 6,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
   })
 
   // TODO: return more data (e.g. Avatar etc.)
@@ -146,6 +149,7 @@ export async function logoutParticipant(_, ctx: ContextWithUser) {
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
   })
 
   return ctx.user.sub

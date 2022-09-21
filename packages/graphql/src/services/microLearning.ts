@@ -14,7 +14,11 @@ export async function getMicroSessionData(
     where: { id },
     include: {
       course: true,
-      instances: true,
+      instances: {
+        orderBy: {
+          questionId: 'asc',
+        },
+      },
     },
   })
 
@@ -59,4 +63,28 @@ export async function getMicroSessionData(
     ...microSession,
     instances: instancesWithoutSolution,
   }
+}
+
+interface MarkMicroSessionCompletedArgs {
+  courseId: string
+  id: string
+}
+
+export async function markMicroSessionCompleted(
+  { courseId, id }: MarkMicroSessionCompletedArgs,
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    data: {
+      completedMicroSessions: {
+        push: id,
+      },
+    },
+  })
 }

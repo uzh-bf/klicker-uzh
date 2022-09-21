@@ -25,6 +25,11 @@ function Header({
   courseColor,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
+
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   return (
     <div
       style={{ borderColor: courseColor || undefined }}
@@ -43,44 +48,46 @@ function Header({
       {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
 
       <div className="flex flex-row items-center gap-4">
+        {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
-          router.pathname !== '/' && (
+          router.pathname !== '/' &&
+          (pageInFrame ? (
+            <Button
+              className="hidden text-white bg-slate-800 md:block"
+              onClick={() => router.back()}
+            >
+              Zurück
+            </Button>
+          ) : (
             <Link href="/">
               <Button className="hidden text-white bg-slate-800 md:block">
                 Home
               </Button>
             </Link>
-          )
+          ))
         ) : (
           <Link href="/login">
             <Button className="text-white bg-slate-800">Login</Button>
           </Link>
         )}
-        {participant ? (
-          <Link href="/profile" className="">
-            <Image
-              src={
-                participant?.avatar
-                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
-                  : '/placeholder.png'
-              }
-              alt=""
-              width="45"
-              height="45"
-              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
-            />
-          </Link>
-        ) : (
-          <Link href="/login" className="">
-            <Image
-              src="/placeholder.png"
-              alt=""
-              width="45"
-              height="45"
-              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
-            />
+        {!participant?.avatar && (
+          <Link href="/editProfile">
+            <Button className="text-white bg-uzh-red-100 border-uzh-red-100">
+              Profil einrichten
+            </Button>
           </Link>
         )}
+        <Link href={participant ? '/profile' : '/login'} className="">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              participant?.avatar ?? 'placeholder'
+            }.svg`}
+            alt=""
+            width="45"
+            height="45"
+            className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
+          />
+        </Link>
       </div>
     </div>
   )

@@ -143,3 +143,79 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-backend-graphql
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-graphql
+spec:
+  {{- with .Values.backendGraphql.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.backendGraphql.autoscaling.enabled }}
+  replicas: {{ .Values.backendGraphql.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend-graphql
+  template:
+    metadata:
+      {{- with .Values.backendGraphql.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend-graphql
+    spec:
+      {{- with .Values.backendGraphql.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.backendGraphql.podSecurityContext | nindent 8 }}
+      containers:
+        - name: backend-graphql
+          securityContext:
+            {{- toYaml .Values.backendGraphql.securityContext | nindent 12 }}
+          image: "{{ .Values.backendGraphql.image.repository }}:{{ .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.backendGraphql.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-backend-graphql
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-backend-graphql
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.backendGraphql.resources | nindent 12 }}
+      {{- with .Values.backendGraphql.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backendGraphql.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backendGraphql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

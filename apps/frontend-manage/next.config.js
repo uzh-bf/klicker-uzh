@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    modularizeImports: {
+      ramda: {
+        transform: 'ramda/es/{{member}}',
+      },
+    },
+  },
+  // TODO: disable compression if it is done on the ingress
+  compress: true,
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
@@ -28,6 +37,7 @@ const nextConfig = {
     API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
   serverRuntimeConfig: {
+    API_URL_SSR: process.env.NEXT_PUBLIC_API_URL_SSR,
     APP_DOMAIN: process.env.APP_DOMAIN,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },

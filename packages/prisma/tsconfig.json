@@ -3,5 +3,11 @@
   "include": ["src"],
   "compilerOptions": {
     "module": "ESNext"
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "moduleTypes": {
+      "src/seed/*": "esm"
+    }
   }
 }
