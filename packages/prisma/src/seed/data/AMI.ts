@@ -8,7 +8,7 @@ export const ATTACHMENTS = []
 
 export const QUESTIONS = [
   {
-    id: 0,
+    id: 30,
     name: 'Modul 1 Finanz- und Realanlagen',
     content:
       'Welche der folgenden Aussagen zu den **Finanz- und Realanlagen** ist **richtig**?',
@@ -47,7 +47,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 1,
+    id: 31,
     name: 'Modul 1 Investitionsprozess',
     content:
       'Welche der folgenden Aussagen zum **Investment-Prozess** ist **falsch**?',
@@ -85,7 +85,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 2,
+    id: 32,
     name: 'Modul 1 Index',
     content:
       'Gehe von folgender Ausgangssituation aus: ![Index](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_index.png) Welche der folgenden Aussagen zu **Aktienindizes** ist **richtig**?',
@@ -122,7 +122,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 3,
+    id: 33,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
     content: 'Beurteile folgende Aussagen auf ihre **Richtigkeit**.',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -154,7 +154,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 30 + 4,
+    id: 34,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
     content:
       'Beurteile folgende Aussagen zum **Leerverkauf** auf ihre **Richtigkeit**.',
@@ -189,7 +189,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 30 + 5,
+    id: 35,
     name: 'Modul 1 Anlageprozess',
     content:
       'Überprüfe die folgenden Aussagen zum **Anlageprozess** auf ihre **Richtigkeit**.',
@@ -224,7 +224,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 30 + 6,
+    id: 36,
     name: 'Modul 1 Investitionsprozess',
     content:
       'Welcher der folgenden Faktoren hat **keinen direkten Einfluss** auf das **Zinsniveau**?',
@@ -262,7 +262,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 30 + 7,
+    id: 37,
     name: 'Modul 1 Effective Annual Rate (EAR) I',
     content: `Du hast die folgenden beiden Zero-Coupon Staatsanleihen:
 ![EAR I](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_effective_annual_rate_EAR_I.png)
@@ -306,7 +306,7 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     ],
   },
   {
-    id: 30 + 8,
+    id: 38,
     name: 'Modul 1 Effective Annual Rate (EAR) II',
     content: `Du hast die folgende Zero-Coupon Staatsanleihe:
 ![EAR I](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_effective_annual_rate_EAR_II.png)
@@ -348,7 +348,7 @@ $$EAR = (1+0.005)^{(\frac{1}{\frac{1}{12}})} -1 = 6.20% $$
     ],
   },
   {
-    id: 30 + 9,
+    id: 39,
     name: 'Modul 1 Continuous Compounding',
     content: `Du hast die folgende Zero-Coupon Staatsanleihe:
 ![Continuous Compounding](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_continuous_compounding.png)
@@ -392,7 +392,7 @@ $$CCR = ln(1+0.084) = 8.1%$$
     ],
   },
   {
-    id: 10,
+    id: 40,
     name: 'Modul 1 Varianz',
     content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008:
 ![Varianz 1](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_varianz1.png)
@@ -444,7 +444,7 @@ $$Varianz = \frac{1}{3}\cdot[(0.19-(-0.26))^2+(-0.29-(-0.26))^2+(-0.68-(-0.26))^
     ],
   },
   {
-    id: 11,
+    id: 41,
     name: 'Modul 1 Standardabweichung',
     content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008:
 ![Varianz 1](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_varianz1.png)
@@ -488,7 +488,7 @@ $$Standardabweichung = \sqrt{0.1272} = 35.67%$$
     ],
   },
   {
-    id: 12,
+    id: 42,
     name: 'Modul 1 Wochenvolatilität',
     content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008:
 ![Varianz 1](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_varianz1.png)
@@ -532,7 +532,7 @@ $$Wochenvolatilität = \frac{Jahresvolatilität}{\sqrt{50}} = 5.04%$$
     ],
   },
   {
-    id: 13,
+    id: 43,
     name: 'Modul 1 Geometric (Time-weighted) Average Return',
     content: `Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen.
 ![Geometric Return](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_geometric_time-weighted_average_return.png)
@@ -572,7 +572,7 @@ $$Geometric Average Return=1.169^\frac{1}{3}-1=5.3%$$
     ],
   },
   {
-    id: 14,
+    id: 44,
     name: 'Modul 1 Risikoaversion',
     content:
       'Welche der folgenden Aussagen ist **richtig**? (A = Index für Risikoaversion)',
@@ -608,7 +608,7 @@ $$Geometric Average Return=1.169^\frac{1}{3}-1=5.3%$$
     ],
   },
   {
-    id: 15,
+    id: 45,
     name: 'Modul 1 Nutzenfunktionen',
     content: `Gehe von folgender Ausgangssituation aus:
 ![Nutzenfunktionen](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_nutzenfunktion.png)
@@ -644,7 +644,7 @@ Welches Investment wird der Anleger tätigen?`,
     ],
   },
   {
-    id: 16,
+    id: 46,
     name: 'Modul 1 Statistische Kennzahlen',
     content:
       'Überprüfe die folgenden Aussagen zu den **statistischen Kennzahlen** auf ihre **Richtigkeit**.',
@@ -677,7 +677,7 @@ Welches Investment wird der Anleger tätigen?`,
     ],
   },
   {
-    id: 17,
+    id: 47,
     name: 'Modul 1 Capital Allocation Line',
     content:
       'Überprüfe die folgenden Aussagen zur **Indifferenzkurve** und zur **Capital Allocation Line (CAL)** auf ihre **Richtigkeit**.',
@@ -710,10 +710,7 @@ Welches Investment wird der Anleger tätigen?`,
       },
     ],
   },
-].map((q) => ({
-  ...q,
-  id: q.id + 30,
-}))
+]
 
 export const LEARNING_ELEMENTS = [
   {
