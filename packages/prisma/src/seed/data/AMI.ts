@@ -124,7 +124,7 @@ export const QUESTIONS = [
   {
     id: 33,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
-    content: 'Beurteile folgende Aussagen auf ihre **Richtigkeit**.',
+    content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
@@ -156,8 +156,7 @@ export const QUESTIONS = [
   {
     id: 34,
     name: 'Modul 1 Aktienkauf mit Fremdkapital',
-    content:
-      'Beurteile folgende Aussagen zum **Leerverkauf** auf ihre **Richtigkeit**.',
+    content: "",
     contentPlain:
       'Beurteile folgende Aussagen zum Leerverkauf auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -191,8 +190,7 @@ export const QUESTIONS = [
   {
     id: 35,
     name: 'Modul 1 Anlageprozess',
-    content:
-      'Überprüfe die folgenden Aussagen zum **Anlageprozess** auf ihre **Richtigkeit**.',
+    content: "",
     contentPlain:
       'Überprüfe die folgenden Aussagen zum Anlageprozess auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -646,8 +644,7 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 46,
     name: 'Modul 1 Statistische Kennzahlen',
-    content:
-      'Überprüfe die folgenden Aussagen zu den **statistischen Kennzahlen** auf ihre **Richtigkeit**.',
+    content: "",
     contentPlain:
       'Überprüfe die folgenden Aussagen zu den statistischen Kennzahlen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
@@ -679,8 +676,7 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 47,
     name: 'Modul 1 Capital Allocation Line',
-    content:
-      'Überprüfe die folgenden Aussagen zur **Indifferenzkurve** und zur **Capital Allocation Line (CAL)** auf ihre **Richtigkeit**.',
+    content: "",
     contentPlain:
       'Überprüfe die folgenden Aussagen zur Indifferenzkurve und zur Capital Allocation Line (CAL) auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
