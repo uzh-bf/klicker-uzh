@@ -33,8 +33,6 @@ function Histogram({
   statistics,
   numBins,
 }: HistogramProps): React.ReactElement {
-  console.log(data)
-
   // calculate the borders of the histogram
   const min = +_minBy(data, (o): number => +o.value).value
   const max = +_maxBy(data, (o): number => +o.value).value
@@ -61,8 +59,6 @@ function Histogram({
     votes: _sumBy(bin, 'votes'),
     value: `${_round(_round(bin.x0, 2) / _round(bin.x1, 2), 1)}`,
   }))
-
-  console.log(mappedData)
 
   return (
     <BarChart
