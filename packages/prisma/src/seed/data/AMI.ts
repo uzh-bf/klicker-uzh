@@ -119,7 +119,7 @@ export const QUESTIONS = [
 =======
         feedback:
           'Falsch! Dies entspricht dem nach Marktwert gewichtetem Index.',
-        value: 'Der Preis-gewichtete Index der drei Aktien beträgt $49`000.',
+        value: 'Der Preis-gewichtete Index der drei Aktien beträgt "$49'000".',
 >>>>>>> d6189b76fb4b7e1de1077bf80b2f79b8f88f9887
       },
       {
@@ -128,9 +128,9 @@ export const QUESTIONS = [
         value: 'Der nach Marktwert gewichtete Index der drei Aktien beträgt "$1'200".',
 =======
         feedback:
-          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
+          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600="$49'000".',
         value:
-          'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`200.',
+          'Der nach Marktwert gewichtete Index der drei Aktien beträgt "$1'200".',
 >>>>>>> d6189b76fb4b7e1de1077bf80b2f79b8f88f9887
       },
       {
@@ -139,9 +139,9 @@ export const QUESTIONS = [
         value: 'Der nach Marktwert gewichtete Index der drei Aktien beträgt "$1'300".',
 =======
         feedback:
-          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600=$49`000.',
+          'Falsch! Der nach Marktwert gewichtete Index beträgt: $40*200+$70*500+$10*600="$49'000".',
         value:
-          'Der nach Marktwert gewichtete Index der drei Aktien beträgt $1`300.',
+          'Der nach Marktwert gewichtete Index der drei Aktien beträgt "$1'300".',
 >>>>>>> d6189b76fb4b7e1de1077bf80b2f79b8f88f9887
       },
       {
