@@ -123,13 +123,14 @@ export async function createSession(
       displayName: displayName ?? name,
       blocks: {
         create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
-          const newInstances = questionIds.map((questionId) => {
+          const newInstances = questionIds.map((questionId, ix) => {
             const question = questionMap[questionId]
             const processedQuestionData = processQuestionData(question)
             const questionAttachmentInstances = question.attachments.map(
               pick(['type', 'href', 'name', 'description', 'originalName'])
             )
             return {
+              order: ix,
               questionData: processedQuestionData,
               results: prepareInitialInstanceResults(processedQuestionData),
               question: {
@@ -419,9 +420,6 @@ export async function deactivateSessionBlock(
           id: 'asc',
         },
       },
-      activeBlock: {
-        include: { instances: true },
-      },
     },
   })
 
@@ -532,25 +530,25 @@ export async function deactivateSessionBlock(
                   results: results.results,
                   participants: Number(results.participants),
                   // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
-                  responses: {
-                    create: Object.entries(results.responses).map(
-                      ([participantId, response]) => ({
-                        response,
-                        participant: {
-                          connect: { id: participantId },
-                        },
-                        participation: {
-                          connect: {
-                            courseId_participantId: {
-                              // TODO: this is not set if the session is not in a course (i.e., not gamified)
-                              courseId: session.courseId as string,
-                              participantId,
-                            },
-                          },
-                        },
-                      })
-                    ),
-                  },
+                  // responses: {
+                  //   create: Object.entries(results.responses).map(
+                  //     ([participantId, response]) => ({
+                  //       response,
+                  //       participant: {
+                  //         connect: { id: participantId },
+                  //       },
+                  //       participation: {
+                  //         connect: {
+                  //           courseId_participantId: {
+                  //             // TODO: this is not set if the session is not in a course (i.e., not gamified)
+                  //             courseId: session.courseId as string,
+                  //             participantId,
+                  //           },
+                  //         },
+                  //       },
+                  //     })
+                  //   ),
+                  // },
                 },
               })),
             },
@@ -595,7 +593,7 @@ export async function deactivateSessionBlock(
     include: {
       blocks: {
         orderBy: {
-          id: 'asc',
+          order: 'asc',
         },
       },
     },
@@ -625,6 +623,9 @@ export async function getRunningSession(
       activeBlock: {
         include: {
           instances: {
+            orderBy: {
+              order: 'asc',
+            },
             include: {
               attachments: true,
             },
@@ -714,7 +715,7 @@ export async function getLeaderboard(
       orderBy: {
         score: 'desc',
       },
-      take: 5,
+      take: 10,
     })
 
   // TODO: extract self into separate query to allow for improved caching?
@@ -804,10 +805,13 @@ export async function getUserSessions(
           course: true,
           blocks: {
             orderBy: {
-              id: 'asc',
+              order: 'asc',
             },
             include: {
               instances: {
+                orderBy: {
+                  order: 'asc',
+                },
                 select: {
                   id: true,
                   questionData: true,
@@ -871,10 +875,14 @@ export async function getCockpitSession(
       activeBlock: true,
       blocks: {
         orderBy: {
-          id: 'asc',
+          order: 'asc',
         },
         include: {
-          instances: true,
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       course: true,

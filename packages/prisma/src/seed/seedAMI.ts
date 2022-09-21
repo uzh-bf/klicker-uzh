@@ -7,6 +7,7 @@ import {
   prepareLearningElement,
   prepareParticipant,
   prepareQuestion,
+  prepareSession,
   prepareUser,
 } from './helpers.js'
 
@@ -57,6 +58,25 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
           ownerId: userAMI.id,
           courseId: courseAMI.id,
           questions: questionsAMI.filter((q) => data.questions.includes(q.id)),
+        })
+      )
+    )
+  )
+
+  const sessionsAMI = await Promise.all(
+    DATA_AMI.SESSIONS.map((data) =>
+      prisma.session.upsert(
+        prepareSession({
+          ...data,
+          blocks: data.blocks.map((block, ix) => ({
+            ...block,
+            order: ix,
+            questions: questionsAMI.filter((q) =>
+              block.questions.includes(q.id)
+            ),
+          })),
+          ownerId: userAMI.id,
+          courseId: courseAMI.id,
         })
       )
     )

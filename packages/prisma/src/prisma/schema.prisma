@@ -169,7 +169,8 @@ enum QuestionInstanceType {
 model QuestionInstance {
   id Int @id @default(autoincrement())
 
-  type QuestionInstanceType?
+  type  QuestionInstanceType?
+  order Int?
 
   questionData Json
   participants Int                @default(0)
@@ -264,6 +265,7 @@ enum SessionBlockStatus {
 model SessionBlock {
   id Int @id @default(autoincrement())
 
+  order  Int?
   status SessionBlockStatus @default(SCHEDULED)
 
   expiresAt       DateTime?
