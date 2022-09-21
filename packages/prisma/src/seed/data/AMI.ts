@@ -309,12 +309,12 @@ export const QUESTIONS = [
     id: 7,
     name: 'Modul 1 Effective Annual Rate (EAR) I',
 <<<<<<< HEAD
-    content: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen:
+    content: `Du hast die folgenden beiden Zero-Coupon Staatsanleihen:
       (Bild Modul 1 Effective Annual Rate (EAR) I) 
-      Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
-    contentPlain: 'Du hast die folgenden beiden Zero-Coupon Staatsanleihen: 
+      Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.`,
+    contentPlain: `Du hast die folgenden beiden Zero-Coupon Staatsanleihen: 
       (Bild Modul 1 Effective Annual Rate (EAR) I) 
-      Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
+      Vergleiche die beiden Bonds mittels der Effective Annual Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.`,
 =======
     content:
       'Du hast die folgenden beiden Zero-Coupon Staatsanleihen: (Bild Modul 1 Effective Annual Rate (EAR) I) Vergleiche die beiden Bonds mittels der Effective **Annual** Rate (EAR).Die beiden Bonds zahlen am Laufzeitende jeweils $100.',
@@ -374,14 +374,14 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 8,
     name: 'Modul 1 Effective Annual Rate (EAR) II',
 <<<<<<< HEAD
-    content: 'Du hast die folgende Zero-Coupon Staatsanleihe: 
+    content: `Du hast die folgende Zero-Coupon Staatsanleihe: 
       (Bild Modul 1 Effective Annual Rate (EAR) II) 
       Der Bond zahlt am Laufzeitende $100. 
-       Berechne die Effective Annual Rate (EAR).',
-    contentPlain: 'Du hast die folgende Zero-Coupon Staatsanleihe: 
+       Berechne die Effective Annual Rate (EAR).`,
+    contentPlain: `Du hast die folgende Zero-Coupon Staatsanleihe: 
       (Bild Modul 1 Effective Annual Rate (EAR) II) 
       Der Bond zahlt am Laufzeitende $100. 
-      Berechne die Effective Annual Rate (EAR).',
+      Berechne die Effective Annual Rate (EAR).`,
 =======
     content:
       'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Effective Annual Rate (EAR) II) Der Bond zahlt am Laufzeitende $100. Berechne die Effective Annual Rate (EAR).',
@@ -428,14 +428,14 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 9,
     name: 'Modul 1 Continuous Compounding',
 <<<<<<< HEAD
-    content: 'Du hast die folgende Zero-Coupon Staatsanleihe: 
+    content: `Du hast die folgende Zero-Coupon Staatsanleihe: 
       (Bild Modul 1 Continuous Compounding) 
       Der Bond zahlt am Laufzeitende $100. 
-      Berechne die Continuously Compounded Rate (CCR).',
-    contentPlain: 'Du hast die folgende Zero-Coupon Staatsanleihe: 
+      Berechne die Continuously Compounded Rate (CCR).`,
+    contentPlain: `Du hast die folgende Zero-Coupon Staatsanleihe: 
       (Bild Modul 1 Continuous Compounding) 
       Der Bond zahlt am Laufzeitende $100. 
-      Berechne die Continuously Compounded Rate (CCR).',
+      Berechne die Continuously Compounded Rate (CCR).`,
 =======
     content:
       'Du hast die folgende Zero-Coupon Staatsanleihe: (Bild Modul 1 Continuous Compounding) Der Bond zahlt am Laufzeitende $100. Berechne die Continuously Compounded Rate (CCR).',
@@ -484,18 +484,18 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 10,
     name: 'Modul 1 Varianz',
 <<<<<<< HEAD
-    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+    content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3). 
-      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.'',
-    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.`,
+    contentPlain: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3)
-      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.'',
+      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.`,
 =======
     content:
       'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3). Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
@@ -548,17 +548,17 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 11,
     name: 'Modul 1 Standardabweichung',
 <<<<<<< HEAD
-    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+    content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3) 
-      Berechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
-    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+      Berechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.`,
+    contentPlain: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3) 
-      erechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
+      erechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.`,
 =======
     content:
       'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechnene die Standardabweichung der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
@@ -602,18 +602,18 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 12,
     name: 'Modul 1 Wochenvolatilität',
 <<<<<<< HEAD
-    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+    content: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3) 
-      Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)',
-    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+      Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)`,
+    contentPlain: `Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3) 
-      Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)',
+      Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)`,
 =======
     content:
       'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3) Berechne die Wochenvolatilität der jährlichen Aktienrenditen für den Zeitraum 2005 bis 2008. (Annahme: Ein Jahr hat 50 Handelswochen.)',
@@ -658,12 +658,12 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 13,
     name: 'Modul 1 Geometric (Time-weighted) Average Return',
 <<<<<<< HEAD
-    content: 'Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. 
+    content: `Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. 
       (Bild Modul 1 Geometric (Time-weighted) Average Return) 
-      Wie gross ist der geometrische Durchschnitt dieser Investition?',
-    contentPlain: 'Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. 
+      Wie gross ist der geometrische Durchschnitt dieser Investition?`,
+    contentPlain: `Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. 
       (Bild Modul 1 Geometric (Time-weighted) Average Return) 
-      Wie gross ist der geometrische Durchschnitt dieser Investition?',
+      Wie gross ist der geometrische Durchschnitt dieser Investition?`,
 =======
     content:
       'Ein Investor möchte die jährliche Durchschnittsrendite seiner Investition über die letzten Jahre ausrechnen. Diese Investition hat folgende Renditen in den letzten Jahren abgeworfen. (Bild Modul 1 Geometric (Time-weighted) Average Return) Wie gross ist der geometrische Durchschnitt dieser Investition?',
@@ -751,14 +751,14 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 15,
     name: 'Modul 1 Nutzenfunktionen',
 <<<<<<< HEAD
-    content: 'Gehe von folgender Ausgangssituation aus: 
+    content: `Gehe von folgender Ausgangssituation aus: 
       (Bild Modul 1 Nutzenfunktionen) 
       Die Nutzenfunktion des Investors beträgt $$U=E(r)-\frac{A}{2}*SD^2$$, wobei A=4.0 ist. 
-      Welches Investment wird der Anleger tätigen?',
-    contentPlain: 'Gehe von folgender Ausgangssituation aus: 
+      Welches Investment wird der Anleger tätigen?`,
+    contentPlain: `Gehe von folgender Ausgangssituation aus: 
       (Bild Modul 1 Nutzenfunktionen) 
       Die Nutzenfunktion des Investors beträgt $$U=E(r)-\frac{A}{2}*SD^2$$, wobei A=4.0 ist. 
-      Welches Investment wird der Anleger tätigen?',
+      Welches Investment wird der Anleger tätigen?`,
 =======
     content:
       'Gehe von folgender Ausgangssituation aus: (Bild Modul 1 Nutzenfunktionen) Die Nutzenfunktion des Investors beträgt U=E(r)-(A/2)*SD^2, wobei A=4.0 ist. Welches Investment wird der Anleger tätigen?',
