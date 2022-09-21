@@ -484,22 +484,18 @@ $$EAR_B = (1+0.0123)^{(\frac{1}{\frac{1}{4}})}-1 = 5.0%$$
     id: 10,
     name: 'Modul 1 Varianz',
 <<<<<<< HEAD
-    content: String.raw`
-      Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+    content: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3). 
-      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.
-      `,
-    contentPlain: String.raw`
-      Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
+      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.'',
+    contentPlain: 'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: 
       (Bild Modul 1 Varianz 1) 
       (Bild Modul 1 Varianz 2) 
       Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: 
       (Bild Modul 1 Varianz 3)
-      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.
-      `,
+      Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.'',
 =======
     content:
       'Folgend siehst du den Aktienkurs- und Aktienrenditeverlauf der UBS in täglicher Frequenz über den Zeitraum 2005 bis 2008: (Bild Modul 1 Varianz 1) (Bild Modul 1 Varianz 2) Zusätzlich liegen dir folgende Daten mit jährlicher Frequenz vor: (Bild Modul 1 Varianz 3). Berechne die Varianz (Annahme: der Grundgesamtheit) der jährlichen Aktienrenditen über den Zeitraum 2005 bis 2008.',
