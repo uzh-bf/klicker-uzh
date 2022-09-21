@@ -5,6 +5,7 @@ import * as DATA_AMI from './data/AMI.js'
 import {
   prepareCourse,
   prepareLearningElement,
+  prepareParticipant,
   prepareQuestion,
   prepareUser,
 } from './helpers.js'
