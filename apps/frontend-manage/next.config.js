@@ -5,6 +5,9 @@ const nextConfig = {
       ramda: {
         transform: 'ramda/es/{{member}}',
       },
+      lodash: {
+        transform: 'lodash/{{member}}',
+      },
     },
   },
   // TODO: disable compression if it is done on the ingress

@@ -907,6 +907,7 @@ export const SESSIONS = [
     name: 'AMI VL Woche 01',
     displayName: 'AMI Vorlesung - Woche 01',
     status: SessionStatus.PREPARED,
+    isGamificationEnabled: true,
     blocks: [
       {
         questions: range(48, 52),

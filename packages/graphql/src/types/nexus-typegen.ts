@@ -179,6 +179,14 @@ export interface NexusGenObjects {
     pointsAwarded?: number | null; // Float
     score: number; // Float!
   }
+  InstanceResults: { // root type
+    blockIx: number; // Int!
+    id: string; // ID!
+    instanceIx: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    results: NexusGenScalars['JSONObject']; // JSONObject!
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+  }
   LeaderboardEntry: { // root type
     avatar?: string | null; // String
     id: string; // ID!
@@ -264,7 +272,11 @@ export interface NexusGenObjects {
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    subscriptions?: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+    subscriptions?: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
+  }
+  PublicSubscriptionData: { // root type
+    endpoint: string; // String!
+    id: number; // Int!
   }
   PushSubscription: { // root type
     auth: string; // String!
@@ -313,10 +325,11 @@ export interface NexusGenObjects {
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
   }
-  Subscription: { // root type
-    endpoint: string; // String!
-    id: number; // Int!
+  SessionEvaluation: { // root type
+    id: string; // ID!
+    instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
+  Subscription: {};
   User: { // root type
     description?: string | null; // String
     email: string; // String!
@@ -432,6 +445,14 @@ export interface NexusGenFieldTypes {
     pointsAwarded: number | null; // Float
     score: number; // Float!
   }
+  InstanceResults: { // field return type
+    blockIx: number; // Int!
+    id: string; // ID!
+    instanceIx: number; // Int!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    results: NexusGenScalars['JSONObject']; // JSONObject!
+    status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
+  }
   LeaderboardEntry: { // field return type
     avatar: string | null; // String
     id: string; // ID!
@@ -546,7 +567,11 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    subscriptions: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+    subscriptions: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
+  }
+  PublicSubscriptionData: { // field return type
+    endpoint: string; // String!
+    id: number; // Int!
   }
   PushSubscription: { // field return type
     auth: string; // String!
@@ -566,6 +591,7 @@ export interface NexusGenFieldTypes {
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
+    sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
@@ -609,9 +635,12 @@ export interface NexusGenFieldTypes {
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
   }
+  SessionEvaluation: { // field return type
+    id: string; // ID!
+    instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+  }
   Subscription: { // field return type
-    endpoint: string; // String!
-    id: number; // Int!
+    runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
   }
   User: { // field return type
     description: string | null; // String
@@ -725,6 +754,14 @@ export interface NexusGenFieldTypeNames {
     percentile: 'Float'
     pointsAwarded: 'Float'
     score: 'Float'
+  }
+  InstanceResults: { // field return type name
+    blockIx: 'Int'
+    id: 'ID'
+    instanceIx: 'Int'
+    questionData: 'QuestionData'
+    results: 'JSONObject'
+    status: 'SessionBlockStatus'
   }
   LeaderboardEntry: { // field return type name
     avatar: 'String'
@@ -840,7 +877,11 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
-    subscriptions: 'Subscription'
+    subscriptions: 'PublicSubscriptionData'
+  }
+  PublicSubscriptionData: { // field return type name
+    endpoint: 'String'
+    id: 'Int'
   }
   PushSubscription: { // field return type name
     auth: 'String'
@@ -860,6 +901,7 @@ export interface NexusGenFieldTypeNames {
     runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
+    sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     userProfile: 'User'
     userSessions: 'Session'
@@ -903,9 +945,12 @@ export interface NexusGenFieldTypeNames {
     status: 'SessionBlockStatus'
     timeLimit: 'Int'
   }
+  SessionEvaluation: { // field return type name
+    id: 'ID'
+    instanceResults: 'InstanceResults'
+  }
   Subscription: { // field return type name
-    endpoint: 'String'
-    id: 'Int'
+    runningSessionUpdated: 'SessionBlock'
   }
   User: { // field return type name
     description: 'String'
@@ -1064,7 +1109,15 @@ export interface NexusGenArgTypes {
     session: { // args
       id: string; // ID!
     }
+    sessionEvaluation: { // args
+      id: string; // ID!
+    }
     sessionLeaderboard: { // args
+      sessionId: string; // ID!
+    }
+  }
+  Subscription: {
+    runningSessionUpdated: { // args
       sessionId: string; // ID!
     }
   }

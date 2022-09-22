@@ -452,13 +452,13 @@ describe('API', () => {
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {
-                    "type": "FREE_TEXT",
+                    "type": "NUMERICAL",
                   },
                 },
                 Object {
                   "id": Any<Number>,
                   "questionData": Object {
-                    "type": "NUMERICAL",
+                    "type": "SC",
                   },
                 },
               ],

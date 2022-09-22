@@ -85,7 +85,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   >
                     <a
                       onClick={() =>
-                        router.push(`sessions/cockpit/${session.id}`)
+                        router.push(`sessions/${session.id}/cockpit`)
                       }
                       className="my-auto text-center"
                     >

@@ -72,7 +72,7 @@ function Header({
         )}
         {participant && !participant?.avatar && (
           <Link href="/editProfile">
-            <Button className="text-white bg-uzh-red-100 border-uzh-red-100">
+            <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
               Profil einrichten
             </Button>
           </Link>

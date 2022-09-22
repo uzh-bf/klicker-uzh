@@ -1,3 +1,4 @@
+import type { PubSub } from '@graphql-yoga/node'
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 import type Redis from 'ioredis'
@@ -10,6 +11,7 @@ interface BaseContext {
 export interface Context extends BaseContext {
   prisma: PrismaClient
   redisExec: Redis
+  pubSub: PubSub<any>
 }
 
 export interface ContextWithOptionalUser extends Context {

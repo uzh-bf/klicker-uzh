@@ -15,13 +15,12 @@ function Leaderboard({
 }: LeaderboardProps): React.ReactElement {
   const { data, loading } = useQuery(GetSessionLeaderboardDocument, {
     variables: { sessionId },
+    fetchPolicy: 'network-only',
   })
 
   if (loading || !data) {
     return <div>loading</div>
   }
-
-  console.warn(data)
 
   return (
     <div className={twMerge(className, '')}>

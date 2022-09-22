@@ -165,7 +165,7 @@ const Index = function () {
 
   return (
     <Layout>
-      <div className="flex flex-col md:w-full md:max-w-lg md:p-8 md:m-auto md:border md:rounded">
+      <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:m-auto md:border md:rounded">
         <H1 className="text-xl">Aktive Sessions ({activeSessions.length})</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
@@ -181,7 +181,7 @@ const Index = function () {
                   />
                 </Button.Icon>
                 <Button.Label className="flex-1">
-                  <div className="flex flex-row items-center justify-between">
+                  <div className="flex flex-col items-center justify-between md:flex-row">
                     <div>{session.displayName}</div>
                     <div className="text-sm">{session.courseName}</div>
                   </div>

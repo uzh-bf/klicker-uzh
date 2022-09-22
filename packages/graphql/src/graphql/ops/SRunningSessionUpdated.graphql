@@ -1,0 +1,24 @@
+# import "./FQuestionDataWithoutSolutions.graphql"
+
+subscription RunningSessionUpdated($sessionId: ID!) {
+  runningSessionUpdated(sessionId: $sessionId) {
+    id
+    status
+    expiresAt
+    timeLimit
+    randomSelection
+    execution
+    instances {
+      id
+      attachments {
+        id
+        href
+        name
+        originalName
+        description
+        type
+      }
+      ...QuestionDataWithoutSolutions
+    }
+  }
+}
