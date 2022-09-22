@@ -5,6 +5,7 @@ import * as DATA_BF1 from './data/BF1.js'
 
 import {
   prepareCourse,
+  prepareLearningElement,
   prepareMicroSession,
   prepareQuestion,
   prepareSession,
@@ -68,18 +69,18 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
     `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount + 1}`
   )
 
-  // const learningElementsBF1 = await Promise.all(
-  //   DATA_BF1.LEARNING_ELEMENTS.map((data) =>
-  //     prisma.learningElement.upsert(
-  //       prepareLearningElement({
-  //         ...data,
-  //         ownerId: userBF1.id,
-  //         courseId: courseBF1.id,
-  //         questions: questionsBF1.filter((q) => data.questions.includes(q.id)),
-  //       })
-  //     )
-  //   )
-  // )
+  const learningElementsBF1 = await Promise.all(
+    DATA_BF1.LEARNING_ELEMENTS.map((data) =>
+      prisma.learningElement.upsert(
+        prepareLearningElement({
+          ...data,
+          ownerId: userBF1.id,
+          courseId: courseBF1.id,
+          questions: questionsBF1.filter((q) => data.questions.includes(q.id)),
+        })
+      )
+    )
+  )
 
   const sessionsBF1 = await Promise.all(
     DATA_BF1.SESSIONS.map((data) =>
