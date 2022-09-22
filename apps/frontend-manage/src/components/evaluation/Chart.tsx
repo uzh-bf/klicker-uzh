@@ -8,6 +8,7 @@ interface ChartProps {
   questionType: QuestionType
   data: { value: string | number; correct: boolean; votes: number }[]
   showSolution: boolean
+  options?: any
 }
 
 const defaultValues = {}
@@ -16,6 +17,7 @@ function Chart({
   questionType,
   data,
   showSolution,
+  options,
 }: ChartProps): React.ReactElement {
   const totalResponses = data.reduce((acc, curr) => acc + curr.votes, 0)
 
@@ -34,7 +36,13 @@ function Chart({
       />
     )
   } else if (questionType === 'NUMERICAL') {
-    return <Histogram data={data} numBins={20} />
+    return (
+      <Histogram
+        data={data}
+        min={options?.restrictions?.min}
+        max={options?.restrictions?.max}
+      />
+    )
   } else if (questionType === 'FREE_TEXT') {
     return <Wordcloud data={data} />
   } else {

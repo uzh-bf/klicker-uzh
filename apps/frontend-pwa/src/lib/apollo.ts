@@ -6,7 +6,6 @@ import {
   NormalizedCacheObject,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
-import { concatPagination } from '@apollo/client/utilities'
 import merge from 'deepmerge'
 import getConfig from 'next/config'
 import Router from 'next/router'
@@ -65,15 +64,7 @@ function createApolloClient() {
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
     link: from([errorLink, httpLink]),
-    cache: new InMemoryCache({
-      typePolicies: {
-        Query: {
-          fields: {
-            allPosts: concatPagination(),
-          },
-        },
-      },
-    }),
+    cache: new InMemoryCache(),
   })
 }
 

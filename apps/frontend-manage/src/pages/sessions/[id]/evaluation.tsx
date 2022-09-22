@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { QuestionType } from '@klicker-uzh/prisma'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -17,67 +16,6 @@ function Evaluation() {
   const router = useRouter()
   // TODO: replace with corresponding database field and query
   const [showSolution, setShowSolution] = useState(true)
-
-  // TODO: replace dummy data with actual results from DB
-  const dummyData: {
-    questionType: QuestionType
-    data: { value: string | number; correct: boolean; votes: number }[]
-  }[] = [
-    {
-      questionType: 'NUMERICAL',
-      data: [
-        { value: 3, correct: true, votes: 10 },
-        { value: 5, correct: true, votes: 12 },
-        { value: 17, correct: false, votes: 3 },
-        { value: 92, correct: true, votes: 1 },
-        { value: 11, correct: false, votes: 30 },
-      ],
-    },
-    {
-      questionType: 'FREE_TEXT',
-      data: [
-        { value: 'Answer 1', correct: true, votes: 2 },
-        { value: 'Answer 2', correct: false, votes: 6 },
-        { value: 'Answer 3', correct: true, votes: 12 },
-        { value: 'Answer 4', correct: false, votes: 4 },
-      ],
-    },
-    {
-      questionType: 'NUMERICAL',
-      data: [
-        { value: 3, correct: true, votes: 10 },
-        { value: 1, correct: true, votes: 12 },
-        { value: 7, correct: false, votes: 3 },
-        { value: 2, correct: true, votes: 1 },
-        { value: 1, correct: false, votes: 30 },
-        { value: 1.5, correct: false, votes: 4 },
-      ],
-    },
-    {
-      questionType: 'SC',
-      data: [
-        { value: 'A', votes: 10, correct: true },
-        { value: 'B', votes: 1, correct: false },
-        { value: 'C', votes: 20, correct: true },
-        { value: 'D', votes: 10, correct: false },
-        { value: 'E', votes: 11, correct: false },
-      ],
-    },
-    {
-      questionType: 'NUMERICAL',
-      data: [
-        { value: 3, correct: true, votes: 10 },
-        { value: 1, correct: true, votes: 12 },
-        { value: 7, correct: false, votes: 3 },
-        { value: 2, correct: true, votes: 1 },
-        { value: 1, correct: false, votes: 30 },
-        { value: 1.5, correct: false, votes: 4 },
-        { value: 100, correct: false, votes: 30 },
-        { value: 18, correct: false, votes: 20 },
-        { value: 61, correct: false, votes: 30 },
-      ],
-    },
-  ]
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
@@ -146,7 +84,7 @@ function Evaluation() {
           value: instance.questionData.options.restrictions,
           correct: undefined,
         })
-        instance.questionData.options.solutionRanges.forEach(
+        instance.questionData.options.solutionRanges?.forEach(
           (range: { min: number; max: number }) => {
             innerArray.push({
               value: range,
@@ -172,15 +110,19 @@ function Evaluation() {
   }
 
   function getChartData(data: any) {
-    // TODO: implement
-    // console.log(data?.sessionEvaluation?.instanceResults)
-    return data?.sessionEvaluation?.instanceResults
+    return data?.sessionEvaluation?.instanceResults.map((result) => ({
+      type: result.questionData.type,
+      data: Object.values(result.results).map((answer) => ({
+        value: answer.value,
+        votes: answer.count,
+      })),
+    }))
   }
 
   const tabs = getTabs(data)
   const questions = getQuestions(data)
   const answerCollection = getAnswers(data)
-  const chartData = dummyData // TODO: replace with getChartData(data)
+  const chartData = getChartData(data)
 
   return (
     <div className="mx-4 mt-2">
@@ -210,6 +152,7 @@ function Evaluation() {
             </TabsPrimitive.Trigger>
           ))}
         </TabsPrimitive.List>
+
         {questions.map((question: any, index: number) => (
           <TabsPrimitive.Content
             key={`tab-content-${index}`}
@@ -223,7 +166,7 @@ function Evaluation() {
             <div className="flex flex-row">
               <div className="w-2/3">
                 <Chart
-                  questionType={dummyData[index]?.questionType}
+                  questionType={chartData[index]?.type}
                   data={chartData[index]?.data}
                   showSolution={showSolution}
                 />
@@ -260,9 +203,10 @@ function Evaluation() {
                         </div>
                       )
                     )}
+
                   {answerCollection[index].type === 'NUMERICAL' && (
                     <div>
-                      <div className="mb-3">
+                      {/* <div className="mb-3">
                         {answerCollection[index].answers
                           .filter(
                             (answer: any) =>
@@ -274,8 +218,8 @@ function Evaluation() {
                               und {answer.value.max}
                             </div>
                           ))}
-                      </div>
-                      <div className="font-bold">Korrekte Antwortbereiche:</div>
+                      </div> */}
+                      <div className="font-bold">Erlaubter Antwortbereich:</div>
                       {answerCollection[index].answers.map(
                         (
                           answer: {
@@ -285,13 +229,14 @@ function Evaluation() {
                           innerIndex: number
                         ) => (
                           <div key={innerIndex}>
-                            [{answer.value.min || '-∞'},
-                            {answer.value.max || '+∞'}]
+                            [{answer.value.min ?? '-∞'},
+                            {answer.value.max ?? '+∞'}]
                           </div>
                         )
                       )}
                     </div>
                   )}
+
                   {answerCollection[index].type === 'FREE_TEXT' && (
                     <div>
                       <div className="font-bold">Schlüsselwörter Lösung:</div>

@@ -8,8 +8,8 @@ import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import { useQuery } from '@apollo/client'
-import { addApolloState } from '@lib/apollo'
-import { getRunningSessionData } from '@lib/joinData'
+import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import getConfig from 'next/config'
 import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
@@ -48,10 +48,13 @@ function Index({ id }: Props) {
     instanceId: number,
     answer: any
   ) => {
-    let requestOptions = {}
+    let requestOptions: RequestInit = {
+      method: 'POST',
+      credentials: 'include',
+    }
     if (QUESTION_GROUPS.CHOICES.includes(type)) {
       requestOptions = {
-        method: 'POST',
+        ...requestOptions,
         body: JSON.stringify({
           instanceId: instanceId,
           sessionId: id,
@@ -63,7 +66,7 @@ function Index({ id }: Props) {
       QUESTION_GROUPS.FREE_TEXT.includes(type)
     ) {
       requestOptions = {
-        method: 'POST',
+        ...requestOptions,
         body: JSON.stringify({
           instanceId: instanceId,
           sessionId: id,
@@ -195,9 +198,21 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  const withNewSessionData = await getRunningSessionData(ctx)
+  const apolloClient = initializeApollo()
 
-  return addApolloState(withNewSessionData.apolloClient, {
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  await apolloClient.query({
+    query: GetRunningSessionDocument,
+    variables: {
+      id: ctx.query?.id as string,
+    },
+  })
+
+  return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
     },

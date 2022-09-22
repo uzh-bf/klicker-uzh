@@ -1,12 +1,16 @@
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
-import React from 'react'
-
+import { maxBy, minBy, round, sumBy } from 'lodash'
+import React, { useMemo, useState } from 'react'
 // TODO: replace lodash with ramda
-import _maxBy from 'lodash/maxBy'
-import _minBy from 'lodash/minBy'
-import _round from 'lodash/round'
-import _sumBy from 'lodash/sumBy'
-import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 interface HistogramProps {
   brush?: boolean
@@ -17,7 +21,8 @@ interface HistogramProps {
   }[]
   solution?: number
   statistics?: any
-  numBins: number
+  min?: number
+  max?: number
 }
 
 const defaultValues = {
@@ -31,65 +36,76 @@ function Histogram({
   data,
   solution,
   statistics,
-  numBins,
+  min,
+  max,
 }: HistogramProps): React.ReactElement {
-  // calculate the borders of the histogram
-  const min = +_minBy(data, (o): number => +o.value).value
-  const max = +_maxBy(data, (o): number => +o.value).value
+  const [numBins, setNumBins] = useState(20)
 
-  // calculate the number of bins according to freedman diaconis
-  const defaultThreshold = thresholdFreedmanDiaconis(
-    data.map((o): number => +o.value),
-    min,
-    max
-  )
+  const processedData = useMemo(() => {
+    const mappedData = data.map((item) => ({
+      value: +item.value,
+      votes: +item.votes,
+    }))
 
-  // setup the D3 histogram generator
-  // use either the passed number of bins or the default threshold
-  const histGen = histogram()
-    .domain([min, max])
-    .value((o): number => _round(+o.value, 2))
-    .thresholds(numBins || defaultThreshold)
+    // calculate the borders of the histogram
+    const computedMin = min ?? minBy(mappedData, (o): number => o.value)?.value
+    const computedMax = max ?? maxBy(mappedData, (o): number => o.value)?.value
 
-  // bin the data using D3
-  const bins = histGen(data)
+    // calculate the number of bins according to freedman diaconis
+    const defaultThreshold = thresholdFreedmanDiaconis(
+      mappedData.map((o): number => +o.value),
+      computedMin,
+      computedMax
+    )
 
-  // map the bins to recharts objects
-  const mappedData = bins.map((bin): any => ({
-    votes: _sumBy(bin, 'votes'),
-    value: `${_round(_round(bin.x0, 2) / _round(bin.x1, 2), 1)}`,
-  }))
+    // setup the D3 histogram generator
+    // use either the passed number of bins or the default threshold
+    const histGen = histogram()
+      .domain([computedMin, computedMax])
+      .value((o): number => round(o.value, 2))
+      .thresholds(numBins || defaultThreshold)
+
+    // bin the data using D3
+    const bins = histGen(mappedData)
+
+    // map the bins to recharts objects
+    return bins.map((bin): any => ({
+      votes: sumBy(bin, 'votes'),
+      value: `${round(round(bin.x0, 2) / round(bin.x1, 2), 1)}`,
+      label: `${bin.x0}/${bin.x1}`,
+    }))
+  }, [data, numBins])
 
   return (
-    <BarChart
-      data={mappedData}
-      margin={{
-        bottom: 16,
-        left: -24,
-        right: 24,
-        top: 24,
-      }}
-      width={800}
-      height={400}
-    >
-      <XAxis dataKey="value" />
-      <YAxis
-        domain={[
-          0,
-          (dataMax: number): number => {
-            const rounded = Math.ceil(dataMax * 1.1)
-            if (rounded % 2 === 0) {
-              return rounded
-            }
-            return rounded + 1
-          },
-        ]}
-      />
-      <CartesianGrid strokeDasharray="5 5" />
-      <Tooltip />
-      <Bar dataKey="votes" fill="rgb(19, 149, 186)" />
+    <div>
+      <ResponsiveContainer minWidth={800} height={400}>
+        <BarChart
+          data={processedData}
+          margin={{
+            bottom: 16,
+            left: -24,
+            right: 24,
+            top: 24,
+          }}
+        >
+          <XAxis dataKey="label" />
+          <YAxis
+            domain={[
+              0,
+              (dataMax: number): number => {
+                const rounded = Math.ceil(dataMax * 1.1)
+                if (rounded % 2 === 0) {
+                  return rounded
+                }
+                return rounded + 1
+              },
+            ]}
+          />
+          <CartesianGrid strokeDasharray="5 5" />
+          <Tooltip />
+          <Bar dataKey="votes" fill="rgb(19, 149, 186)" />
 
-      {/* // TODO: reintroduce statistics when ready
+          {/* // TODO: reintroduce statistics when ready
       {statistics && [
         <ReferenceLine
           isFront
@@ -148,7 +164,18 @@ function Histogram({
 
       { // TODO
         brush && <Brush dataKey="value" height={30} stroke="#8884d8" />} */}
-    </BarChart>
+        </BarChart>
+      </ResponsiveContainer>
+
+      <div>
+        Bins:{' '}
+        <input
+          type="number"
+          value={numBins}
+          onChange={(e) => setNumBins(+e.target.value)}
+        />
+      </div>
+    </div>
   )
 }
 

@@ -47,7 +47,7 @@ export async function loginUser(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '1w',
+      expiresIn: '2w',
     }
   )
 
@@ -55,9 +55,9 @@ export async function loginUser(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   return user.id
@@ -70,7 +70,7 @@ export async function logoutUser(_, ctx: ContextWithUser) {
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   return ctx.user.sub
@@ -97,7 +97,7 @@ export function createParticipantToken(participantId: string) {
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '1w',
+      expiresIn: '2w',
     }
   )
 }
@@ -133,9 +133,9 @@ export async function loginParticipant(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   // TODO: return more data (e.g. Avatar etc.)
@@ -149,7 +149,7 @@ export async function logoutParticipant(_, ctx: ContextWithUser) {
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   return ctx.user.sub

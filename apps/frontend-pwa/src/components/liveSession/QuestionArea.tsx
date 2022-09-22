@@ -67,7 +67,7 @@ function QuestionArea({
       questions[remainingQuestions[0]]?.type
     )
       ? new Array(questions[remainingQuestions[0]]?.options.length, false)
-      : undefined,
+      : '',
   })
 
   useEffect((): void => {
@@ -171,11 +171,15 @@ function QuestionArea({
     const inputEmpty =
       inputValue !== 0 && (!inputValue || inputValue.length === 0)
 
+    let validator = Yup.number().required()
+    if (currentQuestion.options?.restrictions?.min) {
+      validator = validator.min(currentQuestion.options?.restrictions?.min)
+    }
+    if (currentQuestion.options?.restrictions?.max) {
+      validator = validator.max(currentQuestion.options?.restrictions?.max)
+    }
     const schema = Yup.object().shape({
-      input: Yup.number()
-        .min(currentQuestion.options?.restrictions?.min)
-        .max(currentQuestion.options?.restrictions?.max)
-        .required(),
+      input: validator,
     })
 
     try {
@@ -216,7 +220,7 @@ function QuestionArea({
     setInputState({
       inputEmpty: true,
       inputValid: false,
-      inputValue: undefined,
+      inputValue: '',
     })
     setRemainingQuestions(newRemaining)
   }

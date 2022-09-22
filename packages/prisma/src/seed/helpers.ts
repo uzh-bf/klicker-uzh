@@ -283,6 +283,7 @@ export function prepareSession({
   ...args
 }: {
   blocks: {
+    order: number
     questions: BaseQuestionData[]
     expiresAt?: Date
     timeLimit?: number
@@ -305,7 +306,7 @@ export function prepareSession({
     create: {
       ...args,
       blocks: {
-        create: blocks.map(({ questions }) => {
+        create: blocks.map(({ questions, ...rest }) => {
           const preparedInstances = questions.map((question, ix) =>
             prepareQuestionInstance({
               order: ix,
@@ -315,6 +316,7 @@ export function prepareSession({
           )
 
           return {
+            ...rest,
             instances: {
               create: preparedInstances,
             },
