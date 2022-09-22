@@ -108,7 +108,6 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
     context: enhanceContext({ prisma, redisExec, pubSub }),
     logging: true,
     cors(request) {
-      console.warn(request, request.headers)
       const requestOrigin = request.headers.get('origin') as string
       return {
         origin: requestOrigin,
