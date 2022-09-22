@@ -8,7 +8,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { dissoc, mapObjIndexed, pick } from 'ramda'
+import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
@@ -274,15 +274,16 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
 
   // if the session is part of a course, update the course leaderboard with the accumulated points
   if (session.courseId) {
-    const sessionLB = ctx.redisExec.hgetall(`s:${id}:lb`)
+    const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+
     if (sessionLB) {
-      await ctx.prisma.$transaction(
+      const result = await ctx.prisma.$transaction(
         Object.entries(sessionLB).map(([participantId, score]) =>
           ctx.prisma.leaderboardEntry.upsert({
             where: {
               type_participantId_courseId: {
                 type: 'COURSE',
-                courseId: session.courseId,
+                courseId: session.courseId!,
                 participantId,
               },
             },
@@ -290,7 +291,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
               type: 'COURSE',
               course: {
                 connect: {
-                  id: session.courseId,
+                  id: session.courseId!,
                 },
               },
               participant: {
@@ -301,7 +302,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
               participation: {
                 connect: {
                   courseId_participantId: {
-                    courseId: session.courseId,
+                    courseId: session.courseId!,
                     participantId,
                   },
                 },
@@ -622,7 +623,7 @@ export async function deactivateSessionBlock(
       activeBlock: session.activeBlock,
     })
 
-  console.log(instanceResults, sessionLeaderboard, blockLeaderboard)
+  // console.log(instanceResults, sessionLeaderboard, blockLeaderboard)
 
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.session.update({
@@ -682,28 +683,37 @@ export async function deactivateSessionBlock(
           },
         },
       },
-      // leaderboard: {
-      //   upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
-      //     where: {
-      //       type_participantId_sessionId: {
-      //         type: 'SESSION',
-      //         participantId: id,
-      //         sessionId,
-      //       },
-      //     },
-      //     create: {
-      //       type: 'SESSION',
-      //       participant: {
-      //         connect: { id },
-      //       },
-      //       score: Number(score),
-      //       username: id,
-      //     },
-      //     update: {
-      //       score: Number(score),
-      //     },
-      //   })),
-      // },
+      leaderboard: session.isGamificationEnabled
+        ? {
+            upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
+              where: {
+                type_participantId_sessionId: {
+                  type: 'SESSION',
+                  participantId: id,
+                  sessionId,
+                },
+              },
+              create: {
+                type: 'SESSION',
+                participant: {
+                  connect: { id },
+                },
+                score: Number(score),
+                sessionParticipation: {
+                  connect: {
+                    courseId_participantId: {
+                      courseId: session.courseId as string,
+                      participantId: id,
+                    },
+                  },
+                },
+              },
+              update: {
+                score: Number(score),
+              },
+            })),
+          }
+        : undefined,
     },
     include: {
       blocks: {
@@ -827,7 +837,7 @@ export async function getLeaderboard(
   { sessionId }: GetLeaderboardArgs,
   ctx: ContextWithUser
 ) {
-  const top5 = await ctx.prisma.session
+  const top10 = await ctx.prisma.session
     .findUnique({
       where: {
         id: sessionId,
@@ -837,25 +847,25 @@ export async function getLeaderboard(
       orderBy: {
         score: 'desc',
       },
+      include: {
+        sessionParticipation: true,
+        participant: true,
+      },
       take: 10,
     })
 
-  // TODO: extract self into separate query to allow for improved caching?
-  // const self = await ctx.prisma.leaderboardEntry.findUnique({
-  //   where: {
-  //     type_participantId_sessionId: {
-  //       type: 'SESSION',
-  //       participantId: ctx.user.sub,
-  //       sessionId,
-  //     },
-  //   },
-  // })
+  return top10.flatMap((entry) => {
+    if (!entry.sessionParticipation.isActive) return []
 
-  // if (!top5 || !self) return null
-  if (!top5) return null
-
-  // return [...top5, self]
-  return top5
+    return {
+      id: entry.id,
+      participantId: ctx.user.sub,
+      username: entry.participant.username,
+      avatar: entry.participant.avatar,
+      score: entry.score,
+      self: entry.participantId === ctx.user.sub,
+    }
+  })
 }
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
@@ -1162,6 +1172,11 @@ export async function getSessionEvaluation(
           results: results.results,
         }
       }
+    )
+
+    activeInstanceResults = sortWith(
+      [ascend(prop('blockIx')), ascend(prop('instanceIx'))],
+      activeInstanceResults
     )
   }
 
