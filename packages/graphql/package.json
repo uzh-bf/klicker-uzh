@@ -67,6 +67,7 @@
     "web-push": "3.5.0"
   },
   "dependencies": {
+    "@graphql-yoga/node": "^2.13.13",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.5",
     "generate-password": "1.7.0",

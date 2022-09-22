@@ -1,9 +1,12 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetRunningSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetRunningSessionDocument,
+  RunningSessionUpdatedDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
@@ -25,9 +28,27 @@ interface Props {
 function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { data } = useQuery(GetRunningSessionDocument, {
+  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
   })
+
+  useEffect(() => {
+    subscribeToMore({
+      document: RunningSessionUpdatedDocument,
+      variables: {
+        sessionId: id,
+      },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return Object.assign({}, prev, {
+          session: {
+            ...prev.session,
+            activeBlock: subscriptionData.data.runningSessionUpdated,
+          },
+        })
+      },
+    })
+  }, [id, subscribeToMore])
 
   if (!data?.session) return <p>Loading...</p>
 

@@ -15,7 +15,7 @@ import { AuthSchema, Rules } from './authorization'
 
 import { useSentry } from '@envelop/sentry'
 
-function prepareApp({ prisma, redisCache, redisExec }: any) {
+function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
   let cache = undefined
   if (redisCache) {
     try {
@@ -86,7 +86,7 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
       }),
       useValidationCache(),
       useParserCache(),
-      process.env.SENTRY_ENABLED &&
+      process.env.SENTRY_DSN &&
         useSentry({
           includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
           includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
@@ -105,13 +105,15 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
           })
         : null,
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ prisma, redisExec }),
+    context: enhanceContext({ prisma, redisExec, pubSub }),
     logging: true,
     cors(request) {
+      console.warn(request, request.headers)
       const requestOrigin = request.headers.get('origin') as string
       return {
         origin: requestOrigin,
         credentials: true,
+        methods: ['GET', 'POST', 'OPTIONS'],
       }
     },
   })

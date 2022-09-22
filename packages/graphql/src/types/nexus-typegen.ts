@@ -272,7 +272,11 @@ export interface NexusGenObjects {
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    subscriptions?: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+    subscriptions?: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
+  }
+  PublicSubscriptionData: { // root type
+    endpoint: string; // String!
+    id: number; // Int!
   }
   PushSubscription: { // root type
     auth: string; // String!
@@ -325,10 +329,7 @@ export interface NexusGenObjects {
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
-  Subscription: { // root type
-    endpoint: string; // String!
-    id: number; // Int!
-  }
+  Subscription: {};
   User: { // root type
     description?: string | null; // String
     email: string; // String!
@@ -566,7 +567,11 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
-    subscriptions: NexusGenRootTypes['Subscription'][] | null; // [Subscription!]
+    subscriptions: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
+  }
+  PublicSubscriptionData: { // field return type
+    endpoint: string; // String!
+    id: number; // Int!
   }
   PushSubscription: { // field return type
     auth: string; // String!
@@ -635,8 +640,7 @@ export interface NexusGenFieldTypes {
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
   Subscription: { // field return type
-    endpoint: string; // String!
-    id: number; // Int!
+    runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
   }
   User: { // field return type
     description: string | null; // String
@@ -873,7 +877,11 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
-    subscriptions: 'Subscription'
+    subscriptions: 'PublicSubscriptionData'
+  }
+  PublicSubscriptionData: { // field return type name
+    endpoint: 'String'
+    id: 'Int'
   }
   PushSubscription: { // field return type name
     auth: 'String'
@@ -942,8 +950,7 @@ export interface NexusGenFieldTypeNames {
     instanceResults: 'InstanceResults'
   }
   Subscription: { // field return type name
-    endpoint: 'String'
-    id: 'Int'
+    runningSessionUpdated: 'SessionBlock'
   }
   User: { // field return type name
     description: 'String'
@@ -1106,6 +1113,11 @@ export interface NexusGenArgTypes {
       id: string; // ID!
     }
     sessionLeaderboard: { // args
+      sessionId: string; // ID!
+    }
+  }
+  Subscription: {
+    runningSessionUpdated: { // args
       sessionId: string; // ID!
     }
   }

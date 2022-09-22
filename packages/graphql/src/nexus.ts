@@ -1,3 +1,4 @@
+import { filter, pipe } from '@graphql-yoga/node'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
@@ -13,6 +14,7 @@ import {
   nonNull,
   objectType,
   stringArg,
+  subscriptionType,
 } from 'nexus'
 import {
   Context,
@@ -361,8 +363,8 @@ export const Participant = objectType({
   },
 })
 
-export const Subscription = objectType({
-  name: 'Subscription',
+export const PublicSubscriptionData = objectType({
+  name: 'PublicSubscriptionData',
   definition(t) {
     t.nonNull.int('id')
 
@@ -381,7 +383,7 @@ export const Participation = objectType({
       type: Course,
     })
     t.list.nonNull.field('subscriptions', {
-      type: Subscription,
+      type: PublicSubscriptionData,
     })
     t.list.string('completedMicroSessions')
   },
@@ -1096,6 +1098,23 @@ export const Mutation = objectType({
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
       },
+    })
+  },
+})
+
+export const Subscription = subscriptionType({
+  definition(t) {
+    t.field('runningSessionUpdated', {
+      type: SessionBlock,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('runningSessionUpdated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload.block,
     })
   },
 })

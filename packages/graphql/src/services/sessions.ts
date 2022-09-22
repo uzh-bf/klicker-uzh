@@ -272,6 +272,56 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     return null
   }
 
+  // if the session is part of a course, update the course leaderboard with the accumulated points
+  if (session.courseId) {
+    const sessionLB = ctx.redisExec.hgetall(`s:${id}:lb`)
+    if (sessionLB) {
+      await ctx.prisma.$transaction(
+        Object.entries(sessionLB).map(([participantId, score]) =>
+          ctx.prisma.leaderboardEntry.upsert({
+            where: {
+              type_participantId_courseId: {
+                type: 'COURSE',
+                courseId: session.courseId,
+                participantId,
+              },
+            },
+            create: {
+              type: 'COURSE',
+              course: {
+                connect: {
+                  id: session.courseId,
+                },
+              },
+              participant: {
+                connect: {
+                  id: participantId,
+                },
+              },
+              participation: {
+                connect: {
+                  courseId_participantId: {
+                    courseId: session.courseId,
+                    participantId,
+                  },
+                },
+              },
+              score: Number(score),
+            },
+            update: {
+              score: {
+                increment: Number(score),
+              },
+            },
+          })
+        )
+      )
+    }
+  }
+
+  ctx.redisExec.unlink(`s:${id}:meta`)
+  ctx.redisExec.unlink(`s:${id}:lb`)
+
   return ctx.prisma.session.update({
     where: {
       id,
@@ -341,6 +391,11 @@ export async function activateSessionBlock(
         },
       },
     },
+  })
+
+  ctx.pubSub.publish('runningSessionUpdated', {
+    sessionId,
+    block: updatedSession.activeBlock,
   })
 
   // initialize the cache for the new active block
@@ -657,6 +712,11 @@ export async function deactivateSessionBlock(
         },
       },
     },
+  })
+
+  ctx.pubSub.publish('runningSessionUpdated', {
+    sessionId,
+    block: null,
   })
 
   // const leaderboardUpdates = Object.entries(sessionLeaderboard).map(

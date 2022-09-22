@@ -478,7 +478,13 @@ export type Participation = {
   course?: Maybe<Course>;
   id: Scalars['Int'];
   isActive: Scalars['Boolean'];
-  subscriptions?: Maybe<Array<Subscription>>;
+  subscriptions?: Maybe<Array<PublicSubscriptionData>>;
+};
+
+export type PublicSubscriptionData = {
+  __typename?: 'PublicSubscriptionData';
+  endpoint: Scalars['String'];
+  id: Scalars['Int'];
 };
 
 export type PushSubscription = {
@@ -646,8 +652,12 @@ export enum SessionStatus {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  endpoint: Scalars['String'];
-  id: Scalars['Int'];
+  runningSessionUpdated?: Maybe<SessionBlock>;
+};
+
+
+export type SubscriptionRunningSessionUpdatedArgs = {
+  sessionId: Scalars['ID'];
 };
 
 export type SubscriptionKeys = {
@@ -848,7 +858,7 @@ export type SubscribeToPushMutationVariables = Exact<{
 }>;
 
 
-export type SubscribeToPushMutation = { __typename?: 'Mutation', subscribeToPush?: { __typename?: 'Participation', id: number, subscriptions?: Array<{ __typename?: 'Subscription', id: number, endpoint: string }> | null } | null };
+export type SubscribeToPushMutation = { __typename?: 'Mutation', subscribeToPush?: { __typename?: 'Participation', id: number, subscriptions?: Array<{ __typename?: 'PublicSubscriptionData', id: number, endpoint: string }> | null } | null };
 
 export type UpdateParticipantProfileMutationVariables = Exact<{
   avatar?: InputMaybe<Scalars['String']>;
@@ -957,7 +967,7 @@ export type ParticipationsQueryVariables = Exact<{
 }>;
 
 
-export type ParticipationsQuery = { __typename?: 'Query', participations?: Array<{ __typename?: 'Participation', id: number, completedMicroSessions?: Array<string | null> | null, subscriptions?: Array<{ __typename?: 'Subscription', id: number, endpoint: string }> | null, course?: { __typename?: 'Course', id: string, displayName: string, microSessions: Array<{ __typename?: 'MicroSession', id: string, displayName: string, scheduledStartAt: any, scheduledEndAt: any }>, sessions: Array<{ __typename?: 'Session', id: string, displayName: string, linkTo?: string | null }> } | null }> | null };
+export type ParticipationsQuery = { __typename?: 'Query', participations?: Array<{ __typename?: 'Participation', id: number, completedMicroSessions?: Array<string | null> | null, subscriptions?: Array<{ __typename?: 'PublicSubscriptionData', id: number, endpoint: string }> | null, course?: { __typename?: 'Course', id: string, displayName: string, microSessions: Array<{ __typename?: 'MicroSession', id: string, displayName: string, scheduledStartAt: any, scheduledEndAt: any }>, sessions: Array<{ __typename?: 'Session', id: string, displayName: string, linkTo?: string | null }> } | null }> | null };
 
 export type SelfQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -968,6 +978,13 @@ export type UserProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, isActive: boolean, email: string, shortname: string, description?: string | null } | null };
+
+export type RunningSessionUpdatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['ID'];
+}>;
+
+
+export type RunningSessionUpdatedSubscription = { __typename?: 'Subscription', runningSessionUpdated?: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: boolean | null, execution: number, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments?: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType } | null> | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'FreeTextQuestionOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, contentPlain: string, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } }> } | null };
 
 
 
@@ -1074,6 +1091,7 @@ export type ResolversTypes = {
   Participant: ResolverTypeWrapper<Participant>;
   ParticipantLearningData: ResolverTypeWrapper<ParticipantLearningData>;
   Participation: ResolverTypeWrapper<Participation>;
+  PublicSubscriptionData: ResolverTypeWrapper<PublicSubscriptionData>;
   PushSubscription: ResolverTypeWrapper<PushSubscription>;
   Query: ResolverTypeWrapper<{}>;
   QuestionData: ResolversTypes['ChoicesQuestionData'] | ResolversTypes['FreeTextQuestionData'] | ResolversTypes['NumericalQuestionData'];
@@ -1128,6 +1146,7 @@ export type ResolversParentTypes = {
   Participant: Participant;
   ParticipantLearningData: ParticipantLearningData;
   Participation: Participation;
+  PublicSubscriptionData: PublicSubscriptionData;
   PushSubscription: PushSubscription;
   Query: {};
   QuestionData: ResolversParentTypes['ChoicesQuestionData'] | ResolversParentTypes['FreeTextQuestionData'] | ResolversParentTypes['NumericalQuestionData'];
@@ -1417,7 +1436,13 @@ export type ParticipationResolvers<ContextType = any, ParentType extends Resolve
   course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   isActive?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  subscriptions?: Resolver<Maybe<Array<ResolversTypes['Subscription']>>, ParentType, ContextType>;
+  subscriptions?: Resolver<Maybe<Array<ResolversTypes['PublicSubscriptionData']>>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PublicSubscriptionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['PublicSubscriptionData'] = ResolversParentTypes['PublicSubscriptionData']> = {
+  endpoint?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1512,8 +1537,7 @@ export type SessionEvaluationResolvers<ContextType = any, ParentType extends Res
 };
 
 export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
-  endpoint?: SubscriptionResolver<ResolversTypes['String'], "endpoint", ParentType, ContextType>;
-  id?: SubscriptionResolver<ResolversTypes['Int'], "id", ParentType, ContextType>;
+  runningSessionUpdated?: SubscriptionResolver<Maybe<ResolversTypes['SessionBlock']>, "runningSessionUpdated", ParentType, ContextType, RequireFields<SubscriptionRunningSessionUpdatedArgs, 'sessionId'>>;
 };
 
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
@@ -1554,6 +1578,7 @@ export type Resolvers<ContextType = any> = {
   Participant?: ParticipantResolvers<ContextType>;
   ParticipantLearningData?: ParticipantLearningDataResolvers<ContextType>;
   Participation?: ParticipationResolvers<ContextType>;
+  PublicSubscriptionData?: PublicSubscriptionDataResolvers<ContextType>;
   PushSubscription?: PushSubscriptionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   QuestionData?: QuestionDataResolvers<ContextType>;
@@ -1609,6 +1634,7 @@ export const GetUserSessionsDocument = {"kind":"Document","definitions":[{"kind"
 export const ParticipationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Participations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"endpoint"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"completedMicroSessions"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"microSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"linkTo"}}]}}]}}]}}]}}]} as unknown as DocumentNode<ParticipationsQuery, ParticipationsQueryVariables>;
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
+export const RunningSessionUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"RunningSessionUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningSessionUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"attachments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"href"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"originalName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"}}]}}]}}]}},...QuestionDataWithoutSolutionsFragmentDoc.definitions]} as unknown as DocumentNode<RunningSessionUpdatedSubscription, RunningSessionUpdatedSubscriptionVariables>;
 
       export interface PossibleTypesResultData {
         possibleTypes: {

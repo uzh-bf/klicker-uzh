@@ -285,7 +285,12 @@ type Participation {
   course: Course
   id: Int!
   isActive: Boolean!
-  subscriptions: [Subscription!]
+  subscriptions: [PublicSubscriptionData!]
+}
+
+type PublicSubscriptionData {
+  endpoint: String!
+  id: Int!
 }
 
 type PushSubscription {
@@ -390,8 +395,7 @@ enum SessionStatus {
 }
 
 type Subscription {
-  endpoint: String!
-  id: Int!
+  runningSessionUpdated(sessionId: ID!): SessionBlock
 }
 
 input SubscriptionKeys {
