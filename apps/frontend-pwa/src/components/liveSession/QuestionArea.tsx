@@ -41,9 +41,7 @@ const messages = {
   [QUESTION_TYPES.SC]: <p>Bitte eine einzige Option auswählen:</p>,
   [QUESTION_TYPES.MC]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
   [QUESTION_TYPES.FREE_TEXT]: <p>Bitte eine Antwort eingeben:</p>,
-  [QUESTION_TYPES.NUMERICAL]: (
-    <p>Bitte eine Antwort aus dem vorgegebenen Bereich auswählen:</p>
-  ),
+  [QUESTION_TYPES.NUMERICAL]: <p>Bitte eine Zahl eingeben:</p>,
 }
 
 function QuestionArea({

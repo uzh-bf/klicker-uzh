@@ -55,16 +55,16 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (networkError) console.log(`[Network error]: ${networkError}`)
 })
 
+const httpLink = new HttpLink({
+  uri:
+    typeof window !== 'undefined'
+      ? publicRuntimeConfig.API_URL
+      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+  credentials: 'include',
+})
+
 // TODO: use the schema link when working on the server?
 function createApolloClient() {
-  const httpLink = new HttpLink({
-    uri:
-      typeof window !== 'undefined'
-        ? publicRuntimeConfig.API_URL
-        : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
-    credentials: 'include',
-  })
-
   if (typeof window === 'undefined') {
     return new ApolloClient({
       ssrMode: true,

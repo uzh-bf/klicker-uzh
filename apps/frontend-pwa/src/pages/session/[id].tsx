@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useEffect, useState } from 'react'
@@ -31,6 +32,8 @@ function Index({ id }: Props) {
   const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
   })
+
+  const { data: selfData } = useQuery(SelfDocument)
 
   useEffect(() => {
     subscribeToMore({
@@ -129,7 +132,7 @@ function Index({ id }: Props) {
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     })
   }
-  if (isGamificationEnabled) {
+  if (selfData?.self && isGamificationEnabled) {
     mobileMenuItems.push({
       value: 'leaderboard',
       label: 'Leaderboard',
@@ -155,14 +158,7 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            isGamificationEnabled ? (
-              <div className={twMerge('w-full bg-white min-h-full')}>
-                <Leaderboard sessionId={id} className="hidden md:block" />
-                <div className="md:hidden">Keine Frage aktiv.</div>
-              </div>
-            ) : (
-              <div>Keine Frage aktiv.</div>
-            )
+            <div>Keine Frage aktiv.</div>
           ) : (
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}
@@ -181,9 +177,15 @@ function Index({ id }: Props) {
               execution={activeBlock?.execution || 0}
             />
           )}
+
+          {!activeBlock && selfData?.self && isGamificationEnabled && (
+            <div className={twMerge('w-full bg-white min-h-full')}>
+              <Leaderboard sessionId={id} className="hidden md:block" />
+            </div>
+          )}
         </div>
 
-        {isGamificationEnabled && (
+        {selfData?.self && isGamificationEnabled && (
           <div
             className={twMerge(
               'bg-white hidden min-h-full flex-1 md:p-8',
