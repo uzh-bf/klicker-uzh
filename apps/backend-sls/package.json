@@ -27,7 +27,7 @@
     "@envelop/validation-cache": "4.7.0",
     "@graphql-authz/core": "1.3.0",
     "@graphql-authz/envelop-plugin": "1.0.4",
-    "@graphql-hive/client": "0.18.3",
+    "@graphql-hive/client": "0.18.5",
     "@graphql-yoga/node": "2.13.13",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/prisma": "^2.0.0-alpha.9",
