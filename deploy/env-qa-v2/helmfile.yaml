@@ -29,7 +29,7 @@ releases:
           hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
 
           redisCache:
-            host: klicker-v2-qa-redis-headless
+            host: klicker-v2-qa-redis-master
             port: 6379
             pass: ''
 
