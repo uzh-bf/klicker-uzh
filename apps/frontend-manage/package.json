@@ -59,7 +59,7 @@
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@types/react-tagcloud": "^1.1.7",
-    "@types/sharp": "^0.30.5",
+    "@types/sharp": "^0.31.0",
     "autoprefixer": "10.4.10",
     "eslint": "8.23.1",
     "eslint-config-next": "12.3.1",
