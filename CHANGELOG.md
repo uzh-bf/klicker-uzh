@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.56...v2.0.0-alpha.57) (2022-09-24)
+
+
+### Deployment
+
+* use redis master as a caching connection ([6c8e61a](https://github.com/uzh-bf/klicker-uzh/commit/6c8e61a84058888ee4c0f808e6709ce24152bc8d))
+
+
+### Enhancements
+
+* **frontend-*:** improve header and tab title naming, upgrade next to 12.3.1 ([8b2044b](https://github.com/uzh-bf/klicker-uzh/commit/8b2044b8365068062bab352dc5bb4d05e0d9308e))
+* **packages/prisma:** improve upsertion of existing elements, extend seed for BF1 and AMI ([caf454a](https://github.com/uzh-bf/klicker-uzh/commit/caf454ac34fcb5f96329d042fad06df3b57e3d65))
+
 ## [2.0.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.55...v2.0.0-alpha.56) (2022-09-22)
 
 
