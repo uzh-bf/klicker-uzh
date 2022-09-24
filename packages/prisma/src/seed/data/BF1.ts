@@ -1,5 +1,4 @@
 import Prisma from '@klicker-uzh/prisma'
-import { range } from 'ramda'
 
 const { AttachmentType, QuestionType, SessionStatus } = Prisma
 
@@ -456,7 +455,11 @@ export const QUESTIONS = [
       {
         correct: true,
         value: '11,1 %',
-        feedback: 'Diese Aussage ist korrekt!',
+        feedback: String.raw`
+Diese Aussage ist korrekt!
+$$Rentabilität = \frac{Gewinn}{}$$
+$$11.1\% = \frac{50 }{\frac{600 + 300}{2}}$$
+`,
       },
       {
         value: '26,8 %',
@@ -1076,6 +1079,81 @@ export const QUESTIONS = [
       },
     ],
   },
+  // BF1 Session Woche 02
+  {
+    id: 60,
+    name: 'LKW 1',
+    content: 'Welchen LKW würden Sie kaufen?',
+    contentPlain: 'Welchen LKW würden Sie kaufen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'LKW A',
+      },
+      {
+        value: 'LKW B',
+      },
+    ],
+  },
+  {
+    id: 61,
+    name: 'LKW 2',
+    content: 'Worauf basierte Ihre Entscheidung?',
+    contentPlain: 'Worauf basierte Ihre Entscheidung?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Welcher LKW kostet weniger?',
+      },
+      {
+        value: 'Welcher LKW bringt mehr Gewinn?',
+      },
+      {
+        value: 'Welcher LKW bringt mehr Umsatz?',
+      },
+      {
+        value: 'Gschpüri',
+      },
+      {
+        value: 'Zufall',
+      },
+    ],
+  },
+  {
+    id: 62,
+    name: 'Time Value of Money 1',
+    content:
+      'Entscheiden Sie sich zwischen den beiden Auszahlungen. Ich hätte lieber:',
+    contentPlain:
+      'Entscheiden Sie sich zwischen den beiden Auszahlungen. Ich hätte lieber:',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'CHF 100 heute',
+      },
+      {
+        value: 'CHF 105 in einem Jahr',
+      },
+    ],
+  },
+  {
+    id: 63,
+    name: 'Time Value of Money 2',
+    content:
+      'Entscheiden Sie sich zwischen den beiden Auszahlungen. Ich hätte lieber:',
+    contentPlain:
+      'Entscheiden Sie sich zwischen den beiden Auszahlungen. Ich hätte lieber:',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Eine fixe Auszahlung von CHF 100',
+      },
+      {
+        value:
+          'Mit 50% Wahrscheinlichkeit CHF 110 und mit 50% Wahrscheinlichkeit CHF 90',
+      },
+    ],
+  },
 ]
 
 export const LEARNING_ELEMENTS = [
@@ -1089,18 +1167,39 @@ export const LEARNING_ELEMENTS = [
     id: 'c35cf70c-2ff0-4568-84b3-00dbadadd68b',
     name: 'BFI MC 2',
     displayName: 'BFI Modul 2 - Lernfragen',
-    questions: range(10, 30),
+    questions: [],
+    // questions: range(10, 14),
+    // questions: range(10, 14),
+  },
+  {
+    id: '79ae3b4a-dec2-48b3-bcec-6a3d424f81e7',
+    name: 'BFI Micro Repetition',
+    displayName: 'BFI Microlearning - Repetition',
+    questions: [5, 6, 7, 8],
   },
 ]
 
 export const SESSIONS = [
   {
-    id: 'd18dfa3b-a965-4dc3-985f-6695e8a43113',
-    name: 'BFI VL Woche 01',
-    displayName: 'BFI Vorlesung - Woche 01',
+    id: '013efa6e-8a5d-4481-b82d-4ba10375df9d',
+    name: 'BFI VL Woche 02',
+    displayName: 'BFI Vorlesung - Woche 02',
     status: SessionStatus.PREPARED,
-    blocks: [],
-    linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
+    isGamificationEnabled: true,
+    blocks: [
+      {
+        questions: [60],
+      },
+      {
+        questions: [61],
+      },
+      {
+        questions: [62],
+      },
+      {
+        questions: [63],
+      },
+    ],
   },
 ]
 
@@ -1121,5 +1220,20 @@ Was ist Corporate Finance? Gemäss Damodaran umfasst die Corporate Finance alle 
 Du lernst zudem das finanzwirtschaftliche Zieldreieck kennen, bei dem sich die Rentabilität, Liquidität und Sicherheit einander gegenüber stehen. Zudem lernst du das oberste Ziel der unternehmerischen Tätigkeit kennen, nämlich die langfristige Maximierung des Unternehmenswertes.
 `,
     questions: [5, 6, 7, 8],
+  },
+  {
+    id: '12b11bd6-af0d-4cbd-a354-d864956b942c',
+    name: 'BFI Micro Woche 02',
+    displayName: 'BFI Microlearning - Woche 02',
+    scheduledStartAt: new Date('2022-09-28T05:00:00.000Z'),
+    scheduledEndAt: new Date('2022-09-29T07:00:00.000Z'),
+    description: `
+### Einführung
+
+![](https://sos-ch-dk-2.exo.io/klicker-prod/img/microlearning_bf1_woche2.png)
+
+In Vorlesung 2 wird der Fokus auf die statische Investitionsrechnung gelegt. Dabei lernst du, wie du mittels den vier statischen Investitionsrechenverfahren (der Kostenvergleichsrechnung, der Gewinnvergleichsrechnung, der Rentabilitätsrechnung und der Amortisationsrechnung / statischen Payback-Methode) Investitionsentscheide treffen kannst.
+`,
+    questions: [],
   },
 ]

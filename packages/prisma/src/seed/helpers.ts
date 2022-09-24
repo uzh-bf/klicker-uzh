@@ -1,6 +1,6 @@
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
-import { omit } from 'ramda'
+import { omit, pick } from 'ramda'
 import { QuestionInstanceType } from '../client'
 
 export async function prepareUser({
@@ -118,13 +118,15 @@ export function prepareAttachment({
 
 export function prepareQuestion({
   choices,
+  content,
+  contentPlain,
   options,
   ...args
 }: {
   id: number
   name: string
   content: string
-  contentPlain: string
+  contentPlain?: string
   type: Prisma.QuestionType
   ownerId: string
   choices?: {
@@ -144,6 +146,8 @@ export function prepareQuestion({
 
     const data = {
       ...args,
+      content,
+      contentPlain: contentPlain ?? content,
       options: {
         choices: preparedChoices,
       },
@@ -160,6 +164,8 @@ export function prepareQuestion({
 
   const data = {
     ...args,
+    content,
+    contentPlain: contentPlain ?? content,
     options: options ?? {},
   }
 
@@ -274,7 +280,24 @@ export function prepareLearningElement({
         create: preparedInstances,
       },
     },
-    update: args,
+    update: {
+      ...args,
+      instances: {
+        upsert: preparedInstances.map((instance) => ({
+          where: {
+            type_learningElementId_order: {
+              type: QuestionInstanceType.LEARNING_ELEMENT,
+              learningElementId: args.id,
+              order: instance.order,
+            },
+          },
+          create: instance,
+          update: {
+            ...pick([], instance),
+          },
+        })),
+      },
+    },
   }
 }
 
@@ -324,7 +347,39 @@ export function prepareSession({
         }),
       },
     },
-    update: args,
+    update: {
+      ...args,
+      blocks: {
+        upsert: blocks.map(({ questions, ...rest }) => {
+          const preparedInstances = questions.map((question, ix) =>
+            prepareQuestionInstance({
+              order: ix,
+              question,
+              type: QuestionInstanceType.SESSION,
+            })
+          )
+
+          return {
+            where: {
+              sessionId_order: {
+                sessionId: args.id,
+                order: rest.order,
+              },
+            },
+            create: {
+              ...rest,
+              instances: {
+                create: preparedInstances,
+              },
+            },
+            // TODO: upsert instances that are added to blocks? (need to get session block id)
+            update: {
+              ...rest,
+            },
+          }
+        }),
+      },
+    },
   }
 }
 
@@ -360,6 +415,23 @@ export function prepareMicroSession({
         create: preparedInstances,
       },
     },
-    update: args,
+    update: {
+      ...args,
+      instances: {
+        upsert: preparedInstances.map((instance) => ({
+          where: {
+            type_microSessionId_order: {
+              type: QuestionInstanceType.MICRO_SESSION,
+              microSessionId: args.id,
+              order: instance.order,
+            },
+          },
+          create: instance,
+          update: {
+            ...pick([], instance),
+          },
+        })),
+      },
+    },
   }
 }

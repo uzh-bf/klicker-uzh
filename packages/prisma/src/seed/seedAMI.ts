@@ -1,6 +1,7 @@
 import 'dotenv/config'
 
 import Prisma from '@klicker-uzh/prisma'
+import { COURSE_ID_AMI, USER_ID_AMI } from './constants.js'
 import * as DATA_AMI from './data/AMI.js'
 import {
   prepareCourse,
@@ -27,7 +28,7 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
   /* ----- Asset Management: Investments ----- */
   const userAMI = await prisma.user.upsert(
     await prepareUser({
-      id: '163e4f34-52a4-4e47-866f-79a8aec2feac',
+      id: USER_ID_AMI,
       email: 'benjamin.wilding@bf.uzh.ch',
       shortname: 'beni',
       password: process.env.INITIAL_PASSWORD as string,
@@ -36,10 +37,10 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
 
   const courseAMI = await prisma.course.upsert(
     prepareCourse({
-      id: '2f208c63-cb02-4b46-9462-7ce735a42235',
+      id: COURSE_ID_AMI,
       name: 'Asset Management: Investments',
       displayName: 'Asset Management: Investments',
-      ownerId: userAMI.id,
+      ownerId: USER_ID_AMI,
       color: '#FE7408',
     })
   )
@@ -55,8 +56,8 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
       prisma.learningElement.upsert(
         prepareLearningElement({
           ...data,
-          ownerId: userAMI.id,
-          courseId: courseAMI.id,
+          ownerId: USER_ID_AMI,
+          courseId: COURSE_ID_AMI,
           questions: questionsAMI.filter((q) => data.questions.includes(q.id)),
         })
       )
@@ -75,8 +76,8 @@ async function seedAMI(prisma: Prisma.PrismaClient) {
               block.questions.includes(q.id)
             ),
           })),
-          ownerId: userAMI.id,
-          courseId: courseAMI.id,
+          ownerId: USER_ID_AMI,
+          courseId: COURSE_ID_AMI,
         })
       )
     )

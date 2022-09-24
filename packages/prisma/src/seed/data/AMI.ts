@@ -830,12 +830,11 @@ Welches Investment wird der Anleger tätigen?`,
       },
     },
   },
+  // AMI Session Woche 02
   {
     id: 56,
     name: 'Rendite von Obligationen',
     content:
-      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Obligationen in der Schweiz seit 1926 ein? (Angabe in %)',
-    contentPlain:
       'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Obligationen in der Schweiz seit 1926 ein? (Angabe in %)',
     type: QuestionType.NUMERICAL,
     options: {
@@ -850,8 +849,6 @@ Welches Investment wird der Anleger tätigen?`,
     name: 'Rendite von Aktien',
     content:
       'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Aktien in der Schweiz seit 1926 ein? (Angabe in %)',
-    contentPlain:
-      'Wie hoch schätzt du die durchschnittliche, jährliche Rendite von Aktien in der Schweiz seit 1926 ein? (Angabe in %)',
     type: QuestionType.NUMERICAL,
     options: {
       restrictions: {
@@ -864,8 +861,6 @@ Welches Investment wird der Anleger tätigen?`,
     id: 58,
     name: 'Risiko von Obligationen',
     content:
-      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Obligationen in der Schweiz ein? (Angabe in %)',
-    contentPlain:
       'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Obligationen in der Schweiz ein? (Angabe in %)',
     type: QuestionType.NUMERICAL,
     options: {
@@ -880,13 +875,170 @@ Welches Investment wird der Anleger tätigen?`,
     name: 'Risiko von Aktien',
     content:
       'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Aktien in der Schweiz ein? (Angabe in %)',
-    contentPlain:
-      'Wie hoch schätzt du das Risiko (gemessen als Standardabweichung) von Aktien in der Schweiz ein? (Angabe in %)',
     type: QuestionType.NUMERICAL,
     options: {
       restrictions: {
         min: 0,
         max: 100,
+      },
+    },
+  },
+  {
+    id: 64,
+    name: 'Risikofähigkeit: Anlagehorizont',
+    content: 'Wie lange ist dein Anlagehorizont?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '< 1 Jahr',
+      },
+      {
+        value: '1 - 4 Jahre',
+      },
+      {
+        value: '4 - 10 Jahre',
+      },
+      {
+        value: '> 10 Jahre',
+      },
+    ],
+  },
+  {
+    id: 65,
+    name: 'Risikofähigkeit: Alter',
+    content: 'Wie alt bist du?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '> 70 Jahre',
+      },
+      {
+        value: '50 - 70 Jahre',
+      },
+      {
+        value: '30 - 50 Jahr',
+      },
+      {
+        value: '< 30 Jahre',
+      },
+    ],
+  },
+  {
+    id: 66,
+    name: 'Risikofähigkeit: Altersvorsorge',
+    content: 'Wie gut ist deine Altersvorsorge?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Unzureichend',
+      },
+      {
+        value: 'Ausreichend',
+      },
+      {
+        value: 'Mehr als ausreichend',
+      },
+    ],
+  },
+  {
+    id: 67,
+    name: 'Risikofähigkeit: Einkommenssicherheit',
+    content: 'Wie sicher ist dein aktuelles Einkommen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Kurzfristig, hohe Schwankungen unterworfen',
+      },
+      {
+        value: 'Sicher, jedoch mit gewissen Unsicherheiten in der Zukunft',
+      },
+      {
+        value: 'Langfristig gesichert',
+      },
+    ],
+  },
+  {
+    id: 68,
+    name: 'Risikofähigkeit: Sparquote',
+    content: 'Kannst du mit deinem Einkommen deine aktuellen Ausgabe decken?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Nein, ich muss mein Vermögen verzehren',
+      },
+      {
+        value: 'Ja, aber ich benötige die Einkünfte meines Vermögens',
+      },
+      {
+        value: 'Ja, aber ich spare nicht zusätzliches Vermögen an',
+      },
+      {
+        value: 'Ja, ich habe eine positive Sparquote',
+      },
+    ],
+  },
+  {
+    id: 69,
+    name: 'Risikofähigkeit: Verbindlichkeiten',
+    content:
+      'Wie hoch sind deine Verbindlichkeiten im Verhältnis zum Vermögen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '> 50%',
+      },
+      {
+        value: '10% - 50%',
+      },
+      {
+        value: '< 10%',
+      },
+    ],
+  },
+  {
+    id: 70,
+    name: 'Risikofähigkeit: Liquide Anlagen',
+    content: 'Wie hoch ist der Anteil an liquiden Vermögenswerten?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '< 40%',
+      },
+      {
+        value: '40% - 70%',
+      },
+      {
+        value: '> 70%',
+      },
+    ],
+  },
+  {
+    id: 71,
+    name: 'Risikofähigkeit: Künftige Ausgaben',
+    content:
+      'Hast du während deines Anlagehorizonts ausserordentliche Ausgaben geplant?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Ja, mit einem Volumen grösser als 30%',
+      },
+      {
+        value: 'Ja, mit einem Volumen zwischen 10% und 30%',
+      },
+      {
+        value: 'Kaum, d.h. kleiner als 10% oder gar keine',
+      },
+    ],
+  },
+  {
+    id: 72,
+    name: 'Risikofähigkeit: Total',
+    content: 'Wie hoch ist deine Punktezahl bei der Risikofähigkeit?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
       },
     },
   },
@@ -898,6 +1050,12 @@ export const LEARNING_ELEMENTS = [
     name: 'AMI MC 1',
     displayName: 'AMI Modul 1 - Lernfragen',
     questions: range(30, 48),
+  },
+  {
+    id: '627942ff-07c3-464d-860b-126ea74ddc34',
+    name: 'AMI MC 2',
+    displayName: 'AMI Modul 2 - Lernfragen',
+    questions: [],
   },
 ]
 
@@ -920,6 +1078,27 @@ export const SESSIONS = [
       },
       {
         questions: range(56, 60),
+      },
+    ],
+  },
+  {
+    id: 'bd76942d-3a44-4854-9d45-287b50f9dde5',
+    name: 'AMI VL Woche 02',
+    displayName: 'AMI Vorlesung - Woche 02',
+    status: SessionStatus.PREPARED,
+    isGamificationEnabled: true,
+    blocks: [
+      {
+        questions: [56, 57, 58, 59],
+      },
+      {
+        questions: range(64, 73),
+      },
+      {
+        questions: [],
+      },
+      {
+        questions: [],
       },
     ],
   },

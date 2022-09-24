@@ -193,6 +193,10 @@ model QuestionInstance {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([type, sessionBlockId, order])
+  @@unique([type, learningElementId, order])
+  @@unique([type, microSessionId, order])
 }
 
 // ----- INTERACTIONS -----
@@ -287,6 +291,8 @@ model SessionBlock {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, order])
 }
 
 enum SessionStatus {
