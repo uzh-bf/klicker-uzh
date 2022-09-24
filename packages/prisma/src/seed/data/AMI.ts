@@ -619,7 +619,7 @@ $$Geometric Average Return=1.169^\frac{1}{3}-1=5.3\%$$
     name: 'Modul 1 Nutzenfunktionen',
     content: String.raw`Gehe von folgender Ausgangssituation aus:
 ![Nutzenfunktionen](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul1_nutzenfunktion.png)
-Die Nutzenfunktion des Investors beträgt U=E(r)-\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
+Die Nutzenfunktion des Investors beträgt $$ U=E(r)-\frac{A}{2}*SD^2$$, wobei A=4.0 ist.
 Welches Investment wird der Anleger tätigen?`,
     contentPlain: String.raw`Gehe von folgender Ausgangssituation aus:
 BILD
