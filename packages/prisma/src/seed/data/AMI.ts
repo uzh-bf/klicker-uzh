@@ -1057,6 +1057,12 @@ export const LEARNING_ELEMENTS = [
     displayName: 'AMI Modul 2 - Lernfragen',
     questions: [],
   },
+  {
+    id: 'e3fa3767-1bbc-43b4-aa84-50e75b4a4add',
+    name: 'AMI Micro Repetition',
+    displayName: 'AMI Microlearning - Repetition',
+    questions: [],
+  },
 ]
 
 export const SESSIONS = [
