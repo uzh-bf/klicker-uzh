@@ -34,8 +34,8 @@ function Header({
     <div
       style={{ borderColor: courseColor || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800',
-        courseColor && 'border-b-8'
+        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800 border-b-8',
+        !courseColor && 'border-uzh-red-60'
       )}
     >
       {title && courseName && (

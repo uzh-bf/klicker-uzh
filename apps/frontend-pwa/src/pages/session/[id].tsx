@@ -143,7 +143,7 @@ function Index({ id }: Props) {
   return (
     <Layout
       displayName={displayName}
-      courseName={course?.displayName}
+      courseName={course?.displayName ?? 'KlickerUZH Live'}
       courseColor={course?.color}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
