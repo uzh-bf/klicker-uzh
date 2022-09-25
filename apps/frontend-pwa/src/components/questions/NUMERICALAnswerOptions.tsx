@@ -31,7 +31,9 @@ function NUMERICALAnswerOptions({
           'rounded focus:border focus:border-solid focus:border-uzh-blue-80',
           !valid && 'border-red-600'
         )}
-        onChange={(e): void => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
+        onChange={(e): void =>
+          onChange(e.target.value.replace(/[^0-9.-]/g, ''))
+        }
       />
       {!valid && (
         <div className="text-black">
