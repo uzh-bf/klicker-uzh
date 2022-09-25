@@ -48,4 +48,3 @@ releases:
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN" }}'
-          sentryRelease: '{{ env "CHART_VERSION" | default "0.1.0" }}'

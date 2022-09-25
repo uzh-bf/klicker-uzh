@@ -27,6 +27,7 @@ releases:
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
           hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
+          debug: true
 
           redisCache:
             host: klicker-v2-qa-redis-master
@@ -41,4 +42,3 @@ releases:
 
           sentryEnv: qa
           sentryDSN: '{{ env "SENTRY_DSN" }}'
-          sentryRelease: '{{ env "CHART_VERSION" | default "0.1.0" }}'
