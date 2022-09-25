@@ -8,6 +8,7 @@ import { useHive } from '@graphql-hive/client'
 import { createServer, Plugin } from '@graphql-yoga/node'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
+import cors from 'cors'
 import express from 'express'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
@@ -26,6 +27,15 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
   }
 
   const app = express()
+
+  app.use(
+    cors({
+      origin: (origin: string, cb: any) => {
+        cb(null, origin)
+      },
+      credentials: true,
+    })
+  )
 
   passport.use(
     new JWTStrategy(
@@ -107,14 +117,7 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub }),
     logging: true,
-    cors(request) {
-      const requestOrigin = request.headers.get('origin') as string
-      return {
-        origin: requestOrigin,
-        credentials: true,
-        methods: ['GET', 'POST', 'OPTIONS'],
-      }
-    },
+    cors: false,
   })
 
   app.use('/healthz', function (req, res) {
