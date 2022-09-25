@@ -1042,6 +1042,187 @@ Welches Investment wird der Anleger tätigen?`,
       },
     },
   },
+  {
+    id: 73,
+    name: 'Risikobereitschaft: Erfahrung',
+    content: 'Wie viel Erfahrung hast du mit Anlagen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Keine',
+      },
+      {
+        value: '< 3 Jahre',
+      },
+      {
+        value: '3 - 6 Jahre',
+      },
+      {
+        value: '6 - 15 Jahre',
+      },
+      { value: '> 15 Jahre' },
+    ],
+  },
+  {
+    id: 74,
+    name: 'Risikobereitschaft: Interesse',
+    content: 'Wie häufig verfolgst du die Entwicklung an den Finanzmärkten?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Nie',
+      },
+      {
+        value: 'Selten',
+      },
+      {
+        value: 'Manchmal',
+      },
+      {
+        value: 'Regelmässig',
+      },
+      { value: 'Täglich' },
+    ],
+  },
+  {
+    id: 75,
+    name: 'Risikobereitschaft: Erwartungen',
+    content:
+      'Denkst du, dass risikobehaftete Anlagen langfristig eine höhere Rendite als risikoarme Anlagen abwerfen?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Nein',
+      },
+      {
+        value: 'Eher nicht',
+      },
+      {
+        value: 'Eher ja',
+      },
+      {
+        value: 'Ja',
+      },
+    ],
+  },
+  {
+    id: 76,
+    name: 'Risikobereitschaft: Wertschwankungen',
+    content: 'Welche Wertschwankungen passen am besten zu dir?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '-2% und +5%',
+      },
+      {
+        value: '-4% und +10%',
+      },
+      {
+        value: '-7% und +17%',
+      },
+      {
+        value: '-16% und +31%',
+      },
+      {
+        value: '-25% und +45%',
+      },
+    ],
+  },
+  {
+    id: 77,
+    name: 'Risikobereitschaft: Verlustsensitivität',
+    content:
+      'Wie würdest du auf einen Verlust deines Portfolios in der Höhe von 30% reagieren?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Grossteil der Anlagen verkaufen',
+      },
+      {
+        value: 'Einen Teil der Anlagen verkaufen',
+      },
+      {
+        value: 'Nichts, alles behalten',
+      },
+      {
+        value: 'Einen Teil der Anlagen aufstocken',
+      },
+      {
+        value: 'Grossteil der Anlagen aufstocken',
+      },
+    ],
+  },
+  {
+    id: 78,
+    name: 'Risikobereitschaft: Anlageverlust',
+    content: 'Welchen Anlageverlust kannst du maximal verkraften?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: '< 5%',
+      },
+      {
+        value: '5% - 10%',
+      },
+      {
+        value: '10% - 20%',
+      },
+      {
+        value: '> 20%',
+      },
+    ],
+  },
+  {
+    id: 79,
+    name: 'Risikobereitschaft: Total',
+    content: 'Wie hoch ist deine Punktezahl bei der Risikobereitschaft?',
+    type: QuestionType.NUMERICAL,
+    options: {
+      restrictions: {
+        min: undefined,
+        max: undefined,
+      },
+    },
+  },
+  {
+    id: 80,
+    name: 'Los 1',
+    content:
+      'Stell dir vor, du hättest einen Wettbewerb gewonnen und könntest zwischen einem sicheren und einem unsicheren Gewinn auswählen. Welche Variante wählst du?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Ein Los mit einer 5%-Chance auf einen Gewinn von 1‘000 CHF',
+      },
+      { value: 'Sicherer Gewinn von 50 CHF' },
+    ],
+  },
+  {
+    id: 81,
+    name: 'Los 2',
+    content:
+      'Stell dir vor, du hättest einen Wettbewerb gewonnen und könntest zwischen einem sicheren und einem unsicheren Gewinn auswählen. Welche Variante wählst du?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Ein Los mit einer 50%-Chance auf einen Gewinn von 1‘000 CHF',
+      },
+      { value: 'Sicherer Gewinn von 400 CHF' },
+    ],
+  },
+  {
+    id: 82,
+    name: 'Los 3',
+    content:
+      'Stell dir vor, du hättest einen Wettbewerb gewonnen und könntest zwischen einem sicheren und einem unsicheren Gewinn auswählen. Welche Variante wählst du?',
+    type: QuestionType.SC,
+    choices: [
+      {
+        value: 'Ein Los mit einer 95%-Chance auf einen Gewinn von 1‘000 CHF',
+      },
+      { value: 'Sicherer Gewinn von 700 CHF' },
+    ],
+  },
 ]
 
 export const LEARNING_ELEMENTS = [
@@ -1101,10 +1282,10 @@ export const SESSIONS = [
         questions: range(64, 73),
       },
       {
-        questions: [],
+        questions: range(73, 80),
       },
       {
-        questions: [],
+        questions: [80, 81, 82],
       },
     ],
   },

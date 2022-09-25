@@ -440,9 +440,10 @@ export const QUESTIONS = [
   {
     id: 12,
     name: 'Modul 2.1 Rentabilitätsberechnung',
-    content: `Man erwartet, dass ein Projekt einen Gewinn von insgesamt 50'000 CHF generieren wird. Für den Kauf einer dazu benötigten Maschine müssen 600'000 CHF aufgewendet werden. Am Ende der Nutzungsdauer wird diese Maschine wieder verkauft. Man erwartet daraus einen Erlös von 300'000 CHF.
+    content: `
+Man erwartet, dass ein Projekt einen Gewinn von insgesamt 50'000 CHF generieren wird. Für den Kauf einer dazu benötigten Maschine müssen 600'000 CHF aufgewendet werden. Am Ende der Nutzungsdauer wird diese Maschine wieder verkauft. Man erwartet daraus einen Erlös von 300'000 CHF.
 
-      Wie hoch ist die **(Gesamtkapital-)** Rentabilität dieses Projektes?`,
+Wie hoch ist die **(Gesamtkapital-)** Rentabilität dieses Projektes?`,
     contentPlain: `Man erwartet, dass ein Projekt einen Gewinn von insgesamt 50'000 CHF generieren wird. Für den Kauf einer dazu benötigten Maschine müssen 600'000 CHF aufgewendet werden. Am Ende der Nutzungsdauer wird diese Maschine wieder verkauft. Man erwartet daraus einen Erlös von 300'000 CHF.
 
       Wie hoch ist die (Gesamtkapital-) Rentabilität dieses Projektes?`,
@@ -457,6 +458,7 @@ export const QUESTIONS = [
         value: '11,1 %',
         feedback: String.raw`
 Diese Aussage ist korrekt!
+
 $$Rentabilität = \frac{Gewinn}{}$$
 $$11.1\% = \frac{50 }{\frac{600 + 300}{2}}$$
 `,
@@ -1167,7 +1169,7 @@ export const LEARNING_ELEMENTS = [
     id: 'c35cf70c-2ff0-4568-84b3-00dbadadd68b',
     name: 'BFI MC 2',
     displayName: 'BFI Modul 2 - Lernfragen',
-    questions: [],
+    questions: [10, 11, 12, 13],
     // questions: range(10, 14),
     // questions: range(10, 14),
   },
