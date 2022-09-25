@@ -222,7 +222,7 @@ export type Mutation = {
   createSession?: Maybe<Session>;
   deactivateSessionBlock?: Maybe<Session>;
   deleteFeedback?: Maybe<Feedback>;
-  deleteFeedbackResponse?: Maybe<FeedbackResponse>;
+  deleteFeedbackResponse?: Maybe<Feedback>;
   endSession?: Maybe<Session>;
   joinCourse?: Maybe<ParticipantLearningData>;
   leaveCourse?: Maybe<ParticipantLearningData>;
@@ -747,7 +747,7 @@ export type DeleteFeedbackResponseMutationVariables = Exact<{
 }>;
 
 
-export type DeleteFeedbackResponseMutation = { __typename?: 'Mutation', deleteFeedbackResponse?: { __typename?: 'FeedbackResponse', id: number } | null };
+export type DeleteFeedbackResponseMutation = { __typename?: 'Mutation', deleteFeedbackResponse?: { __typename?: 'Feedback', id: number } | null };
 
 export type EndSessionMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -1375,7 +1375,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationCreateSessionArgs, 'blocks' | 'name'>>;
   deactivateSessionBlock?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationDeactivateSessionBlockArgs, 'sessionBlockId' | 'sessionId'>>;
   deleteFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationDeleteFeedbackArgs, 'id'>>;
-  deleteFeedbackResponse?: Resolver<Maybe<ResolversTypes['FeedbackResponse']>, ParentType, ContextType, RequireFields<MutationDeleteFeedbackResponseArgs, 'id'>>;
+  deleteFeedbackResponse?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationDeleteFeedbackResponseArgs, 'id'>>;
   endSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationEndSessionArgs, 'id'>>;
   joinCourse?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationJoinCourseArgs, 'courseId'>>;
   leaveCourse?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationLeaveCourseArgs, 'courseId'>>;

@@ -2473,7 +2473,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "FeedbackResponse",
+              "name": "Feedback",
               "ofType": null
             },
             "isDeprecated": false,

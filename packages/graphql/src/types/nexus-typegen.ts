@@ -471,7 +471,7 @@ export interface NexusGenFieldTypes {
     createSession: NexusGenRootTypes['Session'] | null; // Session
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
-    deleteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
+    deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -769,7 +769,7 @@ export interface NexusGenFieldTypeNames {
     createSession: 'Session'
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
-    deleteFeedbackResponse: 'FeedbackResponse'
+    deleteFeedbackResponse: 'Feedback'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     leaveCourse: 'ParticipantLearningData'
