@@ -4,6 +4,7 @@ import {
   CreateFeedbackDocument,
   FeedbackAddedDocument,
   FeedbackRemovedDocument,
+  FeedbackUpdatedDocument,
   GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
@@ -47,9 +48,26 @@ function Subscriber({ subscribeToMore, sessionId }) {
       },
     })
 
+    const feedbackUpdated = subscribeToMore({
+      document: FeedbackUpdatedDocument,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const updatedItem = subscriptionData.data.feedbackUpdated
+        return {
+          ...prev,
+          feedbacks: prev.feedbacks?.map((item) => {
+            if (item.id === updatedItem.id) return updatedItem
+            return item
+          }),
+        }
+      },
+    })
+
     return () => {
       feedbackAdded && feedbackAdded()
       feedbackRemoved && feedbackRemoved()
+      feedbackUpdated && feedbackUpdated()
     }
   }, [subscribeToMore, sessionId])
 

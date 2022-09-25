@@ -25,7 +25,7 @@ const { publicRuntimeConfig } = getConfig()
 
 function Subscriber({ id, subscribeToMore }) {
   useEffect(() => {
-    return subscribeToMore({
+    subscribeToMore({
       document: RunningSessionUpdatedDocument,
       variables: {
         sessionId: id,
