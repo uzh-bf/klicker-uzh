@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.58...v2.0.0-alpha.59) (2022-09-25)
+
+
+### Features
+
+* graphql subscriptions for feedbacks with websockets ([#2912](https://github.com/uzh-bf/klicker-uzh/issues/2912)) ([5c50541](https://github.com/uzh-bf/klicker-uzh/commit/5c50541fb51124361f66d4958b13cb2ecbacb2e3))
+
+
+### Deployment
+
+* add rollout scripts for container restart ([50b8dfd](https://github.com/uzh-bf/klicker-uzh/commit/50b8dfd0d681be0b8e66b44e27d9976294b3d042))
+* use app version for sentry release, add DEBUG env value for backend ([8ed0441](https://github.com/uzh-bf/klicker-uzh/commit/8ed0441000d1fbf66ee6f80591a6b4b32c032966))
+
+
+### Other
+
+* **apps/backend-docker:** add DEBUG to disable error masking ([9ba8684](https://github.com/uzh-bf/klicker-uzh/commit/9ba8684a329d7fcc552e83ea39b90ad3a675cd96))
+* **apps/backend-docker:** disable sentry envelop plugin for now ([e8e84f3](https://github.com/uzh-bf/klicker-uzh/commit/e8e84f3de9ef7133c7876eafeaab8f8860c01072))
+* lockfile maintenance ([aab69aa](https://github.com/uzh-bf/klicker-uzh/commit/aab69aa702536e5132e81fa092e3b2d458a7b673))
+* **packages/prisma:** add initial migration based on qa/prod db state ([d07f2c0](https://github.com/uzh-bf/klicker-uzh/commit/d07f2c02a917c0dbd24521e632f18e71ff0bb7b7))
+* **packages/prisma:** ensure that migrate reset runs the seeds afterwards ([07d8539](https://github.com/uzh-bf/klicker-uzh/commit/07d85391dd71393453b8484928087b2463fb38f6))
+* remove migrations ([98c6a08](https://github.com/uzh-bf/klicker-uzh/commit/98c6a08d9d0edacfce0b83b21e822b37c768152a))
+
 ## [2.0.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.57...v2.0.0-alpha.58) (2022-09-25)
 
 
