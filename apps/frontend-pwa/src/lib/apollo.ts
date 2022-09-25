@@ -1,5 +1,6 @@
 import {
   ApolloClient,
+  ApolloLink,
   from,
   HttpLink,
   InMemoryCache,
@@ -7,6 +8,7 @@ import {
   split,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
+import { RetryLink } from '@apollo/client/link/retry'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { GetServerSidePropsContext } from 'next'
@@ -26,86 +28,96 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
+function createIsomorphLink() {
+  const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
-const errorLink = onError(({ graphQLErrors, networkError }) => {
-  if (graphQLErrors)
-    graphQLErrors.forEach(
-      ({ message, locations, path, extensions, originalError }) => {
-        console.log(
-          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
-            locations,
-            false,
-            null,
-            true
-          )}, Path: ${path}, Extensions: ${util.inspect(
-            extensions,
-            false,
-            null,
-            true
-          )}, Original: ${originalError}`
-        )
+  const isBrowser = typeof window !== 'undefined'
 
-        // redirect the user to the login page on errors
-        if (typeof window !== 'undefined' && message === 'Unauthorized!') {
-          Router.push(
-            `/login?expired=true&redirect_to=${
-              encodeURIComponent(
-                window?.location?.pathname + (window?.location?.search ?? '')
-              ) ?? '/'
-            }`
+  const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (graphQLErrors)
+      graphQLErrors.forEach(
+        ({ message, locations, path, extensions, originalError }) => {
+          console.log(
+            `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+              locations,
+              false,
+              null,
+              true
+            )}, Path: ${path}, Extensions: ${util.inspect(
+              extensions,
+              false,
+              null,
+              true
+            )}, Original: ${originalError}`
           )
-        }
-      }
-    )
-  if (networkError) console.log(`[Network error]: ${networkError.name}`)
-})
 
-// TODO: use the schema link when working on the server?
-function createApolloClient(ctx?: GetServerSidePropsContext) {
-  const httpLink = new HttpLink({
-    uri:
-      typeof window !== 'undefined'
-        ? publicRuntimeConfig.API_URL
-        : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+          // redirect the user to the login page on errors
+          if (isBrowser && message === 'Unauthorized!') {
+            Router.push(
+              `/login?expired=true&redirect_to=${
+                encodeURIComponent(
+                  window?.location?.pathname + (window?.location?.search ?? '')
+                ) ?? '/'
+              }`
+            )
+          }
+        }
+      )
+    if (networkError) console.log(`[Network error]`, networkError)
+  })
+
+  let link: ApolloLink = new HttpLink({
+    uri: isBrowser
+      ? publicRuntimeConfig.API_URL
+      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
     credentials: 'include',
   })
 
-  if (typeof window === 'undefined') {
-    return new ApolloClient({
-      ssrMode: true,
-      link: from([errorLink, httpLink]),
-      cache: new InMemoryCache(),
+  if (isBrowser) {
+    const retryLink = new RetryLink({
+      delay: {
+        initial: 1000,
+        max: Infinity,
+        jitter: true,
+      },
+      attempts: {
+        max: 3,
+      },
     })
+
+    const sseLink = new SSELink({
+      uri: publicRuntimeConfig.API_URL,
+      withCredentials: true,
+    })
+
+    link = split(
+      ({ query, operationName }) => {
+        const definition = getOperationAST(query, operationName)
+        return (
+          definition?.kind === 'OperationDefinition' &&
+          definition.operation === 'subscription'
+        )
+      },
+      sseLink,
+      link
+    )
+
+    return from([retryLink, errorLink, link])
   }
 
-  const sseLink = new SSELink({
-    uri: publicRuntimeConfig.API_URL,
-    withCredentials: true,
-  })
+  return from([errorLink, link])
+}
 
-  const splitSubsLink = split(
-    ({ query, operationName }) => {
-      const definition = getOperationAST(query, operationName)
-
-      return (
-        definition?.kind === 'OperationDefinition' &&
-        definition.operation === 'subscription'
-      )
-    },
-    sseLink,
-    httpLink
-  )
-
+// TODO: use the schema link when working on the server?
+function createApolloClient(ctx?: GetServerSidePropsContext) {
   // const yogaLink = new YogaLink({
   //   endpoint: publicRuntimeConfig.API_URL,
   //   credentials: true
   // })
 
   return new ApolloClient({
-    ssrMode: false,
-    // link: from([errorLink, yogaLink]),
-    link: from([errorLink, splitSubsLink]),
+    ssrMode: typeof window === 'undefined',
+    link: createIsomorphLink(),
     cache: new InMemoryCache(),
   })
 }
