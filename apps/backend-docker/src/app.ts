@@ -1,6 +1,10 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useParserCache } from '@envelop/parser-cache'
-import { useResponseCache } from '@envelop/response-cache'
+import {
+  Cache,
+  createInMemoryCache,
+  useResponseCache,
+} from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
@@ -15,23 +19,26 @@ import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './authorization'
 
 function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
-  let cache = undefined
+  let cache: Cache | undefined = undefined
   if (redisCache) {
     try {
       cache = createRedisCache({ redis: redisCache })
     } catch (e) {
       console.error(e)
     }
+  } else {
+    cache = createInMemoryCache()
   }
 
   const app = express()
 
   app.use(
     cors({
-      origin: (origin: string, cb: any) => {
+      origin(origin, cb) {
         cb(null, origin)
       },
       credentials: true,
+      optionsSuccessStatus: 200,
     })
   )
 
@@ -119,7 +126,7 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
           usage: true,
         }),
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ prisma, redisExec, pubSub }),
+    context: enhanceContext({ prisma, redisExec, pubSub, cache }),
     logging: true,
     cors: false,
     maskedErrors: !process.env.DEBUG,
