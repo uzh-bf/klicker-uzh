@@ -14,8 +14,6 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './authorization'
 
-import { useSentry } from '@envelop/sentry'
-
 function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
   let cache = undefined
   if (redisCache) {
@@ -96,24 +94,30 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
       }),
       useValidationCache(),
       useParserCache(),
-      process.env.SENTRY_DSN &&
-        useSentry({
-          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
-          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
-          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
-          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
-          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
-          // skip: executionArgs => {} // if you wish to modify the skip specific operations
-        }),
+      // process.env.SENTRY_DSN &&
+      //   useSentry({
+      //     includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+      //     includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+      //     includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+      //     // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+      //     // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+
+      //     skip: (executionArgs) => {
+      //       if (!executionArgs.operationName) {
+      //         console.log(executionArgs)
+      //         return true
+      //       }
+      //       return false
+      //     },
+      //   }),
       // useGraphQlJit(),
-      process.env.HIVE_TOKEN
-        ? useHive({
-            enabled: true,
-            debug: true,
-            token: process.env.HIVE_TOKEN,
-            usage: true,
-          })
-        : null,
+      process.env.HIVE_TOKEN &&
+        useHive({
+          enabled: true,
+          debug: !!process.env.DEBUG,
+          token: process.env.HIVE_TOKEN,
+          usage: true,
+        }),
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub }),
     logging: true,

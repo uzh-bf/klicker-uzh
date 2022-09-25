@@ -1,17 +1,19 @@
 import { createPubSub } from '@graphql-yoga/common'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { PrismaClient } from '@klicker-uzh/prisma'
+import * as Sentry from '@sentry/node'
+import '@sentry/tracing'
 import Redis from 'ioredis'
 import prepareApp from './app'
 
 const prisma = new PrismaClient()
 
 if (process.env.SENTRY_DSN) {
-  const Tracing = require('@sentry/tracing')
-  const Sentry = require('@sentry/node')
-
   Sentry.init({
-    tracesSampleRate: process.env.SENTRY_SAMPLE_RATE ?? 1.0,
+    debug: !!process.env.DEBUG,
+    tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
+      ? Number(process.env.SENTRY_SAMPLE_RATE)
+      : 1,
   })
 }
 
