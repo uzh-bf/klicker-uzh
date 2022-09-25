@@ -102,7 +102,6 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         {/* // TODO: readd all removed features like authenticated sessions, etc. */}
-        SESSION TIMELINE
         <SessionTimeline
           blocks={blocks}
           handleEndSession={() => {

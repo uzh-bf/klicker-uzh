@@ -7,7 +7,6 @@ import {
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
   Feedback,
-  GetCockpitSessionDocument,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
@@ -62,7 +61,7 @@ function AudienceInteraction({
           {isAudienceInteractionActive && (
             <div className="order-3 md:order-1">
               <a
-                href={`/lecturer/${sessionId}`}
+                href={`/sessions/${sessionId}/lecturer`}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -83,7 +82,6 @@ function AudienceInteraction({
               label=""
               onCheckedChange={(): void => {
                 changeSessionSettings({
-                  refetchQueries: [{ query: GetCockpitSessionDocument }],
                   variables: {
                     id: sessionId,
                     isAudienceInteractionActive: !isAudienceInteractionActive,
@@ -112,7 +110,6 @@ function AudienceInteraction({
               disabled={!isAudienceInteractionActive}
               onCheckedChange={(): void => {
                 changeSessionSettings({
-                  refetchQueries: [{ query: GetCockpitSessionDocument }],
                   variables: {
                     id: sessionId,
                     isModerationEnabled: !isModerationEnabled,
@@ -211,7 +208,7 @@ function AudienceInteraction({
                   ])
                 }}
                 isActive={isAudienceInteractionActive}
-                isPublic={isModerationEnabled}
+                isPublic={!isModerationEnabled}
               />
             </div>
           </div>
