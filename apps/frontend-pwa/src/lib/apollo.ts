@@ -9,15 +9,16 @@ import {
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
 import { RetryLink } from '@apollo/client/link/retry'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
+import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config'
 import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
-import SSELink from './SSELink'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -85,10 +86,24 @@ function createIsomorphLink() {
       },
     })
 
-    const sseLink = new SSELink({
-      uri: publicRuntimeConfig.API_URL,
-      withCredentials: true,
-    })
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: publicRuntimeConfig.API_URL.replace('http://', 'ws://').replace(
+          'https://',
+          'wss://'
+        ),
+        // connectionParams: () => {
+        //   // Note: getSession() is a placeholder function created by you
+        //   const session = getSession();
+        //   if (!session) {
+        //     return {};
+        //   }
+        //   return {
+        //     Authorization: `Bearer ${session.token}`,
+        //   };
+        // },
+      })
+    )
 
     link = split(
       ({ query, operationName }) => {
@@ -98,7 +113,7 @@ function createIsomorphLink() {
           definition.operation === 'subscription'
         )
       },
-      sseLink,
+      wsLink,
       link
     )
 

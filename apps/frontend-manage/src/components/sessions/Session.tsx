@@ -49,7 +49,7 @@ function Session({
             </div>
             <div className="flex flex-row">
               <div className="flex flex-row flex-1">
-                {session.blocks.map((block: SessionBlock, index: number) => (
+                {session.blocks?.map((block: SessionBlock, index: number) => (
                   <div className="max-h-40" key={block.id}>
                     <div className="mb-1 ml-1 text-sm">Block {index}</div>
                     {block.instances.map((instance: QuestionInstance) => (

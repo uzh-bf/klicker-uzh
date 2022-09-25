@@ -2,6 +2,9 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AddConfusionTimestepDocument,
   CreateFeedbackDocument,
+  FeedbackAddedDocument,
+  FeedbackRemovedDocument,
+  FeedbackUpdatedDocument,
   GetFeedbacksDocument,
   UpvoteFeedbackDocument,
   VoteFeedbackResponseDocument,
@@ -12,21 +15,66 @@ import dayjs from 'dayjs'
 import { Field, Form, Formik } from 'formik'
 import localForage from 'localforage'
 import { useRouter } from 'next/router'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import PublicFeedback from './PublicFeedback'
 
-interface FeedbackAreaProps {
-  isModerationEnabled?: boolean
+function Subscriber({ subscribeToMore, sessionId }) {
+  useEffect(() => {
+    if (!sessionId) return
+
+    const feedbackAdded = subscribeToMore({
+      document: FeedbackAddedDocument,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const newItem = subscriptionData.data.feedbackAdded
+        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id))
+          return prev
+        return { ...prev, feedbacks: [newItem, ...prev.feedbacks] }
+      },
+    })
+
+    const feedbackRemoved = subscribeToMore({
+      document: FeedbackRemovedDocument,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const removedItem = subscriptionData.data.feedbackRemoved
+        return {
+          ...prev,
+          feedbacks: prev.feedbacks?.filter((item) => item.id !== removedItem),
+        }
+      },
+    })
+
+    const feedbackUpdated = subscribeToMore({
+      document: FeedbackUpdatedDocument,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const updatedItem = subscriptionData.data.feedbackUpdated
+        return {
+          ...prev,
+          feedbacks: prev.feedbacks?.map((item) => {
+            if (item.id === updatedItem.id) return updatedItem
+            return item
+          }),
+        }
+      },
+    })
+
+    return () => {
+      feedbackAdded && feedbackAdded()
+      feedbackRemoved && feedbackRemoved()
+      feedbackUpdated && feedbackUpdated()
+    }
+  }, [subscribeToMore, sessionId])
+
+  return <div></div>
 }
 
-const defaultProps = {
-  isModerationEnabled: true,
-}
-
-function FeedbackArea({
-  isModerationEnabled,
-}: FeedbackAreaProps): React.ReactElement {
+function FeedbackArea() {
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
@@ -59,26 +107,24 @@ function FeedbackArea({
     '2': 'border-red-300',
   }
 
-  // TODO: implement subscription on changing feedbacks
-  // TODO: fix polling
   const {
     loading: feedbacksLoading,
     error: feedbacksError,
     data: feedbacksData,
+    subscribeToMore,
   } = useQuery(GetFeedbacksDocument, {
     variables: {
       sessionId: router.query.id as string,
     },
-    pollInterval: 10000,
     skip: !router.query.id,
   })
 
   const onAddFeedback = (input: string) => {
+    if (!router.query.id) return
     createFeedback({
       variables: {
         sessionId: router.query.id as string,
         content: input,
-        isPublished: !isModerationEnabled,
       },
     })
   }
@@ -213,6 +259,7 @@ function FeedbackArea({
       ),
     [feedbacksData]
   )
+
   const resolvedFeedbacks = useMemo(
     () =>
       feedbacksData?.feedbacks?.filter(
@@ -228,6 +275,8 @@ function FeedbackArea({
   return (
     <div className="w-full h-full">
       <H2>Feedback-Kanal</H2>
+
+      <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
 
       <div className="mb-8">
         <Formik
@@ -357,7 +406,5 @@ function FeedbackArea({
     </div>
   )
 }
-
-FeedbackArea.defaultProps = defaultProps
 
 export default FeedbackArea

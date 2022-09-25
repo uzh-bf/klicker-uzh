@@ -62,6 +62,7 @@ function Cockpit() {
     loading: cockpitLoading,
     error: cockpitError,
     data: cockpitData,
+    subscribeToMore,
   } = useQuery(GetCockpitSessionDocument, {
     variables: {
       id: router.query.id as string,
@@ -102,7 +103,6 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         {/* // TODO: readd all removed features like authenticated sessions, etc. */}
-        SESSION TIMELINE
         <SessionTimeline
           blocks={blocks}
           handleEndSession={() => {
@@ -129,6 +129,7 @@ function Cockpit() {
       </div>
 
       <AudienceInteraction
+        subscribeToMore={subscribeToMore}
         confusionValues={
           confusionFeedbacks
             ? (confusionFeedbacks[0] as AggregatedConfusionFeedbacks)

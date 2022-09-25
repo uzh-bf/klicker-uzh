@@ -21,7 +21,7 @@ function Evaluation() {
     variables: {
       id: router.query.id as string,
     },
-    pollInterval: 10000,
+    pollInterval: 5000,
     skip: !router.query.id,
   })
   if (error) return <div>An error occurred, please try again later.</div>

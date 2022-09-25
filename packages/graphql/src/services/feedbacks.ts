@@ -1,3 +1,4 @@
+import { UserRole } from '@klicker-uzh/prisma'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 export async function getFeedbacks(
@@ -60,32 +61,41 @@ export async function createFeedback(
   { sessionId, content }: { sessionId: string; content: string },
   ctx: ContextWithOptionalUser
 ) {
-  // TODO: without accounting for the role, the user token would count as logged in
-  // but no participant would match the id of the admin user...
-  const isLoggedInParticipant = ctx.user?.sub && ctx.user.role === 'PARTICIPANT'
+  const isLoggedInParticipant =
+    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
 
-  if (isLoggedInParticipant) {
-    return ctx.prisma.feedback.create({
-      data: {
-        content,
-        session: {
-          connect: { id: sessionId },
-        },
-        participant: {
-          connect: { id: ctx.user!.sub },
-        },
-      },
-    })
-  }
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+  })
 
-  return ctx.prisma.feedback.create({
+  if (!session || !session.isAudienceInteractionActive) return null
+
+  const newFeedback = await ctx.prisma.feedback.create({
     data: {
+      isPublished: !session.isModerationEnabled,
       content,
       session: {
         connect: { id: sessionId },
       },
+      participant: isLoggedInParticipant
+        ? {
+            connect: { id: ctx.user!.sub },
+          }
+        : undefined,
     },
   })
+
+  ctx.pubSub.publish('feedbackCreated', newFeedback)
+
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: sessionId })
+
+  if (!session.isModerationEnabled) {
+    ctx.pubSub.publish('feedbackAdded', newFeedback)
+  }
+
+  return newFeedback
 }
 
 // add response to an existing feedback
@@ -111,6 +121,13 @@ export async function respondToFeedback(
     },
   })
 
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
+
   return feedback
 }
 
@@ -125,7 +142,7 @@ export async function addConfusionTimestep(
   { sessionId, difficulty, speed }: AddConfusionTimestepArgs,
   ctx: ContextWithOptionalUser
 ) {
-  return ctx.prisma.confusionTimestep.create({
+  const confusionTS = await ctx.prisma.confusionTimestep.create({
     data: {
       difficulty,
       speed,
@@ -135,6 +152,13 @@ export async function addConfusionTimestep(
       createdAt: new Date(),
     },
   })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: sessionId,
+  })
+
+  return confusionTS
 }
 
 // publish / unpublish a feedback to be visible to students
@@ -142,14 +166,30 @@ export async function publishFeedback(
   { id, isPublished }: { id: number; isPublished: boolean },
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.update({
     where: {
       id,
     },
     data: {
       isPublished: isPublished,
     },
+    include: {
+      responses: true,
+    },
   })
+
+  if (isPublished) {
+    ctx.pubSub.publish('feedbackAdded', feedback)
+  } else {
+    ctx.pubSub.publish('feedbackRemoved', feedback)
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
+
+  return feedback
 }
 
 // pin / unpin a feedback on the lecturers running session screen
@@ -157,14 +197,26 @@ export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.update({
     where: {
       id,
     },
     data: {
       isPinned: isPinned,
     },
+    include: {
+      responses: true,
+    },
   })
+
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
+
+  return feedback
 }
 
 // resolve / unresolve a feedback
@@ -178,7 +230,18 @@ export async function resolveFeedback(
       isResolved: isResolved,
       resolvedAt: isResolved ? new Date() : null,
     },
+    include: {
+      responses: true,
+    },
   })
+
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
+
   return feedback
 }
 
@@ -190,6 +253,14 @@ export async function deleteFeedback(
   const feedback = await ctx.prisma.feedback.delete({
     where: { id },
   })
+
+  ctx.pubSub.publish('feedbackRemoved', { id, sessionId: feedback.sessionId })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
+
   return feedback
 }
 
@@ -200,6 +271,21 @@ export async function deleteFeedbackResponse(
 ) {
   const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },
+    include: {
+      feedback: {
+        include: {
+          responses: true,
+        },
+      },
+    },
   })
-  return feedbackResponse
+
+  ctx.pubSub.publish('feedbackUpdated', feedbackResponse.feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedbackResponse.feedback.sessionId,
+  })
+
+  return feedbackResponse.feedback
 }

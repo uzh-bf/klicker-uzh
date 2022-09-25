@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useParserCache } from '@envelop/parser-cache'
 import { useResponseCache } from '@envelop/response-cache'
-import { createRedisCache } from '@envelop/response-cache-redis'
+import { useSentry } from '@envelop/sentry'
 import { useValidationCache } from '@envelop/validation-cache'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import { useHive } from '@graphql-hive/client'
@@ -14,24 +14,16 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './authorization'
 
-function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
-  let cache = undefined
-  if (redisCache) {
-    try {
-      cache = createRedisCache({ redis: redisCache })
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
+function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const app = express()
 
   app.use(
     cors({
-      origin: (origin: string, cb: any) => {
+      origin(origin, cb) {
         cb(null, origin)
       },
       credentials: true,
+      optionsSuccessStatus: 200,
     })
   )
 
@@ -94,22 +86,21 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
       }),
       useValidationCache(),
       useParserCache(),
-      // process.env.SENTRY_DSN &&
-      //   useSentry({
-      //     includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
-      //     includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
-      //     includeExecuteVariables: false, // set to `true` in order to include the operation variables values
-      //     // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
-      //     // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
-
-      //     skip: (executionArgs) => {
-      //       if (!executionArgs.operationName) {
-      //         console.log(executionArgs)
-      //         return true
-      //       }
-      //       return false
-      //     },
-      //   }),
+      process.env.SENTRY_DSN &&
+        useSentry({
+          includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
+          includeResolverArgs: false, // set to `true` in order to include the args passed to resolvers
+          includeExecuteVariables: false, // set to `true` in order to include the operation variables values
+          // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
+          // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
+          // skip: (executionArgs) => {
+          //   console.log(executionArgs)
+          //   if (!executionArgs.operationName) {
+          //     return true
+          //   }
+          //   return false
+          // },
+        }),
       // useGraphQlJit(),
       process.env.HIVE_TOKEN &&
         useHive({
@@ -119,7 +110,7 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
           usage: true,
         }),
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ prisma, redisExec, pubSub }),
+    context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
     logging: true,
     cors: false,
     maskedErrors: !process.env.DEBUG,

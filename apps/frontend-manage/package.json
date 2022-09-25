@@ -28,6 +28,7 @@
     "deepmerge": "4.2.2",
     "formik": "2.2.9",
     "graphql": "16.6.0",
+    "graphql-ws": "5.11.2",
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",

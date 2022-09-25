@@ -35,7 +35,8 @@
   "peerDependencies": {
     "@klicker-uzh/grading": "^2.0.0-alpha.0",
     "@klicker-uzh/prisma": "^2.0.0-alpha.0",
-    "@graphql-yoga/node": "^2.13.13"
+    "@graphql-yoga/node": "^2.13.13",
+    "@envelop/response-cache": "^3.2.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "2.12.0",

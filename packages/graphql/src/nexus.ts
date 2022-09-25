@@ -544,7 +544,8 @@ export const Session = objectType({
     t.field('activeBlock', {
       type: SessionBlock,
     })
-    t.nonNull.list.nonNull.field('blocks', {
+
+    t.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
 
@@ -552,11 +553,13 @@ export const Session = objectType({
 
     t.list.field('feedbacks', { type: Feedback })
 
-    t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
+    t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+    t.date('startedAt')
+    t.date('finishedAt')
   },
 })
 
@@ -590,44 +593,6 @@ export const SessionEvaluation = objectType({
     t.list.nonNull.field('instanceResults', {
       type: InstanceResults,
     })
-  },
-})
-
-export const LecturerSession = objectType({
-  name: 'LecturerSession',
-  definition(t) {
-    t.nonNull.id('id')
-
-    t.nonNull.boolean('isAudienceInteractionActive')
-    t.nonNull.boolean('isModerationEnabled')
-    t.nonNull.boolean('isGamificationEnabled')
-
-    t.nonNull.string('namespace')
-    t.nonNull.string('name')
-    t.nonNull.string('displayName')
-
-    t.nonNull.field('status', {
-      type: SessionStatus,
-    })
-
-    t.field('activeBlock', {
-      type: SessionBlock,
-    })
-
-    t.nonNull.list.nonNull.field('blocks', {
-      type: SessionBlock,
-    })
-
-    t.nonNull.field('accessMode', { type: AccessMode })
-
-    t.list.field('feedbacks', { type: Feedback })
-
-    t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
-
-    t.field('course', { type: Course })
-
-    t.date('startedAt')
-    t.date('finishedAt')
   },
 })
 
@@ -723,7 +688,7 @@ export const Query = objectType({
     })
 
     t.field('cockpitSession', {
-      type: LecturerSession,
+      type: Session,
       args: {
         id: nonNull(idArg()),
       },
@@ -733,7 +698,7 @@ export const Query = objectType({
     })
 
     t.field('pinnedFeedbacks', {
-      type: LecturerSession,
+      type: Session,
       args: {
         id: nonNull(idArg()),
       },
@@ -933,7 +898,7 @@ export const Mutation = objectType({
     })
 
     t.field('deleteFeedbackResponse', {
-      type: FeedbackResponse,
+      type: Feedback,
       args: {
         id: nonNull(intArg()),
       },
@@ -1115,6 +1080,57 @@ export const Subscription = subscriptionType({
           filter((data) => data.sessionId === args.sessionId)
         ),
       resolve: (payload) => payload.block,
+    })
+
+    t.field('feedbackCreated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackCreated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
+
+    t.field('feedbackAdded', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackAdded'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
+
+    t.int('feedbackRemoved', {
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackRemoved'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload.id,
+    })
+
+    t.field('feedbackUpdated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackUpdated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
     })
   },
 })

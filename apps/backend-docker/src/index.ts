@@ -1,10 +1,19 @@
 import { createPubSub } from '@graphql-yoga/common'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
 import * as Sentry from '@sentry/node'
 import '@sentry/tracing'
 import Redis from 'ioredis'
 import prepareApp from './app'
+
+import { Cache, createInMemoryCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
+import { useServer } from 'graphql-ws/lib/use/ws'
+import { EventEmitter } from 'node:events'
+import { WebSocketServer } from 'ws'
+
+const emitter = new EventEmitter()
 
 const prisma = new PrismaClient()
 
@@ -54,10 +63,48 @@ const eventTarget = createRedisEventTarget({
   subscribeClient,
 })
 
+let cache: Cache
+if (redisCache) {
+  try {
+    cache = createRedisCache({ redis: redisCache })
+  } catch (e) {
+    console.error(e)
+    cache = createInMemoryCache()
+  }
+} else {
+  cache = createInMemoryCache()
+}
+
+emitter.on('invalidate', (resource) => {
+  cache.invalidate([
+    {
+      typename: resource.typename,
+      id: resource.id,
+    },
+  ])
+})
+
 const pubSub = createPubSub({ eventTarget })
 
-const app = prepareApp({ prisma, redisCache, redisExec, pubSub })
+const app = prepareApp({
+  prisma,
+  redisCache,
+  redisExec,
+  pubSub,
+  cache,
+  emitter,
+})
 
-app.listen(3000, () => {
+const server = app.listen(3000, () => {
   console.log('GraphQL API located at http://0.0.0.0:3000/api/graphql')
+
+  const wsServer = new WebSocketServer({
+    server,
+    path: '/api/graphql',
+  })
+
+  useServer(
+    { schema, context: enhanceContext({ prisma, redisExec, pubSub, emitter }) },
+    wsServer
+  )
 })
