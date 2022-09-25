@@ -7,7 +7,94 @@ export const PARTICIPANT_IDS = []
 
 export const ATTACHMENTS = []
 
+export const LEARNING_ELEMENTS = [
+  {
+    id: '3e588933-36ce-49b1-9fad-87481843f7c1',
+    name: 'AMI MC 1',
+    displayName: 'AMI Modul 1 - Lernfragen',
+    questions: range(30, 48),
+  },
+  {
+    id: '627942ff-07c3-464d-860b-126ea74ddc34',
+    name: 'AMI MC 2',
+    displayName: 'AMI Modul 2 - Lernfragen',
+    questions: range(83, 92),
+  },
+  {
+    id: 'e3fa3767-1bbc-43b4-aa84-50e75b4a4add',
+    name: 'AMI Micro Repetition',
+    displayName: 'AMI Microlearning - Repetition',
+    questions: [],
+  },
+  {
+    id: '79860938-1d85-43f8-984c-313cc434af0d',
+    name: 'AMI MC 2 - TEST',
+    displayName: 'AMI Modul 2 - TEST',
+    questions: range(83, 107),
+  },
+  {
+    id: 'f3bb3a87-af08-4cbf-8caa-b3639e0d7282',
+    name: 'AMI MC 3 - TEST',
+    displayName: 'AMI Modul 3 - TEST',
+    questions: range(107, 115),
+  },
+  {
+    id: '98bb5dd4-5560-47a8-8151-bcbdaa79e89d',
+    name: 'AMI MC 4 - TEST',
+    displayName: 'AMI Modul 4 - TEST',
+    questions: range(115, 155),
+  },
+]
+
+export const SESSIONS = [
+  {
+    id: '02df291b-f4cd-46f2-8dbf-bea738aa7a7f',
+    name: 'AMI VL Woche 01',
+    displayName: 'AMI Vorlesung - Woche 01',
+    status: SessionStatus.PREPARED,
+    isGamificationEnabled: true,
+    blocks: [
+      {
+        questions: range(48, 52),
+      },
+      {
+        questions: range(52, 55),
+      },
+      {
+        questions: [55],
+      },
+      {
+        questions: range(56, 60),
+      },
+    ],
+  },
+  {
+    id: 'bd76942d-3a44-4854-9d45-287b50f9dde5',
+    name: 'AMI VL Woche 02',
+    displayName: 'AMI Vorlesung - Woche 02',
+    status: SessionStatus.PREPARED,
+    isGamificationEnabled: true,
+    blocks: [
+      {
+        questions: [56, 57, 58, 59],
+      },
+      {
+        questions: range(64, 73),
+      },
+      {
+        questions: range(73, 80),
+      },
+      {
+        questions: [80, 81, 82],
+      },
+    ],
+  },
+]
+
+export const MICRO_SESSIONS = []
+
 export const QUESTIONS = [
+  // MC - Modul 1
   {
     id: 30,
     name: 'Modul 1 Finanz- und Realanlagen',
@@ -716,6 +803,7 @@ Welches Investment wird der Anleger tätigen?`,
       },
     ],
   },
+  // LIVE SESSION - Woche 01
   {
     id: 48,
     name: 'Geldmarkt',
@@ -830,7 +918,7 @@ Welches Investment wird der Anleger tätigen?`,
       },
     },
   },
-  // AMI Session Woche 02
+  // LIVE SESSION - Woche 02
   {
     id: 56,
     name: 'Rendite von Obligationen',
@@ -1223,6 +1311,7 @@ Welches Investment wird der Anleger tätigen?`,
       { value: 'Sicherer Gewinn von 700 CHF' },
     ],
   },
+  // MC - Modul 2
   {
     id: 83,
     name: 'Modul 2 Diversifikation I',
@@ -1233,8 +1322,7 @@ Welches Investment wird der Anleger tätigen?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
         value:
           'Das Portfolio-Risiko lässt sich nur dann wegdiversifizieren, wenn die Anlagen perfekt negativ korreliert sind.',
       },
@@ -1242,11 +1330,13 @@ Welches Investment wird der Anleger tätigen?`,
         feedback:
           ' Richtig, diese Aussage ist nicht korrekt! Das Marktrisiko (systematisches Risiko) lässt sich durch Diversifikation nicht vermeiden. Nur firmenspezifische (unsystematische) Risiken können dadurch reduziert werden.',
         correct: true,
-        value: 'Das Marktrisiko lässt sich durch eine Streuung in unterschiedliche Anlagen vollständig wegdiversifizieren.',
+        value:
+          'Das Marktrisiko lässt sich durch eine Streuung in unterschiedliche Anlagen vollständig wegdiversifizieren.',
       },
       {
         feedback: 'Falsch! Bei risikofreudigen Investoren gilt A<0.',
-        value: 'Mit zunehmender Anzahl an Anlagen im Portfolio nimmt die Wirkung weiterer Diversifikation ab.',
+        value:
+          'Mit zunehmender Anzahl an Anlagen im Portfolio nimmt die Wirkung weiterer Diversifikation ab.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
@@ -1255,7 +1345,8 @@ Welches Investment wird der Anleger tätigen?`,
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Im Falle einer positiven (aber nicht perfekt positiven) Korrelation zwischen den Anlagen entspricht das systematische Risiko bei zunehmender Diversifikation der durchschnittlichen Kovarianz.',
+        value:
+          'Im Falle einer positiven (aber nicht perfekt positiven) Korrelation zwischen den Anlagen entspricht das systematische Risiko bei zunehmender Diversifikation der durchschnittlichen Kovarianz.',
       },
     ],
   },
@@ -1271,8 +1362,7 @@ Welches Investment wird der Anleger tätigen?`,
       {
         feedback:
           'Falsch! Nicht perfekt positiv korrelierte Renditen ermöglichen zwar einen Diversifikationseffekt, jedoch wird dieser umso grösser, je negativer die Korrelation zwischen den Renditen ist.',
-        value:
-          'Die erwarteten Renditen sind positiv korreliert.',
+        value: 'Die erwarteten Renditen sind positiv korreliert.',
       },
       {
         feedback:
@@ -1280,13 +1370,14 @@ Welches Investment wird der Anleger tätigen?`,
         value: 'Die erwarteten Renditen sind unkorreliert.',
       },
       {
-        feedback: 'Falsch! Die Standardabweichung spielt für den Diversifikationseffekt eine untergeordnete Rolle, ausschlaggebend ist die Korrelation.',
+        feedback:
+          'Falsch! Die Standardabweichung spielt für den Diversifikationseffekt eine untergeordnete Rolle, ausschlaggebend ist die Korrelation.',
         value: 'Die Standardabweichung ist sehr klein.',
       },
       {
-        feedback: 'Falsch! Die Standardabweichung spielt für den Diversifikationseffekt eine untergeordnete Rolle, ausschlaggebend ist die Korrelation.',
-        value:
-          'Die Standardabweichung ist sehr gross.',
+        feedback:
+          'Falsch! Die Standardabweichung spielt für den Diversifikationseffekt eine untergeordnete Rolle, ausschlaggebend ist die Korrelation.',
+        value: 'Die Standardabweichung ist sehr gross.',
       },
       {
         feedback: 'Korrekt!',
@@ -1298,10 +1389,8 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 85,
     name: 'Modul 2 Efficient Frontier',
-    content:
-      'Die Efficient Frontier setzt sich zusammen aus:',
-    contentPlain:
-      'Die Efficient Frontier setzt sich zusammen aus:',
+    content: 'Die Efficient Frontier setzt sich zusammen aus:',
+    contentPlain: 'Die Efficient Frontier setzt sich zusammen aus:',
     type: QuestionType.SC,
     choices: [
       {
@@ -1314,19 +1403,23 @@ Welches Investment wird der Anleger tätigen?`,
       {
         feedback:
           ' Falsch! Eine hohe Standardabweichung muss nicht zwingend zu einer hohen Portfoliorendite führen, dies gilt nur für optimal diversifizierte Portfolios.',
-        value: 'Den Portfolios, welche über die höchste Standardabweichung und somit die grösste Rendite verfügen.',
-      },
-      {
-        feedback: 'Falsch! Eine tiefe Standardabweichung führt nicht automatisch dazu, dass das Portfolio optimal diversifiziert ist und daher müssen solche Portfolios nicht zwingend auf der Efficient Frontier liegen.',
-        value: 'Den Portfolios, welche die kleinste Standardabweichung aufweisen.',
-      },
-      {
-        feedback: 'Falsch! Portfolios mit tiefer Korrelation müssen nicht zwingend optimal sein. relevant ist, dass die Rendite-Risiko-Relation optimal ist.',
         value:
-          'Den Portfolios, welche die geringste Korrelation aufweisen.',
+          'Den Portfolios, welche über die höchste Standardabweichung und somit die grösste Rendite verfügen.',
       },
       {
-        feedback: 'Falsch!  Portfolios mit einem tiefen Beta müssen nicht ein optimales Risiko-Rendite-Verhältnis aufweisen',
+        feedback:
+          'Falsch! Eine tiefe Standardabweichung führt nicht automatisch dazu, dass das Portfolio optimal diversifiziert ist und daher müssen solche Portfolios nicht zwingend auf der Efficient Frontier liegen.',
+        value:
+          'Den Portfolios, welche die kleinste Standardabweichung aufweisen.',
+      },
+      {
+        feedback:
+          'Falsch! Portfolios mit tiefer Korrelation müssen nicht zwingend optimal sein. relevant ist, dass die Rendite-Risiko-Relation optimal ist.',
+        value: 'Den Portfolios, welche die geringste Korrelation aufweisen.',
+      },
+      {
+        feedback:
+          'Falsch!  Portfolios mit einem tiefen Beta müssen nicht ein optimales Risiko-Rendite-Verhältnis aufweisen',
         value: 'Den Portfolios, welche ein tiefes Beta aufweisen.',
       },
     ],
@@ -1341,20 +1434,21 @@ Welches Investment wird der Anleger tätigen?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value:
           'Kapital zum risikolosen Zinssatz aufnehmen und dieses in die risikolose Anlage sowie in das optimale Risikoportfolio auf der Capital Allocation Line investieren.',
       },
       {
-        feedback:
-          'Korrekt!',
+        feedback: 'Korrekt!',
         correct: true,
-        value: 'Eine Netto-Short-Position in der risikolosen Anlage eingehen und das Kapital in das optimale Risikoportfolio auf der Capital Allocation Line investieren.',
+        value:
+          'Eine Netto-Short-Position in der risikolosen Anlage eingehen und das Kapital in das optimale Risikoportfolio auf der Capital Allocation Line investieren.',
       },
       {
-        feedback: 'Falsch! Eine tiefe Standardabweichung führt nicht automatisch dazu, dass das Portfolio optimal diversifiziert ist und daher müssen solche Portfolios nicht zwingend auf der Efficient Frontier liegen.',
-        value: 'Den Portfolios, welche die kleinste Standardabweichung aufweisen.',
+        feedback:
+          'Falsch! Eine tiefe Standardabweichung führt nicht automatisch dazu, dass das Portfolio optimal diversifiziert ist und daher müssen solche Portfolios nicht zwingend auf der Efficient Frontier liegen.',
+        value:
+          'Den Portfolios, welche die kleinste Standardabweichung aufweisen.',
       },
       {
         feedback: 'Falsch!',
@@ -1363,7 +1457,8 @@ Welches Investment wird der Anleger tätigen?`,
       },
       {
         feedback: 'Falsch!',
-        value: 'Ein Portfolio auf der Capital Allocation Line rechts vom optimalen Risikoportfolio kann nicht erreicht werden.',
+        value:
+          'Ein Portfolio auf der Capital Allocation Line rechts vom optimalen Risikoportfolio kann nicht erreicht werden.',
       },
     ],
   },
@@ -1383,17 +1478,20 @@ Welches Investment wird der Anleger tätigen?`,
           'Die Standardabweichung des Portfolios ist stets grösser als der Mittelwert der einzelnen Standardabweichungen zusammen.',
       },
       {
-        feedback:
-          'Korrekt!',
+        feedback: 'Korrekt!',
         correct: true,
-        value: 'Die Standardabweichung des Portfolios ist stets kleiner als der Mittelwert der einzelnen Standardabweichungen zusammen.',
+        value:
+          'Die Standardabweichung des Portfolios ist stets kleiner als der Mittelwert der einzelnen Standardabweichungen zusammen.',
       },
       {
-        feedback: 'Falsch! Auch im Falle einer positiven Korrelation resultiert eine Portfolio-Standardabweichung, welche unter dem Mittelwert der einzelnen Standardabweichungen liegt.',
-        value: 'Die Standardabweichung des Portfolios ist stets gleich gross wie der Mittelwert der einzelnen Standardabweichungen zusammen.',
+        feedback:
+          'Falsch! Auch im Falle einer positiven Korrelation resultiert eine Portfolio-Standardabweichung, welche unter dem Mittelwert der einzelnen Standardabweichungen liegt.',
+        value:
+          'Die Standardabweichung des Portfolios ist stets gleich gross wie der Mittelwert der einzelnen Standardabweichungen zusammen.',
       },
       {
-        feedback: 'Falsch! Ceteris paribus würde die erwartete Rendite zunehmen.',
+        feedback:
+          'Falsch! Ceteris paribus würde die erwartete Rendite zunehmen.',
         value:
           'Je kleiner die Korrelation zwischen den beiden Anlagen, umso kleiner ist (ceteris paribus) die erwartete Rendite.',
       },
@@ -1406,82 +1504,83 @@ Welches Investment wird der Anleger tätigen?`,
   {
     id: 88,
     name: 'Modul 2 Portfoliobildung II',
-    content:
-    `Gehe von folgender Ausgangssituation aus:
-    (Bild_modul2_portfoliobildung_II)
-    Wie hoch ist die erwartete Rendite und die Standardabweichung eines Portfolios, welches 35% des Kapitals in Aktie A und 65% in Aktie B investiert hat?`,
-    contentPlain:
-    `Gehe von folgender Ausgangssituation aus:
-    (Bild_modul2_portfoliobildung_II)
-    Wie hoch ist die erwartete Rendite und die Standardabweichung eines Portfolios, welches 35% des Kapitals in Aktie A und 65% in Aktie B investiert hat?`,
+    content: `Gehe von folgender Ausgangssituation aus:
+![Portfoliobildung](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul2_portfoliobildung_II.png)
+Wie hoch ist die erwartete Rendite und die Standardabweichung eines Portfolios, welches 35% des Kapitals in Aktie A und 65% in Aktie B investiert hat?`,
+    contentPlain: `Gehe von folgender Ausgangssituation aus:
+BILD
+Wie hoch ist die erwartete Rendite und die Standardabweichung eines Portfolios, welches 35% des Kapitals in Aktie A und 65% in Aktie B investiert hat?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.',
-        value:
-          '$$ E(r_p)=13.9\%; SD=2.98\% $$',
+        feedback: String.raw`Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.`,
+        value: String.raw`$$ E(r_p)=13.9\%; SD=2.98\% $$`,
       },
       {
         feedback:
-          'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.',
-        value: '$$ E(r_p)=13.9\%; SD=2.10\% $$',
-      },
-      {
-        feedback: 'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(rB)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(rp)=10.01\%$$.',
-        value: '$$ E(r_p)=13.9\%; SD=3.00\% $$',
-      },
-      {
-        feedback: 'Falsch! Die Varianz einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der quadrierten Abweichungen zwischen möglicher Renditerealisation und erwarteter Rendite. Daraus folgt: SDA=2.45%; SDB=1.66%. Die Standardabweichung des Portfolios wird wie folgt berechnet: $$SD_p=\sqrt{(0.35)^2*(0.0245)^2+(0.65)^2*(0.0166)^2+2*(0.35)*(0.65)*(0.0245)*(0.0166)*(0.5919))}=1.73\%$$.',
-        value:
-          '$$ E(r_p)=10.01\%; SD=2.98\% $$',
+          String.raw`Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.`,
+        value: String.raw`$$ E(r_p)=13.9\%; SD=2.10\% $$`,
       },
       {
         feedback:
-`Korrekt!
-E(r_A) = 0.15 * 8\% + 0.2 * 13\% + … + 0.2 * 16\% = 13.00\%
-E(r_B) = 0.15 * 8\% + 0.2 * 7\% + … + 0.2 * 11\% = 8.40\%
-E(r_{PF}) = 0.35 * 13.00\% + 0.65 * 8.40\% = 10.01\%
-Var_A = 0.15 * (8\% - 13\%)^2 + … + 0.2 * (16\% - 13\%)^2 = 0.0006
-SDA = \sqrt{Var_A} = 0.024495 = 2.45\%
-Var_B = 0.15 * (8\% - 8.4\%)^2 + … + 0.2 * (11\% - 8.4\%)^2 = 0.000274
-SDB = \sqrt{Var_B} = 0.016553 = 1.66\%
-Cov(A,B) = E(r_Ar_B) – E(r_A) * E(r_B) = 1.116\% - 13\% * 8.4\% = 0.00024
-E(r_Ar_B) = 0.15 * 8\% * 8\% + … + 0.2 * 16\% * 11\% = 0.01116 = 1.116\%
-Corr(A,B) = Cov(A,B) / (SDA * SDB) = 0.5919
-Var_{PF} = 0.352 * Var_A + 0.652 * Var_B + 2 * 0.35 * 0.65 * SDA * SDB * Corr(A,B) = 0.00029847
-SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
+          String.raw`Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(rB)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(rp)=10.01\%$$.`,
+        value: String.raw`$$ E(r_p)=13.9\%; SD=3.00\% $$`,
+      },
+      {
+        feedback:
+          String.raw`Falsch! Die Varianz einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der quadrierten Abweichungen zwischen möglicher Renditerealisation und erwarteter Rendite. Daraus folgt: SDA=2.45\%; SDB=1.66\%. Die Standardabweichung des Portfolios wird wie folgt berechnet: $$SD_p=sqrt{(0.35)^2*(0.0245)^2+(0.65)^2*(0.0166)^2+2*(0.35)*(0.65)*(0.0245)*(0.0166)*(0.5919))}=1.73\%$$.`,
+        value: String.raw`$$ E(r_p)=10.01\%; SD=2.98\% $$`,
+      },
+      {
+        feedback: String.raw`Korrekt!
+$$E(r_A) = 0.15 * 8\% + 0.2 * 13\% + … + 0.2 * 16\% = 13.00\%$$
+
+$$E(r_B) = 0.15 * 8\% + 0.2 * 7\% + … + 0.2 * 11\% = 8.40\%$$
+
+$$E(r_{PF}) = 0.35 * 13.00\% + 0.65 * 8.40\% = 10.01\%$$
+
+$$Var_A = 0.15 * (8\% - 13\%)^2 + … + 0.2 * (16\% - 13\%)^2 = 0.0006$$
+
+$$SDA = \sqrt{Var_A} = 0.024495 = 2.45\%$$
+
+$$Var_B = 0.15 * (8\% - 8.4\%)^2 + … + 0.2 * (11\% - 8.4\%)^2 = 0.000274$$
+
+$$SDB = \sqrt{Var_B} = 0.016553 = 1.66\%$$
+
+$$Cov(A,B) = E(r_Ar_B) – E(r_A) * E(r_B) = 1.116\% - 13\% * 8.4\% = 0.00024$$
+
+$$E(r_Ar_B) = 0.15 * 8\% * 8\% + … + 0.2 * 16\% * 11\% = 0.01116 = 1.116\%$$
+
+$$Corr(A,B) = Cov(A,B) / (SDA * SDB) = 0.5919$$
+
+$$Var_{PF} = 0.352 * Var_A + 0.652 * Var_B + 2 * 0.35 * 0.65 * SDA * SDB * Corr(A,B) = 0.00029847$$
+
+$$SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%$$`,
         correct: true,
-        value: '$$ E(r_p)=10.01\%; SD=1.73\% $$',
+        value: String.raw`$$ E(r_p)=10.01\%; SD=1.73\% $$`,
       },
     ],
   },
   {
     id: 89,
     name: 'Modul 2 Portfoliobildung III',
-    content:
-    `Gehe von folgender Ausgangssituation aus:
-    Anlage A: $$E(r_A)=12\%; SDA=17\%$$
-    Anlage B: $$E(r_B)=9\%; SDB=14\%$$
-    Korrelation: r=-1
-    Welche Gewichtung weisen die Anlage A und Anlage B im globalen Minimum-Varianz-Portfolio auf?`,
-    contentPlain:
-    `Gehe von folgender Ausgangssituation aus:
-    Anlage A: $$E(r_A)=12\%; SDA=17\%$$
-    Anlage B: $$E(r_B)=9\%; SDB=14\%$$
-    Korrelation: r=-1
-    Welche Gewichtung weisen die Anlage A und Anlage B im globalen Minimum-Varianz-Portfolio auf?`,
+    content: String.raw`Gehe von folgender Ausgangssituation aus:
+
+Anlage A: $$E(r_A)=12\%; SDA=17\%$$
+
+Anlage B: $$E(r_B)=9\%; SDB=14\%$$
+
+Korrelation: r=-1
+
+Welche Gewichtung weisen die Anlage A und Anlage B im globalen Minimum-Varianz-Portfolio auf?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch!',
-        value:
-          '$$w_A=0.24; w_B=0.76$$',
+        feedback: 'Falsch!',
+        value: '$$w_A=0.24; w_B=0.76$$',
       },
       {
-        feedback:
-          'Korrekt! $$w_A=\frac{14}{(17+14)}=0.45; w_B=1-0.45=0.55$$',
+        feedback: String.raw`Korrekt! $$w_A=\frac{14}{(17+14)}=0.45; w_B=1-0.45=0.55$$`,
         correct: true,
         value: '$$w_A=0.45; w_B=0.55$$',
       },
@@ -1491,8 +1590,7 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
       },
       {
         feedback: 'Falsch!',
-        value:
-          '$$w_A=0.57; w_B=0.43$$',
+        value: '$$w_A=0.57; w_B=0.43$$',
       },
       {
         feedback: 'Falsch',
@@ -1503,23 +1601,18 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 90,
     name: 'Modul 2 Portfoliobildung IV',
-    content:
-    `Gehe von folgender Ausgangssituation aus:
-    Aktie A weist eine erwartete Rendite von 10% bei einer Standardabweichung von 18% auf. Aktie B hingegen verfügt über eine erwartete Rendite von 17% bei einer Standardabweichung von 29%. Welchen Wert hat die Kovarianz, wenn die Korrelation 0.4 beträgt? (Auf zwei Nachkommastellen gerundet.)`,
-    contentPlain:
-    `Gehe von folgender Ausgangssituation aus:
-    Aktie A weist eine erwartete Rendite von 10% bei einer Standardabweichung von 18% auf. Aktie B hingegen verfügt über eine erwartete Rendite von 17% bei einer Standardabweichung von 29%. Welchen Wert hat die Kovarianz, wenn die Korrelation 0.4 beträgt? (Auf zwei Nachkommastellen gerundet.)`,
+    content: `Gehe von folgender Ausgangssituation aus:
+Aktie A weist eine erwartete Rendite von 10% bei einer Standardabweichung von 18% auf. Aktie B hingegen verfügt über eine erwartete Rendite von 17% bei einer Standardabweichung von 29%. Welchen Wert hat die Kovarianz, wenn die Korrelation 0.4 beträgt? (Auf zwei Nachkommastellen gerundet.)`,
+    contentPlain: `Gehe von folgender Ausgangssituation aus:
+Aktie A weist eine erwartete Rendite von 10% bei einer Standardabweichung von 18% auf. Aktie B hingegen verfügt über eine erwartete Rendite von 17% bei einer Standardabweichung von 29%. Welchen Wert hat die Kovarianz, wenn die Korrelation 0.4 beträgt? (Auf zwei Nachkommastellen gerundet.)`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch!',
-        value:
-          '$$Cov(r_A,r_B)=0.01$$',
+        feedback: 'Falsch!',
+        value: '$$Cov(r_A,r_B)=0.01$$',
       },
       {
-        feedback:
-          'Korrekt! $$Cov(r_A,r_B)=0.4*0.18*0.29=0.02$$',
+        feedback: 'Korrekt! $$Cov(r_A,r_B)=0.4*0.18*0.29=0.02$$',
         correct: true,
         value: '$$Cov(r_A,r_B)=0.02$$',
       },
@@ -1529,8 +1622,7 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
       },
       {
         feedback: 'Falsch!',
-        value:
-          '$$Cov(r_A,r_B)=0.04$$',
+        value: '$$Cov(r_A,r_B)=0.04$$',
       },
       {
         feedback: 'Falsch',
@@ -1541,30 +1633,30 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 91,
     name: 'Modul 2 Diversifikation',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Bei einem gut diversifizierten, gleichgewichteten Portfolio ist das Portfoliorisiko abhängig von der Kovarianz/Korrelation zwischen den Renditen der Anlagen im Portfolio.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Es führt zu einem erhöhten Risiko, falls eine tiefe Korrelation vorliegt.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Es führt zu einem erhöhten Risiko, falls eine tiefe Korrelation vorliegt.',
         value:
           'Bei Strukturierten Produkten mit einem Worst-of-Mechanismus führt eine hohe Korrelation zu einem erhöhten Risiko für den Investor.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt!  Es ist keine hohe Korrelation erwünscht, da Hedge Funds dem Portfolio beigemischt werden, aufgrund ihrer tiefen Korrelation zu anderen Märkten.',
+        feedback:
+          'Diese Aussage ist nicht korrekt!  Es ist keine hohe Korrelation erwünscht, da Hedge Funds dem Portfolio beigemischt werden, aufgrund ihrer tiefen Korrelation zu anderen Märkten.',
         value:
           'Bei einem Funds of Hedge Funds ist der Diversifikationseffekt erwünscht, da eine möglichst hohe Korrelation mit den anderen Märkten angestrebt wird.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Je breiter das Portfolio eines Hedge Funds diversifiziert ist, desto höher ist die Korrelation mit dem Aktienmarkt.',
@@ -1574,7 +1666,7 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 92,
     name: 'Modul 2 Capital Market Line',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
@@ -1586,12 +1678,14 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
           ' Auf der Capital Market Line (CML) liegen alle Risiko-Rendite Kombinationen, die der Investor bereit ist zu akzeptieren.',
       },
       {
-        feedback: 'Diese Aussage ist ist korrekt! Einzelne Wertpapiere und deren Risikoprämien werden mithilfe der SML analysiert (nicht auf Portfolio-Ebene).',
+        feedback:
+          'Diese Aussage ist ist korrekt! Einzelne Wertpapiere und deren Risikoprämien werden mithilfe der SML analysiert (nicht auf Portfolio-Ebene).',
         value:
           'Mit der Capital Market Line (CML) kann die Risikoprämie eines Wertpapiers ermittelt werden.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Die Sharpe-Ratio bildet die Steigung der CAL.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Die Sharpe-Ratio bildet die Steigung der CAL.',
         value:
           'Die Steigung der Security Market Line (SML) entspricht der Sharpe-Ratio.',
       },
@@ -1606,27 +1700,24 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 93,
     name: 'Modul 2 Marktportfolio',
-    content:
-      'Welche der folgenden Aussagen ist **falsch**?',
-    contentPlain:
-      'Welche der folgenden Aussagen ist falsch?',
+    content: 'Welche der folgenden Aussagen ist **falsch**?',
+    contentPlain: 'Welche der folgenden Aussagen ist falsch?',
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value:
-          'Das Marktportfolio beinhaltet alle gehandelten Risikoanlagen.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value: 'Das Marktportfolio beinhaltet alle gehandelten Risikoanlagen.',
       },
       {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
         value: 'Das Marktportfolio liegt auf der Efficient Frontier.',
       },
       {
-        feedback: 'Richtig, diese Aussage ist nicht korrekt! Das Marktportfolio liegt auf dem Tangentialpunkt zwischen der Efficient Frontier und der Capital Market Line (CML).',
+        feedback:
+          'Richtig, diese Aussage ist nicht korrekt! Das Marktportfolio liegt auf dem Tangentialpunkt zwischen der Efficient Frontier und der Capital Market Line (CML).',
         correct: true,
-        value: 'Das Marktportfolio liegt auf dem Tangentialpunkt zwischen der Capital Market Line (CML) und der Indifferenzkurve jedes Investors.',
+        value:
+          'Das Marktportfolio liegt auf dem Tangentialpunkt zwischen der Capital Market Line (CML) und der Indifferenzkurve jedes Investors.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
@@ -1642,10 +1733,8 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 94,
     name: 'Modul 2 Security Market Line',
-    content:
-      'Welche der folgenden Aussagen ist **richtig**?',
-    contentPlain:
-      'Welche der folgenden Aussagen ist richtig?',
+    content: 'Welche der folgenden Aussagen ist **richtig**?',
+    contentPlain: 'Welche der folgenden Aussagen ist richtig?',
     type: QuestionType.SC,
     choices: [
       {
@@ -1655,17 +1744,19 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
           'Die Security Market Line (SML) hat nicht zwingend eine positive Steigung (CAPM Annahmen).',
       },
       {
-        feedback:
-          'Korrekt!',
+        feedback: 'Korrekt!',
         correct: true,
         value: 'Eine Aktie, die unter der SML liegt, ist überbewertet.',
       },
       {
-        feedback: 'Falsch! Gemäss CAPM sollte jede Anlage auf der SML liegen. Liegt eine Aktie unter der SML, so ist sie überbewertet, da sie im Verhältnis zu ihrem Risiko eine zu geringe Rendite aufweist. In einem effizienten Markt wird sich die Nachfrage nach dieser Aktie verringern und der Preis wieder auf der SML einpendeln.',
-        value: 'Nur das Marktportfolio, nicht aber die einzelnen Aktien, liegen auf der SML.',
+        feedback:
+          'Falsch! Gemäss CAPM sollte jede Anlage auf der SML liegen. Liegt eine Aktie unter der SML, so ist sie überbewertet, da sie im Verhältnis zu ihrem Risiko eine zu geringe Rendite aufweist. In einem effizienten Markt wird sich die Nachfrage nach dieser Aktie verringern und der Preis wieder auf der SML einpendeln.',
+        value:
+          'Nur das Marktportfolio, nicht aber die einzelnen Aktien, liegen auf der SML.',
       },
       {
-        feedback: 'Falsch! Die SML drückt die Beziehung zwischen dem erwarteten Return und dem Marktrisiko (systematische Risiko) aus.',
+        feedback:
+          'Falsch! Die SML drückt die Beziehung zwischen dem erwarteten Return und dem Marktrisiko (systematische Risiko) aus.',
         value:
           'Die SML drückt die Beziehung zwischen dem erwarteten Return und dem Portfoliorisiko aus.',
       },
@@ -1678,17 +1769,14 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 95,
     name: 'Modul 2 Überrendite Alpha I',
-    content:
-      'Unterbewertete Aktien haben gemäss dem CAPM ein...',
-    contentPlain:
-      'Unterbewertete Aktien haben gemäss dem CAPM ein...',
+    content: 'Unterbewertete Aktien haben gemäss dem CAPM ein...',
+    contentPlain: 'Unterbewertete Aktien haben gemäss dem CAPM ein...',
     type: QuestionType.SC,
     choices: [
       {
         feedback:
           'Falsch! Unterbewertete Aktien haben gemäss dem CAPM ein positives Alpha.',
-        value:
-          'negatives Alpha.',
+        value: 'negatives Alpha.',
       },
       {
         feedback:
@@ -1696,13 +1784,14 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
         value: 'negatives Beta.',
       },
       {
-        feedback: 'Falsch! Nur aufgrund des Betas lässt sich keine Aussage über Unter- oder Überbewertung machen.',
+        feedback:
+          'Falsch! Nur aufgrund des Betas lässt sich keine Aussage über Unter- oder Überbewertung machen.',
         value: 'positives Beta.',
       },
       {
-        feedback: 'Falsch! Unterbewertete Aktien haben gemäss dem CAPM ein positives Alpha.',
-        value:
-          'Alpha von null.',
+        feedback:
+          'Falsch! Unterbewertete Aktien haben gemäss dem CAPM ein positives Alpha.',
+        value: 'Alpha von null.',
       },
       {
         feedback: 'Korrekt!',
@@ -1714,26 +1803,21 @@ SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
   {
     id: 96,
     name: 'Modul 2 Überrendite Alpha II',
-    content:
-`Gehe von folgender Ausgangssituation aus:
-(Bild_modul2_ueberrendite_alpha_II)
+    content: `Gehe von folgender Ausgangssituation aus:
+![Ueberrendite](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul2_ueberrendite_alpha_II.png)
 Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wird ein Investor eher kaufen und aus welchem Grund?`,
-    contentPlain:
-`Gehe von folgender Ausgangssituation aus:
-(Bild_modul2_ueberrendite_alpha_II)
+    contentPlain: `Gehe von folgender Ausgangssituation aus:
+BILD
 Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wird ein Investor eher kaufen und aus welchem Grund?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback:
-          `Korrekt! A's erwartete Überrendite (Alpha) beträgt: 0.12-[0.04+1.2*(0.085-0.04)]=2.6%, das Alpha von B hingegen beträgt: 0.14-[0.04+1.8*(0.085-0.04)]=1.9%.`,
+        feedback: `Korrekt! A's erwartete Überrendite (Alpha) beträgt: 0.12-[0.04+1.2*(0.085-0.04)]=2.6%, das Alpha von B hingegen beträgt: 0.14-[0.04+1.8*(0.085-0.04)]=1.9%.`,
         correct: true,
-        value:
-        'A, da A eine erwartete Überrendite (Alpha) von 2.6% aufweist.',
+        value: 'A, da A eine erwartete Überrendite (Alpha) von 2.6% aufweist.',
       },
       {
-        feedback:
-          `Falsch! A's erwartete Überrendite (Alpha) beträgt: 0.12-[0.04+1.2*(0.085-0.04)]=2.6%.`,
+        feedback: `Falsch! A's erwartete Überrendite (Alpha) beträgt: 0.12-[0.04+1.2*(0.085-0.04)]=2.6%.`,
         value: 'A, da A ein Alpha von 2.7% aufweist.',
       },
       {
@@ -1741,40 +1825,44 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
         value: 'B, da B ein Alpha von 1.9% aufweist.',
       },
       {
-        feedback: 'Falsch! Die erwartete Rendite muss noch mit der Rendite gemäss CAPM verglichen werden.',
-        value:
-          'B, da B eine erwartete Rendite von 12% aufweist.',
+        feedback:
+          'Falsch! Die erwartete Rendite muss noch mit der Rendite gemäss CAPM verglichen werden.',
+        value: 'B, da B eine erwartete Rendite von 12% aufweist.',
       },
       {
         feedback: 'Falsch! B, da B ein höheres Beta besitzt',
-        value: 'Ohne die Renditebetrachtung kann mit dem Beta keine Aussage gemacht werden.',
+        value:
+          'Ohne die Renditebetrachtung kann mit dem Beta keine Aussage gemacht werden.',
       },
     ],
   },
   {
     id: 97,
     name: `Modul 2 Annahmen des CAPM's`,
-    content: 'Welche der folgenden Aussagen ist gemäss den theoretischen Annahmen des CAPM **richtig**?',
+    content:
+      'Welche der folgenden Aussagen ist gemäss den theoretischen Annahmen des CAPM **richtig**?',
     contentPlain:
-    'Welche der folgenden Aussagen ist gemäss den theoretischen Annahmen des CAPM richtig?',
+      'Welche der folgenden Aussagen ist gemäss den theoretischen Annahmen des CAPM richtig?',
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Rationale Investoren werden nie in Aktien investieren, die unterhalb der SML liegen, da diese Aktien überbewertet, d.h. gemessen an der erwarteten Rendite zu teuer sind.',
+        feedback:
+          'Falsch! Rationale Investoren werden nie in Aktien investieren, die unterhalb der SML liegen, da diese Aktien überbewertet, d.h. gemessen an der erwarteten Rendite zu teuer sind.',
         value:
-        'Rationale Investoren investieren vorzugsweise in Aktien, welche unterhalb der Security Market Line (SML) liegen.',
+          'Rationale Investoren investieren vorzugsweise in Aktien, welche unterhalb der Security Market Line (SML) liegen.',
       },
       {
-        feedback:
-          `Falsch! Bei uneingeschränkt vielen Marktteilnehmern kann ein Investor keinen Einfluss auf die Preise einzelner Aktien ausüben.`,
-        value: 'Ein einzelner Investor kann auf die Marktpreise einzelner Aktien Einfluss nehmen.',
+        feedback: `Falsch! Bei uneingeschränkt vielen Marktteilnehmern kann ein Investor keinen Einfluss auf die Preise einzelner Aktien ausüben.`,
+        value:
+          'Ein einzelner Investor kann auf die Marktpreise einzelner Aktien Einfluss nehmen.',
       },
       {
         feedback: `Falsch! Investoren haben homogene Risiko- und Renditeerwartungen.`,
         value: 'Investoren haben heterogene Risiko- und Renditeerwartungen.',
       },
       {
-        feedback: 'Korrekt! Die erwartete Rendite muss noch mit der Rendite gemäss CAPM verglichen werden.',
+        feedback:
+          'Korrekt! Die erwartete Rendite muss noch mit der Rendite gemäss CAPM verglichen werden.',
         correct: true,
         value:
           'Alle Investoren sind gezwungen zu gegebenen Marktpreisen zu investieren.',
@@ -1788,19 +1876,19 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
   {
     id: 98,
     name: 'Modul 2 Low-Risk-Anomalie',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           ' Die Low-Risk-Anomalie besagt, dass Titel mit einem tiefen Beta in der langen Frist im Durchschnitt eine höhere Rendite abwerfen als Titel mit einem hohen Beta.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Genau der umgekehrte Fall ist korrekt: Die Beta-Streuung ist in steigenden Märkten tief und in fallenden Märkten (Krisen) hoch.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Genau der umgekehrte Fall ist korrekt: Die Beta-Streuung ist in steigenden Märkten tief und in fallenden Märkten (Krisen) hoch.',
         value:
           'Eine mögliche Erklärung der Low-Risk-Anomalie ist, dass die Beta-Streuung in fallenden Märkten tief und in steigenden Märkten sehr hoch ist.',
       },
@@ -1811,8 +1899,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
           'Bei der Low-Risk-Strategie erhöht sich das Beta des Portfolios, falls die Marktvolatilität sinkt.',
       },
       {
-        feedback:
-          'Diese Aussage ist nicht korrekt!',
+        feedback: 'Diese Aussage ist nicht korrekt!',
         value:
           'Die Low-Risk-Strategie zeichnet sich dadurch aus, dass auch in der langen Frist immer ein Alpha generiert werden kann.',
       },
@@ -1822,31 +1909,32 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     id: 99,
     name: 'Modul 2 Annahmen der APT',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
-    contentPlain:
-    'Welche der folgenden Aussagen ist falsch?',
+    contentPlain: 'Welche der folgenden Aussagen ist falsch?',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
         value:
-        'Eine Annahme der Arbitrage Pricing Theorie (APT) lautet: Aktienrenditen lassen sich durch Faktormodelle beschreiben.',
-      },
-      {
-        feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value: 'Eine Annahme der APT lautet: Es gibt genügend Aktien, um unsystematische Risiken wegzudiversifizieren.',
-      },
-      {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Arbitragefreiheit ist eine Modellannahme in der Arbitrage Pricing Theory (theoretische Sicht). Zusatz: In der Realität ist diese Voraussetzung aber häufig nicht gegeben (Praxissicht).',
-        value: 'Eine Annahme der APT lautet: Es existieren keine Arbitragemöglichkeiten.',
+          'Eine Annahme der Arbitrage Pricing Theorie (APT) lautet: Aktienrenditen lassen sich durch Faktormodelle beschreiben.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
         value:
-          'Zur Herleitung der APT sind alle obigen Annahmen notwendig.',
+          'Eine Annahme der APT lautet: Es gibt genügend Aktien, um unsystematische Risiken wegzudiversifizieren.',
       },
       {
-        feedback: 'Richtig, diese Aussage ist nicht korrekt! Die Annahmen des CAPM sind deutlich restriktiver als jene der APT. Beispielsweise geht die APT nicht von der Existenz eines allgemeinen Marktportfolios aus.',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Arbitragefreiheit ist eine Modellannahme in der Arbitrage Pricing Theory (theoretische Sicht). Zusatz: In der Realität ist diese Voraussetzung aber häufig nicht gegeben (Praxissicht).',
+        value:
+          'Eine Annahme der APT lautet: Es existieren keine Arbitragemöglichkeiten.',
+      },
+      {
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value: 'Zur Herleitung der APT sind alle obigen Annahmen notwendig.',
+      },
+      {
+        feedback:
+          'Richtig, diese Aussage ist nicht korrekt! Die Annahmen des CAPM sind deutlich restriktiver als jene der APT. Beispielsweise geht die APT nicht von der Existenz eines allgemeinen Marktportfolios aus.',
         correct: true,
         value: 'Im Gegensatz zum CAPM sind die Annahmen der APT restriktiver.',
       },
@@ -1856,24 +1944,26 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     id: 100,
     name: 'Modul 2 CAPM und APT I',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
-    contentPlain:
-    'Welche der folgenden Aussagen ist falsch?',
+    contentPlain: 'Welche der folgenden Aussagen ist falsch?',
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Richtig, diese Aussage ist nicht korrekt! Die SML gibt einen linearen Zusammenhang zwischen dem Beta einer Aktie und deren erwartete Rendite an.',
+        feedback:
+          'Richtig, diese Aussage ist nicht korrekt! Die SML gibt einen linearen Zusammenhang zwischen dem Beta einer Aktie und deren erwartete Rendite an.',
         correct: true,
         value:
-        'Die Security Market Line (SML) im CAPM gibt einen linearen Zusammenhang zwischen der erwarteten Rendite und der Standardabweichung der Renditen einer Aktie an.',
+          'Die Security Market Line (SML) im CAPM gibt einen linearen Zusammenhang zwischen der erwarteten Rendite und der Standardabweichung der Renditen einer Aktie an.',
+      },
+      {
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value:
+          'Sowohl das CAPM als auch die Arbitrage Pricing Theorie (APT) unterliegen dem "Law of One Price".',
       },
       {
         feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value: 'Sowohl das CAPM als auch die Arbitrage Pricing Theorie (APT) unterliegen dem "Law of One Price".',
-      },
-      {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Arbitragefreiheit ist eine Modellannahme in der Arbitrage Pricing Theory (theoretische Sicht). Zusatz: In der Realität ist diese Voraussetzung aber häufig nicht gegeben (Praxissicht).',
-        value: 'Sowohl im CAPM als auch in der APT werden Investoren ausschliesslich für das Eingehen systematischer Risiken entschädigt.',
+          'Falsch! Diese Aussage ist korrekt. Arbitragefreiheit ist eine Modellannahme in der Arbitrage Pricing Theory (theoretische Sicht). Zusatz: In der Realität ist diese Voraussetzung aber häufig nicht gegeben (Praxissicht).',
+        value:
+          'Sowohl im CAPM als auch in der APT werden Investoren ausschliesslich für das Eingehen systematischer Risiken entschädigt.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
@@ -1882,7 +1972,8 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Im Gegensatz zum CAPM sind in der APT auch negative Risikoprämien möglich.',
+        value:
+          'Im Gegensatz zum CAPM sind in der APT auch negative Risikoprämien möglich.',
       },
     ],
   },
@@ -1890,29 +1981,31 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     id: 101,
     name: 'Modul 2 CAPM und APT II',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
-    contentPlain:
-    'Welche der folgenden Aussagen ist richtig?',
+    contentPlain: 'Welche der folgenden Aussagen ist richtig?',
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Das Gegenteil ist richtig: Im CAPM wird - im Gegensatz zur APT - der systematische Risikofaktor (die Schwankungen relativ zum Marktportfolio) endogen durch das Modell bestimmt.',
+        feedback:
+          'Falsch! Das Gegenteil ist richtig: Im CAPM wird - im Gegensatz zur APT - der systematische Risikofaktor (die Schwankungen relativ zum Marktportfolio) endogen durch das Modell bestimmt.',
         value:
-        'Im Gegensatz zum CAPM werden die systematischen Risikofaktoren in der Arbitrage Pricing Theorie (APT) endogen durch das Modell bestimmt.',
+          'Im Gegensatz zum CAPM werden die systematischen Risikofaktoren in der Arbitrage Pricing Theorie (APT) endogen durch das Modell bestimmt.',
       },
       {
         feedback:
           'Falsch! Die Aussagen der APT beruhen nicht auf der Existenz eines Marktportfolios.',
-        value: 'Sowohl die APT als auch das CAPM setzen die Existenz eines allgemeinen Marktportfolios voraus.',
+        value:
+          'Sowohl die APT als auch das CAPM setzen die Existenz eines allgemeinen Marktportfolios voraus.',
       },
       {
-        feedback: 'Falsch! Das Gegenteil ist richtig: Aufgrund des Arbitragearguments ist die Konvergenzgeschwindigkeit in der APT höher als im CAPM.',
-        value: 'In der APT ist die Konvergenzgeschwindigkeit inkorrekt bewerteter Aktienkurse zum Marktgleichgewicht tiefer als im CAPM.',
+        feedback:
+          'Falsch! Das Gegenteil ist richtig: Aufgrund des Arbitragearguments ist die Konvergenzgeschwindigkeit in der APT höher als im CAPM.',
+        value:
+          'In der APT ist die Konvergenzgeschwindigkeit inkorrekt bewerteter Aktienkurse zum Marktgleichgewicht tiefer als im CAPM.',
       },
       {
         feedback: 'Korrekt!',
         correct: true,
-        value:
-          'Das CAPM kann als ein Spezialfall der APT angesehen werden.',
+        value: 'Das CAPM kann als ein Spezialfall der APT angesehen werden.',
       },
       {
         feedback: 'Falsch!',
@@ -1923,30 +2016,29 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
   {
     id: 102,
     name: 'Modul 2 CAPM und APT III',
-    content: 'Die/das ________ liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die/das ________ einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
+    content:
+      'Die/das ________ liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die/das ________ einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
     contentPlain:
-    'Die/das ________ liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die/das ________ einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
+      'Die/das ________ liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die/das ________ einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'APT, CAPM',
+        value: 'APT, CAPM',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: 'APT, OPM (Option Pricing Model)',
       },
       {
-        feedback: 'Korrekt! Das CAPM liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die APT einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
+        feedback:
+          'Korrekt! Das CAPM liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die APT einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
         correct: true,
         value: 'CAPM, APT',
       },
       {
         feedback: 'Falsch!',
-        value:
-          'CAPM, OPM',
+        value: 'CAPM, OPM',
       },
       {
         feedback: 'Falsch!',
@@ -1959,19 +2051,16 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     name: 'Modul 2 Arbitrage I',
     content: `Ausgangspunkt sei ein Ein-Faktor-APT. Das Portfolio A hat ein Beta von 0.2 und eine erwartete Rendite von 13%. Das Portfolio B besitzt ein Beta von 0.4 und eine erwartete Rendite von 15%. Der risikofreie Zinssatz ist 10%.
     Um eine allfällige Arbitragemöglichkeit auszunützen, kann ein Investor eine Short-Position im Portfolio ___ und eine Long-Position im Portfolio ___ einnehmen.`,
-    contentPlain:
-    `Ausgangspunkt sei ein Ein-Faktor-APT. Das Portfolio A hat ein Beta von 0.2 und eine erwartete Rendite von 13%. Das Portfolio B besitzt ein Beta von 0.4 und eine erwartete Rendite von 15%. Der risikofreie Zinssatz ist 10%.
+    contentPlain: `Ausgangspunkt sei ein Ein-Faktor-APT. Das Portfolio A hat ein Beta von 0.2 und eine erwartete Rendite von 13%. Das Portfolio B besitzt ein Beta von 0.4 und eine erwartete Rendite von 15%. Der risikofreie Zinssatz ist 10%.
     Um eine allfällige Arbitragemöglichkeit auszunützen, kann ein Investor eine Short-Position im Portfolio ___ und eine Long-Position im Portfolio ___ einnehmen.`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'A, A',
+        value: 'A, A',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: 'A, B',
       },
       {
@@ -1984,8 +2073,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
       },
       {
         feedback: 'Falsch!',
-        value:
-          'B, B',
+        value: 'B, B',
       },
       {
         feedback: 'Falsch!',
@@ -2001,8 +2089,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     ...ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird.
     ...zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen.
     ...ein Null-Beta Portfolio konstruieren, das einen sicheren Gewinn erzielen wird.`,
-    contentPlain:
-    `Um eine allfällige Arbitragemöglichkeit auszunützen, sollte ein Investor allgemein...
+    contentPlain: `Um eine allfällige Arbitragemöglichkeit auszunützen, sollte ein Investor allgemein...
     ...ein im ersten Markt unterbewertetes Asset leerverkaufen und dasselbe im zweiten Markt überbewertete Asset kaufen.
     ...ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird.
     ...zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen.
@@ -2011,23 +2098,21 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '1. und 4.',
+        value: '1. und 4.',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '1. und 3.',
       },
       {
-        feedback: 'Korrekt! Um eine allfällige Arbitragemöglichkeit auszunutzen, sollte ein Investor allgemein ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird oder zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen. (Zusatz: Die 4. Aussage ist nicht korrekt, denn gemäss Definition erfordert Arbitrage das Erzielen eines sicheren Gewinns ohne den Einsatz von Kapital. Bei der Konstruktion eines Null-Beta-Portfolios ist diese Voraussetzung aber nicht zwingend erfüllt (Kapitaleinsatz beim Erstellen eines Portfolios).)',
+        feedback:
+          'Korrekt! Um eine allfällige Arbitragemöglichkeit auszunutzen, sollte ein Investor allgemein ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird oder zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen. (Zusatz: Die 4. Aussage ist nicht korrekt, denn gemäss Definition erfordert Arbitrage das Erzielen eines sicheren Gewinns ohne den Einsatz von Kapital. Bei der Konstruktion eines Null-Beta-Portfolios ist diese Voraussetzung aber nicht zwingend erfüllt (Kapitaleinsatz beim Erstellen eines Portfolios).)',
         correct: true,
         value: '2. und 3.',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '1. sowie 3. und 4.',
+        value: '1. sowie 3. und 4.',
       },
       {
         feedback: 'Falsch!',
@@ -2040,32 +2125,30 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     name: 'Modul 2 Anwendung',
     content: `Gegeben sei ein diversifiziertes Portfolio A in einer Zwei-Faktoren-Ökonomie. Der risikolose Zinssatz beträgt 6%. Die Risikoprämie des ersten Faktor-Portfolios ist 4% und die Risikoprämie des zweiten Faktor-Portfolios liegt bei 3%. Das Beta des Portfolios A bezüglich des ersten Faktors sei 1.2 und das Beta bezüglich des zweiten Faktors 0.8.
     Wie hoch ist die erwartete Rendite des Portfolios A?`,
-    contentPlain:
-    `Gegeben sei ein diversifiziertes Portfolio A in einer Zwei-Faktoren-Ökonomie. Der risikolose Zinssatz beträgt 6%. Die Risikoprämie des ersten Faktor-Portfolios ist 4% und die Risikoprämie des zweiten Faktor-Portfolios liegt bei 3%. Das Beta des Portfolios A bezüglich des ersten Faktors sei 1.2 und das Beta bezüglich des zweiten Faktors 0.8.
+    contentPlain: `Gegeben sei ein diversifiziertes Portfolio A in einer Zwei-Faktoren-Ökonomie. Der risikolose Zinssatz beträgt 6%. Die Risikoprämie des ersten Faktor-Portfolios ist 4% und die Risikoprämie des zweiten Faktor-Portfolios liegt bei 3%. Das Beta des Portfolios A bezüglich des ersten Faktors sei 1.2 und das Beta bezüglich des zweiten Faktors 0.8.
     Wie hoch ist die erwartete Rendite des Portfolios A?`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '7.0%',
+        value: '7.0%',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '8.0%',
       },
       {
-        feedback: 'Korrekt! Um eine allfällige Arbitragemöglichkeit auszunutzen, sollte ein Investor allgemein ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird oder zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen. (Zusatz: Die 4. Aussage ist nicht korrekt, denn gemäss Definition erfordert Arbitrage das Erzielen eines sicheren Gewinns ohne den Einsatz von Kapital. Bei der Konstruktion eines Null-Beta-Portfolios ist diese Voraussetzung aber nicht zwingend erfüllt (Kapitaleinsatz beim Erstellen eines Portfolios).)',
+        feedback:
+          'Korrekt! Um eine allfällige Arbitragemöglichkeit auszunutzen, sollte ein Investor allgemein ein kostenneutrales Portfolio konstruieren, das einen sicheren Gewinn erzielen wird oder zeitgleiche, kostenneutrale Trades in zwei Märkten durchführen. (Zusatz: Die 4. Aussage ist nicht korrekt, denn gemäss Definition erfordert Arbitrage das Erzielen eines sicheren Gewinns ohne den Einsatz von Kapital. Bei der Konstruktion eines Null-Beta-Portfolios ist diese Voraussetzung aber nicht zwingend erfüllt (Kapitaleinsatz beim Erstellen eines Portfolios).)',
         value: '9.2%',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '13.0%',
+        value: '13.0%',
       },
       {
-        feedback: 'Korrekt! Die erwartete Rendite beträgt: 6%+1.2*4%+0.8*3%=13.2%.',
+        feedback:
+          'Korrekt! Die erwartete Rendite beträgt: 6%+1.2*4%+0.8*3%=13.2%.',
         correct: true,
         value: '13.2%',
       },
@@ -2079,19 +2162,22 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Denn die Aussage lautet nicht, dass alle drei Faktoren firmenspezifische Risikofaktoren darstellen, sondern dass das Fama-French-Modell auf firmenspezifischen Risikofaktoren basiert. “Small-Minus-Big“ und “High-Minus-Low“ sind firmenspezifische Risikofaktoren. Folglich basiert das Fama-French-Modell auf firmenspezifischen Risikofaktoren (und zusätzlich auf dem “CAPM-Beta“, welches das systematische Risiko bzw. das Marktrisiko abbildet).',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Denn die Aussage lautet nicht, dass alle drei Faktoren firmenspezifische Risikofaktoren darstellen, sondern dass das Fama-French-Modell auf firmenspezifischen Risikofaktoren basiert. “Small-Minus-Big“ und “High-Minus-Low“ sind firmenspezifische Risikofaktoren. Folglich basiert das Fama-French-Modell auf firmenspezifischen Risikofaktoren (und zusätzlich auf dem “CAPM-Beta“, welches das systematische Risiko bzw. das Marktrisiko abbildet).',
         value:
-        'Das Fama-French-Modell ist ein Beispiel eines Drei-Faktoren-Modells auf Basis firmenspezifischer Risikofaktoren.',
+          'Das Fama-French-Modell ist ein Beispiel eines Drei-Faktoren-Modells auf Basis firmenspezifischer Risikofaktoren.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Die Auswahl der Risikofaktoren im Fama-French-Modell beruht unter anderem auf der empirisch signifikanten Korrelation der Faktoren mit Aktienrenditen.',
+        value:
+          'Die Auswahl der Risikofaktoren im Fama-French-Modell beruht unter anderem auf der empirisch signifikanten Korrelation der Faktoren mit Aktienrenditen.',
       },
       {
         feedback:
           'Richtig, diese Aussage ist nicht korrekt! Das Fama-French-Modell ist nicht nur in der empirischen Forschung weit verbreitet, es spielt auch eine dominante Rolle in der Finanzindustrie.',
-        correct:true,
-        value: 'Trotz der grossen Beachtung in der akademischen Welt fand das Fama-French-Modell nie Eingang in die Praxis.',
+        correct: true,
+        value:
+          'Trotz der grossen Beachtung in der akademischen Welt fand das Fama-French-Modell nie Eingang in die Praxis.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
@@ -2100,10 +2186,12 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Der zweite firmenspezifische Risikofaktor im Fama-French-Modell misst die Differenz der Renditen zwischen Unternehmen mit hohem und solchen mit tiefem Book-to-Market Ratio.',
+        value:
+          'Der zweite firmenspezifische Risikofaktor im Fama-French-Modell misst die Differenz der Renditen zwischen Unternehmen mit hohem und solchen mit tiefem Book-to-Market Ratio.',
       },
     ],
   },
+  // MC - Modul 3
   {
     id: 107,
     name: 'Modul 3 zeitgewichteter vs. kapitalgewichteter Mittelwert',
@@ -2117,25 +2205,22 @@ Berechne den kapitalgewichteten und den zeitgewichteten Mittelwert, wenn keine R
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '11.7% und 12.5%',
+        value: '11.7% und 12.5%',
       },
       {
-        feedback: `Korrekt!
+        feedback: String.raw`Korrekt!
 $$ Kapitalgewichteter Mittelwert: PV (Einzahlungen) = PV (Auszahlungen) --> \$500'000 + \frac{\$300'000}{(1+r)} = \frac{\$75'000}{(1+r)} + \frac{\$880'000}{(1+r)}^2 --> r = 12.06\%
 Zeitgewichteter Mittelwert (geometrischer Durchschnitt der Renditen): ((1+0.15)*(1+0.10))^{1/2} - 1 = 12.47\% $$`,
-        correct:true,
+        correct: true,
         value: '12.1% und 12.5%',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '12.5% und 11.7%',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '12.5% und 12.1%',
+        value: '12.5% und 12.1%',
       },
       {
         feedback: 'Falsch!',
@@ -2147,34 +2232,32 @@ Zeitgewichteter Mittelwert (geometrischer Durchschnitt der Renditen): ((1+0.15)*
     id: 108,
     name: 'Modul 3 Sharpe und Treynor Ratio',
     content: `Gegeben ist folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+![Sharpe](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul3_sharpe_und_treynorratio.png)
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 3%.
 Berechne das Sharpe und Treynor Ratio des Sooner Stock Fonds.`,
     contentPlain: `Gegeben ist folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+BILD
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 3%.
 Berechne das Sharpe und Treynor Ratio des Sooner Stock Fonds.`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '0.013 / 0.087',
+        value: '0.013 / 0.087',
       },
       {
         feedback: 'Falsch!',
         value: '0.371 / 0.087',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '0.371 / 0.094',
       },
       {
-        feedback: 'Korrekt! $$ Die Sharpe Ratio beträgt: \frac{(r_P-r_f)}{SD_P}= {(0.2-0.03)}{0.44} = 0.386 und das Treynor Ratio: \frac{(r_P-r_f)}{β_P}= \frac{(0.2-0.03)}{1.8} = 0.094 $$',
+        feedback:
+          'Korrekt! $$ Die Sharpe Ratio beträgt: \frac{(r_P-r_f)}{SD_P}= {(0.2-0.03)}{0.44} = 0.386 und das Treynor Ratio: \frac{(r_P-r_f)}{β_P}= \frac{(0.2-0.03)}{1.8} = 0.094 $$',
         correct: true,
-        value:
-          '0.386 / 0.094',
+        value: '0.386 / 0.094',
       },
       {
         feedback: 'Falsch!',
@@ -2186,34 +2269,32 @@ Berechne das Sharpe und Treynor Ratio des Sooner Stock Fonds.`,
     id: 109,
     name: `Modul 3 Jensen's Alpha`,
     content: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+![Sharpe](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul3_sharpe_und_treynorratio.png)
 Der risikofreie Zinssatz für diese Zeitperiode liegt bei 2%.
 Wie hoch ist das Jensen's Alpha des Sooner Stock Funds?`,
     contentPlain: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+BILD
 Der risikofreie Zinssatz für diese Zeitperiode liegt bei 2%.
 Wie hoch ist das Jensen's Alpha des Sooner Stock Funds?`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '-0.234',
+        value: '-0.234',
       },
       {
-        feedback: 'Korrekt! $$ \alpha_P=r_P-(r_f+\beta_P*(r_m-r_f)) = 0.2 - (0.02+1.8*(0.11-0.02)) $$',
+        feedback:
+          'Korrekt! $$ alpha_P=r_P-(r_f+\beta_P*(r_m-r_f)) = 0.2 - (0.02+1.8*(0.11-0.02)) $$',
         correct: true,
         value: '0.018',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '0.038',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '0.09',
+        value: '0.09',
       },
       {
         feedback: 'Falsch!',
@@ -2225,34 +2306,32 @@ Wie hoch ist das Jensen's Alpha des Sooner Stock Funds?`,
     id: 110,
     name: `Modul 3 Information Ratio`,
     content: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+![Sharpe](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul3_sharpe_und_treynorratio.png)
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 3%.
 Wie gross ist das Information Ratio des Sooner Stock Fonds?`,
     contentPlain: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
-(Bild_modul3_sharpe_und_treynorratio)
+BILD
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 3%.
 Wie gross ist das Information Ratio des Sooner Stock Fonds?`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '1.22',
+        value: '1.22',
       },
       {
-        feedback: 'Korrekt! $$ Das Jensen Ratio beträgt: α_P = r_P- (r_f + β_P*(r_m-r_f) = 0.2 - [0.03 + 1.8*(0.11-0.03)] = 0.026 und das Information Ratio ist demnach: α_P/SD(e_P) = \frac{0.026}{0.02} = 1.30. $$',
+        feedback:
+          'Korrekt! $$ Das Jensen Ratio beträgt: α_P = r_P- (r_f + β_P*(r_m-r_f) = 0.2 - [0.03 + 1.8*(0.11-0.03)] = 0.026 und das Information Ratio ist demnach: α_P/SD(e_P) = \frac{0.026}{0.02} = 1.30. $$',
         correct: true,
         value: '1.30',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '1.53',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '10.30',
+        value: '10.30',
       },
       {
         feedback: 'Falsch!',
@@ -2264,34 +2343,32 @@ Wie gross ist das Information Ratio des Sooner Stock Fonds?`,
     id: 111,
     name: `Modul 3 M2 Measure`,
     content: `Gegeben ist folgende Ausgangslage zur Performance des Seminole Fonds und des Marktportfolios:
-(Bild_modul3_M2_measure)
+![M2](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul3_M2_measure.png)
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 6%.
 Berechne die M2 Measure für den Seminole Fonds.`,
     contentPlain: `Gegeben ist folgende Ausgangslage zur Performance des Seminole Fonds und des Marktportfolios:
-(Bild_modul3_M2_measure)
+BILD
 Der risikolose Zinssatz für diese Zeitperiode liegt bei 6%.
 Berechne die M2 Measure für den Seminole Fonds.`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Korrekt! $$ w_P= \frac{0.22}{0.30} = 0.73; w_{rf}= 1-0.73 = 0.27 --> M^2 = [0.73*(0.18)+0.27*(0.06)] - 0.14 = 0.8%.',
+        feedback:
+          String.raw`Korrekt! $$ w_P= \frac{0.22}{0.30} = 0.73; w_{rf}= 1-0.73 = 0.27 --> M^2 = [0.73*(0.18)+0.27*(0.06)] - 0.14 = 0.8\%.`,
         correct: true,
-        value:
-        '0.8%',
+        value: '0.8%',
       },
       {
         feedback: 'Falsch!',
         value: '2.9%',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '4.0%',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '20.0%',
+        value: '20.0%',
       },
       {
         feedback: 'Falsch!',
@@ -2310,19 +2387,23 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         feedback: 'Korrekt!',
         correct: true,
         value:
-        'Falls das gesamte Investionsvolumen in das Portfolio investiert ist, ist das M2-Measure ein sinnvolles Portfolio-Mass.',
+          'Falls das gesamte Investionsvolumen in das Portfolio investiert ist, ist das M2-Measure ein sinnvolles Portfolio-Mass.',
       },
       {
-        feedback: 'Falsch! Die Sharpe-Ratio ist bei einer Gesamtinvestition des Anlageuniversum ein sinnvolles Mass.',
-        value: 'Falls nur ein Teil des Investitionsvolumen in das Portfolio investiert ist, ist die Sharpe-Ratio ein sinnvolles Performance-Mass.',
+        feedback:
+          'Falsch! Die Sharpe-Ratio ist bei einer Gesamtinvestition des Anlageuniversum ein sinnvolles Mass.',
+        value:
+          'Falls nur ein Teil des Investitionsvolumen in das Portfolio investiert ist, ist die Sharpe-Ratio ein sinnvolles Performance-Mass.',
       },
       {
         feedback:
           'Falsch! Um zwei Portfolios adäquat zu vergleichen muss sowohl die Rendite als auch das eingegangene Risiko verglichen werden.',
-        value: 'Um die Performance zweier Portfolios adäquat zu messen, reicht es, die historischen Renditen zu vergleichen.',
+        value:
+          'Um die Performance zweier Portfolios adäquat zu messen, reicht es, die historischen Renditen zu vergleichen.',
       },
       {
-        feedback: 'Falsch! Sowohl die Sharpe-Ratio als auch die Treynor-Ratio sind bei negativen Renditen nicht brauchbar.',
+        feedback:
+          'Falsch! Sowohl die Sharpe-Ratio als auch die Treynor-Ratio sind bei negativen Renditen nicht brauchbar.',
         value:
           'Bei negativen Portfolio-Renditen ist die Sharpe-Ratio nicht brauchbar zur Performance-Messung, die Treynor-Ratio dagegen schon.',
       },
@@ -2343,19 +2424,23 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         feedback: 'Korrekt!',
         correct: true,
         value:
-        'Viele Beobachtungen sind notwendig für eine signifikante Performance Evaluation, selbst wenn der Erwartungswert und die Varianz des Portfolios konstant sind.',
+          'Viele Beobachtungen sind notwendig für eine signifikante Performance Evaluation, selbst wenn der Erwartungswert und die Varianz des Portfolios konstant sind.',
       },
       {
-        feedback: 'Falsch! Eine Veränderung der Portfolioparameter in aktiv gemanagten Portfolios verkompliziert die Performance Evaluation zusätzlich.',
-        value: 'Eine Veränderung der Portfolioparameter in aktiv gemanagten Portfolios stellt keine Herausforderung dar für die Performance Evaluation.',
+        feedback:
+          'Falsch! Eine Veränderung der Portfolioparameter in aktiv gemanagten Portfolios verkompliziert die Performance Evaluation zusätzlich.',
+        value:
+          'Eine Veränderung der Portfolioparameter in aktiv gemanagten Portfolios stellt keine Herausforderung dar für die Performance Evaluation.',
       },
       {
         feedback:
           'Falsch! Unter Window Dressing versteht man, dass der Portfoliomanager vor dem vierteljährlichen Reportdatum das Portfolio umschichtet, um am Reportdatum möglichst viele erfolgreiche Aktien im Portfolio zu halten. Dabei berücksichtigt er die zukünftige Performance dieser Aktien nicht.',
-        value: 'Unter Window Dressing versteht man, dass der Portfoliomanager nach dem vierteljährlichen Reportdatum das Portfolio umschichtet, um für die nächste Periode eine maximale Rendite zu erreichen.',
+        value:
+          'Unter Window Dressing versteht man, dass der Portfoliomanager nach dem vierteljährlichen Reportdatum das Portfolio umschichtet, um für die nächste Periode eine maximale Rendite zu erreichen.',
       },
       {
-        feedback: 'Falsch! Der Survivorship Bias verkompliziert die Performance Evaluation zusätzlich. Denn der Datensatz enthält nur jene Fonds, welche überlebt haben. Die Marktindexrendite ist somit "künstlich" erhöht und schwerer zu schlagen.',
+        feedback:
+          'Falsch! Der Survivorship Bias verkompliziert die Performance Evaluation zusätzlich. Denn der Datensatz enthält nur jene Fonds, welche überlebt haben. Die Marktindexrendite ist somit "künstlich" erhöht und schwerer zu schlagen.',
         value:
           'Der Survivorship Bias vereinfacht generell die Performancemessung.',
       },
@@ -2368,13 +2453,12 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 114,
     name: 'Modul 3 Performance Attribution',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist nicht korrekt!',
+        feedback: 'Diese Aussage ist nicht korrekt!',
         value:
           'Die Performance Attribution verliert aufgrund sinkender Ansprüche der Pensionskassen an Wichtigkeit.',
       },
@@ -2391,14 +2475,14 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Die Performance wird in die Komponenten strategische Asset Allocation, taktische Asset Allocation, Industrieselektion und Titelselektion unterteilt.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Mithilfe der Performance Attribution kann erklärt werden, weshalb die Portfolio Performance von der Performance des Benchmarks abweicht.',
       },
     ],
   },
+  // MC - Modul 4
   {
     id: 115,
     name: 'Modul 4 Grundlagen der Behavioral Finance',
@@ -2410,21 +2494,24 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         feedback: 'Korrekt!',
         correct: true,
         value:
-        'Während konventionelle Theorien annehmen, dass Investoren rational sind, impliziert die Behavioral Finance, dass sie es nicht sein müssen.',
+          'Während konventionelle Theorien annehmen, dass Investoren rational sind, impliziert die Behavioral Finance, dass sie es nicht sein müssen.',
       },
       {
-        feedback: 'Falsch! Falls die irrationalen Entscheidungen der Investoren die Preise beeinflussen, werden rationale Investoren diese Arbitragemöglichkeiten ausnutzen und sie somit wieder auf das rationale Niveau bringen.',
-        value: 'Die Existenz von irrationalen Investoren impliziert, dass Kapitalmärkte ineffizient sind.',
+        feedback:
+          'Falsch! Falls die irrationalen Entscheidungen der Investoren die Preise beeinflussen, werden rationale Investoren diese Arbitragemöglichkeiten ausnutzen und sie somit wieder auf das rationale Niveau bringen.',
+        value:
+          'Die Existenz von irrationalen Investoren impliziert, dass Kapitalmärkte ineffizient sind.',
       },
       {
         feedback:
           'Falsch! Irrationales Verhalten entsteht aufgrund von Verzerrungen in der Informationsverarbeitung sowie inkonsistenten oder systematisch suboptimalen Entscheidungen.',
-        value: 'Die Behavioral Finance nimmt an, dass irrationales Verhalten nur aufgrund von Verzerrungen in der Informationsaufbereitung entsteht.',
+        value:
+          'Die Behavioral Finance nimmt an, dass irrationales Verhalten nur aufgrund von Verzerrungen in der Informationsaufbereitung entsteht.',
       },
       {
-        feedback: 'Falsch! Börsenblasen - wie beispielsweise die Dotcom Blase - werden von irrationalem Investorenverhalten verursacht.',
-        value:
-          'Börsenblasen lassen sich auch rational erklären.',
+        feedback:
+          'Falsch! Börsenblasen - wie beispielsweise die Dotcom Blase - werden von irrationalem Investorenverhalten verursacht.',
+        value: 'Börsenblasen lassen sich auch rational erklären.',
       },
       {
         feedback: 'Falsch!',
@@ -2440,28 +2527,34 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Wenn ein Investor neue Informationen im Verhältnis zu älteren Einschätzungen übergewichtet, dann ist dies auf den Forecasting Error zurückzuführen.',
+        feedback:
+          'Falsch! Wenn ein Investor neue Informationen im Verhältnis zu älteren Einschätzungen übergewichtet, dann ist dies auf den Forecasting Error zurückzuführen.',
         value:
-        'Wenn ein Investor Informationen, die er gestern in der Zeitung gelesen hat gegenüber früheren Einschätzungen übergewichtet, so ist dies auf den Anchoring Bias zurückzuführen.',
+          'Wenn ein Investor Informationen, die er gestern in der Zeitung gelesen hat gegenüber früheren Einschätzungen übergewichtet, so ist dies auf den Anchoring Bias zurückzuführen.',
       },
       {
         feedback: 'Korrekt!',
         correct: true,
-        value: 'Der Overconfidence Bias entsteht, da Investoren ihre eigenen Einschätzungen und Fähigkeiten überschätzen.',
+        value:
+          'Der Overconfidence Bias entsteht, da Investoren ihre eigenen Einschätzungen und Fähigkeiten überschätzen.',
       },
       {
         feedback:
           'Falsch! Wenn ein Investor aufgrund einer zu kleinen Stichprobe auf einen Trend schliesst, dann ist dies auf den Representativeness Effekt zurückzuführen.',
-        value: 'Wenn ein Investor aufgrund zweier guter Quartalsabschlüsse auf eine gute zukünftige Performance schliesst, dann ist dies auf Mental Accounting zurückzuführen.',
+        value:
+          'Wenn ein Investor aufgrund zweier guter Quartalsabschlüsse auf eine gute zukünftige Performance schliesst, dann ist dies auf Mental Accounting zurückzuführen.',
       },
       {
-        feedback: 'Falsch! Framing Biases resultieren, wenn Investoren risikoavers in Bezug auf Gewinne, aber risikosuchend bezüglich Verlusten sind. Als Beispiel sei hier auf die Barings Bank verwiesen, bei welcher Nick Leeson zwischen 1993 und 1995 rund 827 Millionen Pfund durch Optionsspekulationen verloren hatte. Dies, bei dem Versuch Verluste mittels noch riskanteren Spekulationen wieder gut zu machen.',
+        feedback:
+          'Falsch! Framing Biases resultieren, wenn Investoren risikoavers in Bezug auf Gewinne, aber risikosuchend bezüglich Verlusten sind. Als Beispiel sei hier auf die Barings Bank verwiesen, bei welcher Nick Leeson zwischen 1993 und 1995 rund 827 Millionen Pfund durch Optionsspekulationen verloren hatte. Dies, bei dem Versuch Verluste mittels noch riskanteren Spekulationen wieder gut zu machen.',
         value:
           'Framing Biases resultieren, wenn Investoren risikosuchend in Bezug auf Gewinne, aber risikoavers bezüglich Verlusten sind.',
       },
       {
-        feedback: 'Falsch! Ein Beispiel der Regret Avoidance ist, das es einen Investor mehr schmerzt, wenn eine Aktie einer unbekannten Start-up Firma an Wert verliert, als wenn ein ETF auf den SMI denselben Wert einbüsst.',
-        value: 'Ein Beispiel der Regret Avoidance ist, dass es einen Investor weniger schmerzt, wenn eine Aktie einer unbekannten Start-up Firma an Wert verliert, als wenn ein ETF auf den SMI denselben Wert einbüsst.',
+        feedback:
+          'Falsch! Ein Beispiel der Regret Avoidance ist, das es einen Investor mehr schmerzt, wenn eine Aktie einer unbekannten Start-up Firma an Wert verliert, als wenn ein ETF auf den SMI denselben Wert einbüsst.',
+        value:
+          'Ein Beispiel der Regret Avoidance ist, dass es einen Investor weniger schmerzt, wenn eine Aktie einer unbekannten Start-up Firma an Wert verliert, als wenn ein ETF auf den SMI denselben Wert einbüsst.',
       },
     ],
   },
@@ -2473,22 +2566,26 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Falls Investoren inkonsistente Entscheidungen treffen, handelt es sich um den Decision Bias.',
+        feedback:
+          'Falsch! Falls Investoren inkonsistente Entscheidungen treffen, handelt es sich um den Decision Bias.',
         value:
-        'Wenn Investoren inkonsistente Entscheidungen treffen, ist dies auf den Information Selection Bias zurückzuführen.',
-      },
-      {
-        feedback: 'Falsch! Selektive Wahrnehmung von Informationen sind auf den Information Selection Bias zurückzuführen.',
-        value: 'Wenn Investoren Informationen selektiv wahrnehmen, ist dies auf den Information Processing Bias zurückzuführen.',
+          'Wenn Investoren inkonsistente Entscheidungen treffen, ist dies auf den Information Selection Bias zurückzuführen.',
       },
       {
         feedback:
-          'Korrekt!',
-        correct: true,
-        value: 'Der Book-to-market Effekt kann durch den Information Selection Bias erklärt werden.',
+          'Falsch! Selektive Wahrnehmung von Informationen sind auf den Information Selection Bias zurückzuführen.',
+        value:
+          'Wenn Investoren Informationen selektiv wahrnehmen, ist dies auf den Information Processing Bias zurückzuführen.',
       },
       {
-        feedback: 'Falsch! Dieser Effekt kann durch den Information Selection Bias erklärt werden.',
+        feedback: 'Korrekt!',
+        correct: true,
+        value:
+          'Der Book-to-market Effekt kann durch den Information Selection Bias erklärt werden.',
+      },
+      {
+        feedback:
+          'Falsch! Dieser Effekt kann durch den Information Selection Bias erklärt werden.',
         value:
           'Eine mögliche Erklärung dafür, dass Anleger Aktien mit hoher Aufmerksamkeit bevorzugen, ist der Information Processing Bias.',
       },
@@ -2508,39 +2605,41 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
         value:
-        'Durch die Konkavität der Nutzenfunktion im Gewinnbereich wird in der Prospect Theory Risikoaversion ausgedrückt.',
+          'Durch die Konkavität der Nutzenfunktion im Gewinnbereich wird in der Prospect Theory Risikoaversion ausgedrückt.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Gemäss der Prospect Theory sind Anleger im Verlustbereich risikosuchend. Dies wird mit einer konvexen Nutzenfunktion im Verlustbereich modelliert.',
+        value:
+          'Gemäss der Prospect Theory sind Anleger im Verlustbereich risikosuchend. Dies wird mit einer konvexen Nutzenfunktion im Verlustbereich modelliert.',
+      },
+      {
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value:
+          'Die steilere Nutzenfunktion im Verlustbereich drückt die höhere Gewichtung der Verluste gegenüber den Gewinnen aus.',
       },
       {
         feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value: 'Die steilere Nutzenfunktion im Verlustbereich drückt die höhere Gewichtung der Verluste gegenüber den Gewinnen aus.',
-      },
-      {
-        feedback: 'Richtig! Diese Aussage ist nicht korrekt. Als Refernzpunkt dient die Veränderung im Vergleich zum aktuellen Vermögen und nicht das gesamte Vermögen.',
+          'Richtig! Diese Aussage ist nicht korrekt. Als Refernzpunkt dient die Veränderung im Vergleich zum aktuellen Vermögen und nicht das gesamte Vermögen.',
         correct: true,
         value:
           'Das gesamte Vermögen dient als Referenzpunkt für die Nutzenfunktion in der Prospect Theory.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
-        value: 'Die Cumulative Prospect Theory besagt, dass Individuen die Eintrittswahrscheinlichkeit von wenig wahrscheinlichen Ereignissen überschätzen und von sehr wahrscheinlichen Ereignissen unterschätzen.',
+        value:
+          'Die Cumulative Prospect Theory besagt, dass Individuen die Eintrittswahrscheinlichkeit von wenig wahrscheinlichen Ereignissen überschätzen und von sehr wahrscheinlichen Ereignissen unterschätzen.',
       },
     ],
   },
   {
     id: 119,
     name: 'Modul 4 Verzerrungen',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Anchoring beschreibt die Tatsache, dass Individuen dazu tendieren, sich von nicht relevanten Ankerwerten beeinflussen zu lassen.',
@@ -2552,14 +2651,15 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Overconfidence beschreibt den Effekt, dass Investoren dazu tendieren, ihre Fähigkeiten zu überschätzen.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Der Framing-Effekt beschreibt, dass Investoren bei den gleichen Entscheidungsproblemen, welche unterschiedlich formuliert wurden, anders handeln.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Der Framing-Effekt beschreibt, dass Investoren bei den gleichen Entscheidungsproblemen, welche unterschiedlich formuliert wurden, anders handeln.',
         value:
           'Framing beschreibt den Effekt, dass Investoren diejenige Investitionsmöglichkeit wählen, welche ihnen bekannter ist oder welche sie sich besser vorstellen können.',
       },
       {
         feedback:
           'Diese Aussage ist nicht korrekt! Mental Accounting beschreibt den Effekt, dass Individuen psychologisch dazu tendieren ihr Vermögen in Teilvermögen zu unterteilen und dieses Teilvermögen behandeln sie schlussendlich unterschiedlich.',
-       value:
+        value:
           'Mental Accounting beschreibt den Effekt, dass Investoren dazu tendieren, Wahrscheinlichkeiten verzerrt einzuschätzen, da sie von einer kurzen Reihe auf die gesamte Verteilung schliessen.',
       },
     ],
@@ -2567,24 +2667,28 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 120,
     name: 'Modul 4 Efficient Market Hypothesis I',
-    content: 'Welche der folgenden Aussagen zur **Efficient Market Hypothesis (EMH)** ist **falsch**?',
-    contentPlain: 'Welche der folgenden Aussagen zur Efficient Market Hypothesis (EMH) ist falsch?',
+    content:
+      'Welche der folgenden Aussagen zur **Efficient Market Hypothesis (EMH)** ist **falsch**?',
+    contentPlain:
+      'Welche der folgenden Aussagen zur Efficient Market Hypothesis (EMH) ist falsch?',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
         value:
-        'Unter dem Begriff Random Walk versteht man, dass künftige Aktienkursveränderungen zufällig und somit nicht vorhersagbar sind.',
-      },
-      {
-        feedback: 'Richtig! Diese Aussage ist nicht korrekt. Ursache des Random Walks ist die Tatsache, dass Aktienpreise jederzeit alle verfügbaren Informationen vollständig reflektieren. Dies ist der Fall, wenn sich die Marktteilnehmer rational verhalten.',
-        correct: true,
-        value: 'Der Random Walk ist nur durch Irrationalität in der Preisfindung zu erklären.',
+          'Unter dem Begriff Random Walk versteht man, dass künftige Aktienkursveränderungen zufällig und somit nicht vorhersagbar sind.',
       },
       {
         feedback:
-          'Falsch! Diese Aussage ist korrekt.',
-        value: 'Reflektieren Aktienpreise jederzeit alle verfügbaren Informationen, können sie gemäss der EMH als effizient bezeichnet werden.',
+          'Richtig! Diese Aussage ist nicht korrekt. Ursache des Random Walks ist die Tatsache, dass Aktienpreise jederzeit alle verfügbaren Informationen vollständig reflektieren. Dies ist der Fall, wenn sich die Marktteilnehmer rational verhalten.',
+        correct: true,
+        value:
+          'Der Random Walk ist nur durch Irrationalität in der Preisfindung zu erklären.',
+      },
+      {
+        feedback: 'Falsch! Diese Aussage ist korrekt.',
+        value:
+          'Reflektieren Aktienpreise jederzeit alle verfügbaren Informationen, können sie gemäss der EMH als effizient bezeichnet werden.',
       },
       {
         feedback: 'Falsch! Diese Aussage ist korrekt.',
@@ -2592,22 +2696,27 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Ist der Preis einer Aktie gemäss der schwachen Form der Markteffizienz informationseffizient, ist es mittels Analyse vergangener Kurse nicht möglich, Aussagen über zukünftige Aktienpreisentwicklungen zu treffen.',
       },
       {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Die starke Form der Markteffizienz umfasst sowohl die schwache als auch die semi-starke Form.',
-        value: 'Die starke Form der Markteffizienz bedeutet implizit, dass der Markt auch gemäss der schwachen Form informationseffizient ist.',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Die starke Form der Markteffizienz umfasst sowohl die schwache als auch die semi-starke Form.',
+        value:
+          'Die starke Form der Markteffizienz bedeutet implizit, dass der Markt auch gemäss der schwachen Form informationseffizient ist.',
       },
     ],
   },
   {
     id: 121,
     name: 'Modul 4 Efficient Market Hypothesis II',
-    content: 'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
-    contentPlain: 'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
+    content:
+      'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
+    contentPlain:
+      'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Aktive Anlagestrategien mit Stock Picking lohnen sich nur in nicht effizienten Märkten.',
+        feedback:
+          'Falsch! Aktive Anlagestrategien mit Stock Picking lohnen sich nur in nicht effizienten Märkten.',
         value:
-        'eine aktive Handelsstrategie, um ständig die profitabelsten Aktientitel kaufen zu können.',
+          'eine aktive Handelsstrategie, um ständig die profitabelsten Aktientitel kaufen zu können.',
       },
       {
         feedback: 'Richtig!',
@@ -2617,7 +2726,8 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback:
           'Falsch! Fondsmanager verursachen höhere Kosten als bei passiven Anlagen und da es nicht möglich ist, Überrenditen zu generieren, schneiden aktiv verwaltete Fonds schlechter als passive Instrumente ab.',
-        value: 'über Fondsmanager zu investieren, um von deren Erfahrung im Bereich der Aktienanalyse und Titelauswahl zu profitieren.',
+        value:
+          'über Fondsmanager zu investieren, um von deren Erfahrung im Bereich der Aktienanalyse und Titelauswahl zu profitieren.',
       },
       {
         feedback: 'Falsch! Auch effiziente Märkte versprechen Renditen.',
@@ -2625,7 +2735,8 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Investitionen in Rohstoffe oder Immobilien, da effiziente Aktienmärkte ausgereizt sind und keine Renditen mehr versprechen.',
       },
       {
-        feedback: 'Falsch! Hedge Funds versuchen durch aktives Management eine Überrendite zu generieren.',
+        feedback:
+          'Falsch! Hedge Funds versuchen durch aktives Management eine Überrendite zu generieren.',
         value: 'Anlagen in Hedge Funds.',
       },
     ],
@@ -2633,23 +2744,29 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 122,
     name: 'Modul 4 Efficient Market Hypothesis III',
-    content: 'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
-    contentPlain: 'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
+    content:
+      'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
+    contentPlain:
+      'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen.',
+        feedback:
+          'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen.',
         value:
-        'Der Aktienkurs wird allmählich auf einen neuen, höheren Gleichgewichtspreis steigen.',
+          'Der Aktienkurs wird allmählich auf einen neuen, höheren Gleichgewichtspreis steigen.',
       },
       {
-        feedback: 'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen und da durch das neue Medikament der Gewinn oder Cash-flow vermutlich steigen wird, muss der Aktienkurs ansteigen.',
-        value: 'Der Aktienkurs wird in die Höhe schiessen und sich anschliessend langsam wieder auf einen tieferen Gleichgewichtspreis zu bewegen.',
+        feedback:
+          'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen und da durch das neue Medikament der Gewinn oder Cash-flow vermutlich steigen wird, muss der Aktienkurs ansteigen.',
+        value:
+          'Der Aktienkurs wird in die Höhe schiessen und sich anschliessend langsam wieder auf einen tieferen Gleichgewichtspreis zu bewegen.',
       },
       {
         feedback:
           'Falsch! Da das Schweinegrippe Medikament überraschend auf den Markt kommt, steigt auch der Aktienkurs sofort auf einen höheren Gleichgewichtspreis.',
-        value: 'Der Aktienkurs wird sich nicht verändern, da in effizienten Märkten bereits sämtliche Informationen im Preis einbezogen sind.',
+        value:
+          'Der Aktienkurs wird sich nicht verändern, da in effizienten Märkten bereits sämtliche Informationen im Preis einbezogen sind.',
       },
       {
         feedback: 'Korrekt!',
@@ -2658,38 +2775,40 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Der Aktienkurs wird sofort auf einen neuen, höheren Gleichgewichtspreis steigen.',
       },
       {
-        feedback: 'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen.',
-        value: 'Der Aktienkurs wird fallen und sich anschliessend langsam wieder auf einen höheren Gleichgewichtspreis zu bewegen.',
+        feedback:
+          'Falsch! In einem effizienten Markt reagiert der Aktienkurs sofort und korrekt auf neue Informationen.',
+        value:
+          'Der Aktienkurs wird fallen und sich anschliessend langsam wieder auf einen höheren Gleichgewichtspreis zu bewegen.',
       },
     ],
   },
   {
     id: 123,
     name: 'Modul 4 Momentum-Strategien',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Es exististieren zwei Hauptstrategien: Das Kurs- sowie das Gewinn-Momentum.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Erfolgreiche Momentum-Strategien widersprechen der Annahme, dass der Markt (zumindest in schwacher Form) effizient ist.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Erfolgreiche Momentum-Strategien widersprechen der Annahme, dass der Markt (zumindest in schwacher Form) effizient ist.',
         value:
           'Viele empirische Studien können nachweisen, dass mit einer Momentum-Strategie Überrenditen erzielt werden können. Solch erfolgreiche Momentum-Strategien unterstützen die Annahme, dass der Markt (zumindest in schwacher Form) effizient ist.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Gemäss dem Kurs-Momentum werden die Renditen von Aktien, die bereits in der Vergangenheit gut performt haben, auch in der Zukunft besser abschneiden.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Gemäss dem Kurs-Momentum werden die Renditen von Aktien, die bereits in der Vergangenheit gut performt haben, auch in der Zukunft besser abschneiden.',
         value:
           'Gemäss dem Kurs-Momentum werden die Renditen von Aktien, welche in der Vergangenheit unterdurchschnittlich performt haben, in der Zukunft überdurchschnittliche Renditen erzielen.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Das Gewinn-Momentum besagt, dass Aktienkurse den Veränderungen der Gewinnschätzungen der Analysten folgen.',
@@ -2722,8 +2841,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Auftretende Phänomene wie Verlustaversion, Overconfidence oder Framing deuten auf verzerrte Wahrnehmungen von Anlegern hin.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Wahrscheinlichkeitsverteilungen der Aktienrenditen bleiben über die Zeit nicht konstant. Als möglicher Grund seien die Konjunkturzyklen genannt.',
@@ -2738,8 +2856,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist nicht korrekt!',
+        feedback: 'Diese Aussage ist nicht korrekt!',
         value:
           'Ist der Markt in der mittelstarken Form effizient, so wird bevorzugterweise aktiv investiert.',
       },
@@ -2756,8 +2873,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Wenn die mittelstarke Markteffizienz als gegeben erachtet wird, so ist es langfristig nicht möglich ein Alpha zu generieren.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Beim aktiven Management spielt die Performance Attribution eine entscheidende Rolle.',
@@ -2767,30 +2883,32 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 126,
     name: 'Modul 4 Aktives und passives Portfoliomanagement',
-    content: 'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den **Aktienmarkt mit Firmen der dänischen Fischindustrie** als **effizient** ein. Zudem existiert ein **Index**, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende **Empfehlungen** durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
-    contentPlain: 'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den Aktienmarkt mit Firmen der dänischen Fischindustrie als effizient ein. Zudem existiert ein Index, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende Empfehlungen durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
+    content:
+      'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den **Aktienmarkt mit Firmen der dänischen Fischindustrie** als **effizient** ein. Zudem existiert ein **Index**, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende **Empfehlungen** durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
+    contentPlain:
+      'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den Aktienmarkt mit Firmen der dänischen Fischindustrie als effizient ein. Zudem existiert ein Index, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende Empfehlungen durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Eine Abweichung von der Benchmark, d.h. dem Index, der die dänische Fischindustrie abbildet, erbringt keinen Mehrwert, da langfristig kein Alpha generiert werden kann.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Es ist zwar korrekt, dass passives Portfoliomanagement im Normalfall günstiger ist als die aktive Variante, da beispielsweise aufwändige Researcharbeiten wegfallen. Rebalancing nimmt bei passivem Portfoliomanagement jedoch eine wichtige Rolle ein. Von Rebalancing wird gesprochen, wenn das Vermögen umgeschichtet wird, um das Portfolio wieder in Einklang zur strategischen Asset Allocation zu bringen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Es ist zwar korrekt, dass passives Portfoliomanagement im Normalfall günstiger ist als die aktive Variante, da beispielsweise aufwändige Researcharbeiten wegfallen. Rebalancing nimmt bei passivem Portfoliomanagement jedoch eine wichtige Rolle ein. Von Rebalancing wird gesprochen, wenn das Vermögen umgeschichtet wird, um das Portfolio wieder in Einklang zur strategischen Asset Allocation zu bringen.',
         value:
           'Kunden, die passiv investieren möchten, können im Vergleich zum aktiven Management Kosten einsparen, da die Rebalancing-Kosten bei passivem Portfoliomanagement wegfallen.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Da der dänische Fischmarkt als effizient befunden wird, sollte passives Investieren vorgezogen werden. Market-Timing sowie Titelselektion gehören zum aktiven Portfoliomanagement.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Da der dänische Fischmarkt als effizient befunden wird, sollte passives Investieren vorgezogen werden. Market-Timing sowie Titelselektion gehören zum aktiven Portfoliomanagement.',
         value:
           'Market-Timing und Titelselektion sind beim Investieren in den dänischen Fischmarkt auch in der längeren Frist erfolgsversprechender als eine Investition in den Index.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Eine passive buy-and-hold Strategie bei einer Investition in den dänischen Fischmarkt ist sinnvoll.',
@@ -2800,13 +2918,12 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 127,
     name: 'Modul 4 Technische Analyse',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist nicht korrekt!',
+        feedback: 'Diese Aussage ist nicht korrekt!',
         value:
           'Die Chart Technik Analyse versucht durch Berechnung verschiedener Kennzahlen einen neuen Trend oder eine Trendänderung zu erkennen.',
       },
@@ -2823,8 +2940,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Bei der Technischen Analyse werden anhand von vergangenen Marktbewegungen Prognosen für die zukünftigen Kursbewegungen erstellt.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Die Technische Analyse basiert auf der Annahme, dass die Aktienkurse alle relevanten Informationen enthalten.',
@@ -2834,19 +2950,19 @@ Berechne die M2 Measure für den Seminole Fonds.`,
   {
     id: 128,
     name: 'Modul 4 Growth-, GARP- und Value-Investing',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Growth-, GARP- und Value-Investing lohnen sich langfristig nur, wenn die Märkte als nicht vollständig effizient erachtet werden.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Ein Growth-Investor berücksichtigt auch Unternehmen mit überdurchschnittlichen Wachstumserwartungen, die in Bezug auf Multiples eher teuer erscheinen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Ein Growth-Investor berücksichtigt auch Unternehmen mit überdurchschnittlichen Wachstumserwartungen, die in Bezug auf Multiples eher teuer erscheinen.',
         value:
           'In Unternehmen, welche überdurchschnittliches Wachstum versprechen, aber in Bezug auf Multiples teuer erscheinen, investiert ein Growth-Investor nicht.',
       },
@@ -2857,8 +2973,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Ein Value-Investor setzt insbesondere auf Unternehmen mit tiefem Kurs-Gewinn-Verhältnis (P/E-Ratio).',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Das P/E-Ratio im Verhältnis zum EPS-Wachstum (PEG-Ratio) ist für GARP-Investoren von besonderer Relevanz, da sie das Verhältnis zwischen dem Wachstumspotenzial einer Aktie und ihrem Wert beschreibt.',
@@ -2903,32 +3018,33 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     name: 'Modul 4 Black-Litterman Modell II',
     content: `Drei Analysten der Black-Litter-Man Consulting AG haben ihre **Views zur Entwicklung der Kapitalmärkte verschiedener Länder** abgegeben.
     1. Prognosematrix **P** mit Erwartungen („Views“) der Analysten:
-    (Bild_modul4_BlackLitterman_Modell_II_1)
+    ![Black-Litterman 1](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul4_BlackLitterman_Modell_II_1.png)
     2. Vektor **Q** mit Prognoseerwartungen der jeweiligen Analysten:
-    (Bild_modul4_BlackLitterman_Modell_II_2)
+    ![Black-Litterman 2](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul4_BlackLitterman_Modell_II_2.png)
     Überprüfe die folgenden Aussagen zu den **Einschätzungen der drei Analysten** auf ihre Korrektheit**.`,
     contentPlain: `Drei Analysten der Black-Litter-Man Consulting AG haben ihre Views zur Entwicklung der Kapitalmärkte verschiedener Länder abgegeben.
     1. Prognosematrix P mit Erwartungen („Views“) der Analysten:
-    (Bild_modul4_BlackLitterman_Modell_II_1)
+    BILD
     2. Vektor Q mit Prognoseerwartungen der jeweiligen Analysten:
-    (Bild_modul4_BlackLitterman_Modell_II_2)
+    BILD
     Überprüfe die folgenden Aussagen zu den Einschätzungen der drei Analysten auf ihre Korrektheit`,
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Analyst Black erwartet, dass die Rendite eines Long-Schweiz-Portfolios um 5% höher sein wird als diejenige eines Short-Russland- und -USA-Portfolio.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! In der Aufgabenstellung sind keine Angaben bezüglich der Unsicherheit der Prognose der jeweiligen Analysten aufgeführt.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! In der Aufgabenstellung sind keine Angaben bezüglich der Unsicherheit der Prognose der jeweiligen Analysten aufgeführt.',
         value:
           'Anhand der gegebenen Informationen ist ersichtlich, dass sich Analyst Litter bezüglich seiner Erwartung („View“) sicherer ist als Analyst Black.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Analyst Man erwartet, dass die Rendite einer Investition in Deutschland 10% betragen wird.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Analyst Man erwartet, dass die Rendite einer Investition in Deutschland 10% betragen wird.',
         value:
           'Analyst Man erwartet, dass die Rendite einer Investition in Deutschland um 10% höher sein wird als in den restlichen Märkten.',
       },
@@ -2952,8 +3068,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'CHF 0.16',
+        value: 'CHF 0.16',
       },
       {
         feedback: `Korrekt! Die Couponzahlungen erfolgen vierteljährlich: $$ \frac{CHF 4}{4}*\frac{30}{90}=CHF 0.33 $$.
@@ -2962,14 +3077,12 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         value: 'CHF 0.33',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: 'CHF 0.67',
       },
       {
         feedback: 'Falsch!',
-        value:
-          'CHF 1.33',
+        value: 'CHF 1.33',
       },
       {
         feedback: 'Falsch!',
@@ -2990,24 +3103,21 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'CHF 63.5',
+        value: 'CHF 63.5',
       },
       {
         feedback: 'Falsch!',
         value: 'CHF 100.0',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: 'CHF 109.8',
       },
       {
         feedback: `Korrekt! Der Marktzinssatz beträgt 5% p.a. Da wir den Zinssatz für 6 Monate benötigen, müssen wir diesen in den halbjährlichen Zinssatz umrechnen: $$(1+0.05)^{0.5}-1 = 0.0247$$, dann erst können wir den Bond bewerten: $$3*(\fraca{1}{0.0247}*(1-\frac{1}{(1+0.0247)}^{50}))+100*\frac{1}{(1+0.0247)}^{50}=115.1 CHF $$
         Der Coupon ist bereits halbjährlich, deshalb muss man diesen nicht mehr umwandeln.`,
         correct: true,
-        value:
-          'CHF 115.1',
+        value: 'CHF 115.1',
       },
       {
         feedback: 'Falsch!',
@@ -3029,19 +3139,21 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback: 'Falsch!',
         value:
-        'sind die Bondpreise beider Bonds gestiegen, wobei der Preis des Bonds A stärker gestiegen ist als der Preis des Bonds B.',
+          'sind die Bondpreise beider Bonds gestiegen, wobei der Preis des Bonds A stärker gestiegen ist als der Preis des Bonds B.',
       },
       {
         feedback: 'Falsch!',
-        value: 'sind die Bondpreise beider Bonds gestiegen, wobei der Preis des Bonds B stärker gestiegen ist als der Preis des Bonds A.',
+        value:
+          'sind die Bondpreise beider Bonds gestiegen, wobei der Preis des Bonds B stärker gestiegen ist als der Preis des Bonds A.',
+      },
+      {
+        feedback: 'Falsch!',
+        value:
+          'sind die Bondpreise beider Bonds gesunken, wobei der Preis des Bonds A stärker gefallen ist als der Preis des Bonds B.',
       },
       {
         feedback:
-          'Falsch!',
-        value: 'sind die Bondpreise beider Bonds gesunken, wobei der Preis des Bonds A stärker gefallen ist als der Preis des Bonds B.',
-      },
-      {
-        feedback: 'Korrekt! Je länger die Laufzeit eines Bonds, desto stärker wirken sich Zinssatzveränderungen auf Bondpreise aus. Die Bondpreise sinken, da ein inverser Zusammenhang zwischen dem Preis eines Bonds und der Yield-to-Maturity besteht.',
+          'Korrekt! Je länger die Laufzeit eines Bonds, desto stärker wirken sich Zinssatzveränderungen auf Bondpreise aus. Die Bondpreise sinken, da ein inverser Zusammenhang zwischen dem Preis eines Bonds und der Yield-to-Maturity besteht.',
         correct: true,
         value:
           'sind die Bondpreise beider Bonds gesunken, wobei der Preis des Bonds B stärker gefallen ist als der Preis des Bonds A.',
@@ -3061,23 +3173,22 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'Coupon > Current Yield > Yield-to-Maturity',
-      },
-      {
-        feedback: 'Korrekt! Ein Bond ist gleich pari, wenn der Coupon = Current Yield = Yield-to-Maturity. Sinkt nun der Bondpreis, so steigt sowohl die Current Yield, wie auch die Yield-to-Maturity an (inverse Beziehung): Coupon < Current Yield < Yield-to-Maturity.',
-        correct: true
-        value: 'Coupon < Current Yield < Yield-to-Maturity',
+        value: 'Coupon > Current Yield > Yield-to-Maturity',
       },
       {
         feedback:
-          'Falsch!',
+          'Korrekt! Ein Bond ist gleich pari, wenn der Coupon = Current Yield = Yield-to-Maturity. Sinkt nun der Bondpreis, so steigt sowohl die Current Yield, wie auch die Yield-to-Maturity an (inverse Beziehung): Coupon < Current Yield < Yield-to-Maturity.',
+        correct: true,
+        value: 'Coupon < Current Yield < Yield-to-Maturity',
+      },
+      {
+        feedback: 'Falsch!',
         value: 'Coupon > Yield-to-Maturity',
       },
       {
-        feedback: 'Falsch! Die Current Yield muss kleiner sein als die Yield-to-Maturity, da sie den Kapitalgewinn des Bonds nicht berücksichtigt.',
-        value:
-          'Coupon < Current Yield > Yield-to-Maturity',
+        feedback:
+          'Falsch! Die Current Yield muss kleiner sein als die Yield-to-Maturity, da sie den Kapitalgewinn des Bonds nicht berücksichtigt.',
+        value: 'Coupon < Current Yield > Yield-to-Maturity',
       },
       {
         feedback: 'Falsch!',
@@ -3096,19 +3207,23 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         feedback: 'Korrekt!',
         correct: true,
         value:
-        "Junk Bonds sind Bonds die zum Spekulative Grade gehören und durch Ratings tiefer als BBB (S&P, Fitch) oder Baa (Moody's) charakterisiert sind.",
+          "Junk Bonds sind Bonds die zum Spekulative Grade gehören und durch Ratings tiefer als BBB (S&P, Fitch) oder Baa (Moody's) charakterisiert sind.",
       },
       {
-        feedback: 'Falsch! "Fallen Angel" nennt man einen im Investment Grade emittierten Bond (Rating von BBB und höher), dessen Bonität und Rating sich über die Zeit verschlechtert haben.',
-        value: 'Wenn HeidelbergCement (mit einem BB Rating) einen Bond emittiert, so bezeichnet man diesen als "Fallen Angel".',
+        feedback:
+          'Falsch! "Fallen Angel" nennt man einen im Investment Grade emittierten Bond (Rating von BBB und höher), dessen Bonität und Rating sich über die Zeit verschlechtert haben.',
+        value:
+          'Wenn HeidelbergCement (mit einem BB Rating) einen Bond emittiert, so bezeichnet man diesen als "Fallen Angel".',
       },
       {
         feedback:
           'Falsch! Durch ein Collateral gedeckte Bonds sind zwar risikoärmer, allerdings kann auch der Wert des Collaterals bedeutend schwanken, wie wir am Beispiel von Mortgage Backed-Securities im Jahr 2007 gesehen haben.',
-        value: 'Wird ein Bond durch ein Collateral gedeckt, so wird bei einem Ausfall der Unternehmung das Collateral verkauft und der Investor erleidet nie einen Ausfall.',
+        value:
+          'Wird ein Bond durch ein Collateral gedeckt, so wird bei einem Ausfall der Unternehmung das Collateral verkauft und der Investor erleidet nie einen Ausfall.',
       },
       {
-        feedback: 'Falsch! Ein bisheriger Bondhalter schützt seine Rückzahlung, indem sich das Unternehmen verpflichtet nur noch eine begrenzte Summe Fremdkapital aufzunehmen. Zusätzlich darf dieses neu aufgenommene Fremdkapital nur nachrangig aufgenommen werden, wodurch bisherige Fremdkapitalgeber in ihrer vorrangigen Stellung geschützt sind.',
+        feedback:
+          'Falsch! Ein bisheriger Bondhalter schützt seine Rückzahlung, indem sich das Unternehmen verpflichtet nur noch eine begrenzte Summe Fremdkapital aufzunehmen. Zusätzlich darf dieses neu aufgenommene Fremdkapital nur nachrangig aufgenommen werden, wodurch bisherige Fremdkapitalgeber in ihrer vorrangigen Stellung geschützt sind.',
         value:
           'Wenn eine Firma bereits Fremdkapital aufgenommen hat, können neue Gläubiger geschützt werden, indem ihre Bonds einen Seniorstatus erlangen, während die noch ausstehenden Bonds den neu Emittierten untergeordnet werden.',
       },
@@ -3126,57 +3241,63 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Die Höhe eines Coupons und die Preissensitivität eines Bonds stehen in einem inversen Verhältnis zueinander. Je höher also der Coupon eines Bonds, desto geringer reagiert sein Preis auf Zinsänderungen.',
+        feedback:
+          'Falsch! Die Höhe eines Coupons und die Preissensitivität eines Bonds stehen in einem inversen Verhältnis zueinander. Je höher also der Coupon eines Bonds, desto geringer reagiert sein Preis auf Zinsänderungen.',
         value:
-        'Die Höhe eines Coupons und die Preissensitivität eines Bonds korrelieren positiv mit Zinsänderungen.',
-      },
-      {
-        feedback: 'Falsch! Ein Anstieg der Yield to Maturity resultiert in einer kleineren Preisänderung, als eine Senkung der Yield to Maturity um den gleichen Betrag.',
-        value: 'Ein Anstieg der Yield to Maturity resultiert in einer grösseren Preisänderung, als eine Senkung der Yield to Maturity um den gleichen Betrag.',
+          'Die Höhe eines Coupons und die Preissensitivität eines Bonds korrelieren positiv mit Zinsänderungen.',
       },
       {
         feedback:
-          'Korrekt!',
-        correct: true,
-        value: 'Preise von Bonds mit längerer Laufzeit reagieren stärker auf Zinsänderungen, als solche mit kürzerer Restlaufzeit.',
+          'Falsch! Ein Anstieg der Yield to Maturity resultiert in einer kleineren Preisänderung, als eine Senkung der Yield to Maturity um den gleichen Betrag.',
+        value:
+          'Ein Anstieg der Yield to Maturity resultiert in einer grösseren Preisänderung, als eine Senkung der Yield to Maturity um den gleichen Betrag.',
       },
       {
-        feedback: 'Falsch! Bei steigender Restlaufzeit steigt die Sensitivität des Bondpreises an, allerdings ist dieser Anstieg der Sensitivität nicht linear, sondern degressiv.',
+        feedback: 'Korrekt!',
+        correct: true,
+        value:
+          'Preise von Bonds mit längerer Laufzeit reagieren stärker auf Zinsänderungen, als solche mit kürzerer Restlaufzeit.',
+      },
+      {
+        feedback:
+          'Falsch! Bei steigender Restlaufzeit steigt die Sensitivität des Bondpreises an, allerdings ist dieser Anstieg der Sensitivität nicht linear, sondern degressiv.',
         value:
           'Wenn Bond A eine Restlaufzeit von sechs Jahren besitzt und Bond B eine von einem Jahr, dann hat Bond A auch eine sechsmal grössere Zinssensitivität.',
       },
       {
-        feedback: 'Falsch! Das Zinsänderungsrisiko eines Coupon-Bonds steigt (ceteris paribus) mit sinkender Yield to Maturity.',
-        value: 'Das Zinsänderungsrisiko eines Coupon-Bonds steigt (ceteris paribus) mit steigender Yield to Maturity.',
+        feedback:
+          'Falsch! Das Zinsänderungsrisiko eines Coupon-Bonds steigt (ceteris paribus) mit sinkender Yield to Maturity.',
+        value:
+          'Das Zinsänderungsrisiko eines Coupon-Bonds steigt (ceteris paribus) mit steigender Yield to Maturity.',
       },
     ],
   },
   {
     id: 137,
     name: 'Modul 4 Zinssensitivität II',
-    content: 'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
-    contentPlain: 'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
+    content:
+      'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
+    contentPlain:
+      'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '5 Jahre Laufzeit, Verkaufspreis 100.',
+        value: '5 Jahre Laufzeit, Verkaufspreis 100.',
       },
       {
         feedback: 'Falsch!',
         value: '10 Jahre Laufzeit, Verkaufspreis 80.',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '10 Jahre Laufzeit, Verkaufspreis 100.',
       },
       {
-        feedback: 'Korrekt! Je länger die Laufzeit und je kleiner die Coupons, desto grösser ist die Marktzinssensitivität. Bonds mit derselben Laufzeit und demselben Rating aber tieferem Kurs weisen eine kleinere Couponverzinsung auf.',
+        feedback:
+          'Korrekt! Je länger die Laufzeit und je kleiner die Coupons, desto grösser ist die Marktzinssensitivität. Bonds mit derselben Laufzeit und demselben Rating aber tieferem Kurs weisen eine kleinere Couponverzinsung auf.',
         correct: true,
-        value:
-          '20 Jahre Laufzeit, Verkaufspreis 80.',
+        value: '20 Jahre Laufzeit, Verkaufspreis 80.',
       },
       {
         feedback: 'Falsch!',
@@ -3196,26 +3317,29 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback: 'Falsch!',
         value:
-        'Bei gegebener YTM und Restlaufzeit ist die Modified Duration bei kleineren Coupons höher.',
+          'Bei gegebener YTM und Restlaufzeit ist die Modified Duration bei kleineren Coupons höher.',
       },
       {
         feedback: 'Falsch!',
-        value: 'Die Modified Duration steigt - ceteris paribus - mit wachsender Restlaufzeit an.',
+        value:
+          'Die Modified Duration steigt - ceteris paribus - mit wachsender Restlaufzeit an.',
+      },
+      {
+        feedback: 'Falsch!',
+        value:
+          'Die Modified Duration ist ein besseres Zinssensitivitätsmass als die YTM.',
       },
       {
         feedback:
-          'Falsch!',
-        value: 'Die Modified Duration ist ein besseres Zinssensitivitätsmass als die YTM.',
-      },
-      {
-        feedback: 'Korrekt! Die Duration eines Zero Bonds ist immer gleich der Restlaufzeit.',
+          'Korrekt! Die Duration eines Zero Bonds ist immer gleich der Restlaufzeit.',
         correct: true,
         value:
           'Bei gegebener Restlaufzeit steigt die einfache Duration eines Zero Bonds mit sinkender YTM.',
       },
       {
         feedback: 'Falsch!',
-        value: 'Einfache und Modified Duration reagieren beide bei Veränderungen des Zinsniveaus, der Restlaufzeit und der Couponhöhe in die gleiche Richtung.',
+        value:
+          'Einfache und Modified Duration reagieren beide bei Veränderungen des Zinsniveaus, der Restlaufzeit und der Couponhöhe in die gleiche Richtung.',
       },
     ],
   },
@@ -3228,24 +3352,21 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '2.71 Jahre',
+        value: '2.71 Jahre',
       },
       {
         feedback: `Korrekt!
-(Bild_modul4_durationII)`,
+![Duration](https://sos-ch-dk-2.exo.io/klicker-prod/img/modul4_durationII.png)`,
         correct: true,
         value: '2.81 Jahre',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '2.91 Jahre',
       },
       {
         feedback: 'Falsch!',
-        value:
-          '2.93 Jahre',
+        value: '2.93 Jahre',
       },
       {
         feedback: 'Falsch!',
@@ -3262,23 +3383,21 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '0.07 Jahre',
+        value: '0.07 Jahre',
       },
       {
         feedback: 'Falsch!',
         value: '6.66 Jahre',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '12.11 Jahre',
       },
       {
-        feedback: 'Korrekt! Die Duration einer ewigen Rente berechnet sich folgendermassen: $$ \frac{(1+y}{y} --> \frac{(1+0.08)}{0.08}=13.50 Jahre $$.',
+        feedback:
+          'Korrekt! Die Duration einer ewigen Rente berechnet sich folgendermassen: $$ \frac{(1+y}{y} --> \frac{(1+0.08)}{0.08}=13.50 Jahre $$.',
         correct: true,
-        value:
-          '13.50 Jahre',
+        value: '13.50 Jahre',
       },
       {
         feedback: 'Falsch!',
@@ -3296,11 +3415,11 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback: 'Korrekt!',
         correct: true,
-        value:
-        'Steigt der Marktzins um 0.5%, so sinkt der Bondpreis um 2%.',
+        value: 'Steigt der Marktzins um 0.5%, so sinkt der Bondpreis um 2%.',
       },
       {
-        feedback: 'Falsch! Die Modified Duration beträgt zwar 4, jedoch ist der Zusammenhang zwischen Marktzinssatz und Bondpreisänderungen invers.',
+        feedback:
+          'Falsch! Die Modified Duration beträgt zwar 4, jedoch ist der Zusammenhang zwischen Marktzinssatz und Bondpreisänderungen invers.',
         value: 'Steigt der Marktzins um 0.5%, so steigt der Bondpreis um 2%.',
       },
       {
@@ -3309,9 +3428,9 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         value: 'Sinkt der Marktzins um 2%, so steigt der Bondpreis um 4%.',
       },
       {
-        feedback: 'Falsch! Die Modified Duration beträgt 4 und der Zusammenhang zwischen Marktzinssatz und Bondpreisänderungen ist invers.',
-        value:
-          'Sinkt der Marktzins um 2%, so sinkt der Bondpreis um 4%.',
+        feedback:
+          'Falsch! Die Modified Duration beträgt 4 und der Zusammenhang zwischen Marktzinssatz und Bondpreisänderungen ist invers.',
+        value: 'Sinkt der Marktzins um 2%, so sinkt der Bondpreis um 4%.',
       },
       {
         feedback: 'Falsch!',
@@ -3329,16 +3448,17 @@ Berechne die M2 Measure für den Seminole Fonds.`,
       {
         feedback: 'Falsch!',
         value:
-        'Es existieren zwei Klassen von passivem Management im Fixed-Income Markt: Die Index-Strategie und die Zinsimmunisierung, welche das Zinsänderungsrisiko im Portfolio aufheben soll.',
+          'Es existieren zwei Klassen von passivem Management im Fixed-Income Markt: Die Index-Strategie und die Zinsimmunisierung, welche das Zinsänderungsrisiko im Portfolio aufheben soll.',
       },
       {
         feedback: 'Falsch!',
-        value: 'Schwierigkeiten bei der Konstruktion eines Bond-Indizes bereiten beispielsweise die Addition aller Neuemissionen in den Index und die Streichung aller Bonds mit Restlaufzeiten unter einem Jahr.',
+        value:
+          'Schwierigkeiten bei der Konstruktion eines Bond-Indizes bereiten beispielsweise die Addition aller Neuemissionen in den Index und die Streichung aller Bonds mit Restlaufzeiten unter einem Jahr.',
       },
       {
-        feedback:
-          'Falsch!',
-        value: 'Das Konzept hinter der Zinsimmunisierung ist das folgende: Eine Erhöhung des Marktzinssatzes führt zu einem Kapitalverlust auf dem Bond. Gleichzeitig erhöht sich die Reinvestment Rate - im Falle einer optimal gewählten Portfolioduration  - genau um jenen Betrag, so dass sich die beiden Effekte aufheben.',
+        feedback: 'Falsch!',
+        value:
+          'Das Konzept hinter der Zinsimmunisierung ist das folgende: Eine Erhöhung des Marktzinssatzes führt zu einem Kapitalverlust auf dem Bond. Gleichzeitig erhöht sich die Reinvestment Rate - im Falle einer optimal gewählten Portfolioduration  - genau um jenen Betrag, so dass sich die beiden Effekte aufheben.',
       },
       {
         feedback: 'Falsch!',
@@ -3346,9 +3466,11 @@ Berechne die M2 Measure für den Seminole Fonds.`,
           'Damit die Duration des Portfolios und der Investitionshorizont des Investors übereinstimmen, muss ein Portfolio Manager das Portfolio kontinuierlich rebalancieren.',
       },
       {
-        feedback: 'Richtig! Diese Aussage ist nicht korrekt. Das Konzept der Duration unterstellt flache Zinskurven. Im Fall steigender oder fallender Zinskurven kann die Zinsimmunisierung ineffektiv oder ungeeignet sein.',
+        feedback:
+          'Richtig! Diese Aussage ist nicht korrekt. Das Konzept der Duration unterstellt flache Zinskurven. Im Fall steigender oder fallender Zinskurven kann die Zinsimmunisierung ineffektiv oder ungeeignet sein.',
         correct: true,
-        value: 'Die Zinsimmunisierung kann ineffektiv oder ungeeignet sein, da das Konzept der Duration steigende Zinskurven unterstellt.',
+        value:
+          'Die Zinsimmunisierung kann ineffektiv oder ungeeignet sein, da das Konzept der Duration steigende Zinskurven unterstellt.',
       },
     ],
   },
@@ -3356,31 +3478,29 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     id: 143,
     name: 'Modul 4 Innerer Wert',
     content: `Gegeben ist folgende Ausgangslage:
-    Der heutige Kurs der Citigroup-Aktie liegt bei $4.70. Die 52-Woche Kursvorhersage nennt einen Aktienpreis von $5.42, wobei in einem Jahr zusätzlich eine Bardividende von $0.32 erwartet wird. Citigroup besitzt ein Beta von 1.34. Schliesslich sind mit 4.5% und 11% der risikofreie Zinssatz sowie die erwartete Rendite des Marktportfolios für ein Jahr gegeben.
-    Wie hoch ist bei obigen Annahmen der heutige innerer Wert der Citigroup-Aktie?`,
+Der heutige Kurs der Citigroup-Aktie liegt bei $4.70. Die 52-Woche Kursvorhersage nennt einen Aktienpreis von $5.42, wobei in einem Jahr zusätzlich eine Bardividende von $0.32 erwartet wird. Citigroup besitzt ein Beta von 1.34. Schliesslich sind mit 4.5% und 11% der risikofreie Zinssatz sowie die erwartete Rendite des Marktportfolios für ein Jahr gegeben.
+Wie hoch ist bei obigen Annahmen der heutige innerer Wert der Citigroup-Aktie?`,
     contentPlain: `Gegeben ist folgende Ausgangslage:
-    Der heutige Kurs der Citigroup-Aktie liegt bei $4.70. Die 52-Woche Kursvorhersage nennt einen Aktienpreis von $5.42, wobei in einem Jahr zusätzlich eine Bardividende von $0.32 erwartet wird. Citigroup besitzt ein Beta von 1.34. Schliesslich sind mit 4.5% und 11% der risikofreie Zinssatz sowie die erwartete Rendite des Marktportfolios für ein Jahr gegeben.
-    Wie hoch ist bei obigen Annahmen der heutige innerer Wert der Citigroup-Aktie?`,
+Der heutige Kurs der Citigroup-Aktie liegt bei $4.70. Die 52-Woche Kursvorhersage nennt einen Aktienpreis von $5.42, wobei in einem Jahr zusätzlich eine Bardividende von $0.32 erwartet wird. Citigroup besitzt ein Beta von 1.34. Schliesslich sind mit 4.5% und 11% der risikofreie Zinssatz sowie die erwartete Rendite des Marktportfolios für ein Jahr gegeben.
+Wie hoch ist bei obigen Annahmen der heutige innerer Wert der Citigroup-Aktie?`,
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '$4.43',
+        value: '$4.43',
       },
       {
         feedback: 'Falsch!',
         value: '$4.70',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '$4.81',
       },
       {
         feedback: 'Korrekt!',
         correct: true,
-        value:`$5.07
+        value: `$5.07
 Diese Aussage ist korrekt! Der intrinsische Wert $$V_0$$ ist der Present Value aller künftigen Cash Flows. Dies bedeutet, dass sowohl die erwartete Dividende als auch der erwartete Aktienkurs mit dem per CAPM ermittelten risikogerechten Diskontierungssatz verrechnet werden müssen.
 Angaben für das CAPM sind die folgenden gegeben: risikofreier Zinssatz 4.5%, erwartete Rendite des Marktportfolios 11%, Beta der Citigroup von 1.34. Verwendest du nun die CAPM Formel:
 $$ k_{EK}=r_f+β*(r_m - r_f)*k_{EK}=r_f+β*(r_m - r_f) $$
@@ -3401,31 +3521,30 @@ Achtung:
     id: 144,
     name: 'Modul 4 Constant-Growth DDM',
     content: `Gegeben ist folgende Ausgangslage:
-    Angenommen die Aktien der Sulzer AG werden heute zu ihrem intrinsischen Wert von CHF 89.05 ($$P_0$$) gehandelt. Im folgenden Jahr werden dann überraschend die erwarteten künftigen Dividendenzahlungen um g=5% p.a. höher geschätzt.
-    Welchen Wert ($$P_1$$) hat die Sulzer AG unter Berücksichtigung der neuen Erwartungen?`,
+Angenommen die Aktien der Sulzer AG werden heute zu ihrem intrinsischen Wert von CHF 89.05 ($$P_0$$) gehandelt. Im folgenden Jahr werden dann überraschend die erwarteten künftigen Dividendenzahlungen um g=5% p.a. höher geschätzt.
+Welchen Wert ($$P_1$$) hat die Sulzer AG unter Berücksichtigung der neuen Erwartungen?`,
     contentPlain: `Gegeben ist folgende Ausgangslage:
-    Angenommen die Aktien der Sulzer AG werden heute zu ihrem intrinsischen Wert von CHF 89.05 (P0) gehandelt. Im folgenden Jahr werden dann überraschend die erwarteten künftigen Dividendenzahlungen um g=5% p.a. höher geschätzt.
-    Welchen Wert (P1) hat die Sulzer AG unter Berücksichtigung der neuen Erwartungen?`,
+Angenommen die Aktien der Sulzer AG werden heute zu ihrem intrinsischen Wert von CHF 89.05 (P0) gehandelt. Im folgenden Jahr werden dann überraschend die erwarteten künftigen Dividendenzahlungen um g=5% p.a. höher geschätzt.
+Welchen Wert (P1) hat die Sulzer AG unter Berücksichtigung der neuen Erwartungen?`,
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Korrekt! Eine der Implikationen des Constant-Growth DDM ist es, dass der Aktienkurs mit der gleichen erwarteten Wachstumsrate ansteigt, wie die Dividenden ($$89.05 CHF*1.05 = 93.50CHF$$).',
+        feedback:
+          'Korrekt! Eine der Implikationen des Constant-Growth DDM ist es, dass der Aktienkurs mit der gleichen erwarteten Wachstumsrate ansteigt, wie die Dividenden ($$89.05 CHF*1.05 = 93.50CHF$$).',
         correct: true,
-        value:
-        'CHF 93.50',
+        value: 'CHF 93.50',
       },
       {
         feedback: 'Falsch!',
         value: 'CHF 92.14',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: 'CHF 89.05',
       },
       {
         feedback: 'Falsch!',
-        value:'CHF 84.60',
+        value: 'CHF 84.60',
       },
       {
         feedback: 'Falsch!',
@@ -3441,27 +3560,34 @@ Achtung:
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Das P/E Ratio wird unter anderem durch den Optimismus oder Pessimismus bezüglich des firmenspezifischen Wachstumspotentials bestimmt.',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Das P/E Ratio wird unter anderem durch den Optimismus oder Pessimismus bezüglich des firmenspezifischen Wachstumspotentials bestimmt.',
         value:
-        'Unterschiede im erwarteten Wachstumspotential einer Unternehmung zeigen sich auch im P/E Ratio.',
+          'Unterschiede im erwarteten Wachstumspotential einer Unternehmung zeigen sich auch im P/E Ratio.',
       },
       {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Dies ergibt sich aus: P/E=$${(1-b)}{(k-g)}',
-        value: 'Ein höheres Risiko einer Unternehmung lässt das P/E Ratio ceteri paribus sinken.',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Dies ergibt sich aus: P/E=$${(1-b)}{(k-g)}',
+        value:
+          'Ein höheres Risiko einer Unternehmung lässt das P/E Ratio ceteri paribus sinken.',
       },
       {
         feedback:
           'Korrekt! Bei hoher Inflationsrate befinden sich P/E Ratios relativ auf einem tiefen Niveau.',
         correct: true,
-        value: 'Bei hoher Inflation befinden sich auch die P/E Ratios tendenziell auf einem höheren Niveau als dies bei tiefer Inflation der Fall ist.',
+        value:
+          'Bei hoher Inflation befinden sich auch die P/E Ratios tendenziell auf einem höheren Niveau als dies bei tiefer Inflation der Fall ist.',
       },
       {
-        feedback: `Falsch! Diese Aussage ist korrekt. P/E=$${(1-b)}{(k-[ROE*b])}.`,
-        value:'Sowohl der ROE als auch die vom Markt erwartete Rendite (CAPM) sind Parameter des P/E Ratio.',
+        feedback: String.raw`Falsch! Diese Aussage ist korrekt. P/E=$$\frac{(1-b)}{(k-[ROE*b])}$$.`,
+        value:
+          'Sowohl der ROE als auch die vom Markt erwartete Rendite (CAPM) sind Parameter des P/E Ratio.',
       },
       {
-        feedback: 'Falsch! Diese Aussage ist korrekt. Dass das P/E Ratio der Wachstumsrate entspricht, ist eine beliebte Daumenregel an der Wall Street. Diese Relation zwischen P/E Ratio und Wachstumsrate wird oftmals auch PEG Ratio genannt, wobei obige Daumenregel dann ein PEG Ratio von genau 1 besitzt.',
-        value: 'Das P/E Ratio wird oftmals mit der Wachstumsrate des Unternehmens gleichgesetzt, wonach eine Firma mit einem P/E Ratio von 12 auch eine Wachstumsrate von 12% besitzen soll.',
+        feedback:
+          'Falsch! Diese Aussage ist korrekt. Dass das P/E Ratio der Wachstumsrate entspricht, ist eine beliebte Daumenregel an der Wall Street. Diese Relation zwischen P/E Ratio und Wachstumsrate wird oftmals auch PEG Ratio genannt, wobei obige Daumenregel dann ein PEG Ratio von genau 1 besitzt.',
+        value:
+          'Das P/E Ratio wird oftmals mit der Wachstumsrate des Unternehmens gleichgesetzt, wonach eine Firma mit einem P/E Ratio von 12 auch eine Wachstumsrate von 12% besitzen soll.',
       },
     ],
   },
@@ -3479,53 +3605,53 @@ Achtung:
       {
         feedback: 'Korrekt! $$ \frac{P_0}{E_1}=\frac{(1-b)}{(k-b*ROE)} $$',
         correct: true,
-        value:
-        '15.91',
+        value: '15.91',
       },
       {
         feedback: 'Falsch!',
         value: '14.44',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '8.28',
       },
       {
         feedback: `Falsch!`,
-        value:'7.87',
+        value: '7.87',
       },
       {
         feedback: 'Falsch!',
-        value: 'Die Angaben reichen nicht aus, um das Kurs-Gewinn-Verhältnis auszurechnen.',
+        value:
+          'Die Angaben reichen nicht aus, um das Kurs-Gewinn-Verhältnis auszurechnen.',
       },
     ],
   },
   {
     id: 147,
     name: 'Modul 4 Business Cycle I',
-    content: 'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
-    contentPlain: 'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
+    content:
+      'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
+    contentPlain:
+      'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        '... zwischen 0.0 und 1.0.',
+        value: '... zwischen 0.0 und 1.0.',
       },
       {
         feedback: 'Falsch!',
         value: '... von etwa 0.0',
       },
       {
-        feedback:
-          'Falsch!',
+        feedback: 'Falsch!',
         value: '... von etwa 1.0.',
       },
       {
-        feedback: 'Korrekt! Aktien aus zyklischen Industrien sind tendenziell volatiler als der Gesamtmarkt und besitzen dementsprechend einen Betawert über 1.0.',
+        feedback:
+          'Korrekt! Aktien aus zyklischen Industrien sind tendenziell volatiler als der Gesamtmarkt und besitzen dementsprechend einen Betawert über 1.0.',
         correct: true,
-        value:'... über 1.0.',
+        value: '... über 1.0.',
       },
       {
         feedback: 'Falsch!',
@@ -3536,14 +3662,15 @@ Achtung:
   {
     id: 148,
     name: 'Modul 4 Business Cycle II',
-    content: 'Welche der folgenden Branchen gehört **nicht** zu den defensiven Industrien?',
-    contentPlain: 'Welche der folgenden Branchen gehört nicht zu den defensiven Industrien?',
+    content:
+      'Welche der folgenden Branchen gehört **nicht** zu den defensiven Industrien?',
+    contentPlain:
+      'Welche der folgenden Branchen gehört nicht zu den defensiven Industrien?',
     type: QuestionType.SC,
     choices: [
       {
         feedback: 'Falsch!',
-        value:
-        'Nahrungsmittelbranche',
+        value: 'Nahrungsmittelbranche',
       },
       {
         feedback: 'Falsch!',
@@ -3557,7 +3684,7 @@ Achtung:
       },
       {
         feedback: 'Falsch!',
-        value:'Tabakindustrie',
+        value: 'Tabakindustrie',
       },
       {
         feedback: 'Falsch!',
@@ -3568,13 +3695,12 @@ Achtung:
   {
     id: 149,
     name: 'Modul 4 Indikatoren',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Unter vorauseilenden Indikatoren werden Indikatoren verstanden, welche die Wirtschaftsentwicklung voraussehen.',
@@ -3590,8 +3716,7 @@ Achtung:
           'Ein Beispiel für einen vorauseilenden Indikatoren ist die Industrieproduktion.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Gleichlaufende Indikatoren zeigen an, in welchem Zyklus sich die Wirtschaft befindet.',
@@ -3608,23 +3733,28 @@ Achtung:
     type: QuestionType.SC,
     choices: [
       {
-        feedback: 'Falsch! Finanztitel sollten gemäss dem Sektor-Rotations-Ansatz am Ende einer Kontraktion gekauft werden.',
+        feedback:
+          'Falsch! Finanztitel sollten gemäss dem Sektor-Rotations-Ansatz am Ende einer Kontraktion gekauft werden.',
         value:
-        '... sollten Finanztitel am Ende einer Expansion gekauft werden.',
+          '... sollten Finanztitel am Ende einer Expansion gekauft werden.',
       },
       {
         feedback: 'Korrekt!',
         correct: true,
-        value: '... sollte beim Beginn einer Kontraktion in die Pharmabranche investiert werden.',
+        value:
+          '... sollte beim Beginn einer Kontraktion in die Pharmabranche investiert werden.',
       },
       {
         feedback:
           'Falsch! Industrietitel sollten gemäss dem Ansatz der Sektor-Rotation in mitten einer Expansionsphase gekauft werden.',
-        value: '... sollten Industrietitel mitten in einer Kontraktionsphase gekauft werden.',
+        value:
+          '... sollten Industrietitel mitten in einer Kontraktionsphase gekauft werden.',
       },
       {
-        feedback: 'Falsch! In Energietitel sollte gemäss dem Ansatz der Sektor-Rotation am Ende einer Expansion investiert werden.',
-        value:'... sollte am Anfang einer Expansion in Energietitel investiert werden.',
+        feedback:
+          'Falsch! In Energietitel sollte gemäss dem Ansatz der Sektor-Rotation am Ende einer Expansion investiert werden.',
+        value:
+          '... sollte am Anfang einer Expansion in Energietitel investiert werden.',
       },
       {
         feedback: 'Falsch!',
@@ -3635,19 +3765,19 @@ Achtung:
   {
     id: 151,
     name: 'Modul 4 Anlageinstrumente',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Anlagefonds sind Anlageinstrumente, die es erlauben, aktiv anzulegen.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Das Management versucht den Renditeverlauf der Benchmark exakt abzubilden, das heisst der Markt wird nicht geschlagen.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Das Management versucht den Renditeverlauf der Benchmark exakt abzubilden, das heisst der Markt wird nicht geschlagen.',
         value:
           'Exchange Traded Funds (ETFs) sind passive Anlageinstrumente, bei denen der Hauptfokus darauf liegt, durch Kostenminimierung den Markt zu schlagen und so eine Überrendite zu generieren.',
       },
@@ -3668,7 +3798,7 @@ Achtung:
   {
     id: 152,
     name: 'Modul 4 Anlagefonds/Exchange Traded Funds',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
@@ -3679,18 +3809,19 @@ Achtung:
           'Passive Anlageinstrumente wie Exchange Traded Funds (ETFs) werden aktiven Instrumenten besonders dann vorgezogen, wenn der Investor vermutet, mit einer professionellen Titelauswahl Übergewinne realisieren zu können.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Bei ETFs sind kaum spezifische Anlagethemen verfügbar.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei ETFs sind kaum spezifische Anlagethemen verfügbar.',
         value:
           'Exchange Traded Funds (ETFs) eigenen sich besonders dafür, diverse Anlagethemen wie zum Beispiel "Nachhaltigkeit" gezielter abzudecken.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Bei beiden Anlageinstrumenten ist Diversifikation möglich.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Bei beiden Anlageinstrumenten ist Diversifikation möglich.',
         value:
           'Während Exchange Traded Funds (ETFs) durch ihre breite Streuung eine Diversifikation der Investitionen erlauben, ist eine Diversifikation durch den Kauf aktiver Anlageinstrumente wie Anlagefonds nicht möglich.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Die grössten Nachteile aktiver Anlageinstrumente wie Anlagefonds sind, dass Kosten für das Management anfallen und die Performance des Anlageinstrumentes stark von der Qualität des Managements abhängt.',
@@ -3700,13 +3831,12 @@ Achtung:
   {
     id: 153,
     name: 'Modul 4 Strukturierte Produkte I',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Strukturierte Produkte können grundsätzlich in die drei Übergruppen "Kapitalschutz", "Renditeoptimierung" und "Partizipation" unterteilt werden.',
@@ -3723,8 +3853,7 @@ Achtung:
           'Strukturierte Produkte sind deshalb so beliebt, weil sie stets ermöglichen bei limitiertem down-side Risiko im up-side Bereich unlimitiert zu partizipieren.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Strukturierte Produkte erlauben es, das individuelle Risiko-Rendite-Profil des Portfolios eines Investors an seine Bedürfnisse anzupassen.',
@@ -3734,30 +3863,30 @@ Achtung:
   {
     id: 154,
     name: 'Modul 4 Anlagefonds/Exchange Traded Funds',
-    content: "",
+    content: '',
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
     type: QuestionType.KPRIM,
     choices: [
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Kapitalschutzprodukte zeichnen sich durch ein unlimitiertes up-side Potenzial aus und beschränken gleichzeitig das down-side Risiko.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Renditeoptimierungsprodukte werden eingesetzt, wenn man von seitwärtstendierenden Märkten ausgeht.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Renditeoptimierungsprodukte werden eingesetzt, wenn man von seitwärtstendierenden Märkten ausgeht.',
         value:
           'Kapitalschutzprodukte werden vor allem dann eingesetzt, wenn man von seitwärtstendierenden Märkten ausgeht.',
       },
       {
-        feedback: 'Diese Aussage ist nicht korrekt! Das up-side Potential ist bei Discount-Zertifikaten limitiert.',
+        feedback:
+          'Diese Aussage ist nicht korrekt! Das up-side Potential ist bei Discount-Zertifikaten limitiert.',
         value:
           'Discount-Zertifikate, die als Standardprodukt für die Renditeoptimierungskategorie gelten, sind deshalb so beliebt, weil sie zwar unlimitiertes down-side Risiko aufweisen, gleichzeitig aber auch unlimitiertes up-side Potenzial bieten.',
       },
       {
-        feedback:
-          'Diese Aussage ist korrekt!',
+        feedback: 'Diese Aussage ist korrekt!',
         correct: true,
         value:
           'Partizipationsprodukte haben oft den Nachteil, dass ihre Kostenstruktur unklar ist.',
@@ -3765,77 +3894,3 @@ Achtung:
     ],
   },
 ]
-
-export const LEARNING_ELEMENTS = [
-  {
-    id: '3e588933-36ce-49b1-9fad-87481843f7c1',
-    name: 'AMI MC 1',
-    displayName: 'AMI Modul 1 - Lernfragen',
-    questions: range(30, 48),
-  },
-  {
-    id: '627942ff-07c3-464d-860b-126ea74ddc34',
-    name: 'AMI MC 2',
-    displayName: 'AMI Modul 2 - Lernfragen',
-    questions: [],
-  },
-  {
-    id: 'e3fa3767-1bbc-43b4-aa84-50e75b4a4add',
-    name: 'AMI Micro Repetition',
-    displayName: 'AMI Microlearning - Repetition',
-    questions: [],
-  },
-  {
-    id: 'e3fa3767-1bbc-43b4-aa84-50e75b4a4add',
-    name: 'AMI Prüfungspool',
-    displayName: 'AMI Prüfungspool',
-    questions: [],
-  },
-]
-
-export const SESSIONS = [
-  {
-    id: '02df291b-f4cd-46f2-8dbf-bea738aa7a7f',
-    name: 'AMI VL Woche 01',
-    displayName: 'AMI Vorlesung - Woche 01',
-    status: SessionStatus.PREPARED,
-    isGamificationEnabled: true,
-    blocks: [
-      {
-        questions: range(48, 52),
-      },
-      {
-        questions: range(52, 55),
-      },
-      {
-        questions: [55],
-      },
-      {
-        questions: range(56, 60),
-      },
-    ],
-  },
-  {
-    id: 'bd76942d-3a44-4854-9d45-287b50f9dde5',
-    name: 'AMI VL Woche 02',
-    displayName: 'AMI Vorlesung - Woche 02',
-    status: SessionStatus.PREPARED,
-    isGamificationEnabled: true,
-    blocks: [
-      {
-        questions: [56, 57, 58, 59],
-      },
-      {
-        questions: range(64, 73),
-      },
-      {
-        questions: range(73, 80),
-      },
-      {
-        questions: [80, 81, 82],
-      },
-    ],
-  },
-]
-
-export const MICRO_SESSIONS = []
