@@ -118,6 +118,7 @@ function prepareApp({ prisma, redisCache, redisExec, pubSub }: any) {
     context: enhanceContext({ prisma, redisExec, pubSub }),
     logging: true,
     cors: false,
+    maskedErrors: !process.env.DEBUG,
   })
 
   app.use('/healthz', function (req, res) {
