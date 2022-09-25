@@ -635,7 +635,9 @@ export enum SessionStatus {
 export type Subscription = {
   __typename?: 'Subscription';
   feedbackAdded?: Maybe<Feedback>;
-  feedbackRemoved?: Maybe<Scalars['ID']>;
+  feedbackCreated?: Maybe<Feedback>;
+  feedbackRemoved?: Maybe<Scalars['Int']>;
+  feedbackUpdated?: Maybe<Feedback>;
   runningSessionUpdated?: Maybe<SessionBlock>;
 };
 
@@ -645,7 +647,17 @@ export type SubscriptionFeedbackAddedArgs = {
 };
 
 
+export type SubscriptionFeedbackCreatedArgs = {
+  sessionId: Scalars['ID'];
+};
+
+
 export type SubscriptionFeedbackRemovedArgs = {
+  sessionId: Scalars['ID'];
+};
+
+
+export type SubscriptionFeedbackUpdatedArgs = {
   sessionId: Scalars['ID'];
 };
 
@@ -982,12 +994,26 @@ export type FeedbackAddedSubscriptionVariables = Exact<{
 
 export type FeedbackAddedSubscription = { __typename?: 'Subscription', feedbackAdded?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt?: any | null, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number } | null> | null } | null };
 
+export type FeedbackCreatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['ID'];
+}>;
+
+
+export type FeedbackCreatedSubscription = { __typename?: 'Subscription', feedbackCreated?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt?: any | null, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number } | null> | null } | null };
+
 export type FeedbackRemovedSubscriptionVariables = Exact<{
   sessionId: Scalars['ID'];
 }>;
 
 
-export type FeedbackRemovedSubscription = { __typename?: 'Subscription', feedbackRemoved?: string | null };
+export type FeedbackRemovedSubscription = { __typename?: 'Subscription', feedbackRemoved?: number | null };
+
+export type FeedbackUpdatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['ID'];
+}>;
+
+
+export type FeedbackUpdatedSubscription = { __typename?: 'Subscription', feedbackUpdated?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt?: any | null, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number } | null> | null } | null };
 
 export type RunningSessionUpdatedSubscriptionVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1528,7 +1554,9 @@ export type SessionEvaluationResolvers<ContextType = any, ParentType extends Res
 
 export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
   feedbackAdded?: SubscriptionResolver<Maybe<ResolversTypes['Feedback']>, "feedbackAdded", ParentType, ContextType, RequireFields<SubscriptionFeedbackAddedArgs, 'sessionId'>>;
-  feedbackRemoved?: SubscriptionResolver<Maybe<ResolversTypes['ID']>, "feedbackRemoved", ParentType, ContextType, RequireFields<SubscriptionFeedbackRemovedArgs, 'sessionId'>>;
+  feedbackCreated?: SubscriptionResolver<Maybe<ResolversTypes['Feedback']>, "feedbackCreated", ParentType, ContextType, RequireFields<SubscriptionFeedbackCreatedArgs, 'sessionId'>>;
+  feedbackRemoved?: SubscriptionResolver<Maybe<ResolversTypes['Int']>, "feedbackRemoved", ParentType, ContextType, RequireFields<SubscriptionFeedbackRemovedArgs, 'sessionId'>>;
+  feedbackUpdated?: SubscriptionResolver<Maybe<ResolversTypes['Feedback']>, "feedbackUpdated", ParentType, ContextType, RequireFields<SubscriptionFeedbackUpdatedArgs, 'sessionId'>>;
   runningSessionUpdated?: SubscriptionResolver<Maybe<ResolversTypes['SessionBlock']>, "runningSessionUpdated", ParentType, ContextType, RequireFields<SubscriptionRunningSessionUpdatedArgs, 'sessionId'>>;
 };
 
@@ -1627,7 +1655,9 @@ export const ParticipationsDocument = {"kind":"Document","definitions":[{"kind":
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
 export const FeedbackAddedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackAdded"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackAdded"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackAddedSubscription, FeedbackAddedSubscriptionVariables>;
+export const FeedbackCreatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackCreated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackCreated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackCreatedSubscription, FeedbackCreatedSubscriptionVariables>;
 export const FeedbackRemovedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackRemoved"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackRemoved"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}]}]}}]} as unknown as DocumentNode<FeedbackRemovedSubscription, FeedbackRemovedSubscriptionVariables>;
+export const FeedbackUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackUpdatedSubscription, FeedbackUpdatedSubscriptionVariables>;
 export const RunningSessionUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"RunningSessionUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningSessionUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"attachments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"href"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"originalName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"}}]}}]}}]}},...QuestionDataWithoutSolutionsFragmentDoc.definitions]} as unknown as DocumentNode<RunningSessionUpdatedSubscription, RunningSessionUpdatedSubscriptionVariables>;
 
       export interface PossibleTypesResultData {

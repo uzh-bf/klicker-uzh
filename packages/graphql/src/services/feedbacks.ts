@@ -87,7 +87,9 @@ export async function createFeedback(
     },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: sessionId }])
+  ctx.pubSub.publish('feedbackCreated', newFeedback)
+
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: sessionId })
 
   if (!session.isModerationEnabled) {
     ctx.pubSub.publish('feedbackAdded', newFeedback)
@@ -119,7 +121,12 @@ export async function respondToFeedback(
     },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: feedback.sessionId }])
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
 
   return feedback
 }
@@ -146,7 +153,10 @@ export async function addConfusionTimestep(
     },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: sessionId }])
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: sessionId,
+  })
 
   return confusionTS
 }
@@ -163,9 +173,21 @@ export async function publishFeedback(
     data: {
       isPublished: isPublished,
     },
+    include: {
+      responses: true,
+    },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: feedback.sessionId }])
+  if (isPublished) {
+    ctx.pubSub.publish('feedbackAdded', feedback)
+  } else {
+    ctx.pubSub.publish('feedbackRemoved', feedback)
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
 
   return feedback
 }
@@ -182,9 +204,17 @@ export async function pinFeedback(
     data: {
       isPinned: isPinned,
     },
+    include: {
+      responses: true,
+    },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: feedback.sessionId }])
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
 
   return feedback
 }
@@ -200,9 +230,17 @@ export async function resolveFeedback(
       isResolved: isResolved,
       resolvedAt: isResolved ? new Date() : null,
     },
+    include: {
+      responses: true,
+    },
   })
 
-  ctx.cache.invalidate([{ typename: 'Session', id: feedback.sessionId }])
+  ctx.pubSub.publish('feedbackUpdated', feedback)
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
 
   return feedback
 }
@@ -217,7 +255,11 @@ export async function deleteFeedback(
   })
 
   ctx.pubSub.publish('feedbackRemoved', { id, sessionId: feedback.sessionId })
-  ctx.cache.invalidate([{ typename: 'Session', id: feedback.sessionId }])
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedback.sessionId,
+  })
 
   return feedback
 }
@@ -230,13 +272,20 @@ export async function deleteFeedbackResponse(
   const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },
     include: {
-      feedback: true,
+      feedback: {
+        include: {
+          responses: true,
+        },
+      },
     },
   })
 
-  ctx.cache.invalidate([
-    { typename: 'Session', id: feedbackResponse.feedback.sessionId },
-  ])
+  ctx.pubSub.publish('feedbackUpdated', feedbackResponse.feedback)
 
-  return feedbackResponse
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: feedbackResponse.feedback.sessionId,
+  })
+
+  return feedbackResponse.feedback
 }

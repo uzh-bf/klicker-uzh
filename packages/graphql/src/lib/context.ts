@@ -1,8 +1,8 @@
-import type { Cache } from '@envelop/response-cache'
 import type { PubSub } from '@graphql-yoga/node'
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 import type Redis from 'ioredis'
+import type { EventEmitter } from 'node:events'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -13,7 +13,7 @@ export interface Context extends BaseContext {
   prisma: PrismaClient
   redisExec: Redis
   pubSub: PubSub<any>
-  cache: Cache
+  emitter: EventEmitter
 }
 
 export interface ContextWithOptionalUser extends Context {
@@ -33,7 +33,7 @@ export interface ContextWithUser extends Context {
 function enhanceContext(args = {}) {
   return ({ req }: BaseContext) => ({
     ...args,
-    user: req.locals?.user,
+    user: req?.locals?.user,
   })
 }
 

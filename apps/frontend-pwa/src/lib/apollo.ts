@@ -20,7 +20,7 @@ import util from 'util'
 import SSELink from './SSELink'
 
 interface PageProps {
-  __APOLLO_STATE__: NormalizedCacheObject
+  __APOLLO_STATE__?: NormalizedCacheObject
   props?: Record<string, any>
 }
 
@@ -123,7 +123,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 }
 
 export function initializeApollo(
-  initialState: NormalizedCacheObject,
+  initialState?: NormalizedCacheObject,
   ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
   const _apolloClient = apolloClient ?? createApolloClient(ctx)

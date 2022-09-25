@@ -379,7 +379,9 @@ enum SessionStatus {
 
 type Subscription {
   feedbackAdded(sessionId: ID!): Feedback
-  feedbackRemoved(sessionId: ID!): ID
+  feedbackCreated(sessionId: ID!): Feedback
+  feedbackRemoved(sessionId: ID!): Int
+  feedbackUpdated(sessionId: ID!): Feedback
   runningSessionUpdated(sessionId: ID!): SessionBlock
 }
 

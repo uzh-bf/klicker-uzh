@@ -609,7 +609,9 @@ export interface NexusGenFieldTypes {
   }
   Subscription: { // field return type
     feedbackAdded: NexusGenRootTypes['Feedback'] | null; // Feedback
-    feedbackRemoved: string | null; // ID
+    feedbackCreated: NexusGenRootTypes['Feedback'] | null; // Feedback
+    feedbackRemoved: number | null; // Int
+    feedbackUpdated: NexusGenRootTypes['Feedback'] | null; // Feedback
     runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
   }
   User: { // field return type
@@ -905,7 +907,9 @@ export interface NexusGenFieldTypeNames {
   }
   Subscription: { // field return type name
     feedbackAdded: 'Feedback'
-    feedbackRemoved: 'ID'
+    feedbackCreated: 'Feedback'
+    feedbackRemoved: 'Int'
+    feedbackUpdated: 'Feedback'
     runningSessionUpdated: 'SessionBlock'
   }
   User: { // field return type name
@@ -1076,7 +1080,13 @@ export interface NexusGenArgTypes {
     feedbackAdded: { // args
       sessionId: string; // ID!
     }
+    feedbackCreated: { // args
+      sessionId: string; // ID!
+    }
     feedbackRemoved: { // args
+      sessionId: string; // ID!
+    }
+    feedbackUpdated: { // args
       sessionId: string; // ID!
     }
     runningSessionUpdated: { // args

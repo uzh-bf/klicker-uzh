@@ -898,7 +898,7 @@ export const Mutation = objectType({
     })
 
     t.field('deleteFeedbackResponse', {
-      type: FeedbackResponse,
+      type: Feedback,
       args: {
         id: nonNull(intArg()),
       },
@@ -1082,6 +1082,19 @@ export const Subscription = subscriptionType({
       resolve: (payload) => payload.block,
     })
 
+    t.field('feedbackCreated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackCreated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
+
     t.field('feedbackAdded', {
       type: Feedback,
       args: {
@@ -1095,7 +1108,7 @@ export const Subscription = subscriptionType({
       resolve: (payload) => payload,
     })
 
-    t.id('feedbackRemoved', {
+    t.int('feedbackRemoved', {
       args: {
         sessionId: nonNull(idArg()),
       },
@@ -1107,43 +1120,17 @@ export const Subscription = subscriptionType({
       resolve: (payload) => payload.id,
     })
 
-    // t.field('feedbackResolved', {
-    //   type: Feedback,
-    //   args: {
-    //     sessionId: nonNull(idArg()),
-    //   },
-    //   subscribe: (_, args, ctx) =>
-    //     pipe(
-    //       ctx.pubSub.subscribe('feedbackResolved'),
-    //       filter((data) => data.sessionId === args.sessionId)
-    //     ),
-    //   resolve: (payload) => payload,
-    // })
-
-    // t.field('feedbackResponseAdded', {
-    //   type: Feedback,
-    //   args: {
-    //     sessionId: nonNull(idArg()),
-    //   },
-    //   subscribe: (_, args, ctx) =>
-    //     pipe(
-    //       ctx.pubSub.subscribe('feedbackResponseAdded'),
-    //       filter((data) => data.sessionId === args.sessionId)
-    //     ),
-    //   resolve: (payload) => payload,
-    // })
-
-    // t.field('feedbackResponseDeleted', {
-    //   type: Feedback,
-    //   args: {
-    //     sessionId: nonNull(idArg()),
-    //   },
-    //   subscribe: (_, args, ctx) =>
-    //     pipe(
-    //       ctx.pubSub.subscribe('feedbackResponseDeleted'),
-    //       filter((data) => data.sessionId === args.sessionId)
-    //     ),
-    //   resolve: (payload) => payload,
-    // })
+    t.field('feedbackUpdated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackUpdated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
   },
 })

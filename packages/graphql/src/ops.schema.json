@@ -5187,6 +5187,35 @@
             "deprecationReason": null
           },
           {
+            "name": "feedbackCreated",
+            "description": null,
+            "args": [
+              {
+                "name": "sessionId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Feedback",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "feedbackRemoved",
             "description": null,
             "args": [
@@ -5209,7 +5238,36 @@
             ],
             "type": {
               "kind": "SCALAR",
-              "name": "ID",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "feedbackUpdated",
+            "description": null,
+            "args": [
+              {
+                "name": "sessionId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Feedback",
               "ofType": null
             },
             "isDeprecated": false,

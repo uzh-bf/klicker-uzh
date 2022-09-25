@@ -2,6 +2,7 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  GetFeedbacksDocument,
   GetRunningSessionDocument,
   RunningSessionUpdatedDocument,
   SelfDocument,
@@ -22,21 +23,9 @@ import QuestionArea from '../../components/liveSession/QuestionArea'
 
 const { publicRuntimeConfig } = getConfig()
 
-interface Props {
-  id: string
-}
-
-function Index({ id }: Props) {
-  const [activeMobilePage, setActiveMobilePage] = useState('questions')
-
-  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
-    variables: { id },
-  })
-
-  const { data: selfData } = useQuery(SelfDocument)
-
+function Subscriber({ id, subscribeToMore }) {
   useEffect(() => {
-    subscribeToMore({
+    return subscribeToMore({
       document: RunningSessionUpdatedDocument,
       variables: {
         sessionId: id,
@@ -52,6 +41,22 @@ function Index({ id }: Props) {
       },
     })
   }, [id, subscribeToMore])
+
+  return <div></div>
+}
+
+interface Props {
+  id: string
+}
+
+function Index({ id }: Props) {
+  const [activeMobilePage, setActiveMobilePage] = useState('questions')
+
+  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
+    variables: { id },
+  })
+
+  const { data: selfData } = useQuery(SelfDocument)
 
   if (!data?.session) return <p>Loading...</p>
 
@@ -149,6 +154,8 @@ function Index({ id }: Props) {
       setActiveMobilePage={setActiveMobilePage}
       pageNotFound={!id}
     >
+      <Subscriber id={id} subscribeToMore={subscribeToMore} />
+
       <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
         <div
           className={twMerge(
@@ -203,7 +210,7 @@ function Index({ id }: Props) {
               activeMobilePage === 'feedbacks' && 'block'
             )}
           >
-            <FeedbackArea isModerationEnabled={isModerationEnabled} />
+            <FeedbackArea />
           </div>
         )}
       </div>
@@ -228,12 +235,20 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     ctx,
   })
 
-  await apolloClient.query({
-    query: GetRunningSessionDocument,
-    variables: {
-      id: ctx.query?.id as string,
-    },
-  })
+  await Promise.all([
+    apolloClient.query({
+      query: GetRunningSessionDocument,
+      variables: {
+        id: ctx.query?.id as string,
+      },
+    }),
+    apolloClient.query({
+      query: GetFeedbacksDocument,
+      variables: {
+        sessionId: ctx.query?.id as string,
+      },
+    }),
+  ])
 
   return addApolloState(apolloClient, {
     props: {
