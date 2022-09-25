@@ -1,0 +1,3 @@
+[submodule "packages/prisma/src/seed"]
+	path = packages/prisma/src/seed
+	url = https://github.com/uzh-bf/klicker-uzh-data.git
