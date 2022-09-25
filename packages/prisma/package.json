@@ -19,7 +19,7 @@
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema=src/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
-    "prisma:reset": "prisma reset --schema=src/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema=src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "seed:test": "ENV=development ts-node --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
     "seed:bf1": "ENV=development ts-node --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
@@ -27,6 +27,9 @@
     "seed:prod:bf1": "ENV=production ts-node --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
     "seed:prod:ami": "ENV=production ts-node --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
     "size": "size-limit"
+  },
+  "prisma": {
+    "seed": "npm-run-all seed:bf1 seed:ami seed:test"
   },
   "engines": {
     "node": "=18"
