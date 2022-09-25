@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,6 +7,7 @@ import {
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
   Feedback,
+  FeedbackCreatedDocument,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
@@ -14,11 +15,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { Button, Switch } from '@uzh-bf/design-system'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
-
 interface Props {
   sessionId: string
   sessionName: string
@@ -27,6 +28,7 @@ interface Props {
   isAudienceInteractionActive: boolean
   isModerationEnabled: boolean
   isGamificationEnabled: boolean
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
 }
 
 function AudienceInteraction({
@@ -37,7 +39,29 @@ function AudienceInteraction({
   isAudienceInteractionActive,
   isModerationEnabled,
   isGamificationEnabled,
+  subscribeToMore,
 }: Props) {
+  useEffect(() => {
+    if (!sessionId) return
+
+    const feedbackAdded = subscribeToMore({
+      document: FeedbackCreatedDocument,
+      variables: { sessionId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        const newItem = subscriptionData.data.feedbackCreated
+        return {
+          ...prev,
+          feedbacks: [newItem, ...prev.cockpitSession.feedbacks],
+        }
+      },
+    })
+
+    return () => {
+      feedbackAdded && feedbackAdded()
+    }
+  }, [subscribeToMore, sessionId])
+
   const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)

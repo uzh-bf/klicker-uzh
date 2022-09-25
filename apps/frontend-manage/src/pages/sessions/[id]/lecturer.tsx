@@ -28,7 +28,7 @@ function Feedbacks() {
       variables: {
         id: router.query.id as string,
       },
-      pollInterval: 10000,
+      pollInterval: 5000,
       skip: !router.query.id,
     }
   )

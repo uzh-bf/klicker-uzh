@@ -62,6 +62,7 @@ function Cockpit() {
     loading: cockpitLoading,
     error: cockpitError,
     data: cockpitData,
+    subscribeToMore,
   } = useQuery(GetCockpitSessionDocument, {
     variables: {
       id: router.query.id as string,
@@ -128,6 +129,7 @@ function Cockpit() {
       </div>
 
       <AudienceInteraction
+        subscribeToMore={subscribeToMore}
         confusionValues={
           confusionFeedbacks
             ? (confusionFeedbacks[0] as AggregatedConfusionFeedbacks)
