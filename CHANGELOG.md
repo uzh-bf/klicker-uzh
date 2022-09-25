@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.57...v2.0.0-alpha.58) (2022-09-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure negative numbers can be entered for numerical questions ([db7d147](https://github.com/uzh-bf/klicker-uzh/commit/db7d147c2dfe3f6144d06606d2de0aa9fcfcaaf7))
+* enable retry link in PWA to allow for SSE after initial failure ([#2911](https://github.com/uzh-bf/klicker-uzh/issues/2911)) ([93b1e60](https://github.com/uzh-bf/klicker-uzh/commit/93b1e6080ed0cc566526da2d770e0ba6517c7af6))
+
+
+### Deployment
+
+* move vercel dev deployments to workflow drafts (disable) ([f27c724](https://github.com/uzh-bf/klicker-uzh/commit/f27c724a94690606ad509602601ae378a2c065b2))
+
+
+### Other
+
+* add priority classname to deployments, add empty AMI micro rep to seed ([10a9532](https://github.com/uzh-bf/klicker-uzh/commit/10a9532b1116c0eed8e8251f16feb1c67d23c094))
+* add submodule for seeding ([c3c5ca8](https://github.com/uzh-bf/klicker-uzh/commit/c3c5ca8df75cb16985d8261c991c1a07767db905))
+* evaluate yoga link ([277a51e](https://github.com/uzh-bf/klicker-uzh/commit/277a51e92ece3b832dfd2fc541ee9c51a864ad62))
+* lockfile maintenance ([620a7d0](https://github.com/uzh-bf/klicker-uzh/commit/620a7d0cb5cd0a9ac8d510121a082d63ba8ae09a))
+* **packages/prisma:** add seed for AMI lecture ([0ecd4f4](https://github.com/uzh-bf/klicker-uzh/commit/0ecd4f489cf567512a02127a0a16b983f136907d))
+* update dependabot config ([a459bd9](https://github.com/uzh-bf/klicker-uzh/commit/a459bd9e4b7c9cb7c9f33bb75ca92df65a0b70e0))
+* update seed submodule ([d64458c](https://github.com/uzh-bf/klicker-uzh/commit/d64458c0b56afada20f7ca947ff365528bfe33c7))
+* update seed submodule ([e9c465b](https://github.com/uzh-bf/klicker-uzh/commit/e9c465be06f33e7b9fbc5a61fb46aa53a4260ab0))
+
 ## [2.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.56...v2.0.0-alpha.57) (2022-09-24)
 
 
