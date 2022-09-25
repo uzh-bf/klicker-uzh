@@ -914,44 +914,44 @@ Welches Investment wird der Anleger tätigen?`,
         feedback:
           'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.',
         value:
-          '$$E(r_p)=13.9\%; SD=2.98\%$$',
+          '$$ E(r_p)=13.9\%; SD=2.98\% $$',
       },
       {
         feedback:
           'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(r_B)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(r_p)=10.01\%$$.',
-        value: '$$E(r_p)=13.9\%; SD=2.10\%$$',
+        value: '$$ E(r_p)=13.9\%; SD=2.10\% $$',
       },
       {
         feedback: 'Falsch! Die erwartete Rendite einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der möglichen Renditerealisationen. $$E(r_A)=13\%, E(rB)=8.4\%$$. Die erwartete Rendite des Portfolios entspricht der kapitalgewichteten Summe der erwarteten Renditen der einzelnen Anlagen. $$E(rp)=10.01\%$$.',
-        value: '$$E(r_p)=13.9\%; SD=3.00\%$$',
+        value: '$$ E(r_p)=13.9\%; SD=3.00\% $$',
       },
       {
         feedback: 'Falsch! Die Varianz einer Anlage entspricht der wahrscheinlichkeitsgewichteten Summe der quadrierten Abweichungen zwischen möglicher Renditerealisation und erwarteter Rendite. Daraus folgt: SDA=2.45%; SDB=1.66%. Die Standardabweichung des Portfolios wird wie folgt berechnet: $$SD_p=\sqrt{(0.35)^2*(0.0245)^2+(0.65)^2*(0.0166)^2+2*(0.35)*(0.65)*(0.0245)*(0.0166)*(0.5919))}=1.73\%$$.',
         value:
-          '$$E(r_p)=10.01\%; SD=2.98\%$$',
+          '$$ E(r_p)=10.01\%; SD=2.98\% $$',
       },
       {
         feedback: 
 `Korrekt!
 E(r_A) = 0.15 * 8\% + 0.2 * 13\% + … + 0.2 * 16\% = 13.00\%
 E(r_B) = 0.15 * 8\% + 0.2 * 7\% + … + 0.2 * 11\% = 8.40\%
-E(r_{PF}) = 0.35 * 13.00\% + 0.65 * 8.40\% = 10.01\%
-Var_A = 0.15 * (8\% - 13\%)^2 + … + 0.2 * (16\% - 13\%)^2 = 0.0006
-SDA = \sqrt{Var_A} = 0.024495 = 2.45\%
-Var_B = 0.15 * (8\% - 8.4\%)^2 + … + 0.2 * (11\% - 8.4\%)^2 = 0.000274
-SDB = \sqrt{Var_B} = 0.016553 = 1.66\%
+E(r_{PF}) = 0.35 * 13.00\% + 0.65 * 8.40\% = 10.01\%
+Var_A = 0.15 * (8\% - 13\%)^2 + … + 0.2 * (16\% - 13\%)^2 = 0.0006
+SDA = \sqrt{Var_A} = 0.024495 = 2.45\%
+Var_B = 0.15 * (8\% - 8.4\%)^2 + … + 0.2 * (11\% - 8.4\%)^2 = 0.000274
+SDB = \sqrt{Var_B} = 0.016553 = 1.66\%
 Cov(A,B) = E(r_Ar_B) – E(r_A) * E(r_B) = 1.116\% - 13\% * 8.4\% = 0.00024
 E(r_Ar_B) = 0.15 * 8\% * 8\% + … + 0.2 * 16\% * 11\% = 0.01116 = 1.116\%
-Corr(A,B) = Cov(A,B) / (SDA * SDB) = 0.5919
-Var_{PF} = 0.352 * Var_A + 0.652 * Var_B + 2 * 0.35 * 0.65 * SDA * SDB * Corr(A,B) = 0.00029847
-SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
+Corr(A,B) = Cov(A,B) / (SDA * SDB) = 0.5919
+Var_{PF} = 0.352 * Var_A + 0.652 * Var_B + 2 * 0.35 * 0.65 * SDA * SDB * Corr(A,B) = 0.00029847
+SD_{PF} = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
         correct: true,
-        value: '$$E(r_p)=10.01\%; SD=1.73\%$$',
+        value: '$$ E(r_p)=10.01\%; SD=1.73\% $$',
       },
     ],
   },
   {
-    id: 53,
+    id: 54,
     name: 'Modul 2 Portfoliobildung III',
     content:
     `Gehe von folgender Ausgangssituation aus:
@@ -995,7 +995,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 54,
+    id: 55,
     name: 'Modul 2 Portfoliobildung IV',
     content:
     `Gehe von folgender Ausgangssituation aus:
@@ -1033,7 +1033,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 55,
+    id: 56,
     name: 'Modul 2 Diversifikation',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -1066,7 +1066,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 56,
+    id: 57,
     name: 'Modul 2 Capital Market Line',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -1098,7 +1098,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 57,
+    id: 58,
     name: 'Modul 2 Marktportfolio',
     content:
       'Welche der folgenden Aussagen ist **falsch**?',
@@ -1134,7 +1134,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 58,
+    id: 59,
     name: 'Modul 2 Security Market Line',
     content:
       'Welche der folgenden Aussagen ist **richtig**?',
@@ -1170,7 +1170,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 59,
+    id: 60,
     name: 'Modul 2 Überrendite Alpha I',
     content:
       'Unterbewertete Aktien haben gemäss dem CAPM ein...',
@@ -1206,7 +1206,7 @@ SD_{PF}  = \sqrt{Var_{PF}} = 0.017276 = 1.73\%`,
     ],
   },
   {
-    id: 60,
+    id: 61,
     name: 'Modul 2 Überrendite Alpha II',
     content:
 `Gehe von folgender Ausgangssituation aus:
@@ -1246,7 +1246,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 61,
+    id: 62,
     name: `Modul 2 Annahmen des CAPM's`,
     content: 'Welche der folgenden Aussagen ist gemäss den theoretischen Annahmen des CAPM **richtig**?',
     contentPlain:
@@ -1280,7 +1280,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 62,
+    id: 63,
     name: 'Modul 2 Low-Risk-Anomalie',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -1313,7 +1313,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 63,
+    id: 64,
     name: 'Modul 2 Annahmen der APT',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain:
@@ -1347,7 +1347,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 64,
+    id: 65,
     name: 'Modul 2 CAPM und APT I',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain:
@@ -1381,7 +1381,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 65,
+    id: 66,
     name: 'Modul 2 CAPM und APT II',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain:
@@ -1415,7 +1415,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 66,
+    id: 67,
     name: 'Modul 2 CAPM und APT III',
     content: 'Die/das ________ liefert einen Zusammenhang zwischen der erwarteten Rendite und dem Beta eines jeden Assets, wohingegen die/das ________ einen solchen Zusammenhang für sämtliche Aktien exklusive einiger weniger Titel impliziert.',
     contentPlain:
@@ -1449,7 +1449,7 @@ Die Marktrendite beträgt 8.5% und der risikolose Zinssatz 4%. Welche Anlage wir
     ],
   },
   {
-    id: 67,
+    id: 68,
     name: 'Modul 2 Arbitrage I',
     content: `Ausgangspunkt sei ein Ein-Faktor-APT. Das Portfolio A hat ein Beta von 0.2 und eine erwartete Rendite von 13%. Das Portfolio B besitzt ein Beta von 0.4 und eine erwartete Rendite von 15%. Der risikofreie Zinssatz ist 10%.
     Um eine allfällige Arbitragemöglichkeit auszunützen, kann ein Investor eine Short-Position im Portfolio ___ und eine Long-Position im Portfolio ___ einnehmen.`,
@@ -1488,7 +1488,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     ],
   },
   {
-    id: 68,
+    id: 69,
     name: 'Modul 2 Arbitrage II',
     content: `Um eine allfällige Arbitragemöglichkeit auszunützen, sollte ein Investor allgemein...
     ...ein im ersten Markt unterbewertetes Asset leerverkaufen und dasselbe im zweiten Markt überbewertete Asset kaufen.
@@ -1530,7 +1530,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     ],
   },
   {
-    id: 69,
+    id: 70,
     name: 'Modul 2 Anwendung',
     content: `Gegeben sei ein diversifiziertes Portfolio A in einer Zwei-Faktoren-Ökonomie. Der risikolose Zinssatz beträgt 6%. Die Risikoprämie des ersten Faktor-Portfolios ist 4% und die Risikoprämie des zweiten Faktor-Portfolios liegt bei 3%. Das Beta des Portfolios A bezüglich des ersten Faktors sei 1.2 und das Beta bezüglich des zweiten Faktors 0.8.
     Wie hoch ist die erwartete Rendite des Portfolios A?`,
@@ -1566,7 +1566,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     ],
   },
   {
-    id: 70,
+    id: 71,
     name: 'Modul 2 Fama-French-Modell',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -1599,7 +1599,7 @@ Portfolio B: 15%=10%+0.4*F <--> F=12.5%.
     ],
   },
   {
-    id: 70,
+    id: 72,
     name: 'Modul 3 zeitgewichteter vs. kapitalgewichteter Mittelwert',
     content: `Gegeben ist folgende Ausgangslage:
 Ein Anlagefonds, der ein Anfangsvermögen von $500'000 hat, erzielt im ersten Jahr 15% und im zweiten Jahr 10% Rendite. Zu Beginn des zweiten Jahres zahlt ein Sponsor weitere $300'000 ein.
@@ -1638,7 +1638,7 @@ Zeitgewichteter Mittelwert (geometrischer Durchschnitt der Renditen): ((1+0.15)*
     ],
   },
   {
-    id: 71,
+    id: 73,
     name: 'Modul 3 Sharpe und Treynor Ratio',
     content: `Gegeben ist folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
 (Bild_modul3_sharpe_und_treynorratio)
@@ -1677,7 +1677,7 @@ Berechne das Sharpe und Treynor Ratio des Sooner Stock Fonds.`,
     ],
   },
   {
-    id: 72,
+    id: 74,
     name: `Modul 3 Jensen's Alpha`,
     content: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
 (Bild_modul3_sharpe_und_treynorratio)
@@ -1716,7 +1716,7 @@ Wie hoch ist das Jensen's Alpha des Sooner Stock Funds?`,
     ],
   }
   {
-    id: 73,
+    id: 75,
     name: `Modul 3 Information Ratio`,
     content: `Gegeben ist (wie im Beispiel zuvor) folgende Ausgangslage zur Performance des Sooner Stock Fonds und des Marktportfolios:
 (Bild_modul3_sharpe_und_treynorratio)
@@ -1755,7 +1755,7 @@ Wie gross ist das Information Ratio des Sooner Stock Fonds?`,
     ],
   },
   {
-    id: 74,
+    id: 76,
     name: `Modul 3 M2 Measure`,
     content: `Gegeben ist folgende Ausgangslage zur Performance des Seminole Fonds und des Marktportfolios:
 (Bild_modul3_M2_measure)
@@ -1794,7 +1794,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 75,
+    id: 77,
     name: `Modul 3 Performance-Messung`,
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -1827,7 +1827,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 76,
+    id: 78,
     name: `Modul 3 Probleme der Performance-Messung`,
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -1860,7 +1860,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 77,
+    id: 79,
     name: 'Modul 3 Performance Attribution',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -1894,7 +1894,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 78,
+    id: 80,
     name: 'Modul 4 Grundlagen der Behavioral Finance',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -1927,7 +1927,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 79,
+    id: 81,
     name: 'Modul 4 Information Processing und Behavioral Biases',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -1960,7 +1960,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 80,
+    id: 82,
     name: 'Modul 4 Information Processing und Behavioral Biases',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -1993,7 +1993,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 81,
+    id: 83,
     name: 'Modul 4 Prospect Theory',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -2026,7 +2026,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 82,
+    id: 84,
     name: 'Modul 4 Verzerrungen',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2059,7 +2059,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 83,
+    id: 85,
     name: 'Modul 4 Efficient Market Hypothesis I',
     content: 'Welche der folgenden Aussagen zur **Efficient Market Hypothesis (EMH)** ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen zur Efficient Market Hypothesis (EMH) ist falsch?',
@@ -2092,7 +2092,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 84,
+    id: 86,
     name: 'Modul 4 Efficient Market Hypothesis II',
     content: 'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
     contentPlain: 'Personen, welche davon ausgehen, dass die EMH zumindest semi-strong effizient ist, empfehlen Anlegern typischerweise ...',
@@ -2125,7 +2125,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 85,
+    id: 87,
     name: 'Modul 4 Efficient Market Hypothesis III',
     content: 'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
     contentPlain: 'Angenommen das Pharmaunternehmen Roche bringt überraschend ein neues Medikament gegen Schweinegrippe auf den Markt. Auf welche Weise wird der Aktienkurs von Roche auf dieses Ereignis reagieren, wenn man von einem mittelstark effizienten Markt ausgeht?',
@@ -2158,7 +2158,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 86,
+    id: 88,
     name: 'Modul 4 Momentum-Strategien',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2191,7 +2191,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 87,
+    id: 89,
     name: 'Modul 4 Gründe gegen Markteffizienz',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2225,7 +2225,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 88,
+    id: 90,
     name: 'Modul 4 Anlagestrategien',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2259,7 +2259,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 89,
+    id: 91,
     name: 'Modul 4 Aktives und passives Portfoliomanagement',
     content: 'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den **Aktienmarkt mit Firmen der dänischen Fischindustrie** als **effizient** ein. Zudem existiert ein **Index**, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende **Empfehlungen** durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
     contentPlain: 'Nach eingehender Analyse der Marktsituation stufen die Analysten der Copenhagen Fish Invest AG den Aktienmarkt mit Firmen der dänischen Fischindustrie als effizient ein. Zudem existiert ein Index, der die Kapitalisierung der dänischen Fischindustrie abbildet. Folgende Empfehlungen durch die Analysten an ihre Kundschaft, die in die dänische Fischindustrie investieren möchte, sind deshalb angebracht (d.h. im Sinne der Kundschaft):',
@@ -2292,7 +2292,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 90,
+    id: 92,
     name: 'Modul 4 Technische Analyse',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2326,7 +2326,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 91,
+    id: 93,
     name: 'Modul 4 Growth-, GARP- und Value-Investing',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2360,7 +2360,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 92,
+    id: 94,
     name: 'Modul 4 Black-Litterman Modell I',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -2393,7 +2393,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 93,
+    id: 95,
     name: 'Modul 4 Black-Litterman Modell II',
     content: `Drei Analysten der Black-Litter-Man Consulting AG haben ihre **Views zur Entwicklung der Kapitalmärkte verschiedener Länder** abgegeben.
     1. Prognosematrix **P** mit Erwartungen („Views“) der Analysten:
@@ -2436,7 +2436,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 94,
+    id: 96,
     name: 'Modul 4 Marchzins',
     content: `Gegeben ist folgende Ausgangslage:
     Ein ausstehender Bond der XY AG zahlt einen Coupon von 4% p.a. vierteljährlich, jeweils am 1. Januar, 1. April, 1. Juli und 1. Oktober. Ein Investor kauft diesen Bond mit Nominalwert von 100 CHF am 1. August. Wie hoch ist der Marchzins (Accrued Interest), wenn ein Jahr 360 Tagen entspricht?`,
@@ -2472,7 +2472,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 95,
+    id: 97,
     name: 'Modul 4 Bondpricing',
     content: `Gegeben ist folgende Ausgangslage:
     Ein Bond mit einer Laufzeit von 25 Jahren und einem Nennwert von 100 bezahlt halbjährlich einen Coupon von 3% (Zinssatz für 6 Monate). Der Marktzinssatz beträgt 5% p.a..
@@ -2510,7 +2510,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 96,
+    id: 98,
     name: 'Modul 4 Bondsensitivität',
     content: `Gegeben ist folgende Ausgangslage:
     Es sind zwei Bonds gegeben: A und B. Beide werden zu pari verkauft, haben einen Nennwert von CHF 100 und zahlen einen jährlichen Coupon von 3%. Während Bond A eine Laufzeit von 20 Jahren besitzt, ist das Ende der Laufzeit von Bond B erst in 27 Jahren.
@@ -2547,7 +2547,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 97,
+    id: 99,
     name: 'Modul 4 Yield-to-Maturity vs. Current Yield',
     content: 'Ein Bond wird **unter pari** gehandelt, wenn...',
     contentPlain: 'Ein Bond wird unter pari gehandelt, wenn...',
@@ -2580,7 +2580,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 98,
+    id: 100,
     name: 'Modul 4 Default Risk',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -2613,7 +2613,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 99,
+    id: 101,
     name: 'Modul 4 Zinssensitivität I',
     content: 'Welche der folgenden Aussagen ist **richtig**?',
     contentPlain: 'Welche der folgenden Aussagen ist richtig?',
@@ -2646,7 +2646,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 100,
+    id: 102,
     name: 'Modul 4 Zinssensitivität II',
     content: 'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
     contentPlain: 'Bei welchem der folgenden Bonds (alle mit dem gleichen Rating) hat eine Marktzinssatzsenkung von 2% die grösste Auswirkung auf den Preis?',
@@ -2679,7 +2679,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 101,
+    id: 103,
     name: 'Modul 4 Duration I',
     content: `Welche der folgenden Aussagen ist **falsch**?
     Hinweis: Gehe immer vom absoluten Betrag der Modified Duration aus.`,
@@ -2714,7 +2714,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 102,
+    id: 104,
     name: 'Modul 4 Duration II',
     content: `Berechne die Duration eines Bonds mit Preis gleich Nennwert von CHF 1000, einem Coupon von 7% und einer Restlaufzeit von 3 Jahren.`,
     contentPlain: `Berechne die Duration eines Bonds mit Preis gleich Nennwert von CHF 1000, einem Coupon von 7% und einer Restlaufzeit von 3 Jahren.`,
@@ -2748,7 +2748,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 103,
+    id: 105,
     name: 'Modul 4 Duration III',
     content: `Wie hoch ist die Duration einer ewigen Rente (Perpetuity), wenn ihr Zins 8% beträgt?`,
     contentPlain: `Wie hoch ist die Duration einer ewigen Rente (Perpetuity), wenn ihr Zins 8% beträgt?`,
@@ -2781,7 +2781,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 104,
+    id: 106,
     name: 'Modul 4 Modified Duration',
     content: `Gegeben ist ein Bond mit einer Macaulay Duration von 4.24 Jahren und einer YTM von 6%. Welche der folgenden Aussagen ist **richtig**?`,
     contentPlain: `Gegeben ist ein Bond mit einer Macaulay Duration von 4.24 Jahren und einer YTM von 6%. Welche der folgenden Aussagen ist richtig?`,
@@ -2814,7 +2814,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 105,
+    id: 107,
     name: 'Modul 4 Passives Bond Management',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -2847,7 +2847,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
     ],
   },
   {
-    id: 106,
+    id: 108,
     name: 'Modul 4 Innerer Wert',
     content: `Gegeben ist folgende Ausgangslage:
     Der heutige Kurs der Citigroup-Aktie liegt bei $4.70. Die 52-Woche Kursvorhersage nennt einen Aktienpreis von $5.42, wobei in einem Jahr zusätzlich eine Bardividende von $0.32 erwartet wird. Citigroup besitzt ein Beta von 1.34. Schliesslich sind mit 4.5% und 11% der risikofreie Zinssatz sowie die erwartete Rendite des Marktportfolios für ein Jahr gegeben.
@@ -2877,7 +2877,7 @@ Berechne die M2 Measure für den Seminole Fonds.`,
         value:`$5.07
 Diese Aussage ist korrekt! Der intrinsische Wert $$V_0$$ ist der Present Value aller künftigen Cash Flows. Dies bedeutet, dass sowohl die erwartete Dividende als auch der erwartete Aktienkurs mit dem per CAPM ermittelten risikogerechten Diskontierungssatz verrechnet werden müssen.
 Angaben für das CAPM sind die folgenden gegeben: risikofreier Zinssatz 4.5%, erwartete Rendite des Marktportfolios 11%, Beta der Citigroup von 1.34. Verwendest du nun die CAPM Formel:
-$$ k_{EK}=r_f+β*(r_m−r_f)*k_{EK}=r_f+β*(r_m−r_f) $$
+$$ k_{EK}=r_f+β*(r_m - r_f)*k_{EK}=r_f+β*(r_m - r_f) $$
 In einem zweiten Schritt werden die einjährige Kursvorhersage für den Aktienpreis von 5.42 und die Bardividende von 0.32 auf t=0 diskontiert.
 $$ 5.42+0.32*(1+0.1321)*1=5.07 $$
 
@@ -2892,7 +2892,7 @@ Achtung:
     ],
   },
   {
-    id: 107,
+    id: 109,
     name: 'Modul 4 Constant-Growth DDM',
     content: `Gegeben ist folgende Ausgangslage:
     Angenommen die Aktien der Sulzer AG werden heute zu ihrem intrinsischen Wert von CHF 89.05 ($$P_0$$) gehandelt. Im folgenden Jahr werden dann überraschend die erwarteten künftigen Dividendenzahlungen um g=5% p.a. höher geschätzt.
@@ -2928,7 +2928,7 @@ Achtung:
     ],
   },
   {
-    id: 108,
+    id: 110,
     name: 'Modul 4 P/E Ratio',
     content: 'Welche der folgenden Aussagen ist **falsch**?',
     contentPlain: 'Welche der folgenden Aussagen ist falsch?',
@@ -2960,7 +2960,7 @@ Achtung:
     ],
   },
   {
-    id: 109,
+    id: 111,
     name: 'Modul 4 P/E-Ratio mit wachsenden Dividenden',
     content: `Zur AIRESIS AG sind folgende Angaben gegeben:
     Die erzielte Rendite (ROE) des Unternehmens beträgt 12%, das Dividendenwachstum beträgt 1.5% und die vom Markt verlangte Rendite (CAPM) beträgt 7%.
@@ -2996,7 +2996,7 @@ Achtung:
     ],
   },
   {
-    id: 110,
+    id: 112,
     name: 'Modul 4 Business Cycle I',
     content: 'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
     contentPlain: 'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
@@ -3028,7 +3028,7 @@ Achtung:
     ],
   },
   {
-    id: 111,
+    id: 113,
     name: 'Modul 4 Business Cycle II',
     content: 'Welche der folgenden Branchen gehört **nicht** zu den defensiven Industrien?',
     contentPlain: 'Welche der folgenden Branchen gehört nicht zu den defensiven Industrien?',
@@ -3060,7 +3060,7 @@ Achtung:
     ],
   },
   {
-    id: 112,
+    id: 114,
     name: 'Modul 4 Indikatoren',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -3093,7 +3093,7 @@ Achtung:
     ],
   },
   {
-    id: 113,
+    id: 115,
     name: 'Modul 4 Sektor-Rotation',
     content: `Welche der folgenden Aussagen ist **richtig**?
     Gemäss dem Ansatz der Sektor-Rotation...`,
@@ -3127,7 +3127,7 @@ Achtung:
     ],
   },
   {
-    id: 114,
+    id: 116,
     name: 'Modul 4 Anlageinstrumente',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -3160,7 +3160,7 @@ Achtung:
     ],
   },
   {
-    id: 115,
+    id: 117,
     name: 'Modul 4 Anlagefonds/Exchange Traded Funds',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -3192,7 +3192,7 @@ Achtung:
     ],
   },
   {
-    id: 116,
+    id: 118,
     name: 'Modul 4 Strukturierte Produkte I',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
@@ -3226,7 +3226,7 @@ Achtung:
     ],
   },
   {
-    id: 116,
+    id: 119,
     name: 'Modul 4 Anlagefonds/Exchange Traded Funds',
     content: "",
     contentPlain: 'Beurteile folgende Aussagen auf ihre Richtigkeit.',
