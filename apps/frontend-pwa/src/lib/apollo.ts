@@ -4,11 +4,12 @@ import {
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
+  split,
 } from '@apollo/client'
-import { split } from '@apollo/client/link/core'
 import { onError } from '@apollo/client/link/error'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
+import { GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config'
 import Router from 'next/router'
 import { equals } from 'ramda'
@@ -16,9 +17,14 @@ import { useMemo } from 'react'
 import util from 'util'
 import SSELink from './SSELink'
 
+interface PageProps {
+  __APOLLO_STATE__: NormalizedCacheObject
+  props?: Record<string, any>
+}
+
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
-let apolloClient: any
+let apolloClient: ApolloClient<NormalizedCacheObject>
 
 const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
@@ -52,19 +58,19 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
         }
       }
     )
-  if (networkError) console.log(`[Network error]: ${networkError}`)
-})
-
-const httpLink = new HttpLink({
-  uri:
-    typeof window !== 'undefined'
-      ? publicRuntimeConfig.API_URL
-      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
-  credentials: 'include',
+  if (networkError) console.log(`[Network error]: ${networkError.name}`)
 })
 
 // TODO: use the schema link when working on the server?
-function createApolloClient() {
+function createApolloClient(ctx?: GetServerSidePropsContext) {
+  const httpLink = new HttpLink({
+    uri:
+      typeof window !== 'undefined'
+        ? publicRuntimeConfig.API_URL
+        : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+    credentials: 'include',
+  })
+
   if (typeof window === 'undefined') {
     return new ApolloClient({
       ssrMode: true,
@@ -91,17 +97,24 @@ function createApolloClient() {
     httpLink
   )
 
+  // const yogaLink = new YogaLink({
+  //   endpoint: publicRuntimeConfig.API_URL,
+  //   credentials: true
+  // })
+
   return new ApolloClient({
     ssrMode: false,
+    // link: from([errorLink, yogaLink]),
     link: from([errorLink, splitSubsLink]),
     cache: new InMemoryCache(),
   })
 }
 
 export function initializeApollo(
-  initialState = null
+  initialState: NormalizedCacheObject,
+  ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
-  const _apolloClient = apolloClient ?? createApolloClient()
+  const _apolloClient = apolloClient ?? createApolloClient(ctx)
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
   // gets hydrated here
@@ -131,7 +144,10 @@ export function initializeApollo(
   return _apolloClient
 }
 
-export function addApolloState(client: any, pageProps: any) {
+export function addApolloState(
+  client: ApolloClient<NormalizedCacheObject>,
+  pageProps: PageProps
+) {
   if (pageProps?.props) {
     pageProps.props[APOLLO_STATE_PROP_NAME] = client.cache.extract()
   }
@@ -139,7 +155,7 @@ export function addApolloState(client: any, pageProps: any) {
   return pageProps
 }
 
-export function useApollo(pageProps: any) {
+export function useApollo(pageProps: PageProps) {
   const state = pageProps[APOLLO_STATE_PROP_NAME]
   const store = useMemo(() => initializeApollo(state), [state])
   return store

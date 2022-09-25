@@ -11,21 +11,21 @@ class SSELink extends ApolloLink {
   request(operation: Operation): Observable<FetchResult> {
     const url = new URL(this.options.uri)
     url.searchParams.append('query', print(operation.query))
-    // if (operation.operationName) {
-    //   url.searchParams.append(
-    //     'operationName',
-    //     JSON.stringify(operation.operationName)
-    //   )
-    // }
+    if (operation.operationName) {
+      url.searchParams.append(
+        'operationName',
+        JSON.stringify(operation.operationName)
+      )
+    }
     if (operation.variables) {
       url.searchParams.append('variables', JSON.stringify(operation.variables))
     }
-    // if (operation.extensions) {
-    //   url.searchParams.append(
-    //     'extensions',
-    //     JSON.stringify(operation.extensions)
-    //   )
-    // }
+    if (operation.extensions) {
+      url.searchParams.append(
+        'extensions',
+        JSON.stringify(operation.extensions)
+      )
+    }
 
     return new Observable((sink) => {
       const eventsource = new EventSource(url.toString(), this.options)

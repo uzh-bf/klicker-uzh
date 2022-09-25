@@ -19,6 +19,7 @@
     "@fortawesome/free-regular-svg-icons": "6.2.0",
     "@fortawesome/free-solid-svg-icons": "6.2.0",
     "@fortawesome/react-fontawesome": "0.2.0",
+    "@graphql-yoga/apollo-link": "1.0.0-canary-1bfa1d4.0",
     "@klicker-uzh/graphql": "^2.0.0-alpha.8",
     "@klicker-uzh/markdown": "^2.0.0-alpha.8",
     "@klicker-uzh/prisma": "^2.0.0-alpha.8",
