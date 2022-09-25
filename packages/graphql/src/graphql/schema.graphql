@@ -177,25 +177,6 @@ type LearningElement {
   name: String!
 }
 
-type LecturerSession {
-  accessMode: AccessMode!
-  activeBlock: SessionBlock
-  blocks: [SessionBlock!]!
-  confusionFeedbacks: [AggregatedConfusionFeedbacks]
-  course: Course
-  displayName: String!
-  feedbacks: [Feedback]
-  finishedAt: DateTime
-  id: ID!
-  isAudienceInteractionActive: Boolean!
-  isGamificationEnabled: Boolean!
-  isModerationEnabled: Boolean!
-  name: String!
-  namespace: String!
-  startedAt: DateTime
-  status: SessionStatus!
-}
-
 type MicroSession {
   course: Course!
   description: String
@@ -302,13 +283,13 @@ type PushSubscription {
 }
 
 type Query {
-  cockpitSession(id: ID!): LecturerSession
+  cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
   participations(endpoint: String): [Participation!]
-  pinnedFeedbacks(id: ID!): LecturerSession
+  pinnedFeedbacks(id: ID!): Session
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
@@ -350,12 +331,13 @@ input ResponseInput {
 type Session {
   accessMode: AccessMode!
   activeBlock: SessionBlock
-  blocks: [SessionBlock!]!
-  confusionFeedbacks: [ConfusionTimestep]
+  blocks: [SessionBlock!]
+  confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
   createdAt: DateTime!
   displayName: String!
   feedbacks: [Feedback]
+  finishedAt: DateTime
   id: ID!
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
@@ -363,6 +345,7 @@ type Session {
   linkTo: String
   name: String!
   namespace: String!
+  startedAt: DateTime
   status: SessionStatus!
 }
 
@@ -395,6 +378,8 @@ enum SessionStatus {
 }
 
 type Subscription {
+  feedbackAdded(sessionId: ID!): Feedback
+  feedbackRemoved(sessionId: ID!): ID
   runningSessionUpdated(sessionId: ID!): SessionBlock
 }
 

@@ -1,3 +1,4 @@
+import type { Cache } from '@envelop/response-cache'
 import type { PubSub } from '@graphql-yoga/node'
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
@@ -12,6 +13,7 @@ export interface Context extends BaseContext {
   prisma: PrismaClient
   redisExec: Redis
   pubSub: PubSub<any>
+  cache: Cache
 }
 
 export interface ContextWithOptionalUser extends Context {
