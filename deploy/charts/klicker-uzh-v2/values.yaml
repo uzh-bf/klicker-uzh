@@ -9,6 +9,8 @@ podSecurityContext: {}
 securityContext: {}
 
 frontendPWA:
+  priorityClassName: production-workload
+
   replicaCount: 1
 
   image:
@@ -48,6 +50,8 @@ frontendPWA:
   affinity: {}
 
 frontendManage:
+  priorityClassName: production-workload
+
   replicaCount: 1
 
   image:
@@ -87,6 +91,8 @@ frontendManage:
   affinity: {}
 
 backendGraphql:
+  priorityClassName: production-workload
+
   replicaCount: 1
 
   image:

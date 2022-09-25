@@ -1,15 +1,19 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetRunningSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetRunningSessionDocument,
+  RunningSessionUpdatedDocument,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { QUESTION_GROUPS } from '../../constants'
 
 import { useQuery } from '@apollo/client'
-import { addApolloState } from '@lib/apollo'
-import { getRunningSessionData } from '@lib/joinData'
+import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import getConfig from 'next/config'
 import Leaderboard from '../../components/common/Leaderboard'
 import Layout from '../../components/Layout'
@@ -25,9 +29,29 @@ interface Props {
 function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { data } = useQuery(GetRunningSessionDocument, {
+  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
   })
+
+  const { data: selfData } = useQuery(SelfDocument)
+
+  useEffect(() => {
+    subscribeToMore({
+      document: RunningSessionUpdatedDocument,
+      variables: {
+        sessionId: id,
+      },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev
+        return Object.assign({}, prev, {
+          session: {
+            ...prev.session,
+            activeBlock: subscriptionData.data.runningSessionUpdated,
+          },
+        })
+      },
+    })
+  }, [id, subscribeToMore])
 
   if (!data?.session) return <p>Loading...</p>
 
@@ -48,10 +72,13 @@ function Index({ id }: Props) {
     instanceId: number,
     answer: any
   ) => {
-    let requestOptions = {}
+    let requestOptions: RequestInit = {
+      method: 'POST',
+      credentials: 'include',
+    }
     if (QUESTION_GROUPS.CHOICES.includes(type)) {
       requestOptions = {
-        method: 'POST',
+        ...requestOptions,
         body: JSON.stringify({
           instanceId: instanceId,
           sessionId: id,
@@ -63,7 +90,7 @@ function Index({ id }: Props) {
       QUESTION_GROUPS.FREE_TEXT.includes(type)
     ) {
       requestOptions = {
-        method: 'POST',
+        ...requestOptions,
         body: JSON.stringify({
           instanceId: instanceId,
           sessionId: id,
@@ -105,7 +132,7 @@ function Index({ id }: Props) {
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     })
   }
-  if (isGamificationEnabled) {
+  if (selfData?.self && isGamificationEnabled) {
     mobileMenuItems.push({
       value: 'leaderboard',
       label: 'Leaderboard',
@@ -116,7 +143,7 @@ function Index({ id }: Props) {
   return (
     <Layout
       displayName={displayName}
-      courseName={course?.displayName}
+      courseName={course?.displayName ?? 'KlickerUZH Live'}
       courseColor={course?.color}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
@@ -131,14 +158,7 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            isGamificationEnabled ? (
-              <div className={twMerge('w-full bg-white min-h-full')}>
-                <Leaderboard sessionId={id} className="hidden md:block" />
-                <div className="md:hidden">Keine Frage aktiv.</div>
-              </div>
-            ) : (
-              <div>Keine Frage aktiv.</div>
-            )
+            <div>Keine Frage aktiv.</div>
           ) : (
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}
@@ -157,9 +177,15 @@ function Index({ id }: Props) {
               execution={activeBlock?.execution || 0}
             />
           )}
+
+          {!activeBlock && selfData?.self && isGamificationEnabled && (
+            <div className={twMerge('w-full bg-white min-h-full')}>
+              <Leaderboard sessionId={id} className="hidden md:block" />
+            </div>
+          )}
         </div>
 
-        {isGamificationEnabled && (
+        {selfData?.self && isGamificationEnabled && (
           <div
             className={twMerge(
               'bg-white hidden min-h-full flex-1 md:p-8',
@@ -195,9 +221,21 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  const withNewSessionData = await getRunningSessionData(ctx)
+  const apolloClient = initializeApollo()
 
-  return addApolloState(withNewSessionData.apolloClient, {
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  await apolloClient.query({
+    query: GetRunningSessionDocument,
+    variables: {
+      id: ctx.query?.id as string,
+    },
+  })
+
+  return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
     },

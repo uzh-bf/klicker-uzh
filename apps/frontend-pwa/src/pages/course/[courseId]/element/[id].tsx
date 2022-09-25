@@ -116,15 +116,15 @@ function LearningElement({ courseId, id }: Props) {
             <div>
               <div className="flex flex-row items-center justify-between">
                 <H3 className="flex flex-row justify-between">Auswertung</H3>
-                <H3>Punkte (gesammelt/berechnet)</H3>
+                <H3>Punkte (gesammelt/berechnet/möglich)</H3>
               </div>
               <div>
                 {data.learningElement.instances.map((instance) => (
                   <div className="flex flex-row justify-between">
                     <div>{instance.questionData.name}</div>
                     <div>
-                      {instance.evaluation.pointsAwarded}/
-                      {instance.evaluation.score}
+                      {instance.evaluation.pointsAwarded} /{' '}
+                      {instance.evaluation.score} / 10
                     </div>
                   </div>
                 ))}

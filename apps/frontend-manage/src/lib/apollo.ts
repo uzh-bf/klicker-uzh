@@ -5,14 +5,16 @@ import {
   InMemoryCache,
   NormalizedCacheObject,
 } from '@apollo/client'
+import { split } from '@apollo/client/link/core'
 import { onError } from '@apollo/client/link/error'
-import { concatPagination } from '@apollo/client/utilities'
 import merge from 'deepmerge'
+import { getOperationAST } from 'graphql'
 import getConfig from 'next/config'
 import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
+import SSELink from './SSELink'
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
@@ -53,27 +55,46 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (networkError) console.log(`[Network error]: ${networkError}`)
 })
 
-const httpLink = new HttpLink({
-  uri:
-    typeof window !== 'undefined'
-      ? publicRuntimeConfig.API_URL
-      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
-  credentials: 'include',
-})
-
+// TODO: use the schema link when working on the server?
 function createApolloClient() {
+  const httpLink = new HttpLink({
+    uri:
+      typeof window !== 'undefined'
+        ? publicRuntimeConfig.API_URL
+        : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+    credentials: 'include',
+  })
+
+  if (typeof window === 'undefined') {
+    return new ApolloClient({
+      ssrMode: true,
+      link: from([errorLink, httpLink]),
+      cache: new InMemoryCache(),
+    })
+  }
+
+  const sseLink = new SSELink({
+    uri: publicRuntimeConfig.API_URL,
+    withCredentials: true,
+  })
+
+  const splitSubsLink = split(
+    ({ query, operationName }) => {
+      const definition = getOperationAST(query, operationName)
+
+      return (
+        definition?.kind === 'OperationDefinition' &&
+        definition.operation === 'subscription'
+      )
+    },
+    sseLink,
+    httpLink
+  )
+
   return new ApolloClient({
-    ssrMode: typeof window === 'undefined',
-    link: from([errorLink, httpLink]),
-    cache: new InMemoryCache({
-      typePolicies: {
-        Query: {
-          fields: {
-            allPosts: concatPagination(),
-          },
-        },
-      },
-    }),
+    ssrMode: false,
+    link: from([errorLink, splitSubsLink]),
+    cache: new InMemoryCache(),
   })
 }
 

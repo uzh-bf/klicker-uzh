@@ -63,7 +63,6 @@ export const AuthSchema = {
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     respondToQuestionInstance: { __authz: { rules: ['Allow'] } },
   },
-
   Query: {
     '*': { __authz: { rules: ['Allow'] } },
     cockpitSession: { __authz: { rules: ['IsUserOrAdmin'] } },
@@ -78,5 +77,8 @@ export const AuthSchema = {
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
+  },
+  Subscription: {
+    '*': { __authz: { rules: ['Allow'] } },
   },
 }

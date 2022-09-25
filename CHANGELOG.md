@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.56...v2.0.0-alpha.57) (2022-09-24)
+
+
+### Deployment
+
+* use redis master as a caching connection ([6c8e61a](https://github.com/uzh-bf/klicker-uzh/commit/6c8e61a84058888ee4c0f808e6709ce24152bc8d))
+
+
+### Enhancements
+
+* **frontend-*:** improve header and tab title naming, upgrade next to 12.3.1 ([8b2044b](https://github.com/uzh-bf/klicker-uzh/commit/8b2044b8365068062bab352dc5bb4d05e0d9308e))
+* **packages/prisma:** improve upsertion of existing elements, extend seed for BF1 and AMI ([caf454a](https://github.com/uzh-bf/klicker-uzh/commit/caf454ac34fcb5f96329d042fad06df3b57e3d65))
+
+## [2.0.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.55...v2.0.0-alpha.56) (2022-09-22)
+
+
+### Features
+
+* session leaderboards and evaluation, subscriptions ([#2894](https://github.com/uzh-bf/klicker-uzh/issues/2894)) ([e06a59d](https://github.com/uzh-bf/klicker-uzh/commit/e06a59d7413d4d5bc163264cd56cbd708dada2c6))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only show profile creation button if logged in ([eaf9e4a](https://github.com/uzh-bf/klicker-uzh/commit/eaf9e4a46f9a9efcb0d320e82f5b21d61c2bded7))
+
+
+### Deployment
+
+* update chart for redis and sentry ([09a3f61](https://github.com/uzh-bf/klicker-uzh/commit/09a3f618a40891f3250527d3e183f11c8d93b091))
+
+
+### Enhancements
+
+* **packages/prisma:** add order for blocks and instances ([31cdb3c](https://github.com/uzh-bf/klicker-uzh/commit/31cdb3c86f8ffe5f5d9e6ce5632227bb803f5fc4))
+
+
+### Other
+
+* add version update for chart v2 version ([00f70f2](https://github.com/uzh-bf/klicker-uzh/commit/00f70f2f2ebc12688863069eb013c4f590112c0c))
+* **apps/frontend-pwa:** stubs for group join and group create ([c25c522](https://github.com/uzh-bf/klicker-uzh/commit/c25c522899ebcc9d35186ebb87f1640408c1eb7a))
+* **packages/prisma:** add AMI color ([8794ea6](https://github.com/uzh-bf/klicker-uzh/commit/8794ea6ade70dab817a0ef10cd168aeefe12d91c))
+* seed updates ([5524ed7](https://github.com/uzh-bf/klicker-uzh/commit/5524ed7f81e30479b9a2c905f5c618028cddb3b3))
+* update AMI seed for first question set ([#2896](https://github.com/uzh-bf/klicker-uzh/issues/2896)) ([66dcee0](https://github.com/uzh-bf/klicker-uzh/commit/66dcee034a18323a393651a4d4c75252e5fbf401))
+
 ## [2.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.54...v2.0.0-alpha.55) (2022-09-20)
 
 

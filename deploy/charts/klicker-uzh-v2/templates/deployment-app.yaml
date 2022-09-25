@@ -27,6 +27,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend-pwa
     spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendPWA.priorityClassName }}
       {{- with .Values.frontendPWA.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -100,6 +101,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend-manage
     spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendManage.priorityClassName }}
       {{- with .Values.frontendManage.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -173,6 +175,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend-graphql
     spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.backendGraphql.priorityClassName }}
       {{- with .Values.backendGraphql.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

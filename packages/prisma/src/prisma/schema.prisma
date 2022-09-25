@@ -193,6 +193,10 @@ model QuestionInstance {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([type, sessionBlockId, order])
+  @@unique([type, learningElementId, order])
+  @@unique([type, microSessionId, order])
 }
 
 // ----- INTERACTIONS -----
@@ -242,6 +246,9 @@ model LeaderboardEntry {
 
   participation Participation?
 
+  sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
+  sessionParticipationId Int?
+
   sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId Int?
 
@@ -284,6 +291,8 @@ model SessionBlock {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, order])
 }
 
 enum SessionStatus {
@@ -479,6 +488,8 @@ model Participation {
 
   courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
   courseLeaderboardId Int?              @unique
+
+  sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
 
   responses              QuestionResponse[]
   subscriptions          PushSubscription[]

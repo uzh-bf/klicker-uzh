@@ -146,6 +146,15 @@ type InstanceEvaluation {
   score: Float!
 }
 
+type InstanceResults {
+  blockIx: Int!
+  id: ID!
+  instanceIx: Int!
+  questionData: QuestionData!
+  results: JSONObject!
+  status: SessionBlockStatus!
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -276,7 +285,12 @@ type Participation {
   course: Course
   id: Int!
   isActive: Boolean!
-  subscriptions: [Subscription!]
+  subscriptions: [PublicSubscriptionData!]
+}
+
+type PublicSubscriptionData {
+  endpoint: String!
+  id: Int!
 }
 
 type PushSubscription {
@@ -298,6 +312,7 @@ type Query {
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
+  sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   userProfile: User
   userSessions: [Session!]
@@ -367,6 +382,11 @@ enum SessionBlockStatus {
   SCHEDULED
 }
 
+type SessionEvaluation {
+  id: ID!
+  instanceResults: [InstanceResults!]
+}
+
 enum SessionStatus {
   COMPLETED
   PREPARED
@@ -375,8 +395,7 @@ enum SessionStatus {
 }
 
 type Subscription {
-  endpoint: String!
-  id: Int!
+  runningSessionUpdated(sessionId: ID!): SessionBlock
 }
 
 input SubscriptionKeys {

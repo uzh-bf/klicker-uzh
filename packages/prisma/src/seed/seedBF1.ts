@@ -3,8 +3,10 @@ import 'dotenv/config'
 import Prisma from '@klicker-uzh/prisma'
 import * as DATA_BF1 from './data/BF1.js'
 
+import { COURSE_ID_BF1, USER_ID_BF1 } from './constants.js'
 import {
   prepareCourse,
+  prepareLearningElement,
   prepareMicroSession,
   prepareQuestion,
   prepareSession,
@@ -27,7 +29,7 @@ import {
 async function seedBF1(prisma: Prisma.PrismaClient) {
   const userBF1 = await prisma.user.upsert(
     await prepareUser({
-      id: 'b7e21ad0-dcf6-4277-9b06-a3eb1d03147c',
+      id: USER_ID_BF1,
       email: 'julia.gut@bf.uzh.ch',
       shortname: 'bf1hs22',
       password: process.env.INITIAL_PASSWORD as string,
@@ -36,10 +38,10 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
 
   const courseBF1 = await prisma.course.upsert(
     prepareCourse({
-      id: '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2',
+      id: COURSE_ID_BF1,
       name: 'Banking and Finance I',
       displayName: 'Banking and Finance I',
-      ownerId: userBF1.id,
+      ownerId: USER_ID_BF1,
       color: '#016272',
     })
   )
@@ -59,7 +61,7 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
 
   const questionsBF1 = await Promise.all(
     DATA_BF1.QUESTIONS.map((data) =>
-      prisma.question.upsert(prepareQuestion({ ownerId: userBF1.id, ...data }))
+      prisma.question.upsert(prepareQuestion({ ownerId: USER_ID_BF1, ...data }))
     )
   )
 
@@ -68,33 +70,33 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
     `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount + 1}`
   )
 
-  // const learningElementsBF1 = await Promise.all(
-  //   DATA_BF1.LEARNING_ELEMENTS.map((data) =>
-  //     prisma.learningElement.upsert(
-  //       prepareLearningElement({
-  //         ...data,
-  //         ownerId: userBF1.id,
-  //         courseId: courseBF1.id,
-  //         questions: questionsBF1.filter((q) => data.questions.includes(q.id)),
-  //       })
-  //     )
-  //   )
-  // )
+  const learningElementsBF1 = await Promise.all(
+    DATA_BF1.LEARNING_ELEMENTS.map((data) =>
+      prisma.learningElement.upsert(
+        prepareLearningElement({
+          ...data,
+          ownerId: USER_ID_BF1,
+          courseId: COURSE_ID_BF1,
+          questions: questionsBF1.filter((q) => data.questions.includes(q.id)),
+        })
+      )
+    )
+  )
 
   const sessionsBF1 = await Promise.all(
     DATA_BF1.SESSIONS.map((data) =>
       prisma.session.upsert(
         prepareSession({
           ...data,
-          linkTo: 'https://app.klicker.uzh.ch/join/bf1hs22',
-          blocks: data.blocks.map((block) => ({
+          blocks: data.blocks.map((block, ix) => ({
             ...block,
+            order: ix,
             questions: questionsBF1.filter((q) =>
               block.questions.includes(q.id)
             ),
           })),
-          ownerId: userBF1.id,
-          courseId: courseBF1.id,
+          ownerId: USER_ID_BF1,
+          courseId: COURSE_ID_BF1,
         })
       )
     )
@@ -105,8 +107,8 @@ async function seedBF1(prisma: Prisma.PrismaClient) {
       prisma.microSession.upsert(
         prepareMicroSession({
           ...data,
-          ownerId: userBF1.id,
-          courseId: courseBF1.id,
+          ownerId: USER_ID_BF1,
+          courseId: COURSE_ID_BF1,
           questions: questionsBF1.filter((q) => data.questions.includes(q.id)),
         })
       )

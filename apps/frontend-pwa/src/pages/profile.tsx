@@ -17,7 +17,7 @@ const Profile = () => {
   const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
-    <Layout>
+    <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <div className="flex flex-col items-center md:max-w-md md:border md:rounded md:p-4 md:m-auto md:w-full">
         <H1>{data.self.username}</H1>
 

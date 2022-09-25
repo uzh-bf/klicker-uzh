@@ -1,4 +1,6 @@
 frontendPWA:
+  priorityClassName: staging-workload
+
   hostname: pwa.klicker-qa.bf-app.ch
 
   ingress:
@@ -24,6 +26,8 @@ frontendPWA:
       memory: 200Mi
 
 frontendManage:
+  priorityClassName: staging-workload
+
   hostname: manage.klicker-qa.bf-app.ch
 
   ingress:
@@ -49,6 +53,8 @@ frontendManage:
       memory: 200Mi
 
 backendGraphql:
+  priorityClassName: staging-workload
+
   hostname: backend-sls.klicker-qa.bf-app.ch
 
   ingress:

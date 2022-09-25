@@ -72,7 +72,9 @@ export const AuthSchema = {
     participations: { __authz: { rules: ['IsParticipant'] } },
     pinnedFeedbacks: { __authz: { rules: ['IsUserOrAdmin'] } },
     self: { __authz: { rules: ['IsParticipant'] } },
+    // TODO: should session be restricted to users only?
     session: { __authz: { rules: ['Allow'] } },
+    sessionEvaluation: { __authz: { rules: ['IsUserOrAdmin'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },

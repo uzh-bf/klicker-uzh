@@ -8,7 +8,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { dissoc, mapObjIndexed, pick } from 'ramda'
+import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 function processQuestionData(question: Question): AllQuestionTypeData {
@@ -272,6 +272,57 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     return null
   }
 
+  // if the session is part of a course, update the course leaderboard with the accumulated points
+  if (session.courseId) {
+    const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+
+    if (sessionLB) {
+      const result = await ctx.prisma.$transaction(
+        Object.entries(sessionLB).map(([participantId, score]) =>
+          ctx.prisma.leaderboardEntry.upsert({
+            where: {
+              type_participantId_courseId: {
+                type: 'COURSE',
+                courseId: session.courseId!,
+                participantId,
+              },
+            },
+            create: {
+              type: 'COURSE',
+              course: {
+                connect: {
+                  id: session.courseId!,
+                },
+              },
+              participant: {
+                connect: {
+                  id: participantId,
+                },
+              },
+              participation: {
+                connect: {
+                  courseId_participantId: {
+                    courseId: session.courseId!,
+                    participantId,
+                  },
+                },
+              },
+              score: Number(score),
+            },
+            update: {
+              score: {
+                increment: Number(score),
+              },
+            },
+          })
+        )
+      )
+    }
+  }
+
+  ctx.redisExec.unlink(`s:${id}:meta`)
+  ctx.redisExec.unlink(`s:${id}:lb`)
+
   return ctx.prisma.session.update({
     where: {
       id,
@@ -335,8 +386,17 @@ export async function activateSessionBlock(
       activeBlock: {
         include: { instances: true },
       },
-      blocks: true,
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
     },
+  })
+
+  ctx.pubSub.publish('runningSessionUpdated', {
+    sessionId,
+    block: updatedSession.activeBlock,
   })
 
   // initialize the cache for the new active block
@@ -406,33 +466,12 @@ export async function activateSessionBlock(
   return updatedSession
 }
 
-export async function deactivateSessionBlock(
-  { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: ContextWithUser
-) {
-  const session = await ctx.prisma.session.findUnique({
-    where: {
-      id: sessionId,
-    },
-    include: {
-      blocks: {
-        orderBy: {
-          id: 'asc',
-        },
-      },
-    },
-  })
-
-  if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
-    return null
-
-  // if the block is not the active one, return early
-  if (session.activeBlockId !== sessionBlockId) return session
-
-  const activeInstanceIds = session.activeBlock.instances.map(
-    (instance) => instance.id
-  )
-
+async function getCachedBlockResults({
+  ctx,
+  sessionId,
+  sessionBlockId,
+  activeInstanceIds,
+}) {
   const redisMulti = ctx.redisExec.multi()
   redisMulti.hgetall(`s:${sessionId}:lb`)
   redisMulti.hgetall(`s:${sessionId}:b:${sessionBlockId}:lb`)
@@ -441,10 +480,28 @@ export async function deactivateSessionBlock(
     redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:responses`)
     redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:results`)
   })
-  const cachedResults = await redisMulti.exec()
+  return await redisMulti.exec()
+}
 
-  if (!cachedResults) return session
+async function unlinkCachedBlockResults({
+  ctx,
+  sessionId,
+  sessionBlockId,
+  activeInstanceIds,
+}) {
+  // unlink everything regarding the block in redis
+  const unlinkMulti = ctx.redisExec.pipeline()
+  unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
+  activeInstanceIds.forEach((instanceId) => {
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:results`)
+  })
+  return unlinkMulti.exec()
+}
 
+async function processCachedData({ cachedResults, activeBlock }) {
   const mappedResults: any[] = cachedResults.map(([_, result]) => result)
 
   const sessionLeaderboard: Record<string, string> = mappedResults[0]
@@ -461,13 +518,13 @@ export async function deactivateSessionBlock(
   > = mappedResults.slice(2).reduce((acc: any, cacheObj: any, ix) => {
     const ixMod = ix % 3
     const instance: QuestionInstance =
-      session.activeBlock!.instances[Math.floor((ix - ixMod) / 3)]
+      activeBlock!.instances[Math.floor((ix - ixMod) / 3)]
     switch (ixMod) {
       // results
       case 2: {
         const results = mapObjIndexed((count, responseHash) => {
           return {
-            count,
+            count: +count,
             value:
               acc[instance.id]['responseHashes'][responseHash] ?? responseHash,
           }
@@ -506,6 +563,67 @@ export async function deactivateSessionBlock(
         return acc
     }
   }, {})
+
+  return {
+    sessionLeaderboard,
+    blockLeaderboard,
+    cachedResults,
+    instanceResults,
+  }
+}
+
+export async function deactivateSessionBlock(
+  { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      activeBlock: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          id: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
+    return null
+
+  // if the block is not the active one, return early
+  if (session.activeBlockId !== sessionBlockId) return session
+
+  const activeInstanceIds = session.activeBlock.instances.map(
+    (instance) => instance.id
+  )
+
+  const cachedResults = await getCachedBlockResults({
+    ctx,
+    sessionId,
+    sessionBlockId,
+    activeInstanceIds,
+  })
+
+  if (!cachedResults) return null
+
+  const { instanceResults, sessionLeaderboard, blockLeaderboard } =
+    await processCachedData({
+      cachedResults,
+      activeBlock: session.activeBlock,
+    })
+
+  // console.log(instanceResults, sessionLeaderboard, blockLeaderboard)
 
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.session.update({
@@ -552,43 +670,50 @@ export async function deactivateSessionBlock(
                 },
               })),
             },
-            leaderboard: {
-              create: Object.entries(blockLeaderboard).map(([id, score]) => ({
-                score: Number(score),
-                participant: {
-                  connect: { id },
-                },
-                type: 'SESSION_BLOCK',
-                // TODO: use the real username here, or remove it
-                username: id,
-              })),
-            },
+            // leaderboard: {
+            //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
+            //     score: Number(score),
+            //     participant: {
+            //       connect: { id },
+            //     },
+            //     type: 'SESSION_BLOCK',
+            //     username: id,
+            //   })),
+            // },
           },
         },
       },
-      leaderboard: {
-        upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
-          where: {
-            type_participantId_sessionId: {
-              type: 'SESSION',
-              participantId: id,
-              sessionId,
-            },
-          },
-          create: {
-            type: 'SESSION',
-            participant: {
-              connect: { id },
-            },
-            score: Number(score),
-            // TODO: use the real username here, or remove it
-            username: id,
-          },
-          update: {
-            score: Number(score),
-          },
-        })),
-      },
+      leaderboard: session.isGamificationEnabled
+        ? {
+            upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
+              where: {
+                type_participantId_sessionId: {
+                  type: 'SESSION',
+                  participantId: id,
+                  sessionId,
+                },
+              },
+              create: {
+                type: 'SESSION',
+                participant: {
+                  connect: { id },
+                },
+                score: Number(score),
+                sessionParticipation: {
+                  connect: {
+                    courseId_participantId: {
+                      courseId: session.courseId as string,
+                      participantId: id,
+                    },
+                  },
+                },
+              },
+              update: {
+                score: Number(score),
+              },
+            })),
+          }
+        : undefined,
     },
     include: {
       blocks: {
@@ -599,16 +724,23 @@ export async function deactivateSessionBlock(
     },
   })
 
-  // unlink everything regarding the block in redis
-  const unlinkMulti = ctx.redisExec.pipeline()
-  unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
-  activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`s:${sessionId}:i:${instanceId}:results`)
+  ctx.pubSub.publish('runningSessionUpdated', {
+    sessionId,
+    block: null,
   })
-  unlinkMulti.exec()
+
+  // const leaderboardUpdates = Object.entries(sessionLeaderboard).map(
+  //   ([id, score]) => {
+  //     out
+  //   }
+  // )
+
+  unlinkCachedBlockResults({
+    ctx,
+    sessionId,
+    sessionBlockId,
+    activeInstanceIds,
+  })
 
   return updatedSession
 }
@@ -705,7 +837,7 @@ export async function getLeaderboard(
   { sessionId }: GetLeaderboardArgs,
   ctx: ContextWithUser
 ) {
-  const top5 = await ctx.prisma.session
+  const top10 = await ctx.prisma.session
     .findUnique({
       where: {
         id: sessionId,
@@ -715,25 +847,25 @@ export async function getLeaderboard(
       orderBy: {
         score: 'desc',
       },
+      include: {
+        sessionParticipation: true,
+        participant: true,
+      },
       take: 10,
     })
 
-  // TODO: extract self into separate query to allow for improved caching?
-  // const self = await ctx.prisma.leaderboardEntry.findUnique({
-  //   where: {
-  //     type_participantId_sessionId: {
-  //       type: 'SESSION',
-  //       participantId: ctx.user.sub,
-  //       sessionId,
-  //     },
-  //   },
-  // })
+  return top10.flatMap((entry) => {
+    if (!entry.sessionParticipation.isActive) return []
 
-  // if (!top5 || !self) return null
-  if (!top5) return null
-
-  // return [...top5, self]
-  return top5
+    return {
+      id: entry.id,
+      participantId: ctx.user.sub,
+      username: entry.participant.username,
+      avatar: entry.participant.avatar,
+      score: entry.score,
+      self: entry.participantId === ctx.user.sub,
+    }
+  })
 }
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
@@ -964,4 +1096,103 @@ export async function getPinnedFeedbacks(
   }
 
   return reducedSession
+}
+
+export async function getSessionEvaluation(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        where: {
+          status: {
+            equals: 'EXECUTED',
+          },
+        },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!session) return null
+
+  // if the session is running and a block is active
+  // fetch the current results from the execution cache
+  let activeInstanceResults = []
+  if (session.status === SessionStatus.RUNNING && session.activeBlock) {
+    const activeInstanceIds = session.activeBlock.instances.map(
+      (instance) => instance.id
+    )
+
+    const cachedResults = await getCachedBlockResults({
+      ctx,
+      sessionId: session.id,
+      sessionBlockId: session.activeBlock.id,
+      activeInstanceIds,
+    })
+
+    const { instanceResults, sessionLeaderboard, blockLeaderboard } =
+      await processCachedData({
+        cachedResults,
+        activeBlock: session.activeBlock,
+      })
+
+    activeInstanceResults = Object.entries(instanceResults).map(
+      ([id, results]) => {
+        const instance = session.activeBlock!.instances.find(
+          (instance) => instance.id === Number(id)
+        )
+
+        return {
+          id: `${instance.id}-eval`,
+          blockIx: session.activeBlock.order,
+          instanceIx: instance.order,
+          status: session.activeBlock!.status,
+          questionData: instance.questionData,
+          results: results.results,
+        }
+      }
+    )
+
+    activeInstanceResults = sortWith(
+      [ascend(prop('blockIx')), ascend(prop('instanceIx'))],
+      activeInstanceResults
+    )
+  }
+
+  const executedInstanceResults = session.blocks.flatMap((block) =>
+    block.instances.map((instance) => ({
+      id: `${instance.id}-eval`,
+      blockIx: block.order,
+      instanceIx: instance.order,
+      status: block.status,
+      questionData: instance.questionData,
+      results: instance.results,
+    }))
+  )
+
+  return {
+    id: `${id}-eval`,
+    instanceResults: [...executedInstanceResults, ...activeInstanceResults],
+  }
 }

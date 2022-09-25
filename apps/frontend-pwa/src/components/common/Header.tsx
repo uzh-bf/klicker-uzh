@@ -34,8 +34,8 @@ function Header({
     <div
       style={{ borderColor: courseColor || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800',
-        courseColor && 'border-b-8'
+        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800 border-b-8',
+        !courseColor && 'border-uzh-red-60'
       )}
     >
       {title && courseName && (
@@ -72,7 +72,7 @@ function Header({
         )}
         {participant && !participant?.avatar && (
           <Link href="/editProfile">
-            <Button className="text-white bg-uzh-red-100 border-uzh-red-100">
+            <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
               Profil einrichten
             </Button>
           </Link>

@@ -74,10 +74,11 @@ const httpTrigger: AzureFunction = async function (
     choiceCount,
   } = instanceInfo
 
-  // TODO: ensure that the following code can handle missing solutions
   let parsedSolutions
   try {
-    parsedSolutions = JSON.parse(solutions)
+    if (solutions) {
+      parsedSolutions = JSON.parse(solutions)
+    }
   } catch (e) {
     console.error(e)
   }
@@ -86,10 +87,10 @@ const httpTrigger: AzureFunction = async function (
 
   // compute the timing of the response based on the first response received for the instance
   const responseTiming =
-    responseTimestamp -
-    Number(firstResponseReceivedAt ?? responseTimestamp) +
+    (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
     1000
-  let pointsAwarded: number | string = 10000000 / (responseTiming / 1000)
+
+  let pointsAwarded: number | string = 10
 
   switch (type) {
     case 'SC':
@@ -123,7 +124,7 @@ const httpTrigger: AzureFunction = async function (
         }
 
         if (pointsPercentage !== null) {
-          pointsAwarded *= pointsPercentage
+          pointsAwarded += (20 * pointsPercentage) / responseTiming
 
           // if we are processing a first response, set the timestamp on the instance
           // this will allow us to award points for response timing
@@ -134,8 +135,6 @@ const httpTrigger: AzureFunction = async function (
               responseTimestamp
             )
           }
-        } else {
-          pointsAwarded = 100
         }
 
         console.warn(
@@ -179,12 +178,13 @@ const httpTrigger: AzureFunction = async function (
 
       if (participantData) {
         if (
+          parsedSolutions &&
           gradeQuestionNumerical({
             response: response.value,
             solutionRanges: parsedSolutions,
           })
         ) {
-          pointsAwarded += 100
+          pointsAwarded += 20 / responseTiming
 
           // if we are processing a first response, set the timestamp on the instance
           // this will allow us to award points for response timing
@@ -195,8 +195,6 @@ const httpTrigger: AzureFunction = async function (
               responseTimestamp
             )
           }
-        } else {
-          pointsAwarded = 0
         }
 
         redisMulti.hset(
@@ -239,7 +237,7 @@ const httpTrigger: AzureFunction = async function (
             solutions: parsedSolutions,
           })
         ) {
-          pointsAwarded += 100
+          pointsAwarded += 20 / responseTiming
 
           // if we are processing a first response, set the timestamp on the instance
           // this will allow us to award points for response timing
@@ -250,8 +248,6 @@ const httpTrigger: AzureFunction = async function (
               responseTimestamp
             )
           }
-        } else {
-          pointsAwarded = 0
         }
 
         redisMulti.hset(
