@@ -209,7 +209,7 @@ function Evaluation() {
                           style={{
                             backgroundColor: answer.correct
                               ? '#00de0d'
-                              : CHART_COLORS[innerIndex],
+                              : CHART_COLORS[innerIndex % 12],
                           }}
                           className={twMerge(
                             'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
