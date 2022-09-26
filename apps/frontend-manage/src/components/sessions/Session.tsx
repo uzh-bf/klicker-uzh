@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H4 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
 
@@ -40,9 +41,17 @@ function Session({
       <div className="mb-8">
         {sessionList.map((session: SessionType) => (
           <div key={session.id} className="mb-4">
-            <div className="flex flex-row border-b border-solid border-uzh-grey-40">
+            <div className="flex flex-row items-end border-b border-solid border-uzh-grey-40">
               <H4 className="flex-1">{session.displayName}</H4>
-              <div className="text-sm italic">
+              {(session.status === 'RUNNING' ||
+                session.status === 'COMPLETED') && (
+                <Link href={`/sessions/${session.id}/evaluation`} passHref>
+                  <a className="mr-4 text-sm hover:text-uzh-red-100">
+                    Zur Evaluation
+                  </a>
+                </Link>
+              )}
+              <div className="text-sm">
                 <FontAwesomeIcon icon={faCalendarDays} className="mr-1" />
                 {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
               </div>
