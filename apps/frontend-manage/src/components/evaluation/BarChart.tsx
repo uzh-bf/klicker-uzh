@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { SMALL_BAR_THRESHOLD } from '../../constants'
+import { CHART_COLORS, SMALL_BAR_THRESHOLD } from '../../constants'
 
 interface BarChartProps {
   questionType: QuestionType
@@ -94,9 +94,13 @@ function BarChart({
             style={{ fontSize: '2rem' }}
           />
           {data.map(
-            (row): React.ReactElement => (
+            (row, index): React.ReactElement => (
               <Cell
-                fill={showSolution && row.correct ? '#00de0d' : '#3353b7'}
+                fill={
+                  showSolution && row.correct
+                    ? '#00de0d'
+                    : CHART_COLORS[index % 12]
+                }
                 key={row.value}
               />
             )

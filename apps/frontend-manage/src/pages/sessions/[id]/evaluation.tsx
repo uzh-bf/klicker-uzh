@@ -8,6 +8,7 @@ import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { Prose } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
+import { CHART_COLORS } from 'src/constants'
 import { twMerge } from 'tailwind-merge'
 
 interface Tab {
@@ -104,7 +105,7 @@ function getAnswers(data: any): {
 function getChartData(data: any) {
   if (!data) return []
 
-  return data?.sessionEvaluation?.instanceResults.map((result) => ({
+  return data?.sessionEvaluation?.instanceResults.map((result: any) => ({
     type: result.questionData.type,
     data: Object.values(result.results).map((answer) => ({
       value: answer.value,
@@ -205,12 +206,17 @@ function Evaluation() {
                         className="flex flex-row"
                       >
                         <div
+                          style={{
+                            backgroundColor: answer.correct
+                              ? '#00de0d'
+                              : CHART_COLORS[innerIndex],
+                          }}
                           className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 bg-uzh-blue-80 text-white font-bold',
-                            answer.correct && 'bg-green-500 text-black'
+                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                            answer.correct && 'text-black'
                           )}
                         >
-                          <div>{chartData[index].data[innerIndex].value}</div>
+                          {chartData[index].data[innerIndex].value}
                         </div>
                         <Markdown
                           content={answer.value}
