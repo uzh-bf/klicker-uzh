@@ -149,6 +149,7 @@ model Question {
 
 model Tag {
   id Int @id @default(autoincrement())
+  name String
 
   questions Question[]
 

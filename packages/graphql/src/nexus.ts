@@ -27,6 +27,7 @@ import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
 import * as NotificationService from './services/notifications'
 import * as ParticipantService from './services/participants'
+import * as QuestionService from './services/questions'
 import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
@@ -83,6 +84,26 @@ export const ResponseInput = inputObjectType({
   },
 })
 
+export const Question = objectType({
+  name: 'Question',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+    t.nonNull.string('contentPlain')
+
+    t.list.field('tags', { type: Tag })
+
+    t.nonNull.date('createdAt')
+    t.nonNull.date('updatedAt')
+  },
+})
+
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -109,6 +130,14 @@ export const QuestionData = interfaceType({
       return 'FreeTextQuestionData'
     }
     return null
+  },
+})
+
+export const Tag = objectType({
+  name: 'Tag',
+  definition(t) {
+    t.nonNull.int('id')
+    t.nonNull.string('name')
   },
 })
 
@@ -743,6 +772,13 @@ export const Query = objectType({
       type: Session,
       resolve(_, _args, ctx: ContextWithUser) {
         return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
+    t.list.nonNull.field('userQuestions', {
+      type: Question,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return QuestionService.getUserQuestions({ userId: ctx.user.sub }, ctx)
       },
     })
   },

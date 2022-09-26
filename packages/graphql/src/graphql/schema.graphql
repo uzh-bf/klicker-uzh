@@ -297,7 +297,21 @@ type Query {
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   userProfile: User
+  userQuestions: [Question!]
   userSessions: [Session!]
+}
+
+type Question {
+  content: String!
+  contentPlain: String!
+  createdAt: DateTime!
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  tags: [Tag]
+  type: String!
+  updatedAt: DateTime!
 }
 
 interface QuestionData {
@@ -395,6 +409,11 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeys!
+}
+
+type Tag {
+  id: Int!
+  name: String!
 }
 
 type User {

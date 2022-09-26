@@ -1,0 +1,19 @@
+query GetUserQuestions {
+  userQuestions {
+    id
+    name
+    type
+    content
+    contentPlain
+
+    isArchived
+    isDeleted
+    createdAt
+    updatedAt
+
+    tags {
+      id
+      name
+    }
+  }
+}

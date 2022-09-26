@@ -269,6 +269,18 @@ export interface NexusGenObjects {
     p256dh: string; // String!
   }
   Query: {};
+  Question: { // root type
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    tags?: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
+  }
   QuestionFeedback: { // root type
     correct: boolean; // Boolean!
     feedback: string; // String!
@@ -315,6 +327,10 @@ export interface NexusGenObjects {
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
   Subscription: {};
+  Tag: { // root type
+    id: number; // Int!
+    name: string; // String!
+  }
   User: { // root type
     description?: string | null; // String
     email: string; // String!
@@ -562,7 +578,20 @@ export interface NexusGenFieldTypes {
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     userProfile: NexusGenRootTypes['User'] | null; // User
+    userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
+  }
+  Question: { // field return type
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    tags: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -615,6 +644,10 @@ export interface NexusGenFieldTypes {
     feedbackRemoved: number | null; // Int
     feedbackUpdated: NexusGenRootTypes['Feedback'] | null; // Feedback
     runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
+  }
+  Tag: { // field return type
+    id: number; // Int!
+    name: string; // String!
   }
   User: { // field return type
     description: string | null; // String
@@ -861,7 +894,20 @@ export interface NexusGenFieldTypeNames {
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     userProfile: 'User'
+    userQuestions: 'Question'
     userSessions: 'Session'
+  }
+  Question: { // field return type name
+    content: 'String'
+    contentPlain: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -914,6 +960,10 @@ export interface NexusGenFieldTypeNames {
     feedbackRemoved: 'Int'
     feedbackUpdated: 'Feedback'
     runningSessionUpdated: 'SessionBlock'
+  }
+  Tag: { // field return type name
+    id: 'Int'
+    name: 'String'
   }
   User: { // field return type name
     description: 'String'
