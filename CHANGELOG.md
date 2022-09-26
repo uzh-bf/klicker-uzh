@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.59...v2.0.0-alpha.60) (2022-09-26)
+
+
+### Other
+
+* **packages/graphql:** rebuild generated artifacts ([98954ea](https://github.com/uzh-bf/klicker-uzh/commit/98954eaacad0032a151b4b123bb1b7705eeb805e))
+
+
+### Enhancements
+
+* basic evaluation page for SC ([7a7a6db](https://github.com/uzh-bf/klicker-uzh/commit/7a7a6db13fa3dc0de69d4e9eb5d50bd02b27bb3d))
+
 ## [2.0.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.58...v2.0.0-alpha.59) (2022-09-25)
 
 
