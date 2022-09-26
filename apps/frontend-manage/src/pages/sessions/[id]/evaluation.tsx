@@ -105,6 +105,7 @@ function getAnswers(data: any): {
 function getChartData(data: any) {
   if (!data) return []
 
+  console.log(data)
   return data?.sessionEvaluation?.instanceResults.map((result: any) => ({
     type: result.questionData.type,
     data: Object.values(result.results).map((answer) => ({
@@ -216,7 +217,7 @@ function Evaluation() {
                             answer.correct && 'text-black'
                           )}
                         >
-                          {chartData[index].data[innerIndex].value}
+                          {String.fromCharCode(65 + innerIndex)}
                         </div>
                         <Markdown
                           content={answer.value}

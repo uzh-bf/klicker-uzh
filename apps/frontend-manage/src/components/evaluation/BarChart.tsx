@@ -33,7 +33,11 @@ function BarChart({
       d.votes / totalResponses > SMALL_BAR_THRESHOLD ? d.votes : undefined
     const labelOut =
       d.votes / totalResponses <= SMALL_BAR_THRESHOLD ? d.votes : undefined
-    return { ...d, labelIn, labelOut }
+    const xLabel =
+      questionType === 'NUMERICAL'
+        ? d.value
+        : String.fromCharCode(Number(d.value) + 65)
+    return { ...d, labelIn, labelOut, xLabel }
   })
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
@@ -49,7 +53,7 @@ function BarChart({
         }}
       >
         <XAxis
-          dataKey="value"
+          dataKey="xLabel"
           tick={{
             fill: 'black',
             offset: 30,
