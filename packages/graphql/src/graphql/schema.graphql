@@ -150,6 +150,7 @@ type InstanceResults {
   blockIx: Int!
   id: ID!
   instanceIx: Int!
+  participants: Int!
   questionData: QuestionData!
   results: JSONObject!
   status: SessionBlockStatus!

@@ -9,6 +9,7 @@ interface ChartProps {
   data: { value: string | number; correct: boolean; votes: number }[]
   showSolution: boolean
   options?: any
+  totalResponses: number
 }
 
 const defaultValues = {}
@@ -18,9 +19,8 @@ function Chart({
   data,
   showSolution,
   options,
+  totalResponses,
 }: ChartProps): React.ReactElement {
-  const totalResponses = data.reduce((acc, curr) => acc + curr.votes, 0)
-
   if (
     questionType === 'SC' ||
     questionType === 'MC' ||

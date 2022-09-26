@@ -49,6 +49,7 @@ query GetSessionEvaluation($id: ID!) {
         }
       }
 
+      participants
       results
     }
   }

@@ -183,6 +183,7 @@ export interface NexusGenObjects {
     blockIx: number; // Int!
     id: string; // ID!
     instanceIx: number; // Int!
+    participants: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
     results: NexusGenScalars['JSONObject']; // JSONObject!
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
@@ -433,6 +434,7 @@ export interface NexusGenFieldTypes {
     blockIx: number; // Int!
     id: string; // ID!
     instanceIx: number; // Int!
+    participants: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
     results: NexusGenScalars['JSONObject']; // JSONObject!
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
@@ -731,6 +733,7 @@ export interface NexusGenFieldTypeNames {
     blockIx: 'Int'
     id: 'ID'
     instanceIx: 'Int'
+    participants: 'Int'
     questionData: 'QuestionData'
     results: 'JSONObject'
     status: 'SessionBlockStatus'

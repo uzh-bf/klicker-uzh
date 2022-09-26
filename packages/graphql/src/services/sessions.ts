@@ -1169,6 +1169,7 @@ export async function getSessionEvaluation(
           instanceIx: instance.order,
           status: session.activeBlock!.status,
           questionData: instance.questionData,
+          participants: results.participants,
           results: results.results,
         }
       }
@@ -1187,6 +1188,7 @@ export async function getSessionEvaluation(
       instanceIx: instance.order,
       status: block.status,
       questionData: instance.questionData,
+      participants: instance.participants,
       results: instance.results,
     }))
   )

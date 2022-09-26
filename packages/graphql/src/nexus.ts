@@ -579,6 +579,8 @@ export const InstanceResults = objectType({
       type: QuestionData,
     })
 
+    t.nonNull.int('participants')
+
     t.nonNull.field('results', {
       type: 'JSONObject',
     })
