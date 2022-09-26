@@ -43,3 +43,6 @@ public/worker*.js
 src/testPush.js
 
 public/avatars*
+
+# Sentry
+.sentryclirc
