@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
@@ -13,6 +13,10 @@ function Index() {
   // const { addToast } = useToasts()
 
   const router = useRouter()
+  const [selectedQuestions, setSelectedQuestions] = useState(
+    new Array<boolean>()
+  )
+
   const {
     loading: loadingQuestions,
     error: errorQuestions,
@@ -44,17 +48,12 @@ function Index() {
     return null
   }, [dataQuestions])
 
-  const processedQuestions = useMemo(
-    () => {
-      if (dataQuestions?.userQuestions) {
-        return processItems(dataQuestions?.userQuestions, filters, sort, index)
-      }
-      return
-    },
-    [dataQuestions?.userQuestions, filters, index, sort]
-  )
-
-  console.log(processedQuestions)
+  const processedQuestions = useMemo(() => {
+    if (dataQuestions?.userQuestions) {
+      return processItems(dataQuestions?.userQuestions, filters, sort, index)
+    }
+    return
+  }, [dataQuestions?.userQuestions, filters, index, sort])
 
   return (
     <Layout displayName="Fragepool">
@@ -150,8 +149,12 @@ function Index() {
                   >
                     <QuestionList
                       questions={processedQuestions}
-                      selectedItems={[]} // TODO: selectedItems
-                      onQuestionChecked={() => null}  // TODO: handleSelectItem
+                      selectedQuestions={selectedQuestions}
+                      setSelectedQuestions={(index: number) => {
+                        const tempQuestions = [...selectedQuestions]
+                        tempQuestions[index] = !tempQuestions[index]
+                        setSelectedQuestions(tempQuestions)
+                      }}
                     />
                   </div>
                 </div>

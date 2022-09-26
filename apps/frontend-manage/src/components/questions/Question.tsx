@@ -1,4 +1,4 @@
-import { Button } from '@uzh-bf/design-system'
+import { Button, Checkbox } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -15,8 +15,8 @@ import { QUESTION_TYPES_SHORT } from '../../constants'
 // import QuestionTags from './QuestionTags'
 
 interface Props {
-  checked?: boolean
-  id: string
+  checked: boolean
+  id: number
   isArchived?: boolean
   tags?: any[] // TODO: typing
   title: string
@@ -63,10 +63,10 @@ function Question({
   return (
     <div className="flex w-full mb-4 h-max flex-col-2">
       <div className="min-h-full my-auto mr-2">
-        CB
-        {/* <CustomCheckbox checked={checked} id={id} onCheck={() => onCheck({ version: activeVersion })}>
-            <CheckIcon />
-          </CustomCheckbox> */}
+        <Checkbox
+          checked={checked}
+          onCheck={onCheck}
+        />
       </div>
       <div
         className={twMerge(

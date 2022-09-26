@@ -1,24 +1,23 @@
-import dayjs from 'dayjs'
+import { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 
 import Question from './Question'
 
-interface Props {
-  onQuestionChecked: any // TODO: typing
-  selectedItems: any // TODO: typing
-  questions?: any[] // TODO: typing
+interface QuestionListProps {
+  setSelectedQuestions: (questionIndex: number) => void
+  selectedQuestions: boolean[]
+  questions?: QuestionType[]
 }
 
 const defaultProps = {
-  isArchiveActive: false,
   questions: [],
 }
 
 function QuestionList({
-  onQuestionChecked,
-  selectedItems,
+  setSelectedQuestions,
+  selectedQuestions,
   questions,
-}: Props): React.ReactElement {
+}: QuestionListProps): React.ReactElement {
   if (!questions) {
     return <></>
   }
@@ -29,17 +28,17 @@ function QuestionList({
 
   return (
     <div className="mb-4">
-      {questions.map((question): any => (
+      {questions.map((question, index): any => (
         <Question
-          // checked={selectedItems.ids.includes(question.id)} // TODO: readd
+          checked={selectedQuestions[index]}
           id={question.id}
           isArchived={question.isArchived}
           key={question.id}
-          tags={question.tags}
-          title={question.title}
+          tags={question.tags || []}
+          title={question.name}
           type={question.type}
           contentPlain={question.contentPlain}
-          onCheck={onQuestionChecked(question.id, question)}
+          onCheck={() => setSelectedQuestions(index)}
         />
       ))}
     </div>

@@ -23,7 +23,7 @@
     "@radix-ui/react-tabs": "^1.0.0",
     "@radix-ui/react-tooltip": "1.0.0",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.0.43",
+    "@uzh-bf/design-system": "0.0.44",
     "d3": "7.6.1",
     "deepmerge": "4.2.2",
     "formik": "2.2.9",
