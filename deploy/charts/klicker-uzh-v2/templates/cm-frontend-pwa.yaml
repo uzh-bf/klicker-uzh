@@ -6,4 +6,10 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  SOMETHING: anything
+  {{- if .Values.frontendPWA.sentryDSN }}
+  SENTRY_DSN: {{ .Values.frontendPWA.sentryDSN | quote }}
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  {{ end }}
+  {{- if .Values.frontendPWA.sentryEnv }}
+  SENTRY_ENVIRONMENT: {{ .Values.frontendPWA.sentryEnv | quote }}
+  {{ end }}

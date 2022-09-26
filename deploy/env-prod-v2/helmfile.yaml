@@ -19,10 +19,16 @@ releases:
           image:
             tag: v2.0.0-alpha.60
 
+          sentryEnv: production
+          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
+
         frontendManage:
           replicaCount: 1
           image:
             tag: v2.0.0-alpha.60
+
+          sentryEnv: production
+          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
 
         backendGraphql:
           replicaCount: 4
