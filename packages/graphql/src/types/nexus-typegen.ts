@@ -119,6 +119,20 @@ export interface NexusGenObjects {
   ChoicesQuestionOptions: { // root type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
   }
+  ChoicesSingleQuestion: { // root type
+    attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    tags?: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
+  }
   ConfusionTimestep: { // root type
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     difficulty: number; // Int!
@@ -170,6 +184,20 @@ export interface NexusGenObjects {
   }
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
+  }
+  FreeTextSingleQuestion: { // root type
+    attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
+    tags?: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
   InstanceEvaluation: { // root type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
@@ -231,6 +259,20 @@ export interface NexusGenObjects {
   NumericalRestrictions: { // root type
     max?: number | null; // Int
     min?: number | null; // Int
+  }
+  NumericalSingleQuestion: { // root type
+    attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    tags?: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
   NumericalSolutionRange: { // root type
     max?: number | null; // Float
@@ -342,6 +384,7 @@ export interface NexusGenObjects {
 
 export interface NexusGenInterfaces {
   QuestionData: NexusGenRootTypes['ChoicesQuestionData'] | NexusGenRootTypes['FreeTextQuestionData'] | NexusGenRootTypes['NumericalQuestionData'];
+  SingleQuestion: NexusGenRootTypes['ChoicesSingleQuestion'] | NexusGenRootTypes['FreeTextSingleQuestion'] | NexusGenRootTypes['NumericalSingleQuestion'];
 }
 
 export interface NexusGenUnions {
@@ -385,6 +428,20 @@ export interface NexusGenFieldTypes {
   }
   ChoicesQuestionOptions: { // field return type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
+  }
+  ChoicesSingleQuestion: { // field return type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    tags: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
   ConfusionTimestep: { // field return type
     createdAt: NexusGenScalars['DateTime']; // DateTime!
@@ -437,6 +494,20 @@ export interface NexusGenFieldTypes {
   }
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
+  }
+  FreeTextSingleQuestion: { // field return type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
+    tags: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
@@ -528,6 +599,20 @@ export interface NexusGenFieldTypes {
     max: number | null; // Int
     min: number | null; // Int
   }
+  NumericalSingleQuestion: { // field return type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    tags: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
+  }
   NumericalSolutionRange: { // field return type
     max: number | null; // Float
     min: number | null; // Float
@@ -572,6 +657,7 @@ export interface NexusGenFieldTypes {
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     pinnedFeedbacks: NexusGenRootTypes['Session'] | null; // Session
+    question: NexusGenRootTypes['SingleQuestion'] | null; // SingleQuestion
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
@@ -665,6 +751,19 @@ export interface NexusGenFieldTypes {
     name: string; // String!
     type: string; // String!
   }
+  SingleQuestion: { // field return type
+    attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
+    content: string; // String!
+    contentPlain: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    tags: Array<NexusGenRootTypes['Tag'] | null> | null; // [Tag]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime']; // DateTime!
+  }
 }
 
 export interface NexusGenFieldTypeNames {
@@ -701,6 +800,20 @@ export interface NexusGenFieldTypeNames {
   }
   ChoicesQuestionOptions: { // field return type name
     choices: 'Choice'
+  }
+  ChoicesSingleQuestion: { // field return type name
+    attachments: 'Attachment'
+    content: 'String'
+    contentPlain: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'ChoicesQuestionOptions'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
   }
   ConfusionTimestep: { // field return type name
     createdAt: 'DateTime'
@@ -753,6 +866,20 @@ export interface NexusGenFieldTypeNames {
   }
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
+  }
+  FreeTextSingleQuestion: { // field return type name
+    attachments: 'Attachment'
+    content: 'String'
+    contentPlain: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'FreeTextQuestionOptions'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
   }
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
@@ -844,6 +971,20 @@ export interface NexusGenFieldTypeNames {
     max: 'Int'
     min: 'Int'
   }
+  NumericalSingleQuestion: { // field return type name
+    attachments: 'Attachment'
+    content: 'String'
+    contentPlain: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    options: 'NumericalQuestionOptions'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
+  }
   NumericalSolutionRange: { // field return type name
     max: 'Float'
     min: 'Float'
@@ -888,6 +1029,7 @@ export interface NexusGenFieldTypeNames {
     microSession: 'MicroSession'
     participations: 'Participation'
     pinnedFeedbacks: 'Session'
+    question: 'SingleQuestion'
     runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
@@ -980,6 +1122,19 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     type: 'String'
+  }
+  SingleQuestion: { // field return type name
+    attachments: 'Attachment'
+    content: 'String'
+    contentPlain: 'String'
+    createdAt: 'DateTime'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
   }
 }
 
@@ -1116,6 +1271,9 @@ export interface NexusGenArgTypes {
     pinnedFeedbacks: { // args
       id: string; // ID!
     }
+    question: { // args
+      id: number; // Int!
+    }
     runningSessions: { // args
       shortname: string; // String!
     }
@@ -1150,12 +1308,16 @@ export interface NexusGenArgTypes {
 
 export interface NexusGenAbstractTypeMembers {
   QuestionData: "ChoicesQuestionData" | "FreeTextQuestionData" | "NumericalQuestionData"
+  SingleQuestion: "ChoicesSingleQuestion" | "FreeTextSingleQuestion" | "NumericalSingleQuestion"
 }
 
 export interface NexusGenTypeInterfaces {
   ChoicesQuestionData: "QuestionData"
+  ChoicesSingleQuestion: "SingleQuestion"
   FreeTextQuestionData: "QuestionData"
+  FreeTextSingleQuestion: "SingleQuestion"
   NumericalQuestionData: "QuestionData"
+  NumericalSingleQuestion: "SingleQuestion"
 }
 
 export type NexusGenObjectNames = keyof NexusGenObjects;
@@ -1172,7 +1334,7 @@ export type NexusGenUnionNames = never;
 
 export type NexusGenObjectsUsingAbstractStrategyIsTypeOf = never;
 
-export type NexusGenAbstractsUsingStrategyResolveType = "QuestionData";
+export type NexusGenAbstractsUsingStrategyResolveType = "QuestionData" | "SingleQuestion";
 
 export type NexusGenFeaturesConfig = {
   abstractTypeStrategies: {

@@ -239,6 +239,74 @@ export const FreeTextQuestionData = objectType({
   },
 })
 
+export const SingleQuestion = interfaceType({
+  name: 'SingleQuestion',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+    t.nonNull.string('contentPlain')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+    t.nonNull.date('createdAt')
+    t.nonNull.date('updatedAt')
+
+    t.list.field('attachments', { type: Attachment })
+    t.list.field('tags', { type: Tag })
+  },
+
+  resolveType: (item) => {
+    if (
+      item.type === DB.QuestionType.SC ||
+      item.type === DB.QuestionType.MC ||
+      item.type === DB.QuestionType.KPRIM
+    ) {
+      return 'ChoicesSingleQuestion'
+    } else if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalSingleQuestion'
+    } else if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeTextSingleQuestion'
+    }
+    return null
+  },
+})
+
+export const ChoicesSingleQuestion = objectType({
+  name: 'ChoicesSingleQuestion',
+  definition(t) {
+    t.implements(SingleQuestion)
+
+    t.nonNull.field('options', {
+      type: ChoicesQuestionOptions,
+    })
+  },
+})
+
+export const NumericalSingleQuestion = objectType({
+  name: 'NumericalSingleQuestion',
+  definition(t) {
+    t.implements(SingleQuestion)
+
+    t.nonNull.field('options', {
+      type: NumericalQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextSingleQuestion = objectType({
+  name: 'FreeTextSingleQuestion',
+  definition(t) {
+    t.implements(SingleQuestion)
+
+    t.nonNull.field('options', {
+      type: FreeTextQuestionOptions,
+    })
+  },
+})
+
 export const QuestionFeedback = objectType({
   name: 'QuestionFeedback',
   definition(t) {
@@ -779,6 +847,16 @@ export const Query = objectType({
       type: Question,
       resolve(_, _args, ctx: ContextWithUser) {
         return QuestionService.getUserQuestions({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
+    t.field('question', {
+      type: SingleQuestion,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.getSingleQuestion(args, ctx)
       },
     })
   },

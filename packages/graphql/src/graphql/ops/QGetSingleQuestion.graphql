@@ -1,0 +1,20 @@
+#import "./FSingleQuestionData.graphql"
+
+query GetSingleQuestion($id: Int!) {
+  question(id: $id) {
+    ...SingleQuestionData
+
+    tags {
+      id
+      name
+    }
+    attachments {
+      id
+      href
+      name
+      originalName
+      description
+      type
+    }
+  }
+}

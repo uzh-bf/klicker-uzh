@@ -46,3 +46,22 @@ export async function getUserQuestions(
     }
   })
 }
+
+export async function getSingleQuestion(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  console.log(question)
+
+  return question
+}

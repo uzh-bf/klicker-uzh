@@ -5,13 +5,10 @@ import { twMerge } from 'tailwind-merge'
 
 import { QUESTION_TYPES_SHORT } from '../../constants'
 
-// TODO: readd checkbox
-// import CustomCheckbox from '../common/CustomCheckbox'
-
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
-// import QuestionPreviewModal from './QuestionPreviewModal'
+import QuestionPreviewModal from './QuestionPreviewModal'
 // import QuestionTags from './QuestionTags'
 
 interface Props {
@@ -63,10 +60,7 @@ function Question({
   return (
     <div className="flex w-full mb-4 h-max flex-col-2">
       <div className="min-h-full my-auto mr-2">
-        <Checkbox
-          checked={checked}
-          onCheck={onCheck}
-        />
+        <Checkbox checked={checked} onCheck={onCheck} />
       </div>
       <div
         className={twMerge(
@@ -108,14 +102,13 @@ function Question({
             >
               Vorschau
             </Button>
-            {/* {isPreviewModalOpen && (
+            {isPreviewModalOpen && (
                 <QuestionPreviewModal
                   handleSetIsOpen={setIsPreviewModalOpen}
                   isOpen={isPreviewModalOpen}
-                  question={versions[activeVersion]}
-                  type={type}
+                  questionId={id}
                 />
-              )} */}
+              )}
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
