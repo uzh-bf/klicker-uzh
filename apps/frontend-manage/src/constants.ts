@@ -58,3 +58,18 @@ export const QUESTION_GROUPS = {
   ],
   WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
 }
+
+export const QUESTION_SORTINGS = [
+  { content: 'Creation Date', id: 'CREATED', labelStart: 'sort numeric' },
+  { content: 'Last Usage', id: 'USED', labelStart: 'sort numeric' },
+  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
+  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
+]
+
+export const QUESTION_TYPES_SHORT: Record<string, string> = {
+  SC: 'SC',
+  MC: 'MC',
+  FREE_TEXT: 'FT',
+  NUMERICAL: 'NR',
+  KPRIM: 'KP',
+}

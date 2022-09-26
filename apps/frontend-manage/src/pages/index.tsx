@@ -1,25 +1,164 @@
 import { useQuery } from '@apollo/client'
 import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useRouter } from 'next/router'
+import { useEffect, useMemo } from 'react'
+import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
+import { buildIndex, processItems } from '../lib/utils/filters'
 
 import Layout from '../components/Layout'
+import QuestionList from '../components/questions/QuestionList'
 
 function Index() {
+  // TODO: add toasts
+  // const { addToast } = useToasts()
+
+  const router = useRouter()
   const {
     loading: loadingQuestions,
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
+  const {
+    filters,
+    sort,
+    handleSearch,
+    handleSortByChange,
+    handleSortOrderToggle,
+    handleTagClick,
+    handleReset,
+    handleToggleArchive,
+  } = useSortingAndFiltering()
 
-  console.log(dataQuestions?.userQuestions)
+  useEffect((): void => {
+    router.prefetch('/sessions/running')
+    router.prefetch('/sessions')
+  })
+
+  const index = useMemo(() => {
+    if (dataQuestions?.userQuestions) {
+      return buildIndex('questions', dataQuestions.userQuestions, [
+        'title',
+        'createdAt',
+      ])
+    }
+    return null
+  }, [dataQuestions])
+
+  const processedQuestions = useMemo(
+    () => {
+      if (dataQuestions?.userQuestions) {
+        return processItems(dataQuestions?.userQuestions, filters, sort, index)
+      }
+      return
+    },
+    [dataQuestions?.userQuestions, filters, index, sort]
+  )
+
+  console.log(processedQuestions)
 
   return (
     <Layout displayName="Fragepool">
-      <div>Welcome to the management frontend.</div>
-      <div>
-        Go to{' '}
-        <a href="/sessions" className="text-uzh-blue-80">
-          Session List
-        </a>
+      <div className="w-full h-full">
+        {/* // TODO: add session creation / edit form
+        <div className="flex justify-center mx-10 md:h-72 print-hidden md:mx-20">
+          <div className="max-w-[100rem] h-full w-full mt-6 gap-5">
+            {editSessionId ? (
+              <SessionEditForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={
+                  setSessionAuthenticationMode
+                }
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            ) : (
+              <SessionCreationForm
+                handleCreateSession={onCreateSession}
+                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+                handleSetSessionAuthenticationMode={
+                  setSessionAuthenticationMode
+                }
+                handleSetSessionBlocks={setSessionBlocks}
+                handleSetSessionName={setSessionName}
+                handleSetSessionParticipants={setSessionParticipants}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                runningSessionId={runningSessionId}
+                sessionAuthenticationMode={sessionAuthenticationMode}
+                sessionBlocks={sessionBlocks}
+                sessionName={sessionName}
+                sessionParticipants={sessionParticipants}
+                setSessionName={setSessionName}
+              />
+            )}
+          </div>
+        </div> */}
+        <div className="flex justify-center mx-auto">
+          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 mx-10 md:mx-20">
+            // TODO Tags
+            {/* <TagList
+              activeTags={filters.tags}
+              activeType={filters.type}
+              handleReset={handleReset}
+              handleTagClick={handleTagClick}
+              handleToggleArchive={onToggleArchive}
+              isArchiveActive={filters.archive}
+            /> */}
+            <div className="w-full">
+              {!dataQuestions || loadingQuestions ? (
+                // TODO: replace by nice loader
+                <div>Loading...</div>
+              ) : (
+                <div className="flex flex-col w-full">
+                  {/* // TODO: add action area
+                   <ActionSearchArea
+                    withSorting
+                    deletionConfirmation={deletionConfirmation}
+                    handleArchiveQuestions={onArchiveQuestions}
+                    handleDeleteQuestions={onDeleteQuestions}
+                    handleQuickBlock={onQuickBlock}
+                    handleQuickBlocks={onQuickBlocks}
+                    handleQuickStart={handleQuickStart}
+                    handleResetItemsChecked={handleResetSelection}
+                    handleSearch={_debounce(handleSearch, 200)}
+                    handleSetItemsChecked={handleSelectItems}
+                    handleSortByChange={handleSortByChange}
+                    handleSortOrderToggle={handleSortOrderToggle}
+                    isArchiveActive={filters.archive}
+                    itemsChecked={selectedItems.ids}
+                    key="action-area"
+                    questions={processedQuestions}
+                    runningSessionId={runningSessionId}
+                    sessionBlocks={sessionBlocks}
+                    setSessionBlocks={setSessionBlocks}
+                    sortBy={sort.by}
+                    sortOrder={sort.asc}
+                    sortingTypes={QUESTION_SORTINGS}
+                  /> */}
+
+                  <div
+                    className="w-full h-full mt-4 md:overflow-y-auto md:mx-auto"
+                    key="question-list"
+                  >
+                    <QuestionList
+                      questions={processedQuestions}
+                      selectedItems={[]} // TODO: selectedItems
+                      onQuestionChecked={() => null}  // TODO: handleSelectItem
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   )

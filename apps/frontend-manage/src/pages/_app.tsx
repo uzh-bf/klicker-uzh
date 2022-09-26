@@ -1,5 +1,8 @@
 import { ApolloProvider } from '@apollo/client'
 import type { AppProps } from 'next/app'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
+
 
 import { ThemeProvider } from '@uzh-bf/design-system'
 import { useApollo } from '../lib/apollo'
@@ -11,6 +14,7 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <ApolloProvider client={apolloClient}>
+      <DndProvider backend={HTML5Backend}>
       <ThemeProvider
         theme={{
           primaryBg: 'bg-uzh-blue-20',
@@ -28,6 +32,7 @@ function App({ Component, pageProps }: AppProps) {
       >
         <Component {...pageProps} />
       </ThemeProvider>
+      </DndProvider>
     </ApolloProvider>
   )
 }
