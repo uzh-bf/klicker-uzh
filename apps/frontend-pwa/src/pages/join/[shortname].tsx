@@ -67,6 +67,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
   // if only a single session is running, redirect directly to the corresponding session page
   // or if linkTo is set, redirect to the specified link
   if (result.data.runningSessions.length === 1) {
@@ -86,11 +91,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     }
   }
-
-  const { participantToken, participant } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
 
   return addApolloState(apolloClient, {
     props: {
