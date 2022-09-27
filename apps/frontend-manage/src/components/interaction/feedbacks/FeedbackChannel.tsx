@@ -11,7 +11,7 @@ import { Button } from '@uzh-bf/design-system'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import Feedback from './Feedback'
-// import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
   feedbacks?: FeedbackType[]
@@ -76,6 +76,7 @@ function FeedbackChannel({
         disabled={sortedFeedbacks?.length === 0}
         {...filterProps}
       /> */}
+      <FeedbackSearchAndFilters disabled={sortedFeedbacks?.length === 0} {...filterProps} />
       <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
         {/* // TODO: styling */}
         {!feedbacks ||

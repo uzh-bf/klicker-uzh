@@ -2,7 +2,7 @@
 
 import { faPrint } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Checkbox } from '@uzh-bf/design-system'
 // import { Checkbox, Dropdown, Input } from 'semantic-ui-react'
 
 interface Props {
@@ -95,43 +95,43 @@ function FeedbackSearchAndFilters({
         <div className="flex-row flex-wrap justify-between flex-initial order-1 hidden mt-4 mb-1 ml-4 2xl:flex md:mt-0">
           <div className="inline-block">
             <span className="flex items-center">
-              {/* <Checkbox checked={showResolved} label="" onChange={() => setShowResolved((current) => !current)} /> */}
+              <Checkbox
+                checked={showResolved}
+                onCheck={() => setShowResolved((current: boolean) => !current)}
+              />
               Gelöst
             </span>
           </div>
 
           <div className="inline-block">
             <span className="flex items-center">
-              {/* <Checkbox
+              <Checkbox
                 checked={showOpen}
                 className="ml-4"
-                label=""
-                onChange={() => setShowOpen((current) => !current)}
-              /> */}
+                onCheck={() => setShowOpen((current: boolean) => !current)}
+              />
               Offen
             </span>
           </div>
 
           <div className="inline-block">
             <span className="flex items-center">
-              {/* <Checkbox
+              <Checkbox
                 checked={showUnpinned}
                 className="ml-4"
-                label=""
-                onChange={() => setShowUnpinned((current) => !current)}
-              /> */}
+                onCheck={() => setShowUnpinned((current: boolean) => !current)}
+              />
               Ungepinnt
             </span>
           </div>
 
           <div className="inline-block">
             <span className="flex items-center">
-              {/* <Checkbox
+              <Checkbox
                 checked={showUnpublished}
                 className="ml-4"
-                label=""
-                onChange={() => setShowUnpublished((current) => !current)}
-              /> */}
+                onCheck={() => setShowUnpublished((current: boolean) => !current)}
+              />
               Unveröffentlich
             </span>
           </div>
