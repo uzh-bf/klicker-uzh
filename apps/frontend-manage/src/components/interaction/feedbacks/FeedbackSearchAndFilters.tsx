@@ -60,15 +60,14 @@ function FeedbackSearchAndFilters({
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
       <div className="flex flex-row items-center">
-        {
-          withSearch && 'INPUT'
-          // <Input
-          //   className="order-1 w-full md:mr-2 md:w-64 md:order-0"
-          //   placeholder="Suche..."
-          //   value={searchString}
-          //   onChange={(e: any) => setSearchString(e.target.value)}
-          // />
-        }
+        {withSearch && (
+          <input
+            value={searchString}
+            onChange={(e: any) => setSearchString(e.target.value)}
+            placeholder="Suche..."
+            className="py-2 px-1.5 border border-solid rounded-md border-uzh-grey-60 order-1 w-full md:mr-2 md:w-64 md:order-0"
+          />
+        )}
         <div className="block mr-1 md:mr-0 xl:hidden order-0 md:order-1">
           <Dropdown
             trigger={
@@ -199,12 +198,14 @@ function FeedbackSearchAndFilters({
             <FontAwesomeIcon icon={faPrint} />
           </Button.Icon>
         </Button>
+
+        {/* // TODO: readd disabled attribute if required */}
         <Dropdown
           trigger={
             <span
               className={twMerge(
-                'flex items-center hover:cursor-pointer px-1.5 py-2 border border-solid border-uzh-grey-60 rounded-md',
-                `hover:${theme.primaryBgDark}`
+                'flex items-center hover:cursor-pointer px-2 py-2 border border-solid border-uzh-grey-60 rounded-md',
+                `hover:${theme.primaryBg}`
               )}
             >
               <FontAwesomeIcon icon={faArrowUpShortWide} className="mr-2" />
