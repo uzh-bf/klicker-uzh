@@ -527,6 +527,83 @@ export async function joinParticipantGroup(
   return updatedParticipantGroup
 }
 
+interface LeaveParticipantGroupArgs {
+  groupId: string
+  courseId: string
+}
+
+export async function leaveParticipantGroup(
+  { groupId, courseId }: LeaveParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  // find participantgroup with corresponding id
+  const participantGroup = await ctx.prisma.participantGroup.findUnique({
+    where: {
+      id: groupId,
+    },
+    include: {
+      participants: true,
+    },
+  })
+
+  // if no participant group with the provided id exists in this course or at all, return null
+  if (!participantGroup) return null
+
+  // if the participant is the only one in the group, delete the group
+  if (participantGroup.participants.length === 1) {
+    await ctx.prisma.participantGroup.delete({
+      where: {
+        id: groupId,
+      },
+    })
+
+    return null
+
+    // // return all remaining groups of participants to invalidate graphql response cache
+    // // TODO: implement more elegant / efficient solution, if possible
+    // const participant = await ctx.prisma.participant.findUnique({
+    //   where: {
+    //     id: ctx.user.sub,
+    //   },
+    //   include: {
+    //     participantGroups: {
+    //       where: {
+    //         course: {
+    //           id: courseId,
+    //         },
+    //       },
+    //       include: {
+    //         course: true,
+    //         participants: true,
+    //       },
+    //     },
+    //   },
+    // })
+
+    // return participant?.participantGroups ?? []
+  }
+
+  // otherwise update the participant group with the current participant and return it
+  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
+    where: {
+      id: groupId,
+    },
+    data: {
+      participants: {
+        disconnect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  return updatedParticipantGroup
+}
+
 interface GetParticipantGroupsArgs {
   courseId: string
 }

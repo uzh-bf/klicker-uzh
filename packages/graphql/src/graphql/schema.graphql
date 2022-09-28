@@ -205,6 +205,7 @@ type Mutation {
   joinCourse(courseId: ID!): ParticipantLearningData
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
   leaveCourse(courseId: ID!): ParticipantLearningData
+  leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID

@@ -1120,6 +1120,17 @@ export const Mutation = objectType({
         return ParticipantService.joinParticipantGroup(args, ctx)
       },
     })
+
+    t.field('leaveParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        groupId: nonNull(idArg()),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.leaveParticipantGroup(args, ctx)
+      },
+    })
   },
 })
 

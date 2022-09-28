@@ -489,6 +489,7 @@ export interface NexusGenFieldTypes {
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    leaveParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
@@ -800,6 +801,7 @@ export interface NexusGenFieldTypeNames {
     joinCourse: 'ParticipantLearningData'
     joinParticipantGroup: 'ParticipantGroup'
     leaveCourse: 'ParticipantLearningData'
+    leaveParticipantGroup: 'ParticipantGroup'
     loginParticipant: 'ID'
     loginUser: 'ID'
     logoutParticipant: 'ID'
@@ -1024,6 +1026,10 @@ export interface NexusGenArgTypes {
     }
     leaveCourse: { // args
       courseId: string; // ID!
+    }
+    leaveParticipantGroup: { // args
+      courseId: string; // ID!
+      groupId: string; // ID!
     }
     loginParticipant: { // args
       password: string; // String!

@@ -3,7 +3,7 @@ import Layout from '@components/Layout'
 import {
   CreateParticipantGroupDocument,
   GetParticipantGroupsDocument,
-  ParticipantGroup,
+  LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
@@ -14,6 +14,7 @@ function GroupCreation() {
   const courseId = String(router.query.courseId)
 
   const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
+  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   const {
     loading: loadingParticipantGroups,
@@ -65,19 +66,34 @@ function GroupCreation() {
         Testgruppe erstellen
       </Button>
       {dataParticipantGroups &&
+        dataParticipantGroups.participantGroups &&
         dataParticipantGroups.participantGroups.length === 0 && (
           <div className="mt-10">Nicht Mitglied in einer Gruppe</div>
         )}
       {dataParticipantGroups &&
-        dataParticipantGroups.participantGroups.length !== 0 && (
+        dataParticipantGroups.participantGroups &&
+        dataParticipantGroups.participantGroups?.length !== 0 && (
           <div className="mt-10">
-            {dataParticipantGroups.participantGroups.map(
-              (group: ParticipantGroup) => (
-                <div key={group.name}>
-                  {group.name}, Code: {group.code}, Mitglieder: ...
-                </div>
-              )
-            )}
+            {dataParticipantGroups.participantGroups?.map((group) => (
+              <div key={group.name}>
+                {group.name}, Code: {group.code}, Mitglieder: ...
+                <Button
+                  onClick={() =>
+                    leaveParticipantGroup({
+                      variables: { groupId: group.id, courseId: courseId },
+                      refetchQueries: [
+                        {
+                          query: GetParticipantGroupsDocument,
+                          variables: { courseId: courseId },
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Leave Group
+                </Button>
+              </div>
+            ))}
           </div>
         )}
     </Layout>
