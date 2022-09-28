@@ -41,11 +41,6 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
-  // const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
-  //   true,
-  //   'qa-survey-lecturer-visible'
-  // )
-
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })

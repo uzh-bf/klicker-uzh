@@ -1,11 +1,15 @@
 // TODO: eliminate duplicated content and imporve layout instead dynamically
 
-import { faFilter, faPrint } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowUpShortWide,
+  faFilter,
+  faPrint,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Checkbox, Dropdown, ThemeContext } from '@uzh-bf/design-system'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-// import { Dropdown, Input } from 'semantic-ui-react'
+// import { Input } from 'semantic-ui-react'
 
 interface Props {
   disabled?: boolean
@@ -47,6 +51,11 @@ function FeedbackSearchAndFilters({
   setSortBy,
 }: Props) {
   const theme = useContext(ThemeContext)
+
+  const sortLabels: Record<string, string> = {
+    recency: 'Nach Zeitpunkt sortieren',
+    votes: 'Nach Stimmen sortieren',
+  }
 
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
@@ -190,23 +199,29 @@ function FeedbackSearchAndFilters({
             <FontAwesomeIcon icon={faPrint} />
           </Button.Icon>
         </Button>
-        {/* <Dropdown
-          selection
-          className="flex flex-1 mt-4 md:mt-0"
-          disabled={disabled}
-          options={[
+        <Dropdown
+          trigger={
+            <span
+              className={twMerge(
+                'flex items-center hover:cursor-pointer px-1.5 py-2 border border-solid border-uzh-grey-60 rounded-md',
+                `hover:${theme.primaryBgDark}`
+              )}
+            >
+              <FontAwesomeIcon icon={faArrowUpShortWide} className="mr-2" />
+              {sortLabels[sortBy]}
+            </span>
+          }
+          items={[
             {
-              text: "Nach Zeitpunkt sortieren",
-              value: 'recency',
+              label: 'Nach Zeitpunkt sortieren',
+              onClick: () => setSortBy('recency'),
             },
             {
-              text: "Nach Stimmen sortieren",
-              value: 'votes',
+              label: 'Nach Stimmen sortieren',
+              onClick: () => setSortBy('votes'),
             },
           ]}
-          value={sortBy}
-          onChange={(_, { value }) => setSortBy(String(value))}
-        /> */}
+        />
       </div>
     </div>
   )
