@@ -36,7 +36,7 @@
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
     "@types/supertest": "^2.0.12",
-    "@uzh-bf/design-system": "0.0.43",
+    "@uzh-bf/design-system": "0.0.46",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",
     "husky": "8.0.1",

@@ -68,8 +68,8 @@ function useFeedbackFilter(
     }
     setFilteredFeedbacks(
       results?.filter((item) => {
-        if (!showResolved && item.resolvedAt === true) return false
-        if (!showOpen && item.resolvedAt === false) return false
+        if (!showResolved && item.isResolved === true) return false
+        if (!showOpen && item.isResolved === false) return false
         if (!showUnpublished && item.isPublished === false) return false
         if (!showUnpinned && item.isPinned === false) return false
         return true
@@ -90,7 +90,7 @@ function useFeedbackFilter(
     setSortedFeedbacks(
       _sortBy(
         filteredFeedbacks,
-        (o) => {
+        (o: any) => {
           if (sortBy === 'recency') return dayjs(o.createdAt)
           return o[sortBy]
         },

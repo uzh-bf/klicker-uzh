@@ -11,7 +11,7 @@ import { Button } from '@uzh-bf/design-system'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import Feedback from './Feedback'
-// import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
   feedbacks?: FeedbackType[]
@@ -41,11 +41,6 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
-  // const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
-  //   true,
-  //   'qa-survey-lecturer-visible'
-  // )
-
   const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
@@ -71,11 +66,10 @@ function FeedbackChannel({
 
   return (
     <div>
-      FILTER {/* TODO: fix filtering and add it to the runningSession view */}
-      {/* <FeedbackSearchAndFilters
+      <FeedbackSearchAndFilters
         disabled={sortedFeedbacks?.length === 0}
         {...filterProps}
-      /> */}
+      />
       <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
         {/* // TODO: styling */}
         {!feedbacks ||
