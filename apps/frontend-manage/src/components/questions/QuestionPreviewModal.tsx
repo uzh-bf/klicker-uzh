@@ -1,8 +1,10 @@
-import React from 'react'
 import { useQuery } from '@apollo/client'
 import { GetSingleQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
+import { H1, H2 } from '@uzh-bf/design-system'
+import React from 'react'
 
 import { Modal } from '@uzh-bf/design-system'
+import Markdown from '@klicker-uzh/markdown'
 
 interface Props {
   isOpen: boolean
@@ -26,14 +28,14 @@ function QuestionPreviewModal({
 
   console.log(dataQuestion)
 
-  const question = {}
   return (
     <Modal
       className="!pb-4"
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
     >
-      Question Preview Modal
+      <H2>{dataQuestion?.question.name}</H2>
+      <Markdown content={dataQuestion?.question.content} className="mb-10" />
     </Modal>
   )
 }

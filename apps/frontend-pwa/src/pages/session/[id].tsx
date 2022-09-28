@@ -206,7 +206,7 @@ function Index({ id }: Props) {
         {isAudienceInteractionActive && (
           <div
             className={twMerge(
-              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block d:rounded-lg',
+              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
               activeMobilePage === 'feedbacks' && 'block'
             )}
           >
