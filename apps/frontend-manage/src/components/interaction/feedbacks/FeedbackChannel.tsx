@@ -71,12 +71,10 @@ function FeedbackChannel({
 
   return (
     <div>
-      FILTER {/* TODO: fix filtering and add it to the runningSession view */}
-      {/* <FeedbackSearchAndFilters
+      <FeedbackSearchAndFilters
         disabled={sortedFeedbacks?.length === 0}
         {...filterProps}
-      /> */}
-      <FeedbackSearchAndFilters disabled={sortedFeedbacks?.length === 0} {...filterProps} />
+      />
       <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
         {/* // TODO: styling */}
         {!feedbacks ||
