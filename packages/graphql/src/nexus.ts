@@ -84,26 +84,6 @@ export const ResponseInput = inputObjectType({
   },
 })
 
-export const Question = objectType({
-  name: 'Question',
-  definition(t) {
-    t.nonNull.int('id')
-
-    t.nonNull.boolean('isArchived')
-    t.nonNull.boolean('isDeleted')
-
-    t.nonNull.string('name')
-    t.nonNull.string('type')
-    t.nonNull.string('content')
-    t.nonNull.string('contentPlain')
-
-    t.list.field('tags', { type: Tag })
-
-    t.nonNull.date('createdAt')
-    t.nonNull.date('updatedAt')
-  },
-})
-
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -239,8 +219,8 @@ export const FreeTextQuestionData = objectType({
   },
 })
 
-export const SingleQuestion = interfaceType({
-  name: 'SingleQuestion',
+export const Question = objectType({
+  name: 'Question',
   definition(t) {
     t.nonNull.int('id')
 
@@ -251,59 +231,16 @@ export const SingleQuestion = interfaceType({
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
+
+    t.nonNull.field('questionData', {
+      type: QuestionData,
+    })
+
     t.nonNull.date('createdAt')
-    t.nonNull.date('updatedAt')
+    t.date('updatedAt')
 
-    t.list.field('attachments', { type: Attachment })
-    t.list.field('tags', { type: Tag })
-  },
-
-  resolveType: (item) => {
-    if (
-      item.type === DB.QuestionType.SC ||
-      item.type === DB.QuestionType.MC ||
-      item.type === DB.QuestionType.KPRIM
-    ) {
-      return 'ChoicesSingleQuestion'
-    } else if (item.type === DB.QuestionType.NUMERICAL) {
-      return 'NumericalSingleQuestion'
-    } else if (item.type === DB.QuestionType.FREE_TEXT) {
-      return 'FreeTextSingleQuestion'
-    }
-    return null
-  },
-})
-
-export const ChoicesSingleQuestion = objectType({
-  name: 'ChoicesSingleQuestion',
-  definition(t) {
-    t.implements(SingleQuestion)
-
-    t.nonNull.field('options', {
-      type: ChoicesQuestionOptions,
-    })
-  },
-})
-
-export const NumericalSingleQuestion = objectType({
-  name: 'NumericalSingleQuestion',
-  definition(t) {
-    t.implements(SingleQuestion)
-
-    t.nonNull.field('options', {
-      type: NumericalQuestionOptions,
-    })
-  },
-})
-
-export const FreeTextSingleQuestion = objectType({
-  name: 'FreeTextSingleQuestion',
-  definition(t) {
-    t.implements(SingleQuestion)
-
-    t.nonNull.field('options', {
-      type: FreeTextQuestionOptions,
-    })
+    t.list.nonNull.field('attachments', { type: Attachment })
+    t.list.nonNull.field('tags', { type: Tag })
   },
 })
 
@@ -851,7 +788,7 @@ export const Query = objectType({
     })
 
     t.field('question', {
-      type: SingleQuestion,
+      type: Question,
       args: {
         id: nonNull(intArg()),
       },

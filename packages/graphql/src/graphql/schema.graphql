@@ -73,21 +73,6 @@ type ChoicesQuestionOptions {
   choices: [Choice!]!
 }
 
-type ChoicesSingleQuestion implements SingleQuestion {
-  attachments: [Attachment]
-  content: String!
-  contentPlain: String!
-  createdAt: DateTime!
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: ChoicesQuestionOptions!
-  tags: [Tag]
-  type: String!
-  updatedAt: DateTime!
-}
-
 type ConfusionTimestep {
   createdAt: DateTime!
   difficulty: Int!
@@ -150,21 +135,6 @@ type FreeTextQuestionOptions {
 
 type FreeTextRestrictions {
   maxLength: Int
-}
-
-type FreeTextSingleQuestion implements SingleQuestion {
-  attachments: [Attachment]
-  content: String!
-  contentPlain: String!
-  createdAt: DateTime!
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: FreeTextQuestionOptions!
-  tags: [Tag]
-  type: String!
-  updatedAt: DateTime!
 }
 
 type InstanceEvaluation {
@@ -271,21 +241,6 @@ type NumericalRestrictions {
   min: Int
 }
 
-type NumericalSingleQuestion implements SingleQuestion {
-  attachments: [Attachment]
-  content: String!
-  contentPlain: String!
-  createdAt: DateTime!
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: NumericalQuestionOptions!
-  tags: [Tag]
-  type: String!
-  updatedAt: DateTime!
-}
-
 type NumericalSolutionRange {
   max: Float
   min: Float
@@ -336,7 +291,7 @@ type Query {
   microSession(id: ID!): MicroSession
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: ID!): Session
-  question(id: Int!): SingleQuestion
+  question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
@@ -348,6 +303,7 @@ type Query {
 }
 
 type Question {
+  attachments: [Attachment!]
   content: String!
   contentPlain: String!
   createdAt: DateTime!
@@ -355,9 +311,10 @@ type Question {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
-  tags: [Tag]
+  questionData: QuestionData!
+  tags: [Tag!]
   type: String!
-  updatedAt: DateTime!
+  updatedAt: DateTime
 }
 
 interface QuestionData {
@@ -436,20 +393,6 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
-}
-
-interface SingleQuestion {
-  attachments: [Attachment]
-  content: String!
-  contentPlain: String!
-  createdAt: DateTime!
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  tags: [Tag]
-  type: String!
-  updatedAt: DateTime!
 }
 
 type Subscription {

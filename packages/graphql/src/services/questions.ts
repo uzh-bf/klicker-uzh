@@ -61,7 +61,8 @@ export async function getSingleQuestion(
     },
   })
 
-  console.log(question)
-
-  return question
+  return {
+    ...question,
+    questionData: question,
+  }
 }

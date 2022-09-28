@@ -1,8 +1,45 @@
-#import "./FSingleQuestionData.graphql"
-
 query GetSingleQuestion($id: Int!) {
   question(id: $id) {
-    ...SingleQuestionData
+    id
+    name
+    type
+    content
+    contentPlain
+
+    questionData {
+      ... on ChoicesQuestionData {
+        options {
+          choices {
+            ix
+            correct
+            feedback
+            value
+          }
+        }
+      }
+
+      ... on NumericalQuestionData {
+        options {
+          restrictions {
+            min
+            max
+          }
+          solutionRanges {
+            min
+            max
+          }
+        }
+      }
+
+      ... on FreeTextQuestionData {
+        options {
+          restrictions {
+            maxLength
+          }
+          solutions
+        }
+      }
+    }
 
     tags {
       id
