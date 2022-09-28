@@ -574,6 +574,7 @@ export interface NexusGenFieldTypes {
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     pinnedFeedbacks: NexusGenRootTypes['Session'] | null; // Session
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
@@ -884,6 +885,7 @@ export interface NexusGenFieldTypeNames {
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
     microSession: 'MicroSession'
+    participantGroups: 'ParticipantGroup'
     participations: 'Participation'
     pinnedFeedbacks: 'Session'
     runningSessions: 'Session'
@@ -1098,6 +1100,9 @@ export interface NexusGenArgTypes {
     }
     microSession: { // args
       id: string; // ID!
+    }
+    participantGroups: { // args
+      courseId: string; // ID!
     }
     participations: { // args
       endpoint?: string | null; // String

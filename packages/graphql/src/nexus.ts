@@ -691,6 +691,16 @@ export const Query = objectType({
       },
     })
 
+    t.list.nonNull.field('participantGroups', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.getParticipantGroups(args, ctx)
+      },
+    })
+
     t.field('session', {
       type: Session,
       args: {

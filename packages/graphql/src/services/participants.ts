@@ -503,8 +503,6 @@ export async function joinParticipantGroup(
     },
   })
 
-  console.log('participant group found', participantGroup)
-
   // if no participant group with the provided id exists in this course or at all, return null
   if (!participantGroup || participantGroup.course.id !== courseId) return null
 
@@ -526,7 +524,36 @@ export async function joinParticipantGroup(
     },
   })
 
-  console.log('returning updated participant group', updatedParticipantGroup)
-
   return updatedParticipantGroup
+}
+
+interface GetParticipantGroupsArgs {
+  courseId: string
+}
+
+export async function getParticipantGroups(
+  { courseId }: GetParticipantGroupsArgs,
+  ctx: ContextWithUser
+) {
+  // find participant with correspoinding id ctx.user.sub and return all his participant groups with correct id
+  const participant = await ctx.prisma.participant.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      participantGroups: {
+        where: {
+          course: {
+            id: courseId,
+          },
+        },
+        include: {
+          course: true,
+          participants: true,
+        },
+      },
+    },
+  })
+
+  return participant?.participantGroups ?? []
 }

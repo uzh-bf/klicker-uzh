@@ -301,6 +301,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
+  participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: ID!): Session
   runningSessions(shortname: String!): [Session!]

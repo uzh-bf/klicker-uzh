@@ -1,0 +1,16 @@
+query GetParticipantGroups($courseId: ID!) {
+  participantGroups(courseId: $courseId) {
+    id
+    name
+    code
+    participants {
+      id
+      username
+    }
+    course {
+      id
+      name
+      displayName
+    }
+  }
+}
