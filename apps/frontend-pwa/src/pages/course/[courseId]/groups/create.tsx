@@ -60,6 +60,12 @@ function GroupCreation() {
               courseId: courseId,
               name: 'Test group',
             },
+            refetchQueries: [
+              {
+                query: GetParticipantGroupsDocument,
+                variables: { courseId: courseId },
+              },
+            ],
           })
         }
       >

@@ -481,6 +481,12 @@ export async function createParticipantGroup(
     },
   })
 
+  // invalidate graphql response cache
+  ctx.emitter.emit('invalidate', {
+    typename: 'ParticipantGroup',
+    id: participantGroup.id,
+  })
+
   return participantGroup
 }
 
@@ -557,30 +563,13 @@ export async function leaveParticipantGroup(
       },
     })
 
+    // invalidate graphql response cache
+    ctx.emitter.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+
     return null
-
-    // // return all remaining groups of participants to invalidate graphql response cache
-    // // TODO: implement more elegant / efficient solution, if possible
-    // const participant = await ctx.prisma.participant.findUnique({
-    //   where: {
-    //     id: ctx.user.sub,
-    //   },
-    //   include: {
-    //     participantGroups: {
-    //       where: {
-    //         course: {
-    //           id: courseId,
-    //         },
-    //       },
-    //       include: {
-    //         course: true,
-    //         participants: true,
-    //       },
-    //     },
-    //   },
-    // })
-
-    // return participant?.participantGroups ?? []
   }
 
   // otherwise update the participant group with the current participant and return it
