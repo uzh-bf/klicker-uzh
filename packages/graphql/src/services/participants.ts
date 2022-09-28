@@ -483,3 +483,50 @@ export async function createParticipantGroup(
 
   return participantGroup
 }
+
+interface JoinParticipantGroupArgs {
+  courseId: string
+  code: number
+}
+
+export async function joinParticipantGroup(
+  { courseId, code }: JoinParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  // find participantgroup with code
+  const participantGroup = await ctx.prisma.participantGroup.findUnique({
+    where: {
+      code: code,
+    },
+    include: {
+      course: true,
+    },
+  })
+
+  console.log('participant group found', participantGroup)
+
+  // if no participant group with the provided id exists in this course or at all, return null
+  if (!participantGroup || participantGroup.course.id !== courseId) return null
+
+  // otherwise update the participant group with the current participant and return it
+  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
+    where: {
+      code: code,
+    },
+    data: {
+      participants: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  console.log('returning updated participant group', updatedParticipantGroup)
+
+  return updatedParticipantGroup
+}

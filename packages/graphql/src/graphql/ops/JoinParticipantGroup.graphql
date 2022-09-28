@@ -1,0 +1,16 @@
+mutation JoinParticipantGroup($courseId: ID!, $code: Int!) {
+  joinParticipantGroup(courseId: $courseId, code: $code) {
+    id
+    name
+    code
+    participants {
+      id
+      username
+    }
+    course {
+      id
+      name
+      displayName
+    }
+  }
+}
