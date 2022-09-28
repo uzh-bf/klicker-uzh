@@ -448,3 +448,38 @@ export async function registerParticipantFromLTI(
     return null
   }
 }
+
+interface CreateParticipantGroupArgs {
+  courseId: string
+  name: string
+}
+
+export async function createParticipantGroup(
+  { courseId, name }: CreateParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  const code = 100000 + Math.floor(Math.random() * 900000)
+
+  const participantGroup = await ctx.prisma.participantGroup.create({
+    data: {
+      name,
+      code: code,
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participants: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  return participantGroup
+}

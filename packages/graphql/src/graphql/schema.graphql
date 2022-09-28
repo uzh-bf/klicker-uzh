@@ -87,6 +87,7 @@ type Course {
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  participantGroups: [ParticipantGroup]!
   sessions: [Session!]!
 }
 
@@ -195,6 +196,7 @@ type Mutation {
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
+  createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
@@ -250,7 +252,16 @@ type Participant {
   avatar: String
   avatarSettings: JSONObject
   id: ID!
+  participantGroups: [ParticipantGroup]!
   username: String!
+}
+
+type ParticipantGroup {
+  code: Int!
+  course: Course!
+  id: ID!
+  name: String!
+  participants: [Participant!]!
 }
 
 type ParticipantLearningData {

@@ -132,6 +132,7 @@ export interface NexusGenObjects {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   Feedback: { // root type
@@ -240,7 +241,15 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     username: string; // String!
+  }
+  ParticipantGroup: { // root type
+    code: number; // Int!
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    name: string; // String!
+    participants: NexusGenRootTypes['Participant'][]; // [Participant!]!
   }
   ParticipantLearningData: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
@@ -383,6 +392,7 @@ export interface NexusGenFieldTypes {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   Feedback: { // field return type
@@ -470,6 +480,7 @@ export interface NexusGenFieldTypes {
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    createParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     createSession: NexusGenRootTypes['Session'] | null; // Session
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -520,7 +531,15 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     username: string; // String!
+  }
+  ParticipantGroup: { // field return type
+    code: number; // Int!
+    course: NexusGenRootTypes['Course']; // Course!
+    id: string; // ID!
+    name: string; // String!
+    participants: NexusGenRootTypes['Participant'][]; // [Participant!]!
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
@@ -682,6 +701,7 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
+    participantGroups: 'ParticipantGroup'
     sessions: 'Session'
   }
   Feedback: { // field return type name
@@ -769,6 +789,7 @@ export interface NexusGenFieldTypeNames {
     changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
+    createParticipantGroup: 'ParticipantGroup'
     createSession: 'Session'
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
@@ -819,7 +840,15 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     avatarSettings: 'JSONObject'
     id: 'ID'
+    participantGroups: 'ParticipantGroup'
     username: 'String'
+  }
+  ParticipantGroup: { // field return type name
+    code: 'Int'
+    course: 'Course'
+    id: 'ID'
+    name: 'String'
+    participants: 'Participant'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
@@ -958,6 +987,10 @@ export interface NexusGenArgTypes {
     createFeedback: { // args
       content: string; // String!
       sessionId: string; // ID!
+    }
+    createParticipantGroup: { // args
+      courseId: string; // ID!
+      name: string; // String!
     }
     createSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!

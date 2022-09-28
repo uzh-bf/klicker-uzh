@@ -1,8 +1,12 @@
 import Layout from '@components/Layout'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useRouter } from 'next/router'
 
-function GroupJoin({ courseId }: any) {
+function GroupJoin() {
+  const router = useRouter()
+  const courseId = router.query.courseId
+
   return (
     <Layout
       displayName="Gruppe Beitreten"
@@ -14,13 +18,13 @@ function GroupJoin({ courseId }: any) {
         initialValues={{ code: '' }}
         onSubmit={(values, actions) => {
           setTimeout(() => {
-            alert(JSON.stringify(values, null, 2));
-            actions.setSubmitting(false);
-          }, 1000);
+            alert(JSON.stringify(values, null, 2))
+            actions.setSubmitting(false)
+          }, 1000)
         }}
       >
         <Form>
-          <div className='flex flex-col'>
+          <div className="flex flex-col">
             <Field type="text" name="code" placeholder="Code" />
             <ErrorMessage
               name="code"

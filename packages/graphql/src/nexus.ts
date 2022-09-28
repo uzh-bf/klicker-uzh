@@ -293,6 +293,8 @@ export const Course = objectType({
     t.nonNull.list.nonNull.field('sessions', {
       type: Session,
     })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
   },
 })
 
@@ -359,6 +361,26 @@ export const Participant = objectType({
     t.string('avatar')
     t.field('avatarSettings', {
       type: 'JSONObject',
+    })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
+  },
+})
+
+export const ParticipantGroup = objectType({
+  name: 'ParticipantGroup',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.int('code')
+
+    t.nonNull.list.nonNull.field('participants', {
+      type: Participant,
+    })
+
+    t.nonNull.field('course', {
+      type: Course,
     })
   },
 })
@@ -1064,6 +1086,17 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
+      },
+    })
+
+    t.field('createParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+        name: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.createParticipantGroup(args, ctx)
       },
     })
   },
