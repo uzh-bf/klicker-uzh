@@ -78,7 +78,7 @@ function Histogram({
 
   return (
     <div>
-      <ResponsiveContainer minWidth={800} height={400}>
+      <ResponsiveContainer minWidth={800} height={400} className="z-10">
         <BarChart
           data={processedData}
           margin={{
