@@ -42,7 +42,7 @@ function BarChart({
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
-    <ResponsiveContainer height={600}>
+    <ResponsiveContainer height={600} className="z-10">
       <BarChartRecharts
         data={dataWithLabels}
         margin={{

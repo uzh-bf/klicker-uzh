@@ -1,119 +1,74 @@
 import { useQuery } from '@apollo/client'
 import Chart from '@components/evaluation/Chart'
-import { faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faChevronDown,
+  faChevronUp,
+  faSync,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import * as SelectPrimitive from '@radix-ui/react-select'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { Prose } from '@uzh-bf/design-system'
+import { Button, Prose } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
 import { CHART_COLORS } from 'src/constants'
 import { twMerge } from 'tailwind-merge'
 
+const Select = ({ items, onChange }) => {
+  return (
+    <SelectPrimitive.Root
+      defaultValue={String(items[0].instanceIx)}
+      onValueChange={onChange}
+    >
+      <SelectPrimitive.Trigger asChild aria-label="Food">
+        <Button className="text-sm">
+          <SelectPrimitive.Value />
+          <SelectPrimitive.Icon className="ml-2">
+            <FontAwesomeIcon icon={faChevronDown} />
+          </SelectPrimitive.Icon>
+        </Button>
+      </SelectPrimitive.Trigger>
+      <SelectPrimitive.Content>
+        <SelectPrimitive.ScrollUpButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
+          <FontAwesomeIcon icon={faChevronUp} />
+        </SelectPrimitive.ScrollUpButton>
+        <SelectPrimitive.Viewport className="p-2 bg-white rounded-lg shadow-lg dark:bg-gray-800 z-[9999]">
+          <SelectPrimitive.Group>
+            {items.map((item, ix) => (
+              <SelectPrimitive.Item
+                key={item.instanceIx}
+                value={String(item.instanceIx)}
+                className={twMerge(
+                  'relative flex items-center px-8 py-2 rounded-md text-gray-700 dark:text-gray-300 font-medium focus:bg-gray-100 dark:focus:bg-gray-900',
+                  'radix-disabled:opacity-50',
+                  'focus:outline-none select-none'
+                )}
+              >
+                <SelectPrimitive.ItemText>
+                  {item.label}
+                </SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemIndicator className="absolute inline-flex items-center left-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                </SelectPrimitive.ItemIndicator>
+              </SelectPrimitive.Item>
+            ))}
+          </SelectPrimitive.Group>
+        </SelectPrimitive.Viewport>
+        <SelectPrimitive.ScrollDownButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
+          <FontAwesomeIcon icon={faChevronDown} />
+        </SelectPrimitive.ScrollDownButton>
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Root>
+  )
+}
 interface Tab {
   status: 'EXECUTED' | 'ACTIVE'
   title: string
   value: string
-}
-
-function getTabs(data: any): Tab[] {
-  if (!data) return []
-
-  const tabArray: Tab[] = []
-  data.sessionEvaluation.instanceResults.map((instance: any, index: number) => {
-    tabArray.push({
-      value: 'tab' + index,
-      title: instance.questionData.name,
-      status: instance.status,
-    })
-  })
-  return tabArray
-}
-
-function getQuestions(data: any): String[] {
-  if (!data) return []
-
-  const questionArray: String[] = []
-  data.sessionEvaluation.instanceResults.map((instance: any, index: number) => {
-    questionArray.push(instance.questionData.content)
-  })
-  return questionArray
-}
-
-function getAnswers(data: any): {
-  answers: {
-    value: String | { min: number; max: number }
-    correct?: Boolean
-  }[]
-  type: String
-}[] {
-  if (!data) return []
-
-  const answerArray: {
-    answers: {
-      value: String | { min: number; max: number }
-      correct?: Boolean
-    }[]
-    type: String
-  }[] = []
-  data.sessionEvaluation.instanceResults.map((instance: any) => {
-    const innerArray: {
-      value: String | { min: number; max: number }
-      correct?: Boolean
-    }[] = []
-    if (
-      instance.questionData.type === 'SC' ||
-      instance.questionData.type === 'MC' ||
-      instance.questionData.type === 'KPRIM'
-    ) {
-      // answerArray should include both all answer possibilities as well as a correct / false attribute for them
-      instance.questionData.options.choices.map((choice: any) => {
-        innerArray.push({ value: choice.value, correct: choice.correct })
-      })
-    } else if (instance.questionData.type === 'NUMERICAL') {
-      // answerArray should include the correct answer ranges with correct attribute and the restrictions with an undefined correct attribute
-      innerArray.push({
-        value: instance.questionData.options.restrictions,
-        correct: undefined,
-      })
-      instance.questionData.options.solutionRanges?.forEach(
-        (range: { min: number; max: number }) => {
-          innerArray.push({
-            value: range,
-            correct: true,
-          })
-        }
-      )
-    } else if (instance.questionData.type === 'FREE_TEXT') {
-      // answerArray should include the correct keywords together with a correct: true attribute
-      instance.questionData.options.solutions.forEach((solution: string) => {
-        innerArray.push({
-          value: solution,
-          correct: true,
-        })
-      })
-    }
-    answerArray.push({
-      answers: innerArray,
-      type: instance.questionData.type,
-    })
-  })
-  return answerArray
-}
-
-function getChartData(data: any) {
-  if (!data) return []
-
-  console.log(data)
-  return data?.sessionEvaluation?.instanceResults.map((result: any) => ({
-    type: result.questionData.type,
-    data: Object.values(result.results).map((answer) => ({
-      value: answer.value,
-      votes: answer.count,
-    })),
-    participants: result.participants,
-  }))
 }
 
 const INSTANCE_STATUS_ICON = {
@@ -123,8 +78,13 @@ const INSTANCE_STATUS_ICON = {
 
 function Evaluation() {
   const router = useRouter()
+
   // TODO: replace with corresponding database field and query
   const [showSolution, setShowSolution] = useState(true)
+  const [activeBlock, setActiveBlock] = useState(0)
+  const [activeInstance, setActiveInstance] = useState(0)
+
+  console.log(activeBlock, activeInstance)
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
@@ -134,67 +94,162 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  const tabs = useMemo(() => getTabs(data), [data])
-  const questions = useMemo(() => getQuestions(data), [data])
-  const answerCollection = useMemo(() => getAnswers(data), [data])
-  const chartData = useMemo(() => getChartData(data), [data])
+  const { groupedTabs } = useMemo(() => {
+    if (!data) return { tabs: [] }
+
+    const tabs = data.sessionEvaluation?.instanceResults?.map(
+      (instance, index) => ({
+        id: instance.id,
+        blockIx: instance.blockIx,
+        instanceIx: instance.instanceIx,
+        value: 'tab' + index,
+        title: instance.questionData.name,
+        status: instance.status,
+        label: instance.questionData.name,
+      })
+    )
+
+    if (!tabs) return { tabs: [] }
+
+    const groupedTabs = Object.entries(
+      groupBy((tab) => tab.blockIx.toString(), tabs)
+    )
+
+    return { tabs, groupedTabs }
+  }, [data])
+
+  const questions = useMemo(() => {
+    if (!data) return []
+
+    return data.sessionEvaluation?.instanceResults?.map((instance) => {
+      const baseData = {
+        blockIx: instance.blockIx,
+        instanceIx: instance.instanceIx,
+        content: instance.questionData.content,
+        type: instance.questionData.type,
+      }
+
+      const answers = []
+
+      if (
+        instance.questionData.type === 'SC' ||
+        instance.questionData.type === 'MC' ||
+        instance.questionData.type === 'KPRIM'
+      ) {
+        // answerArray should include both all answer possibilities as well as a correct / false attribute for them
+        instance.questionData.options.choices.map((choice: any) => {
+          answers.push({ value: choice.value, correct: choice.correct })
+        })
+      } else if (instance.questionData.type === 'NUMERICAL') {
+        // answerArray should include the correct answer ranges with correct attribute and the restrictions with an undefined correct attribute
+        answers.push({
+          value: instance.questionData.options.restrictions,
+          correct: undefined,
+        })
+        instance.questionData.options.solutionRanges?.forEach(
+          (range: { min: number; max: number }) => {
+            answers.push({
+              value: range,
+              correct: true,
+            })
+          }
+        )
+      } else if (instance.questionData.type === 'FREE_TEXT') {
+        // answerArray should include the correct keywords together with a correct: true attribute
+        instance.questionData.options.solutions.forEach((solution: string) => {
+          answers.push({
+            value: solution,
+            correct: true,
+          })
+        })
+      }
+
+      const results = Object.values(instance.results).map((answer) => ({
+        value: answer.value,
+        votes: answer.count,
+      }))
+
+      return {
+        ...baseData,
+        answers,
+        results,
+        participants: instance.participants,
+      }
+    })
+  }, [data])
 
   if (error) return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
+  const currentQuestion = questions?.find(
+    (question) =>
+      question.blockIx == activeBlock && question.instanceIx == activeInstance
+  )
+
   return (
     <TabsPrimitive.Root
-      defaultValue="tab0"
+      value={`tab-${activeBlock}`}
       className="flex flex-col h-full p-1"
     >
       <TabsPrimitive.List
         className={twMerge('flex-initial flex flex-col md:flex-row')}
       >
-        {tabs.map((instance, index) => (
+        {groupedTabs?.map(([blockIx, items], groupIx) => (
           <TabsPrimitive.Trigger
-            key={`tab-trigger-${index}`}
-            value={'tab' + index}
+            key={`tab-trigger-${blockIx}`}
+            value={'tab' + blockIx}
             className={twMerge(
-              'py-1 px-3 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900 flex flex-row items-center gap-2'
+              'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
             )}
+            onClick={() => {
+              setActiveBlock(Number(blockIx))
+              setActiveInstance(0)
+            }}
           >
-            <FontAwesomeIcon
-              size="xs"
-              icon={INSTANCE_STATUS_ICON[instance.status]}
+            <div className="flex flex-row items-center gap-1 text-sm text-left">
+              <div>
+                <FontAwesomeIcon
+                  size="xs"
+                  icon={INSTANCE_STATUS_ICON[items[0].status]}
+                />
+              </div>
+              <div>Block {Number(blockIx) + 1}</div>
+            </div>
+            <Select
+              items={items}
+              onChange={(newIx) => {
+                setActiveBlock(Number(blockIx))
+                setActiveInstance(Number(newIx))
+              }}
             />
-            {instance.title}
           </TabsPrimitive.Trigger>
         ))}
       </TabsPrimitive.List>
 
-      {questions.map((question, index) => (
-        <TabsPrimitive.Content
-          key={`tab-content-${index}`}
-          value={'tab' + index}
-          className={twMerge('bg-white flex flex-col rdx-state-active:flex-1')}
-        >
+      {currentQuestion && (
+        <div>
           <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
             <Markdown
               className="flex flex-row content-between p-2"
-              content={question}
+              content={currentQuestion.content}
             />
           </Prose>
 
           <div className="flex flex-col flex-1 md:flex-row">
-            <div className="flex-1 order-2 md:order-1">
+            <div className="z-10 flex-1 order-2 md:order-1">
               <Chart
-                questionType={chartData[index]?.type}
-                data={chartData[index]?.data}
+                questionType={currentQuestion.type}
+                data={currentQuestion.results}
                 showSolution={showSolution}
-                totalResponses={chartData[index]?.participants}
+                totalResponses={currentQuestion.participants}
               />
             </div>
             <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
               <div className="flex flex-col gap-2">
-                {(answerCollection[index].type === 'SC' ||
-                  answerCollection[index].type === 'MC' ||
-                  answerCollection[index].type === 'KPRIM') &&
-                  answerCollection[index].answers.map(
+                {(currentQuestion.type === 'SC' ||
+                  currentQuestion.type === 'MC' ||
+                  currentQuestion.type === 'KPRIM') &&
+                  currentQuestion.answers.map(
                     (
                       answer: {
                         value: String | { min: number; max: number }
@@ -203,7 +258,7 @@ function Evaluation() {
                       innerIndex: number
                     ) => (
                       <div
-                        key={chartData[index].data[innerIndex].value}
+                        key={currentQuestion.results[innerIndex].value}
                         className="flex flex-row"
                       >
                         <div
@@ -227,7 +282,7 @@ function Evaluation() {
                     )
                   )}
 
-                {answerCollection[index].type === 'NUMERICAL' && (
+                {currentQuestion.type === 'NUMERICAL' && (
                   <div>
                     {/* <div className="mb-3">
                         {answerCollection[index].answers
@@ -243,7 +298,7 @@ function Evaluation() {
                           ))}
                       </div> */}
                     <div className="font-bold">Erlaubter Antwortbereich:</div>
-                    {answerCollection[index].answers.map(
+                    {currentQuestion.answers.map(
                       (
                         answer: {
                           value: String | { min: number; max: number }
@@ -260,11 +315,11 @@ function Evaluation() {
                   </div>
                 )}
 
-                {answerCollection[index].type === 'FREE_TEXT' && (
+                {currentQuestion.type === 'FREE_TEXT' && (
                   <div>
                     <div className="font-bold">Schlüsselwörter Lösung:</div>
                     <ul>
-                      {answerCollection[index].answers.map(
+                      {currentQuestion.answers.map(
                         (
                           answer: {
                             value: String | { min: number; max: number }
@@ -283,10 +338,10 @@ function Evaluation() {
           </div>
 
           <div className="flex flex-row items-center flex-initial p-2 text-xl border-t">
-            Teilnehmende: {chartData[index]?.participants}
+            Teilnehmende: {currentQuestion.participants}
           </div>
-        </TabsPrimitive.Content>
-      ))}
+        </div>
+      )}
     </TabsPrimitive.Root>
   )
 }
