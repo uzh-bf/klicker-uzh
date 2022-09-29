@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.61...v2.0.0-alpha.62) (2022-09-29)
+
+
+### Other
+
+* disable sentry in frontends for now ([974641a](https://github.com/uzh-bf/klicker-uzh/commit/974641a8e6dc45611cff48e947ac30e1b4096379))
+
 ## [2.0.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.60...v2.0.0-alpha.61) (2022-09-29)
 
 
