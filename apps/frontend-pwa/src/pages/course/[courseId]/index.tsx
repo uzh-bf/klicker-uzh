@@ -220,6 +220,13 @@ function CourseOverview({ courseId }: any) {
                 onLeaveCourse={leaveCourse}
               />
             )}
+          
+            <Button className="text-sm" onClick={() => props.onLeaveCourse()}>
+              Gruppe Erstellen
+            </Button>
+            <Button className="text-sm ml-2" onClick={() => props.onLeaveCourse()}>
+              Gruppe Beitreten
+            </Button>
           </div>
         </div>
       </div>
