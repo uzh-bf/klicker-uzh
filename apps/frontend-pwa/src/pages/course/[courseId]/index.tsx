@@ -15,6 +15,7 @@ import Layout from '@components/Layout'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { any } from 'ramda'
+import Router from 'next/router'
 
 const { serverRuntimeConfig } = getConfig()
 
@@ -220,13 +221,16 @@ function CourseOverview({ courseId }: any) {
                 onLeaveCourse={leaveCourse}
               />
             )}
-          
-            <Button className="text-sm" onClick={() => props.onLeaveCourse()}>
-              Gruppe Erstellen
-            </Button>
-            <Button className="text-sm ml-2" onClick={() => props.onLeaveCourse()}>
-              Gruppe Beitreten
-            </Button>
+            <Button
+              className="text-sm"
+              fluid
+              onClick={() => Router.replace(`/course/${courseId}/groups/create`)}
+            >Gruppe Erstellen</Button>
+            <Button
+              className="text-sm"
+              fluid
+              onClick={() => Router.replace(`/course/${courseId}/groups/join`)}
+            >Gruppe Beitreten</Button>
           </div>
         </div>
       </div>
