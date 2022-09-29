@@ -17,8 +17,15 @@ releases:
         frontendPWA:
           replicaCount: 1
 
+          sentryEnv: qa
+          sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
+
+
         frontendManage:
           replicaCount: 1
+
+          sentryEnv: qa
+          sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
 
         backendGraphql:
           replicaCount: 1
