@@ -32,13 +32,19 @@ function GroupCreation() {
     >
       <H1>Gruppenname:</H1>
       <Formik
-        initialValues={{ groupName: '' }}
-        onSubmit={(values, actions) => {
-          setTimeout(() => {
-            alert(JSON.stringify(values, null, 2))
-            actions.setSubmitting(false)
-          }, 1000)
-        }}
+        initialValues={{ groupName: ''}}
+        onSubmit={(values) => createParticipantGroup({
+          variables: {
+            courseId: courseId,
+            name: values.groupName,
+          },
+          refetchQueries: [
+            {
+              query: GetParticipantGroupsDocument,
+              variables: { courseId: courseId },
+            },
+          ],
+        })}
       >
         <Form>
           <div className="flex flex-col">
@@ -52,25 +58,6 @@ function GroupCreation() {
           </div>
         </Form>
       </Formik>
-      This button creates group with name Testgroup and this participant:
-      <Button
-        onClick={() =>
-          createParticipantGroup({
-            variables: {
-              courseId: courseId,
-              name: 'Test group',
-            },
-            refetchQueries: [
-              {
-                query: GetParticipantGroupsDocument,
-                variables: { courseId: courseId },
-              },
-            ],
-          })
-        }
-      >
-        Testgruppe erstellen
-      </Button>
       {dataParticipantGroups &&
         dataParticipantGroups.participantGroups &&
         dataParticipantGroups.participantGroups.length === 0 && (
