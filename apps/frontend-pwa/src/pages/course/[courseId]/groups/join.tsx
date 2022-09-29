@@ -14,7 +14,7 @@ function GroupJoin() {
   return (
     <Layout
       displayName="Gruppe Beitreten"
-      courseName="Banking and Finance I"
+      courseName="Banking and Finance I - STILL HARDCODED"
       courseColor="green"
     >
       <H1>Code:</H1>

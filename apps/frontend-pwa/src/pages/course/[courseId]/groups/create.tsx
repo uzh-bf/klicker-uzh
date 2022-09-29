@@ -27,7 +27,7 @@ function GroupCreation() {
   return (
     <Layout
       displayName="Gruppe Erstellen"
-      courseName="Banking and Finance I"
+      courseName="Banking and Finance I - STILL HARDCODED"
       courseColor="green"
     >
       <H1>Gruppenname:</H1>
