@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.60...v2.0.0-alpha.61) (2022-09-29)
+
+
+### Features
+
+* **frontend-manage:** readd filtering possibilities for feedback section ([#2922](https://github.com/uzh-bf/klicker-uzh/issues/2922)) ([5ba37ee](https://github.com/uzh-bf/klicker-uzh/commit/5ba37ee23d719a658ee7fa61a97d2003364e8820))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** participant token before redirect on join page ([846b2f0](https://github.com/uzh-bf/klicker-uzh/commit/846b2f0aa638af06a32d4e3a90d3e3761efd3834))
+
+
+### Deployment
+
+* add sentry config to deployments ([b848476](https://github.com/uzh-bf/klicker-uzh/commit/b848476e9d220de44418cd85f78ef4c734550677))
+
+
+### Other
+
+* **apps/frontend-manage:** basic sentry setup ([2bf09c6](https://github.com/uzh-bf/klicker-uzh/commit/2bf09c6c41e2e65d8cb2830a4d70535818d90c1f))
+* **apps/frontend-pwa:** basic sentry setup ([f487be5](https://github.com/uzh-bf/klicker-uzh/commit/f487be5a572271e25754bab58c7dde8941cf0579))
+* **packages/graphql:** improve push sending util to loop through subscriptions ([6d9eb3b](https://github.com/uzh-bf/klicker-uzh/commit/6d9eb3b7382ca74411febc0ba7aaea041697ec4f))
+* **packages/prisma:** update seed ([8ff3830](https://github.com/uzh-bf/klicker-uzh/commit/8ff3830100735642781cad53def84619b04a043d))
+* submodule seed update ([a1c6297](https://github.com/uzh-bf/klicker-uzh/commit/a1c629759e4c5bda383d9a0026f2c1fe7872bbf3))
+* upgrade deployed version ([fa9a440](https://github.com/uzh-bf/klicker-uzh/commit/fa9a44090c1a3f8f51773ebe35ecdb30c4d257de))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add evaluation link to a session ([73b70a4](https://github.com/uzh-bf/klicker-uzh/commit/73b70a465641d2efba5bb24547b7be670e57f938))
+* rework of navigation on session evaluation, improve coloring of charts ([#2936](https://github.com/uzh-bf/klicker-uzh/issues/2936)) ([86e5401](https://github.com/uzh-bf/klicker-uzh/commit/86e5401aa6158cdaef0e0b376de571ca7cdc0aec))
+
 ## [2.0.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.59...v2.0.0-alpha.60) (2022-09-26)
 
 
