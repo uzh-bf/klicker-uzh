@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { QUESTION_TYPES_SHORT } from '../../constants'
+import { QUESTION_TYPES_SHORT } from 'shared-components'
 
 interface SessionProps {
   sessionName: string

@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { SMALL_BAR_THRESHOLD } from '../../constants'
+import { SMALL_BAR_THRESHOLD } from 'shared-components'
 
 interface BarChartProps {
   questionType: QuestionType

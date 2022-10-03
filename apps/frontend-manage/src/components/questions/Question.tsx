@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
-import { QUESTION_TYPES_SHORT } from '../../constants'
+import { QUESTION_TYPES_SHORT } from 'shared-components'
 
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'

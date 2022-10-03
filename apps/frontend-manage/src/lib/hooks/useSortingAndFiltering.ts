@@ -2,7 +2,7 @@
 
 import { useReducer } from 'react'
 
-import { QUESTION_SORTINGS } from '../../constants'
+import { QUESTION_SORTINGS } from 'shared-components'
 
 const INITIAL_STATE = {
   filters: {

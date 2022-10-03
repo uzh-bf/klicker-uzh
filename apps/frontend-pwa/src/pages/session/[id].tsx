@@ -10,7 +10,7 @@ import {
 import { GetServerSideProps } from 'next'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { QUESTION_GROUPS } from '../../constants'
+import { QUESTION_GROUPS } from 'shared-components'
 
 import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'

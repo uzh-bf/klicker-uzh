@@ -4,8 +4,7 @@ import { H2 } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 
 import { Modal } from '@uzh-bf/design-system'
-import { StudentQuestion } from 'shared-components'
-import { QUESTION_GROUPS } from '../../constants'
+import { StudentQuestion, QUESTION_GROUPS } from 'shared-components'
 
 interface Props {
   isOpen: boolean

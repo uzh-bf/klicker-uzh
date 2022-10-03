@@ -7,39 +7,12 @@ import * as Yup from 'yup'
 // eslint-disable-next-line prettier/prettier
 import React from 'react'
 
+import { QUESTION_GROUPS, QUESTION_TYPES } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
-
-export const QUESTION_TYPES = {
-  FREE_TEXT: 'FREE_TEXT',
-  NUMERICAL: 'NUMERICAL',
-  MC: 'MC',
-  SC: 'SC',
-  KPRIM: 'KPRIM',
-}
-
-export const QUESTION_GROUPS = {
-  CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.KPRIM],
-  FREE_TEXT: [QUESTION_TYPES.FREE_TEXT],
-  NUMERICAL: [QUESTION_TYPES.NUMERICAL],
-  FREE: [QUESTION_TYPES.FREE_TEXT, QUESTION_TYPES.NUMERICAL],
-  WITH_PERCENTAGES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.FREE_TEXT,
-  ],
-  WITH_POSSIBILITIES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.NUMERICAL,
-  ],
-  WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
-}
 
 const messages = {
   [QUESTION_TYPES.SC]: <p>Bitte eine einzige Option auswählen:</p>,
