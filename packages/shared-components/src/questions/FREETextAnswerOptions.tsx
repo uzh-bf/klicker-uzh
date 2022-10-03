@@ -1,11 +1,11 @@
 import React from 'react'
 
-interface FREETextAnswerOptionsProps {
+export interface FREETextAnswerOptionsProps {
   maxLength: number
   onChange: (value: any) => any
 }
 
-function FREETextAnswerOptions({
+export function FREETextAnswerOptions({
   maxLength,
   onChange,
 }: FREETextAnswerOptionsProps): React.ReactElement {

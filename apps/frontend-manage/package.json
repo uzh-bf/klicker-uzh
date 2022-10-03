@@ -34,6 +34,7 @@
     "localforage": "1.10.0",
     "lodash": "4.17.21",
     "next": "12.3.1",
+    "next-transpile-modules": "9.0.0",
     "nookies": "2.5.2",
     "ramda": "0.28.0",
     "react": "18.2.0",
@@ -46,6 +47,7 @@
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",
     "recharts": "2.1.12",
+    "shared-components": "*",
     "sharp": "0.31.0",
     "tailwind-merge": "1.6.0",
     "yup": "0.32.11"

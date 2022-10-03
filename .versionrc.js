@@ -2,97 +2,98 @@ module.exports = {
   packageFiles: [
     {
       filename: `package.json`,
-      type: 'json',
+      type: "json",
     },
   ],
   bumpFiles: [
-    '',
-    'docs/',
-    'apps/backend-docker/',
-    'apps/backend-responses/',
-    'apps/backend-sls/',
-    'apps/frontend-learning/',
-    'apps/frontend-manage/',
-    'apps/frontend-pwa/',
-    'packages/grading/',
-    'packages/graphql/',
-    'packages/lti/',
-    'packages/prisma/',
-    'packages/markdown/',
+    "",
+    "docs/",
+    "apps/backend-docker/",
+    "apps/backend-responses/",
+    "apps/backend-sls/",
+    "apps/frontend-learning/",
+    "apps/frontend-manage/",
+    "apps/frontend-pwa/",
+    "packages/grading/",
+    "packages/graphql/",
+    "packages/lti/",
+    "packages/prisma/",
+    "packages/markdown/",
+    "packages/shared-components",
   ].reduce(
     (acc, path) => {
       return acc.concat({
         filename: `${path}package.json`,
-        type: 'json',
-      })
+        type: "json",
+      });
     },
     [
       {
         filename: `package-lock.json`,
-        type: 'json',
+        type: "json",
       },
       {
         filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
-        updater: 'util/yaml-updater.js',
+        updater: "util/yaml-updater.js",
       },
     ]
   ),
   types: [
     {
-      type: 'feat',
-      section: 'Features',
+      type: "feat",
+      section: "Features",
     },
     {
-      type: 'enhance',
-      section: 'Enhancements',
+      type: "enhance",
+      section: "Enhancements",
     },
     {
-      type: 'fix',
-      section: 'Bug Fixes',
+      type: "fix",
+      section: "Bug Fixes",
     },
     {
-      type: 'docs',
-      section: 'Documentation',
+      type: "docs",
+      section: "Documentation",
     },
     {
-      type: 'refactor',
-      section: 'Refactors',
+      type: "refactor",
+      section: "Refactors",
     },
     {
-      type: 'perf',
-      section: 'Performance',
+      type: "perf",
+      section: "Performance",
     },
     {
-      type: 'deploy',
-      section: 'Deployment',
+      type: "deploy",
+      section: "Deployment",
     },
     {
-      type: 'deps',
-      section: 'Dependencies',
+      type: "deps",
+      section: "Dependencies",
     },
     {
-      type: 'build',
-      section: 'Build and CI',
+      type: "build",
+      section: "Build and CI",
     },
     {
-      type: 'ci',
-      section: 'Build and CI',
+      type: "ci",
+      section: "Build and CI",
     },
     {
-      type: 'chore',
-      section: 'Other',
+      type: "chore",
+      section: "Other",
     },
     {
-      type: 'wip',
-      section: 'Other',
+      type: "wip",
+      section: "Other",
     },
     {
-      type: 'test',
-      section: 'Other',
+      type: "test",
+      section: "Other",
     },
     {
-      type: 'style',
-      section: 'Other',
+      type: "style",
+      section: "Other",
     },
   ],
-}
+};
