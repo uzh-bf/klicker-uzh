@@ -6,7 +6,7 @@ import React, { useState } from 'react'
 import { Modal } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS, StudentQuestion } from 'shared-components'
 
-interface Props {
+interface QuestionPreviewModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
   questionId: number
@@ -16,7 +16,7 @@ function QuestionPreviewModal({
   isOpen,
   handleSetIsOpen,
   questionId,
-}: Props): React.ReactElement {
+}: QuestionPreviewModalProps): React.ReactElement {
   const {
     loading: loadingQuestion,
     error: errorQuestion,
@@ -24,8 +24,6 @@ function QuestionPreviewModal({
   } = useQuery(GetSingleQuestionDocument, {
     variables: { id: questionId },
   })
-
-  console.log(dataQuestion)
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,

@@ -9,6 +9,7 @@ import { QUESTION_TYPES_SHORT } from 'shared-components'
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import QuestionPreviewModal from './QuestionPreviewModal'
+import QuestionEditModal from './QuestionEditModal'
 // import QuestionTags from './QuestionTags'
 
 interface Props {
@@ -117,13 +118,13 @@ function Question({
             >
               Bearbeiten
             </Button>
-            {/* {isModificationModalOpen && (
-                <QuestionDetailsModal
+            {isModificationModalOpen && (
+                <QuestionEditModal
                   handleSetIsOpen={setIsModificationModalOpen}
                   isOpen={isModificationModalOpen}
                   questionId={id}
                 />
-              )} */}
+              )}
           </div>
           <div className="w-36">
             <Button

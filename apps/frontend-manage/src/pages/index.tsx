@@ -22,6 +22,7 @@ function Index() {
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
+
   const {
     filters,
     sort,

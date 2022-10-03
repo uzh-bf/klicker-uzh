@@ -32,7 +32,7 @@ export interface StudentQuestionProps {
   currentQuestion: {
     content: string
     contentPlain: string
-    id: string
+    id: number
     name: string
     type: string
     options: any
