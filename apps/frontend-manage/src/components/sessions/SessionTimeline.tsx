@@ -10,7 +10,6 @@ import dayjs from 'dayjs'
 // import getConfig from 'next/config'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-// import { CSVLink } from 'react-csv'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
