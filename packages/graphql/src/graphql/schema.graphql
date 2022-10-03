@@ -23,6 +23,10 @@ type Attachment {
   type: AttachmentType!
 }
 
+input AttachmentInput {
+  id: String
+}
+
 enum AttachmentType {
   GIF
   JPEG
@@ -56,6 +60,13 @@ type Choice {
   id: ID!
   ix: Int!
   value: String!
+}
+
+input ChoiceInput {
+  correct: Boolean
+  feedback: String
+  ix: Int
+  value: String
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -199,6 +210,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  editQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int!, name: String, options: OptionsInput, tags: [TagInput]): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   leaveCourse(courseId: ID!): ParticipantLearningData
@@ -244,6 +256,13 @@ type NumericalRestrictions {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+input OptionsInput {
+  choices: [ChoiceInput]
+  restrictions: Restrictions
+  solutionRanges: SolutionRange
+  solutions: [String]
 }
 
 type Participant {
@@ -346,6 +365,12 @@ input ResponseInput {
   value: String
 }
 
+input Restrictions {
+  max: Float
+  maxLength: Int
+  min: Float
+}
+
 type Session {
   accessMode: AccessMode!
   activeBlock: SessionBlock
@@ -395,6 +420,11 @@ enum SessionStatus {
   SCHEDULED
 }
 
+input SolutionRange {
+  max: Float
+  min: Float
+}
+
 type Subscription {
   feedbackAdded(sessionId: ID!): Feedback
   feedbackCreated(sessionId: ID!): Feedback
@@ -417,6 +447,10 @@ input SubscriptionObjectInput {
 type Tag {
   id: Int!
   name: String!
+}
+
+input TagInput {
+  id: String
 }
 
 type User {

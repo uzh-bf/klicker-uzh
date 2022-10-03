@@ -42,6 +42,10 @@ export type Attachment = {
   type: AttachmentType;
 };
 
+export type AttachmentInput = {
+  id?: InputMaybe<Scalars['String']>;
+};
+
 export enum AttachmentType {
   Gif = 'GIF',
   Jpeg = 'JPEG',
@@ -76,6 +80,13 @@ export type Choice = {
   id: Scalars['ID'];
   ix: Scalars['Int'];
   value: Scalars['String'];
+};
+
+export type ChoiceInput = {
+  correct?: InputMaybe<Scalars['Boolean']>;
+  feedback?: InputMaybe<Scalars['String']>;
+  ix?: InputMaybe<Scalars['Int']>;
+  value?: InputMaybe<Scalars['String']>;
 };
 
 export type ChoicesQuestionData = QuestionData & {
@@ -224,6 +235,7 @@ export type Mutation = {
   deactivateSessionBlock?: Maybe<Session>;
   deleteFeedback?: Maybe<Feedback>;
   deleteFeedbackResponse?: Maybe<Feedback>;
+  editQuestion?: Maybe<Question>;
   endSession?: Maybe<Session>;
   joinCourse?: Maybe<ParticipantLearningData>;
   leaveCourse?: Maybe<ParticipantLearningData>;
@@ -301,6 +313,17 @@ export type MutationDeleteFeedbackArgs = {
 
 export type MutationDeleteFeedbackResponseArgs = {
   id: Scalars['Int'];
+};
+
+
+export type MutationEditQuestionArgs = {
+  attachments?: InputMaybe<Array<InputMaybe<AttachmentInput>>>;
+  content?: InputMaybe<Scalars['String']>;
+  contentPlain?: InputMaybe<Scalars['String']>;
+  id: Scalars['Int'];
+  name?: InputMaybe<Scalars['String']>;
+  options?: InputMaybe<OptionsInput>;
+  tags?: InputMaybe<Array<InputMaybe<TagInput>>>;
 };
 
 
@@ -433,6 +456,13 @@ export type NumericalSolutionRange = {
   __typename?: 'NumericalSolutionRange';
   max?: Maybe<Scalars['Float']>;
   min?: Maybe<Scalars['Float']>;
+};
+
+export type OptionsInput = {
+  choices?: InputMaybe<Array<InputMaybe<ChoiceInput>>>;
+  restrictions?: InputMaybe<Restrictions>;
+  solutionRanges?: InputMaybe<SolutionRange>;
+  solutions?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
 export type Participant = {
@@ -604,6 +634,12 @@ export type ResponseInput = {
   value?: InputMaybe<Scalars['String']>;
 };
 
+export type Restrictions = {
+  max?: InputMaybe<Scalars['Float']>;
+  maxLength?: InputMaybe<Scalars['Int']>;
+  min?: InputMaybe<Scalars['Float']>;
+};
+
 export type Session = {
   __typename?: 'Session';
   accessMode: AccessMode;
@@ -656,6 +692,11 @@ export enum SessionStatus {
   Scheduled = 'SCHEDULED'
 }
 
+export type SolutionRange = {
+  max?: InputMaybe<Scalars['Float']>;
+  min?: InputMaybe<Scalars['Float']>;
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
   feedbackAdded?: Maybe<Feedback>;
@@ -705,6 +746,10 @@ export type Tag = {
   __typename?: 'Tag';
   id: Scalars['Int'];
   name: Scalars['String'];
+};
+
+export type TagInput = {
+  id?: InputMaybe<Scalars['String']>;
 };
 
 export type User = {
@@ -778,6 +823,19 @@ export type DeleteFeedbackResponseMutationVariables = Exact<{
 
 
 export type DeleteFeedbackResponseMutation = { __typename?: 'Mutation', deleteFeedbackResponse?: { __typename?: 'Feedback', id: number } | null };
+
+export type EditQuestionMutationVariables = Exact<{
+  id: Scalars['Int'];
+  name?: InputMaybe<Scalars['String']>;
+  content?: InputMaybe<Scalars['String']>;
+  contentPlain?: InputMaybe<Scalars['String']>;
+  options?: InputMaybe<OptionsInput>;
+  attachments?: InputMaybe<Array<InputMaybe<AttachmentInput>> | InputMaybe<AttachmentInput>>;
+  tags?: InputMaybe<Array<InputMaybe<TagInput>> | InputMaybe<TagInput>>;
+}>;
+
+
+export type EditQuestionMutation = { __typename?: 'Mutation', editQuestion?: { __typename?: 'Question', id: number } | null };
 
 export type EndSessionMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -1136,11 +1194,13 @@ export type ResolversTypes = {
   AccessMode: AccessMode;
   AggregatedConfusionFeedbacks: ResolverTypeWrapper<AggregatedConfusionFeedbacks>;
   Attachment: ResolverTypeWrapper<Attachment>;
+  AttachmentInput: AttachmentInput;
   AttachmentType: AttachmentType;
   AvatarSettingsInput: AvatarSettingsInput;
   BlockInput: BlockInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Choice: ResolverTypeWrapper<Choice>;
+  ChoiceInput: ChoiceInput;
   ChoicesQuestionData: ResolverTypeWrapper<ChoicesQuestionData>;
   ChoicesQuestionOptions: ResolverTypeWrapper<ChoicesQuestionOptions>;
   ConfusionTimestep: ResolverTypeWrapper<ConfusionTimestep>;
@@ -1165,6 +1225,7 @@ export type ResolversTypes = {
   NumericalQuestionOptions: ResolverTypeWrapper<NumericalQuestionOptions>;
   NumericalRestrictions: ResolverTypeWrapper<NumericalRestrictions>;
   NumericalSolutionRange: ResolverTypeWrapper<NumericalSolutionRange>;
+  OptionsInput: OptionsInput;
   Participant: ResolverTypeWrapper<Participant>;
   ParticipantLearningData: ResolverTypeWrapper<ParticipantLearningData>;
   Participation: ResolverTypeWrapper<Participation>;
@@ -1176,16 +1237,19 @@ export type ResolversTypes = {
   QuestionFeedback: ResolverTypeWrapper<QuestionFeedback>;
   QuestionInstance: ResolverTypeWrapper<QuestionInstance>;
   ResponseInput: ResponseInput;
+  Restrictions: Restrictions;
   Session: ResolverTypeWrapper<Session>;
   SessionBlock: ResolverTypeWrapper<SessionBlock>;
   SessionBlockStatus: SessionBlockStatus;
   SessionEvaluation: ResolverTypeWrapper<SessionEvaluation>;
   SessionStatus: SessionStatus;
+  SolutionRange: SolutionRange;
   String: ResolverTypeWrapper<Scalars['String']>;
   Subscription: ResolverTypeWrapper<{}>;
   SubscriptionKeys: SubscriptionKeys;
   SubscriptionObjectInput: SubscriptionObjectInput;
   Tag: ResolverTypeWrapper<Tag>;
+  TagInput: TagInput;
   User: ResolverTypeWrapper<User>;
 };
 
@@ -1193,10 +1257,12 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   AggregatedConfusionFeedbacks: AggregatedConfusionFeedbacks;
   Attachment: Attachment;
+  AttachmentInput: AttachmentInput;
   AvatarSettingsInput: AvatarSettingsInput;
   BlockInput: BlockInput;
   Boolean: Scalars['Boolean'];
   Choice: Choice;
+  ChoiceInput: ChoiceInput;
   ChoicesQuestionData: ChoicesQuestionData;
   ChoicesQuestionOptions: ChoicesQuestionOptions;
   ConfusionTimestep: ConfusionTimestep;
@@ -1221,6 +1287,7 @@ export type ResolversParentTypes = {
   NumericalQuestionOptions: NumericalQuestionOptions;
   NumericalRestrictions: NumericalRestrictions;
   NumericalSolutionRange: NumericalSolutionRange;
+  OptionsInput: OptionsInput;
   Participant: Participant;
   ParticipantLearningData: ParticipantLearningData;
   Participation: Participation;
@@ -1232,14 +1299,17 @@ export type ResolversParentTypes = {
   QuestionFeedback: QuestionFeedback;
   QuestionInstance: QuestionInstance;
   ResponseInput: ResponseInput;
+  Restrictions: Restrictions;
   Session: Session;
   SessionBlock: SessionBlock;
   SessionEvaluation: SessionEvaluation;
+  SolutionRange: SolutionRange;
   String: Scalars['String'];
   Subscription: {};
   SubscriptionKeys: SubscriptionKeys;
   SubscriptionObjectInput: SubscriptionObjectInput;
   Tag: Tag;
+  TagInput: TagInput;
   User: User;
 };
 
@@ -1423,6 +1493,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deactivateSessionBlock?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationDeactivateSessionBlockArgs, 'sessionBlockId' | 'sessionId'>>;
   deleteFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationDeleteFeedbackArgs, 'id'>>;
   deleteFeedbackResponse?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationDeleteFeedbackResponseArgs, 'id'>>;
+  editQuestion?: Resolver<Maybe<ResolversTypes['Question']>, ParentType, ContextType, RequireFields<MutationEditQuestionArgs, 'id'>>;
   endSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationEndSessionArgs, 'id'>>;
   joinCourse?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationJoinCourseArgs, 'courseId'>>;
   leaveCourse?: Resolver<Maybe<ResolversTypes['ParticipantLearningData']>, ParentType, ContextType, RequireFields<MutationLeaveCourseArgs, 'courseId'>>;
@@ -1694,6 +1765,7 @@ export const CreateFeedbackDocument = {"kind":"Document","definitions":[{"kind":
 export const DeactivateSessionBlockDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeactivateSessionBlock"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionBlockId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deactivateSessionBlock"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"sessionBlockId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionBlockId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"activeBlock"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"blocks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]}}]} as unknown as DocumentNode<DeactivateSessionBlockMutation, DeactivateSessionBlockMutationVariables>;
 export const DeleteFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<DeleteFeedbackMutation, DeleteFeedbackMutationVariables>;
 export const DeleteFeedbackResponseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteFeedbackResponse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteFeedbackResponse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<DeleteFeedbackResponseMutation, DeleteFeedbackResponseMutationVariables>;
+export const EditQuestionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"EditQuestion"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"content"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"contentPlain"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"options"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"OptionsInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"attachments"}},"type":{"kind":"ListType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AttachmentInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TagInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"editQuestion"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"content"},"value":{"kind":"Variable","name":{"kind":"Name","value":"content"}}},{"kind":"Argument","name":{"kind":"Name","value":"contentPlain"},"value":{"kind":"Variable","name":{"kind":"Name","value":"contentPlain"}}},{"kind":"Argument","name":{"kind":"Name","value":"options"},"value":{"kind":"Variable","name":{"kind":"Name","value":"options"}}},{"kind":"Argument","name":{"kind":"Name","value":"attachments"},"value":{"kind":"Variable","name":{"kind":"Name","value":"attachments"}}},{"kind":"Argument","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<EditQuestionMutation, EditQuestionMutationVariables>;
 export const EndSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"EndSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"endSession"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<EndSessionMutation, EndSessionMutationVariables>;
 export const JoinCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"JoinCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"joinCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"participation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}}]}}]}}]}}]} as unknown as DocumentNode<JoinCourseMutation, JoinCourseMutationVariables>;
 export const LeaveCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LeaveCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"leaveCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"participation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}}]}}]}}]}}]} as unknown as DocumentNode<LeaveCourseMutation, LeaveCourseMutationVariables>;

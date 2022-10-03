@@ -66,3 +66,50 @@ export async function getSingleQuestion(
     questionData: question,
   }
 }
+
+export async function editQuestion(
+  {
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags,
+  }: {
+    id: number
+    name: string
+    content: string
+    contentPlain: string
+    options: {
+      choices?: {
+        id: string
+        ix: number
+        correct: boolean
+        value: string
+        feedback?: string
+      }[]
+      restrictions: { min?: number; max?: number; maxLength?: number }
+      solutionRanges?: { min?: number; max?: number }[]
+      solutions?: string[]
+    }
+    attachments: {}[]
+    tags: {}[]
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: implement update of question with provided parameters
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  return {
+    ...question,
+  }
+}

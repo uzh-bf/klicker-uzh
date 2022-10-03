@@ -36,6 +36,9 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  AttachmentInput: { // input type
+    id?: string | null; // String
+  }
   AvatarSettingsInput: { // input type
     accessory: string; // String!
     clothing: string; // String!
@@ -52,9 +55,30 @@ export interface NexusGenInputs {
     randomSelection?: number | null; // Int
     timeLimit?: number | null; // Int
   }
+  ChoiceInput: { // input type
+    correct?: boolean | null; // Boolean
+    feedback?: string | null; // String
+    ix?: number | null; // Int
+    value?: string | null; // String
+  }
+  OptionsInput: { // input type
+    choices?: Array<NexusGenInputs['ChoiceInput'] | null> | null; // [ChoiceInput]
+    restrictions?: NexusGenInputs['Restrictions'] | null; // Restrictions
+    solutionRanges?: NexusGenInputs['SolutionRange'] | null; // SolutionRange
+    solutions?: Array<string | null> | null; // [String]
+  }
   ResponseInput: { // input type
     choices?: number[] | null; // [Int!]
     value?: string | null; // String
+  }
+  Restrictions: { // input type
+    max?: number | null; // Float
+    maxLength?: number | null; // Int
+    min?: number | null; // Float
+  }
+  SolutionRange: { // input type
+    max?: number | null; // Float
+    min?: number | null; // Float
   }
   SubscriptionKeys: { // input type
     auth: string; // String!
@@ -64,6 +88,9 @@ export interface NexusGenInputs {
     endpoint: string; // String!
     expirationTime?: number | null; // Int
     keys: NexusGenInputs['SubscriptionKeys']; // SubscriptionKeys!
+  }
+  TagInput: { // input type
+    id?: string | null; // String
   }
 }
 
@@ -492,6 +519,7 @@ export interface NexusGenFieldTypes {
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
+    editQuestion: NexusGenRootTypes['Question'] | null; // Question
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -811,6 +839,7 @@ export interface NexusGenFieldTypeNames {
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
+    editQuestion: 'Question'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     leaveCourse: 'ParticipantLearningData'
@@ -1032,6 +1061,15 @@ export interface NexusGenArgTypes {
     }
     deleteFeedbackResponse: { // args
       id: number; // Int!
+    }
+    editQuestion: { // args
+      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
+      content?: string | null; // String
+      contentPlain?: string | null; // String
+      id: number; // Int!
+      name?: string | null; // String
+      options?: NexusGenInputs['OptionsInput'] | null; // OptionsInput
+      tags?: Array<NexusGenInputs['TagInput'] | null> | null; // [TagInput]
     }
     endSession: { // args
       id: string; // ID!

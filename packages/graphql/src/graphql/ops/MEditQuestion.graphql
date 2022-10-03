@@ -1,0 +1,21 @@
+mutation EditQuestion(
+  $id: Int!
+  $name: String
+  $content: String
+  $contentPlain: String
+  $options: OptionsInput
+  $attachments: [AttachmentInput]
+  $tags: [TagInput]
+) {
+  editQuestion(
+    id: $id
+    name: $name
+    content: $content
+    contentPlain: $contentPlain
+    options: $options
+    attachments: $attachments
+    tags: $tags
+  ) {
+    id
+  }
+}

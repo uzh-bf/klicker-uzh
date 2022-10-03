@@ -84,6 +84,59 @@ export const ResponseInput = inputObjectType({
   },
 })
 
+export const Restrictions = inputObjectType({
+  name: 'Restrictions',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+    t.int('maxLength')
+  },
+})
+
+export const ChoiceInput = inputObjectType({
+  name: 'ChoiceInput',
+  definition(t) {
+    t.int('ix')
+    t.boolean('correct')
+    t.string('value')
+    t.string('feedback')
+  },
+})
+
+export const SolutionRange = inputObjectType({
+  name: 'SolutionRange',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+  },
+})
+
+export const OptionsInput = inputObjectType({
+  name: 'OptionsInput',
+  definition(t) {
+    t.list.field('choices', {
+      type: ChoiceInput,
+    })
+    t.field('restrictions', { type: Restrictions })
+    t.field('solutionRanges', { type: SolutionRange })
+    t.list.string('solutions')
+  },
+})
+
+export const AttachmentInput = inputObjectType({
+  name: 'AttachmentInput',
+  definition(t) {
+    t.string('id')
+  },
+})
+
+export const TagInput = inputObjectType({
+  name: 'TagInput',
+  definition(t) {
+    t.string('id')
+  },
+})
+
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -1115,6 +1168,22 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
+      },
+    })
+
+    t.field('editQuestion', {
+      type: Question,
+      args: {
+        id: nonNull(intArg()),
+        name: stringArg(),
+        content: stringArg(),
+        contentPlain: stringArg(),
+        options: arg({ type: 'OptionsInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(arg({ type: 'TagInput' })),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.editQuestion(args, ctx)
       },
     })
   },
