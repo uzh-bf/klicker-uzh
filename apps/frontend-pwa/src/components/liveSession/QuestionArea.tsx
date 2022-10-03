@@ -5,10 +5,9 @@ import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
-import * as Yup from 'yup'
 
 import { StudentQuestion } from 'shared-components'
-import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import { QUESTION_GROUPS } from '../../constants'
 
 // TODO: notifications
 
@@ -88,102 +87,6 @@ function QuestionArea({
     }
     exec()
   }, [sessionId, questions, execution])
-
-  const onActiveChoicesChange =
-    (type: string): any =>
-    (choice: any): any =>
-    (): void => {
-      const validateChoices = (newValue: any): boolean =>
-        type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
-
-      if (inputValue && (type === QUESTION_TYPES.MC || type === QUESTION_TYPES.KPRIM)) {
-        // if the choice is already active, remove it
-        if (inputValue.includes(choice)) {
-          const newInputValue = without([choice], inputValue)
-
-          return setInputState({
-            inputEmpty: newInputValue.length === 0,
-            inputValid: validateChoices(newInputValue),
-            inputValue: newInputValue,
-          })
-        }
-
-        // else add it to the active choices
-        const newInputValue = [...inputValue, choice]
-        return setInputState({
-          inputEmpty: false,
-          inputValid: validateChoices(newInputValue),
-          inputValue: newInputValue,
-        })
-      }
-
-      // initialize the value with the first choice
-      return setInputState({
-        inputEmpty: false,
-        inputValid: true,
-        inputValue: [choice],
-      })
-    }
-
-  const onFreeTextValueChange = (inputValue: any): void => {
-    const inputEmpty = !inputValue || inputValue.length === 0
-
-    const schema = Yup.object().shape({
-      input: Yup.string()
-        .max(currentQuestion.options?.restrictions?.maxLength)
-        .required(),
-    })
-
-    try {
-      const isValid = schema.validateSync({ input: inputValue })
-      if (isValid) {
-        return setInputState({
-          inputEmpty: inputEmpty,
-          inputValid: true,
-          inputValue: inputValue,
-        })
-      }
-    } catch (error: any) {
-      return setInputState({
-        inputEmpty: inputEmpty,
-        inputValid: false,
-        inputValue: inputValue,
-      })
-    }
-  }
-
-  const onNumericalValueChange = (inputValue: any): void => {
-    const inputEmpty =
-      inputValue !== 0 && (!inputValue || inputValue.length === 0)
-
-    let validator = Yup.number().required()
-    if (currentQuestion.options?.restrictions?.min) {
-      validator = validator.min(currentQuestion.options?.restrictions?.min)
-    }
-    if (currentQuestion.options?.restrictions?.max) {
-      validator = validator.max(currentQuestion.options?.restrictions?.max)
-    }
-    const schema = Yup.object().shape({
-      input: validator,
-    })
-
-    try {
-      const isValid = schema.validateSync({ input: inputValue })
-      if (isValid) {
-        return setInputState({
-          inputEmpty: inputEmpty,
-          inputValid: true,
-          inputValue: inputValue,
-        })
-      }
-    } catch (error: any) {
-      return setInputState({
-        inputEmpty: inputEmpty,
-        inputValid: false,
-        inputValue: inputValue,
-      })
-    }
-  }
 
   const onSubmit = async (): Promise<void> => {
     const { instanceId, type } = questions[activeQuestion]
@@ -311,9 +214,7 @@ function QuestionArea({
             inputValue={inputValue}
             inputValid={inputValid}
             inputEmpty={inputEmpty}
-            onActiveChoicesChange={onActiveChoicesChange}
-            onFreeTextValueChange={onFreeTextValueChange}
-            onNumericalValueChange={onNumericalValueChange}
+            setInputState={setInputState}
           />
         </div>
       )}
