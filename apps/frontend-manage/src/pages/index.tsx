@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
-import { StudentQuestion } from 'shared-components'
 import Layout from '../components/Layout'
 import QuestionList from '../components/questions/QuestionList'
 
@@ -59,7 +58,6 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full">
-        <StudentQuestion />
         {/* // TODO: add session creation / edit form
         <div className="flex justify-center mx-10 md:h-72 print-hidden md:mx-20">
           <div className="max-w-[100rem] h-full w-full mt-6 gap-5">
