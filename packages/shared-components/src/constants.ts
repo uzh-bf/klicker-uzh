@@ -128,3 +128,19 @@ export const AVATAR_LABELS = {
   dressShirt: 'Anzug',
   dress: 'Kleid',
 }
+
+export const TYPES_LABELS: Record<string, string> = {
+  NUMERICAL: 'Numerisch (NR)',
+  FREE_TEXT: 'Freitext (FT)',
+  MC: 'Multiple Choice (MC)',
+  SC: 'Single Choice (SC)',
+  KPRIM: 'KPRIM',
+}
+
+export const TYPES_SHORT: Record<string, string> = {
+  NUMERICAL: 'NR',
+  FREE_TEXT: 'FT',
+  MC: 'MC',
+  SC: 'SC',
+  KPRIM: 'KP',
+}
