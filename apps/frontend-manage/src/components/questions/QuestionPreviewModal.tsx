@@ -4,7 +4,7 @@ import { H2 } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 
 import { Modal } from '@uzh-bf/design-system'
-import { StudentQuestion, QUESTION_GROUPS } from 'shared-components'
+import { QUESTION_GROUPS, StudentQuestion } from 'shared-components'
 
 interface Props {
   isOpen: boolean
@@ -30,8 +30,13 @@ function QuestionPreviewModal({
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
     inputValid: false,
-    inputValue: QUESTION_GROUPS.CHOICES.includes(dataQuestion?.question.type)
-      ? new Array(dataQuestion?.question.questionData.options.length, false)
+    inputValue: QUESTION_GROUPS.CHOICES.includes(
+      dataQuestion?.question?.type || ''
+    )
+      ? new Array(
+          dataQuestion?.question?.questionData.options.choices.length,
+          false
+        )
       : '',
   })
 
@@ -41,7 +46,7 @@ function QuestionPreviewModal({
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
     >
-      <H2>{dataQuestion?.question.name}</H2>
+      <H2>{dataQuestion?.question?.name}</H2>
       <StudentQuestion
         activeIndex={0}
         numItems={1}
@@ -51,10 +56,10 @@ function QuestionPreviewModal({
             inputEmpty: true,
             inputValid: false,
             inputValue: QUESTION_GROUPS.CHOICES.includes(
-              dataQuestion?.question.type
+              dataQuestion?.question?.type || ''
             )
               ? new Array(
-                  dataQuestion?.question.questionData.options.length,
+                  dataQuestion?.question?.questionData.options.choices.length,
                   false
                 )
               : '',
@@ -62,8 +67,9 @@ function QuestionPreviewModal({
         }
         onExpire={() => null}
         currentQuestion={{
+          instanceId: 0,
           ...dataQuestion?.question,
-          options: dataQuestion?.question.questionData.options,
+          options: dataQuestion?.question?.questionData.options,
         }}
         inputValue={inputValue}
         inputValid={inputValid}
