@@ -96,7 +96,7 @@ function QuestionArea({
       const validateChoices = (newValue: any): boolean =>
         type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
 
-      if (inputValue && type === QUESTION_TYPES.MC) {
+      if (inputValue && (type === QUESTION_TYPES.MC || type === QUESTION_TYPES.KPRIM)) {
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
           const newInputValue = without([choice], inputValue)
