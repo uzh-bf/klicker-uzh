@@ -17,6 +17,7 @@
     "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
+    "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit"
   },
   "engines": {
