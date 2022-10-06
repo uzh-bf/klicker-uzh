@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { SMALL_BAR_THRESHOLD } from '../../constants'
+import { CHART_COLORS, SMALL_BAR_THRESHOLD } from '../../constants'
 
 interface BarChartProps {
   questionType: QuestionType
@@ -33,12 +33,16 @@ function BarChart({
       d.votes / totalResponses > SMALL_BAR_THRESHOLD ? d.votes : undefined
     const labelOut =
       d.votes / totalResponses <= SMALL_BAR_THRESHOLD ? d.votes : undefined
-    return { ...d, labelIn, labelOut }
+    const xLabel =
+      questionType === 'NUMERICAL'
+        ? d.value
+        : String.fromCharCode(Number(d.value) + 65)
+    return { ...d, labelIn, labelOut, xLabel }
   })
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
-    <ResponsiveContainer height={600}>
+    <ResponsiveContainer height={600} className="z-10">
       <BarChartRecharts
         data={dataWithLabels}
         margin={{
@@ -49,7 +53,7 @@ function BarChart({
         }}
       >
         <XAxis
-          dataKey="value"
+          dataKey="xLabel"
           tick={{
             fill: 'black',
             offset: 30,
@@ -94,9 +98,13 @@ function BarChart({
             style={{ fontSize: '2rem' }}
           />
           {data.map(
-            (row): React.ReactElement => (
+            (row, index): React.ReactElement => (
               <Cell
-                fill={showSolution && row.correct ? '#00de0d' : '#3353b7'}
+                fill={
+                  showSolution && row.correct
+                    ? '#00de0d'
+                    : CHART_COLORS[index % 12]
+                }
                 key={row.value}
               />
             )

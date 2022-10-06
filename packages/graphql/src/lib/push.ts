@@ -37,13 +37,15 @@ webpush.setVapidDetails(
 //   },
 // }
 
-// webpush.sendNotification(
+// const result = await webpush.sendNotification(
 //   pushSubscription,
 //   JSON.stringify({
 //     title: '',
 //     message: '',
 //   })
 // )
+
+// console.log(result)
 
 async function sendPushNotifications() {
   for (let sub of SUBSCRIPTIONS) {
@@ -60,7 +62,7 @@ async function sendPushNotifications() {
         },
         JSON.stringify({
           message:
-            'Das Microlearning für BFI Woche 2 ist bis morgen um 09:00 verfügbar.',
+            'Das Microlearning für BFI Woche 3 ist bis morgen um 09:00 verfügbar.',
           title: 'KlickerUZH - Neues Microlearning',
         })
       )
