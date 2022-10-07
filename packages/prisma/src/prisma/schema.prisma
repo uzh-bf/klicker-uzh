@@ -221,9 +221,8 @@ model Course {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
-  participations Participation[]
-  subscriptions  PushSubscription[]
-
+  participations    Participation[]
+  subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
 
   createdAt DateTime @default(now())
@@ -480,8 +479,9 @@ model Participant {
 model ParticipantGroup {
   id String @id @default(uuid()) @db.Uuid
 
-  name String
-  code Int
+  name   String
+  code   Int
+  points Int    @default(0)
 
   participants Participant[]
 
