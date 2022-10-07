@@ -6,11 +6,8 @@ query GetParticipantGroups($courseId: ID!) {
     participants {
       id
       username
-    }
-    course {
-      id
-      name
-      displayName
+      score
+      isSelf
     }
   }
 }

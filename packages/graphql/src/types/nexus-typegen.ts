@@ -246,13 +246,12 @@ export interface NexusGenObjects {
   }
   ParticipantGroup: { // root type
     code: number; // Int!
-    course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
     name: string; // String!
-    participants: NexusGenRootTypes['Participant'][]; // [Participant!]!
+    participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
   }
   ParticipantLearningData: { // root type
-    course?: NexusGenRootTypes['Course'] | null; // Course
+    course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
     leaderboard?: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
@@ -538,13 +537,12 @@ export interface NexusGenFieldTypes {
   }
   ParticipantGroup: { // field return type
     code: number; // Int!
-    course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
     name: string; // String!
-    participants: NexusGenRootTypes['Participant'][]; // [Participant!]!
+    participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
   }
   ParticipantLearningData: { // field return type
-    course: NexusGenRootTypes['Course'] | null; // Course
+    course: NexusGenRootTypes['Course']; // Course!
     id: string; // ID!
     leaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant: NexusGenRootTypes['Participant'] | null; // Participant
@@ -850,10 +848,9 @@ export interface NexusGenFieldTypeNames {
   }
   ParticipantGroup: { // field return type name
     code: 'Int'
-    course: 'Course'
     id: 'ID'
     name: 'String'
-    participants: 'Participant'
+    participants: 'LeaderboardEntry'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'

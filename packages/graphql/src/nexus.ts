@@ -376,11 +376,7 @@ export const ParticipantGroup = objectType({
     t.nonNull.int('code')
 
     t.nonNull.list.nonNull.field('participants', {
-      type: Participant,
-    })
-
-    t.nonNull.field('course', {
-      type: Course,
+      type: LeaderboardEntry,
     })
   },
 })
@@ -441,7 +437,7 @@ export const ParticipantLearningData = objectType({
       type: Participation,
     })
 
-    t.field('course', {
+    t.nonNull.field('course', {
       type: Course,
     })
 

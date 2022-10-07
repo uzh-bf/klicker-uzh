@@ -25,4 +25,16 @@ query GetCourseOverviewData($courseId: ID!) {
       isSelf
     }
   }
+  participantGroups(courseId: $courseId) {
+    id
+    name
+    code
+    participants {
+      id
+      username
+      avatar
+      score
+      isSelf
+    }
+  }
 }

@@ -7,10 +7,5 @@ mutation LeaveParticipantGroup($groupId: ID!, $courseId: ID!) {
       id
       username
     }
-    course {
-      id
-      name
-      displayName
-    }
   }
 }

@@ -260,14 +260,13 @@ type Participant {
 
 type ParticipantGroup {
   code: Int!
-  course: Course!
   id: ID!
   name: String!
-  participants: [Participant!]!
+  participants: [LeaderboardEntry!]!
 }
 
 type ParticipantLearningData {
-  course: Course
+  course: Course!
   id: ID!
   leaderboard: [LeaderboardEntry!]
   participant: Participant

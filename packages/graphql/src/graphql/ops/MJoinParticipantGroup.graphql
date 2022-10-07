@@ -7,10 +7,5 @@ mutation JoinParticipantGroup($courseId: ID!, $code: Int!) {
       id
       username
     }
-    course {
-      id
-      name
-      displayName
-    }
   }
 }

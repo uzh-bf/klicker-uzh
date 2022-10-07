@@ -1,4 +1,4 @@
-import { SSOType } from '@klicker-uzh/prisma'
+import { LeaderboardType, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import { descend, prop, sort } from 'ramda'
@@ -240,17 +240,6 @@ export async function getCourseOverviewData(
       },
     })
 
-    const followedEntries = await course.leaderboard({
-      where: {
-        participantId: {
-          in: [],
-        },
-      },
-      include: {
-        participant: true,
-      },
-    })
-
     const top10Entries = await course.leaderboard({
       where: {
         participation: {
@@ -279,7 +268,6 @@ export async function getCourseOverviewData(
         ...top10Entries
           .filter((entry) => entry.participantId !== ctx.user!.sub)
           .map(mapper),
-        ...followedEntries.map(mapper),
         participation?.isActive &&
           participation.courseLeaderboard?.id && {
             participantId: participation.participant.id,
@@ -502,7 +490,10 @@ export async function joinParticipantGroup(
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
     where: {
-      code: code,
+      courseId_code: {
+        courseId,
+        code,
+      },
     },
     include: {
       course: true,
@@ -515,7 +506,10 @@ export async function joinParticipantGroup(
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
     where: {
-      code: code,
+      courseId_code: {
+        courseId,
+        code,
+      },
     },
     data: {
       participants: {
@@ -614,12 +608,32 @@ export async function getParticipantGroups(
           },
         },
         include: {
-          course: true,
-          participants: true,
+          participants: {
+            include: {
+              leaderboards: {
+                where: {
+                  courseId,
+                  type: LeaderboardType.COURSE,
+                },
+              },
+            },
+          },
         },
       },
     },
   })
 
-  return participant?.participantGroups ?? []
+  return (
+    participant?.participantGroups.map((group) => ({
+      ...group,
+      participants: sort(
+        descend(prop('score')),
+        group.participants.map((participant) => ({
+          ...participant,
+          score: participant.leaderboards[0]?.score ?? 0,
+          isSelf: participant.id === ctx.user.sub,
+        }))
+      ),
+    })) ?? []
+  )
 }
