@@ -48,7 +48,7 @@ function GroupVisualization({ participants }) {
       {participants.map((participant, ix) => (
         <Image
           key={participant.avatar}
-          className="absolute bg-white border-4 border-white rounded-full shadow"
+          className="absolute bg-white border border-white rounded-full shadow"
           style={{
             bottom: POSITIONS[ix][0],
             left: POSITIONS[ix][1],
@@ -57,8 +57,8 @@ function GroupVisualization({ participants }) {
             participant.avatar ?? 'placeholder'
           }.svg`}
           alt=""
-          height={40}
-          width={40}
+          height={33}
+          width={33}
         />
       ))}
     </div>
@@ -129,7 +129,7 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global">
-            <div className="flex flex-col gap-8 md:flex-row">
+            <div className="flex flex-col gap-12 md:flex-row">
               <div className="flex-1">
                 <H3 className="mb-4">Individuelles Leaderboard</H3>
                 <Podium leaderboard={leaderboard} />
@@ -153,14 +153,21 @@ function CourseOverview({ courseId }: any) {
                       geht&apos;s!
                     </div>
                   ))}
-                {data.getCourseOverviewData.groupLeaderboard?.map((entry) => (
-                  <ParticipantOther
-                    key={entry.id}
-                    pseudonym={entry.name}
-                    points={entry.score}
-                    withAvatar={false}
-                  />
-                ))}
+                <Podium
+                  leaderboard={data.getCourseOverviewData.groupLeaderboard?.map(
+                    (entry) => ({ username: entry.name, score: entry.score })
+                  )}
+                />
+                <div className="pt-8 space-y-2">
+                  {data.getCourseOverviewData.groupLeaderboard?.map((entry) => (
+                    <ParticipantOther
+                      key={entry.id}
+                      pseudonym={entry.name}
+                      points={entry.score}
+                      withAvatar={false}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </Tabs.TabContent>
@@ -238,13 +245,23 @@ function CourseOverview({ courseId }: any) {
             <H3 className="mt-4">Gruppe beitreten</H3>
             <Formik
               initialValues={{ code: '' }}
-              onSubmit={(values, actions) => {
-                joinParticipantGroup({
+              onSubmit={async (values, actions) => {
+                const result = await joinParticipantGroup({
                   variables: {
                     courseId: courseId,
                     code: Number(values.code) >> 0,
                   },
+                  refetchQueries: [
+                    {
+                      query: GetCourseOverviewDataDocument,
+                      variables: { courseId },
+                    },
+                  ],
                 })
+
+                if (result.data?.joinParticipantGroup?.id) {
+                  setSelectedTab(result.data.joinParticipantGroup.id)
+                }
               }}
             >
               <Form>

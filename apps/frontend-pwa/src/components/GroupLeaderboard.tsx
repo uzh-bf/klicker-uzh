@@ -10,7 +10,7 @@ function GroupLeaderboard({ leaderboard, courseId, groupId, onLeave }) {
               key={entry.id}
               isActive
               pseudonym={entry.username}
-              avatar={entry.avatar}
+              avatar={entry.avatar ?? 'placeholder'}
               points={entry.score}
               onLeaveCourse={onLeave}
             />
@@ -21,7 +21,7 @@ function GroupLeaderboard({ leaderboard, courseId, groupId, onLeave }) {
           <ParticipantOther
             key={entry.id}
             pseudonym={entry.username}
-            avatar={entry.avatar}
+            avatar={entry.avatar ?? 'placeholder'}
             points={entry.score}
           />
         )

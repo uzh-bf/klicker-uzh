@@ -16,9 +16,9 @@ export function Tab({ key, value, label }: TabProps) {
       className={twMerge(
         'group',
         'first:rounded-tl-lg last:rounded-tr-lg',
-        'border-b first:border-r last:border-l',
+        'border-b border-r last:border-r-0',
         'border-gray-300',
-        'rdx-state-active:border-b-gray-500 focus-visible:rdx-state-active:border-b-transparent rdx-state-inactive:bg-gray-50',
+        'rdx-state-active:border-b-slate-600 focus-visible:rdx-state-active:border-b-transparent rdx-state-inactive:bg-gray-50',
         'flex-1 px-3 py-2.5',
         'focus:rdx-state-active:border-b-red',
         'focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75'
@@ -34,7 +34,9 @@ export function Tab({ key, value, label }: TabProps) {
 export function TabList({ children }: PropsWithChildren) {
   return (
     <TabsPrimitive.List
-      className={twMerge('flex w-full rounded-t-lg bg-white')}
+      className={twMerge(
+        'flex w-full rounded-t-lg bg-white flex-col md:flex-row'
+      )}
     >
       {children}
     </TabsPrimitive.List>

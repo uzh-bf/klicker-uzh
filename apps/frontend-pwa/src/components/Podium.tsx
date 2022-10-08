@@ -1,6 +1,30 @@
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from './Participant'
+
+function SinglePodium({ number, username, avatar, score, isSelf, className }) {
+  return (
+    <div
+      className={twMerge(
+        'flex-1 md:border-b-4 bg-uzh-grey-20 md:border-slate-600',
+        className
+      )}
+    >
+      <div className="text-xl bg-white md:text-center text-uzh-red-100">
+        {number}. {isSelf && 'bist du!'}
+      </div>
+
+      <ParticipantOther
+        className="bg-white shadow outline-slate-700"
+        pseudonym={username}
+        avatar={avatar}
+        points={score ?? 0}
+        withAvatar={!!avatar}
+      />
+    </div>
+  )
+}
 
 interface PodiumProps {
   leaderboard: LeaderboardEntry[]
@@ -17,41 +41,32 @@ export function Podium({ leaderboard }: PodiumProps) {
 
   return (
     <div className="flex flex-col gap-4 md:items-end md:flex-row">
-      <div className="flex-1 order-2 h-28 md:border-b-2 md:order-1 bg-uzh-grey-20 md:border-uzh-blue-100">
-        <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-          2. {rank2?.isSelf && 'bist du!'}
-        </div>
-        <ParticipantOther
-          className="bg-white shadow outline-uzh-red-100"
-          pseudonym={rank2?.username ?? 'Frei'}
-          avatar={rank2?.avatar}
-          points={rank2?.score ?? 0}
-        />
-      </div>
+      <SinglePodium
+        className="order-2 h-[90px] md:order-1"
+        isSelf={rank2?.isSelf}
+        username={rank2?.username}
+        avatar={rank2?.avatar}
+        score={rank2?.score}
+        number={2}
+      />
 
-      <div className="flex-1 order-1 h-32 md:border-b-2 md:order-2 bg-uzh-grey-20 md:border-uzh-blue-100">
-        <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-          1. {rank1?.isSelf && 'bist du!'}
-        </div>
-        <ParticipantOther
-          className="bg-white shadow outline-uzh-red-100"
-          pseudonym={rank1?.username ?? 'Frei'}
-          avatar={rank1?.avatar}
-          points={rank1?.score ?? 0}
-        />
-      </div>
+      <SinglePodium
+        className="order-1 h-[100px] md:order-2"
+        isSelf={rank1?.isSelf}
+        username={rank1?.username}
+        avatar={rank1?.avatar}
+        score={rank1?.score}
+        number={1}
+      />
 
-      <div className="flex-1 order-3 h-24 md:border-b-2 bg-uzh-grey-20 md:border-uzh-blue-100">
-        <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-          3. {rank3?.isSelf && 'bist du!'}
-        </div>
-        <ParticipantOther
-          className="bg-white shadow outline-uzh-red-100"
-          pseudonym={rank3?.username ?? 'Frei'}
-          avatar={rank3?.avatar}
-          points={rank3?.score ?? 0}
-        />
-      </div>
+      <SinglePodium
+        className="order-3 h-[80px]"
+        isSelf={rank3?.isSelf}
+        username={rank3?.username}
+        avatar={rank3?.avatar}
+        score={rank3?.score}
+        number={3}
+      />
     </div>
   )
 }

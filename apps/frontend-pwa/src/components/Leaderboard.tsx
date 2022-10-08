@@ -23,7 +23,7 @@ function Leaderboard({
               key={entry.id}
               isActive={participation?.isActive ?? false}
               pseudonym={entry.username}
-              avatar={entry.avatar}
+              avatar={entry.avatar ?? 'placeholder'}
               points={entry.score}
               rank={entry.rank}
               onJoinCourse={onJoin}
@@ -36,7 +36,7 @@ function Leaderboard({
           <ParticipantOther
             key={entry.id}
             pseudonym={entry.username}
-            avatar={entry.avatar}
+            avatar={entry.avatar ?? 'placeholder'}
             rank={entry.rank}
             points={entry.score}
           />
@@ -48,7 +48,7 @@ function Leaderboard({
           key={participant?.id}
           isActive={participation.isActive}
           pseudonym={participant?.username}
-          avatar={participant?.avatar}
+          avatar={participant?.avatar ?? 'placeholder'}
           points={null}
           onJoinCourse={onJoin}
           onLeaveCourse={onLeave}
