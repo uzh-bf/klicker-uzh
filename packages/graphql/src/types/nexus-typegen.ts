@@ -172,6 +172,13 @@ export interface NexusGenObjects {
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
+  GroupLeaderboardEntry: { // root type
+    id: string; // ID!
+    isMember?: boolean | null; // Boolean
+    name: string; // String!
+    rank: number; // Int!
+    score: number; // Float!
+  }
   InstanceEvaluation: { // root type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
@@ -194,6 +201,7 @@ export interface NexusGenObjects {
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
     participantId: string; // ID!
+    rank: number; // Int!
     score: number; // Float!
     username: string; // String!
   }
@@ -252,6 +260,7 @@ export interface NexusGenObjects {
   }
   ParticipantLearningData: { // root type
     course: NexusGenRootTypes['Course']; // Course!
+    groupLeaderboard?: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
     id: string; // ID!
     leaderboard?: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
@@ -431,6 +440,13 @@ export interface NexusGenFieldTypes {
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
+  GroupLeaderboardEntry: { // field return type
+    id: string; // ID!
+    isMember: boolean | null; // Boolean
+    name: string; // String!
+    rank: number; // Int!
+    score: number; // Float!
+  }
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
@@ -453,6 +469,7 @@ export interface NexusGenFieldTypes {
     id: string; // ID!
     isSelf: boolean | null; // Boolean
     participantId: string; // ID!
+    rank: number; // Int!
     score: number; // Float!
     username: string; // String!
   }
@@ -543,6 +560,7 @@ export interface NexusGenFieldTypes {
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
+    groupLeaderboard: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
     id: string; // ID!
     leaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     participant: NexusGenRootTypes['Participant'] | null; // Participant
@@ -742,6 +760,13 @@ export interface NexusGenFieldTypeNames {
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
   }
+  GroupLeaderboardEntry: { // field return type name
+    id: 'ID'
+    isMember: 'Boolean'
+    name: 'String'
+    rank: 'Int'
+    score: 'Float'
+  }
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
@@ -764,6 +789,7 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     isSelf: 'Boolean'
     participantId: 'ID'
+    rank: 'Int'
     score: 'Float'
     username: 'String'
   }
@@ -854,6 +880,7 @@ export interface NexusGenFieldTypeNames {
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
+    groupLeaderboard: 'GroupLeaderboardEntry'
     id: 'ID'
     leaderboard: 'LeaderboardEntry'
     participant: 'Participant'

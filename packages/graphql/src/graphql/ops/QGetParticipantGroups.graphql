@@ -8,6 +8,7 @@ query GetParticipantGroups($courseId: ID!) {
       username
       score
       isSelf
+      rank
     }
   }
 }

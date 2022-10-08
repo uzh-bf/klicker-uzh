@@ -1,7 +1,7 @@
 import { LeaderboardType, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { descend, prop, sort } from 'ramda'
+import { descend, prop, sortWith } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -228,63 +228,61 @@ export async function getCourseOverviewData(
         },
       },
       include: {
-        course: true,
+        course: {
+          include: {
+            participantGroups: true,
+          },
+        },
         participant: true,
         courseLeaderboard: true,
       },
     })
 
     const course = ctx.prisma.course.findUnique({
-      where: {
-        id: courseId,
-      },
+      where: { id: courseId },
     })
 
-    const top10Entries = await course.leaderboard({
+    const lbEntries = await course.leaderboard({
       where: {
-        participation: {
-          isActive: true,
-        },
+        participation: { isActive: true },
       },
       include: {
         participant: true,
       },
-      orderBy: {
-        score: 'desc',
-      },
-      take: 10,
-    })
-
-    const mapper = (entry) => ({
-      id: entry.id,
-      score: entry.score,
-      username: entry.participant.username,
-      avatar: entry.participant.avatar,
-      participantId: entry.participant.id,
     })
 
     if (participation) {
-      const allEntries = [
-        ...top10Entries
-          .filter((entry) => entry.participantId !== ctx.user!.sub)
-          .map(mapper),
-        participation?.isActive &&
-          participation.courseLeaderboard?.id && {
-            participantId: participation.participant.id,
-            id: participation.courseLeaderboard?.id,
-            score: participation.courseLeaderboard?.score,
-            username: participation.participant.username,
-            avatar: participation.participant.avatar,
-            isSelf: true,
-          },
-      ].filter(Boolean)
+      const allEntries = lbEntries.map((entry) => ({
+        id: entry.id,
+        score: entry.score,
+        username: entry.participant.username,
+        avatar: entry.participant.avatar,
+        participantId: entry.participant.id,
+        isSelf: ctx.user?.sub === entry.participant.id,
+      }))
+
+      const sortedEntries = sortWith(
+        [descend(prop('score')), descend(prop('username'))],
+        allEntries
+      )
+
+      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+        if (ix < 10 || entry.participantId === ctx.user?.sub)
+          return { ...entry, rank: ix + 1 }
+        return []
+      })
+
+      // TODO: compute leaderboard statistics (mean, median, hist distribution)
 
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
-        leaderboard: sort(descend(prop('score')), allEntries),
+        leaderboard: filteredEntries,
+        groupLeaderboard: participation.course.participantGroups.map(
+          (group, ix) => ({ ...group, score: 0, rank: ix + 1 })
+        ),
       }
     }
   }
@@ -377,9 +375,7 @@ export async function registerParticipantFromLTI(
                 create: {
                   isActive: false,
                   course: {
-                    connect: {
-                      id: courseId,
-                    },
+                    connect: { id: courseId },
                   },
                 },
               },
@@ -623,17 +619,17 @@ export async function getParticipantGroups(
     },
   })
 
-  return (
-    participant?.participantGroups.map((group) => ({
-      ...group,
-      participants: sort(
-        descend(prop('score')),
-        group.participants.map((participant) => ({
-          ...participant,
-          score: participant.leaderboards[0]?.score ?? 0,
-          isSelf: participant.id === ctx.user.sub,
-        }))
-      ),
-    })) ?? []
-  )
+  if (!participant || !participant.participantGroups) return []
+
+  return participant.participantGroups.map((group) => ({
+    ...group,
+    participants: sortWith(
+      [descend(prop('score')), descend(prop('username'))],
+      group.participants.map((participant) => ({
+        ...participant,
+        score: participant.leaderboards[0]?.score ?? 0,
+        isSelf: participant.id === ctx.user.sub,
+      }))
+    ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
+  }))
 }

@@ -138,6 +138,14 @@ type FreeTextRestrictions {
   maxLength: Int
 }
 
+type GroupLeaderboardEntry {
+  id: ID!
+  isMember: Boolean
+  name: String!
+  rank: Int!
+  score: Float!
+}
+
 type InstanceEvaluation {
   choices: JSONObject!
   feedbacks: [QuestionFeedback!]
@@ -167,6 +175,7 @@ type LeaderboardEntry {
   id: ID!
   isSelf: Boolean
   participantId: ID!
+  rank: Int!
   score: Float!
   username: String!
 }
@@ -267,6 +276,7 @@ type ParticipantGroup {
 
 type ParticipantLearningData {
   course: Course!
+  groupLeaderboard: [GroupLeaderboardEntry!]
   id: ID!
   leaderboard: [LeaderboardEntry!]
   participant: Participant

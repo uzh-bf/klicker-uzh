@@ -417,8 +417,21 @@ export const LeaderboardEntry = objectType({
     t.string('avatar')
 
     t.nonNull.float('score')
+    t.nonNull.int('rank')
 
     t.boolean('isSelf')
+  },
+})
+
+export const GroupLeaderboardEntry = objectType({
+  name: 'GroupLeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.float('score')
+    t.nonNull.int('rank')
+    t.boolean('isMember')
   },
 })
 
@@ -443,6 +456,10 @@ export const ParticipantLearningData = objectType({
 
     t.list.nonNull.field('leaderboard', {
       type: LeaderboardEntry,
+    })
+
+    t.list.nonNull.field('groupLeaderboard', {
+      type: GroupLeaderboardEntry,
     })
   },
 })

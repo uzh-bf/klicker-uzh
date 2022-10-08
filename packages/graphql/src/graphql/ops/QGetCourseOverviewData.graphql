@@ -23,6 +23,12 @@ query GetCourseOverviewData($courseId: ID!) {
       avatar
       score
       isSelf
+      rank
+    }
+    groupLeaderboard {
+      id
+      name
+      score
     }
   }
   participantGroups(courseId: $courseId) {
