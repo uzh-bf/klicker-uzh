@@ -1,7 +1,7 @@
 import { LeaderboardType, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { descend, prop, sortWith } from 'ramda'
+import { ascend, descend, prop, sortWith } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -262,7 +262,7 @@ export async function getCourseOverviewData(
       }))
 
       const sortedEntries = sortWith(
-        [descend(prop('score')), descend(prop('username'))],
+        [descend(prop('score')), ascend(prop('username'))],
         allEntries
       )
 
@@ -624,7 +624,7 @@ export async function getParticipantGroups(
   return participant.participantGroups.map((group) => ({
     ...group,
     participants: sortWith(
-      [descend(prop('score')), descend(prop('username'))],
+      [descend(prop('score')), ascend(prop('username'))],
       group.participants.map((participant) => ({
         ...participant,
         score: participant.leaderboards[0]?.score ?? 0,
