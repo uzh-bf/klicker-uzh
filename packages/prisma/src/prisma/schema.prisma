@@ -461,10 +461,6 @@ model Participant {
   lastLoginAt DateTime?
 
   participantGroups ParticipantGroup[]
-
-  follows    Participant[] @relation("ParticipantFollows")
-  followedBy Participant[] @relation("ParticipantFollows")
-
   accounts          ParticipantAccount[]
   participations    Participation[]
   questionResponses QuestionResponse[]
