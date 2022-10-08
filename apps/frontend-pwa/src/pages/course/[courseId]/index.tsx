@@ -69,6 +69,7 @@ interface ParticipantProps {
   avatar?: string
   pseudonym: string
   points?: number
+  rank?: number
   isHighlighted?: boolean
   className?: string
 }
@@ -80,6 +81,7 @@ function Participant({
   children,
   className,
   points,
+  rank,
 }: PropsWithChildren<ParticipantProps>) {
   return (
     <div
@@ -101,8 +103,9 @@ function Participant({
             width={30}
           />
         </div>
+        {rank && <div className="text-lg font-bold">{rank}</div>}
         <div>{pseudonym}</div>
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
         <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
@@ -144,6 +147,8 @@ function CourseOverview({ courseId }: any) {
     variables: { courseId },
   })
 
+  console.log(data)
+
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
     refetchQueries: [
@@ -162,6 +167,7 @@ function CourseOverview({ courseId }: any) {
   const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
+  // TODO: move this computation to a component
   const { rank1, rank2, rank3, isSelfContained } = useMemo(() => {
     if (!data?.getCourseOverviewData?.leaderboard) return {}
     return {
@@ -202,9 +208,7 @@ function CourseOverview({ courseId }: any) {
             className={twMerge('rounded-t-lg bg-white px-6 py-4')}
           >
             <H3 className="flex flex-row justify-between">Kursleaderboard</H3>
-
             <Podium rank1={rank1} rank2={rank2} rank3={rank3} />
-
             <div className="pt-8 space-y-2">
               {leaderboard?.flatMap((entry) => {
                 if (entry.isSelf) {
@@ -215,6 +219,7 @@ function CourseOverview({ courseId }: any) {
                       pseudonym={entry.username}
                       avatar={entry.avatar}
                       points={entry.score}
+                      rank={entry.rank}
                       onJoinCourse={joinCourse}
                       onLeaveCourse={leaveCourse}
                     />
@@ -226,6 +231,7 @@ function CourseOverview({ courseId }: any) {
                     key={entry.id}
                     pseudonym={entry.username}
                     avatar={entry.avatar}
+                    rank={entry.rank}
                     points={entry.score}
                   />
                 )
@@ -243,6 +249,10 @@ function CourseOverview({ courseId }: any) {
                 />
               )}
             </div>
+            HISTOGRAMM
+            <H3 className="flex flex-row justify-between">
+              Gruppenleaderboard
+            </H3>
           </TabsPrimitive.Content>
 
           {data.participantGroups?.map((group) => (
