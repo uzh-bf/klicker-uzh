@@ -50,6 +50,7 @@ function Leaderboard({
           pseudonym={participant?.username}
           avatar={participant?.avatar ?? 'placeholder'}
           points={null}
+          rank="?"
           onJoinCourse={onJoin}
           onLeaveCourse={onLeave}
         />

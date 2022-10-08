@@ -8,7 +8,7 @@ interface ParticipantProps {
   withAvatar?: boolean
   pseudonym: string
   points?: number
-  rank?: number
+  rank?: number | string
   isHighlighted?: boolean
   className?: string
 }
@@ -44,7 +44,7 @@ function Participant({
           </div>
         )}
 
-        {rank && <div className="text-lg font-bold">{rank}</div>}
+        {rank && <div className="w-3 text-lg font-bold">{rank}</div>}
         <div className="first:ml-1">{pseudonym ?? 'Frei'}</div>
         <div className="flex-1 text-right">{children}</div>
       </div>

@@ -95,8 +95,15 @@ function CourseOverview({ courseId }: any) {
   if (!data?.getCourseOverviewData || loading) return <div>Loading...</div>
   if (error) return <p>Oh no... {error.message}</p>
 
-  const { course, participant, participation, leaderboard } =
-    data.getCourseOverviewData
+  const {
+    course,
+    participant,
+    participation,
+    leaderboard,
+    leaderboardStatistics,
+    groupLeaderboard,
+    groupLeaderboardStatistics,
+  } = data.getCourseOverviewData
 
   return (
     <Layout
@@ -141,25 +148,35 @@ function CourseOverview({ courseId }: any) {
                   onJoin={joinCourse}
                   onLeave={leaveCourse}
                 />
+                <div className="mt-4 mb-2 text-right">
+                  <div>
+                    Anzahl Teilnehmende:{' '}
+                    {leaderboardStatistics.participantCount}
+                  </div>
+                  <div>
+                    Durchschnittl. Punkte: {leaderboardStatistics.averageScore}
+                  </div>
+                </div>
                 HISTOGRAMM
               </div>
 
               <div className="flex-1">
                 <H3 className="mb-4">Gruppenleaderboard</H3>
-                {!data.getCourseOverviewData.groupLeaderboard ||
-                  (data.getCourseOverviewData.groupLeaderboard.length === 0 && (
-                    <div>
+                <Podium
+                  leaderboard={groupLeaderboard?.map((entry) => ({
+                    username: entry.name,
+                    score: entry.score,
+                  }))}
+                />
+                {!groupLeaderboard ||
+                  (groupLeaderboard.length === 0 && (
+                    <div className="mt-6">
                       Bisher wurden noch keine Gruppen gebildet. Los
                       geht&apos;s!
                     </div>
                   ))}
-                <Podium
-                  leaderboard={data.getCourseOverviewData.groupLeaderboard?.map(
-                    (entry) => ({ username: entry.name, score: entry.score })
-                  )}
-                />
                 <div className="pt-8 space-y-2">
-                  {data.getCourseOverviewData.groupLeaderboard?.map((entry) => (
+                  {groupLeaderboard?.map((entry) => (
                     <ParticipantOther
                       key={entry.id}
                       pseudonym={entry.name}
@@ -167,6 +184,16 @@ function CourseOverview({ courseId }: any) {
                       withAvatar={false}
                     />
                   ))}
+                </div>
+                <div className="mt-4 mb-2 text-right">
+                  <div>
+                    Anzahl Gruppen:{' '}
+                    {groupLeaderboardStatistics.participantCount}
+                  </div>
+                  <div>
+                    Durchschnittl. Punkte:{' '}
+                    {groupLeaderboardStatistics.averageScore}
+                  </div>
                 </div>
               </div>
             </div>
