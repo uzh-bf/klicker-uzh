@@ -293,6 +293,8 @@ export const Course = objectType({
     t.nonNull.list.nonNull.field('sessions', {
       type: Session,
     })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
   },
 })
 
@@ -360,6 +362,23 @@ export const Participant = objectType({
     t.field('avatarSettings', {
       type: 'JSONObject',
     })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
+  },
+})
+
+export const ParticipantGroup = objectType({
+  name: 'ParticipantGroup',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.int('code')
+    t.nonNull.float('score')
+
+    t.nonNull.list.nonNull.field('participants', {
+      type: LeaderboardEntry,
+    })
   },
 })
 
@@ -399,8 +418,30 @@ export const LeaderboardEntry = objectType({
     t.string('avatar')
 
     t.nonNull.float('score')
+    t.nonNull.int('rank')
 
     t.boolean('isSelf')
+  },
+})
+
+export const GroupLeaderboardEntry = objectType({
+  name: 'GroupLeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.float('score')
+    t.nonNull.int('rank')
+    t.boolean('isMember')
+  },
+})
+
+export const LeaderboardStatistics = objectType({
+  name: 'LeaderboardStatistics',
+  definition(t) {
+    t.nonNull.int('participantCount')
+    t.nonNull.float('averageScore')
+    // TODO: add histogram bins
   },
 })
 
@@ -419,12 +460,24 @@ export const ParticipantLearningData = objectType({
       type: Participation,
     })
 
-    t.field('course', {
+    t.nonNull.field('course', {
       type: Course,
     })
 
     t.list.nonNull.field('leaderboard', {
       type: LeaderboardEntry,
+    })
+
+    t.nonNull.field('leaderboardStatistics', {
+      type: LeaderboardStatistics,
+    })
+
+    t.list.nonNull.field('groupLeaderboard', {
+      type: GroupLeaderboardEntry,
+    })
+
+    t.nonNull.field('groupLeaderboardStatistics', {
+      type: LeaderboardStatistics,
     })
   },
 })
@@ -666,6 +719,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.getParticipations(args, ctx)
+      },
+    })
+
+    t.list.nonNull.field('participantGroups', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.getParticipantGroups(args, ctx)
       },
     })
 
@@ -1064,6 +1127,39 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
+      },
+    })
+
+    t.field('createParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+        name: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.createParticipantGroup(args, ctx)
+      },
+    })
+
+    t.field('joinParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+        code: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.joinParticipantGroup(args, ctx)
+      },
+    })
+
+    t.field('leaveParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        groupId: nonNull(idArg()),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.leaveParticipantGroup(args, ctx)
       },
     })
   },

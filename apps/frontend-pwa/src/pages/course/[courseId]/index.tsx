@@ -1,101 +1,78 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  GetCourseOverviewDataDocument,
-  JoinCourseDocument,
-  LeaveCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
-import { GetServerSideProps } from 'next'
-import getConfig from 'next/config'
-import Image from 'next/future/image'
-import { PropsWithChildren, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
-
+import GroupLeaderboard from '@components/GroupLeaderboard'
 import Layout from '@components/Layout'
+import Leaderboard from '@components/Leaderboard'
+import {
+  CreateParticipantGroupDocument,
+  GetCourseOverviewDataDocument,
+  GetParticipantGroupsDocument,
+  JoinCourseDocument,
+  JoinParticipantGroupDocument,
+  LeaveCourseDocument,
+  LeaveParticipantGroupDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { any } from 'ramda'
+import { Button, H3 } from '@uzh-bf/design-system'
+import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { GetServerSideProps } from 'next'
+import { ParticipantOther } from '../../../components/Participant'
+import { Podium } from '../../../components/Podium'
+import Tabs from '../../../components/Tabs'
 
-const { serverRuntimeConfig } = getConfig()
+import Image from 'next/future/image'
+import { useState } from 'react'
 
-interface ParticipantProps {
-  avatar?: string
-  pseudonym: string
-  points?: number
-  isHighlighted?: boolean
-  className?: string
-}
+const POSITIONS = [
+  [30, 130],
+  [40, 330],
+  [40, 70],
+  [45, 380],
+  [10, 95],
+  [10, 355],
+  [20, 40],
+  [15, 410],
+  [35, 5],
+  [40, 440],
+]
 
-function Participant({
-  avatar,
-  pseudonym,
-  isHighlighted,
-  children,
-  className,
-  points,
-}: PropsWithChildren<ParticipantProps>) {
+function GroupVisualization({ participants }) {
   return (
-    <div
-      className={twMerge(
-        'flex flex-row items-center gap-4 outline outline-slate-300 outline-1 rounded',
-        isHighlighted && 'bg-uzh-grey-20',
-        className
-      )}
-    >
-      <div className="flex flex-row items-center flex-1 gap-4 p-1">
-        <div className="bg-white border rounded-full">
-          <Image
-            className="rounded-full"
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-              avatar ?? 'placeholder'
-            }.svg`}
-            alt=""
-            height={30}
-            width={30}
-          />
-        </div>
-        <div>{pseudonym}</div>
-        <div className="flex-1">{children}</div>
+    <div className="relative h-64 m-auto border border-b-4 rounded border-slate-300 border-b-slate-700 w-[500px]">
+      <div className="absolute top-0 bottom-0 left-0 right-0 desert-bg grayscale-[70%]"></div>
+
+      <div className="absolute bottom-0 left-0 right-0 top-8">
+        <Image className="" src="/rocket_base.svg" fill />
       </div>
-      {typeof points === 'number' && (
-        <div className="flex flex-col items-center self-stretch justify-center flex-initial px-3 py-1 font-bold text-white bg-slate-700">
-          {points}
-        </div>
-      )}
+
+      {participants.map((participant, ix) => (
+        <Image
+          key={participant.avatar}
+          className="absolute bg-white border border-white rounded-full shadow"
+          style={{
+            bottom: POSITIONS[ix][0],
+            left: POSITIONS[ix][1],
+          }}
+          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+            participant.avatar ?? 'placeholder'
+          }.svg`}
+          alt=""
+          height={33}
+          width={33}
+        />
+      ))}
     </div>
   )
 }
 
-function ParticipantOther(props: ParticipantProps) {
-  return <Participant {...props}></Participant>
-}
-
-interface ParticipantSelfProps extends ParticipantProps {
-  isActive: boolean
-  onJoinCourse: () => void
-  onLeaveCourse: () => void
-}
-
-function ParticipantSelf(props: ParticipantSelfProps) {
-  return (
-    <Participant isHighlighted {...props}>
-      {props.isActive ? (
-        <Button className="text-sm" onClick={() => props.onLeaveCourse()}>
-          Austreten
-        </Button>
-      ) : (
-        <Button className="text-sm" onClick={() => props.onJoinCourse()}>
-          Beitreten
-        </Button>
-      )}
-    </Participant>
-  )
-}
-
 function CourseOverview({ courseId }: any) {
+  const [selectedTab, setSelectedTab] = useState('global')
+
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
+
+  console.log(data)
 
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
@@ -111,31 +88,22 @@ function CourseOverview({ courseId }: any) {
     ],
   })
 
-  const { rank1, rank2, rank3, isSelfContained } = useMemo(() => {
-    if (!data?.getCourseOverviewData?.leaderboard) return {}
-    return {
-      rank1:
-        data.getCourseOverviewData.leaderboard.length >= 1 &&
-        data.getCourseOverviewData.leaderboard[0],
-      rank2:
-        data.getCourseOverviewData.leaderboard.length >= 2 &&
-        data.getCourseOverviewData.leaderboard[1],
-      rank3:
-        data.getCourseOverviewData.leaderboard.length >= 3 &&
-        data.getCourseOverviewData.leaderboard[2],
-      isSelfContained: any(
-        (item) =>
-          item.participantId === data.getCourseOverviewData?.participant.id,
-        data.getCourseOverviewData.leaderboard
-      ),
-    }
-  }, [data?.getCourseOverviewData?.leaderboard])
+  const [createParticipantGroup] = useMutation(CreateParticipantGroupDocument)
+  const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
+  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
   if (!data?.getCourseOverviewData || loading) return <div>Loading...</div>
   if (error) return <p>Oh no... {error.message}</p>
 
-  const { course, participant, participation, leaderboard } =
-    data.getCourseOverviewData
+  const {
+    course,
+    participant,
+    participation,
+    leaderboard,
+    leaderboardStatistics,
+    groupLeaderboard,
+    groupLeaderboardStatistics,
+  } = data.getCourseOverviewData
 
   return (
     <Layout
@@ -143,85 +111,200 @@ function CourseOverview({ courseId }: any) {
       courseName={course.displayName}
       courseColor={course.color}
     >
-      <div className="md:m-auto md:max-w-3xl md:p-8 md:w-full md:border md:rounded">
-        <div className="space-y-2">
-          <div className="flex flex-col gap-4 md:items-end md:flex-row">
-            <div className="flex-1 order-2 h-28 md:border-b-2 md:order-1 bg-uzh-grey-20 md:border-uzh-blue-100">
-              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-                2. {rank2.isSelf && 'bist du!'}
-              </div>
-              <ParticipantOther
-                className="bg-white shadow outline-uzh-red-100"
-                pseudonym={rank2.username ?? 'Frei'}
-                avatar={rank2.avatar}
-                points={rank2.score ?? 0}
+      <div className="md:m-auto md:max-w-5xl md:w-full md:border md:rounded">
+        <Tabs
+          defaultValue="global"
+          value={selectedTab}
+          onValueChange={(tab) => setSelectedTab(tab)}
+        >
+          <Tabs.TabList>
+            <Tabs.Tab key="course" value="global" label="Leaderboard" />
+
+            {data.participantGroups?.map((group) => (
+              <Tabs.Tab
+                key={group.id}
+                value={group.id}
+                label={`Gruppe ${group.name}`}
               />
-            </div>
+            ))}
 
-            <div className="flex-1 order-1 h-32 md:border-b-2 md:order-2 bg-uzh-grey-20 md:border-uzh-blue-100">
-              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-                1. {rank1.isSelf && 'bist du!'}
-              </div>
-              <ParticipantOther
-                className="bg-white shadow outline-uzh-red-100"
-                pseudonym={rank1.username ?? 'Frei'}
-                avatar={rank1.avatar}
-                points={rank1.score ?? 0}
-              />
-            </div>
+            <Tabs.Tab
+              key="create"
+              value="create"
+              label="Gruppe erstellen/beitreten"
+            />
+          </Tabs.TabList>
 
-            <div className="flex-1 order-3 h-24 md:border-b-2 bg-uzh-grey-20 md:border-uzh-blue-100">
-              <div className="text-2xl font-bold bg-white md:text-center text-uzh-red-100">
-                3. {rank3.isSelf && 'bist du!'}
-              </div>
-              <ParticipantOther
-                className="bg-white shadow outline-uzh-red-100"
-                pseudonym={rank3.username ?? 'Frei'}
-                avatar={rank3.avatar}
-                points={rank3.score ?? 0}
-              />
-            </div>
-          </div>
-
-          <div className="pt-8 space-y-2">
-            {leaderboard?.flatMap((entry) => {
-              if (entry.isSelf) {
-                return (
-                  <ParticipantSelf
-                    key={entry.id}
-                    isActive={participation?.isActive ?? false}
-                    pseudonym={entry.username}
-                    avatar={entry.avatar}
-                    points={entry.score}
-                    onJoinCourse={joinCourse}
-                    onLeaveCourse={leaveCourse}
-                  />
-                )
-              }
-
-              return (
-                <ParticipantOther
-                  key={entry.id}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar}
-                  points={entry.score}
+          <Tabs.TabContent key="course" value="global">
+            <div className="flex flex-col gap-12 md:flex-row">
+              <div className="flex-1">
+                <H3 className="mb-4">Individuelles Leaderboard</H3>
+                <Podium leaderboard={leaderboard} />
+                <Leaderboard
+                  leaderboard={leaderboard}
+                  courseId={courseId}
+                  participant={participant}
+                  participation={participation}
+                  onJoin={joinCourse}
+                  onLeave={leaveCourse}
                 />
-              )
-            })}
+                <div className="mt-4 mb-2 text-right">
+                  <div>
+                    Anzahl Teilnehmende:{' '}
+                    {leaderboardStatistics.participantCount}
+                  </div>
+                  <div>
+                    Durchschnittl. Punkte: {leaderboardStatistics.averageScore}
+                  </div>
+                </div>
+                HISTOGRAMM
+              </div>
 
-            {(!participation?.isActive || !isSelfContained) && (
-              <ParticipantSelf
-                key={participant?.id}
-                isActive={participation.isActive}
-                pseudonym={participant?.username}
-                avatar={participant?.avatar}
-                points={null}
-                onJoinCourse={joinCourse}
-                onLeaveCourse={leaveCourse}
+              <div className="flex-1">
+                <H3 className="mb-4">Gruppenleaderboard</H3>
+                <Podium
+                  leaderboard={groupLeaderboard?.map((entry) => ({
+                    username: entry.name,
+                    score: entry.score,
+                  }))}
+                />
+                {!groupLeaderboard ||
+                  (groupLeaderboard.length === 0 && (
+                    <div className="mt-6">
+                      Bisher wurden noch keine Gruppen gebildet. Los
+                      geht&apos;s!
+                    </div>
+                  ))}
+                <div className="pt-8 space-y-2">
+                  {groupLeaderboard?.map((entry) => (
+                    <ParticipantOther
+                      key={entry.id}
+                      pseudonym={entry.name}
+                      points={entry.score}
+                      withAvatar={false}
+                    />
+                  ))}
+                </div>
+                <div className="mt-4 mb-2 text-right">
+                  <div>
+                    Anzahl Gruppen:{' '}
+                    {groupLeaderboardStatistics.participantCount}
+                  </div>
+                  <div>
+                    Durchschnittl. Punkte:{' '}
+                    {groupLeaderboardStatistics.averageScore}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Tabs.TabContent>
+
+          {data.participantGroups?.map((group) => (
+            <Tabs.TabContent key={group.id} value={group.id}>
+              <H3 className="flex flex-row justify-between">
+                <div>Gruppe {group.name}</div>
+                <div>{group.code}</div>
+              </H3>
+              <GroupVisualization participants={group.participants} />
+              <GroupLeaderboard
+                courseId={courseId}
+                groupId={group.id}
+                leaderboard={group.participants}
+                onLeave={() => {
+                  leaveParticipantGroup({
+                    variables: {
+                      courseId,
+                      groupId: group.id,
+                    },
+                    refetchQueries: [GetCourseOverviewDataDocument],
+                  })
+
+                  setSelectedTab('global')
+                }}
               />
-            )}
-          </div>
-        </div>
+            </Tabs.TabContent>
+          ))}
+
+          <Tabs.TabContent key="create" value="create">
+            <H3>Gruppe erstellen</H3>
+            <Formik
+              initialValues={{ groupName: '' }}
+              onSubmit={async (values) => {
+                const result = await createParticipantGroup({
+                  variables: {
+                    courseId: courseId,
+                    name: values.groupName,
+                  },
+                  refetchQueries: [
+                    {
+                      query: GetParticipantGroupsDocument,
+                      variables: { courseId: courseId },
+                    },
+                    {
+                      query: GetCourseOverviewDataDocument,
+                      variables: { courseId: courseId },
+                    },
+                  ],
+                })
+
+                if (result.data?.createParticipantGroup?.id) {
+                  setSelectedTab(result.data.createParticipantGroup.id)
+                }
+              }}
+            >
+              <Form>
+                <div className="flex flex-row gap-4">
+                  <Field
+                    type="text"
+                    name="groupName"
+                    placeholder="Gruppenname"
+                  />
+                  <ErrorMessage
+                    name="groupName"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
+                  <Button type="submit">Erstellen</Button>
+                </div>
+              </Form>
+            </Formik>
+
+            <H3 className="mt-4">Gruppe beitreten</H3>
+            <Formik
+              initialValues={{ code: '' }}
+              onSubmit={async (values, actions) => {
+                const result = await joinParticipantGroup({
+                  variables: {
+                    courseId: courseId,
+                    code: Number(values.code) >> 0,
+                  },
+                  refetchQueries: [
+                    {
+                      query: GetCourseOverviewDataDocument,
+                      variables: { courseId },
+                    },
+                  ],
+                })
+
+                if (result.data?.joinParticipantGroup?.id) {
+                  setSelectedTab(result.data.joinParticipantGroup.id)
+                }
+              }}
+            >
+              <Form>
+                <div className="flex flex-row gap-4">
+                  <Field type="text" name="code" placeholder="Code" />
+                  <ErrorMessage
+                    name="code"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
+                  <Button type="submit">Beitreten</Button>
+                </div>
+              </Form>
+            </Formik>
+          </Tabs.TabContent>
+        </Tabs>
       </div>
     </Layout>
   )

@@ -221,8 +221,9 @@ model Course {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
-  participations Participation[]
-  subscriptions  PushSubscription[]
+  participations    Participation[]
+  subscriptions     PushSubscription[]
+  participantGroups ParticipantGroup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -459,9 +460,7 @@ model Participant {
 
   lastLoginAt DateTime?
 
-  follows    Participant[] @relation("ParticipantFollows")
-  followedBy Participant[] @relation("ParticipantFollows")
-
+  participantGroups ParticipantGroup[]
   accounts          ParticipantAccount[]
   participations    Participation[]
   questionResponses QuestionResponse[]
@@ -471,6 +470,24 @@ model Participant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ParticipantGroup {
+  id String @id @default(uuid()) @db.Uuid
+
+  name  String
+  code  Int
+  score Int    @default(0)
+
+  participants Participant[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, code])
 }
 
 model Participation {

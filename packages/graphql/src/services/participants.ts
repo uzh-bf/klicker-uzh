@@ -1,7 +1,7 @@
-import { SSOType } from '@klicker-uzh/prisma'
+import { LeaderboardType, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { descend, prop, sort } from 'ramda'
+import { ascend, descend, prop, sortWith } from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -228,75 +228,100 @@ export async function getCourseOverviewData(
         },
       },
       include: {
-        course: true,
+        course: {
+          include: {
+            participantGroups: true,
+          },
+        },
         participant: true,
         courseLeaderboard: true,
       },
     })
 
     const course = ctx.prisma.course.findUnique({
-      where: {
-        id: courseId,
-      },
+      where: { id: courseId },
     })
 
-    const followedEntries = await course.leaderboard({
+    const lbEntries = await course.leaderboard({
       where: {
-        participantId: {
-          in: [],
-        },
+        participation: { isActive: true },
       },
       include: {
         participant: true,
       },
-    })
-
-    const top10Entries = await course.leaderboard({
-      where: {
-        participation: {
-          isActive: true,
-        },
-      },
-      include: {
-        participant: true,
-      },
-      orderBy: {
-        score: 'desc',
-      },
-      take: 10,
-    })
-
-    const mapper = (entry) => ({
-      id: entry.id,
-      score: entry.score,
-      username: entry.participant.username,
-      avatar: entry.participant.avatar,
-      participantId: entry.participant.id,
     })
 
     if (participation) {
-      const allEntries = [
-        ...top10Entries
-          .filter((entry) => entry.participantId !== ctx.user!.sub)
-          .map(mapper),
-        ...followedEntries.map(mapper),
-        participation?.isActive &&
-          participation.courseLeaderboard?.id && {
-            participantId: participation.participant.id,
-            id: participation.courseLeaderboard?.id,
-            score: participation.courseLeaderboard?.score,
-            username: participation.participant.username,
-            avatar: participation.participant.avatar,
-            isSelf: true,
-          },
-      ].filter(Boolean)
+      const allEntries = lbEntries.reduce(
+        (acc, entry) => {
+          return {
+            mapped: [
+              ...acc.mapped,
+              {
+                id: entry.id,
+                score: entry.score,
+                username: entry.participant.username,
+                avatar: entry.participant.avatar,
+                participantId: entry.participant.id,
+                isSelf: ctx.user?.sub === entry.participant.id,
+              },
+            ],
+            sum: acc.sum + entry.score ?? 0,
+            count: acc.count + 1,
+          }
+        },
+        {
+          mapped: [],
+          sum: 0,
+          count: 0,
+        }
+      )
+
+      const allGroupEntries = participation.course.participantGroups.reduce(
+        (acc, group, ix) => {
+          return {
+            mapped: [...acc.mapped, { ...group, rank: ix + 1 }],
+            count: acc.count + 1,
+            sum: acc.sum + group.score,
+          }
+        },
+        {
+          mapped: [],
+          count: 0,
+          sum: 0,
+        }
+      )
+
+      const sortedEntries = sortWith(
+        [descend(prop('score')), ascend(prop('username'))],
+        allEntries.mapped
+      )
+
+      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+        if (ix < 10 || entry.participantId === ctx.user?.sub)
+          return { ...entry, rank: ix + 1 }
+        return []
+      })
 
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
-        leaderboard: sort(descend(prop('score')), allEntries),
+        leaderboard: filteredEntries,
+        leaderboardStatistics: {
+          participantCount: allEntries.count,
+          averageScore:
+            allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
+        },
+        groupLeaderboard: allGroupEntries.mapped,
+        groupLeaderboardStatistics: {
+          participantCount: allGroupEntries.count,
+          averageScore:
+            allGroupEntries.count > 0
+              ? allGroupEntries.sum / allGroupEntries.count
+              : 0,
+        },
       }
     }
   }
@@ -389,9 +414,7 @@ export async function registerParticipantFromLTI(
                 create: {
                   isActive: false,
                   course: {
-                    connect: {
-                      id: courseId,
-                    },
+                    connect: { id: courseId },
                   },
                 },
               },
@@ -447,4 +470,205 @@ export async function registerParticipantFromLTI(
     console.error(e)
     return null
   }
+}
+
+interface CreateParticipantGroupArgs {
+  courseId: string
+  name: string
+}
+
+export async function createParticipantGroup(
+  { courseId, name }: CreateParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  const code = 100000 + Math.floor(Math.random() * 900000)
+
+  const participantGroup = await ctx.prisma.participantGroup.create({
+    data: {
+      name,
+      code: code,
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participants: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  // invalidate graphql response cache
+  ctx.emitter.emit('invalidate', {
+    typename: 'ParticipantGroup',
+    id: participantGroup.id,
+  })
+
+  return participantGroup
+}
+
+interface JoinParticipantGroupArgs {
+  courseId: string
+  code: number
+}
+
+export async function joinParticipantGroup(
+  { courseId, code }: JoinParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  // find participantgroup with code
+  const participantGroup = await ctx.prisma.participantGroup.findUnique({
+    where: {
+      courseId_code: {
+        courseId,
+        code,
+      },
+    },
+    include: {
+      course: true,
+    },
+  })
+
+  // if no participant group with the provided id exists in this course or at all, return null
+  if (!participantGroup || participantGroup.course.id !== courseId) return null
+
+  // otherwise update the participant group with the current participant and return it
+  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
+    where: {
+      courseId_code: {
+        courseId,
+        code,
+      },
+    },
+    data: {
+      participants: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  return updatedParticipantGroup
+}
+
+interface LeaveParticipantGroupArgs {
+  groupId: string
+  courseId: string
+}
+
+export async function leaveParticipantGroup(
+  { groupId, courseId }: LeaveParticipantGroupArgs,
+  ctx: ContextWithUser
+) {
+  // find participantgroup with corresponding id
+  const participantGroup = await ctx.prisma.participantGroup.findUnique({
+    where: {
+      id: groupId,
+    },
+    include: {
+      participants: true,
+    },
+  })
+
+  // if no participant group with the provided id exists in this course or at all, return null
+  if (!participantGroup) return null
+
+  // if the participant is the only one in the group, delete the group
+  if (participantGroup.participants.length === 1) {
+    await ctx.prisma.participantGroup.delete({
+      where: {
+        id: groupId,
+      },
+    })
+
+    // invalidate graphql response cache
+    ctx.emitter.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+
+    return null
+  }
+
+  // otherwise update the participant group with the current participant and return it
+  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
+    where: {
+      id: groupId,
+    },
+    data: {
+      participants: {
+        disconnect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      participants: true,
+      course: true,
+    },
+  })
+
+  return updatedParticipantGroup
+}
+
+interface GetParticipantGroupsArgs {
+  courseId: string
+}
+
+export async function getParticipantGroups(
+  { courseId }: GetParticipantGroupsArgs,
+  ctx: ContextWithUser
+) {
+  // find participant with correspoinding id ctx.user.sub and return all his participant groups with correct id
+  const participant = await ctx.prisma.participant.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      participantGroups: {
+        where: {
+          course: {
+            id: courseId,
+          },
+        },
+        include: {
+          participants: {
+            include: {
+              leaderboards: {
+                where: {
+                  courseId,
+                  type: LeaderboardType.COURSE,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participant || !participant.participantGroups) return []
+
+  return participant.participantGroups.map((group) => ({
+    ...group,
+    participants: sortWith(
+      [descend(prop('score')), ascend(prop('username'))],
+      group.participants.map((participant) => ({
+        ...participant,
+        score: participant.leaderboards[0]?.score ?? 0,
+        isSelf: participant.id === ctx.user.sub,
+      }))
+    ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
+  }))
 }
