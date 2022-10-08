@@ -252,18 +252,49 @@ export async function getCourseOverviewData(
     })
 
     if (participation) {
-      const allEntries = lbEntries.map((entry) => ({
-        id: entry.id,
-        score: entry.score,
-        username: entry.participant.username,
-        avatar: entry.participant.avatar,
-        participantId: entry.participant.id,
-        isSelf: ctx.user?.sub === entry.participant.id,
-      }))
+      const allEntries = lbEntries.reduce(
+        (acc, entry) => {
+          return {
+            mapped: [
+              ...acc.mapped,
+              {
+                id: entry.id,
+                score: entry.score,
+                username: entry.participant.username,
+                avatar: entry.participant.avatar,
+                participantId: entry.participant.id,
+                isSelf: ctx.user?.sub === entry.participant.id,
+              },
+            ],
+            sum: acc.sum + entry.score ?? 0,
+            count: acc.count + 1,
+          }
+        },
+        {
+          mapped: [],
+          sum: 0,
+          count: 0,
+        }
+      )
+
+      const allGroupEntries = participation.course.participantGroups.reduce(
+        (acc, group, ix) => {
+          return {
+            mapped: [...acc.mapped, { ...group, rank: ix + 1 }],
+            count: acc.count + 1,
+            sum: acc.sum + group.score,
+          }
+        },
+        {
+          mapped: [],
+          count: 0,
+          sum: 0,
+        }
+      )
 
       const sortedEntries = sortWith(
         [descend(prop('score')), ascend(prop('username'))],
-        allEntries
+        allEntries.mapped
       )
 
       const filteredEntries = sortedEntries.flatMap((entry, ix) => {
@@ -272,17 +303,25 @@ export async function getCourseOverviewData(
         return []
       })
 
-      // TODO: compute leaderboard statistics (mean, median, hist distribution)
-
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
         leaderboard: filteredEntries,
-        groupLeaderboard: participation.course.participantGroups.map(
-          (group, ix) => ({ ...group, score: 0, rank: ix + 1 })
-        ),
+        leaderboardStatistics: {
+          participantCount: allEntries.count,
+          averageScore:
+            allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
+        },
+        groupLeaderboard: allGroupEntries.mapped,
+        groupLeaderboardStatistics: {
+          participantCount: allGroupEntries.count,
+          averageScore:
+            allGroupEntries.count > 0
+              ? allGroupEntries.sum / allGroupEntries.count
+              : 0,
+        },
       }
     }
   }

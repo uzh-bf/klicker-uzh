@@ -180,6 +180,11 @@ type LeaderboardEntry {
   username: String!
 }
 
+type LeaderboardStatistics {
+  averageScore: Float!
+  participantCount: Int!
+}
+
 type LearningElement {
   course: Course!
   displayName: String!
@@ -272,13 +277,16 @@ type ParticipantGroup {
   id: ID!
   name: String!
   participants: [LeaderboardEntry!]!
+  score: Float!
 }
 
 type ParticipantLearningData {
   course: Course!
   groupLeaderboard: [GroupLeaderboardEntry!]
+  groupLeaderboardStatistics: LeaderboardStatistics!
   id: ID!
   leaderboard: [LeaderboardEntry!]
+  leaderboardStatistics: LeaderboardStatistics!
   participant: Participant
   participantToken: String
   participation: Participation

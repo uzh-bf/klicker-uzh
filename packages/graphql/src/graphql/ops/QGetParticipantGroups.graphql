@@ -3,6 +3,7 @@ query GetParticipantGroups($courseId: ID!) {
     id
     name
     code
+    score
     participants {
       id
       username

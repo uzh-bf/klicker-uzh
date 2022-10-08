@@ -205,6 +205,10 @@ export interface NexusGenObjects {
     score: number; // Float!
     username: string; // String!
   }
+  LeaderboardStatistics: { // root type
+    averageScore: number; // Float!
+    participantCount: number; // Int!
+  }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
     displayName: string; // String!
@@ -257,12 +261,15 @@ export interface NexusGenObjects {
     id: string; // ID!
     name: string; // String!
     participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
+    score: number; // Float!
   }
   ParticipantLearningData: { // root type
     course: NexusGenRootTypes['Course']; // Course!
     groupLeaderboard?: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
+    groupLeaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     id: string; // ID!
     leaderboard?: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    leaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken?: string | null; // String
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
@@ -473,6 +480,10 @@ export interface NexusGenFieldTypes {
     score: number; // Float!
     username: string; // String!
   }
+  LeaderboardStatistics: { // field return type
+    averageScore: number; // Float!
+    participantCount: number; // Int!
+  }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
     displayName: string; // String!
@@ -557,12 +568,15 @@ export interface NexusGenFieldTypes {
     id: string; // ID!
     name: string; // String!
     participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
+    score: number; // Float!
   }
   ParticipantLearningData: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
     groupLeaderboard: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
+    groupLeaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     id: string; // ID!
     leaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    leaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     participant: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken: string | null; // String
     participation: NexusGenRootTypes['Participation'] | null; // Participation
@@ -793,6 +807,10 @@ export interface NexusGenFieldTypeNames {
     score: 'Float'
     username: 'String'
   }
+  LeaderboardStatistics: { // field return type name
+    averageScore: 'Float'
+    participantCount: 'Int'
+  }
   LearningElement: { // field return type name
     course: 'Course'
     displayName: 'String'
@@ -877,12 +895,15 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     name: 'String'
     participants: 'LeaderboardEntry'
+    score: 'Float'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
     groupLeaderboard: 'GroupLeaderboardEntry'
+    groupLeaderboardStatistics: 'LeaderboardStatistics'
     id: 'ID'
     leaderboard: 'LeaderboardEntry'
+    leaderboardStatistics: 'LeaderboardStatistics'
     participant: 'Participant'
     participantToken: 'String'
     participation: 'Participation'

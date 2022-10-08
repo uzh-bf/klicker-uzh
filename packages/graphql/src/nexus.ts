@@ -374,6 +374,7 @@ export const ParticipantGroup = objectType({
 
     t.nonNull.string('name')
     t.nonNull.int('code')
+    t.nonNull.float('score')
 
     t.nonNull.list.nonNull.field('participants', {
       type: LeaderboardEntry,
@@ -435,6 +436,15 @@ export const GroupLeaderboardEntry = objectType({
   },
 })
 
+export const LeaderboardStatistics = objectType({
+  name: 'LeaderboardStatistics',
+  definition(t) {
+    t.nonNull.int('participantCount')
+    t.nonNull.float('averageScore')
+    // TODO: add histogram bins
+  },
+})
+
 export const ParticipantLearningData = objectType({
   name: 'ParticipantLearningData',
   definition(t) {
@@ -458,8 +468,16 @@ export const ParticipantLearningData = objectType({
       type: LeaderboardEntry,
     })
 
+    t.nonNull.field('leaderboardStatistics', {
+      type: LeaderboardStatistics,
+    })
+
     t.list.nonNull.field('groupLeaderboard', {
       type: GroupLeaderboardEntry,
+    })
+
+    t.nonNull.field('groupLeaderboardStatistics', {
+      type: LeaderboardStatistics,
     })
   },
 })
