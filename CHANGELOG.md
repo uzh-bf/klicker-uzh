@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.62...v2.0.0-alpha.63) (2022-10-08)
+
+
+### Features
+
+* participant groups and leaderboards ([#2905](https://github.com/uzh-bf/klicker-uzh/issues/2905)) ([0833cca](https://github.com/uzh-bf/klicker-uzh/commit/0833cca54fe2945bf33b55da26fd1465997d7b5d))
+
+
+### Other
+
+* final seed update for AMI week 3 ([02d6177](https://github.com/uzh-bf/klicker-uzh/commit/02d6177db91160fbfbbcee3f872926829d9b22cb))
+* lockfile maintenance ([478ab07](https://github.com/uzh-bf/klicker-uzh/commit/478ab07f94a8504c56afe868e6df259d24dc63e5))
+* **packages/graphql:** add npm script for push send ([63fd7be](https://github.com/uzh-bf/klicker-uzh/commit/63fd7beaaeb3787080f300f0bddefe97a13212db))
+* seed update ([0d7fec6](https://github.com/uzh-bf/klicker-uzh/commit/0d7fec6c9834df7fa898bd13cb4604af5f3e6aff))
+* seed update ([c9719fc](https://github.com/uzh-bf/klicker-uzh/commit/c9719fc81c210c4bdf38f5d282b92fa8d7fe913e))
+* seed update ([0c31291](https://github.com/uzh-bf/klicker-uzh/commit/0c3129163257bc86f53ef510ef17c8627b4ed306))
+* seed update ([d51af43](https://github.com/uzh-bf/klicker-uzh/commit/d51af438dacf72f1e2f32eed69e19c2b9fcf312b))
+* seed update ([b0a9ded](https://github.com/uzh-bf/klicker-uzh/commit/b0a9ded595b45ff27118fce9629c8cd2129451ba))
+* seed update ([a22b5f3](https://github.com/uzh-bf/klicker-uzh/commit/a22b5f306843c6e1db76154c5b031916f69a800a))
+* seed update ([f5b88b1](https://github.com/uzh-bf/klicker-uzh/commit/f5b88b11843cd21bf05ba2e2cadc2f9a4c0741e3))
+* update seed ([5dee789](https://github.com/uzh-bf/klicker-uzh/commit/5dee7899391fadfd131c4df0f9e26f5a1f572f64))
+
 ## [2.0.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.61...v2.0.0-alpha.62) (2022-09-29)
 
 
