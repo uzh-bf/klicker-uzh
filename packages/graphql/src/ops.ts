@@ -260,6 +260,7 @@ export type Mutation = {
   respondToQuestionInstance?: Maybe<QuestionInstance>;
   startSession?: Maybe<Session>;
   subscribeToPush?: Maybe<Participation>;
+  updateGroupAverageScores?: Maybe<Scalars['Boolean']>;
   updateParticipantProfile?: Maybe<Participant>;
   upvoteFeedback?: Maybe<Feedback>;
   voteFeedbackResponse?: Maybe<FeedbackResponse>;
@@ -484,7 +485,9 @@ export type Participant = {
 
 export type ParticipantGroup = {
   __typename?: 'ParticipantGroup';
+  averageMemberScore: Scalars['Float'];
   code: Scalars['Int'];
+  groupActivityScore: Scalars['Float'];
   id: Scalars['ID'];
   name: Scalars['String'];
   participants: Array<LeaderboardEntry>;
@@ -1508,6 +1511,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   respondToQuestionInstance?: Resolver<Maybe<ResolversTypes['QuestionInstance']>, ParentType, ContextType, RequireFields<MutationRespondToQuestionInstanceArgs, 'courseId' | 'id' | 'response'>>;
   startSession?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<MutationStartSessionArgs, 'id'>>;
   subscribeToPush?: Resolver<Maybe<ResolversTypes['Participation']>, ParentType, ContextType, RequireFields<MutationSubscribeToPushArgs, 'courseId' | 'subscriptionObject'>>;
+  updateGroupAverageScores?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   updateParticipantProfile?: Resolver<Maybe<ResolversTypes['Participant']>, ParentType, ContextType, Partial<MutationUpdateParticipantProfileArgs>>;
   upvoteFeedback?: Resolver<Maybe<ResolversTypes['Feedback']>, ParentType, ContextType, RequireFields<MutationUpvoteFeedbackArgs, 'feedbackId' | 'increment'>>;
   voteFeedbackResponse?: Resolver<Maybe<ResolversTypes['FeedbackResponse']>, ParentType, ContextType, RequireFields<MutationVoteFeedbackResponseArgs, 'id' | 'incrementDownvote' | 'incrementUpvote'>>;
@@ -1553,7 +1557,9 @@ export type ParticipantResolvers<ContextType = any, ParentType extends Resolvers
 };
 
 export type ParticipantGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['ParticipantGroup'] = ResolversParentTypes['ParticipantGroup']> = {
+  averageMemberScore?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   code?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  groupActivityScore?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   participants?: Resolver<Array<ResolversTypes['LeaderboardEntry']>, ParentType, ContextType>;

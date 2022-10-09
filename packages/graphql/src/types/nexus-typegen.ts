@@ -257,7 +257,9 @@ export interface NexusGenObjects {
     username: string; // String!
   }
   ParticipantGroup: { // root type
+    averageMemberScore: number; // Float!
     code: number; // Int!
+    groupActivityScore: number; // Float!
     id: string; // ID!
     name: string; // String!
     participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
@@ -530,6 +532,7 @@ export interface NexusGenFieldTypes {
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     subscribeToPush: NexusGenRootTypes['Participation'] | null; // Participation
+    updateGroupAverageScores: boolean | null; // Boolean
     updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
@@ -564,7 +567,9 @@ export interface NexusGenFieldTypes {
     username: string; // String!
   }
   ParticipantGroup: { // field return type
+    averageMemberScore: number; // Float!
     code: number; // Int!
+    groupActivityScore: number; // Float!
     id: string; // ID!
     name: string; // String!
     participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
@@ -857,6 +862,7 @@ export interface NexusGenFieldTypeNames {
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     subscribeToPush: 'Participation'
+    updateGroupAverageScores: 'Boolean'
     updateParticipantProfile: 'Participant'
     upvoteFeedback: 'Feedback'
     voteFeedbackResponse: 'FeedbackResponse'
@@ -891,7 +897,9 @@ export interface NexusGenFieldTypeNames {
     username: 'String'
   }
   ParticipantGroup: { // field return type name
+    averageMemberScore: 'Float'
     code: 'Int'
+    groupActivityScore: 'Float'
     id: 'ID'
     name: 'String'
     participants: 'LeaderboardEntry'
