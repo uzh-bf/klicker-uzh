@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.65...v2.0.0-alpha.66) (2022-10-09)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that cron schedule is quoted ([eaf3b04](https://github.com/uzh-bf/klicker-uzh/commit/eaf3b048cf3e6b912704a13c2cf4e3c17613dc56))
+* **packages/graphql:** ensure that singleplayer groups get zero points for members ([4a87a82](https://github.com/uzh-bf/klicker-uzh/commit/4a87a826543d98cddcf11ba5c45998bc040ba330))
+
+
+### Enhancements
+
+* **deploy:** dynamic cron schedules in chart ([be94751](https://github.com/uzh-bf/klicker-uzh/commit/be9475104ffb197e2eccfa4d03433280187d019e))
+
+
+### Other
+
+* **deploy:** update production deployment ([8641cbf](https://github.com/uzh-bf/klicker-uzh/commit/8641cbff848bdb8954ae461744bc76034e5e2231))
+
 ## [2.0.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.64...v2.0.0-alpha.65) (2022-10-09)
 
 
