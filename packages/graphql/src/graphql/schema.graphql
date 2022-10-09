@@ -98,6 +98,7 @@ type Course {
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  participantGroups: [ParticipantGroup]!
   sessions: [Session!]!
 }
 
@@ -148,6 +149,14 @@ type FreeTextRestrictions {
   maxLength: Int
 }
 
+type GroupLeaderboardEntry {
+  id: ID!
+  isMember: Boolean
+  name: String!
+  rank: Int!
+  score: Float!
+}
+
 type InstanceEvaluation {
   choices: JSONObject!
   feedbacks: [QuestionFeedback!]
@@ -177,8 +186,14 @@ type LeaderboardEntry {
   id: ID!
   isSelf: Boolean
   participantId: ID!
+  rank: Int!
   score: Float!
   username: String!
+}
+
+type LeaderboardStatistics {
+  averageScore: Float!
+  participantCount: Int!
 }
 
 type LearningElement {
@@ -206,6 +221,7 @@ type Mutation {
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
+  createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
@@ -213,7 +229,9 @@ type Mutation {
   editQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int!, name: String, options: OptionsInput, tags: [TagInput]): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
+  joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
   leaveCourse(courseId: ID!): ParticipantLearningData
+  leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
@@ -227,6 +245,7 @@ type Mutation {
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
   subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
+  updateGroupAverageScores: Boolean
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -269,13 +288,27 @@ type Participant {
   avatar: String
   avatarSettings: JSONObject
   id: ID!
+  participantGroups: [ParticipantGroup]!
   username: String!
 }
 
+type ParticipantGroup {
+  averageMemberScore: Float!
+  code: Int!
+  groupActivityScore: Float!
+  id: ID!
+  name: String!
+  participants: [LeaderboardEntry!]!
+  score: Float!
+}
+
 type ParticipantLearningData {
-  course: Course
+  course: Course!
+  groupLeaderboard: [GroupLeaderboardEntry!]
+  groupLeaderboardStatistics: LeaderboardStatistics!
   id: ID!
   leaderboard: [LeaderboardEntry!]
+  leaderboardStatistics: LeaderboardStatistics!
   participant: Participant
   participantToken: String
   participation: Participation
@@ -308,6 +341,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
+  participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: ID!): Session
   question(id: Int!): Question

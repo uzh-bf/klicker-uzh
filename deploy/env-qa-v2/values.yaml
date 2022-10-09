@@ -1,3 +1,6 @@
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
+
 frontendPWA:
   priorityClassName: staging-workload
 

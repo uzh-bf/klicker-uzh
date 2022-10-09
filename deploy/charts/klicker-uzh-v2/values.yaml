@@ -8,6 +8,9 @@ podSecurityContext: {}
 
 securityContext: {}
 
+cron:
+  dailyGroupScores: "* * * * *"
+
 frontendPWA:
   priorityClassName: production-workload
 
@@ -130,3 +133,6 @@ backendGraphql:
   tolerations: []
 
   affinity: {}
+
+heartbeats:
+  dailyGroupScores:

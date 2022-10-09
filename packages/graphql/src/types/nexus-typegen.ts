@@ -159,6 +159,7 @@ export interface NexusGenObjects {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   Feedback: { // root type
@@ -198,6 +199,13 @@ export interface NexusGenObjects {
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
+  GroupLeaderboardEntry: { // root type
+    id: string; // ID!
+    isMember?: boolean | null; // Boolean
+    name: string; // String!
+    rank: number; // Int!
+    score: number; // Float!
+  }
   InstanceEvaluation: { // root type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks?: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
@@ -220,8 +228,13 @@ export interface NexusGenObjects {
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
     participantId: string; // ID!
+    rank: number; // Int!
     score: number; // Float!
     username: string; // String!
+  }
+  LeaderboardStatistics: { // root type
+    averageScore: number; // Float!
+    participantCount: number; // Int!
   }
   LearningElement: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -267,12 +280,25 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     username: string; // String!
   }
+  ParticipantGroup: { // root type
+    averageMemberScore: number; // Float!
+    code: number; // Int!
+    groupActivityScore: number; // Float!
+    id: string; // ID!
+    name: string; // String!
+    participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
+    score: number; // Float!
+  }
   ParticipantLearningData: { // root type
-    course?: NexusGenRootTypes['Course'] | null; // Course
+    course: NexusGenRootTypes['Course']; // Course!
+    groupLeaderboard?: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
+    groupLeaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     id: string; // ID!
     leaderboard?: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    leaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken?: string | null; // String
     participation?: NexusGenRootTypes['Participation'] | null; // Participation
@@ -428,6 +454,7 @@ export interface NexusGenFieldTypes {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
   }
   Feedback: { // field return type
@@ -467,6 +494,13 @@ export interface NexusGenFieldTypes {
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
+  GroupLeaderboardEntry: { // field return type
+    id: string; // ID!
+    isMember: boolean | null; // Boolean
+    name: string; // String!
+    rank: number; // Int!
+    score: number; // Float!
+  }
   InstanceEvaluation: { // field return type
     choices: NexusGenScalars['JSONObject']; // JSONObject!
     feedbacks: NexusGenRootTypes['QuestionFeedback'][] | null; // [QuestionFeedback!]
@@ -489,8 +523,13 @@ export interface NexusGenFieldTypes {
     id: string; // ID!
     isSelf: boolean | null; // Boolean
     participantId: string; // ID!
+    rank: number; // Int!
     score: number; // Float!
     username: string; // String!
+  }
+  LeaderboardStatistics: { // field return type
+    averageScore: number; // Float!
+    participantCount: number; // Int!
   }
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
@@ -515,6 +554,7 @@ export interface NexusGenFieldTypes {
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    createParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     createSession: NexusGenRootTypes['Session'] | null; // Session
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -522,7 +562,9 @@ export interface NexusGenFieldTypes {
     editQuestion: NexusGenRootTypes['Question'] | null; // Question
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    joinParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    leaveParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
@@ -536,6 +578,7 @@ export interface NexusGenFieldTypes {
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
     startSession: NexusGenRootTypes['Session'] | null; // Session
     subscribeToPush: NexusGenRootTypes['Participation'] | null; // Participation
+    updateGroupAverageScores: boolean | null; // Boolean
     updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
     upvoteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     voteFeedbackResponse: NexusGenRootTypes['FeedbackResponse'] | null; // FeedbackResponse
@@ -566,12 +609,25 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
+    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     username: string; // String!
   }
+  ParticipantGroup: { // field return type
+    averageMemberScore: number; // Float!
+    code: number; // Int!
+    groupActivityScore: number; // Float!
+    id: string; // ID!
+    name: string; // String!
+    participants: NexusGenRootTypes['LeaderboardEntry'][]; // [LeaderboardEntry!]!
+    score: number; // Float!
+  }
   ParticipantLearningData: { // field return type
-    course: NexusGenRootTypes['Course'] | null; // Course
+    course: NexusGenRootTypes['Course']; // Course!
+    groupLeaderboard: NexusGenRootTypes['GroupLeaderboardEntry'][] | null; // [GroupLeaderboardEntry!]
+    groupLeaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     id: string; // ID!
     leaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    leaderboardStatistics: NexusGenRootTypes['LeaderboardStatistics']; // LeaderboardStatistics!
     participant: NexusGenRootTypes['Participant'] | null; // Participant
     participantToken: string | null; // String
     participation: NexusGenRootTypes['Participation'] | null; // Participation
@@ -600,6 +656,7 @@ export interface NexusGenFieldTypes {
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     pinnedFeedbacks: NexusGenRootTypes['Session'] | null; // Session
     question: NexusGenRootTypes['Question'] | null; // Question
@@ -748,6 +805,7 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
+    participantGroups: 'ParticipantGroup'
     sessions: 'Session'
   }
   Feedback: { // field return type name
@@ -787,6 +845,13 @@ export interface NexusGenFieldTypeNames {
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
   }
+  GroupLeaderboardEntry: { // field return type name
+    id: 'ID'
+    isMember: 'Boolean'
+    name: 'String'
+    rank: 'Int'
+    score: 'Float'
+  }
   InstanceEvaluation: { // field return type name
     choices: 'JSONObject'
     feedbacks: 'QuestionFeedback'
@@ -809,8 +874,13 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     isSelf: 'Boolean'
     participantId: 'ID'
+    rank: 'Int'
     score: 'Float'
     username: 'String'
+  }
+  LeaderboardStatistics: { // field return type name
+    averageScore: 'Float'
+    participantCount: 'Int'
   }
   LearningElement: { // field return type name
     course: 'Course'
@@ -835,6 +905,7 @@ export interface NexusGenFieldTypeNames {
     changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
+    createParticipantGroup: 'ParticipantGroup'
     createSession: 'Session'
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
@@ -842,7 +913,9 @@ export interface NexusGenFieldTypeNames {
     editQuestion: 'Question'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
+    joinParticipantGroup: 'ParticipantGroup'
     leaveCourse: 'ParticipantLearningData'
+    leaveParticipantGroup: 'ParticipantGroup'
     loginParticipant: 'ID'
     loginUser: 'ID'
     logoutParticipant: 'ID'
@@ -856,6 +929,7 @@ export interface NexusGenFieldTypeNames {
     respondToQuestionInstance: 'QuestionInstance'
     startSession: 'Session'
     subscribeToPush: 'Participation'
+    updateGroupAverageScores: 'Boolean'
     updateParticipantProfile: 'Participant'
     upvoteFeedback: 'Feedback'
     voteFeedbackResponse: 'FeedbackResponse'
@@ -886,12 +960,25 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     avatarSettings: 'JSONObject'
     id: 'ID'
+    participantGroups: 'ParticipantGroup'
     username: 'String'
+  }
+  ParticipantGroup: { // field return type name
+    averageMemberScore: 'Float'
+    code: 'Int'
+    groupActivityScore: 'Float'
+    id: 'ID'
+    name: 'String'
+    participants: 'LeaderboardEntry'
+    score: 'Float'
   }
   ParticipantLearningData: { // field return type name
     course: 'Course'
+    groupLeaderboard: 'GroupLeaderboardEntry'
+    groupLeaderboardStatistics: 'LeaderboardStatistics'
     id: 'ID'
     leaderboard: 'LeaderboardEntry'
+    leaderboardStatistics: 'LeaderboardStatistics'
     participant: 'Participant'
     participantToken: 'String'
     participation: 'Participation'
@@ -920,6 +1007,7 @@ export interface NexusGenFieldTypeNames {
     getCourseOverviewData: 'ParticipantLearningData'
     learningElement: 'LearningElement'
     microSession: 'MicroSession'
+    participantGroups: 'ParticipantGroup'
     participations: 'Participation'
     pinnedFeedbacks: 'Session'
     question: 'Question'
@@ -1046,6 +1134,10 @@ export interface NexusGenArgTypes {
       content: string; // String!
       sessionId: string; // ID!
     }
+    createParticipantGroup: { // args
+      courseId: string; // ID!
+      name: string; // String!
+    }
     createSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
       courseId?: string | null; // String
@@ -1077,8 +1169,16 @@ export interface NexusGenArgTypes {
     joinCourse: { // args
       courseId: string; // ID!
     }
+    joinParticipantGroup: { // args
+      code: number; // Int!
+      courseId: string; // ID!
+    }
     leaveCourse: { // args
       courseId: string; // ID!
+    }
+    leaveParticipantGroup: { // args
+      courseId: string; // ID!
+      groupId: string; // ID!
     }
     loginParticipant: { // args
       password: string; // String!
@@ -1155,6 +1255,9 @@ export interface NexusGenArgTypes {
     }
     microSession: { // args
       id: string; // ID!
+    }
+    participantGroups: { // args
+      courseId: string; // ID!
     }
     participations: { // args
       endpoint?: string | null; // String

@@ -23,6 +23,35 @@ query GetCourseOverviewData($courseId: ID!) {
       avatar
       score
       isSelf
+      rank
+    }
+    leaderboardStatistics {
+      participantCount
+      averageScore
+    }
+    groupLeaderboard {
+      id
+      name
+      score
+    }
+    groupLeaderboardStatistics {
+      participantCount
+      averageScore
+    }
+  }
+  participantGroups(courseId: $courseId) {
+    id
+    name
+    code
+    averageMemberScore
+    groupActivityScore
+    score
+    participants {
+      id
+      username
+      avatar
+      score
+      isSelf
     }
   }
 }

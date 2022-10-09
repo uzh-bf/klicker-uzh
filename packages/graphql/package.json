@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "2.0.0-alpha.60",
+  "version": "2.0.0-alpha.66",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
     "generate": "npm-run-all generate:nexus generate:graphql",
     "generate:graphql": "graphql-codegen --config codegen.yml",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
+    "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit"
   },
   "engines": {
@@ -33,10 +34,10 @@
     }
   ],
   "peerDependencies": {
-    "@klicker-uzh/grading": "^2.0.0-alpha.0",
-    "@klicker-uzh/prisma": "^2.0.0-alpha.0",
+    "@envelop/response-cache": "^3.2.0",
     "@graphql-yoga/node": "^2.13.13",
-    "@envelop/response-cache": "^3.2.0"
+    "@klicker-uzh/grading": "^2.0.0-alpha.0",
+    "@klicker-uzh/prisma": "^2.0.0-alpha.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "2.12.0",
@@ -74,6 +75,7 @@
     "generate-password": "1.7.0",
     "graphql": "16.6.0",
     "graphql-scalars": "1.18.0",
+    "mathjs": "11.2.1",
     "nexus": "1.3.0",
     "validator": "13.7.0"
   },
