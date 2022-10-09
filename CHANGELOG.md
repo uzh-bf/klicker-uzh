@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.63...v2.0.0-alpha.64) (2022-10-09)
+
+
+### Enhancements
+
+* improve groups logic with average score cronjob ([#2955](https://github.com/uzh-bf/klicker-uzh/issues/2955)) ([4d86e60](https://github.com/uzh-bf/klicker-uzh/commit/4d86e60a769e08baea65e3bd43f93bbb4aa4cd41))
+
 ## [2.0.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.62...v2.0.0-alpha.63) (2022-10-08)
 
 
