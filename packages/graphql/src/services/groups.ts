@@ -255,7 +255,9 @@ export async function updateGroupAverageScores(ctx: Context) {
 
         // compute the average score of all participants in the group
         // if it has not changed, exit early
-        const averageMemberScore = round(aggregate.sum / aggregate.count, 2)
+        // if the group consists of only one participant, the member score should be zero
+        const averageMemberScore =
+          aggregate.count > 1 ? round(aggregate.sum / aggregate.count, 2) : 0
 
         if (averageMemberScore === group.averageMemberScore)
           return Promise.resolve()
