@@ -43,6 +43,8 @@ query GetCourseOverviewData($courseId: ID!) {
     id
     name
     code
+    averageMemberScore
+    groupActivityScore
     score
     participants {
       id

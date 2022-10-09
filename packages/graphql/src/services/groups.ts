@@ -237,8 +237,11 @@ export async function updateGroupAverageScores(ctx: Context) {
       groupsWithParticipants.map((group) => {
         const aggregate = group.participants.reduce(
           (acc, participant) => {
+            const matchingLeaderboard = participant.leaderboards.find(
+              (item) => item.courseId === group.courseId
+            )
             return {
-              sum: acc.sum + (participant.leaderboards?.[0]?.score ?? 0),
+              sum: acc.sum + (matchingLeaderboard?.score ?? 0),
               count: acc.count + 1,
             }
           },
