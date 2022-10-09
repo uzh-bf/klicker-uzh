@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.64...v2.0.0-alpha.65) (2022-10-09)
+
+
+### Bug Fixes
+
+* **deploy:** use args for the curl container ([167d026](https://github.com/uzh-bf/klicker-uzh/commit/167d026f7ba7def7ac84852440925516bc3eacff))
+* **packages/graphql:** ensure the matching leaderboard is used in average group score computation ([7243ce0](https://github.com/uzh-bf/klicker-uzh/commit/7243ce0cac6ada8af53f977ae3fd0e139fad11b6))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improve group and leaderboard display ([06ad275](https://github.com/uzh-bf/klicker-uzh/commit/06ad2750c800a3ced1fba0c030b353c4e156af89))
+
+
+### Other
+
+* **deploy:** add heartbeats for group scores ([a896fba](https://github.com/uzh-bf/klicker-uzh/commit/a896fba370baa809a851e65fb1f9a6bc0ae36fad))
+
 ## [2.0.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.63...v2.0.0-alpha.64) (2022-10-09)
 
 
