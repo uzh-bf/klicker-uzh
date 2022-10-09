@@ -72,8 +72,6 @@ function CourseOverview({ courseId }: any) {
     variables: { courseId },
   })
 
-  console.log(data)
-
   const [joinCourse] = useMutation(JoinCourseDocument, {
     variables: { courseId },
     refetchQueries: [
@@ -136,8 +134,8 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global">
-            <div className="flex flex-col gap-12 md:flex-row">
-              <div className="flex flex-col justify-between flex-1 gap-8">
+            <div className="flex flex-col gap-10 md:flex-row">
+              <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
 
@@ -216,29 +214,45 @@ function CourseOverview({ courseId }: any) {
 
           {data.participantGroups?.map((group) => (
             <Tabs.TabContent key={group.id} value={group.id}>
-              <H3 className="flex flex-row justify-between">
-                <div>Gruppe {group.name}</div>
-                <div>{group.code}</div>
-              </H3>
-              <GroupVisualization
-                participants={Array(20).fill(group.participants[0])}
-              />
-              <GroupLeaderboard
-                courseId={courseId}
-                groupId={group.id}
-                leaderboard={group.participants}
-                onLeave={() => {
-                  leaveParticipantGroup({
-                    variables: {
-                      courseId,
-                      groupId: group.id,
-                    },
-                    refetchQueries: [GetCourseOverviewDataDocument],
-                  })
+              <div className="flex flex-col">
+                <H3 className="flex flex-row justify-between">
+                  <div>Gruppe {group.name}</div>
+                  <div>{group.code}</div>
+                </H3>
 
-                  setSelectedTab('global')
-                }}
-              />
+                <GroupVisualization participants={group.participants} />
+                <GroupLeaderboard
+                  courseId={courseId}
+                  groupId={group.id}
+                  leaderboard={group.participants}
+                  onLeave={() => {
+                    leaveParticipantGroup({
+                      variables: {
+                        courseId,
+                        groupId: group.id,
+                      },
+                      refetchQueries: [GetCourseOverviewDataDocument],
+                    })
+
+                    setSelectedTab('global')
+                  }}
+                />
+
+                <div className="self-end mt-6 text-sm w-60 text-slate-600">
+                  <div className="flex flex-row justify-between">
+                    <div>Punkte durch Mitglieder</div>
+                    <div>{group.averageMemberScore}</div>
+                  </div>
+                  <div className="flex flex-row justify-between">
+                    <div>Punkte aus Gruppenaktivitäten</div>
+                    <div>{group.groupActivityScore}</div>
+                  </div>
+                  <div className="flex flex-row justify-between font-bold">
+                    <div>Total Punkte</div>
+                    <div>{group.score}</div>
+                  </div>
+                </div>
+              </div>
             </Tabs.TabContent>
           ))}
 

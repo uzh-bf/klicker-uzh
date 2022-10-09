@@ -12,7 +12,7 @@ function SinglePodium({ username, avatar, score, className }) {
       )}
     >
       <ParticipantOther
-        className="font-bold bg-white shadow outline-slate-400"
+        className="bg-white shadow outline-slate-400"
         pseudonym={username}
         avatar={avatar}
         points={score ?? 0}

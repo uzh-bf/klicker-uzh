@@ -26,26 +26,26 @@ function Participant({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-4 outline outline-slate-200 outline-1 rounded',
+        'flex flex-row items-center gap-1 outline outline-slate-200 outline-1 rounded',
         isHighlighted && 'bg-uzh-grey-20',
         className
       )}
     >
-      <div className="flex flex-row items-center flex-1 gap-4 p-1">
+      <div className="flex flex-row items-center flex-1 gap-2">
+        {rank && <div className="w-3 ml-1 text-lg font-bold">{rank}</div>}
+
         {withAvatar && (
-          <div className="bg-white border rounded-full border-slate-400">
+          <div className="w-[30px] h-full">
             <Image
-              className="rounded-full"
               src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
               alt=""
-              height={27}
-              width={27}
+              height={25}
+              width={30}
             />
           </div>
         )}
 
-        {rank && <div className="w-3 text-lg font-bold">{rank}</div>}
-        <div className="first:ml-1">{pseudonym ?? 'Frei'}</div>
+        <div className="first:ml-2 text-slate-700">{pseudonym ?? 'Frei'}</div>
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (

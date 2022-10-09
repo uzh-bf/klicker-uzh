@@ -6,9 +6,10 @@ interface TabProps {
   key: string
   value: string
   label: string
+  className?: string
 }
 
-export function Tab({ key, value, label }: TabProps) {
+export function Tab({ key, value, label, className }: TabProps) {
   return (
     <TabsPrimitive.Trigger
       key={`tab-trigger-${key}`}
@@ -21,7 +22,8 @@ export function Tab({ key, value, label }: TabProps) {
         'rdx-state-active:border-b-slate-600 focus-visible:rdx-state-active:border-b-transparent rdx-state-inactive:bg-gray-50',
         'flex-1 px-3 py-2.5',
         'focus:rdx-state-active:border-b-red',
-        'focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75'
+        'focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75',
+        className
       )}
     >
       <span className={twMerge('text-sm font-medium', 'text-gray-700')}>
@@ -31,11 +33,19 @@ export function Tab({ key, value, label }: TabProps) {
   )
 }
 
-export function TabList({ children }: PropsWithChildren) {
+interface TabListProps {
+  className?: string
+}
+
+export function TabList({
+  children,
+  className,
+}: PropsWithChildren<TabListProps>) {
   return (
     <TabsPrimitive.List
       className={twMerge(
-        'flex w-full rounded-t-lg bg-white flex-col md:flex-row'
+        'flex w-full rounded-t-lg bg-white flex-col md:flex-row',
+        className
       )}
     >
       {children}
@@ -46,18 +56,20 @@ export function TabList({ children }: PropsWithChildren) {
 interface TabContentProps {
   key: string
   value: string
+  className?: string
 }
 
 export function TabContent({
   key,
   value,
   children,
+  className,
 }: PropsWithChildren<TabContentProps>) {
   return (
     <TabsPrimitive.Content
       key={`tab-content-${key}`}
       value={value}
-      className={twMerge('rounded-t-lg bg-white md:px-6 py-4')}
+      className={twMerge('rounded-t-lg bg-white md:px-6 py-4', className)}
     >
       {children}
     </TabsPrimitive.Content>
@@ -68,6 +80,7 @@ interface TabsProps {
   defaultValue: string
   value?: string
   onValueChange?: (newValue: string) => void
+  className?: string
 }
 
 function Tabs({
@@ -75,12 +88,14 @@ function Tabs({
   value,
   children,
   onValueChange,
+  className,
 }: PropsWithChildren<TabsProps>) {
   return (
     <TabsPrimitive.Root
       defaultValue={defaultValue}
       value={value}
       onValueChange={onValueChange}
+      className={twMerge(className)}
     >
       {children}
     </TabsPrimitive.Root>
