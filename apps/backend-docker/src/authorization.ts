@@ -65,6 +65,7 @@ export const AuthSchema = {
     respondToFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     respondToQuestionInstance: { __authz: { rules: ['Allow'] } },
+    updateGroupAverageScores: { __authz: { rules: ['Allow'] } },
   },
   Query: {
     '*': { __authz: { rules: ['Allow'] } },
