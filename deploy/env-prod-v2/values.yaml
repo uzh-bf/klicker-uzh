@@ -1,3 +1,6 @@
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
+
 frontendPWA:
   autoscaling:
     enabled: false
