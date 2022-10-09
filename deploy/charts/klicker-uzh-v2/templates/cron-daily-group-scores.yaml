@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "chart.fullname" . }}-cron-daily-group-scores
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.85.0
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - curl -X POST http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql -H "Content-Type: application/json" -d '{"query":"mutation { updateGroupAverageScores }"}'
+          restartPolicy: OnFailure
