@@ -3,20 +3,16 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from './Participant'
 
-function SinglePodium({ number, username, avatar, score, isSelf, className }) {
+function SinglePodium({ username, avatar, score, className }) {
   return (
     <div
       className={twMerge(
-        'flex-1 md:border-b-4 bg-uzh-grey-20 md:border-slate-600',
+        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500',
         className
       )}
     >
-      <div className="text-xl bg-white md:text-center text-uzh-red-100">
-        {number}. {isSelf && 'bist du!'}
-      </div>
-
       <ParticipantOther
-        className="bg-white shadow outline-slate-700"
+        className="font-bold bg-white shadow outline-slate-400"
         pseudonym={username}
         avatar={avatar}
         points={score ?? 0}
@@ -42,30 +38,24 @@ export function Podium({ leaderboard }: PodiumProps) {
   return (
     <div className="flex flex-col gap-4 md:items-end md:flex-row">
       <SinglePodium
-        className="order-2 h-[90px] md:order-1"
-        isSelf={rank2?.isSelf}
+        className="order-2 h-[70px] md:order-1"
         username={rank2?.username}
         avatar={rank2?.avatar}
         score={rank2?.score}
-        number={2}
       />
 
       <SinglePodium
-        className="order-1 h-[100px] md:order-2"
-        isSelf={rank1?.isSelf}
+        className="order-1 h-[80px] md:order-2"
         username={rank1?.username}
         avatar={rank1?.avatar}
         score={rank1?.score}
-        number={1}
       />
 
       <SinglePodium
-        className="order-3 h-[80px]"
-        isSelf={rank3?.isSelf}
+        className="order-3 h-[60px]"
         username={rank3?.username}
         avatar={rank3?.avatar}
         score={rank3?.score}
-        number={3}
       />
     </div>
   )
