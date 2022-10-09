@@ -8,6 +8,9 @@ podSecurityContext: {}
 
 securityContext: {}
 
+cron:
+  dailyGroupScores: "* * * * *"
+
 frontendPWA:
   priorityClassName: production-workload
 

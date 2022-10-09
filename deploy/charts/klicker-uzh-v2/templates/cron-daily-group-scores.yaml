@@ -5,8 +5,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-  # schedule: "5 6,19 * * *"
-  schedule: "* * * * *"
+  schedule: {{ .Values.cron.dailyGroupScores }}
   jobTemplate:
     spec:
       template:
