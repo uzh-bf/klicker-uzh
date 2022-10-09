@@ -23,6 +23,7 @@ import {
 } from './lib/context'
 import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
+import * as ParticipantGroupService from './services/groups'
 import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
 import * as NotificationService from './services/notifications'
@@ -374,6 +375,9 @@ export const ParticipantGroup = objectType({
 
     t.nonNull.string('name')
     t.nonNull.int('code')
+
+    t.nonNull.float('groupActivityScore')
+    t.nonNull.float('averageMemberScore')
     t.nonNull.float('score')
 
     t.nonNull.list.nonNull.field('participants', {
@@ -728,7 +732,7 @@ export const Query = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.getParticipantGroups(args, ctx)
+        return ParticipantGroupService.getParticipantGroups(args, ctx)
       },
     })
 
@@ -1137,7 +1141,7 @@ export const Mutation = objectType({
         name: nonNull(stringArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.createParticipantGroup(args, ctx)
+        return ParticipantGroupService.createParticipantGroup(args, ctx)
       },
     })
 
@@ -1148,7 +1152,7 @@ export const Mutation = objectType({
         code: nonNull(intArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.joinParticipantGroup(args, ctx)
+        return ParticipantGroupService.joinParticipantGroup(args, ctx)
       },
     })
 
@@ -1159,7 +1163,13 @@ export const Mutation = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.leaveParticipantGroup(args, ctx)
+        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+      },
+    })
+
+    t.boolean('updateGroupAverageScores', {
+      resolve(_, _args, ctx: Context) {
+        return ParticipantGroupService.updateGroupAverageScores(ctx)
       },
     })
   },

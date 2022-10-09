@@ -24,41 +24,41 @@ import Image from 'next/future/image'
 import { useState } from 'react'
 
 const POSITIONS = [
-  [30, 130],
-  [40, 330],
-  [40, 70],
-  [45, 380],
-  [10, 95],
-  [10, 355],
-  [20, 40],
-  [15, 410],
-  [35, 5],
-  [40, 440],
+  [17, 20],
+  [17, 70],
+  [17, 10],
+  [17, 80],
+  [5, 25],
+  [5, 65],
+  [5, 15],
+  [5, 75],
+  [5, 5],
+  [5, 85],
 ]
 
 function GroupVisualization({ participants }) {
   return (
-    <div className="relative h-64 m-auto border border-b-4 rounded border-slate-300 border-b-slate-700 w-[500px]">
+    <div className="relative w-full md:w-[500px] h-48 m-auto border border-b-4 rounded md:h-64 border-slate-300 border-b-slate-700">
       <div className="absolute top-0 bottom-0 left-0 right-0 desert-bg grayscale-[70%]"></div>
 
       <div className="absolute bottom-0 left-0 right-0 top-8">
         <Image className="" src="/rocket_base.svg" fill />
       </div>
 
-      {participants.map((participant, ix) => (
+      {participants.slice(0, 10).map((participant, ix) => (
         <Image
           key={participant.avatar}
           className="absolute bg-white border border-white rounded-full shadow"
           style={{
-            bottom: POSITIONS[ix][0],
-            left: POSITIONS[ix][1],
+            bottom: `${POSITIONS[ix][0]}%`,
+            left: `${POSITIONS[ix][1]}%`,
           }}
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
             participant.avatar ?? 'placeholder'
           }.svg`}
           alt=""
-          height={33}
-          width={33}
+          height={32}
+          width={32}
         />
       ))}
     </div>
@@ -137,63 +137,78 @@ function CourseOverview({ courseId }: any) {
 
           <Tabs.TabContent key="course" value="global">
             <div className="flex flex-col gap-12 md:flex-row">
-              <div className="flex-1">
-                <H3 className="mb-4">Individuelles Leaderboard</H3>
-                <Podium leaderboard={leaderboard} />
-                <Leaderboard
-                  leaderboard={leaderboard}
-                  courseId={courseId}
-                  participant={participant}
-                  participation={participation}
-                  onJoin={joinCourse}
-                  onLeave={leaveCourse}
-                />
-                <div className="mt-4 mb-2 text-right">
-                  <div>
-                    Anzahl Teilnehmende:{' '}
-                    {leaderboardStatistics.participantCount}
+              <div className="flex flex-col justify-between flex-1 gap-8">
+                <div>
+                  <H3 className="mb-4">Individuelles Leaderboard</H3>
+
+                  <Podium leaderboard={leaderboard} />
+                  <Leaderboard
+                    leaderboard={leaderboard}
+                    courseId={courseId}
+                    participant={participant}
+                    participation={participation}
+                    onJoin={joinCourse}
+                    onLeave={leaveCourse}
+                  />
+                  <div className="mt-4 mb-2 text-sm text-right text-slate-600">
+                    <div>
+                      Anzahl Teilnehmende:{' '}
+                      {leaderboardStatistics.participantCount}
+                    </div>
+                    <div>
+                      Durchschnittl. Punkte:{' '}
+                      {leaderboardStatistics.averageScore?.toFixed(2)}
+                    </div>
                   </div>
-                  <div>
-                    Durchschnittl. Punkte: {leaderboardStatistics.averageScore}
-                  </div>
+                  {/* TODO: HISTOGRAMM */}
                 </div>
-                HISTOGRAMM
+
+                <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
+                  Das individuelle Leaderboard wird stündlich aktualisiert.
+                </div>
               </div>
 
-              <div className="flex-1">
-                <H3 className="mb-4">Gruppenleaderboard</H3>
-                <Podium
-                  leaderboard={groupLeaderboard?.map((entry) => ({
-                    username: entry.name,
-                    score: entry.score,
-                  }))}
-                />
-                {!groupLeaderboard ||
-                  (groupLeaderboard.length === 0 && (
-                    <div className="mt-6">
-                      Bisher wurden noch keine Gruppen gebildet. Los
-                      geht&apos;s!
+              <div className="flex flex-col justify-between flex-1 gap-8">
+                <div>
+                  <H3 className="mb-4">Gruppenleaderboard</H3>
+
+                  <Podium
+                    leaderboard={groupLeaderboard?.map((entry) => ({
+                      username: entry.name,
+                      score: entry.score,
+                    }))}
+                  />
+                  {!groupLeaderboard ||
+                    (groupLeaderboard.length === 0 && (
+                      <div className="mt-6">
+                        Bisher wurden noch keine Gruppen gebildet. Los
+                        geht&apos;s!
+                      </div>
+                    ))}
+                  <div className="pt-8 space-y-2">
+                    {groupLeaderboard?.map((entry) => (
+                      <ParticipantOther
+                        key={entry.id}
+                        pseudonym={entry.name}
+                        points={entry.score}
+                        withAvatar={false}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-4 mb-2 text-sm text-right text-slate-600">
+                    <div>
+                      Anzahl Gruppen:{' '}
+                      {groupLeaderboardStatistics.participantCount}
                     </div>
-                  ))}
-                <div className="pt-8 space-y-2">
-                  {groupLeaderboard?.map((entry) => (
-                    <ParticipantOther
-                      key={entry.id}
-                      pseudonym={entry.name}
-                      points={entry.score}
-                      withAvatar={false}
-                    />
-                  ))}
+                    <div>
+                      Durchschnittl. Punkte:{' '}
+                      {groupLeaderboardStatistics.averageScore?.toFixed(2)}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-4 mb-2 text-right">
-                  <div>
-                    Anzahl Gruppen:{' '}
-                    {groupLeaderboardStatistics.participantCount}
-                  </div>
-                  <div>
-                    Durchschnittl. Punkte:{' '}
-                    {groupLeaderboardStatistics.averageScore}
-                  </div>
+
+                <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
+                  Das Gruppenleaderboard wird täglich aktualisiert.
                 </div>
               </div>
             </div>
@@ -205,7 +220,9 @@ function CourseOverview({ courseId }: any) {
                 <div>Gruppe {group.name}</div>
                 <div>{group.code}</div>
               </H3>
-              <GroupVisualization participants={group.participants} />
+              <GroupVisualization
+                participants={Array(20).fill(group.participants[0])}
+              />
               <GroupLeaderboard
                 courseId={courseId}
                 groupId={group.id}

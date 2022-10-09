@@ -57,7 +57,7 @@ export function TabContent({
     <TabsPrimitive.Content
       key={`tab-content-${key}`}
       value={value}
-      className={twMerge('rounded-t-lg bg-white px-6 py-4')}
+      className={twMerge('rounded-t-lg bg-white md:px-6 py-4')}
     >
       {children}
     </TabsPrimitive.Content>

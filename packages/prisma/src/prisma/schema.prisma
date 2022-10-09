@@ -475,9 +475,11 @@ model Participant {
 model ParticipantGroup {
   id String @id @default(uuid()) @db.Uuid
 
-  name  String
-  code  Int
-  score Int    @default(0)
+  name String
+  code Int
+
+  groupActivityScore Float @default(0)
+  averageMemberScore Float @default(0)
 
   participants Participant[]
 
