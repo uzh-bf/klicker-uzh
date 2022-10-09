@@ -26,3 +26,6 @@ data:
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}
+  {{- if .Values.heartbeats.dailyGroupScores }}
+  HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
+  {{ end }}

@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
+  # schedule: "5 6,19 * * *"
   schedule: "* * * * *"
   jobTemplate:
     spec:
@@ -14,8 +15,12 @@ spec:
           - name: curl
             image: curlimages/curl:7.85.0
             imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - curl -X POST http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql -H "Content-Type: application/json" -d '{"query":"mutation { updateGroupAverageScores }"}'
+            args:
+            - -X
+            - POST
+            - -H
+            - "Content-Type: application/json"
+            - -d
+            - '{"query":"mutation { updateGroupAverageScores }"}'
+            - "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"
           restartPolicy: OnFailure

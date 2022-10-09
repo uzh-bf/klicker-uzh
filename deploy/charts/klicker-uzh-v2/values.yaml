@@ -130,3 +130,6 @@ backendGraphql:
   tolerations: []
 
   affinity: {}
+
+heartbeats:
+  dailyGroupScores:
