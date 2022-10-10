@@ -226,7 +226,6 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
-  editQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int!, name: String, options: OptionsInput, tags: [TagInput]): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
@@ -236,6 +235,11 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsFreeTextInput, tags: [TagInput]): Question
+  manipulateKPRIMQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
+  manipulateMCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsNumericalInput, tags: [TagInput]): Question
+  manipulateSCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
   markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -277,11 +281,18 @@ type NumericalSolutionRange {
   min: Float
 }
 
-input OptionsInput {
-  choices: [ChoiceInput]
+input OptionsChoicesInput {
+  choices: [ChoiceInput]!
+}
+
+input OptionsFreeTextInput {
+  restrictions: Restrictions
+  solutions: [String]
+}
+
+input OptionsNumericalInput {
   restrictions: Restrictions
   solutionRanges: [SolutionRange]
-  solutions: [String]
 }
 
 type Participant {
@@ -484,7 +495,7 @@ type Tag {
 }
 
 input TagInput {
-  id: Int!
+  name: String!
 }
 
 type User {

@@ -1,13 +1,13 @@
-mutation EditQuestion(
-  $id: Int!
+mutation ManipulateNUMERICALQuestion(
+  $id: Int
   $name: String
   $content: String
   $contentPlain: String
-  $options: OptionsInput
+  $options: OptionsNumericalInput
   $attachments: [AttachmentInput]
   $tags: [TagInput]
 ) {
-  editQuestion(
+  manipulateNUMERICALQuestion(
     id: $id
     name: $name
     content: $content

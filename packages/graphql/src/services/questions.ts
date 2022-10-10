@@ -67,7 +67,8 @@ export async function getSingleQuestion(
   }
 }
 
-export async function editQuestion(
+// TODO: implement
+export async function manipulateSCQuestion(
   {
     id,
     name,
@@ -82,14 +83,230 @@ export async function editQuestion(
     content: string
     contentPlain: string
     options: {
-      choices?: {
+      choices: {
         ix: number
         value: string
         correct?: boolean
         feedback?: string
       }[]
-      restrictions?: { min?: number; max?: number; maxLength?: number }
+    }
+    attachments: { id: string }[]
+    tags: { id: string }[]
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: implement update of question with provided parameters
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  console.log('SC QUESTION')
+  console.log(
+    'inputs',
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags
+  )
+
+  return {
+    ...question,
+  }
+}
+
+// TODO: implement
+export async function manipulateMCQuestion(
+  {
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags,
+  }: {
+    id: number
+    name: string
+    content: string
+    contentPlain: string
+    options: {
+      choices: {
+        ix: number
+        value: string
+        correct?: boolean
+        feedback?: string
+      }[]
+    }
+    attachments: { id: string }[]
+    tags: { id: string }[]
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: implement update of question with provided parameters
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  console.log('MC QUESTION')
+  console.log(
+    'inputs',
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags
+  )
+
+  return {
+    ...question,
+  }
+}
+
+// TODO: implement
+export async function manipulateKPRIMQuestion(
+  {
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags,
+  }: {
+    id: number
+    name: string
+    content: string
+    contentPlain: string
+    options: {
+      choices: {
+        ix: number
+        value: string
+        correct?: boolean
+        feedback?: string
+      }[]
+      // restrictions?: { min?: number; max?: number; maxLength?: number }
+      // solutionRanges?: { min?: number; max?: number }[]
+      // solutions?: string[]
+    }
+    attachments: { id: string }[]
+    tags: { id: string }[]
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: implement update of question with provided parameters
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  console.log('KPRIM QUESTION')
+  console.log(
+    'inputs',
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags
+  )
+
+  return {
+    ...question,
+  }
+}
+
+// TODO: implement
+export async function manipulateNUMERICALQuestion(
+  {
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags,
+  }: {
+    id: number
+    name: string
+    content: string
+    contentPlain: string
+    options: {
+      restrictions?: { min?: number; max?: number }
       solutionRanges?: { min?: number; max?: number }[]
+    }
+    attachments: { id: string }[]
+    tags: { id: string }[]
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: implement update of question with provided parameters
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+
+  console.log('NUMERICAL QUESTION')
+  console.log(
+    'inputs',
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags
+  )
+
+  return {
+    ...question,
+  }
+}
+
+// TODO: implement
+export async function manipulateFREETEXTQuestion(
+  {
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags,
+  }: {
+    id: number
+    name: string
+    content: string
+    contentPlain: string
+    options: {
+      restrictions?: { maxLength?: number }
       solutions?: string[]
     }
     attachments: { id: string }[]
@@ -108,7 +325,7 @@ export async function editQuestion(
     },
   })
 
-  console.log('question', question)
+  console.log('FREE_TEXT QUESTION')
   console.log(
     'inputs',
     id,

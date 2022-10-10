@@ -1,8 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  EditQuestionDocument,
   GetSingleQuestionDocument,
   GetUserQuestionDocument,
+  ManipulateFreetextQuestionDocument,
+  ManipulateKprimQuestionDocument,
+  ManipulateMcQuestionDocument,
+  ManipulateNumericalQuestionDocument,
+  ManipulateScQuestionDocument,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
@@ -30,11 +34,20 @@ function QuestionEditModal({
   } = useQuery(GetSingleQuestionDocument, {
     variables: { id: questionId },
   })
-  const [editQuestion] = useMutation(EditQuestionDocument)
+
+  const [manipulateSCQuestion] = useMutation(ManipulateScQuestionDocument)
+  const [manipulateMCQuestion] = useMutation(ManipulateMcQuestionDocument)
+  const [manipulateKPRIMQuestion] = useMutation(ManipulateKprimQuestionDocument)
+  const [manipulateNUMERICALQuestion] = useMutation(
+    ManipulateNumericalQuestionDocument
+  )
+  const [manipulateFreeTextQuestion] = useMutation(
+    ManipulateFreetextQuestionDocument
+  )
 
   // TODO replace by proper function call
   const temp = () =>
-    editQuestion({
+    manipulateSCQuestion({
       variables: { id: questionId },
       refetchQueries: [{ query: GetUserQuestionDocument }],
     })
@@ -70,7 +83,7 @@ function QuestionEditModal({
           // TODO: validationSchema={loginSchema}
           // TODO: pass correct values to this function instead of demo values
           onSubmit={async (values) => {
-            await editQuestion({
+            await manipulateSCQuestion({
               variables: {
                 id: questionId,
                 name: 'testName',
@@ -91,21 +104,107 @@ function QuestionEditModal({
                       feedback: 'This is a second test feedback.',
                     },
                   ],
-                  restrictions: { min: 0, max: 100, maxLength: 200 },
+                },
+                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
+                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+              },
+              refetchQueries: [{ query: GetUserQuestionDocument }],
+            })
+
+            await manipulateMCQuestion({
+              variables: {
+                id: questionId,
+                name: 'testName',
+                content: 'testContent',
+                contentPlain: 'testContentPlain',
+                options: {
+                  choices: [
+                    {
+                      ix: 20,
+                      value: 'testValueChoice',
+                      correct: false,
+                      feedback: 'This is a test feedback.',
+                    },
+                    {
+                      ix: 21,
+                      value: 'testValueChoice2',
+                      correct: false,
+                      feedback: 'This is a second test feedback.',
+                    },
+                  ],
+                },
+                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
+                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+              },
+              refetchQueries: [{ query: GetUserQuestionDocument }],
+            })
+
+            await manipulateKPRIMQuestion({
+              variables: {
+                id: questionId,
+                name: 'testName',
+                content: 'testContent',
+                contentPlain: 'testContentPlain',
+                options: {
+                  choices: [
+                    {
+                      ix: 20,
+                      value: 'testValueChoice',
+                      correct: false,
+                      feedback: 'This is a test feedback.',
+                    },
+                    {
+                      ix: 21,
+                      value: 'testValueChoice2',
+                      correct: false,
+                      feedback: 'This is a second test feedback.',
+                    },
+                  ],
+                },
+                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
+                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+              },
+              refetchQueries: [{ query: GetUserQuestionDocument }],
+            })
+
+            await manipulateNUMERICALQuestion({
+              variables: {
+                id: questionId,
+                name: 'testName',
+                content: 'testContent',
+                contentPlain: 'testContentPlain',
+                options: {
+                  restrictions: { min: 0, max: 100 },
                   solutionRanges: [
                     { min: 0, max: 1 },
                     { min: 80, max: 100 },
                   ],
+                },
+                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
+                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+              },
+              refetchQueries: [{ query: GetUserQuestionDocument }],
+            })
+
+            await manipulateFreeTextQuestion({
+              variables: {
+                id: questionId,
+                name: 'testName',
+                content: 'testContent',
+                contentPlain: 'testContentPlain',
+                options: {
+                  restrictions: { maxLength: 200 },
                   solutions: [
                     'This is a text solution 1.',
                     'This is a text solution 2.',
                   ],
                 },
                 attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ id: 1 }, { id: 2 }],
+                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
               },
               refetchQueries: [{ query: GetUserQuestionDocument }],
             })
+
             handleSetIsOpen(false)
           }}
         >

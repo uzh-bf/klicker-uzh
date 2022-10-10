@@ -1,0 +1,21 @@
+mutation ManipulateMCQuestion(
+  $id: Int
+  $name: String
+  $content: String
+  $contentPlain: String
+  $options: OptionsChoicesInput
+  $attachments: [AttachmentInput]
+  $tags: [TagInput]
+) {
+  manipulateMCQuestion(
+    id: $id
+    name: $name
+    content: $content
+    contentPlain: $contentPlain
+    options: $options
+    attachments: $attachments
+    tags: $tags
+  ) {
+    id
+  }
+}

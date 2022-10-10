@@ -112,14 +112,27 @@ export const SolutionRange = inputObjectType({
   },
 })
 
-export const OptionsInput = inputObjectType({
-  name: 'OptionsInput',
+export const OptionsChoicesInput = inputObjectType({
+  name: 'OptionsChoicesInput',
   definition(t) {
-    t.list.field('choices', {
+    t.nonNull.list.field('choices', {
       type: ChoiceInput,
     })
+  },
+})
+
+export const OptionsNumericalInput = inputObjectType({
+  name: 'OptionsNumericalInput',
+  definition(t) {
     t.field('restrictions', { type: Restrictions })
     t.list.field('solutionRanges', { type: SolutionRange })
+  },
+})
+
+export const OptionsFreeTextInput = inputObjectType({
+  name: 'OptionsFreeTextInput',
+  definition(t) {
+    t.field('restrictions', { type: Restrictions })
     t.list.string('solutions')
   },
 })
@@ -134,7 +147,7 @@ export const AttachmentInput = inputObjectType({
 export const TagInput = inputObjectType({
   name: 'TagInput',
   definition(t) {
-    t.nonNull.int('id')
+    t.nonNull.string('name')
   },
 })
 
@@ -1238,19 +1251,83 @@ export const Mutation = objectType({
       },
     })
 
-    t.field('editQuestion', {
+    t.field('manipulateSCQuestion', {
       type: Question,
       args: {
-        id: nonNull(intArg()),
+        id: intArg(),
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
-        options: arg({ type: 'OptionsInput' }),
+        options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),
       },
       resolve(_, args, ctx: Context) {
-        return QuestionService.editQuestion(args, ctx)
+        return QuestionService.manipulateSCQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateMCQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        name: stringArg(),
+        content: stringArg(),
+        contentPlain: stringArg(),
+        options: arg({ type: 'OptionsChoicesInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(arg({ type: 'TagInput' })),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateMCQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateKPRIMQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        name: stringArg(),
+        content: stringArg(),
+        contentPlain: stringArg(),
+        options: arg({ type: 'OptionsChoicesInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(arg({ type: 'TagInput' })),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateKPRIMQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateNUMERICALQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        name: stringArg(),
+        content: stringArg(),
+        contentPlain: stringArg(),
+        options: arg({ type: 'OptionsNumericalInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(arg({ type: 'TagInput' })),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateNUMERICALQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateFREETEXTQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        name: stringArg(),
+        content: stringArg(),
+        contentPlain: stringArg(),
+        options: arg({ type: 'OptionsFreeTextInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(arg({ type: 'TagInput' })),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateFREETEXTQuestion(args, ctx)
       },
     })
 
