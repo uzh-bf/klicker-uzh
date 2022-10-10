@@ -6,6 +6,9 @@ query GetSingleQuestion($id: Int!) {
     content
     contentPlain
 
+    hasSampleSolution
+    hasAnswerFeedbacks
+
     questionData {
       ... on ChoicesQuestionData {
         options {

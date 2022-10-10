@@ -57,9 +57,8 @@ function QuestionEditModal({
     [dataQuestion?.question]
   )
 
-  console.log(dataQuestion)
-
   // TODO: styling of tooltips - some are too wide
+  // TODO: ensure that the tag name is unique for every user - different users should be allows to have tags with the same name though
 
   return (
     <Modal
@@ -79,141 +78,175 @@ function QuestionEditModal({
             content: question.content,
             attachments: question.attachments,
             options: question.questionData.options,
+            hasSampleSolution: question.hasSampleSolution,
+            hasAnswerFeedbacks: question.hasAnswerFeedbacks,
           }}
           // TODO: validationSchema={loginSchema}
           // TODO: pass correct values to this function instead of demo values
           onSubmit={async (values) => {
-            await manipulateSCQuestion({
-              variables: {
-                id: questionId,
-                name: 'testName',
-                content: 'testContent',
-                contentPlain: 'testContentPlain',
-                options: {
-                  choices: [
-                    {
-                      ix: 20,
-                      value: 'testValueChoice',
-                      correct: false,
-                      feedback: 'This is a test feedback.',
-                    },
-                    {
-                      ix: 21,
-                      value: 'testValueChoice2',
-                      correct: false,
-                      feedback: 'This is a second test feedback.',
-                    },
-                  ],
-                },
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: true,
-                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-              },
-              refetchQueries: [{ query: GetUserQuestionDocument }],
-            })
+            console.log(values)
 
-            await manipulateMCQuestion({
-              variables: {
-                id: questionId,
-                name: 'testName',
-                content: 'testContent',
-                contentPlain: 'testContentPlain',
-                options: {
-                  choices: [
-                    {
-                      ix: 20,
-                      value: 'testValueChoice',
-                      correct: false,
-                      feedback: 'This is a test feedback.',
+            switch (question.type) {
+              case 'SC':
+                await manipulateSCQuestion({
+                  variables: {
+                    id: questionId,
+                    name: 'testName',
+                    content: 'testContent',
+                    contentPlain: 'testContentPlain',
+                    options: {
+                      choices: [
+                        {
+                          ix: 20,
+                          value: 'testValueChoice',
+                          correct: false,
+                          feedback: 'This is a test feedback.',
+                        },
+                        {
+                          ix: 21,
+                          value: 'testValueChoice2',
+                          correct: false,
+                          feedback: 'This is a second test feedback.',
+                        },
+                      ],
                     },
-                    {
-                      ix: 21,
-                      value: 'testValueChoice2',
-                      correct: false,
-                      feedback: 'This is a second test feedback.',
-                    },
-                  ],
-                },
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: true,
-                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-              },
-              refetchQueries: [{ query: GetUserQuestionDocument }],
-            })
+                    hasSampleSolution: true,
+                    hasAnswerFeedbacks: true,
+                    attachments: [
+                      { id: 'attachmendId1' },
+                      { id: 'attachmendId2' },
+                    ],
+                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                  },
+                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                })
+                break
 
-            await manipulateKPRIMQuestion({
-              variables: {
-                id: questionId,
-                name: 'testName',
-                content: 'testContent',
-                contentPlain: 'testContentPlain',
-                options: {
-                  choices: [
-                    {
-                      ix: 20,
-                      value: 'testValueChoice',
-                      correct: false,
-                      feedback: 'This is a test feedback.',
+              case 'MC':
+                await manipulateMCQuestion({
+                  variables: {
+                    id: questionId,
+                    name: 'testName',
+                    content: 'testContent',
+                    contentPlain: 'testContentPlain',
+                    options: {
+                      choices: [
+                        {
+                          ix: 20,
+                          value: 'testValueChoice',
+                          correct: false,
+                          feedback: 'This is a test feedback.',
+                        },
+                        {
+                          ix: 21,
+                          value: 'testValueChoice2',
+                          correct: false,
+                          feedback: 'This is a second test feedback.',
+                        },
+                      ],
                     },
-                    {
-                      ix: 21,
-                      value: 'testValueChoice2',
-                      correct: false,
-                      feedback: 'This is a second test feedback.',
+                    hasSampleSolution: true,
+                    hasAnswerFeedbacks: true,
+                    attachments: [
+                      { id: 'attachmendId1' },
+                      { id: 'attachmendId2' },
+                    ],
+                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                  },
+                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                })
+                break
+
+              case 'KPRIM':
+                await manipulateKPRIMQuestion({
+                  variables: {
+                    id: questionId,
+                    name: 'testName',
+                    content: 'testContent',
+                    contentPlain: 'testContentPlain',
+                    options: {
+                      choices: [
+                        {
+                          ix: 20,
+                          value: 'testValueChoice',
+                          correct: false,
+                          feedback: 'This is a test feedback.',
+                        },
+                        {
+                          ix: 21,
+                          value: 'testValueChoice2',
+                          correct: false,
+                          feedback: 'This is a second test feedback.',
+                        },
+                      ],
                     },
-                  ],
-                },
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: true,
-                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-              },
-              refetchQueries: [{ query: GetUserQuestionDocument }],
-            })
+                    hasSampleSolution: true,
+                    hasAnswerFeedbacks: true,
+                    attachments: [
+                      { id: 'attachmendId1' },
+                      { id: 'attachmendId2' },
+                    ],
+                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                  },
+                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                })
+                break
 
-            await manipulateNUMERICALQuestion({
-              variables: {
-                id: questionId,
-                name: 'testName',
-                content: 'testContent',
-                contentPlain: 'testContentPlain',
-                options: {
-                  restrictions: { min: 0, max: 100 },
-                  solutionRanges: [
-                    { min: 0, max: 1 },
-                    { min: 80, max: 100 },
-                  ],
-                },
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: true,
-                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-              },
-              refetchQueries: [{ query: GetUserQuestionDocument }],
-            })
+              case 'NUMERICAL':
+                await manipulateNUMERICALQuestion({
+                  variables: {
+                    id: questionId,
+                    name: 'testName',
+                    content: 'testContent',
+                    contentPlain: 'testContentPlain',
+                    options: {
+                      restrictions: { min: 0, max: 100 },
+                      solutionRanges: [
+                        { min: 0, max: 1 },
+                        { min: 80, max: 100 },
+                      ],
+                    },
+                    hasSampleSolution: true,
+                    hasAnswerFeedbacks: true,
+                    attachments: [
+                      { id: 'attachmendId1' },
+                      { id: 'attachmendId2' },
+                    ],
+                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                  },
+                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                })
+                break
 
-            await manipulateFreeTextQuestion({
-              variables: {
-                id: questionId,
-                name: 'testName',
-                content: 'testContent',
-                contentPlain: 'testContentPlain',
-                options: {
-                  restrictions: { maxLength: 200 },
-                  solutions: [
-                    'This is a text solution 1.',
-                    'This is a text solution 2.',
-                  ],
-                },
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: true,
-                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
-                tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-              },
-              refetchQueries: [{ query: GetUserQuestionDocument }],
-            })
+              case 'FREE_TEXT':
+                await manipulateFreeTextQuestion({
+                  variables: {
+                    id: questionId,
+                    name: 'testName',
+                    content: 'testContent',
+                    contentPlain: 'testContentPlain',
+                    options: {
+                      restrictions: { maxLength: 200 },
+                      solutions: [
+                        'This is a text solution 1.',
+                        'This is a text solution 2.',
+                      ],
+                    },
+                    hasSampleSolution: true,
+                    hasAnswerFeedbacks: true,
+                    attachments: [
+                      { id: 'attachmendId1' },
+                      { id: 'attachmendId2' },
+                    ],
+                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                  },
+                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                })
+                break
+
+              default:
+                break
+            }
 
             handleSetIsOpen(false)
           }}
