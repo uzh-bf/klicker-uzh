@@ -15,6 +15,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { Button, Label, Modal } from '@uzh-bf/design-system'
 import { TYPES_LABELS } from 'shared-components'
+import ContentInput from './ContentInput'
 
 interface QuestionEditModalProps {
   isOpen: boolean
@@ -44,13 +45,6 @@ function QuestionEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreetextQuestionDocument
   )
-
-  // TODO replace by proper function call
-  const temp = () =>
-    manipulateSCQuestion({
-      variables: { id: questionId },
-      refetchQueries: [{ query: GetUserQuestionDocument }],
-    })
 
   const question = useMemo(
     () => dataQuestion?.question,
@@ -251,7 +245,14 @@ function QuestionEditModal({
             handleSetIsOpen(false)
           }}
         >
-          {({ errors, touched, isSubmitting, values }) => {
+          {({
+            errors,
+            touched,
+            isSubmitting,
+            values,
+            setFieldValue,
+            setFieldTouched,
+          }) => {
             return (
               <Form className="w-full">
                 <div className="flex flex-row">
@@ -298,6 +299,19 @@ function QuestionEditModal({
                     tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
                     showTooltipSymbol={true}
                   />
+
+                  {/* // TODO: wrap in formik field with "as" or "componetn" */}
+                  <ContentInput
+                    error={errors.content}
+                    touched={touched.content}
+                    content={values.content}
+                    onChange={(newContent: string): void => {
+                      setFieldTouched('content', true, false)
+                      setFieldValue('content', newContent)
+                    }}
+                  />
+                  {console.log(values.content)}
+                  {values.content}
                 </div>
 
                 <div className="">
@@ -308,6 +322,7 @@ function QuestionEditModal({
                     tooltip="// TODO Tooltip Content"
                     showTooltipSymbol={true}
                   />
+                  <div>// TODO: to be released</div>
                 </div>
 
                 <div className="">
