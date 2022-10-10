@@ -134,6 +134,9 @@ model Question {
   contentPlain String
   options      Json
 
+  hasSampleSolution  Boolean @default(false)
+  hasAnswerFeedbacks Boolean @default(false)
+
   type QuestionType
 
   attachments Attachment[]
@@ -148,7 +151,7 @@ model Question {
 }
 
 model Tag {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
   name String
 
   questions Question[]
