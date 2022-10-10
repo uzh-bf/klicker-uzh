@@ -78,11 +78,11 @@ export async function manipulateSCQuestion(
     attachments,
     tags,
   }: {
-    id: number
-    name: string
-    content: string
-    contentPlain: string
-    options: {
+    id?: number
+    name?: string
+    content?: string
+    contentPlain?: string
+    options?: {
       choices: {
         ix: number
         value: string
@@ -90,8 +90,8 @@ export async function manipulateSCQuestion(
         feedback?: string
       }[]
     }
-    attachments: { id: string }[]
-    tags: { id: string }[]
+    attachments?: { id: string }[]
+    tags?: { id: string }[]
   },
   ctx: ContextWithUser
 ) {
@@ -134,11 +134,11 @@ export async function manipulateMCQuestion(
     attachments,
     tags,
   }: {
-    id: number
-    name: string
-    content: string
-    contentPlain: string
-    options: {
+    id?: number
+    name?: string
+    content?: string
+    contentPlain?: string
+    options?: {
       choices: {
         ix: number
         value: string
@@ -146,8 +146,8 @@ export async function manipulateMCQuestion(
         feedback?: string
       }[]
     }
-    attachments: { id: string }[]
-    tags: { id: string }[]
+    attachments?: { id: string }[]
+    tags?: { id: string }[]
   },
   ctx: ContextWithUser
 ) {
@@ -190,20 +190,17 @@ export async function manipulateKPRIMQuestion(
     attachments,
     tags,
   }: {
-    id: number
-    name: string
-    content: string
-    contentPlain: string
-    options: {
+    id?: number
+    name?: string
+    content?: string
+    contentPlain?: string
+    options?: {
       choices: {
         ix: number
         value: string
         correct?: boolean
         feedback?: string
       }[]
-      // restrictions?: { min?: number; max?: number; maxLength?: number }
-      // solutionRanges?: { min?: number; max?: number }[]
-      // solutions?: string[]
     }
     attachments: { id: string }[]
     tags: { id: string }[]
@@ -249,16 +246,16 @@ export async function manipulateNUMERICALQuestion(
     attachments,
     tags,
   }: {
-    id: number
-    name: string
-    content: string
-    contentPlain: string
-    options: {
+    id?: number
+    name?: string
+    content?: string
+    contentPlain?: string
+    options?: {
       restrictions?: { min?: number; max?: number }
       solutionRanges?: { min?: number; max?: number }[]
     }
-    attachments: { id: string }[]
-    tags: { id: string }[]
+    attachments?: { id: string }[]
+    tags?: { id: string }[]
   },
   ctx: ContextWithUser
 ) {
@@ -301,16 +298,16 @@ export async function manipulateFREETEXTQuestion(
     attachments,
     tags,
   }: {
-    id: number
-    name: string
-    content: string
-    contentPlain: string
-    options: {
+    id?: number
+    name?: string
+    content?: string
+    contentPlain?: string
+    options?: {
       restrictions?: { maxLength?: number }
       solutions?: string[]
     }
-    attachments: { id: string }[]
-    tags: { id: string }[]
+    attachments?: { id: string }[]
+    tags?: { id: string }[]
   },
   ctx: ContextWithUser
 ) {
