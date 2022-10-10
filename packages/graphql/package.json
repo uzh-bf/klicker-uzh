@@ -74,7 +74,7 @@
     "dayjs": "1.11.5",
     "generate-password": "1.7.0",
     "graphql": "16.6.0",
-    "graphql-scalars": "1.18.0",
+    "graphql-scalars": "1.19.0",
     "mathjs": "11.2.1",
     "nexus": "1.3.0",
     "validator": "13.7.0"
