@@ -75,6 +75,8 @@ export async function manipulateSCQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags,
   }: {
@@ -90,6 +92,8 @@ export async function manipulateSCQuestion(
         feedback?: string
       }[]
     }
+    hasSampleSolution?: boolean
+    hasAnswerFeedbacks?: boolean
     attachments?: { id: string }[]
     tags?: { id: string }[]
   },
@@ -114,6 +118,8 @@ export async function manipulateSCQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags
   )
@@ -131,6 +137,8 @@ export async function manipulateMCQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags,
   }: {
@@ -146,6 +154,8 @@ export async function manipulateMCQuestion(
         feedback?: string
       }[]
     }
+    hasSampleSolution?: boolean
+    hasAnswerFeedbacks?: boolean
     attachments?: { id: string }[]
     tags?: { id: string }[]
   },
@@ -170,6 +180,8 @@ export async function manipulateMCQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags
   )
@@ -187,6 +199,8 @@ export async function manipulateKPRIMQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags,
   }: {
@@ -202,6 +216,8 @@ export async function manipulateKPRIMQuestion(
         feedback?: string
       }[]
     }
+    hasSampleSolution?: boolean
+    hasAnswerFeedbacks?: boolean
     attachments: { id: string }[]
     tags: { id: string }[]
   },
@@ -226,6 +242,8 @@ export async function manipulateKPRIMQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags
   )
@@ -243,6 +261,8 @@ export async function manipulateNUMERICALQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags,
   }: {
@@ -254,6 +274,8 @@ export async function manipulateNUMERICALQuestion(
       restrictions?: { min?: number; max?: number }
       solutionRanges?: { min?: number; max?: number }[]
     }
+    hasSampleSolution?: boolean
+    hasAnswerFeedbacks?: boolean
     attachments?: { id: string }[]
     tags?: { id: string }[]
   },
@@ -278,6 +300,8 @@ export async function manipulateNUMERICALQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags
   )
@@ -295,6 +319,8 @@ export async function manipulateFREETEXTQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags,
   }: {
@@ -306,6 +332,8 @@ export async function manipulateFREETEXTQuestion(
       restrictions?: { maxLength?: number }
       solutions?: string[]
     }
+    hasSampleSolution?: boolean
+    hasAnswerFeedbacks?: boolean
     attachments?: { id: string }[]
     tags?: { id: string }[]
   },
@@ -330,6 +358,8 @@ export async function manipulateFREETEXTQuestion(
     content,
     contentPlain,
     options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
     attachments,
     tags
   )

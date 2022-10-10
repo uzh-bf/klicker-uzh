@@ -4,6 +4,8 @@ mutation ManipulateNUMERICALQuestion(
   $content: String
   $contentPlain: String
   $options: OptionsNumericalInput
+  $hasSampleSolution: Boolean
+  $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput]
   $tags: [TagInput]
 ) {
@@ -13,6 +15,8 @@ mutation ManipulateNUMERICALQuestion(
     content: $content
     contentPlain: $contentPlain
     options: $options
+    hasSampleSolution: $hasSampleSolution
+    hasAnswerFeedbacks: $hasAnswerFeedbacks
     attachments: $attachments
     tags: $tags
   ) {

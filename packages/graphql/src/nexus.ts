@@ -161,6 +161,9 @@ export const QuestionData = interfaceType({
     t.nonNull.string('content')
     t.nonNull.string('contentPlain')
 
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
+
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
   },
@@ -298,6 +301,9 @@ export const Question = objectType({
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
+
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
 
     t.nonNull.field('questionData', {
       type: QuestionData,
@@ -1258,6 +1264,8 @@ export const Mutation = objectType({
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),
@@ -1274,6 +1282,8 @@ export const Mutation = objectType({
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),
@@ -1290,6 +1300,8 @@ export const Mutation = objectType({
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),
@@ -1306,6 +1318,8 @@ export const Mutation = objectType({
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsNumericalInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),
@@ -1322,6 +1336,8 @@ export const Mutation = objectType({
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsFreeTextInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
         tags: list(arg({ type: 'TagInput' })),

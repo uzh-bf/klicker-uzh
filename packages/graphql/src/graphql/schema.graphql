@@ -72,6 +72,8 @@ input ChoiceInput {
 type ChoicesQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -132,6 +134,8 @@ type FeedbackResponse {
 type FreeTextQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -235,11 +239,11 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsFreeTextInput, tags: [TagInput]): Question
-  manipulateKPRIMQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
-  manipulateMCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
-  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsNumericalInput, tags: [TagInput]): Question
-  manipulateSCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [TagInput]): Question
+  manipulateKPRIMQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
+  manipulateMCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [TagInput]): Question
+  manipulateSCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [TagInput]): Question
   markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -258,6 +262,8 @@ type Mutation {
 type NumericalQuestionData implements QuestionData {
   content: String!
   contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -371,6 +377,8 @@ type Question {
   content: String!
   contentPlain: String!
   createdAt: DateTime!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -384,6 +392,8 @@ type Question {
 interface QuestionData {
   content: String!
   contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
