@@ -1,5 +1,10 @@
-import { useQuery } from '@apollo/client'
-import { GetSingleQuestionDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  EditQuestionDocument,
+  GetSingleQuestionDocument,
+  GetUserQuestionDocument,
+  Tag,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -25,6 +30,14 @@ function QuestionEditModal({
   } = useQuery(GetSingleQuestionDocument, {
     variables: { id: questionId },
   })
+  const [editQuestion] = useMutation(EditQuestionDocument)
+
+  // TODO replace by proper function call
+  const temp = () =>
+    editQuestion({
+      variables: { id: questionId },
+      refetchQueries: [{ query: GetUserQuestionDocument }],
+    })
 
   const question = useMemo(
     () => dataQuestion?.question,
@@ -49,15 +62,52 @@ function QuestionEditModal({
         <Formik
           initialValues={{
             title: question.name,
-            tags: question.tags.map((tag: Tag) => tag.name),
+            tags: question?.tags?.map((tag: Tag) => tag.name) || [],
             content: question.content,
             attachments: question.attachments,
-            choices: question.choices,
-            restrictions: question.restrictions,
-            solutions: question.solutions,
+            options: question.questionData.options,
           }}
           // TODO: validationSchema={loginSchema}
-          onSubmit={async (values) => null} // TODO
+          // TODO: pass correct values to this function instead of demo values
+          onSubmit={async (values) => {
+            await editQuestion({
+              variables: {
+                id: questionId,
+                name: 'testName',
+                content: 'testContent',
+                contentPlain: 'testContentPlain',
+                options: {
+                  choices: [
+                    {
+                      ix: 20,
+                      value: 'testValueChoice',
+                      correct: false,
+                      feedback: 'This is a test feedback.',
+                    },
+                    {
+                      ix: 21,
+                      value: 'testValueChoice2',
+                      correct: false,
+                      feedback: 'This is a second test feedback.',
+                    },
+                  ],
+                  restrictions: { min: 0, max: 100, maxLength: 200 },
+                  solutionRanges: [
+                    { min: 0, max: 1 },
+                    { min: 80, max: 100 },
+                  ],
+                  solutions: [
+                    'This is a text solution 1.',
+                    'This is a text solution 2.',
+                  ],
+                },
+                attachments: [{ id: 'attachmendId1' }, { id: 'attachmendId2' }],
+                tags: [{ id: 1 }, { id: 2 }],
+              },
+              refetchQueries: [{ query: GetUserQuestionDocument }],
+            })
+            handleSetIsOpen(false)
+          }}
         >
           {({ errors, touched, isSubmitting, values }) => {
             return (

@@ -37,7 +37,7 @@ declare global {
 
 export interface NexusGenInputs {
   AttachmentInput: { // input type
-    id?: string | null; // String
+    id: string; // String!
   }
   AvatarSettingsInput: { // input type
     accessory: string; // String!
@@ -58,13 +58,13 @@ export interface NexusGenInputs {
   ChoiceInput: { // input type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
-    ix?: number | null; // Int
-    value?: string | null; // String
+    ix: number; // Int!
+    value: string; // String!
   }
   OptionsInput: { // input type
     choices?: Array<NexusGenInputs['ChoiceInput'] | null> | null; // [ChoiceInput]
     restrictions?: NexusGenInputs['Restrictions'] | null; // Restrictions
-    solutionRanges?: NexusGenInputs['SolutionRange'] | null; // SolutionRange
+    solutionRanges?: Array<NexusGenInputs['SolutionRange'] | null> | null; // [SolutionRange]
     solutions?: Array<string | null> | null; // [String]
   }
   ResponseInput: { // input type
@@ -90,7 +90,7 @@ export interface NexusGenInputs {
     keys: NexusGenInputs['SubscriptionKeys']; // SubscriptionKeys!
   }
   TagInput: { // input type
-    id?: string | null; // String
+    id: number; // Int!
   }
 }
 
@@ -121,7 +121,7 @@ export interface NexusGenObjects {
   Attachment: { // root type
     description?: string | null; // String
     href: string; // String!
-    id: string; // String!
+    id: string; // ID!
     name: string; // String!
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
@@ -383,7 +383,7 @@ export interface NexusGenObjects {
   }
   Subscription: {};
   Tag: { // root type
-    id: number; // Int!
+    id: string; // ID!
     name: string; // String!
   }
   User: { // root type
@@ -416,7 +416,7 @@ export interface NexusGenFieldTypes {
   Attachment: { // field return type
     description: string | null; // String
     href: string; // String!
-    id: string; // String!
+    id: string; // ID!
     name: string; // String!
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
@@ -736,7 +736,7 @@ export interface NexusGenFieldTypes {
     runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
   }
   Tag: { // field return type
-    id: number; // Int!
+    id: string; // ID!
     name: string; // String!
   }
   User: { // field return type
@@ -767,7 +767,7 @@ export interface NexusGenFieldTypeNames {
   Attachment: { // field return type name
     description: 'String'
     href: 'String'
-    id: 'String'
+    id: 'ID'
     name: 'String'
     originalName: 'String'
     type: 'AttachmentType'
@@ -1087,7 +1087,7 @@ export interface NexusGenFieldTypeNames {
     runningSessionUpdated: 'SessionBlock'
   }
   Tag: { // field return type name
-    id: 'Int'
+    id: 'ID'
     name: 'String'
   }
   User: { // field return type name

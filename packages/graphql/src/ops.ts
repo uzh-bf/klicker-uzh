@@ -36,14 +36,14 @@ export type Attachment = {
   __typename?: 'Attachment';
   description?: Maybe<Scalars['String']>;
   href: Scalars['String'];
-  id: Scalars['String'];
+  id: Scalars['ID'];
   name: Scalars['String'];
   originalName?: Maybe<Scalars['String']>;
   type: AttachmentType;
 };
 
 export type AttachmentInput = {
-  id?: InputMaybe<Scalars['String']>;
+  id: Scalars['String'];
 };
 
 export enum AttachmentType {
@@ -85,8 +85,8 @@ export type Choice = {
 export type ChoiceInput = {
   correct?: InputMaybe<Scalars['Boolean']>;
   feedback?: InputMaybe<Scalars['String']>;
-  ix?: InputMaybe<Scalars['Int']>;
-  value?: InputMaybe<Scalars['String']>;
+  ix: Scalars['Int'];
+  value: Scalars['String'];
 };
 
 export type ChoicesQuestionData = QuestionData & {
@@ -500,7 +500,7 @@ export type NumericalSolutionRange = {
 export type OptionsInput = {
   choices?: InputMaybe<Array<InputMaybe<ChoiceInput>>>;
   restrictions?: InputMaybe<Restrictions>;
-  solutionRanges?: InputMaybe<SolutionRange>;
+  solutionRanges?: InputMaybe<Array<InputMaybe<SolutionRange>>>;
   solutions?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
@@ -804,12 +804,12 @@ export type SubscriptionObjectInput = {
 
 export type Tag = {
   __typename?: 'Tag';
-  id: Scalars['Int'];
+  id: Scalars['ID'];
   name: Scalars['String'];
 };
 
 export type TagInput = {
-  id?: InputMaybe<Scalars['String']>;
+  id: Scalars['Int'];
 };
 
 export type User = {
@@ -1149,12 +1149,12 @@ export type GetSingleQuestionQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleQuestionQuery = { __typename?: 'Query', question?: { __typename?: 'Question', id: number, name: string, type: string, content: string, contentPlain: string, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } }, tags?: Array<{ __typename?: 'Tag', id: number, name: string }> | null, attachments?: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> | null } | null };
+export type GetSingleQuestionQuery = { __typename?: 'Query', question?: { __typename?: 'Question', id: number, name: string, type: string, content: string, contentPlain: string, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } }, tags?: Array<{ __typename?: 'Tag', id: string, name: string }> | null, attachments?: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> | null } | null };
 
 export type GetUserQuestionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUserQuestionsQuery = { __typename?: 'Query', userQuestions?: Array<{ __typename?: 'Question', id: number, name: string, type: string, content: string, contentPlain: string, isArchived: boolean, isDeleted: boolean, createdAt: any, updatedAt?: any | null, tags?: Array<{ __typename?: 'Tag', id: number, name: string }> | null }> | null };
+export type GetUserQuestionsQuery = { __typename?: 'Query', userQuestions?: Array<{ __typename?: 'Question', id: number, name: string, type: string, content: string, contentPlain: string, isArchived: boolean, isDeleted: boolean, createdAt: any, updatedAt?: any | null, tags?: Array<{ __typename?: 'Tag', id: string, name: string }> | null }> | null };
 
 export type GetUserSessionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1421,7 +1421,7 @@ export type AggregatedConfusionFeedbacksResolvers<ContextType = any, ParentType 
 export type AttachmentResolvers<ContextType = any, ParentType extends ResolversParentTypes['Attachment'] = ResolversParentTypes['Attachment']> = {
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   href?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   originalName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes['AttachmentType'], ParentType, ContextType>;
@@ -1831,7 +1831,7 @@ export type SubscriptionResolvers<ContextType = any, ParentType extends Resolver
 };
 
 export type TagResolvers<ContextType = any, ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag']> = {
-  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

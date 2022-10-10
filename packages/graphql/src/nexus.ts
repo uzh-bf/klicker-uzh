@@ -97,9 +97,9 @@ export const Restrictions = inputObjectType({
 export const ChoiceInput = inputObjectType({
   name: 'ChoiceInput',
   definition(t) {
-    t.int('ix')
+    t.nonNull.int('ix')
     t.boolean('correct')
-    t.string('value')
+    t.nonNull.string('value')
     t.string('feedback')
   },
 })
@@ -119,7 +119,7 @@ export const OptionsInput = inputObjectType({
       type: ChoiceInput,
     })
     t.field('restrictions', { type: Restrictions })
-    t.field('solutionRanges', { type: SolutionRange })
+    t.list.field('solutionRanges', { type: SolutionRange })
     t.list.string('solutions')
   },
 })
@@ -127,14 +127,14 @@ export const OptionsInput = inputObjectType({
 export const AttachmentInput = inputObjectType({
   name: 'AttachmentInput',
   definition(t) {
-    t.string('id')
+    t.nonNull.string('id')
   },
 })
 
 export const TagInput = inputObjectType({
   name: 'TagInput',
   definition(t) {
-    t.string('id')
+    t.nonNull.int('id')
   },
 })
 
@@ -170,7 +170,7 @@ export const QuestionData = interfaceType({
 export const Tag = objectType({
   name: 'Tag',
   definition(t) {
-    t.nonNull.int('id')
+    t.nonNull.id('id')
     t.nonNull.string('name')
   },
 })
@@ -332,7 +332,7 @@ export const AttachmentType = enumType({
 export const Attachment = objectType({
   name: 'Attachment',
   definition(t) {
-    t.nonNull.string('id')
+    t.nonNull.id('id')
 
     t.nonNull.string('href')
     t.nonNull.string('name')

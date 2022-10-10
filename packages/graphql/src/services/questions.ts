@@ -83,18 +83,17 @@ export async function editQuestion(
     contentPlain: string
     options: {
       choices?: {
-        id: string
         ix: number
-        correct: boolean
         value: string
+        correct?: boolean
         feedback?: string
       }[]
-      restrictions: { min?: number; max?: number; maxLength?: number }
+      restrictions?: { min?: number; max?: number; maxLength?: number }
       solutionRanges?: { min?: number; max?: number }[]
       solutions?: string[]
     }
-    attachments: {}[]
-    tags: {}[]
+    attachments: { id: string }[]
+    tags: { id: string }[]
   },
   ctx: ContextWithUser
 ) {
@@ -108,6 +107,18 @@ export async function editQuestion(
       attachments: true,
     },
   })
+
+  console.log('question', question)
+  console.log(
+    'inputs',
+    id,
+    name,
+    content,
+    contentPlain,
+    options,
+    attachments,
+    tags
+  )
 
   return {
     ...question,

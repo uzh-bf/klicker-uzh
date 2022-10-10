@@ -17,14 +17,14 @@ type AggregatedConfusionFeedbacks {
 type Attachment {
   description: String
   href: String!
-  id: String!
+  id: ID!
   name: String!
   originalName: String
   type: AttachmentType!
 }
 
 input AttachmentInput {
-  id: String
+  id: String!
 }
 
 enum AttachmentType {
@@ -65,8 +65,8 @@ type Choice {
 input ChoiceInput {
   correct: Boolean
   feedback: String
-  ix: Int
-  value: String
+  ix: Int!
+  value: String!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -280,7 +280,7 @@ type NumericalSolutionRange {
 input OptionsInput {
   choices: [ChoiceInput]
   restrictions: Restrictions
-  solutionRanges: SolutionRange
+  solutionRanges: [SolutionRange]
   solutions: [String]
 }
 
@@ -479,12 +479,12 @@ input SubscriptionObjectInput {
 }
 
 type Tag {
-  id: Int!
+  id: ID!
   name: String!
 }
 
 input TagInput {
-  id: String
+  id: Int!
 }
 
 type User {
