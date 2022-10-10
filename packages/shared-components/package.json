@@ -2,6 +2,11 @@
   "name": "shared-components",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "dev": "tailwindcss -i src/globals.css -o src/tailwind.css -w",
+    "build": "tailwindcss -i src/globals.css -o src/tailwind.css"
+  },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "6.2.0",
     "@fortawesome/react-fontawesome": "0.2.0",
