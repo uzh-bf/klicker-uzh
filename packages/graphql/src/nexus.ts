@@ -144,13 +144,6 @@ export const AttachmentInput = inputObjectType({
   },
 })
 
-export const TagInput = inputObjectType({
-  name: 'TagInput',
-  definition(t) {
-    t.nonNull.string('name')
-  },
-})
-
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -1268,7 +1261,7 @@ export const Mutation = objectType({
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(arg({ type: 'TagInput' })),
+        tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return QuestionService.manipulateSCQuestion(args, ctx)
@@ -1286,7 +1279,7 @@ export const Mutation = objectType({
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(arg({ type: 'TagInput' })),
+        tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return QuestionService.manipulateMCQuestion(args, ctx)
@@ -1304,7 +1297,7 @@ export const Mutation = objectType({
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(arg({ type: 'TagInput' })),
+        tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return QuestionService.manipulateKPRIMQuestion(args, ctx)
@@ -1322,7 +1315,7 @@ export const Mutation = objectType({
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsNumericalInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(arg({ type: 'TagInput' })),
+        tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return QuestionService.manipulateNUMERICALQuestion(args, ctx)
@@ -1340,7 +1333,7 @@ export const Mutation = objectType({
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsFreeTextInput' }),
         attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(arg({ type: 'TagInput' })),
+        tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
         return QuestionService.manipulateFREETEXTQuestion(args, ctx)

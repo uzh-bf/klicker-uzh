@@ -7,7 +7,7 @@ mutation ManipulateKPRIMQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput]
-  $tags: [TagInput]
+  $tags: [String]
 ) {
   manipulateKPRIMQuestion(
     id: $id

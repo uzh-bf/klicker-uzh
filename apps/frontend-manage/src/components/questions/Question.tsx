@@ -130,6 +130,8 @@ function Question({
             <Button
               className="justify-center h-10 bg-white w-36"
               onClick={(): void => setIsDuplicationModalOpen(true)}
+              // TODO: implement
+              disabled
             >
               Duplizieren
             </Button>

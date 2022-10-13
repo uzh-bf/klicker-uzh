@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetSingleQuestionDocument,
-  GetUserQuestionDocument,
+  GetUserQuestionsDocument,
   ManipulateFreetextQuestionDocument,
   ManipulateKprimQuestionDocument,
   ManipulateMcQuestionDocument,
@@ -92,85 +92,12 @@ function QuestionEditModal({
 
             switch (question.type) {
               case 'SC':
-                // TODO
                 await manipulateSCQuestion({
                   variables: {
                     id: questionId,
-                    name: 'testName',
-                    content: 'testContent',
-                    contentPlain: 'testContentPlain',
-                    options: {
-                      choices: [
-                        {
-                          ix: 20,
-                          value: 'testValueChoice',
-                          correct: false,
-                          feedback: 'This is a test feedback.',
-                        },
-                        {
-                          ix: 21,
-                          value: 'testValueChoice2',
-                          correct: false,
-                          feedback: 'This is a second test feedback.',
-                        },
-                      ],
-                    },
-                    hasSampleSolution: true,
-                    hasAnswerFeedbacks: true,
-                    attachments: [
-                      { id: 'attachmendId1' },
-                      { id: 'attachmendId2' },
-                    ],
-                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-                  },
-                  refetchQueries: [{ query: GetUserQuestionDocument }],
-                })
-                break
-
-              // TODO
-              case 'MC':
-                await manipulateMCQuestion({
-                  variables: {
-                    id: questionId,
-                    name: 'testName',
-                    content: 'testContent',
-                    contentPlain: 'testContentPlain',
-                    options: {
-                      choices: [
-                        {
-                          ix: 20,
-                          value: 'testValueChoice',
-                          correct: false,
-                          feedback: 'This is a test feedback.',
-                        },
-                        {
-                          ix: 21,
-                          value: 'testValueChoice2',
-                          correct: false,
-                          feedback: 'This is a second test feedback.',
-                        },
-                      ],
-                    },
-                    hasSampleSolution: true,
-                    hasAnswerFeedbacks: true,
-                    attachments: [
-                      { id: 'attachmendId1' },
-                      { id: 'attachmendId2' },
-                    ],
-                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
-                  },
-                  refetchQueries: [{ query: GetUserQuestionDocument }],
-                })
-                break
-
-              // TODO: in progress
-              case 'KPRIM':
-                await manipulateKPRIMQuestion({
-                  variables: {
-                    id: questionId,
                     name: values.title,
-                    content: values.title,
-                    contentPlain: '// TODO',
+                    content: values.content,
+                    contentPlain: values.content, // TODO: remove this field
                     options: {
                       choices: values.options.choices.map((choice: any) => {
                         return {
@@ -183,13 +110,62 @@ function QuestionEditModal({
                     },
                     hasSampleSolution: values.hasSampleSolution,
                     hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: [
-                      { id: 'attachmendId1' },
-                      { id: 'attachmendId2' },
-                    ],
-                    tags: values.tags.map((tag: string) => ({ name: tag })),
+                    attachments: undefined, // TODO: implement
+                    tags: values.tags,
                   },
-                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                  refetchQueries: [{ query: GetUserQuestionsDocument }],
+                })
+                break
+
+              case 'MC':
+                await manipulateMCQuestion({
+                  variables: {
+                    id: questionId,
+                    name: values.title,
+                    content: values.content,
+                    contentPlain: values.content, // TODO: remove this field
+                    options: {
+                      choices: values.options.choices.map((choice: any) => {
+                        return {
+                          ix: choice.ix,
+                          value: choice.value,
+                          correct: choice.correct,
+                          feedback: choice.feedback,
+                        }
+                      }),
+                    },
+                    hasSampleSolution: values.hasSampleSolution,
+                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+                    attachments: undefined, // TODO: implement
+                    tags: values.tags,
+                  },
+                  refetchQueries: [{ query: GetUserQuestionsDocument }],
+                })
+                break
+
+              case 'KPRIM':
+                await manipulateKPRIMQuestion({
+                  variables: {
+                    id: questionId,
+                    name: values.title,
+                    content: values.content,
+                    contentPlain: values.content, // TODO: remove this field
+                    options: {
+                      choices: values.options.choices.map((choice: any) => {
+                        return {
+                          ix: choice.ix,
+                          value: choice.value,
+                          correct: choice.correct,
+                          feedback: choice.feedback,
+                        }
+                      }),
+                    },
+                    hasSampleSolution: values.hasSampleSolution,
+                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+                    attachments: undefined, // TODO: implement
+                    tags: values.tags,
+                  },
+                  refetchQueries: [{ query: GetUserQuestionsDocument }],
                 })
                 break
 
@@ -198,9 +174,10 @@ function QuestionEditModal({
                 await manipulateNUMERICALQuestion({
                   variables: {
                     id: questionId,
-                    name: 'testName',
-                    content: 'testContent',
-                    contentPlain: 'testContentPlain',
+                    name: values.title,
+                    content: values.content,
+                    contentPlain: values.content, // TODO: remove this field
+                    // TODO: implement
                     options: {
                       restrictions: { min: 0, max: 100 },
                       solutionRanges: [
@@ -208,15 +185,12 @@ function QuestionEditModal({
                         { min: 80, max: 100 },
                       ],
                     },
-                    hasSampleSolution: true,
-                    hasAnswerFeedbacks: true,
-                    attachments: [
-                      { id: 'attachmendId1' },
-                      { id: 'attachmendId2' },
-                    ],
-                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                    hasSampleSolution: values.hasSampleSolution,
+                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+                    attachments: undefined, // TODO: implement
+                    tags: values.tags,
                   },
-                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                  refetchQueries: [{ query: GetUserQuestionsDocument }],
                 })
                 break
 
@@ -225,9 +199,10 @@ function QuestionEditModal({
                 await manipulateFreeTextQuestion({
                   variables: {
                     id: questionId,
-                    name: 'testName',
-                    content: 'testContent',
-                    contentPlain: 'testContentPlain',
+                    name: values.title,
+                    content: values.content,
+                    contentPlain: values.content, // TODO: remove this field
+                    // TODO: implement
                     options: {
                       restrictions: { maxLength: 200 },
                       solutions: [
@@ -235,15 +210,12 @@ function QuestionEditModal({
                         'This is a text solution 2.',
                       ],
                     },
-                    hasSampleSolution: true,
-                    hasAnswerFeedbacks: true,
-                    attachments: [
-                      { id: 'attachmendId1' },
-                      { id: 'attachmendId2' },
-                    ],
-                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                    hasSampleSolution: values.hasSampleSolution,
+                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
+                    tags: values.tags,
                   },
-                  refetchQueries: [{ query: GetUserQuestionDocument }],
+                  refetchQueries: [{ query: GetUserQuestionsDocument }],
                 })
                 break
 
@@ -264,7 +236,7 @@ function QuestionEditModal({
           }) => {
             return (
               <Form className="w-full">
-                <div className="flex flex-row">
+                <div className="flex flex-row mt-2">
                   <Label
                     label="Fragetitel:"
                     className="my-auto mr-2 text-lg font-bold"
@@ -283,32 +255,34 @@ function QuestionEditModal({
                 </div>
 
                 {/* {// TODO replace tag input by suitable component including tag suggestions} */}
-                <div>
-                  Temporary: Enter tags separated by commas e.g.: Tag1, Tag2,
-                  Tag3
-                </div>
-                <div className="flex flex-row">
-                  <Label
-                    label="Tags:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
-                    tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
-                    showTooltipSymbol={true}
-                  />
-                  <Field
-                    name="title"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
-                    )}
-                    value={values.tags.join(', ')}
-                    onChange={(e: any) => {
-                      setFieldValue('tags', e.target.value.split(', '))
-                    }}
-                  />
+                <div className="mt-2">
+                  <div className="flex flex-row">
+                    <Label
+                      label="Tags:"
+                      className="my-auto mr-2 text-lg font-bold"
+                      tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                      tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
+                      showTooltipSymbol={true}
+                    />
+                    <Field
+                      name="title"
+                      type="text"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                      )}
+                      value={values.tags.join(', ')}
+                      onChange={(e: any) => {
+                        setFieldValue('tags', e.target.value.split(', '))
+                      }}
+                    />
+                  </div>
+                  <div className="italic text-red-600">
+                    Temporarily required formatting: Enter tags separated by
+                    commas e.g.: Tag1, Tag2, Tag3
+                  </div>
                 </div>
 
-                <div className="">
+                <div className="mt-4">
                   <Label
                     label="Frage:"
                     className="my-auto mr-2 text-lg font-bold"
@@ -327,11 +301,11 @@ function QuestionEditModal({
                       setFieldValue('content', newContent)
                     }}
                   />
-                  {console.log(values.content)}
                   {values.content}
                 </div>
 
-                <div className="">
+                {/* // TODO: to be released
+                <div className="mb-4">
                   <Label
                     label="Anhänge:"
                     className="my-auto mr-2 text-lg font-bold"
@@ -339,36 +313,34 @@ function QuestionEditModal({
                     tooltip="// TODO Tooltip Content"
                     showTooltipSymbol={true}
                   />
-                  <div>// TODO: to be released</div>
-                </div>
+                </div> */}
 
-                {(question.type === 'SC' ||
-                  question.type === 'MC' ||
-                  question.type === 'KPRIM') && (
-                  <div className="">
-                    <Label
-                      label="Restrictions:"
-                      className="my-auto mr-2 text-lg font-bold"
-                      tooltipStyle="text-base font-normal"
-                      tooltip="// TODO Tooltip Content"
-                      showTooltipSymbol={true}
-                    />
-                  </div>
-                )}
-                {(question.type === 'NUMERICAL' ||
-                  question.type === 'FREE_TEXT') && (
-                  <div className="">
-                    <Label
-                      label="Restrictions:"
-                      className="my-auto mr-2 text-lg font-bold"
-                      tooltipStyle="text-base font-normal"
-                      tooltip="// TODO Tooltip Content"
-                      showTooltipSymbol={true}
-                    />
-                  </div>
-                )}
-
-                <div className="flex flex-row gap-4">
+                <div className="flex flex-row gap-4 mt-4">
+                  {(question.type === 'SC' ||
+                    question.type === 'MC' ||
+                    question.type === 'KPRIM') && (
+                    <div className="flex-1">
+                      <Label
+                        label="Choices:"
+                        className="my-auto mr-2 text-lg font-bold"
+                        tooltipStyle="text-base font-normal"
+                        tooltip="// TODO Tooltip Content"
+                        showTooltipSymbol={true}
+                      />
+                    </div>
+                  )}
+                  {(question.type === 'NUMERICAL' ||
+                    question.type === 'FREE_TEXT') && (
+                    <div className="flex-1">
+                      <Label
+                        label="Restrictions:"
+                        className="my-auto mr-2 text-lg font-bold"
+                        tooltipStyle="text-base font-normal"
+                        tooltip="// TODO Tooltip Content"
+                        showTooltipSymbol={true}
+                      />
+                    </div>
+                  )}
                   <Switch
                     id="solution switch"
                     checked={values.hasSampleSolution}
@@ -379,23 +351,26 @@ function QuestionEditModal({
                   />
                   {(question.type === 'SC' ||
                     question.type === 'MC' ||
-                    question.type === 'KPRIM') &&
-                    values.hasSampleSolution && (
-                      <Switch
-                        id="feedback switch"
-                        checked={values.hasAnswerFeedbacks}
-                        onCheckedChange={(newValue: boolean) =>
-                          setFieldValue('hasAnswerFeedbacks', newValue)
-                        }
-                        label="Choices Feedbacks"
-                      />
-                    )}
+                    question.type === 'KPRIM') && (
+                    <Switch
+                      id="feedback switch"
+                      checked={values.hasAnswerFeedbacks}
+                      onCheckedChange={(newValue: boolean) =>
+                        setFieldValue('hasAnswerFeedbacks', newValue)
+                      }
+                      label="Choices Feedbacks"
+                      disabled={!values.hasSampleSolution}
+                      className={twMerge(
+                        !values.hasSampleSolution && 'opacity-50'
+                      )}
+                    />
+                  )}
                 </div>
 
                 {(question.type === 'SC' ||
                   question.type === 'MC' ||
                   question.type === 'KPRIM') && (
-                  <div className="flex flex-col w-full gap-1.5 pt-2">
+                  <div className="flex flex-col w-full gap-2 pt-2">
                     {values.options.choices?.map(
                       (
                         choice: {
@@ -408,67 +383,132 @@ function QuestionEditModal({
                       ) => (
                         <div
                           key={choice.ix}
-                          className="w-full p-1 border border-solid rounded border-uzh-grey-80"
+                          className="w-full px-2 py-1 border border-solid rounded border-uzh-grey-80"
                         >
                           <div className="flex flex-row">
-                            Choice correct:{' '}
-                            <Switch
-                              id={`${choice.value}-correct`}
-                              checked={choice.correct || false}
-                              label=""
-                              onCheckedChange={(newValue: boolean) => {
-                                setFieldValue(
-                                  `options.choices[${index}].correct`,
-                                  newValue
-                                )
-                              }}
+                            <Field
+                              name={`options.choices[${index}].value`}
+                              type="text"
+                              className={twMerge(
+                                'w-full rounded border border-uzh-grey-60 focus:border-uzh-blue-50 h-9',
+                                choice.correct &&
+                                  values.hasSampleSolution &&
+                                  'border-green-500 bg-green-100',
+                                !choice.correct &&
+                                  values.hasSampleSolution &&
+                                  'border-red-500 bg-red-100',
+                                  !values.hasSampleSolution && 'bg-uzh-grey-20'
+                              )}
+                              value={choice.value}
+                              placeholder="Enter choice"
                             />
-                            {String(choice.correct)}
-                          </div>
-                          <Field
-                            name={`options.choices[${index}].value`}
-                            type="text"
-                            className={twMerge(
-                              'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                            {values.hasSampleSolution && (
+                              <div className="flex flex-row items-center ml-2">
+                                <div className="mr-2">Correct?</div>
+                                <Switch
+                                  id={`${choice.value}-correct`}
+                                  checked={choice.correct || false}
+                                  label=""
+                                  onCheckedChange={(newValue: boolean) => {
+                                    setFieldValue(
+                                      `options.choices[${index}].correct`,
+                                      newValue
+                                    )
+                                  }}
+                                />
+                              </div>
                             )}
-                            value={choice.value}
-                          />
+                          </div>
 
-                          {values.hasAnswerFeedbacks && (
-                            <div className="flex flex-row items-center">
-                              <div className="mr-2">Feedback:</div>
-                              <Field
-                                name={`options.choices[${index}].feedback`}
-                                type="text"
-                                className={twMerge(
-                                  'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
-                                )}
-                                value={choice.feedback}
-                              />
-                            </div>
-                          )}
+                          {values.hasAnswerFeedbacks &&
+                            values.hasSampleSolution && (
+                              <div className="flex flex-row items-center mt-1">
+                                <div className="mr-2 font-bold">Feedback:</div>
+                                <Field
+                                  name={`options.choices[${index}].feedback`}
+                                  type="text"
+                                  className={twMerge(
+                                    'w-full rounded  bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
+                                  )}
+                                  value={choice.feedback}
+                                  placeholder="Enter feedback"
+                                />
+                              </div>
+                            )}
                         </div>
                       )
                     )}
+                    <Button
+                      fluid
+                      className="font-bold border border-solid border-uzh-grey-100"
+                      onClick={() =>
+                        setFieldValue(
+                          'values.options.choices',
+                          values.options.choices.push({
+                            ix: values.options.choices[
+                              values.options.choices.length - 1
+                            ]
+                              ? values.options.choices[
+                                  values.options.choices.length - 1
+                                ].ix + 1
+                              : 0,
+                            value: '',
+                            correct: false,
+                            feedback: '',
+                          })
+                        )
+                      }
+                    >
+                      Add new Choice
+                    </Button>
                   </div>
                 )}
 
                 {question.type === 'NUMERICAL' && (
                   <div>
-                    NUMERICAL RESTRICTIONS INPUT with potentially Solution
-                    enabled
+                    <div className="w-full">
+                      <div className="flex flex-row items-center gap-2">
+                        <div className="font-bold">Min: </div>
+                        <Field
+                          name={`values.options.restrictions.min`}
+                          type="number"
+                          className={twMerge(
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                          )}
+                          value={values.options.restrictions.min}
+                          placeholder="Minimum"
+                        />
+                        <div className="font-bold">Max: </div>
+                        <Field
+                          name={`values.options.restrictions.max`}
+                          type="number"
+                          className={twMerge(
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                          )}
+                          value={values.options.restrictions.min}
+                          placeholder="Maximum"
+                        />
+                      </div>
+                    </div>
+                    {values.hasSampleSolution && <div>NUMERICAL SOLUTIONS</div>}
                   </div>
                 )}
 
                 {/* // TODO: test this once a free text question was created as well */}
                 {question.type === 'FREE_TEXT' && (
                   <div>
-                    FREE TEXT RESTRICTIONS INPUT with potentially solution
-                    enabled
+                    <div>RESTRICTIONS</div>
+                    {values.hasSampleSolution && <div>FREE TEXT SOLUTIONS</div>}
                   </div>
                 )}
 
-                <div className="flex flex-row justify-between float-right">
+                <div className="flex flex-row justify-between">
+                  <Button
+                    className="mt-2 border-uzh-grey-80"
+                    onClick={() => handleSetIsOpen(false)}
+                  >
+                    <Button.Label>Close</Button.Label>
+                  </Button>
                   <Button
                     className="mt-2 border-uzh-grey-80"
                     type="submit"

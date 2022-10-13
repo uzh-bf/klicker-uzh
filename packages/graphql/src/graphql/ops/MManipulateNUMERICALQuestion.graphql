@@ -7,7 +7,7 @@ mutation ManipulateNUMERICALQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput]
-  $tags: [TagInput]
+  $tags: [String]
 ) {
   manipulateNUMERICALQuestion(
     id: $id

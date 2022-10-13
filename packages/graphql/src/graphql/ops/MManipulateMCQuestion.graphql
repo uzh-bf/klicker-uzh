@@ -7,7 +7,7 @@ mutation ManipulateMCQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput]
-  $tags: [TagInput]
+  $tags: [String]
 ) {
   manipulateMCQuestion(
     id: $id

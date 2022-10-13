@@ -7,7 +7,7 @@ mutation ManipulateFREETEXTQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput]
-  $tags: [TagInput]
+  $tags: [String]
 ) {
   manipulateFREETEXTQuestion(
     id: $id
