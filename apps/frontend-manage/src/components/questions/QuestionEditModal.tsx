@@ -51,7 +51,6 @@ function QuestionEditModal({
 
   // TODO: styling of tooltips - some are too wide
   // TODO: FORM VALIDATION!!
-  // TODO: ensure that the tag name is unique for every user - different users should be allows to have tags with the same name though
 
   return (
     <Modal
@@ -80,7 +79,6 @@ function QuestionEditModal({
             hasAnswerFeedbacks: question.hasAnswerFeedbacks,
           }}
           // TODO: validationSchema={loginSchema}
-          // TODO: pass correct values to this function instead of demo values
           onSubmit={async (values) => {
             // TODO: remove once all questions have some content again
             if (values.content === 'WARNING: Content missing!') {
@@ -110,7 +108,7 @@ function QuestionEditModal({
                     },
                     hasSampleSolution: values.hasSampleSolution,
                     hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: implement
+                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
                     tags: values.tags,
                   },
                   refetchQueries: [{ query: GetUserQuestionsDocument }],
@@ -148,7 +146,7 @@ function QuestionEditModal({
                     },
                     hasSampleSolution: values.hasSampleSolution,
                     hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: implement
+                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
                     tags: values.tags,
                   },
                   refetchQueries: [{ query: GetUserQuestionsDocument }],
