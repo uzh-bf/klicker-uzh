@@ -239,11 +239,9 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String]): Question
-  manipulateKPRIMQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String]): Question
-  manipulateMCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String]): Question
-  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String]): Question
-  manipulateSCQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String]): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
   markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback

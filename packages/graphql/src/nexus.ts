@@ -1250,10 +1250,11 @@ export const Mutation = objectType({
       },
     })
 
-    t.field('manipulateSCQuestion', {
+    t.field('manipulateChoicesQuestion', {
       type: Question,
       args: {
         id: intArg(),
+        type: stringArg(),
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
@@ -1264,43 +1265,7 @@ export const Mutation = objectType({
         tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
-        return QuestionService.manipulateSCQuestion(args, ctx)
-      },
-    })
-
-    t.field('manipulateMCQuestion', {
-      type: Question,
-      args: {
-        id: intArg(),
-        name: stringArg(),
-        content: stringArg(),
-        contentPlain: stringArg(),
-        hasSampleSolution: booleanArg(),
-        hasAnswerFeedbacks: booleanArg(),
-        options: arg({ type: 'OptionsChoicesInput' }),
-        attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(stringArg()),
-      },
-      resolve(_, args, ctx: Context) {
-        return QuestionService.manipulateMCQuestion(args, ctx)
-      },
-    })
-
-    t.field('manipulateKPRIMQuestion', {
-      type: Question,
-      args: {
-        id: intArg(),
-        name: stringArg(),
-        content: stringArg(),
-        contentPlain: stringArg(),
-        hasSampleSolution: booleanArg(),
-        hasAnswerFeedbacks: booleanArg(),
-        options: arg({ type: 'OptionsChoicesInput' }),
-        attachments: list(arg({ type: 'AttachmentInput' })),
-        tags: list(stringArg()),
-      },
-      resolve(_, args, ctx: Context) {
-        return QuestionService.manipulateKPRIMQuestion(args, ctx)
+        return QuestionService.manipulateQuestion(args, ctx)
       },
     })
 
@@ -1308,6 +1273,7 @@ export const Mutation = objectType({
       type: Question,
       args: {
         id: intArg(),
+        type: stringArg(),
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
@@ -1318,7 +1284,7 @@ export const Mutation = objectType({
         tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
-        return QuestionService.manipulateNUMERICALQuestion(args, ctx)
+        return QuestionService.manipulateQuestion(args, ctx)
       },
     })
 
@@ -1326,6 +1292,7 @@ export const Mutation = objectType({
       type: Question,
       args: {
         id: intArg(),
+        type: stringArg(),
         name: stringArg(),
         content: stringArg(),
         contentPlain: stringArg(),
@@ -1336,7 +1303,7 @@ export const Mutation = objectType({
         tags: list(stringArg()),
       },
       resolve(_, args, ctx: Context) {
-        return QuestionService.manipulateFREETEXTQuestion(args, ctx)
+        return QuestionService.manipulateQuestion(args, ctx)
       },
     })
 

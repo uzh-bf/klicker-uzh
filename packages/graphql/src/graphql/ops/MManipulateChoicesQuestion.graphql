@@ -1,5 +1,6 @@
-mutation ManipulateKPRIMQuestion(
+mutation ManipulateChoicesQuestion(
   $id: Int
+  $type: String
   $name: String
   $content: String
   $contentPlain: String
@@ -9,8 +10,9 @@ mutation ManipulateKPRIMQuestion(
   $attachments: [AttachmentInput]
   $tags: [String]
 ) {
-  manipulateKPRIMQuestion(
+  manipulateChoicesQuestion(
     id: $id
+    type: $type
     name: $name
     content: $content
     contentPlain: $contentPlain

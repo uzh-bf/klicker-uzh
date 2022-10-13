@@ -582,11 +582,9 @@ export interface NexusGenFieldTypes {
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
     logoutUser: string | null; // ID
+    manipulateChoicesQuestion: NexusGenRootTypes['Question'] | null; // Question
     manipulateFREETEXTQuestion: NexusGenRootTypes['Question'] | null; // Question
-    manipulateKPRIMQuestion: NexusGenRootTypes['Question'] | null; // Question
-    manipulateMCQuestion: NexusGenRootTypes['Question'] | null; // Question
     manipulateNUMERICALQuestion: NexusGenRootTypes['Question'] | null; // Question
-    manipulateSCQuestion: NexusGenRootTypes['Question'] | null; // Question
     markMicroSessionCompleted: NexusGenRootTypes['Participation'] | null; // Participation
     pinFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     publishFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -947,11 +945,9 @@ export interface NexusGenFieldTypeNames {
     loginUser: 'ID'
     logoutParticipant: 'ID'
     logoutUser: 'ID'
+    manipulateChoicesQuestion: 'Question'
     manipulateFREETEXTQuestion: 'Question'
-    manipulateKPRIMQuestion: 'Question'
-    manipulateMCQuestion: 'Question'
     manipulateNUMERICALQuestion: 'Question'
-    manipulateSCQuestion: 'Question'
     markMicroSessionCompleted: 'Participation'
     pinFeedback: 'Feedback'
     publishFeedback: 'Feedback'
@@ -1217,6 +1213,18 @@ export interface NexusGenArgTypes {
       email: string; // String!
       password: string; // String!
     }
+    manipulateChoicesQuestion: { // args
+      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
+      content?: string | null; // String
+      contentPlain?: string | null; // String
+      hasAnswerFeedbacks?: boolean | null; // Boolean
+      hasSampleSolution?: boolean | null; // Boolean
+      id?: number | null; // Int
+      name?: string | null; // String
+      options?: NexusGenInputs['OptionsChoicesInput'] | null; // OptionsChoicesInput
+      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
+    }
     manipulateFREETEXTQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
       content?: string | null; // String
@@ -1227,28 +1235,7 @@ export interface NexusGenArgTypes {
       name?: string | null; // String
       options?: NexusGenInputs['OptionsFreeTextInput'] | null; // OptionsFreeTextInput
       tags?: Array<string | null> | null; // [String]
-    }
-    manipulateKPRIMQuestion: { // args
-      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
-      content?: string | null; // String
-      contentPlain?: string | null; // String
-      hasAnswerFeedbacks?: boolean | null; // Boolean
-      hasSampleSolution?: boolean | null; // Boolean
-      id?: number | null; // Int
-      name?: string | null; // String
-      options?: NexusGenInputs['OptionsChoicesInput'] | null; // OptionsChoicesInput
-      tags?: Array<string | null> | null; // [String]
-    }
-    manipulateMCQuestion: { // args
-      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
-      content?: string | null; // String
-      contentPlain?: string | null; // String
-      hasAnswerFeedbacks?: boolean | null; // Boolean
-      hasSampleSolution?: boolean | null; // Boolean
-      id?: number | null; // Int
-      name?: string | null; // String
-      options?: NexusGenInputs['OptionsChoicesInput'] | null; // OptionsChoicesInput
-      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
     }
     manipulateNUMERICALQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
@@ -1260,17 +1247,7 @@ export interface NexusGenArgTypes {
       name?: string | null; // String
       options?: NexusGenInputs['OptionsNumericalInput'] | null; // OptionsNumericalInput
       tags?: Array<string | null> | null; // [String]
-    }
-    manipulateSCQuestion: { // args
-      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
-      content?: string | null; // String
-      contentPlain?: string | null; // String
-      hasAnswerFeedbacks?: boolean | null; // Boolean
-      hasSampleSolution?: boolean | null; // Boolean
-      id?: number | null; // Int
-      name?: string | null; // String
-      options?: NexusGenInputs['OptionsChoicesInput'] | null; // OptionsChoicesInput
-      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
     }
     markMicroSessionCompleted: { // args
       courseId: string; // ID!

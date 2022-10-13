@@ -11,6 +11,7 @@ mutation ManipulateNUMERICALQuestion(
 ) {
   manipulateNUMERICALQuestion(
     id: $id
+    type: "NUMERICAL"
     name: $name
     content: $content
     contentPlain: $contentPlain

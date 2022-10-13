@@ -2,11 +2,9 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
+  ManipulateChoicesQuestionDocument,
   ManipulateFreetextQuestionDocument,
-  ManipulateKprimQuestionDocument,
-  ManipulateMcQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  ManipulateScQuestionDocument,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
@@ -36,9 +34,9 @@ function QuestionEditModal({
     variables: { id: questionId },
   })
 
-  const [manipulateSCQuestion] = useMutation(ManipulateScQuestionDocument)
-  const [manipulateMCQuestion] = useMutation(ManipulateMcQuestionDocument)
-  const [manipulateKPRIMQuestion] = useMutation(ManipulateKprimQuestionDocument)
+  const [manipulateChoicesQuestion] = useMutation(
+    ManipulateChoicesQuestionDocument
+  )
   const [manipulateNUMERICALQuestion] = useMutation(
     ManipulateNumericalQuestionDocument
   )
@@ -93,61 +91,12 @@ function QuestionEditModal({
 
             switch (question.type) {
               case 'SC':
-                await manipulateSCQuestion({
-                  variables: {
-                    id: questionId,
-                    name: values.title,
-                    content: values.content,
-                    contentPlain: values.content, // TODO: remove this field
-                    options: {
-                      choices: values.options.choices.map((choice: any) => {
-                        return {
-                          ix: choice.ix,
-                          value: choice.value,
-                          correct: choice.correct,
-                          feedback: choice.feedback,
-                        }
-                      }),
-                    },
-                    hasSampleSolution: values.hasSampleSolution,
-                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: implement
-                    tags: values.tags,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-                break
-
               case 'MC':
-                await manipulateMCQuestion({
-                  variables: {
-                    id: questionId,
-                    name: values.title,
-                    content: values.content,
-                    contentPlain: values.content, // TODO: remove this field
-                    options: {
-                      choices: values.options.choices.map((choice: any) => {
-                        return {
-                          ix: choice.ix,
-                          value: choice.value,
-                          correct: choice.correct,
-                          feedback: choice.feedback,
-                        }
-                      }),
-                    },
-                    hasSampleSolution: values.hasSampleSolution,
-                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: implement
-                    tags: values.tags,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-                break
-
               case 'KPRIM':
-                await manipulateKPRIMQuestion({
+                await manipulateChoicesQuestion({
                   variables: {
                     id: questionId,
+                    type: question.type,
                     name: values.title,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
