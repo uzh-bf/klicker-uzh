@@ -1,3 +1,5 @@
+import { QuestionType } from '@klicker-uzh/prisma'
+
 interface QuestionData<Type, Options> {
   id: number
   name: string
@@ -21,7 +23,7 @@ interface Choice {
 }
 
 type ChoicesQuestionData = QuestionData<
-  QuestionType.SC | QuestionType.MC,
+  QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
   {
     choices: Choice[]
   }
