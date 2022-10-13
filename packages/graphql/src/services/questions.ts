@@ -99,34 +99,71 @@ export async function manipulateSCQuestion(
   },
   ctx: ContextWithUser
 ) {
-  // TODO: implement update of question with provided parameters
-  const question = await ctx.prisma.question.findUnique({
+  const question = await ctx.prisma.question.upsert({
     where: {
       id: id,
     },
-    include: {
-      tags: true,
-      attachments: true,
+    create: {
+      type: 'SC',
+      name: name || 'Missing Question Title',
+      content: content || 'Missing Question Content',
+      contentPlain: contentPlain || 'Missing Question Content',
+      hasSampleSolution: hasSampleSolution || false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+      options: options || {},
+      owner: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      // connect to the tags which already exist by name and otherwise create a new tag with the given name
+      tags: {
+        connectOrCreate: tags?.map((tag: string) => {
+          return {
+            where: {
+              ownerId_name: {
+                ownerId: ctx.user.sub,
+                name: tag,
+              },
+            },
+            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+          }
+        }),
+      },
+      // TODO: create / connect attachments
+    },
+    update: {
+      name: name,
+      content: content,
+      contentPlain: contentPlain,
+      hasSampleSolution: hasSampleSolution || false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+      options: options,
+      tags: {
+        // TODO: disconnect unused and potentially previously used tags
+        connectOrCreate: tags?.map((tag: string) => {
+          return {
+            where: {
+              ownerId_name: {
+                ownerId: ctx.user.sub,
+                name: tag,
+              },
+            },
+            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+          }
+        }),
+      },
+      // TODO: create / connect attachments
     },
   })
 
-  console.log('SC QUESTION')
-  console.log(
-    'inputs',
-    id,
-    name,
-    content,
-    contentPlain,
-    options,
-    hasSampleSolution,
-    hasAnswerFeedbacks,
-    attachments,
-    tags
-  )
+  // TODO: fix invalidation of cache
+  ctx.emitter.emit('invalidate', {
+    typename: 'Question',
+    id: question.id,
+  })
 
-  return {
-    ...question,
-  }
+  return question
 }
 
 // TODO: implement
@@ -161,34 +198,71 @@ export async function manipulateMCQuestion(
   },
   ctx: ContextWithUser
 ) {
-  // TODO: implement update of question with provided parameters
-  const question = await ctx.prisma.question.findUnique({
+  const question = await ctx.prisma.question.upsert({
     where: {
       id: id,
     },
-    include: {
-      tags: true,
-      attachments: true,
+    create: {
+      type: 'MC',
+      name: name || 'Missing Question Title',
+      content: content || 'Missing Question Content',
+      contentPlain: contentPlain || 'Missing Question Content',
+      hasSampleSolution: hasSampleSolution || false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+      options: options || {},
+      owner: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      // connect to the tags which already exist by name and otherwise create a new tag with the given name
+      tags: {
+        connectOrCreate: tags?.map((tag: string) => {
+          return {
+            where: {
+              ownerId_name: {
+                ownerId: ctx.user.sub,
+                name: tag,
+              },
+            },
+            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+          }
+        }),
+      },
+      // TODO: create / connect attachments
+    },
+    update: {
+      name: name,
+      content: content,
+      contentPlain: contentPlain,
+      hasSampleSolution: hasSampleSolution || false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+      options: options,
+      tags: {
+        // TODO: disconnect unused and potentially previously used tags
+        connectOrCreate: tags?.map((tag: string) => {
+          return {
+            where: {
+              ownerId_name: {
+                ownerId: ctx.user.sub,
+                name: tag,
+              },
+            },
+            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+          }
+        }),
+      },
+      // TODO: create / connect attachments
     },
   })
 
-  console.log('MC QUESTION')
-  console.log(
-    'inputs',
-    id,
-    name,
-    content,
-    contentPlain,
-    options,
-    hasSampleSolution,
-    hasAnswerFeedbacks,
-    attachments,
-    tags
-  )
+  // TODO: fix invalidation of cache
+  ctx.emitter.emit('invalidate', {
+    typename: 'Question',
+    id: question.id,
+  })
 
-  return {
-    ...question,
-  }
+  return question
 }
 
 export async function manipulateKPRIMQuestion(
@@ -217,8 +291,8 @@ export async function manipulateKPRIMQuestion(
     }
     hasSampleSolution?: boolean
     hasAnswerFeedbacks?: boolean
-    attachments: { id: string }[]
-    tags: string[]
+    attachments?: { id: string }[]
+    tags?: string[]
   },
   ctx: ContextWithUser
 ) {
@@ -241,7 +315,7 @@ export async function manipulateKPRIMQuestion(
       },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {
-        connectOrCreate: tags.map((tag: string) => {
+        connectOrCreate: tags?.map((tag: string) => {
           return {
             where: {
               ownerId_name: {
@@ -264,7 +338,7 @@ export async function manipulateKPRIMQuestion(
       options: options,
       tags: {
         // TODO: disconnect unused and potentially previously used tags
-        connectOrCreate: tags.map((tag: string) => {
+        connectOrCreate: tags?.map((tag: string) => {
           return {
             where: {
               ownerId_name: {

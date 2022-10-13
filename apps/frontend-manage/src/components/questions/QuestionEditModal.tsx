@@ -409,6 +409,7 @@ function QuestionEditModal({
                                   id={`${choice.value}-correct`}
                                   checked={choice.correct || false}
                                   label=""
+                                  className='gap-0 mr-0.5'
                                   onCheckedChange={(newValue: boolean) => {
                                     setFieldValue(
                                       `options.choices[${index}].correct`,
