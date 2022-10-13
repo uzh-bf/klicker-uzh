@@ -1,5 +1,3 @@
-import { QuestionType } from '@klicker-uzh/prisma'
-
 interface QuestionData<Type, Options> {
   id: number
   name: string
