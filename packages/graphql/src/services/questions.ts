@@ -95,7 +95,7 @@ export async function manipulateSCQuestion(
     hasSampleSolution?: boolean
     hasAnswerFeedbacks?: boolean
     attachments?: { id: string }[]
-    tags?: { id: string }[]
+    tags?: { name: string }[]
   },
   ctx: ContextWithUser
 ) {

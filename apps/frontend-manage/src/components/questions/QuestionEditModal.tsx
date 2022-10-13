@@ -13,7 +13,7 @@ import { Field, Form, Formik } from 'formik'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { Button, Label, Modal } from '@uzh-bf/design-system'
+import { Button, Label, Modal, Switch } from '@uzh-bf/design-system'
 import { TYPES_LABELS } from 'shared-components'
 import ContentInput from './ContentInput'
 
@@ -52,6 +52,7 @@ function QuestionEditModal({
   )
 
   // TODO: styling of tooltips - some are too wide
+  // TODO: FORM VALIDATION!!
   // TODO: ensure that the tag name is unique for every user - different users should be allows to have tags with the same name though
 
   return (
@@ -69,7 +70,11 @@ function QuestionEditModal({
           initialValues={{
             title: question.name,
             tags: question?.tags?.map((tag: Tag) => tag.name) || [],
-            content: question.content,
+            // TODO: change to simply question.content once all questions have some content again
+            content:
+              question.content.length !== 0
+                ? question.content
+                : 'WARNING: Content missing!',
             attachments: question.attachments,
             options: question.questionData.options,
             hasSampleSolution: question.hasSampleSolution,
@@ -80,8 +85,14 @@ function QuestionEditModal({
           onSubmit={async (values) => {
             console.log(values)
 
+            // TODO: remove once all questions have some content again
+            if (values.content === 'WARNING: Content missing!') {
+              values.content = ''
+            }
+
             switch (question.type) {
               case 'SC':
+                // TODO
                 await manipulateSCQuestion({
                   variables: {
                     id: questionId,
@@ -116,6 +127,7 @@ function QuestionEditModal({
                 })
                 break
 
+              // TODO
               case 'MC':
                 await manipulateMCQuestion({
                   variables: {
@@ -151,41 +163,37 @@ function QuestionEditModal({
                 })
                 break
 
+              // TODO: in progress
               case 'KPRIM':
                 await manipulateKPRIMQuestion({
                   variables: {
                     id: questionId,
-                    name: 'testName',
-                    content: 'testContent',
-                    contentPlain: 'testContentPlain',
+                    name: values.title,
+                    content: values.title,
+                    contentPlain: '// TODO',
                     options: {
-                      choices: [
-                        {
-                          ix: 20,
-                          value: 'testValueChoice',
-                          correct: false,
-                          feedback: 'This is a test feedback.',
-                        },
-                        {
-                          ix: 21,
-                          value: 'testValueChoice2',
-                          correct: false,
-                          feedback: 'This is a second test feedback.',
-                        },
-                      ],
+                      choices: values.options.choices.map((choice: any) => {
+                        return {
+                          ix: choice.ix,
+                          value: choice.value,
+                          correct: choice.correct,
+                          feedback: choice.feedback,
+                        }
+                      }),
                     },
-                    hasSampleSolution: true,
-                    hasAnswerFeedbacks: true,
+                    hasSampleSolution: values.hasSampleSolution,
+                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
                     attachments: [
                       { id: 'attachmendId1' },
                       { id: 'attachmendId2' },
                     ],
-                    tags: [{ name: 'Tag1' }, { name: 'Tag2' }],
+                    tags: values.tags.map((tag: string) => ({ name: tag })),
                   },
                   refetchQueries: [{ query: GetUserQuestionDocument }],
                 })
                 break
 
+              // TODO
               case 'NUMERICAL':
                 await manipulateNUMERICALQuestion({
                   variables: {
@@ -212,6 +220,7 @@ function QuestionEditModal({
                 })
                 break
 
+              // TODO
               case 'FREE_TEXT':
                 await manipulateFreeTextQuestion({
                   variables: {
@@ -273,7 +282,12 @@ function QuestionEditModal({
                   />
                 </div>
 
-                <div className="flex flex-row mb-8">
+                {/* {// TODO replace tag input by suitable component including tag suggestions} */}
+                <div>
+                  Temporary: Enter tags separated by commas e.g.: Tag1, Tag2,
+                  Tag3
+                </div>
+                <div className="flex flex-row">
                   <Label
                     label="Tags:"
                     className="my-auto mr-2 text-lg font-bold"
@@ -287,7 +301,10 @@ function QuestionEditModal({
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                     )}
-                    value={'TODO'}
+                    value={values.tags.join(', ')}
+                    onChange={(e: any) => {
+                      setFieldValue('tags', e.target.value.split(', '))
+                    }}
                   />
                 </div>
 
@@ -325,15 +342,131 @@ function QuestionEditModal({
                   <div>// TODO: to be released</div>
                 </div>
 
-                <div className="">
-                  <Label
-                    label="Choices / Restrictions:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal"
-                    tooltip="// TODO Tooltip Content"
-                    showTooltipSymbol={true}
+                {(question.type === 'SC' ||
+                  question.type === 'MC' ||
+                  question.type === 'KPRIM') && (
+                  <div className="">
+                    <Label
+                      label="Restrictions:"
+                      className="my-auto mr-2 text-lg font-bold"
+                      tooltipStyle="text-base font-normal"
+                      tooltip="// TODO Tooltip Content"
+                      showTooltipSymbol={true}
+                    />
+                  </div>
+                )}
+                {(question.type === 'NUMERICAL' ||
+                  question.type === 'FREE_TEXT') && (
+                  <div className="">
+                    <Label
+                      label="Restrictions:"
+                      className="my-auto mr-2 text-lg font-bold"
+                      tooltipStyle="text-base font-normal"
+                      tooltip="// TODO Tooltip Content"
+                      showTooltipSymbol={true}
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-row gap-4">
+                  <Switch
+                    id="solution switch"
+                    checked={values.hasSampleSolution}
+                    onCheckedChange={(newValue: boolean) =>
+                      setFieldValue('hasSampleSolution', newValue)
+                    }
+                    label="Sample Solution"
                   />
+                  {(question.type === 'SC' ||
+                    question.type === 'MC' ||
+                    question.type === 'KPRIM') &&
+                    values.hasSampleSolution && (
+                      <Switch
+                        id="feedback switch"
+                        checked={values.hasAnswerFeedbacks}
+                        onCheckedChange={(newValue: boolean) =>
+                          setFieldValue('hasAnswerFeedbacks', newValue)
+                        }
+                        label="Choices Feedbacks"
+                      />
+                    )}
                 </div>
+
+                {(question.type === 'SC' ||
+                  question.type === 'MC' ||
+                  question.type === 'KPRIM') && (
+                  <div className="flex flex-col w-full gap-1.5 pt-2">
+                    {values.options.choices?.map(
+                      (
+                        choice: {
+                          ix: number
+                          value: string
+                          correct?: boolean
+                          feedback?: string
+                        },
+                        index: number
+                      ) => (
+                        <div
+                          key={choice.ix}
+                          className="w-full p-1 border border-solid rounded border-uzh-grey-80"
+                        >
+                          <div className="flex flex-row">
+                            Choice correct:{' '}
+                            <Switch
+                              id={`${choice.value}-correct`}
+                              checked={choice.correct || false}
+                              label=""
+                              onCheckedChange={(newValue: boolean) => {
+                                setFieldValue(
+                                  `options.choices[${index}].correct`,
+                                  newValue
+                                )
+                              }}
+                            />
+                            {String(choice.correct)}
+                          </div>
+                          <Field
+                            name={`options.choices[${index}].value`}
+                            type="text"
+                            className={twMerge(
+                              'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                            )}
+                            value={choice.value}
+                          />
+
+                          {values.hasAnswerFeedbacks && (
+                            <div className="flex flex-row items-center">
+                              <div className="mr-2">Feedback:</div>
+                              <Field
+                                name={`options.choices[${index}].feedback`}
+                                type="text"
+                                className={twMerge(
+                                  'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                                )}
+                                value={choice.feedback}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+
+                {question.type === 'NUMERICAL' && (
+                  <div>
+                    NUMERICAL RESTRICTIONS INPUT with potentially Solution
+                    enabled
+                  </div>
+                )}
+
+                {/* // TODO: test this once a free text question was created as well */}
+                {question.type === 'FREE_TEXT' && (
+                  <div>
+                    FREE TEXT RESTRICTIONS INPUT with potentially solution
+                    enabled
+                  </div>
+                )}
 
                 <div className="flex flex-row justify-between float-right">
                   <Button
