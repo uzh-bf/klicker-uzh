@@ -82,8 +82,6 @@ function QuestionEditModal({
           // TODO: validationSchema={loginSchema}
           // TODO: pass correct values to this function instead of demo values
           onSubmit={async (values) => {
-            console.log(values)
-
             // TODO: remove once all questions have some content again
             if (values.content === 'WARNING: Content missing!') {
               values.content = ''
@@ -129,11 +127,24 @@ function QuestionEditModal({
                     contentPlain: values.content, // TODO: remove this field
                     // TODO: implement
                     options: {
-                      restrictions: { min: 0, max: 100 },
-                      solutionRanges: [
-                        { min: 0, max: 1 },
-                        { min: 80, max: 100 },
-                      ],
+                      restrictions: {
+                        min:
+                          values.options.restrictions.min === ''
+                            ? undefined
+                            : values.options.restrictions.min,
+                        max:
+                          values.options.restrictions.max === ''
+                            ? undefined
+                            : values.options.restrictions.max,
+                      },
+                      solutionRanges: values.options.solutionRanges?.map(
+                        (range: any) => {
+                          return {
+                            min: range.min === '' ? undefined : range.min,
+                            max: range.max === '' ? undefined : range.max,
+                          }
+                        }
+                      ),
                     },
                     hasSampleSolution: values.hasSampleSolution,
                     hasAnswerFeedbacks: values.hasAnswerFeedbacks,
@@ -421,7 +432,7 @@ function QuestionEditModal({
                       <div className="flex flex-row items-center gap-2">
                         <div className="font-bold">Min: </div>
                         <Field
-                          name={`values.options.restrictions.min`}
+                          name={`options.restrictions.min`}
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
@@ -431,17 +442,83 @@ function QuestionEditModal({
                         />
                         <div className="font-bold">Max: </div>
                         <Field
-                          name={`values.options.restrictions.max`}
+                          name={`options.restrictions.max`}
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
-                          value={values.options.restrictions.min}
+                          value={values.options.restrictions.max}
                           placeholder="Maximum"
                         />
                       </div>
                     </div>
-                    {values.hasSampleSolution && <div>NUMERICAL SOLUTIONS</div>}
+                    {values.hasSampleSolution && (
+                      <div className="mt-3">
+                        <div className="mb-1 mr-2 font-bold">
+                          Solution Ranges:
+                        </div>
+                        <div className="flex flex-col gap-1 w-max">
+                          {values.options.solutionRanges?.map(
+                            (
+                              range: { min?: number; max?: number },
+                              index: number
+                            ) => {
+                              return (
+                                <div
+                                  className="flex flex-row items-center gap-2"
+                                  key={index}
+                                >
+                                  <div className="font-bold">Min: </div>
+                                  <Field
+                                    name={`options.solutionRanges[${index}].min`}
+                                    type="number"
+                                    className={twMerge(
+                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                    )}
+                                    value={range.min}
+                                    placeholder="Minimum"
+                                  />
+                                  <div className="font-bold">Max: </div>
+                                  <Field
+                                    name={`options.solutionRanges[${index}].max`}
+                                    type="number"
+                                    className={twMerge(
+                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
+                                    )}
+                                    value={range.max}
+                                    placeholder="Maximum"
+                                  />
+                                </div>
+                              )
+                            }
+                          )}
+                          <Button
+                            fluid
+                            className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                            onClick={() => {
+                              if (values.options.solutionRanges) {
+                                setFieldValue(
+                                  'values.options.solutionRanges',
+                                  values.options.solutionRanges.push({
+                                    min: undefined,
+                                    max: undefined,
+                                  })
+                                )
+                              } else {
+                                setFieldValue('options.solutionRanges', [
+                                  {
+                                    min: undefined,
+                                    max: undefined,
+                                  },
+                                ])
+                              }
+                            }}
+                          >
+                            Add new solution range
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
