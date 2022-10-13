@@ -60,6 +60,7 @@ function QuestionEditModal({
       className="!pb-4"
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
+      escapeDisabled={true}
     >
       <div className="z-0 flex flex-row">
         <Label label="Fragetyp:" className="my-auto mr-2 text-lg font-bold" />
@@ -397,7 +398,7 @@ function QuestionEditModal({
                                 !choice.correct &&
                                   values.hasSampleSolution &&
                                   'border-red-500 bg-red-100',
-                                  !values.hasSampleSolution && 'bg-uzh-grey-20'
+                                !values.hasSampleSolution && 'bg-uzh-grey-20'
                               )}
                               value={choice.value}
                               placeholder="Enter choice"
@@ -409,7 +410,7 @@ function QuestionEditModal({
                                   id={`${choice.value}-correct`}
                                   checked={choice.correct || false}
                                   label=""
-                                  className='gap-0 mr-0.5'
+                                  className="gap-0 mr-0.5"
                                   onCheckedChange={(newValue: boolean) => {
                                     setFieldValue(
                                       `options.choices[${index}].correct`,
