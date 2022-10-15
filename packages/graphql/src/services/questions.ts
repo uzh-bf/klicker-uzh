@@ -162,7 +162,6 @@ export async function manipulateQuestion(
       hasAnswerFeedbacks: hasAnswerFeedbacks || false,
       options: options,
       tags: {
-        // TODO: disconnect unused and potentially previously used tags
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
           .map((tag: string) => {
@@ -185,7 +184,7 @@ export async function manipulateQuestion(
           }
         }),
       },
-      // TODO: create / connect attachments
+      // TODO: create / connect / disconnect attachments
     },
   })
 

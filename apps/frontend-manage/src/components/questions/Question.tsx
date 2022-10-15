@@ -8,8 +8,8 @@ import { QUESTION_TYPES_SHORT } from 'shared-components'
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
-import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionEditModal from './QuestionEditModal'
+import QuestionPreviewModal from './QuestionPreviewModal'
 // import QuestionTags from './QuestionTags'
 
 interface Props {
@@ -73,16 +73,20 @@ function Question({
         <div className="flex flex-row flex-1">
           <div className="flex-1">
             {isArchived && <div>ARCHIVED // TODO styling</div>}
-            <a
-              className="flex-1 text-xl font-bold cursor-pointer text-primary-strong"
-              role="button"
-              tabIndex={0}
-              type="button"
-              onClick={() => setIsModificationModalOpen(true)}
-              onKeyDown={() => setIsModificationModalOpen(true)}
-            >
-              {title}
-            </a>
+            <div className="flex flex-row">
+              <a
+                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong"
+                role="button"
+                tabIndex={0}
+                type="button"
+                onClick={() => setIsModificationModalOpen(true)}
+                onKeyDown={() => setIsModificationModalOpen(true)}
+              >
+                {title}
+              </a>
+              {/* // TODO: remove once seeding is no longer done manually */}
+              <div>QuestionId: {id}</div>
+            </div>
             <div className="mb-2 italic">{QUESTION_TYPES_SHORT[type]}</div>
             <div className="flex-1 mb-2">
               {contentPlain.length > 120
@@ -104,12 +108,12 @@ function Question({
               Vorschau
             </Button>
             {isPreviewModalOpen && (
-                <QuestionPreviewModal
-                  handleSetIsOpen={setIsPreviewModalOpen}
-                  isOpen={isPreviewModalOpen}
-                  questionId={id}
-                />
-              )}
+              <QuestionPreviewModal
+                handleSetIsOpen={setIsPreviewModalOpen}
+                isOpen={isPreviewModalOpen}
+                questionId={id}
+              />
+            )}
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
@@ -119,12 +123,12 @@ function Question({
               Bearbeiten
             </Button>
             {isModificationModalOpen && (
-                <QuestionEditModal
-                  handleSetIsOpen={setIsModificationModalOpen}
-                  isOpen={isModificationModalOpen}
-                  questionId={id}
-                />
-              )}
+              <QuestionEditModal
+                handleSetIsOpen={setIsModificationModalOpen}
+                isOpen={isModificationModalOpen}
+                questionId={id}
+              />
+            )}
           </div>
           <div className="w-36">
             <Button
