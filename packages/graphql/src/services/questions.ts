@@ -104,7 +104,23 @@ export async function manipulateQuestion(
   },
   ctx: ContextWithUser
 ) {
-  // TODO: implement update of question with provided parameters
+  const questionOLD = await ctx.prisma.question.findUnique({
+    where: {
+      id: id,
+    },
+    include: {
+      tags: true,
+      attachments: true,
+    },
+  })
+  let tagsToDelete: string[] = []
+
+  if (questionOLD?.tags) {
+    tagsToDelete = questionOLD.tags
+      .filter((tag) => !tags?.includes(tag.name))
+      .map((tag) => tag.name)
+  }
+
   const question = await ctx.prisma.question.upsert({
     where: {
       id: id,
@@ -147,15 +163,25 @@ export async function manipulateQuestion(
       options: options,
       tags: {
         // TODO: disconnect unused and potentially previously used tags
-        connectOrCreate: tags?.map((tag: string) => {
-          return {
-            where: {
-              ownerId_name: {
-                ownerId: ctx.user.sub,
-                name: tag,
+        connectOrCreate: tags
+          ?.filter((tag: string) => tag !== '')
+          .map((tag: string) => {
+            return {
+              where: {
+                ownerId_name: {
+                  ownerId: ctx.user.sub,
+                  name: tag,
+                },
               },
+              create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+            }
+          }),
+        disconnect: tagsToDelete.map((tag) => {
+          return {
+            ownerId_name: {
+              ownerId: ctx.user.sub,
+              name: tag,
             },
-            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
           }
         }),
       },
