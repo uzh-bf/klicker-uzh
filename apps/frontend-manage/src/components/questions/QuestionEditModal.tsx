@@ -245,10 +245,11 @@ function QuestionEditModal({
       restrictions: Yup.object().shape({
         min: Yup.number().nullable(true),
         max: Yup.number().nullable(true),
-        maxLength: Yup.number().min(1),
+        // TODO: ensure that this check does not fail if the user enters a number and then deletes it
+        maxLength: Yup.number().min(1).nullable(true),
       }),
 
-      // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated
+      // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for free text)
       solutionRanges: Yup.array()
         .of(
           Yup.object().shape({
@@ -267,7 +268,7 @@ function QuestionEditModal({
           },
         }),
 
-      // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated
+      // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for numerical)
       solutions: Yup.array()
         .of(Yup.string())
         .test({
