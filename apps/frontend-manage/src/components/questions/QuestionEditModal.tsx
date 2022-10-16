@@ -191,10 +191,13 @@ function QuestionEditModal({
   const questionManipulationSchema = Yup.object().shape({
     name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
     tags: Yup.array().of(Yup.string()),
-    // TODO: add validation such that <br> and empty strings are not accepted
-    content: Yup.string().required(
-      'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu'
-    ),
+    content: Yup.string()
+      .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
+      .test({
+        message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
+        test: (content) => !content?.match(/(<br>(\n)*)/g) && content !== '',
+      }),
+
     // TODO: adapt validation structure for attachments once they are available
     attachments: Yup.array()
       .of(
@@ -250,16 +253,23 @@ function QuestionEditModal({
             max: Yup.number().nullable(true),
           })
         )
-        .test({
-          message:
-            'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-          test: (solutionRanges) => {
-            if (questionType === 'NUMERICAL') {
-              return solutionRanges ? solutionRanges.length > 0 : false
-            }
-            return true
-          },
+
+        // when hasSampleSolution is active, check if the array solutionRanges is at least of length 1
+        .when('hasSampleSolution', {
+          is: true,
+          then: Yup.array().min(1),
         }),
+
+      // .test({
+      //   message:
+      //     'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+      //   test: (solutionRanges) => {
+      //     if (questionType === 'NUMERICAL') {
+      //       return solutionRanges ? solutionRanges.length > 0 : false
+      //     }
+      //     return true
+      //   },
+      // }),
       // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated
       solutions: Yup.array()
         .of(Yup.string())
