@@ -297,7 +297,6 @@ function QuestionEditModal({
                 })
                 break
 
-              // TODO
               case 'FREE_TEXT':
                 await manipulateFreeTextQuestion({
                   variables: {
@@ -305,13 +304,11 @@ function QuestionEditModal({
                     name: values.title,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
-                    // TODO: implement
                     options: {
-                      restrictions: { maxLength: 200 },
-                      solutions: [
-                        'This is a text solution 1.',
-                        'This is a text solution 2.',
-                      ],
+                      restrictions: {
+                        maxLength: values.options?.restrictions?.maxLength,
+                      },
+                      solutions: values.options?.solutions,
                     },
                     hasSampleSolution: values.hasSampleSolution,
                     hasAnswerFeedbacks: values.hasAnswerFeedbacks,
@@ -670,9 +667,63 @@ function QuestionEditModal({
 
                 {/* // TODO: test this once a free text question was created as well */}
                 {questionType === 'FREE_TEXT' && (
-                  <div>
-                    <div>RESTRICTIONS</div>
-                    {values.hasSampleSolution && <div>FREE TEXT SOLUTIONS</div>}
+                  <div className="flex flex-col">
+                    <div className="flex flex-row items-center">
+                      <div className="mr-2">Maximale Länge:</div>
+                      <Field
+                        name={`options.restrictions.maxLength`}
+                        type="number"
+                        className={twMerge(
+                          'w-44 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                        )}
+                        value={values.options?.restrictions?.maxLength}
+                        placeholder="Antwort Länge"
+                        min={0}
+                      />
+                    </div>
+                    {values.hasSampleSolution && (
+                      <div className="flex flex-col gap-1 w-max">
+                        {values.options.solutions?.map(
+                          (solution: string, index: number) => {
+                            return (
+                              <div
+                                className="flex flex-row items-center gap-2"
+                                key={index}
+                              >
+                                <div className="font-bold w-40">
+                                  Mögliche Lösung {String(index + 1)}:{' '}
+                                </div>
+                                <Field
+                                  name={`options.solutions[${index}]`}
+                                  type="text"
+                                  className={twMerge(
+                                    'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                  )}
+                                  value={solution}
+                                  placeholder="Lösung"
+                                />
+                              </div>
+                            )
+                          }
+                        )}
+                        <Button
+                          fluid
+                          className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                          onClick={() => {
+                            if (values.options.solutions) {
+                              setFieldValue(
+                                'values.options.solutionRanges',
+                                values.options.solutions.push('')
+                              )
+                            } else {
+                              setFieldValue('options.solutions', [''])
+                            }
+                          }}
+                        >
+                          Add new solution range
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
