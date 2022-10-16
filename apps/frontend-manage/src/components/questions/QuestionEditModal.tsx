@@ -213,6 +213,7 @@ function QuestionEditModal({
         })
       )
       .nullable(true),
+
     options: Yup.object().shape({
       // TODO: ensure that there is at least one / exactly one correct answer for MC and SC (KPRIM can also have all wrong answers) - approach based on .when could be promising
       choices: Yup.array()
@@ -240,11 +241,13 @@ function QuestionEditModal({
             return true
           },
         }),
+
       restrictions: Yup.object().shape({
         min: Yup.number().nullable(true),
         max: Yup.number().nullable(true),
         maxLength: Yup.number().min(1),
       }),
+
       // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated
       solutionRanges: Yup.array()
         .of(
@@ -253,23 +256,17 @@ function QuestionEditModal({
             max: Yup.number().nullable(true),
           })
         )
-
-        // when hasSampleSolution is active, check if the array solutionRanges is at least of length 1
-        .when('hasSampleSolution', {
-          is: true,
-          then: Yup.array().min(1),
+        .test({
+          message:
+            'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+          test: (solutionRanges) => {
+            if (questionType === 'NUMERICAL') {
+              return solutionRanges ? solutionRanges.length > 0 : false
+            }
+            return true
+          },
         }),
 
-      // .test({
-      //   message:
-      //     'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-      //   test: (solutionRanges) => {
-      //     if (questionType === 'NUMERICAL') {
-      //       return solutionRanges ? solutionRanges.length > 0 : false
-      //     }
-      //     return true
-      //   },
-      // }),
       // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated
       solutions: Yup.array()
         .of(Yup.string())
