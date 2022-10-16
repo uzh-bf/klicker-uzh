@@ -5,6 +5,7 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreetextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  Question,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
@@ -65,7 +66,7 @@ function QuestionEditModal({
     return dataQuestion?.question.type
   }, [mode, dataQuestion?.question.type, newQuestionType])
 
-  const question = useMemo(() => {
+  const question: Question = useMemo(() => {
     if (mode === 'CREATE') {
       switch (questionType) {
         case 'SC':
@@ -73,13 +74,15 @@ function QuestionEditModal({
         case 'KPRIM':
           return {
             type: questionType,
-            title: '',
-            content: '',
+            name: '',
+            content: '<br>',
             tags: [],
             attachments: null,
             questionData: {
               options: {
-                choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+                choices: question?.questionData?.options?.choices
+                  ? [...question.questionData.options.choices]
+                  : [{ ix: 0, value: '', correct: false, feedback: '' }],
               },
             },
             hasSampleSolution: false,
@@ -88,8 +91,8 @@ function QuestionEditModal({
         case 'NUMERICAL':
           return {
             type: questionType,
-            title: '',
-            content: '',
+            name: '',
+            content: '<br>',
             tags: [],
             attachments: null,
             questionData: {
@@ -104,8 +107,8 @@ function QuestionEditModal({
         case 'FREE_TEXT':
           return {
             type: questionType,
-            title: '',
-            content: '',
+            name: '',
+            content: '<br>',
             tags: [],
             attachments: null,
             questionData: {
@@ -120,8 +123,8 @@ function QuestionEditModal({
         default: {
           return {
             type: questionType,
-            title: '',
-            content: '',
+            name: '',
+            content: '<br>',
             tags: [],
             attachments: null,
             questionData: {
@@ -149,8 +152,8 @@ function QuestionEditModal({
     question
       ? {
           type: questionType,
-          title: '',
-          content: '',
+          name: '',
+          content: '<br>',
           tags: [],
           attachments: null,
 
@@ -173,9 +176,9 @@ function QuestionEditModal({
   useEffect(() => {
     if (question) {
       setInitialData({
-        title: question.name,
+        name: question.name,
         tags: question.tags?.map((tag: Tag) => tag.name) || [],
-        content: question.content.length !== 0 ? question.content : '<br>',
+        content: question.content,
         attachments: question.attachments,
         options: question.questionData.options,
         hasSampleSolution: question.hasSampleSolution,
@@ -219,11 +222,6 @@ function QuestionEditModal({
           initialValues={initialData}
           // TODO: validationSchema={loginSchema}
           onSubmit={async (values) => {
-            // TODO: remove once all questions have some content again
-            if (values.content === 'WARNING: Content missing!') {
-              values.content = ''
-            }
-
             switch (questionType) {
               case 'SC':
               case 'MC':
@@ -232,7 +230,7 @@ function QuestionEditModal({
                   variables: {
                     id: questionId,
                     type: questionType,
-                    name: values.title,
+                    name: values.name,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
                     options: {
@@ -258,7 +256,7 @@ function QuestionEditModal({
                 await manipulateNUMERICALQuestion({
                   variables: {
                     id: questionId,
-                    name: values.title,
+                    name: values.name,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
                     options: {
@@ -296,7 +294,7 @@ function QuestionEditModal({
                 await manipulateFreeTextQuestion({
                   variables: {
                     id: questionId,
-                    name: values.title,
+                    name: values.name,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
                     options: {
@@ -342,12 +340,12 @@ function QuestionEditModal({
                     showTooltipSymbol={true}
                   />
                   <Field
-                    name="title"
+                    name="name"
                     type="text"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                     )}
-                    value={values.title}
+                    value={values.name}
                   />
                 </div>
 
@@ -362,7 +360,7 @@ function QuestionEditModal({
                       showTooltipSymbol={true}
                     />
                     <Field
-                      name="title"
+                      name="name"
                       type="text"
                       className={twMerge(
                         'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
