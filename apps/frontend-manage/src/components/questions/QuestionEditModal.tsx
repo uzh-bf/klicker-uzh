@@ -8,7 +8,7 @@ import {
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { Button, Label, Modal, Select, Switch } from '@uzh-bf/design-system'
@@ -95,7 +95,7 @@ function QuestionEditModal({
             questionData: {
               options: {
                 restrictions: { min: undefined, max: undefined },
-                solutionRanges: undefined,
+                solutionRanges: [{ min: undefined, max: undefined }],
               },
             },
             hasSampleSolution: false,
@@ -132,7 +132,7 @@ function QuestionEditModal({
                   max: undefined,
                   maxLength: undefined,
                 },
-                solutionRanges: undefined,
+                solutionRanges: [{ min: undefined, max: undefined }],
                 solutions: [''],
               },
             },
@@ -144,6 +144,50 @@ function QuestionEditModal({
     }
     return dataQuestion?.question
   }, [dataQuestion?.question, mode, questionType])
+
+  const [initialData, setInitialData] = useState(
+    question
+      ? {
+          type: questionType,
+          title: '',
+          content: '',
+          tags: [],
+          attachments: null,
+
+          options: {
+            choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+            restrictions: {
+              min: undefined,
+              max: undefined,
+              maxLength: undefined,
+            },
+            solutionRanges: [{ min: undefined, max: undefined }],
+            solutions: [''],
+          },
+          hasSampleSolution: false,
+          hasAnswerFeedbacks: false,
+        }
+      : {}
+  )
+
+  useEffect(() => {
+    if (question) {
+      setInitialData({
+        title: question.name,
+        tags: question.tags?.map((tag: Tag) => tag.name) || [],
+        // TODO: change to simply question.content once all questions have some content again
+        content:
+          // TODO: enable empty content in editor such that nothing is in this field on initialization
+          question.content.length !== 0
+            ? question.content
+            : 'Content Placeholder',
+        attachments: question.attachments,
+        options: question.questionData.options,
+        hasSampleSolution: question.hasSampleSolution,
+        hasAnswerFeedbacks: question.hasAnswerFeedbacks,
+      })
+    }
+  }, [question])
 
   // TODO: styling of tooltips - some are too wide
   // TODO: FORM VALIDATION!!
@@ -176,19 +220,8 @@ function QuestionEditModal({
       </div>
       {question && questionType === question.type && (
         <Formik
-          initialValues={{
-            title: question.name,
-            tags: question.tags?.map((tag: Tag) => tag.name) || [],
-            // TODO: change to simply question.content once all questions have some content again
-            content:
-              question.content.length !== 0
-                ? question.content
-                : 'Content Placeholder',
-            attachments: question.attachments,
-            options: question.questionData.options,
-            hasSampleSolution: question.hasSampleSolution,
-            hasAnswerFeedbacks: question.hasAnswerFeedbacks,
-          }}
+          enableReinitialize={true}
+          initialValues={initialData}
           // TODO: validationSchema={loginSchema}
           onSubmit={async (values) => {
             // TODO: remove once all questions have some content again
@@ -208,7 +241,7 @@ function QuestionEditModal({
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
                     options: {
-                      choices: values.options.choices.map((choice: any) => {
+                      choices: values.options?.choices.map((choice: any) => {
                         return {
                           ix: choice.ix,
                           value: choice.value,
@@ -236,17 +269,17 @@ function QuestionEditModal({
                     options: {
                       restrictions: {
                         min:
-                          !values.options.restrictions ||
-                          values.options.restrictions?.min === ''
+                          !values.options?.restrictions ||
+                          values.options?.restrictions?.min === ''
                             ? undefined
-                            : values.options.restrictions.min,
+                            : values.options.restrictions?.min,
                         max:
-                          !values.options.restrictions ||
-                          values.options.restrictions?.max === ''
+                          !values.options?.restrictions ||
+                          values.options?.restrictions?.max === ''
                             ? undefined
-                            : values.options.restrictions.max,
+                            : values.options.restrictions?.max,
                       },
-                      solutionRanges: values.options.solutionRanges?.map(
+                      solutionRanges: values.options?.solutionRanges?.map(
                         (range: any) => {
                           return {
                             min: range.min === '' ? undefined : range.min,
@@ -304,6 +337,8 @@ function QuestionEditModal({
             setFieldValue,
             setFieldTouched,
           }) => {
+            console.log(values)
+
             return (
               <Form className="w-full">
                 <div className="flex flex-row mt-2">
@@ -340,7 +375,7 @@ function QuestionEditModal({
                       className={twMerge(
                         'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                       )}
-                      value={values.tags.join(', ')}
+                      value={values.tags?.join(', ')}
                       onChange={(e: any) => {
                         setFieldValue('tags', e.target.value.split(', '))
                       }}
@@ -361,16 +396,18 @@ function QuestionEditModal({
                     showTooltipSymbol={true}
                   />
 
-                  {/* // TODO: wrap in formik field with "as" or "componetn" */}
-                  <ContentInput
-                    error={errors.content}
-                    touched={touched.content}
-                    content={values.content}
-                    onChange={(newContent: string): void => {
-                      setFieldTouched('content', true, false)
-                      setFieldValue('content', newContent)
-                    }}
-                  />
+                  {/* // TODO: wrap in formik field with "as" or "component" */}
+                  {values.content && (
+                    <ContentInput
+                      error={errors.content}
+                      touched={touched.content}
+                      content={values.content}
+                      onChange={(newContent: string): void => {
+                        setFieldTouched('content', true, false)
+                        setFieldValue('content', newContent)
+                      }}
+                    />
+                  )}
                   {values.content}
                 </div>
 
@@ -413,7 +450,7 @@ function QuestionEditModal({
                   )}
                   <Switch
                     id="solution switch"
-                    checked={values.hasSampleSolution}
+                    checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('hasSampleSolution', newValue)
                     }
@@ -424,7 +461,7 @@ function QuestionEditModal({
                     questionType === 'KPRIM') && (
                     <Switch
                       id="feedback switch"
-                      checked={values.hasAnswerFeedbacks}
+                      checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) =>
                         setFieldValue('hasAnswerFeedbacks', newValue)
                       }
@@ -441,7 +478,7 @@ function QuestionEditModal({
                   questionType === 'MC' ||
                   questionType === 'KPRIM') && (
                   <div className="flex flex-col w-full gap-2 pt-2">
-                    {values.options.choices?.map(
+                    {values.options?.choices?.map(
                       (
                         choice: {
                           ix: number
@@ -515,7 +552,7 @@ function QuestionEditModal({
                       onClick={() =>
                         setFieldValue(
                           'values.options.choices',
-                          values.options.choices.push({
+                          values.options?.choices.push({
                             ix: values.options.choices[
                               values.options.choices.length - 1
                             ]
@@ -546,7 +583,7 @@ function QuestionEditModal({
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
-                          value={values.options.restrictions.min}
+                          value={values.options?.restrictions?.min}
                           placeholder="Minimum"
                         />
                         <div className="font-bold">Max: </div>
@@ -556,7 +593,7 @@ function QuestionEditModal({
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
-                          value={values.options.restrictions.max}
+                          value={values.options?.restrictions?.max}
                           placeholder="Maximum"
                         />
                       </div>
