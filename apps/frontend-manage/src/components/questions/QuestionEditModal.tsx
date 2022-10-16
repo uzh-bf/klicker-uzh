@@ -11,6 +11,7 @@ import {
 import { Field, Form, Formik } from 'formik'
 import React, { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
 
 import { Button, Label, Modal, Select, Switch } from '@uzh-bf/design-system'
 import { TYPES_LABELS } from 'shared-components'
@@ -187,8 +188,99 @@ function QuestionEditModal({
     }
   }, [question])
 
+  const questionManipulationSchema = Yup.object().shape({
+    name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
+    tags: Yup.array().of(Yup.string()),
+    // TODO: add validation such that <br> and empty strings are not accepted
+    content: Yup.string().required(
+      'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu'
+    ),
+    // TODO: adapt validation structure for attachments once they are available
+    attachments: Yup.array()
+      .of(
+        Yup.object().shape({
+          href: Yup.string().required(
+            'Bitte geben Sie eine URL für den Anhang ein'
+          ),
+          name: Yup.string().required(
+            'Bitte geben Sie einen Namen für den Anhang ein'
+          ),
+          originalName: Yup.string(),
+          description: Yup.string(),
+        })
+      )
+      .nullable(true),
+    options: Yup.object().shape({
+      // TODO: ensure that there is at least one / exactly one correct answer for MC and SC (KPRIM can also have all wrong answers) - approach based on .when could be promising
+      choices: Yup.array()
+        .of(
+          Yup.object().shape({
+            ix: Yup.number(),
+            value: Yup.string().required(
+              'Bitte geben Sie einen Wert für die Antwortmöglichkeit ein'
+            ),
+            correct: Yup.boolean(),
+            feedback: Yup.string(),
+          })
+        )
+        .test({
+          message:
+            'Fragen mit Auswahlmöglichkeiten müssen mindestens eine Antwort haben. Bei SC Fragen muss genau eine Antwort korrekt sein. Bei MC Fragen muss mindestens eine Antwort korrekt sein.',
+          test: (choices) => {
+            if (
+              questionType === 'SC' ||
+              questionType === 'MC' ||
+              questionType === 'KPRIM'
+            ) {
+              return choices ? choices.length > 0 : false
+            }
+            return true
+          },
+        }),
+      restrictions: Yup.object().shape({
+        min: Yup.number().nullable(true),
+        max: Yup.number().nullable(true),
+        maxLength: Yup.number().min(1),
+      }),
+      // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated
+      solutionRanges: Yup.array()
+        .of(
+          Yup.object().shape({
+            min: Yup.number().nullable(true),
+            max: Yup.number().nullable(true),
+          })
+        )
+        .test({
+          message:
+            'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+          test: (solutionRanges) => {
+            if (questionType === 'NUMERICAL') {
+              return solutionRanges ? solutionRanges.length > 0 : false
+            }
+            return true
+          },
+        }),
+      // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated
+      solutions: Yup.array()
+        .of(Yup.string())
+        .test({
+          message:
+            'Freitext Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+          test: (solutions) => {
+            if (questionType === 'FREE_TEXT') {
+              return solutions ? solutions.length > 0 : false
+            }
+            return true
+          },
+        }),
+    }),
+    hasSampleSolution: Yup.boolean(),
+    hasAnswerFeedbacks: Yup.boolean(),
+  })
+
   // TODO: styling of tooltips - some are too wide
   // TODO: FORM VALIDATION!!
+  // TODO: show errors of form validation below fields as for the login form
 
   return (
     <Modal
@@ -239,7 +331,7 @@ function QuestionEditModal({
         <Formik
           enableReinitialize={true}
           initialValues={initialData}
-          // TODO: validationSchema={loginSchema}
+          validationSchema={questionManipulationSchema}
           onSubmit={async (values) => {
             switch (questionType) {
               case 'SC':
@@ -347,6 +439,7 @@ function QuestionEditModal({
             setFieldTouched,
           }) => {
             console.log(values)
+            console.log(errors)
 
             return (
               <Form className="w-full" id="question-manipulation-form">
