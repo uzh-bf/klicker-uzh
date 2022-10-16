@@ -196,6 +196,7 @@ function QuestionEditModal({
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       escapeDisabled={true}
+      hideCloseButton={true}
     >
       <div className="z-0 flex flex-row">
         <Label
