@@ -175,12 +175,7 @@ function QuestionEditModal({
       setInitialData({
         title: question.name,
         tags: question.tags?.map((tag: Tag) => tag.name) || [],
-        // TODO: change to simply question.content once all questions have some content again
-        content:
-          // TODO: enable empty content in editor such that nothing is in this field on initialization
-          question.content.length !== 0
-            ? question.content
-            : 'Content Placeholder',
+        content: question.content.length !== 0 ? question.content : '<br>',
         attachments: question.attachments,
         options: question.questionData.options,
         hasSampleSolution: question.hasSampleSolution,
