@@ -104,67 +104,46 @@ export async function manipulateQuestion(
   },
   ctx: ContextWithUser
 ) {
-  const questionOLD = await ctx.prisma.question.findUnique({
-    where: {
-      id: id,
-    },
-    include: {
-      tags: true,
-      attachments: true,
-    },
-  })
   let tagsToDelete: string[] = []
 
-  if (questionOLD?.tags) {
+  const questionOLD = id
+    ? await ctx.prisma.question.findUnique({
+        where: {
+          id: id,
+        },
+        include: {
+          tags: true,
+          attachments: true,
+        },
+      })
+    : undefined
+
+  if (questionOLD && questionOLD?.tags) {
     tagsToDelete = questionOLD.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
 
-  const question = await ctx.prisma.question.upsert({
-    where: {
-      id: id,
-    },
-    create: {
-      type: type,
-      name: name || 'Missing Question Title',
-      content: content || 'Missing Question Content',
-      contentPlain: contentPlain || 'Missing Question Content',
-      hasSampleSolution: hasSampleSolution || false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
-      options: options || {},
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  let question
+
+  if (!id) {
+    question = await ctx.prisma.question.create({
+      data: {
+        type: type,
+        name: name || 'Missing Question Title',
+        content: content || 'Missing Question Content',
+        contentPlain: contentPlain || 'Missing Question Content',
+        hasSampleSolution: hasSampleSolution || false,
+        hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+        options: options || {},
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
         },
-      },
-      // connect to the tags which already exist by name and otherwise create a new tag with the given name
-      tags: {
-        connectOrCreate: tags?.map((tag: string) => {
-          return {
-            where: {
-              ownerId_name: {
-                ownerId: ctx.user.sub,
-                name: tag,
-              },
-            },
-            create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
-          }
-        }),
-      },
-      // TODO: create / connect attachments
-    },
-    update: {
-      name: name,
-      content: content,
-      contentPlain: contentPlain,
-      hasSampleSolution: hasSampleSolution || false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
-      options: options,
-      tags: {
-        connectOrCreate: tags
-          ?.filter((tag: string) => tag !== '')
-          .map((tag: string) => {
+        // connect to the tags which already exist by name and otherwise create a new tag with the given name
+        tags: {
+          connectOrCreate: tags?.map((tag: string) => {
             return {
               where: {
                 ownerId_name: {
@@ -175,24 +154,137 @@ export async function manipulateQuestion(
               create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
             }
           }),
-        disconnect: tagsToDelete.map((tag) => {
-          return {
-            ownerId_name: {
-              ownerId: ctx.user.sub,
-              name: tag,
-            },
-          }
-        }),
+        },
+        // TODO: create / connect attachments
       },
-      // TODO: create / connect / disconnect attachments
-    },
-  })
+      include: {
+        tags: true,
+        attachments: true,
+      },
+    })
 
-  // TODO: fix invalidation of cache
-  ctx.emitter.emit('invalidate', {
-    typename: 'Question',
-    id: question.id,
-  })
+    ctx.emitter.emit('invalidate', {
+      typename: 'Question',
+      id: question.id,
+    })
+  } else {
+    question = await ctx.prisma.question.update({
+      where: {
+        id: id,
+      },
+      data: {
+        name: name,
+        content: content,
+        contentPlain: contentPlain,
+        hasSampleSolution: hasSampleSolution || false,
+        hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+        options: options,
+        tags: {
+          connectOrCreate: tags
+            ?.filter((tag: string) => tag !== '')
+            .map((tag: string) => {
+              return {
+                where: {
+                  ownerId_name: {
+                    ownerId: ctx.user.sub,
+                    name: tag,
+                  },
+                },
+                create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+              }
+            }),
+          disconnect: tagsToDelete.map((tag) => {
+            return {
+              ownerId_name: {
+                ownerId: ctx.user.sub,
+                name: tag,
+              },
+            }
+          }),
+        },
+        // TODO: create / connect / disconnect attachments
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'Question',
+      id: question.id,
+    })
+  }
+
+  // TODO: replace the conditional implementation above with the single upsert below - up to now it failed because "where did not receive an argument when id was undefined"
+  // const question = await ctx.prisma.question.upsert({
+  //   where: {
+  //     id: id,
+  //   },
+  //   create: {
+  //     type: type,
+  //     name: name || 'Missing Question Title',
+  //     content: content || 'Missing Question Content',
+  //     contentPlain: contentPlain || 'Missing Question Content',
+  //     hasSampleSolution: hasSampleSolution || false,
+  //     hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+  //     options: options || {},
+  //     owner: {
+  //       connect: {
+  //         id: ctx.user.sub,
+  //       },
+  //     },
+  //     // connect to the tags which already exist by name and otherwise create a new tag with the given name
+  //     tags: {
+  //       connectOrCreate: tags?.map((tag: string) => {
+  //         return {
+  //           where: {
+  //             ownerId_name: {
+  //               ownerId: ctx.user.sub,
+  //               name: tag,
+  //             },
+  //           },
+  //           create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+  //         }
+  //       }),
+  //     },
+  //     // TODO: create / connect attachments
+  //   },
+  //   update: {
+  //     name: name,
+  //     content: content,
+  //     contentPlain: contentPlain,
+  //     hasSampleSolution: hasSampleSolution || false,
+  //     hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+  //     options: options,
+  //     tags: {
+  //       connectOrCreate: tags
+  //         ?.filter((tag: string) => tag !== '')
+  //         .map((tag: string) => {
+  //           return {
+  //             where: {
+  //               ownerId_name: {
+  //                 ownerId: ctx.user.sub,
+  //                 name: tag,
+  //               },
+  //             },
+  //             create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
+  //           }
+  //         }),
+  //       disconnect: tagsToDelete.map((tag) => {
+  //         return {
+  //           ownerId_name: {
+  //             ownerId: ctx.user.sub,
+  //             name: tag,
+  //           },
+  //         }
+  //       }),
+  //     },
+  //     // TODO: create / connect / disconnect attachments
+  //   },
+  // })
+
+  // // TODO: fix invalidation of cache
+  // ctx.emitter.emit('invalidate', {
+  //   typename: 'Question',
+  //   id: question.id,
+  // })
 
   return question
 }

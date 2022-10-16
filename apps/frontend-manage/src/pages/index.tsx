@@ -7,6 +7,8 @@ import { buildIndex, processItems } from '../lib/utils/filters'
 
 import Layout from '../components/Layout'
 import QuestionList from '../components/questions/QuestionList'
+import { Button } from '@uzh-bf/design-system'
+import QuestionEditModal from '../components/questions/QuestionEditModal'
 
 function Index() {
   // TODO: add toasts
@@ -55,6 +57,9 @@ function Index() {
     }
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
+
+  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+    useState(false)
 
   return (
     <Layout displayName="Fragepool">
@@ -148,6 +153,22 @@ function Index() {
                     className="w-full h-full mt-4 md:overflow-y-auto md:mx-auto"
                     key="question-list"
                   >
+                    <Button
+                      onClick={() =>
+                        setIsQuestionCreationModalOpen(
+                          !isQuestionCreationModalOpen
+                        )
+                      }
+                    >
+                      CREATE QUESTION
+                    </Button>
+                    {isQuestionCreationModalOpen && (
+                      <QuestionEditModal
+                        handleSetIsOpen={setIsQuestionCreationModalOpen}
+                        isOpen={isQuestionCreationModalOpen}
+                        mode="CREATE"
+                      />
+                    )}
                     <QuestionList
                       questions={processedQuestions}
                       selectedQuestions={selectedQuestions}

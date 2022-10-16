@@ -8,23 +8,25 @@ import {
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { Button, Label, Modal, Switch } from '@uzh-bf/design-system'
+import { Button, Label, Modal, Select, Switch } from '@uzh-bf/design-system'
 import { TYPES_LABELS } from 'shared-components'
 import ContentInput from './ContentInput'
 
 interface QuestionEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
-  questionId: number
+  questionId?: number
+  mode: 'EDIT' | 'CREATE'
 }
 
 function QuestionEditModal({
   isOpen,
   handleSetIsOpen,
   questionId,
+  mode,
 }: QuestionEditModalProps): React.ReactElement {
   const {
     loading: loadingQuestion,
@@ -32,6 +34,7 @@ function QuestionEditModal({
     data: dataQuestion,
   } = useQuery(GetSingleQuestionDocument, {
     variables: { id: questionId },
+    skip: questionId === undefined,
   })
 
   const [manipulateChoicesQuestion] = useMutation(
@@ -44,10 +47,103 @@ function QuestionEditModal({
     ManipulateFreetextQuestionDocument
   )
 
-  const question = useMemo(
-    () => dataQuestion?.question,
-    [dataQuestion?.question]
+  const dropdownOptions = useMemo(() => {
+    return Object.keys(TYPES_LABELS).map((key) => ({
+      value: key,
+      label: TYPES_LABELS[key],
+    }))
+  }, [])
+
+  const [newQuestionType, setNewQuestionType] = useState(
+    Object.keys(TYPES_LABELS)[0]
   )
+
+  const questionType = useMemo(() => {
+    if (mode === 'CREATE') {
+      return newQuestionType
+    }
+    return dataQuestion?.question.type
+  }, [mode, dataQuestion?.question.type, newQuestionType])
+
+  const question = useMemo(() => {
+    if (mode === 'CREATE') {
+      switch (questionType) {
+        case 'SC':
+        case 'MC':
+        case 'KPRIM':
+          return {
+            type: questionType,
+            title: '',
+            content: '',
+            tags: [],
+            attachments: null,
+            questionData: {
+              options: {
+                choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+              },
+            },
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+          }
+        case 'NUMERICAL':
+          return {
+            type: questionType,
+            title: '',
+            content: '',
+            tags: [],
+            attachments: null,
+            questionData: {
+              options: {
+                restrictions: { min: undefined, max: undefined },
+                solutionRanges: undefined,
+              },
+            },
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+          }
+        case 'FREE_TEXT':
+          return {
+            type: questionType,
+            title: '',
+            content: '',
+            tags: [],
+            attachments: null,
+            questionData: {
+              options: {
+                restrictions: { maxLength: undefined },
+                solutions: [''],
+              },
+            },
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+          }
+        default: {
+          return {
+            type: questionType,
+            title: '',
+            content: '',
+            tags: [],
+            attachments: null,
+            questionData: {
+              options: {
+                choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+                restrictions: {
+                  min: undefined,
+                  max: undefined,
+                  maxLength: undefined,
+                },
+                solutionRanges: undefined,
+                solutions: [''],
+              },
+            },
+            hasSampleSolution: false,
+            hasAnswerFeedbacks: false,
+          }
+        }
+      }
+    }
+    return dataQuestion?.question
+  }, [dataQuestion?.question, mode, questionType])
 
   // TODO: styling of tooltips - some are too wide
   // TODO: FORM VALIDATION!!
@@ -60,19 +156,34 @@ function QuestionEditModal({
       escapeDisabled={true}
     >
       <div className="z-0 flex flex-row">
-        <Label label="Fragetyp:" className="my-auto mr-2 text-lg font-bold" />
-        <div className="my-auto">{TYPES_LABELS[question?.type || '']}</div>
+        <Label
+          label="Fragetyp:"
+          className="my-auto mr-2 text-lg font-bold"
+          tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+          tooltip="// TODO: tooltip content"
+          showTooltipSymbol={mode === 'CREATE'}
+        />
+        {mode === 'CREATE' ? (
+          <Select
+            items={dropdownOptions}
+            onChange={(newValue: string) => {
+              setNewQuestionType(newValue)
+            }}
+          />
+        ) : (
+          <div className="my-auto">{TYPES_LABELS[question?.type || '']}</div>
+        )}
       </div>
-      {question && (
+      {question && questionType === question.type && (
         <Formik
           initialValues={{
             title: question.name,
-            tags: question?.tags?.map((tag: Tag) => tag.name) || [],
+            tags: question.tags?.map((tag: Tag) => tag.name) || [],
             // TODO: change to simply question.content once all questions have some content again
             content:
               question.content.length !== 0
                 ? question.content
-                : 'WARNING: Content missing!',
+                : 'Content Placeholder',
             attachments: question.attachments,
             options: question.questionData.options,
             hasSampleSolution: question.hasSampleSolution,
@@ -85,14 +196,14 @@ function QuestionEditModal({
               values.content = ''
             }
 
-            switch (question.type) {
+            switch (questionType) {
               case 'SC':
               case 'MC':
               case 'KPRIM':
                 await manipulateChoicesQuestion({
                   variables: {
                     id: questionId,
-                    type: question.type,
+                    type: questionType,
                     name: values.title,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
@@ -115,7 +226,6 @@ function QuestionEditModal({
                 })
                 break
 
-              // TODO
               case 'NUMERICAL':
                 await manipulateNUMERICALQuestion({
                   variables: {
@@ -123,15 +233,16 @@ function QuestionEditModal({
                     name: values.title,
                     content: values.content,
                     contentPlain: values.content, // TODO: remove this field
-                    // TODO: implement
                     options: {
                       restrictions: {
                         min:
-                          values.options.restrictions.min === ''
+                          !values.options.restrictions ||
+                          values.options.restrictions?.min === ''
                             ? undefined
                             : values.options.restrictions.min,
                         max:
-                          values.options.restrictions.max === ''
+                          !values.options.restrictions ||
+                          values.options.restrictions?.max === ''
                             ? undefined
                             : values.options.restrictions.max,
                       },
@@ -275,9 +386,9 @@ function QuestionEditModal({
                 </div> */}
 
                 <div className="flex flex-row gap-4 mt-4">
-                  {(question.type === 'SC' ||
-                    question.type === 'MC' ||
-                    question.type === 'KPRIM') && (
+                  {(questionType === 'SC' ||
+                    questionType === 'MC' ||
+                    questionType === 'KPRIM') && (
                     <div className="flex-1">
                       <Label
                         label="Choices:"
@@ -288,8 +399,8 @@ function QuestionEditModal({
                       />
                     </div>
                   )}
-                  {(question.type === 'NUMERICAL' ||
-                    question.type === 'FREE_TEXT') && (
+                  {(questionType === 'NUMERICAL' ||
+                    questionType === 'FREE_TEXT') && (
                     <div className="flex-1">
                       <Label
                         label="Restrictions:"
@@ -308,9 +419,9 @@ function QuestionEditModal({
                     }
                     label="Sample Solution"
                   />
-                  {(question.type === 'SC' ||
-                    question.type === 'MC' ||
-                    question.type === 'KPRIM') && (
+                  {(questionType === 'SC' ||
+                    questionType === 'MC' ||
+                    questionType === 'KPRIM') && (
                     <Switch
                       id="feedback switch"
                       checked={values.hasAnswerFeedbacks}
@@ -326,9 +437,9 @@ function QuestionEditModal({
                   )}
                 </div>
 
-                {(question.type === 'SC' ||
-                  question.type === 'MC' ||
-                  question.type === 'KPRIM') && (
+                {(questionType === 'SC' ||
+                  questionType === 'MC' ||
+                  questionType === 'KPRIM') && (
                   <div className="flex flex-col w-full gap-2 pt-2">
                     {values.options.choices?.map(
                       (
@@ -424,7 +535,7 @@ function QuestionEditModal({
                   </div>
                 )}
 
-                {question.type === 'NUMERICAL' && (
+                {questionType === 'NUMERICAL' && (
                   <div>
                     <div className="w-full">
                       <div className="flex flex-row items-center gap-2">
@@ -521,7 +632,7 @@ function QuestionEditModal({
                 )}
 
                 {/* // TODO: test this once a free text question was created as well */}
-                {question.type === 'FREE_TEXT' && (
+                {questionType === 'FREE_TEXT' && (
                   <div>
                     <div>RESTRICTIONS</div>
                     {values.hasSampleSolution && <div>FREE TEXT SOLUTIONS</div>}

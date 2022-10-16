@@ -1,0 +1,23 @@
+{
+  "where": { "id": "Int" },
+  "create": {
+    "type": "NUMERICAL",
+    "name": "NEW NR QUESTION",
+    "content": "Content Placeholder",
+    "contentPlain": "Content Placeholder",
+    "hasSampleSolution": false,
+    "hasAnswerFeedbacks": false,
+    "options": { "restrictions": { "min": 10, "max": 10 } },
+    "owner": { "connect": { "id": "163e4f34-52a4-4e47-866f-79a8aec2feac" } },
+    "tags": { "connectOrCreate": [] }
+  },
+  "update": {
+    "name": "NEW NR QUESTION",
+    "content": "Content Placeholder",
+    "contentPlain": "Content Placeholder",
+    "hasSampleSolution": false,
+    "hasAnswerFeedbacks": false,
+    "options": { "restrictions": { "min": 10, "max": 10 } },
+    "tags": { "connectOrCreate": [], "disconnect": [] }
+  }
+}

@@ -127,6 +127,7 @@ function Question({
                 handleSetIsOpen={setIsModificationModalOpen}
                 isOpen={isModificationModalOpen}
                 questionId={id}
+                mode="EDIT"
               />
             )}
           </div>
