@@ -202,6 +202,7 @@ function QuestionEditModal({
           className="mt-2 border-uzh-grey-80 bg-uzh-blue-80 font-bold text-white"
           type="submit"
           form="question-manipulation-form"
+          // disabled={isSubmitting}
         >
           <Button.Label>Speichern</Button.Label>
         </Button>
@@ -534,6 +535,18 @@ function QuestionEditModal({
                                 />
                               </div>
                             )}
+                            <Button
+                              onClick={() => {
+                                values.options.choices.splice(index, 1)
+                                setFieldValue(
+                                  'options.choices',
+                                  values.options.choices
+                                )
+                              }}
+                              className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                            >
+                              Löschen
+                            </Button>
                           </div>
 
                           {values.hasAnswerFeedbacks &&
@@ -642,6 +655,21 @@ function QuestionEditModal({
                                     value={range.max}
                                     placeholder="Maximum"
                                   />
+                                  <Button
+                                    onClick={() => {
+                                      values.options.solutionRanges.splice(
+                                        index,
+                                        1
+                                      )
+                                      setFieldValue(
+                                        'options.solutionRanges',
+                                        values.options.solutionRanges
+                                      )
+                                    }}
+                                    className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                                  >
+                                    Löschen
+                                  </Button>
                                 </div>
                               )
                             }
@@ -713,6 +741,18 @@ function QuestionEditModal({
                                   value={solution}
                                   placeholder="Lösung"
                                 />
+                                <Button
+                                  onClick={() => {
+                                    values.options.solutions.splice(index, 1)
+                                    setFieldValue(
+                                      'options.solutions',
+                                      values.options.solutions
+                                    )
+                                  }}
+                                  className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                                >
+                                  Löschen
+                                </Button>
                               </div>
                             )
                           }
