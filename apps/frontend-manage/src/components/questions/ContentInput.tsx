@@ -227,7 +227,7 @@ function ContentInput({
             <Editable
               autoFocus
               spellCheck
-              placeholder="Enter your question here…"
+              placeholder="Fragetext hier eingeben…"
               renderElement={renderElement}
               renderLeaf={renderLeaf}
               onKeyDown={(event) => {

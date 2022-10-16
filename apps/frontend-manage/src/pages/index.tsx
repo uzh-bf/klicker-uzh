@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
-import Layout from '../components/Layout'
-import QuestionList from '../components/questions/QuestionList'
 import { Button } from '@uzh-bf/design-system'
+import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
+import QuestionList from '../components/questions/QuestionList'
 
 function Index() {
   // TODO: add toasts
@@ -159,8 +159,9 @@ function Index() {
                           !isQuestionCreationModalOpen
                         )
                       }
+                      className="bg-uzh-blue-80 font-bold text-white float-right mb-3"
                     >
-                      CREATE QUESTION
+                      FRAGE ERSTELLEN
                     </Button>
                     {isQuestionCreationModalOpen && (
                       <QuestionEditModal

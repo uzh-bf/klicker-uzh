@@ -197,6 +197,23 @@ function QuestionEditModal({
       onClose={() => handleSetIsOpen(false)}
       escapeDisabled={true}
       hideCloseButton={true}
+      onPrimaryAction={
+        <Button
+          className="mt-2 border-uzh-grey-80 bg-uzh-blue-80 font-bold text-white"
+          type="submit"
+          form="question-manipulation-form"
+        >
+          <Button.Label>Speichern</Button.Label>
+        </Button>
+      }
+      onSecondaryAction={
+        <Button
+          className="mt-2 border-uzh-grey-80"
+          onClick={() => handleSetIsOpen(false)}
+        >
+          <Button.Label>Close</Button.Label>
+        </Button>
+      }
     >
       <div className="z-0 flex flex-row">
         <Label
@@ -331,7 +348,7 @@ function QuestionEditModal({
             console.log(values)
 
             return (
-              <Form className="w-full">
+              <Form className="w-full" id="question-manipulation-form">
                 <div className="flex flex-row mt-2">
                   <Label
                     label="Fragetitel:"
@@ -419,7 +436,7 @@ function QuestionEditModal({
                     questionType === 'KPRIM') && (
                     <div className="flex-1">
                       <Label
-                        label="Choices:"
+                        label="Antwortmöglichkeiten:"
                         className="my-auto mr-2 text-lg font-bold"
                         tooltipStyle="text-base font-normal"
                         tooltip="// TODO Tooltip Content"
@@ -431,7 +448,7 @@ function QuestionEditModal({
                     questionType === 'FREE_TEXT') && (
                     <div className="flex-1">
                       <Label
-                        label="Restrictions:"
+                        label="Einschränkungen:"
                         className="my-auto mr-2 text-lg font-bold"
                         tooltipStyle="text-base font-normal"
                         tooltip="// TODO Tooltip Content"
@@ -445,7 +462,7 @@ function QuestionEditModal({
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('hasSampleSolution', newValue)
                     }
-                    label="Sample Solution"
+                    label="Musterlösung"
                   />
                   {(questionType === 'SC' ||
                     questionType === 'MC' ||
@@ -456,7 +473,7 @@ function QuestionEditModal({
                       onCheckedChange={(newValue: boolean) =>
                         setFieldValue('hasAnswerFeedbacks', newValue)
                       }
-                      label="Choices Feedbacks"
+                      label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
                       className={twMerge(
                         !values.hasSampleSolution && 'opacity-50'
@@ -498,11 +515,11 @@ function QuestionEditModal({
                                 !values.hasSampleSolution && 'bg-uzh-grey-20'
                               )}
                               value={choice.value}
-                              placeholder="Enter choice"
+                              placeholder="Lösungsmöglichkeit eingeben"
                             />
                             {values.hasSampleSolution && (
                               <div className="flex flex-row items-center ml-2">
-                                <div className="mr-2">Correct?</div>
+                                <div className="mr-2">Korrekt?</div>
                                 <Switch
                                   id={`${choice.value}-correct`}
                                   checked={choice.correct || false}
@@ -530,7 +547,7 @@ function QuestionEditModal({
                                     'w-full rounded  bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
                                   )}
                                   value={choice.feedback}
-                                  placeholder="Enter feedback"
+                                  placeholder="Feedback eingeben"
                                 />
                               </div>
                             )}
@@ -558,7 +575,7 @@ function QuestionEditModal({
                         )
                       }
                     >
-                      Add new Choice
+                      Neue Antwort hinzufügen
                     </Button>
                   </div>
                 )}
@@ -592,7 +609,7 @@ function QuestionEditModal({
                     {values.hasSampleSolution && (
                       <div className="mt-3">
                         <div className="mb-1 mr-2 font-bold">
-                          Solution Ranges:
+                          Lösungsbereiche:
                         </div>
                         <div className="flex flex-col gap-1 w-max">
                           {values.options.solutionRanges?.map(
@@ -651,7 +668,7 @@ function QuestionEditModal({
                               }
                             }}
                           >
-                            Add new solution range
+                            Neuen Lösungsbereich hinzufügen
                           </Button>
                         </div>
                       </div>
@@ -662,8 +679,8 @@ function QuestionEditModal({
                 {/* // TODO: test this once a free text question was created as well */}
                 {questionType === 'FREE_TEXT' && (
                   <div className="flex flex-col">
-                    <div className="flex flex-row items-center">
-                      <div className="mr-2">Maximale Länge:</div>
+                    <div className="flex flex-row items-center mb-4">
+                      <div className="mr-2 font-bold">Maximale Länge:</div>
                       <Field
                         name={`options.restrictions.maxLength`}
                         type="number"
@@ -714,28 +731,12 @@ function QuestionEditModal({
                             }
                           }}
                         >
-                          Add new solution range
+                          Neue Lösung hinzufügen
                         </Button>
                       </div>
                     )}
                   </div>
                 )}
-
-                <div className="flex flex-row justify-between">
-                  <Button
-                    className="mt-2 border-uzh-grey-80"
-                    onClick={() => handleSetIsOpen(false)}
-                  >
-                    <Button.Label>Close</Button.Label>
-                  </Button>
-                  <Button
-                    className="mt-2 border-uzh-grey-80"
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
-                    <Button.Label>Speichern</Button.Label>
-                  </Button>
-                </div>
               </Form>
             )
           }}
