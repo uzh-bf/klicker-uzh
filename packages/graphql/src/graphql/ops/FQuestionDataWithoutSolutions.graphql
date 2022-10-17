@@ -4,7 +4,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     name
     type
     content
-    contentPlain
 
     ... on ChoicesQuestionData {
       options {

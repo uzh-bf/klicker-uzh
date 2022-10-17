@@ -31,7 +31,6 @@ export interface StudentQuestionProps {
   onExpire: () => void
   currentQuestion: {
     content: string
-    contentPlain: string
     id: number
     name: string
     type: string
@@ -171,10 +170,7 @@ export const StudentQuestion = ({
       />
 
       <div className="flex-initial min-h-[6rem] px-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded prose leading-4 max-w-none">
-        <Markdown
-          content={currentQuestion.content}
-          description={currentQuestion.contentPlain}
-        />
+        <Markdown content={currentQuestion.content} />
       </div>
 
       {currentQuestion.attachments && (

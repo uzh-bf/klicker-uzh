@@ -137,7 +137,6 @@ export interface NexusGenObjects {
   }
   ChoicesQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -188,7 +187,6 @@ export interface NexusGenObjects {
   }
   FreeTextQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -262,7 +260,6 @@ export interface NexusGenObjects {
   Mutation: {};
   NumericalQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -333,7 +330,6 @@ export interface NexusGenObjects {
   Question: { // root type
     attachments?: NexusGenRootTypes['Attachment'][] | null; // [Attachment!]
     content: string; // String!
-    contentPlain: string; // String!
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
@@ -440,7 +436,6 @@ export interface NexusGenFieldTypes {
   }
   ChoicesQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -491,7 +486,6 @@ export interface NexusGenFieldTypes {
   }
   FreeTextQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -601,7 +595,6 @@ export interface NexusGenFieldTypes {
   }
   NumericalQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -690,7 +683,6 @@ export interface NexusGenFieldTypes {
   Question: { // field return type
     attachments: NexusGenRootTypes['Attachment'][] | null; // [Attachment!]
     content: string; // String!
-    contentPlain: string; // String!
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
@@ -768,7 +760,6 @@ export interface NexusGenFieldTypes {
   }
   QuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
     hasAnswerFeedbacks: boolean; // Boolean!
     hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
@@ -803,7 +794,6 @@ export interface NexusGenFieldTypeNames {
   }
   ChoicesQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
     hasAnswerFeedbacks: 'Boolean'
     hasSampleSolution: 'Boolean'
     id: 'Int'
@@ -854,7 +844,6 @@ export interface NexusGenFieldTypeNames {
   }
   FreeTextQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
     hasAnswerFeedbacks: 'Boolean'
     hasSampleSolution: 'Boolean'
     id: 'Int'
@@ -964,7 +953,6 @@ export interface NexusGenFieldTypeNames {
   }
   NumericalQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
     hasAnswerFeedbacks: 'Boolean'
     hasSampleSolution: 'Boolean'
     id: 'Int'
@@ -1053,7 +1041,6 @@ export interface NexusGenFieldTypeNames {
   Question: { // field return type name
     attachments: 'Attachment'
     content: 'String'
-    contentPlain: 'String'
     createdAt: 'DateTime'
     hasAnswerFeedbacks: 'Boolean'
     hasSampleSolution: 'Boolean'
@@ -1131,7 +1118,6 @@ export interface NexusGenFieldTypeNames {
   }
   QuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
     hasAnswerFeedbacks: 'Boolean'
     hasSampleSolution: 'Boolean'
     id: 'Int'
@@ -1216,7 +1202,6 @@ export interface NexusGenArgTypes {
     manipulateChoicesQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
       content?: string | null; // String
-      contentPlain?: string | null; // String
       hasAnswerFeedbacks?: boolean | null; // Boolean
       hasSampleSolution?: boolean | null; // Boolean
       id?: number | null; // Int
@@ -1228,7 +1213,6 @@ export interface NexusGenArgTypes {
     manipulateFREETEXTQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
       content?: string | null; // String
-      contentPlain?: string | null; // String
       hasAnswerFeedbacks?: boolean | null; // Boolean
       hasSampleSolution?: boolean | null; // Boolean
       id?: number | null; // Int
@@ -1240,7 +1224,6 @@ export interface NexusGenArgTypes {
     manipulateNUMERICALQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
       content?: string | null; // String
-      contentPlain?: string | null; // String
       hasAnswerFeedbacks?: boolean | null; // Boolean
       hasSampleSolution?: boolean | null; // Boolean
       id?: number | null; // Int

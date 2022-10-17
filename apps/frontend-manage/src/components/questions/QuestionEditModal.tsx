@@ -255,7 +255,6 @@ function QuestionEditModal({
           id: questionId,
           name: values.name,
           content: values.content,
-          contentPlain: values.content, // TODO: remove this field
           hasSampleSolution: values.hasSampleSolution,
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]

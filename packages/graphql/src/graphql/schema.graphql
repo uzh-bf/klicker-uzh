@@ -71,7 +71,6 @@ input ChoiceInput {
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -133,7 +132,6 @@ type FeedbackResponse {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -239,9 +237,9 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
-  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
-  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, contentPlain: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
   markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -259,7 +257,6 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -373,7 +370,6 @@ type Query {
 type Question {
   attachments: [Attachment!]
   content: String!
-  contentPlain: String!
   createdAt: DateTime!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -389,7 +385,6 @@ type Question {
 
 interface QuestionData {
   content: String!
-  contentPlain: String!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!

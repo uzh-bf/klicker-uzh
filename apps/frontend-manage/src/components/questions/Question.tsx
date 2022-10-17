@@ -19,7 +19,7 @@ interface Props {
   tags?: any[] // TODO: typing
   title: string
   type: string
-  contentPlain: string
+  content: string
   onCheck: any // TODO: typing
 }
 
@@ -36,7 +36,7 @@ function Question({
   tags,
   title,
   type,
-  contentPlain,
+  content,
   onCheck,
   isArchived,
 }: Props): React.ReactElement {
@@ -50,7 +50,7 @@ function Question({
       type: 'question',
       questionType: type,
       title,
-      contentPlain,
+      content,
     },
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
@@ -89,9 +89,9 @@ function Question({
             </div>
             <div className="mb-2 italic">{QUESTION_TYPES_SHORT[type]}</div>
             <div className="flex-1 mb-2">
-              {contentPlain.length > 120
-                ? `${contentPlain.substring(0, 120)}...`
-                : contentPlain}
+              {content.length > 120
+                ? `${content.substring(0, 120)}...`
+                : content}
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
