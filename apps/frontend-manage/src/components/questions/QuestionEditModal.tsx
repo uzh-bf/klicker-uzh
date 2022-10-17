@@ -265,146 +265,147 @@ function QuestionEditModal({
   }
 
   return (
-    <Modal
-      fullScreen
-      title="Frage erstellen"
-      classNames={{
-        overlay: 'top-14',
-        content: 'm-auto max-w-7xl',
-      }}
-      open={isOpen}
-      onClose={() => handleSetIsOpen(false)}
-      escapeDisabled={true}
-      hideCloseButton={true}
-      onPrimaryAction={
-        <Button
-          className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
-          type="submit"
-          form="question-manipulation-form"
-        >
-          <Button.Label>Speichern</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          className="mt-2 border-uzh-grey-80"
-          onClick={() => handleSetIsOpen(false)}
-        >
-          <Button.Label>Close</Button.Label>
-        </Button>
-      }
-    >
-      <Formik
-        // validateOnChange={false}
-        isInitialValid={mode === 'EDIT'}
-        enableReinitialize={true}
-        initialValues={question}
-        validationSchema={questionManipulationSchema}
-        onSubmit={async (values) => {
-          const common = {
-            id: questionId,
-            name: values.name,
-            content: values.content,
-            contentPlain: values.content, // TODO: remove this field
-            hasSampleSolution: values.hasSampleSolution,
-            hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-            attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
-            tags: values.tags,
-          }
-          switch (questionType) {
-            case 'SC':
-            case 'MC':
-            case 'KPRIM':
-              await manipulateChoicesQuestion({
-                variables: {
-                  ...common,
-                  type: questionType,
-                  options: {
-                    choices: values.options?.choices.map((choice: any) => {
+    <Formik
+      // validateOnChange={false}
+      isInitialValid={mode === 'EDIT'}
+      enableReinitialize={true}
+      initialValues={question}
+      validationSchema={questionManipulationSchema}
+      onSubmit={async (values) => {
+        const common = {
+          id: questionId,
+          name: values.name,
+          content: values.content,
+          contentPlain: values.content, // TODO: remove this field
+          hasSampleSolution: values.hasSampleSolution,
+          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+          attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
+          tags: values.tags,
+        }
+        switch (questionType) {
+          case 'SC':
+          case 'MC':
+          case 'KPRIM':
+            await manipulateChoicesQuestion({
+              variables: {
+                ...common,
+                type: questionType,
+                options: {
+                  choices: values.options?.choices.map((choice: any) => {
+                    return {
+                      ix: choice.ix,
+                      value: choice.value,
+                      correct: choice.correct,
+                      feedback: choice.feedback,
+                    }
+                  }),
+                },
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
+
+          case 'NUMERICAL':
+            await manipulateNUMERICALQuestion({
+              variables: {
+                ...common,
+                options: {
+                  restrictions: {
+                    min:
+                      !values.options?.restrictions ||
+                      values.options?.restrictions?.min === ''
+                        ? undefined
+                        : values.options.restrictions?.min,
+                    max:
+                      !values.options?.restrictions ||
+                      values.options?.restrictions?.max === ''
+                        ? undefined
+                        : values.options.restrictions?.max,
+                  },
+                  solutionRanges: values.options?.solutionRanges?.map(
+                    (range: any) => {
                       return {
-                        ix: choice.ix,
-                        value: choice.value,
-                        correct: choice.correct,
-                        feedback: choice.feedback,
+                        min: range.min === '' ? undefined : range.min,
+                        max: range.max === '' ? undefined : range.max,
                       }
-                    }),
-                  },
+                    }
+                  ),
                 },
-                refetchQueries: [{ query: GetUserQuestionsDocument }],
-              })
-              break
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
 
-            case 'NUMERICAL':
-              await manipulateNUMERICALQuestion({
-                variables: {
-                  ...common,
-                  options: {
-                    restrictions: {
-                      min:
-                        !values.options?.restrictions ||
-                        values.options?.restrictions?.min === ''
-                          ? undefined
-                          : values.options.restrictions?.min,
-                      max:
-                        !values.options?.restrictions ||
-                        values.options?.restrictions?.max === ''
-                          ? undefined
-                          : values.options.restrictions?.max,
-                    },
-                    solutionRanges: values.options?.solutionRanges?.map(
-                      (range: any) => {
-                        return {
-                          min: range.min === '' ? undefined : range.min,
-                          max: range.max === '' ? undefined : range.max,
-                        }
-                      }
-                    ),
+          case 'FREE_TEXT':
+            await manipulateFreeTextQuestion({
+              variables: {
+                ...common,
+                options: {
+                  restrictions: {
+                    maxLength: values.options?.restrictions?.maxLength,
                   },
+                  solutions: values.options?.solutions,
                 },
-                refetchQueries: [{ query: GetUserQuestionsDocument }],
-              })
-              break
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
 
-            case 'FREE_TEXT':
-              await manipulateFreeTextQuestion({
-                variables: {
-                  ...common,
-                  options: {
-                    restrictions: {
-                      maxLength: values.options?.restrictions?.maxLength,
-                    },
-                    solutions: values.options?.solutions,
-                  },
-                },
-                refetchQueries: [{ query: GetUserQuestionsDocument }],
-              })
-              break
+          default:
+            break
+        }
 
-            default:
-              break
-          }
+        handleSetIsOpen(false)
+      }}
+    >
+      {({
+        errors,
+        touched,
+        isSubmitting,
+        values,
+        isValid,
+        resetForm,
+        setFieldValue,
+        setFieldTouched,
+      }) => {
+        console.log(values)
+        console.error(errors)
 
-          handleSetIsOpen(false)
-        }}
-      >
-        {({
-          errors,
-          touched,
-          isSubmitting,
-          values,
-          isValid,
-          resetForm,
-          setFieldValue,
-          setFieldTouched,
-        }) => {
-          console.log(values)
-          console.log(errors)
+        if (mode === 'EDIT' && loadingQuestion) {
+          return <div></div>
+        }
 
-          if (mode === 'EDIT' && loadingQuestion) {
-            return <div></div>
-          }
-
-          return (
+        return (
+          <Modal
+            fullScreen
+            title="Frage erstellen"
+            classNames={{
+              overlay: 'top-14',
+              content: 'm-auto max-w-7xl',
+            }}
+            open={isOpen}
+            onClose={() => handleSetIsOpen(false)}
+            escapeDisabled={true}
+            hideCloseButton={true}
+            onPrimaryAction={
+              <Button
+                disabled={isSubmitting || !isValid}
+                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+                type="submit"
+                form="question-manipulation-form"
+              >
+                <Button.Label>Speichern</Button.Label>
+              </Button>
+            }
+            onSecondaryAction={
+              <Button
+                className="mt-2 border-uzh-grey-80"
+                onClick={() => handleSetIsOpen(false)}
+              >
+                <Button.Label>Close</Button.Label>
+              </Button>
+            }
+          >
             <div>
               <div className="z-0 flex flex-row">
                 <Label
@@ -884,10 +885,10 @@ function QuestionEditModal({
                 )}
               </Form>
             </div>
-          )
-        }}
-      </Formik>
-    </Modal>
+          </Modal>
+        )
+      }}
+    </Formik>
   )
 }
 
