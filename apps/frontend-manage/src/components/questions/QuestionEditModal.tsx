@@ -7,11 +7,20 @@ import {
   ManipulateNumericalQuestionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
-import React, { useMemo, useState } from 'react'
+import React, { useContext, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
-import { Button, Label, Modal, Select, Switch } from '@uzh-bf/design-system'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  Button,
+  Label,
+  Modal,
+  Select,
+  Switch,
+  ThemeContext,
+} from '@uzh-bf/design-system'
 import {
   QUESTION_GROUPS,
   QUESTION_TYPES,
@@ -133,6 +142,8 @@ function QuestionEditModal({
   questionId,
   mode,
 }: QuestionEditModalProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
+
   const {
     loading: loadingQuestion,
     error: errorQuestion,
@@ -603,9 +614,16 @@ function QuestionEditModal({
                                   values.options.choices
                                 )
                               }}
-                              className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                              className="items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md"
                             >
-                              Löschen
+                              <Button.Icon>
+                                <FontAwesomeIcon
+                                  icon={faTrash}
+                                  className={twMerge(
+                                    `hover:${theme.primaryBg}`
+                                  )}
+                                />
+                              </Button.Icon>
                             </Button>
                           </div>
 
