@@ -36,106 +36,118 @@ import {
 } from 'shared-components'
 import ContentInput from './ContentInput'
 
-const questionManipulationSchema = (questionType) =>
-  Yup.object().shape({
-    name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
-    tags: Yup.array().of(Yup.string()),
-    content: Yup.string()
-      .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
-      .test({
-        message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
-        test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-      }),
-    hasSampleSolution: Yup.boolean(),
-    hasAnswerFeedbacks: Yup.boolean(),
-
-    // TODO: adapt validation structure for attachments once they are available
-    attachments: Yup.array()
-      .of(
-        Yup.object().shape({
-          href: Yup.string().required(
-            'Bitte geben Sie eine URL für den Anhang ein'
-          ),
-          name: Yup.string().required(
-            'Bitte geben Sie einen Namen für den Anhang ein'
-          ),
-          originalName: Yup.string(),
-          description: Yup.string(),
-        })
-      )
-      .nullable(true),
-
-    options: Yup.object().shape({
-      // TODO: ensure that there is at least one / exactly one correct answer for MC and SC (KPRIM can also have all wrong answers) - approach based on .when could be promising
-      choices: Yup.array()
-        .of(
-          Yup.object().shape({
-            ix: Yup.number(),
-            value: Yup.string().required(
-              'Bitte geben Sie einen Wert für die Antwortmöglichkeit ein'
-            ),
-            correct: Yup.boolean(),
-            feedback: Yup.string(),
-          })
-        )
-        .test({
-          message:
-            'Fragen mit Auswahlmöglichkeiten müssen mindestens eine Antwort haben. Bei SC Fragen muss genau eine Antwort korrekt sein. Bei MC Fragen muss mindestens eine Antwort korrekt sein.',
-          test: (choices) => {
-            if (
-              questionType === 'SC' ||
-              questionType === 'MC' ||
-              questionType === 'KPRIM'
-            ) {
-              return choices ? choices.length > 0 : false
-            }
-            return true
-          },
-        }),
-
-      // TODO: ensure that min is smaller than max
-      restrictions: Yup.object().shape({
-        min: Yup.number().nullable(true),
-        max: Yup.number().nullable(true),
-        // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-        maxLength: Yup.number().min(1).nullable(true),
-      }),
-
-      // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for free text)
-      // TODO: ensure that max is larger than min under consideration that both can be null
-      solutionRanges: Yup.array()
-        .of(
-          Yup.object().shape({
-            min: Yup.number().nullable(true),
-            max: Yup.number().nullable(true),
-          })
-        )
-        .test({
-          message:
-            'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-          test: (solutionRanges) => {
-            if (questionType === 'NUMERICAL') {
-              return solutionRanges ? solutionRanges.length > 0 : false
-            }
-            return true
-          },
-        }),
-
-      // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for numerical)
-      solutions: Yup.array()
-        .of(Yup.string())
-        .test({
-          message:
-            'Freitext Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-          test: (solutions) => {
-            if (questionType === 'FREE_TEXT') {
-              return solutions ? solutions.length > 0 : false
-            }
-            return true
-          },
-        }),
+const questionManipulationSchema = Yup.object().shape({
+  name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
+  tags: Yup.array().of(Yup.string()),
+  type: Yup.string()
+    .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM'])
+    .required(),
+  content: Yup.string()
+    .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
+    .test({
+      message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
+      test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
-  })
+  hasSampleSolution: Yup.boolean(),
+  hasAnswerFeedbacks: Yup.boolean(),
+
+  // TODO: adapt validation structure for attachments once they are available
+  attachments: Yup.array()
+    .of(
+      Yup.object().shape({
+        href: Yup.string().required(
+          'Bitte geben Sie eine URL für den Anhang ein'
+        ),
+        name: Yup.string().required(
+          'Bitte geben Sie einen Namen für den Anhang ein'
+        ),
+        originalName: Yup.string(),
+        description: Yup.string(),
+      })
+    )
+    .nullable(true),
+
+  options: Yup.object().when('type', ([type], schema) => {
+    switch (type) {
+      case 'SC':
+      case 'MC':
+      case 'KPRIM': {
+        return schema.shape({
+          // TODO: ensure that there is at least one / exactly one correct answer for MC and SC (KPRIM can also have all wrong answers) - approach based on .when could be promising
+          choices: Yup.array()
+            .of(
+              Yup.object().shape({
+                ix: Yup.number(),
+                value: Yup.string().required(
+                  'Bitte geben Sie einen Wert für die Antwortmöglichkeit ein'
+                ),
+                correct: Yup.boolean(),
+                feedback: Yup.string(),
+              })
+            )
+            .test({
+              message:
+                'Fragen mit Auswahlmöglichkeiten müssen mindestens eine Antwort haben. Bei SC Fragen muss genau eine Antwort korrekt sein. Bei MC Fragen muss mindestens eine Antwort korrekt sein.',
+              test: (choices) => {
+                return choices ? choices.length > 0 : false
+              },
+            }),
+        })
+      }
+
+      case 'NUMERICAL': {
+        return schema.shape({
+          // TODO: ensure that min is smaller than max
+          restrictions: Yup.object().shape({
+            min: Yup.number()
+              .nullable(true)
+              .lessThan(Yup.ref('options.restrictions.max')),
+            max: Yup.number()
+              .nullable(true)
+              .moreThan(Yup.ref('options.restrictions.min')),
+          }),
+
+          // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for free text)
+          // TODO: ensure that max is larger than min under consideration that both can be null
+          solutionRanges: Yup.array()
+            .of(
+              Yup.object().shape({
+                min: Yup.number().nullable(true),
+                max: Yup.number().nullable(true),
+              })
+            )
+            .test({
+              message:
+                'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+              test: (solutionRanges) => {
+                return solutionRanges ? solutionRanges.length > 0 : false
+              },
+            }),
+        })
+      }
+
+      case 'FREE_TEXT': {
+        return schema.shape({
+          restrictions: {
+            // TODO: ensure that this check does not fail if the user enters a number and then deletes it
+            maxLength: Yup.number().min(1).nullable(true),
+          },
+
+          // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for numerical)
+          solutions: Yup.array()
+            .of(Yup.string())
+            .test({
+              message:
+                'Freitext Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
+              test: (solutions) => {
+                return solutions ? solutions.length > 0 : false
+              },
+            }),
+        })
+      }
+    }
+  }),
+})
 
 interface QuestionEditModalProps {
   isOpen: boolean
@@ -287,7 +299,7 @@ function QuestionEditModal({
         isInitialValid={mode === 'EDIT'}
         enableReinitialize={true}
         initialValues={question}
-        validationSchema={questionManipulationSchema(questionType)}
+        validationSchema={questionManipulationSchema}
         onSubmit={async (values) => {
           const common = {
             id: questionId,
@@ -412,7 +424,7 @@ function QuestionEditModal({
                   />
                 ) : (
                   <div className="my-auto">
-                    {TYPES_LABELS[question?.type || '']}
+                    {TYPES_LABELS[question?.type || '']}{' '}
                   </div>
                 )}
               </div>
@@ -453,7 +465,7 @@ function QuestionEditModal({
                       )}
                       value={values.tags?.join(', ')}
                       onChange={(e: any) => {
-                        setFieldValue('tags', e.target.value.split(', '), false)
+                        setFieldValue('tags', e.target.value.split(', '))
                       }}
                     />
                   </div>
@@ -530,7 +542,7 @@ function QuestionEditModal({
                     id="solution switch"
                     checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) =>
-                      setFieldValue('hasSampleSolution', newValue, false)
+                      setFieldValue('hasSampleSolution', newValue)
                     }
                     label="Musterlösung"
                   />
@@ -539,7 +551,7 @@ function QuestionEditModal({
                       id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) =>
-                        setFieldValue('hasAnswerFeedbacks', newValue, false)
+                        setFieldValue('hasAnswerFeedbacks', newValue)
                       }
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
@@ -623,8 +635,7 @@ function QuestionEditModal({
                                           ) => {
                                             setFieldValue(
                                               `options.choices.${index}.correct`,
-                                              newValue,
-                                              false
+                                              newValue
                                             )
                                           }}
                                         />
@@ -667,8 +678,7 @@ function QuestionEditModal({
                                           ): void => {
                                             setFieldValue(
                                               `options.choices.${index}.feedback`,
-                                              newContent,
-                                              false
+                                              newContent
                                             )
                                           }}
                                           className={{
@@ -799,6 +809,7 @@ function QuestionEditModal({
                 )}
 
                 {/* // TODO: test this once a free text question was created as well */}
+                {/* // TODO: use field array for the solutions  */}
                 {questionType === 'FREE_TEXT' && (
                   <div className="flex flex-col">
                     <div className="flex flex-row items-center mb-4">
@@ -840,8 +851,7 @@ function QuestionEditModal({
                                     values.options.solutions.splice(index, 1)
                                     setFieldValue(
                                       'options.solutions',
-                                      values.options.solutions,
-                                      false
+                                      values.options.solutions
                                     )
                                   }}
                                   className="ml-2 text-white bg-red-500 hover:bg-red-600"
@@ -859,11 +869,10 @@ function QuestionEditModal({
                             if (values.options.solutions) {
                               setFieldValue(
                                 'values.options.solutions',
-                                values.options.solutions.push(''),
-                                false
+                                values.options.solutions.push('')
                               )
                             } else {
-                              setFieldValue('options.solutions', [''], false)
+                              setFieldValue('options.solutions', [''])
                             }
                           }}
                         >
