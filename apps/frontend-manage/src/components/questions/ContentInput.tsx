@@ -31,12 +31,14 @@ interface Props {
   onChange: any
   touched: any
   disabled?: boolean
+  showToolbarOnFocus?: boolean
   content: string
 }
 
 const defaultProps = {
   error: '',
   disabled: false,
+  showToolbarOnFocus: false,
 }
 
 const HOTKEYS: Record<string, string> = {
@@ -51,6 +53,7 @@ function ContentInput({
   content,
   onChange,
   disabled,
+  showToolbarOnFocus,
   error,
   touched,
 }: Props): React.ReactElement {
@@ -65,191 +68,200 @@ function ContentInput({
   console.log(editorValue)
 
   return (
-    <div className={twMerge(disabled && 'pointer-events-none opacity-70')}>
-      <div className="mt-2 border border-solid rounded">
-        {/* eslint-disable-next-line react/no-children-prop */}
-        <Slate
-          editor={editor}
-          value={editorValue}
-          onChange={(newValue) => onChange(convertToMd(newValue))}
+    <div
+      className={twMerge(
+        disabled && 'pointer-events-none opacity-70',
+        'mt-2 border border-solid rounded',
+        showToolbarOnFocus && 'group'
+      )}
+    >
+      {/* eslint-disable-next-line react/no-children-prop */}
+      <Slate
+        editor={editor}
+        value={editorValue}
+        onChange={(newValue) => onChange(convertToMd(newValue))}
+      >
+        <div
+          className={twMerge(
+            'toolbar flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-uzh-grey-20',
+            showToolbarOnFocus && 'group-focus-within:flex hidden'
+          )}
         >
-          <div className="flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-uzh-grey-20">
-            <div className="flex flex-row flex-1 gap-3">
-              <Tooltip
-                tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
-                tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                triggerStyle={twMerge(
-                  isMarkActive(editor, 'bold') && '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <MarkButton className="" format="bold" icon={faBold} />
-              </Tooltip>
+          <div className="flex flex-row flex-1 gap-3">
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
+              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+              triggerStyle={twMerge(
+                isMarkActive(editor, 'bold') && '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <MarkButton className="" format="bold" icon={faBold} />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
-                tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                triggerStyle={twMerge(
-                  isMarkActive(editor, 'italic') && '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <MarkButton className="" format="italic" icon={faItalic} />
-              </Tooltip>
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
+              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+              triggerStyle={twMerge(
+                isMarkActive(editor, 'italic') && '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <MarkButton className="" format="italic" icon={faItalic} />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
-                tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
-                triggerStyle={twMerge(
-                  isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <MarkButton className="" format="code" icon={faCode} />
-              </Tooltip>
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
+              tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
+              triggerStyle={twMerge(
+                isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <MarkButton className="" format="code" icon={faCode} />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
-                tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[70%]'}
-                triggerStyle={twMerge(
-                  isBlockActive(editor, 'block-quote') &&
-                    '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <BlockButton
-                  className=""
-                  format="block-quote"
-                  icon={faQuoteRight}
-                />
-              </Tooltip>
+            <Tooltip
+              tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
+              tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[70%]'}
+              triggerStyle={twMerge(
+                isBlockActive(editor, 'block-quote') &&
+                  '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <BlockButton
+                className=""
+                format="block-quote"
+                icon={faQuoteRight}
+              />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Diese Option erzeug eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-                tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
-                triggerStyle={twMerge(
-                  isBlockActive(editor, 'numbered-list') &&
-                    '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <BlockButton
-                  className=""
-                  format="numbered-list"
-                  icon={faListOl}
-                />
-              </Tooltip>
+            <Tooltip
+              tooltip="Diese Option erzeug eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
+              triggerStyle={twMerge(
+                isBlockActive(editor, 'numbered-list') &&
+                  '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <BlockButton
+                className=""
+                format="numbered-list"
+                icon={faListOl}
+              />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Diese Option erzeug eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-                tooltipStyle={'text-sm md:text-base max-w-[40%] md:max-w-[50%]'}
-                triggerStyle={twMerge(
-                  isBlockActive(editor, 'bulleted-list') &&
-                    '!bg-grey-40 !rounded-md'
-                )}
-                withArrow={false}
-              >
-                <BlockButton
-                  className=""
-                  format="bulleted-list"
-                  icon={faListUl}
-                />
-              </Tooltip>
+            <Tooltip
+              tooltip="Diese Option erzeug eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltipStyle={'text-sm md:text-base max-w-[40%] md:max-w-[50%]'}
+              triggerStyle={twMerge(
+                isBlockActive(editor, 'bulleted-list') &&
+                  '!bg-grey-40 !rounded-md'
+              )}
+              withArrow={false}
+            >
+              <BlockButton
+                className=""
+                format="bulleted-list"
+                icon={faListUl}
+              />
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
-                tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                withArrow={false}
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+              withArrow={false}
+            >
+              <Button
+                active={false}
+                editor={editor}
+                format="paragraph"
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  Transforms.insertText(editor, '$$1 + 2$$')
+                }}
               >
-                <Button
-                  active={false}
-                  editor={editor}
-                  format="paragraph"
-                  onClick={(e: any) => {
-                    e.preventDefault()
-                    Transforms.insertText(editor, '$$1 + 2$$')
-                  }}
-                >
-                  <div className="ml-1 mt-0.5">
-                    <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                  </div>
-                </Button>
-              </Tooltip>
+                <div className="ml-1 mt-0.5">
+                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                </div>
+              </Button>
+            </Tooltip>
 
-              <Tooltip
-                tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
-                tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-                withArrow={false}
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
+              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
+              withArrow={false}
+            >
+              <Button
+                active={false}
+                editor={editor}
+                format="paragraph"
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  Transforms.insertNodes(editor, {
+                    type: 'paragraph',
+                    children: [{ text: '$$' }],
+                  })
+                  Transforms.insertNodes(editor, {
+                    type: 'paragraph',
+                    children: [{ text: '1 + 2' }],
+                  })
+                  Transforms.insertNodes(editor, {
+                    type: 'paragraph',
+                    children: [{ text: '$$' }],
+                  })
+                }}
               >
-                <Button
-                  active={false}
-                  editor={editor}
-                  format="paragraph"
-                  onClick={(e: any) => {
-                    e.preventDefault()
-                    Transforms.insertNodes(editor, {
-                      type: 'paragraph',
-                      children: [{ text: '$$' }],
-                    })
-                    Transforms.insertNodes(editor, {
-                      type: 'paragraph',
-                      children: [{ text: '1 + 2' }],
-                    })
-                    Transforms.insertNodes(editor, {
-                      type: 'paragraph',
-                      children: [{ text: '$$' }],
-                    })
-                  }}
-                >
-                  <div className="ml-1 mt-0.5">
-                    <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                  </div>
-                </Button>
-              </Tooltip>
+                <div className="ml-1 mt-0.5">
+                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                </div>
+              </Button>
+            </Tooltip>
+          </div>
+          <Button
+            active={false}
+            editor={editor}
+            format="paragraph"
+            onMouseDown={() => editor.undo()}
+          >
+            <div className="ml-1 mt-0.5">
+              <FontAwesomeIcon icon={faRotateLeft} color="grey" />
             </div>
-            <Button
-              active={false}
-              editor={editor}
-              format="paragraph"
-              onMouseDown={() => editor.undo()}
-            >
-              <div className="ml-1 mt-0.5">
-                <FontAwesomeIcon icon={faRotateLeft} color="grey" />
-              </div>
-            </Button>
-            <Button
-              active={false}
-              editor={editor}
-              format="paragraph"
-              onMouseDown={() => editor.redo()}
-            >
-              <div className="ml-1 mt-0.5">
-                <FontAwesomeIcon icon={faRotateRight} color="grey" />
-              </div>
-            </Button>
-          </div>
-          <div className="p-3">
-            <Editable
-              className="leading-4 prose prose-blockquote:text-gray-500"
-              autoFocus
-              spellCheck
-              placeholder="Fragetext hier eingeben…"
-              renderElement={renderElement}
-              renderLeaf={renderLeaf}
-              onKeyDown={(event) => {
-                // eslint-disable-next-line no-restricted-syntax
-                for (const hotkey in HOTKEYS) {
-                  if (isHotkey(hotkey, event as any)) {
-                    event.preventDefault()
-                    const mark = HOTKEYS[hotkey]
-                    toggleMark(editor, mark)
-                  }
+          </Button>
+          <Button
+            active={false}
+            editor={editor}
+            format="paragraph"
+            onMouseDown={() => editor.redo()}
+          >
+            <div className="ml-1 mt-0.5">
+              <FontAwesomeIcon icon={faRotateRight} color="grey" />
+            </div>
+          </Button>
+        </div>
+        <div className="p-3 ">
+          <Editable
+            className="leading-4 prose prose-blockquote:text-gray-500"
+            autoFocus
+            spellCheck
+            placeholder="Fragetext hier eingeben…"
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            onKeyDown={(event) => {
+              // eslint-disable-next-line no-restricted-syntax
+              for (const hotkey in HOTKEYS) {
+                if (isHotkey(hotkey, event as any)) {
+                  event.preventDefault()
+                  const mark = HOTKEYS[hotkey]
+                  toggleMark(editor, mark)
                 }
-              }}
-            />
-          </div>
-        </Slate>
-      </div>
+              }
+            }}
+          />
+        </div>
+      </Slate>
     </div>
   )
 }

@@ -522,6 +522,7 @@ function QuestionEditModal({
                         setFieldTouched('content', true, false)
                         setFieldValue('content', newContent)
                       }}
+                      showToolbarOnFocus={false}
                     />
                   )}
                   {values.content}
