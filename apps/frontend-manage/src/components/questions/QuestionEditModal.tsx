@@ -242,6 +242,7 @@ function QuestionEditModal({
           },
         }),
 
+      // TODO: ensure that min is smaller than max
       restrictions: Yup.object().shape({
         min: Yup.number().nullable(true),
         max: Yup.number().nullable(true),
@@ -250,6 +251,7 @@ function QuestionEditModal({
       }),
 
       // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for free text)
+      // TODO: ensure that max is larger than min under consideration that both can be null
       solutionRanges: Yup.array()
         .of(
           Yup.object().shape({
@@ -287,7 +289,6 @@ function QuestionEditModal({
   })
 
   // TODO: styling of tooltips - some are too wide
-  // TODO: FORM VALIDATION!!
   // TODO: show errors of form validation below fields as for the login form
 
   return (
