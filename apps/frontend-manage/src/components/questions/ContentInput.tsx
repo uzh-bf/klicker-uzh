@@ -61,6 +61,8 @@ function ContentInput({
     return convertToSlate(content)
   }, [content])
 
+  console.log(editorValue)
+
   return (
     <div className={twMerge(disabled && 'pointer-events-none opacity-70')}>
       <div className="mt-2 border border-solid rounded">
@@ -225,6 +227,7 @@ function ContentInput({
           </div>
           <div className="p-3">
             <Editable
+              className="prose leading-4 prose-blockquote:text-gray-500"
               autoFocus
               spellCheck
               placeholder="Fragetext hier eingeben…"
@@ -304,14 +307,7 @@ const isMarkActive = (editor, format) => {
 const Element = ({ attributes, children, element }: any) => {
   switch (element.type) {
     case 'block-quote':
-      return (
-        <>
-          <blockquote className="text-gray-500" {...attributes}>
-            <strong className="mr-2">|</strong>
-            {children}
-          </blockquote>
-        </>
-      )
+      return <blockquote {...attributes}>{children}</blockquote>
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
     case 'heading-one':

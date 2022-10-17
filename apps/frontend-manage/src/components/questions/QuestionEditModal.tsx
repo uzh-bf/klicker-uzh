@@ -195,8 +195,10 @@ function QuestionEditModal({
       .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
       .test({
         message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
-        test: (content) => !content?.match(/(<br>(\n)*)/g) && content !== '',
+        test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
       }),
+    hasSampleSolution: Yup.boolean(),
+    hasAnswerFeedbacks: Yup.boolean(),
 
     // TODO: adapt validation structure for attachments once they are available
     attachments: Yup.array()
@@ -284,8 +286,6 @@ function QuestionEditModal({
           },
         }),
     }),
-    hasSampleSolution: Yup.boolean(),
-    hasAnswerFeedbacks: Yup.boolean(),
   })
 
   // TODO: styling of tooltips - some are too wide
