@@ -283,7 +283,7 @@ function QuestionEditModal({
       }
     >
       <Formik
-        validateOnChange={false}
+        // validateOnChange={false}
         isInitialValid={mode === 'EDIT'}
         enableReinitialize={true}
         initialValues={question}
@@ -661,7 +661,7 @@ function QuestionEditModal({
                                         <ContentInput
                                           error={meta.error}
                                           touched={meta.touched}
-                                          content={field.value}
+                                          content={field.value || '<br>'}
                                           onChange={(
                                             newContent: string
                                           ): void => {
