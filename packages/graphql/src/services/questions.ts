@@ -190,6 +190,10 @@ export async function manipulateQuestion(
       },
       // TODO: create / connect / disconnect attachments
     },
+    include: {
+      tags: true,
+      attachments: true,
+    },
   })
 
   // TODO: fix invalidation of cache
@@ -198,5 +202,8 @@ export async function manipulateQuestion(
     id: question.id,
   })
 
-  return question
+  return {
+    ...question,
+    questionData: question,
+  }
 }

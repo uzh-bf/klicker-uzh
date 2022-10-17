@@ -22,5 +22,60 @@ mutation ManipulateNUMERICALQuestion(
     tags: $tags
   ) {
     id
+    name
+    type
+    content
+    contentPlain
+
+    hasSampleSolution
+    hasAnswerFeedbacks
+
+    questionData {
+      ... on ChoicesQuestionData {
+        options {
+          choices {
+            ix
+            correct
+            feedback
+            value
+          }
+        }
+      }
+
+      ... on NumericalQuestionData {
+        options {
+          restrictions {
+            min
+            max
+          }
+          solutionRanges {
+            min
+            max
+          }
+        }
+      }
+
+      ... on FreeTextQuestionData {
+        options {
+          restrictions {
+            maxLength
+          }
+          solutions
+        }
+      }
+    }
+
+    tags {
+      id
+      name
+    }
+    attachments {
+      id
+      href
+      name
+      originalName
+      description
+      type
+    }
   }
 }
