@@ -207,7 +207,7 @@ function QuestionEditModal({
             options: {
               choices: question?.questionData?.options?.choices
                 ? [...question.questionData.options.choices]
-                : [{ ix: 0, value: '', correct: false, feedback: '' }],
+                : [{ ix: 0, value: '<br>', correct: false, feedback: '<br>' }],
             },
           }
 
@@ -480,7 +480,9 @@ function QuestionEditModal({
                           error={meta.error}
                           touched={meta.touched}
                           content={field.value || '<br>'}
-                          onChange={field.onChange}
+                          onChange={(newValue: string) =>
+                            setFieldValue('content', newValue)
+                          }
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                         />

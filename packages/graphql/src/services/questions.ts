@@ -14,9 +14,6 @@ export async function getUserQuestions(
       questions: {
         orderBy: [
           {
-            updatedAt: 'desc',
-          },
-          {
             createdAt: 'desc',
           },
         ],
