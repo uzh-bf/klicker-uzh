@@ -33,6 +33,7 @@ interface Props {
   disabled?: boolean
   showToolbarOnFocus?: boolean
   placeholder: string
+  autoFocus?: boolean
   content: string
   className?: {
     root?: string
@@ -61,6 +62,7 @@ function ContentInput({
   disabled,
   showToolbarOnFocus,
   placeholder,
+  autoFocus,
   error,
   touched,
   className,
@@ -256,7 +258,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className="leading-4 prose prose-blockquote:text-gray-500 max-w-none"
-            autoFocus
+            autoFocus={autoFocus}
             spellCheck
             placeholder={placeholder}
             renderElement={renderElement}

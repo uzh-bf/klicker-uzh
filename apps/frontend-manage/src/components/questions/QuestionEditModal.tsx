@@ -515,6 +515,7 @@ function QuestionEditModal({
                   {/* // TODO: wrap in formik field with "as" or "component" */}
                   {values.content && (
                     <ContentInput
+                      autoFocus
                       error={errors.content}
                       touched={touched.content}
                       content={values.content}
