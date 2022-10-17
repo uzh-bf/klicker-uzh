@@ -1,70 +1,21 @@
 import { useQuery } from '@apollo/client'
+import Footer from '@components/common/Footer'
 import Chart from '@components/evaluation/Chart'
-import {
-  faCheck,
-  faChevronDown,
-  faChevronUp,
-  faSync,
-} from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSessionEvaluationDocument,
+  InstanceResults,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import * as SelectPrimitive from '@radix-ui/react-select'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { Button, Prose } from '@uzh-bf/design-system'
+import { Prose, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
 import { CHART_COLORS } from 'src/constants'
 import { twMerge } from 'tailwind-merge'
 
-const Select = ({ items, onChange }) => {
-  return (
-    <SelectPrimitive.Root
-      defaultValue={String(items[0].instanceIx)}
-      onValueChange={onChange}
-    >
-      <SelectPrimitive.Trigger asChild aria-label="Food">
-        <Button className="text-sm">
-          <SelectPrimitive.Value />
-          <SelectPrimitive.Icon className="ml-2">
-            <FontAwesomeIcon icon={faChevronDown} />
-          </SelectPrimitive.Icon>
-        </Button>
-      </SelectPrimitive.Trigger>
-      <SelectPrimitive.Content>
-        <SelectPrimitive.ScrollUpButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
-          <FontAwesomeIcon icon={faChevronUp} />
-        </SelectPrimitive.ScrollUpButton>
-        <SelectPrimitive.Viewport className="p-2 bg-white rounded-lg shadow-lg dark:bg-gray-800 z-[9999]">
-          <SelectPrimitive.Group>
-            {items.map((item, ix) => (
-              <SelectPrimitive.Item
-                key={item.instanceIx}
-                value={String(item.instanceIx)}
-                className={twMerge(
-                  'relative flex items-center px-8 py-2 rounded-md text-gray-700 dark:text-gray-300 font-medium focus:bg-gray-100 dark:focus:bg-gray-900',
-                  'radix-disabled:opacity-50',
-                  'focus:outline-none select-none'
-                )}
-              >
-                <SelectPrimitive.ItemText>
-                  {item.label}
-                </SelectPrimitive.ItemText>
-                <SelectPrimitive.ItemIndicator className="absolute inline-flex items-center left-2">
-                  <FontAwesomeIcon icon={faCheck} />
-                </SelectPrimitive.ItemIndicator>
-              </SelectPrimitive.Item>
-            ))}
-          </SelectPrimitive.Group>
-        </SelectPrimitive.Viewport>
-        <SelectPrimitive.ScrollDownButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
-          <FontAwesomeIcon icon={faChevronDown} />
-        </SelectPrimitive.ScrollDownButton>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Root>
-  )
-}
 interface Tab {
   status: 'EXECUTED' | 'ACTIVE'
   title: string
@@ -84,8 +35,6 @@ function Evaluation() {
   const [activeBlock, setActiveBlock] = useState(0)
   const [activeInstance, setActiveInstance] = useState(0)
 
-  console.log(activeBlock, activeInstance)
-
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
@@ -98,7 +47,7 @@ function Evaluation() {
     if (!data) return { tabs: [] }
 
     const tabs = data.sessionEvaluation?.instanceResults?.map(
-      (instance, index) => ({
+      (instance: InstanceResults, index) => ({
         id: instance.id,
         blockIx: instance.blockIx,
         instanceIx: instance.instanceIx,
@@ -216,8 +165,12 @@ function Evaluation() {
               <div>Block {Number(blockIx) + 1}</div>
             </div>
             <Select
-              items={items}
+              items={items.map((item) => ({
+                value: String(item.instanceIx),
+                label: item.label,
+              }))}
               onChange={(newIx) => {
+                console.log(newIx)
                 setActiveBlock(Number(blockIx))
                 setActiveInstance(Number(newIx))
               }}
@@ -336,10 +289,18 @@ function Evaluation() {
               </div>
             </div>
           </div>
-
-          <div className="flex flex-row items-center flex-initial p-2 text-xl border-t">
-            Teilnehmende: {currentQuestion.participants}
-          </div>
+          <Footer className="flex flex-row px-8 py-4">
+            <div className="text-xl grow">
+              Total Participants: {currentQuestion.participants}
+            </div>
+            <Select
+              items={[
+                { label: 'Table', value: 'table' },
+                { label: 'Bar Chart', value: 'barChart' },
+              ]}
+              onChange={() => {}}
+            ></Select>
+          </Footer>
         </div>
       )}
     </TabsPrimitive.Root>

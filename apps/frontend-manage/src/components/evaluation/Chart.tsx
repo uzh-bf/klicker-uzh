@@ -1,7 +1,7 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import React from 'react'
-import BarChart from './BarChart'
 import Histogram from './Histogram'
+import TableChart from './TableChart'
 import Wordcloud from './Wordcloud'
 
 interface ChartProps {
@@ -28,7 +28,7 @@ function Chart({
   ) {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (
-      <BarChart
+      <TableChart
         data={data}
         questionType={questionType}
         showSolution={showSolution}
