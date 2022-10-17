@@ -21,7 +21,7 @@ interface Choice {
 }
 
 type ChoicesQuestionData = QuestionData<
-  QuestionType.SC | QuestionType.MC,
+  QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
   {
     choices: Choice[]
   }
