@@ -6,7 +6,14 @@ import {
   ManipulateFreetextQuestionDocument,
   ManipulateNumericalQuestionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Field, Form, Formik } from 'formik'
+import {
+  FastField,
+  FastFieldProps,
+  FieldArray,
+  FieldArrayRenderProps,
+  Form,
+  Formik,
+} from 'formik'
 import React, { useContext, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -245,146 +252,146 @@ function QuestionEditModal({
   }
 
   return (
-    <Formik
-      isInitialValid={mode === 'EDIT'}
-      enableReinitialize={true}
-      initialValues={question}
-      validationSchema={questionManipulationSchema(questionType)}
-      onSubmit={async (values) => {
-        const common = {
-          id: questionId,
-          name: values.name,
-          content: values.content,
-          contentPlain: values.content, // TODO: remove this field
-          hasSampleSolution: values.hasSampleSolution,
-          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-          attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
-          tags: values.tags,
-        }
-        switch (questionType) {
-          case 'SC':
-          case 'MC':
-          case 'KPRIM':
-            await manipulateChoicesQuestion({
-              variables: {
-                ...common,
-                type: questionType,
-                options: {
-                  choices: values.options?.choices.map((choice: any) => {
-                    return {
-                      ix: choice.ix,
-                      value: choice.value,
-                      correct: choice.correct,
-                      feedback: choice.feedback,
-                    }
-                  }),
-                },
-              },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
-            })
-            break
-
-          case 'NUMERICAL':
-            await manipulateNUMERICALQuestion({
-              variables: {
-                ...common,
-                options: {
-                  restrictions: {
-                    min:
-                      !values.options?.restrictions ||
-                      values.options?.restrictions?.min === ''
-                        ? undefined
-                        : values.options.restrictions?.min,
-                    max:
-                      !values.options?.restrictions ||
-                      values.options?.restrictions?.max === ''
-                        ? undefined
-                        : values.options.restrictions?.max,
-                  },
-                  solutionRanges: values.options?.solutionRanges?.map(
-                    (range: any) => {
-                      return {
-                        min: range.min === '' ? undefined : range.min,
-                        max: range.max === '' ? undefined : range.max,
-                      }
-                    }
-                  ),
-                },
-              },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
-            })
-            break
-
-          case 'FREE_TEXT':
-            await manipulateFreeTextQuestion({
-              variables: {
-                ...common,
-                options: {
-                  restrictions: {
-                    maxLength: values.options?.restrictions?.maxLength,
-                  },
-                  solutions: values.options?.solutions,
-                },
-              },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
-            })
-            break
-
-          default:
-            break
-        }
-
-        handleSetIsOpen(false)
+    <Modal
+      fullScreen
+      title="Frage erstellen"
+      classNames={{
+        overlay: 'top-14',
+        content: 'm-auto max-w-7xl',
       }}
+      open={isOpen}
+      onClose={() => handleSetIsOpen(false)}
+      escapeDisabled={true}
+      hideCloseButton={true}
+      onPrimaryAction={
+        <Button
+          className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+          type="submit"
+          form="question-manipulation-form"
+        >
+          <Button.Label>Speichern</Button.Label>
+        </Button>
+      }
+      onSecondaryAction={
+        <Button
+          className="mt-2 border-uzh-grey-80"
+          onClick={() => handleSetIsOpen(false)}
+        >
+          <Button.Label>Close</Button.Label>
+        </Button>
+      }
     >
-      {({
-        errors,
-        touched,
-        isSubmitting,
-        values,
-        isValid,
-        resetForm,
-        setFieldValue,
-        setFieldTouched,
-      }) => {
-        console.log(values)
-        console.log(errors)
+      <Formik
+        validateOnChange={false}
+        isInitialValid={mode === 'EDIT'}
+        enableReinitialize={true}
+        initialValues={question}
+        validationSchema={questionManipulationSchema(questionType)}
+        onSubmit={async (values) => {
+          const common = {
+            id: questionId,
+            name: values.name,
+            content: values.content,
+            contentPlain: values.content, // TODO: remove this field
+            hasSampleSolution: values.hasSampleSolution,
+            hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+            attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
+            tags: values.tags,
+          }
+          switch (questionType) {
+            case 'SC':
+            case 'MC':
+            case 'KPRIM':
+              await manipulateChoicesQuestion({
+                variables: {
+                  ...common,
+                  type: questionType,
+                  options: {
+                    choices: values.options?.choices.map((choice: any) => {
+                      return {
+                        ix: choice.ix,
+                        value: choice.value,
+                        correct: choice.correct,
+                        feedback: choice.feedback,
+                      }
+                    }),
+                  },
+                },
+                refetchQueries: [{ query: GetUserQuestionsDocument }],
+              })
+              break
 
-        if (mode === 'EDIT' && loadingQuestion) {
-          return <div></div>
-        }
+            case 'NUMERICAL':
+              await manipulateNUMERICALQuestion({
+                variables: {
+                  ...common,
+                  options: {
+                    restrictions: {
+                      min:
+                        !values.options?.restrictions ||
+                        values.options?.restrictions?.min === ''
+                          ? undefined
+                          : values.options.restrictions?.min,
+                      max:
+                        !values.options?.restrictions ||
+                        values.options?.restrictions?.max === ''
+                          ? undefined
+                          : values.options.restrictions?.max,
+                    },
+                    solutionRanges: values.options?.solutionRanges?.map(
+                      (range: any) => {
+                        return {
+                          min: range.min === '' ? undefined : range.min,
+                          max: range.max === '' ? undefined : range.max,
+                        }
+                      }
+                    ),
+                  },
+                },
+                refetchQueries: [{ query: GetUserQuestionsDocument }],
+              })
+              break
 
-        return (
-          <Modal
-            fullScreen
-            title="Frage erstellen"
-            classNames={{
-              overlay: 'top-14',
-              content: 'm-auto max-w-7xl',
-            }}
-            open={isOpen}
-            onClose={() => handleSetIsOpen(false)}
-            escapeDisabled={true}
-            hideCloseButton={true}
-            onPrimaryAction={
-              <Button
-                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
-                type="submit"
-                form="question-manipulation-form"
-                disabled={!isValid}
-              >
-                <Button.Label>Speichern</Button.Label>
-              </Button>
-            }
-            onSecondaryAction={
-              <Button
-                className="mt-2 border-uzh-grey-80"
-                onClick={() => handleSetIsOpen(false)}
-              >
-                <Button.Label>Close</Button.Label>
-              </Button>
-            }
-          >
+            case 'FREE_TEXT':
+              await manipulateFreeTextQuestion({
+                variables: {
+                  ...common,
+                  options: {
+                    restrictions: {
+                      maxLength: values.options?.restrictions?.maxLength,
+                    },
+                    solutions: values.options?.solutions,
+                  },
+                },
+                refetchQueries: [{ query: GetUserQuestionsDocument }],
+              })
+              break
+
+            default:
+              break
+          }
+
+          handleSetIsOpen(false)
+        }}
+      >
+        {({
+          errors,
+          touched,
+          isSubmitting,
+          values,
+          isValid,
+          resetForm,
+          setFieldValue,
+          setFieldTouched,
+        }) => {
+          console.log(values)
+          console.log(errors)
+
+          if (mode === 'EDIT' && loadingQuestion) {
+            return <div></div>
+          }
+
+          return (
             <div>
               <div className="z-0 flex flex-row">
                 <Label
@@ -418,13 +425,12 @@ function QuestionEditModal({
                     tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
                     showTooltipSymbol={true}
                   />
-                  <Field
+                  <FastField
                     name="name"
                     type="text"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                     )}
-                    value={values.name}
                   />
                 </div>
 
@@ -438,15 +444,15 @@ function QuestionEditModal({
                       tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
                       showTooltipSymbol={true}
                     />
-                    <Field
-                      name="name"
+                    <FastField
+                      name="tags"
                       type="text"
                       className={twMerge(
                         'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                       )}
                       value={values.tags?.join(', ')}
                       onChange={(e: any) => {
-                        setFieldValue('tags', e.target.value.split(', '))
+                        setFieldValue('tags', e.target.value.split(', '), false)
                       }}
                     />
                   </div>
@@ -465,20 +471,20 @@ function QuestionEditModal({
                     showTooltipSymbol={true}
                   />
 
-                  {/* // TODO: wrap in formik field with "as" or "component" */}
                   {typeof values.content !== 'undefined' && (
-                    <ContentInput
-                      autoFocus
-                      error={errors.content}
-                      touched={touched.content}
-                      content={values.content || '<br>'}
-                      onChange={(newContent: string): void => {
-                        setFieldTouched('content', true, false)
-                        setFieldValue('content', newContent)
-                      }}
-                      showToolbarOnFocus={false}
-                      placeholder="Fragetext hier eingeben…"
-                    />
+                    <FastField name="content">
+                      {({ field, meta }: FastFieldProps) => (
+                        <ContentInput
+                          autoFocus
+                          error={meta.error}
+                          touched={meta.touched}
+                          content={field.value || '<br>'}
+                          onChange={field.onChange}
+                          showToolbarOnFocus={false}
+                          placeholder="Fragetext hier eingeben…"
+                        />
+                      )}
+                    </FastField>
                   )}
                   {values.content}
                 </div>
@@ -521,7 +527,7 @@ function QuestionEditModal({
                     id="solution switch"
                     checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) =>
-                      setFieldValue('hasSampleSolution', newValue)
+                      setFieldValue('hasSampleSolution', newValue, false)
                     }
                     label="Musterlösung"
                   />
@@ -530,7 +536,7 @@ function QuestionEditModal({
                       id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) =>
-                        setFieldValue('hasAnswerFeedbacks', newValue)
+                        setFieldValue('hasAnswerFeedbacks', newValue, false)
                       }
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
@@ -600,7 +606,8 @@ function QuestionEditModal({
                                   onCheckedChange={(newValue: boolean) => {
                                     setFieldValue(
                                       `options.choices[${index}].correct`,
-                                      newValue
+                                      newValue,
+                                      false
                                     )
                                   }}
                                 />
@@ -611,7 +618,8 @@ function QuestionEditModal({
                                 values.options.choices.splice(index, 1)
                                 setFieldValue(
                                   'options.choices',
-                                  values.options.choices
+                                  values.options.choices,
+                                  false
                                 )
                               }}
                               className="items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md"
@@ -629,8 +637,10 @@ function QuestionEditModal({
 
                           {values.hasAnswerFeedbacks &&
                             values.hasSampleSolution && (
-                              <div className="flex flex-row items-center mt-1">
-                                <div className="mr-2 font-bold">Feedback:</div>
+                              <div className="">
+                                <div className="text-sm font-bold">
+                                  Feedback
+                                </div>
                                 <ContentInput
                                   error={errors.options}
                                   touched={touched.options}
@@ -645,7 +655,8 @@ function QuestionEditModal({
                                     )
                                     setFieldValue(
                                       `options.choices[${index}].feedback`,
-                                      newContent
+                                      newContent,
+                                      false
                                     )
                                   }}
                                   className={{
@@ -678,7 +689,8 @@ function QuestionEditModal({
                             value: '<br>',
                             correct: false,
                             feedback: '<br>',
-                          })
+                          }),
+                          false
                         )
                       }
                     >
@@ -692,23 +704,21 @@ function QuestionEditModal({
                     <div className="w-full">
                       <div className="flex flex-row items-center gap-2">
                         <div className="font-bold">Min: </div>
-                        <Field
-                          name={`options.restrictions.min`}
+                        <FastField
+                          name="options.restrictions.min"
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
-                          value={values.options?.restrictions?.min}
                           placeholder="Minimum"
                         />
                         <div className="font-bold">Max: </div>
-                        <Field
-                          name={`options.restrictions.max`}
+                        <FastField
+                          name="options.restrictions.max"
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
-                          value={values.options?.restrictions?.max}
                           placeholder="Maximum"
                         />
                       </div>
@@ -718,81 +728,57 @@ function QuestionEditModal({
                         <div className="mb-1 mr-2 font-bold">
                           Lösungsbereiche:
                         </div>
-                        <div className="flex flex-col gap-1 w-max">
-                          {values.options.solutionRanges?.map(
-                            (
-                              range: { min?: number; max?: number },
-                              index: number
-                            ) => {
-                              return (
-                                <div
-                                  className="flex flex-row items-center gap-2"
-                                  key={index}
-                                >
-                                  <div className="font-bold">Min: </div>
-                                  <Field
-                                    name={`options.solutionRanges[${index}].min`}
-                                    type="number"
-                                    className={twMerge(
-                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
-                                    )}
-                                    value={range.min}
-                                    placeholder="Minimum"
-                                  />
-                                  <div className="font-bold">Max: </div>
-                                  <Field
-                                    name={`options.solutionRanges[${index}].max`}
-                                    type="number"
-                                    className={twMerge(
-                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
-                                    )}
-                                    value={range.max}
-                                    placeholder="Maximum"
-                                  />
-                                  <Button
-                                    onClick={() => {
-                                      values.options.solutionRanges.splice(
-                                        index,
-                                        1
-                                      )
-                                      setFieldValue(
-                                        'options.solutionRanges',
-                                        values.options.solutionRanges
-                                      )
-                                    }}
-                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                        <FieldArray name="options.solutionRanges">
+                          {({ push, remove }: FieldArrayRenderProps) => (
+                            <div className="flex flex-col gap-1 w-max">
+                              {values.options.solutionRanges?.map(
+                                (_range: any, index: number) => (
+                                  <div
+                                    className="flex flex-row items-center gap-2"
+                                    key={index}
                                   >
-                                    Löschen
-                                  </Button>
-                                </div>
-                              )
-                            }
-                          )}
-                          <Button
-                            fluid
-                            className="flex-1 font-bold border border-solid border-uzh-grey-100"
-                            onClick={() => {
-                              if (values.options.solutionRanges) {
-                                setFieldValue(
-                                  'values.options.solutionRanges',
-                                  values.options.solutionRanges.push({
+                                    <div className="font-bold">Min: </div>
+                                    <FastField
+                                      name={`options.solutionRanges.${index}.min`}
+                                      type="number"
+                                      className={twMerge(
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                      )}
+                                      placeholder="Minimum"
+                                    />
+                                    <div className="font-bold">Max: </div>
+                                    <FastField
+                                      name={`options.solutionRanges.${index}.max`}
+                                      type="number"
+                                      className={twMerge(
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
+                                      )}
+                                      placeholder="Maximum"
+                                    />
+                                    <Button
+                                      onClick={() => remove(index)}
+                                      className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                    >
+                                      Löschen
+                                    </Button>
+                                  </div>
+                                )
+                              )}
+                              <Button
+                                fluid
+                                className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                                onClick={() =>
+                                  push({
                                     min: undefined,
                                     max: undefined,
                                   })
-                                )
-                              } else {
-                                setFieldValue('options.solutionRanges', [
-                                  {
-                                    min: undefined,
-                                    max: undefined,
-                                  },
-                                ])
-                              }
-                            }}
-                          >
-                            Neuen Lösungsbereich hinzufügen
-                          </Button>
-                        </div>
+                                }
+                              >
+                                Neuen Lösungsbereich hinzufügen
+                              </Button>
+                            </div>
+                          )}
+                        </FieldArray>
                       </div>
                     )}
                   </div>
@@ -803,8 +789,8 @@ function QuestionEditModal({
                   <div className="flex flex-col">
                     <div className="flex flex-row items-center mb-4">
                       <div className="mr-2 font-bold">Maximale Länge:</div>
-                      <Field
-                        name={`options.restrictions.maxLength`}
+                      <FastField
+                        name="options.restrictions.maxLength"
                         type="number"
                         className={twMerge(
                           'w-44 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
@@ -826,7 +812,7 @@ function QuestionEditModal({
                                 <div className="w-40 font-bold">
                                   Mögliche Lösung {String(index + 1)}:{' '}
                                 </div>
-                                <Field
+                                <FastField
                                   name={`options.solutions[${index}]`}
                                   type="text"
                                   className={twMerge(
@@ -840,7 +826,8 @@ function QuestionEditModal({
                                     values.options.solutions.splice(index, 1)
                                     setFieldValue(
                                       'options.solutions',
-                                      values.options.solutions
+                                      values.options.solutions,
+                                      false
                                     )
                                   }}
                                   className="ml-2 text-white bg-red-500 hover:bg-red-600"
@@ -858,10 +845,11 @@ function QuestionEditModal({
                             if (values.options.solutions) {
                               setFieldValue(
                                 'values.options.solutions',
-                                values.options.solutions.push('')
+                                values.options.solutions.push(''),
+                                false
                               )
                             } else {
-                              setFieldValue('options.solutions', [''])
+                              setFieldValue('options.solutions', [''], false)
                             }
                           }}
                         >
@@ -872,11 +860,11 @@ function QuestionEditModal({
                   </div>
                 )}
               </Form>
-            </div>{' '}
-          </Modal>
-        )
-      }}
-    </Formik>
+            </div>
+          )
+        }}
+      </Formik>
+    </Modal>
   )
 }
 
