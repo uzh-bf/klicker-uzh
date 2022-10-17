@@ -131,7 +131,6 @@ model Question {
 
   name         String
   content      String
-  contentPlain String
   options      Json
 
   hasSampleSolution  Boolean @default(false)

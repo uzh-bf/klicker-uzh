@@ -29,7 +29,6 @@ query GetCockpitSession($id: ID!) {
           name
           type
           content
-          contentPlain
         }
       }
     }

@@ -35,7 +35,6 @@ export async function getUserQuestions(
           'name',
           'type',
           'content',
-          'contentPlain',
           'isArchived',
           'isDeleted',
           'createdAt',
@@ -74,7 +73,6 @@ export async function manipulateQuestion(
     type,
     name,
     content,
-    contentPlain,
     options,
     hasSampleSolution,
     hasAnswerFeedbacks,
@@ -85,7 +83,6 @@ export async function manipulateQuestion(
     type: QuestionType
     name?: string
     content?: string
-    contentPlain?: string
     options?: {
       restrictions?: { maxLength?: number; min?: number; max?: number }
       solutionRanges?: { min?: number; max?: number }[]
@@ -133,7 +130,6 @@ export async function manipulateQuestion(
       type: type,
       name: name || 'Missing Question Title',
       content: content || 'Missing Question Content',
-      contentPlain: contentPlain || 'Missing Question Content',
       hasSampleSolution: hasSampleSolution || false,
       hasAnswerFeedbacks: hasAnswerFeedbacks || false,
       options: options || {},
@@ -161,7 +157,6 @@ export async function manipulateQuestion(
     update: {
       name: name,
       content: content,
-      contentPlain: contentPlain,
       hasSampleSolution: hasSampleSolution || false,
       hasAnswerFeedbacks: hasAnswerFeedbacks || false,
       options: options,

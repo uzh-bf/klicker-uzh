@@ -4,7 +4,6 @@ query GetSingleQuestion($id: Int!) {
     name
     type
     content
-    contentPlain
 
     hasSampleSolution
     hasAnswerFeedbacks

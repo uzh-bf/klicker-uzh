@@ -152,7 +152,6 @@ export const QuestionData = interfaceType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
-    t.nonNull.string('contentPlain')
 
     t.nonNull.boolean('hasSampleSolution')
     t.nonNull.boolean('hasAnswerFeedbacks')
@@ -290,7 +289,6 @@ export const Question = objectType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
-    t.nonNull.string('contentPlain')
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
@@ -1257,7 +1255,6 @@ export const Mutation = objectType({
         type: stringArg(),
         name: stringArg(),
         content: stringArg(),
-        contentPlain: stringArg(),
         hasSampleSolution: booleanArg(),
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsChoicesInput' }),
@@ -1276,7 +1273,6 @@ export const Mutation = objectType({
         type: stringArg(),
         name: stringArg(),
         content: stringArg(),
-        contentPlain: stringArg(),
         hasSampleSolution: booleanArg(),
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsNumericalInput' }),
@@ -1295,7 +1291,6 @@ export const Mutation = objectType({
         type: stringArg(),
         name: stringArg(),
         content: stringArg(),
-        contentPlain: stringArg(),
         hasSampleSolution: booleanArg(),
         hasAnswerFeedbacks: booleanArg(),
         options: arg({ type: 'OptionsFreeTextInput' }),

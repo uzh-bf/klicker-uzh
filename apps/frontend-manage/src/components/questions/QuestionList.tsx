@@ -37,7 +37,7 @@ function QuestionList({
           tags={question.tags || []}
           title={question.name}
           type={question.type}
-          contentPlain={question.contentPlain}
+          content={question.content}
           onCheck={() => setSelectedQuestions(index)}
         />
       ))}
