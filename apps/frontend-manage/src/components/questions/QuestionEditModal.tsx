@@ -139,7 +139,7 @@ function QuestionEditModal({
     data: dataQuestion,
   } = useQuery(GetSingleQuestionDocument, {
     variables: { id: questionId! },
-    skip: questionId === undefined,
+    skip: typeof questionId === 'undefined',
   })
 
   const [manipulateChoicesQuestion] = useMutation(
@@ -212,7 +212,7 @@ function QuestionEditModal({
 
         default: {
           console.error('question type not implemented', questionType)
-          return null
+          return {}
         }
       }
     }
@@ -223,7 +223,7 @@ function QuestionEditModal({
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
-      : null
+      : {}
   }, [dataQuestion?.question, mode, questionType])
 
   // TODO: styling of tooltips - some are too wide
@@ -338,6 +338,10 @@ function QuestionEditModal({
       }) => {
         console.log(values)
         console.log(errors)
+
+        if (mode === 'EDIT' && loadingQuestion) {
+          return <div></div>
+        }
 
         return (
           <Modal
