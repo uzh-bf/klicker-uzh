@@ -43,8 +43,8 @@ function QuestionPreviewModal({
       className="!pb-4"
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
+      title={dataQuestion?.question?.name}
     >
-      <H2>{dataQuestion?.question?.name}</H2>
       <StudentQuestion
         activeIndex={0}
         numItems={1}

@@ -309,7 +309,11 @@ const isMarkActive = (editor, format) => {
 const Element = ({ attributes, children, element }: any) => {
   switch (element.type) {
     case 'block-quote':
-      return <blockquote {...attributes}>{children}</blockquote>
+      return (
+        <blockquote {...attributes}>
+          <p>{children}</p>
+        </blockquote>
+      )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
     case 'heading-one':
