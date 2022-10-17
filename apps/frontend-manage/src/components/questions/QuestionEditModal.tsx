@@ -293,14 +293,19 @@ function QuestionEditModal({
 
   return (
     <Modal
-      className="!pb-4"
+      fullScreen
+      title="Frage erstellen"
+      classNames={{
+        overlay: 'top-14',
+        content: 'm-auto max-w-7xl',
+      }}
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       escapeDisabled={true}
       hideCloseButton={true}
       onPrimaryAction={
         <Button
-          className="mt-2 border-uzh-grey-80 bg-uzh-blue-80 font-bold text-white"
+          className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80"
           type="submit"
           form="question-manipulation-form"
           // disabled={isSubmitting}
@@ -645,7 +650,7 @@ function QuestionEditModal({
                                   values.options.choices
                                 )
                               }}
-                              className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                              className="ml-2 text-white bg-red-500 hover:bg-red-600"
                             >
                               Löschen
                             </Button>
@@ -768,7 +773,7 @@ function QuestionEditModal({
                                         values.options.solutionRanges
                                       )
                                     }}
-                                    className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
                                   >
                                     Löschen
                                   </Button>
@@ -831,7 +836,7 @@ function QuestionEditModal({
                                 className="flex flex-row items-center gap-2"
                                 key={index}
                               >
-                                <div className="font-bold w-40">
+                                <div className="w-40 font-bold">
                                   Mögliche Lösung {String(index + 1)}:{' '}
                                 </div>
                                 <Field
@@ -851,7 +856,7 @@ function QuestionEditModal({
                                       values.options.solutions
                                     )
                                   }}
-                                  className="bg-red-500 hover:bg-red-600 text-white ml-2"
+                                  className="ml-2 text-white bg-red-500 hover:bg-red-600"
                                 >
                                   Löschen
                                 </Button>
