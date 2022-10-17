@@ -62,7 +62,7 @@ async function sendPushNotifications() {
         },
         JSON.stringify({
           message:
-            'Das Microlearning für BFI Woche 3 ist bis morgen um 09:00 verfügbar.',
+            'Das Microlearning für BFI Woche 4 ist bis morgen um 09:00 verfügbar.',
           title: 'KlickerUZH - Neues Microlearning',
         })
       )
