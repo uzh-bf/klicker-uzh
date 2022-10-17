@@ -5,190 +5,22 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreetextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  Question,
-  Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Field, Form, Formik } from 'formik'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 import { Button, Label, Modal, Select, Switch } from '@uzh-bf/design-system'
-import { TYPES_LABELS } from 'shared-components'
+import {
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+  TYPES_LABELS,
+} from 'shared-components'
 import ContentInput from './ContentInput'
 
-interface QuestionEditModalProps {
-  isOpen: boolean
-  handleSetIsOpen: (open: boolean) => void
-  questionId?: number
-  mode: 'EDIT' | 'CREATE'
-}
-
-function QuestionEditModal({
-  isOpen,
-  handleSetIsOpen,
-  questionId,
-  mode,
-}: QuestionEditModalProps): React.ReactElement {
-  const {
-    loading: loadingQuestion,
-    error: errorQuestion,
-    data: dataQuestion,
-  } = useQuery(GetSingleQuestionDocument, {
-    variables: { id: questionId },
-    skip: questionId === undefined,
-  })
-
-  const [manipulateChoicesQuestion] = useMutation(
-    ManipulateChoicesQuestionDocument
-  )
-  const [manipulateNUMERICALQuestion] = useMutation(
-    ManipulateNumericalQuestionDocument
-  )
-  const [manipulateFreeTextQuestion] = useMutation(
-    ManipulateFreetextQuestionDocument
-  )
-
-  const dropdownOptions = useMemo(() => {
-    return Object.keys(TYPES_LABELS).map((key) => ({
-      value: key,
-      label: TYPES_LABELS[key],
-    }))
-  }, [])
-
-  const [newQuestionType, setNewQuestionType] = useState(
-    Object.keys(TYPES_LABELS)[0]
-  )
-
-  const questionType = useMemo(() => {
-    if (mode === 'CREATE') {
-      return newQuestionType
-    }
-    return dataQuestion?.question.type
-  }, [mode, dataQuestion?.question.type, newQuestionType])
-
-  const question: Question = useMemo(() => {
-    if (mode === 'CREATE') {
-      switch (questionType) {
-        case 'SC':
-        case 'MC':
-        case 'KPRIM':
-          return {
-            type: questionType,
-            name: '',
-            content: '<br>',
-            tags: [],
-            attachments: null,
-            questionData: {
-              options: {
-                choices: question?.questionData?.options?.choices
-                  ? [...question.questionData.options.choices]
-                  : [{ ix: 0, value: '', correct: false, feedback: '' }],
-              },
-            },
-            hasSampleSolution: false,
-            hasAnswerFeedbacks: false,
-          }
-        case 'NUMERICAL':
-          return {
-            type: questionType,
-            name: '',
-            content: '<br>',
-            tags: [],
-            attachments: null,
-            questionData: {
-              options: {
-                restrictions: { min: undefined, max: undefined },
-                solutionRanges: [{ min: undefined, max: undefined }],
-              },
-            },
-            hasSampleSolution: false,
-            hasAnswerFeedbacks: false,
-          }
-        case 'FREE_TEXT':
-          return {
-            type: questionType,
-            name: '',
-            content: '<br>',
-            tags: [],
-            attachments: null,
-            questionData: {
-              options: {
-                restrictions: { maxLength: undefined },
-                solutions: [''],
-              },
-            },
-            hasSampleSolution: false,
-            hasAnswerFeedbacks: false,
-          }
-        default: {
-          return {
-            type: questionType,
-            name: '',
-            content: '<br>',
-            tags: [],
-            attachments: null,
-            questionData: {
-              options: {
-                choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
-                restrictions: {
-                  min: undefined,
-                  max: undefined,
-                  maxLength: undefined,
-                },
-                solutionRanges: [{ min: undefined, max: undefined }],
-                solutions: [''],
-              },
-            },
-            hasSampleSolution: false,
-            hasAnswerFeedbacks: false,
-          }
-        }
-      }
-    }
-    return dataQuestion?.question
-  }, [dataQuestion?.question, mode, questionType])
-
-  const [initialData, setInitialData] = useState(
-    question
-      ? {
-          type: questionType,
-          name: '',
-          content: '<br>',
-          tags: [],
-          attachments: null,
-
-          options: {
-            choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
-            restrictions: {
-              min: undefined,
-              max: undefined,
-              maxLength: undefined,
-            },
-            solutionRanges: [{ min: undefined, max: undefined }],
-            solutions: [''],
-          },
-          hasSampleSolution: false,
-          hasAnswerFeedbacks: false,
-        }
-      : {}
-  )
-
-  useEffect(() => {
-    if (question) {
-      setInitialData({
-        name: question.name,
-        tags: question.tags?.map((tag: Tag) => tag.name) || [],
-        content: question.content,
-        attachments: question.attachments,
-        options: question.questionData.options,
-        hasSampleSolution: question.hasSampleSolution,
-        hasAnswerFeedbacks: question.hasAnswerFeedbacks,
-      })
-    }
-  }, [question])
-
-  const questionManipulationSchema = Yup.object().shape({
+const questionManipulationSchema = (questionType) =>
+  Yup.object().shape({
     name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
     tags: Yup.array().of(Yup.string()),
     content: Yup.string()
@@ -288,174 +120,284 @@ function QuestionEditModal({
     }),
   })
 
+interface QuestionEditModalProps {
+  isOpen: boolean
+  handleSetIsOpen: (open: boolean) => void
+  questionId?: number
+  mode: 'EDIT' | 'CREATE'
+}
+
+function QuestionEditModal({
+  isOpen,
+  handleSetIsOpen,
+  questionId,
+  mode,
+}: QuestionEditModalProps): React.ReactElement {
+  const {
+    loading: loadingQuestion,
+    error: errorQuestion,
+    data: dataQuestion,
+  } = useQuery(GetSingleQuestionDocument, {
+    variables: { id: questionId! },
+    skip: typeof questionId === 'undefined',
+  })
+
+  const [manipulateChoicesQuestion] = useMutation(
+    ManipulateChoicesQuestionDocument
+  )
+  const [manipulateNUMERICALQuestion] = useMutation(
+    ManipulateNumericalQuestionDocument
+  )
+  const [manipulateFreeTextQuestion] = useMutation(
+    ManipulateFreetextQuestionDocument
+  )
+
+  const dropdownOptions = useMemo(() => {
+    return Object.keys(TYPES_LABELS).map((key) => ({
+      value: key,
+      label: TYPES_LABELS[key],
+    }))
+  }, [])
+
+  const [newQuestionType, setNewQuestionType] = useState(
+    Object.keys(TYPES_LABELS)[0]
+  )
+
+  const questionType = useMemo(() => {
+    return mode === 'CREATE' ? newQuestionType : dataQuestion?.question?.type
+  }, [mode, dataQuestion?.question?.type, newQuestionType])
+
+  const question = useMemo(() => {
+    if (mode === 'CREATE') {
+      const common = {
+        type: questionType,
+        name: '',
+        content: '<br>',
+        tags: [],
+        attachments: null,
+        hasSampleSolution: false,
+        hasAnswerFeedbacks: false,
+      }
+
+      switch (questionType) {
+        case QUESTION_TYPES.SC:
+        case QUESTION_TYPES.MC:
+        case QUESTION_TYPES.KPRIM:
+          return {
+            ...common,
+            options: {
+              choices: question?.questionData?.options?.choices
+                ? [...question.questionData.options.choices]
+                : [{ ix: 0, value: '', correct: false, feedback: '' }],
+            },
+          }
+
+        case QUESTION_TYPES.NUMERICAL:
+          return {
+            ...common,
+            options: {
+              restrictions: { min: undefined, max: undefined },
+              solutionRanges: [{ min: undefined, max: undefined }],
+            },
+          }
+
+        case QUESTION_TYPES.FREE_TEXT:
+          return {
+            ...common,
+            options: {
+              restrictions: { maxLength: undefined },
+              solutions: [],
+            },
+          }
+
+        default: {
+          console.error('question type not implemented', questionType)
+          return {}
+        }
+      }
+    }
+
+    return dataQuestion?.question?.questionData
+      ? {
+          ...dataQuestion.question,
+          tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
+          options: dataQuestion.question.questionData.options,
+        }
+      : {}
+  }, [dataQuestion?.question, mode, questionType])
+
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
+  if (!question && questionType !== question?.type) {
+    return <div></div>
+  }
+
   return (
-    <Modal
-      fullScreen
-      title="Frage erstellen"
-      classNames={{
-        overlay: 'top-14',
-        content: 'm-auto max-w-7xl',
+    <Formik
+      isInitialValid={mode === 'EDIT'}
+      enableReinitialize={true}
+      initialValues={question}
+      validationSchema={questionManipulationSchema(questionType)}
+      onSubmit={async (values) => {
+        const common = {
+          id: questionId,
+          name: values.name,
+          content: values.content,
+          contentPlain: values.content, // TODO: remove this field
+          hasSampleSolution: values.hasSampleSolution,
+          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+          attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
+          tags: values.tags,
+        }
+        switch (questionType) {
+          case 'SC':
+          case 'MC':
+          case 'KPRIM':
+            await manipulateChoicesQuestion({
+              variables: {
+                ...common,
+                type: questionType,
+                options: {
+                  choices: values.options?.choices.map((choice: any) => {
+                    return {
+                      ix: choice.ix,
+                      value: choice.value,
+                      correct: choice.correct,
+                      feedback: choice.feedback,
+                    }
+                  }),
+                },
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
+
+          case 'NUMERICAL':
+            await manipulateNUMERICALQuestion({
+              variables: {
+                ...common,
+                options: {
+                  restrictions: {
+                    min:
+                      !values.options?.restrictions ||
+                      values.options?.restrictions?.min === ''
+                        ? undefined
+                        : values.options.restrictions?.min,
+                    max:
+                      !values.options?.restrictions ||
+                      values.options?.restrictions?.max === ''
+                        ? undefined
+                        : values.options.restrictions?.max,
+                  },
+                  solutionRanges: values.options?.solutionRanges?.map(
+                    (range: any) => {
+                      return {
+                        min: range.min === '' ? undefined : range.min,
+                        max: range.max === '' ? undefined : range.max,
+                      }
+                    }
+                  ),
+                },
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
+
+          case 'FREE_TEXT':
+            await manipulateFreeTextQuestion({
+              variables: {
+                ...common,
+                options: {
+                  restrictions: {
+                    maxLength: values.options?.restrictions?.maxLength,
+                  },
+                  solutions: values.options?.solutions,
+                },
+              },
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
+            })
+            break
+
+          default:
+            break
+        }
+
+        handleSetIsOpen(false)
       }}
-      open={isOpen}
-      onClose={() => handleSetIsOpen(false)}
-      escapeDisabled={true}
-      hideCloseButton={true}
-      onPrimaryAction={
-        <Button
-          className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80"
-          type="submit"
-          form="question-manipulation-form"
-          // disabled={isSubmitting}
-        >
-          <Button.Label>Speichern</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          className="mt-2 border-uzh-grey-80"
-          onClick={() => handleSetIsOpen(false)}
-        >
-          <Button.Label>Close</Button.Label>
-        </Button>
-      }
     >
-      <div className="z-0 flex flex-row">
-        <Label
-          label="Fragetyp:"
-          className="my-auto mr-2 text-lg font-bold"
-          tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
-          tooltip="// TODO: tooltip content"
-          showTooltipSymbol={mode === 'CREATE'}
-        />
-        {mode === 'CREATE' ? (
-          <Select
-            items={dropdownOptions}
-            onChange={(newValue: string) => {
-              setNewQuestionType(newValue)
+      {({
+        errors,
+        touched,
+        isSubmitting,
+        values,
+        isValid,
+        resetForm,
+        setFieldValue,
+        setFieldTouched,
+      }) => {
+        console.log(values)
+        console.log(errors)
+
+        if (mode === 'EDIT' && loadingQuestion) {
+          return <div></div>
+        }
+
+        return (
+          <Modal
+            fullScreen
+            title="Frage erstellen"
+            classNames={{
+              overlay: 'top-14',
+              content: 'm-auto max-w-7xl',
             }}
-          />
-        ) : (
-          <div className="my-auto">{TYPES_LABELS[question?.type || '']}</div>
-        )}
-      </div>
-      {question && questionType === question.type && (
-        <Formik
-          enableReinitialize={true}
-          initialValues={initialData}
-          validationSchema={questionManipulationSchema}
-          onSubmit={async (values) => {
-            switch (questionType) {
-              case 'SC':
-              case 'MC':
-              case 'KPRIM':
-                await manipulateChoicesQuestion({
-                  variables: {
-                    id: questionId,
-                    type: questionType,
-                    name: values.name,
-                    content: values.content,
-                    contentPlain: values.content, // TODO: remove this field
-                    options: {
-                      choices: values.options?.choices.map((choice: any) => {
-                        return {
-                          ix: choice.ix,
-                          value: choice.value,
-                          correct: choice.correct,
-                          feedback: choice.feedback,
-                        }
-                      }),
-                    },
-                    hasSampleSolution: values.hasSampleSolution,
-                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
-                    tags: values.tags,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-                break
-
-              case 'NUMERICAL':
-                await manipulateNUMERICALQuestion({
-                  variables: {
-                    id: questionId,
-                    name: values.name,
-                    content: values.content,
-                    contentPlain: values.content, // TODO: remove this field
-                    options: {
-                      restrictions: {
-                        min:
-                          !values.options?.restrictions ||
-                          values.options?.restrictions?.min === ''
-                            ? undefined
-                            : values.options.restrictions?.min,
-                        max:
-                          !values.options?.restrictions ||
-                          values.options?.restrictions?.max === ''
-                            ? undefined
-                            : values.options.restrictions?.max,
-                      },
-                      solutionRanges: values.options?.solutionRanges?.map(
-                        (range: any) => {
-                          return {
-                            min: range.min === '' ? undefined : range.min,
-                            max: range.max === '' ? undefined : range.max,
-                          }
-                        }
-                      ),
-                    },
-                    hasSampleSolution: values.hasSampleSolution,
-                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
-                    tags: values.tags,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-                break
-
-              case 'FREE_TEXT':
-                await manipulateFreeTextQuestion({
-                  variables: {
-                    id: questionId,
-                    name: values.name,
-                    content: values.content,
-                    contentPlain: values.content, // TODO: remove this field
-                    options: {
-                      restrictions: {
-                        maxLength: values.options?.restrictions?.maxLength,
-                      },
-                      solutions: values.options?.solutions,
-                    },
-                    hasSampleSolution: values.hasSampleSolution,
-                    hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-                    attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
-                    tags: values.tags,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-                break
-
-              default:
-                break
+            open={isOpen}
+            onClose={() => handleSetIsOpen(false)}
+            escapeDisabled={true}
+            hideCloseButton={true}
+            onPrimaryAction={
+              <Button
+                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+                type="submit"
+                form="question-manipulation-form"
+                disabled={!isValid}
+              >
+                <Button.Label>Speichern</Button.Label>
+              </Button>
             }
+            onSecondaryAction={
+              <Button
+                className="mt-2 border-uzh-grey-80"
+                onClick={() => handleSetIsOpen(false)}
+              >
+                <Button.Label>Close</Button.Label>
+              </Button>
+            }
+          >
+            <div>
+              <div className="z-0 flex flex-row">
+                <Label
+                  label="Fragetyp:"
+                  className="my-auto mr-2 text-lg font-bold"
+                  tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                  tooltip="// TODO: tooltip content"
+                  showTooltipSymbol={mode === 'CREATE'}
+                />
+                {mode === 'CREATE' ? (
+                  <Select
+                    items={dropdownOptions}
+                    onChange={(newValue: string) => {
+                      resetForm()
+                      setNewQuestionType(newValue)
+                    }}
+                  />
+                ) : (
+                  <div className="my-auto">
+                    {TYPES_LABELS[question?.type || '']}
+                  </div>
+                )}
+              </div>
 
-            handleSetIsOpen(false)
-          }}
-        >
-          {({
-            errors,
-            touched,
-            isSubmitting,
-            values,
-            setFieldValue,
-            setFieldTouched,
-          }) => {
-            console.log(values)
-            console.log(errors)
-
-            return (
               <Form className="w-full" id="question-manipulation-form">
                 <div className="flex flex-row mt-2">
                   <Label
@@ -513,12 +455,12 @@ function QuestionEditModal({
                   />
 
                   {/* // TODO: wrap in formik field with "as" or "component" */}
-                  {values.content && (
+                  {typeof values.content !== 'undefined' && (
                     <ContentInput
                       autoFocus
                       error={errors.content}
                       touched={touched.content}
-                      content={values.content}
+                      content={values.content || '<br>'}
                       onChange={(newContent: string): void => {
                         setFieldTouched('content', true, false)
                         setFieldValue('content', newContent)
@@ -542,9 +484,7 @@ function QuestionEditModal({
                 </div> */}
 
                 <div className="flex flex-row gap-4 mt-4">
-                  {(questionType === 'SC' ||
-                    questionType === 'MC' ||
-                    questionType === 'KPRIM') && (
+                  {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <div className="flex-1">
                       <Label
                         label="Antwortmöglichkeiten:"
@@ -555,8 +495,7 @@ function QuestionEditModal({
                       />
                     </div>
                   )}
-                  {(questionType === 'NUMERICAL' ||
-                    questionType === 'FREE_TEXT') && (
+                  {QUESTION_GROUPS.FREE.includes(questionType) && (
                     <div className="flex-1">
                       <Label
                         label="Einschränkungen:"
@@ -575,9 +514,7 @@ function QuestionEditModal({
                     }
                     label="Musterlösung"
                   />
-                  {(questionType === 'SC' ||
-                    questionType === 'MC' ||
-                    questionType === 'KPRIM') && (
+                  {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <Switch
                       id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
@@ -593,9 +530,7 @@ function QuestionEditModal({
                   )}
                 </div>
 
-                {(questionType === 'SC' ||
-                  questionType === 'MC' ||
-                  questionType === 'KPRIM') && (
+                {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                   <div className="flex flex-col w-full gap-2 pt-2">
                     {values.options?.choices?.map(
                       (
@@ -863,7 +798,7 @@ function QuestionEditModal({
                     </div>
                     {values.hasSampleSolution && (
                       <div className="flex flex-col gap-1 w-max">
-                        {values.options.solutions?.map(
+                        {values.options?.solutions?.map(
                           (solution: string, index: number) => {
                             return (
                               <div
@@ -919,11 +854,11 @@ function QuestionEditModal({
                   </div>
                 )}
               </Form>
-            )
-          }}
-        </Formik>
-      )}
-    </Modal>
+            </div>{' '}
+          </Modal>
+        )
+      }}
+    </Formik>
   )
 }
 
