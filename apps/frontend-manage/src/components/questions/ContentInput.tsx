@@ -14,13 +14,14 @@ import { Tooltip } from '@uzh-bf/design-system'
 import isHotkey from 'is-hotkey'
 import React, { PropsWithChildren, Ref, useCallback, useMemo } from 'react'
 import {
+  BaseEditor,
   createEditor,
   Editor,
   Element as SlateElement,
   Transforms,
 } from 'slate'
-import { withHistory } from 'slate-history'
-import { Editable, Slate, useSlate, withReact } from 'slate-react'
+import { HistoryEditor, withHistory } from 'slate-history'
+import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 
 import { convertToMd, convertToSlate } from '../../lib/utils/slateMdConversion'
@@ -38,7 +39,7 @@ const defaultProps = {
   disabled: false,
 }
 
-const HOTKEYS = {
+const HOTKEYS: Record<string, string> = {
   'mod+b': 'bold',
   'mod+i': 'italic',
   'mod+c': 'code',
@@ -53,8 +54,8 @@ function ContentInput({
   error,
   touched,
 }: Props): React.ReactElement {
-  const renderElement = useCallback((props) => <Element {...props} />, [])
-  const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
+  const renderElement = useCallback((props: any) => <Element {...props} />, [])
+  const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   const editorValue = useMemo(() => {
@@ -253,7 +254,10 @@ function ContentInput({
   )
 }
 
-const toggleBlock = (editor, format) => {
+const toggleBlock = (
+  editor: BaseEditor & ReactEditor & HistoryEditor,
+  format: string
+) => {
   const isActive = isBlockActive(editor, format)
   const isList = LIST_TYPES.includes(format)
 
@@ -276,7 +280,10 @@ const toggleBlock = (editor, format) => {
   }
 }
 
-const toggleMark = (editor, format) => {
+const toggleMark = (
+  editor: BaseEditor & ReactEditor & HistoryEditor,
+  format: string
+) => {
   const isActive = isMarkActive(editor, format)
 
   if (isActive) {
@@ -286,7 +293,10 @@ const toggleMark = (editor, format) => {
   }
 }
 
-const isBlockActive = (editor, format) => {
+const isBlockActive = (
+  editor: BaseEditor & ReactEditor & HistoryEditor,
+  format: string
+) => {
   const { selection } = editor
   if (!selection) return false
 
@@ -301,7 +311,11 @@ const isBlockActive = (editor, format) => {
   return !!match
 }
 
-const isMarkActive = (editor, format) => {
+const isMarkActive = (
+  editor: BaseEditor & ReactEditor & HistoryEditor,
+  format: string
+) => {
+  console.log('format', format)
   const marks = Editor.marks(editor)
   return marks ? marks[format] === true : false
 }
@@ -355,7 +369,7 @@ const BlockButton = ({ format, icon, className }: any) => {
       active={isBlockActive(editor, format)}
       editor={editor}
       format={format}
-      onClick={(event) => {
+      onClick={(event: React.MouseEvent<HTMLElement>) => {
         event.preventDefault()
         toggleBlock(editor, format)
       }}
@@ -375,7 +389,7 @@ const MarkButton = ({ format, icon, className }: any) => {
   return (
     <Button
       active={isMarkActive(editor, format)}
-      onClick={(event) => {
+      onClick={(event: React.MouseEvent<HTMLElement>) => {
         event.preventDefault()
         toggleMark(editor, format)
       }}
