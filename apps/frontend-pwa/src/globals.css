@@ -9,10 +9,6 @@
 
 @tailwind utilities;
 
-.markdown p:not(:last-child) {
-  @apply mb-2;
-}
-
 .desert-bg {
   background-image: url('/desert.svg');
 }
