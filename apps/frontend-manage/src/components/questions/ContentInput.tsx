@@ -41,7 +41,7 @@ const defaultProps = {
 const HOTKEYS = {
   'mod+b': 'bold',
   'mod+i': 'italic',
-  'mod+`': 'code',
+  'mod+c': 'code',
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 type OrNull<T> = T | null
@@ -97,7 +97,7 @@ function ContentInput({
               </Tooltip>
 
               <Tooltip
-                tooltip="Wählen Sie diese Einstellung für Code-Styling."
+                tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
                 tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
                 triggerStyle={twMerge(
                   isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md'
@@ -164,7 +164,8 @@ function ContentInput({
                   active={false}
                   editor={editor}
                   format="paragraph"
-                  onMouseDown={() => {
+                  onClick={(e: any) => {
+                    e.preventDefault()
                     Transforms.insertText(editor, '$$1 + 2$$')
                   }}
                 >
@@ -183,7 +184,8 @@ function ContentInput({
                   active={false}
                   editor={editor}
                   format="paragraph"
-                  onMouseDown={() => {
+                  onClick={(e: any) => {
+                    e.preventDefault()
                     Transforms.insertNodes(editor, {
                       type: 'paragraph',
                       children: [{ text: '$$' }],
@@ -227,7 +229,7 @@ function ContentInput({
           </div>
           <div className="p-3">
             <Editable
-              className="prose leading-4 prose-blockquote:text-gray-500"
+              className="leading-4 prose prose-blockquote:text-gray-500"
               autoFocus
               spellCheck
               placeholder="Fragetext hier eingeben…"
