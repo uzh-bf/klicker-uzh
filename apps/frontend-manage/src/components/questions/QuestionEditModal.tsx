@@ -721,9 +721,9 @@ function QuestionEditModal({
                                   values.options.choices.length - 1
                                 ].ix + 1
                               : 0,
-                            value: '',
+                            value: '<br>',
                             correct: false,
-                            feedback: '',
+                            feedback: '<br>',
                           })
                         )
                       }
@@ -903,7 +903,7 @@ function QuestionEditModal({
                           onClick={() => {
                             if (values.options.solutions) {
                               setFieldValue(
-                                'values.options.solutionRanges',
+                                'values.options.solutions',
                                 values.options.solutions.push('')
                               )
                             } else {
