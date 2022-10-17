@@ -32,7 +32,13 @@ interface Props {
   touched: any
   disabled?: boolean
   showToolbarOnFocus?: boolean
+  placeholder: string
   content: string
+  className?: {
+    root?: string
+    toolbar?: string
+    content?: string
+  }
 }
 
 const defaultProps = {
@@ -54,8 +60,10 @@ function ContentInput({
   onChange,
   disabled,
   showToolbarOnFocus,
+  placeholder,
   error,
   touched,
+  className,
 }: Props): React.ReactElement {
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -65,14 +73,13 @@ function ContentInput({
     return convertToSlate(content)
   }, [content])
 
-  console.log(editorValue)
-
   return (
     <div
       className={twMerge(
         disabled && 'pointer-events-none opacity-70',
-        'mt-2 border border-solid rounded',
-        showToolbarOnFocus && 'group'
+        'border border-solid rounded flex-1',
+        showToolbarOnFocus && 'group',
+        className?.root
       )}
     >
       {/* eslint-disable-next-line react/no-children-prop */}
@@ -83,11 +90,16 @@ function ContentInput({
       >
         <div
           className={twMerge(
-            'toolbar flex flex-row w-full p-1.5 mb-2 mr-10 h-10 bg-uzh-grey-20',
+            'toolbar flex flex-row w-full p-1.5 mr-10 h-10 bg-uzh-grey-20',
             showToolbarOnFocus && 'group-focus-within:flex hidden'
           )}
         >
-          <div className="flex flex-row flex-1 gap-3">
+          <div
+            className={twMerge(
+              'flex flex-row flex-1 gap-3',
+              className?.toolbar
+            )}
+          >
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
               tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
@@ -241,12 +253,12 @@ function ContentInput({
             </div>
           </Button>
         </div>
-        <div className="p-3 ">
+        <div className={twMerge('p-3', className?.content)}>
           <Editable
-            className="leading-4 prose prose-blockquote:text-gray-500"
+            className="leading-4 prose prose-blockquote:text-gray-500 max-w-none"
             autoFocus
             spellCheck
-            placeholder="Fragetext hier eingeben…"
+            placeholder={placeholder}
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             onKeyDown={(event) => {
@@ -327,7 +339,6 @@ const isMarkActive = (
   editor: BaseEditor & ReactEditor & HistoryEditor,
   format: string
 ) => {
-  console.log('format', format)
   const marks = Editor.marks(editor)
   return marks ? marks[format] === true : false
 }

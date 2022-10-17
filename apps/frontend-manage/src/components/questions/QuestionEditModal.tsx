@@ -523,6 +523,7 @@ function QuestionEditModal({
                         setFieldValue('content', newContent)
                       }}
                       showToolbarOnFocus={false}
+                      placeholder="Fragetext hier eingeben…"
                     />
                   )}
                   {values.content}
@@ -610,22 +611,37 @@ function QuestionEditModal({
                           className="w-full px-2 py-1 border border-solid rounded border-uzh-grey-80"
                         >
                           <div className="flex flex-row">
-                            <Field
-                              name={`options.choices[${index}].value`}
-                              type="text"
-                              className={twMerge(
-                                'w-full rounded border border-uzh-grey-60 focus:border-uzh-blue-50 h-9',
-                                choice.correct &&
-                                  values.hasSampleSolution &&
-                                  'border-green-500 bg-green-100',
-                                !choice.correct &&
-                                  values.hasSampleSolution &&
-                                  'border-red-500 bg-red-100',
-                                !values.hasSampleSolution && 'bg-uzh-grey-20'
-                              )}
-                              value={choice.value}
-                              placeholder="Lösungsmöglichkeit eingeben"
+                            {/* // TODO: define maximum height of editor if possible */}
+                            <ContentInput
+                              error={errors.options}
+                              touched={touched.options}
+                              content={values.options.choices[index].value}
+                              onChange={(newContent: string): void => {
+                                setFieldTouched(
+                                  `options.choices[${index}].value`,
+                                  true,
+                                  false
+                                )
+                                setFieldValue(
+                                  `options.choices[${index}].value`,
+                                  newContent
+                                )
+                              }}
+                              className={{
+                                content: twMerge(
+                                  'w-full focus:border-uzh-blue-50',
+                                  choice.correct &&
+                                    values.hasSampleSolution &&
+                                    ' bg-green-100',
+                                  !choice.correct &&
+                                    values.hasSampleSolution &&
+                                    ' bg-red-100'
+                                ),
+                              }}
+                              showToolbarOnFocus={true}
+                              placeholder="Antwortmöglichkeit eingeben…"
                             />
+
                             {values.hasSampleSolution && (
                               <div className="flex flex-row items-center ml-2">
                                 <div className="mr-2">Korrekt?</div>
@@ -661,14 +677,30 @@ function QuestionEditModal({
                             values.hasSampleSolution && (
                               <div className="flex flex-row items-center mt-1">
                                 <div className="mr-2 font-bold">Feedback:</div>
-                                <Field
-                                  name={`options.choices[${index}].feedback`}
-                                  type="text"
-                                  className={twMerge(
-                                    'w-full rounded  bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
-                                  )}
-                                  value={choice.feedback}
-                                  placeholder="Feedback eingeben"
+                                <ContentInput
+                                  error={errors.options}
+                                  touched={touched.options}
+                                  content={
+                                    values.options.choices[index].feedback
+                                  }
+                                  onChange={(newContent: string): void => {
+                                    setFieldTouched(
+                                      `options.choices[${index}].feedback`,
+                                      true,
+                                      false
+                                    )
+                                    setFieldValue(
+                                      `options.choices[${index}].feedback`,
+                                      newContent
+                                    )
+                                  }}
+                                  className={{
+                                    content: twMerge(
+                                      'w-full rounded border border-uzh-grey-100 focus:border-uzh-blue-50'
+                                    ),
+                                  }}
+                                  showToolbarOnFocus={true}
+                                  placeholder="Feedback eingeben…"
                                 />
                               </div>
                             )}
