@@ -1302,6 +1302,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('deleteQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.deleteQuestion(args, ctx)
+      },
+    })
+
     t.field('createParticipantGroup', {
       type: ParticipantGroup,
       args: {

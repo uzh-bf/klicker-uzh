@@ -8,6 +8,8 @@ import { QUESTION_TYPES_SHORT } from 'shared-components'
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
+import { useMutation } from '@apollo/client'
+import { DeleteQuestionDocument, GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionPreviewModal from './QuestionPreviewModal'
 // import QuestionTags from './QuestionTags'
@@ -43,6 +45,7 @@ function Question({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
+  const [deleteQuestion] = useMutation(DeleteQuestionDocument)
 
   const [collectedProps, drag] = useDrag({
     item: {
@@ -114,6 +117,19 @@ function Question({
                 questionId={id}
               />
             )}
+          </div>
+          <div className="mb-2 md:mr-3 w-36 md:mb-0">
+            <Button
+              className="justify-center h-10 bg-red-300 w-36"
+              onClick={() => deleteQuestion({
+                variables: {
+                  id,
+                },
+                refetchQueries: [{query: GetUserQuestionsDocument}],
+              })}
+            >
+              Löschen
+            </Button>
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button

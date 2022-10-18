@@ -228,6 +228,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteQuestion(id: Int): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
