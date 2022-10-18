@@ -15,7 +15,7 @@ import { Button, Prose } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
-import { CHART_COLORS } from 'shared-components'
+import { CHART_COLORS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 const Select = ({ items, onChange }) => {

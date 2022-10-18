@@ -9,7 +9,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useEffect, useState } from 'react'
-import { QUESTION_GROUPS } from 'shared-components'
+import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 import { useQuery } from '@apollo/client'

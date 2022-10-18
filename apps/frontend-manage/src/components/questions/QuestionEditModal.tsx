@@ -33,7 +33,7 @@ import {
   QUESTION_GROUPS,
   QUESTION_TYPES,
   TYPES_LABELS,
-} from 'shared-components'
+} from 'shared-components/src/constants'
 import ContentInput from './ContentInput'
 
 const questionManipulationSchema = Yup.object().shape({

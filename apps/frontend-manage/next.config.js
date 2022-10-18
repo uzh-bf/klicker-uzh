@@ -76,3 +76,4 @@ const nextConfig = {
 // ensure that your source maps include changes from all other Webpack plugins
 // module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions)
 module.exports = withTM(nextConfig)
+// module.exports = nextConfig

@@ -6,7 +6,8 @@ import localForage from 'localforage'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 
-import { QUESTION_GROUPS, StudentQuestion } from 'shared-components'
+import { QUESTION_GROUPS } from 'shared-components/src/constants'
+import StudentQuestion from 'shared-components/src/StudentQuestion'
 
 // TODO: notifications
 

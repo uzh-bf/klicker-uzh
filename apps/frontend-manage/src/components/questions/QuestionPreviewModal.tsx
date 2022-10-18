@@ -5,7 +5,8 @@ import React, { useState } from 'react'
 
 import Markdown from '@klicker-uzh/markdown'
 import { Modal } from '@uzh-bf/design-system'
-import { QUESTION_GROUPS, StudentQuestion } from 'shared-components'
+import { QUESTION_GROUPS } from 'shared-components/src/constants'
+import StudentQuestion from 'shared-components/src/StudentQuestion'
 
 interface QuestionPreviewModalProps {
   isOpen: boolean
