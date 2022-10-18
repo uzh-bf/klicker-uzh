@@ -1,3 +1,4 @@
+import Markdown from '@klicker-uzh/markdown';
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 
@@ -23,7 +24,9 @@ export function SCAnswerOptions({
             key={choice.value}
             active={value?.includes(index)}
           >
-            <Button.Label>{choice.value}</Button.Label>
+            <Button.Label>
+              <Markdown content={choice.value} />
+            </Button.Label>
           </Button>
         )
       })}
