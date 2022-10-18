@@ -24,45 +24,62 @@ import Image from 'next/future/image'
 import { useState } from 'react'
 
 const POSITIONS = [
-  [17, 20],
-  [17, 70],
-  [17, 10],
-  [17, 80],
-  [5, 25],
-  [5, 65],
-  [5, 15],
-  [5, 75],
-  [5, 5],
-  [5, 85],
+  [77, 75],
+  [69, 98],
+  [101, 83],
+  [93, 106],
+  [123, 92],
+  [115, 115],
+  [146, 100],
+  [138, 123],
+  [170, 108],
+  [162, 131],
 ]
 
-function GroupVisualization({ participants }) {
-  return (
-    <div className="relative w-full md:w-[500px] h-48 m-auto border border-b-4 rounded md:h-64 border-slate-300 border-b-slate-700">
-      <div className="absolute top-0 bottom-0 left-0 right-0 desert-bg grayscale-[70%]"></div>
+function GroupVisualization({ participants, scaleFactor }) {
+  const height = 351 * scaleFactor
+  const width = 248 * scaleFactor
 
-      <div className="absolute bottom-0 left-0 right-0 top-8">
-        <Image className="" src="/rocket_base.svg" fill />
+  return (
+    <div
+      className="relative m-auto"
+      style={{
+        height,
+        width,
+      }}
+    >
+      <div className="absolute top-0 left-0 right-0">
+        <Image
+          className="border shadow rounded-xl"
+          src="/rakete_mond.png"
+          width={width}
+          height={height}
+        />
+        {/* <Image className="" src="/rocket_base.svg" fill /> */}
       </div>
 
       {participants.slice(0, 10).map((participant, ix) => (
         <Image
           key={participant.avatar}
-          className="absolute bg-white border border-white rounded-full shadow"
+          className="absolute rounded-full"
           style={{
-            bottom: `${POSITIONS[ix][0]}%`,
-            left: `${POSITIONS[ix][1]}%`,
+            top: `${POSITIONS[ix][0] * scaleFactor}px`,
+            left: `${POSITIONS[ix][1] * scaleFactor}px`,
           }}
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
             participant.avatar ?? 'placeholder'
           }.svg`}
           alt=""
-          height={32}
-          width={32}
+          height={16 * scaleFactor}
+          width={16 * scaleFactor}
         />
       ))}
     </div>
   )
+}
+
+GroupVisualization.defaultProps = {
+  scaleFactor: 1.7,
 }
 
 function CourseOverview({ courseId }: any) {
