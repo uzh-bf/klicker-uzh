@@ -13,7 +13,7 @@ import Router from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
-import { AVATAR_LABELS, AVATAR_OPTIONS } from 'src/constants'
+import { AVATAR_LABELS, AVATAR_OPTIONS } from 'shared-components'
 import * as yup from 'yup'
 
 const EditProfile: NextPageWithLayout = () => {

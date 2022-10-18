@@ -36,6 +36,9 @@ declare global {
 }
 
 export interface NexusGenInputs {
+  AttachmentInput: { // input type
+    id: string; // String!
+  }
   AvatarSettingsInput: { // input type
     accessory: string; // String!
     clothing: string; // String!
@@ -52,9 +55,35 @@ export interface NexusGenInputs {
     randomSelection?: number | null; // Int
     timeLimit?: number | null; // Int
   }
+  ChoiceInput: { // input type
+    correct?: boolean | null; // Boolean
+    feedback?: string | null; // String
+    ix: number; // Int!
+    value: string; // String!
+  }
+  OptionsChoicesInput: { // input type
+    choices: Array<NexusGenInputs['ChoiceInput'] | null>; // [ChoiceInput]!
+  }
+  OptionsFreeTextInput: { // input type
+    restrictions?: NexusGenInputs['Restrictions'] | null; // Restrictions
+    solutions?: Array<string | null> | null; // [String]
+  }
+  OptionsNumericalInput: { // input type
+    restrictions?: NexusGenInputs['Restrictions'] | null; // Restrictions
+    solutionRanges?: Array<NexusGenInputs['SolutionRange'] | null> | null; // [SolutionRange]
+  }
   ResponseInput: { // input type
     choices?: number[] | null; // [Int!]
     value?: string | null; // String
+  }
+  Restrictions: { // input type
+    max?: number | null; // Float
+    maxLength?: number | null; // Int
+    min?: number | null; // Float
+  }
+  SolutionRange: { // input type
+    max?: number | null; // Float
+    min?: number | null; // Float
   }
   SubscriptionKeys: { // input type
     auth: string; // String!
@@ -94,7 +123,7 @@ export interface NexusGenObjects {
   Attachment: { // root type
     description?: string | null; // String
     href: string; // String!
-    id: string; // String!
+    id: string; // ID!
     name: string; // String!
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
@@ -108,7 +137,8 @@ export interface NexusGenObjects {
   }
   ChoicesQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -157,7 +187,8 @@ export interface NexusGenObjects {
   }
   FreeTextQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -229,7 +260,8 @@ export interface NexusGenObjects {
   Mutation: {};
   NumericalQuestionData: { // root type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -295,6 +327,21 @@ export interface NexusGenObjects {
     p256dh: string; // String!
   }
   Query: {};
+  Question: { // root type
+    attachments?: NexusGenRootTypes['Attachment'][] | null; // [Attachment!]
+    content: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    tags?: NexusGenRootTypes['Tag'][] | null; // [Tag!]
+    type: string; // String!
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+  }
   QuestionFeedback: { // root type
     correct: boolean; // Boolean!
     feedback: string; // String!
@@ -341,6 +388,10 @@ export interface NexusGenObjects {
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
   Subscription: {};
+  Tag: { // root type
+    id: string; // ID!
+    name: string; // String!
+  }
   User: { // root type
     description?: string | null; // String
     email: string; // String!
@@ -371,7 +422,7 @@ export interface NexusGenFieldTypes {
   Attachment: { // field return type
     description: string | null; // String
     href: string; // String!
-    id: string; // String!
+    id: string; // ID!
     name: string; // String!
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
@@ -385,7 +436,8 @@ export interface NexusGenFieldTypes {
   }
   ChoicesQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -434,7 +486,8 @@ export interface NexusGenFieldTypes {
   }
   FreeTextQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -514,6 +567,7 @@ export interface NexusGenFieldTypes {
     deactivateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
+    deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
@@ -523,6 +577,9 @@ export interface NexusGenFieldTypes {
     loginUser: string | null; // ID
     logoutParticipant: string | null; // ID
     logoutUser: string | null; // ID
+    manipulateChoicesQuestion: NexusGenRootTypes['Question'] | null; // Question
+    manipulateFREETEXTQuestion: NexusGenRootTypes['Question'] | null; // Question
+    manipulateNUMERICALQuestion: NexusGenRootTypes['Question'] | null; // Question
     markMicroSessionCompleted: NexusGenRootTypes['Participation'] | null; // Participation
     pinFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     publishFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -539,7 +596,8 @@ export interface NexusGenFieldTypes {
   }
   NumericalQuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -613,13 +671,30 @@ export interface NexusGenFieldTypes {
     participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
     pinnedFeedbacks: NexusGenRootTypes['Session'] | null; // Session
+    question: NexusGenRootTypes['Question'] | null; // Question
     runningSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     self: NexusGenRootTypes['Participant'] | null; // Participant
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     userProfile: NexusGenRootTypes['User'] | null; // User
+    userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
+  }
+  Question: { // field return type
+    attachments: NexusGenRootTypes['Attachment'][] | null; // [Attachment!]
+    content: string; // String!
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
+    id: number; // Int!
+    isArchived: boolean; // Boolean!
+    isDeleted: boolean; // Boolean!
+    name: string; // String!
+    questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
+    tags: NexusGenRootTypes['Tag'][] | null; // [Tag!]
+    type: string; // String!
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
   QuestionFeedback: { // field return type
     correct: boolean; // Boolean!
@@ -673,6 +748,10 @@ export interface NexusGenFieldTypes {
     feedbackUpdated: NexusGenRootTypes['Feedback'] | null; // Feedback
     runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
   }
+  Tag: { // field return type
+    id: string; // ID!
+    name: string; // String!
+  }
   User: { // field return type
     description: string | null; // String
     email: string; // String!
@@ -682,7 +761,8 @@ export interface NexusGenFieldTypes {
   }
   QuestionData: { // field return type
     content: string; // String!
-    contentPlain: string; // String!
+    hasAnswerFeedbacks: boolean; // Boolean!
+    hasSampleSolution: boolean; // Boolean!
     id: number; // Int!
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
@@ -701,7 +781,7 @@ export interface NexusGenFieldTypeNames {
   Attachment: { // field return type name
     description: 'String'
     href: 'String'
-    id: 'String'
+    id: 'ID'
     name: 'String'
     originalName: 'String'
     type: 'AttachmentType'
@@ -715,7 +795,8 @@ export interface NexusGenFieldTypeNames {
   }
   ChoicesQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
+    hasAnswerFeedbacks: 'Boolean'
+    hasSampleSolution: 'Boolean'
     id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
@@ -764,7 +845,8 @@ export interface NexusGenFieldTypeNames {
   }
   FreeTextQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
+    hasAnswerFeedbacks: 'Boolean'
+    hasSampleSolution: 'Boolean'
     id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
@@ -844,6 +926,7 @@ export interface NexusGenFieldTypeNames {
     deactivateSessionBlock: 'Session'
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
+    deleteQuestion: 'Question'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     joinParticipantGroup: 'ParticipantGroup'
@@ -853,6 +936,9 @@ export interface NexusGenFieldTypeNames {
     loginUser: 'ID'
     logoutParticipant: 'ID'
     logoutUser: 'ID'
+    manipulateChoicesQuestion: 'Question'
+    manipulateFREETEXTQuestion: 'Question'
+    manipulateNUMERICALQuestion: 'Question'
     markMicroSessionCompleted: 'Participation'
     pinFeedback: 'Feedback'
     publishFeedback: 'Feedback'
@@ -869,7 +955,8 @@ export interface NexusGenFieldTypeNames {
   }
   NumericalQuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
+    hasAnswerFeedbacks: 'Boolean'
+    hasSampleSolution: 'Boolean'
     id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
@@ -943,13 +1030,30 @@ export interface NexusGenFieldTypeNames {
     participantGroups: 'ParticipantGroup'
     participations: 'Participation'
     pinnedFeedbacks: 'Session'
+    question: 'Question'
     runningSessions: 'Session'
     self: 'Participant'
     session: 'Session'
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     userProfile: 'User'
+    userQuestions: 'Question'
     userSessions: 'Session'
+  }
+  Question: { // field return type name
+    attachments: 'Attachment'
+    content: 'String'
+    createdAt: 'DateTime'
+    hasAnswerFeedbacks: 'Boolean'
+    hasSampleSolution: 'Boolean'
+    id: 'Int'
+    isArchived: 'Boolean'
+    isDeleted: 'Boolean'
+    name: 'String'
+    questionData: 'QuestionData'
+    tags: 'Tag'
+    type: 'String'
+    updatedAt: 'DateTime'
   }
   QuestionFeedback: { // field return type name
     correct: 'Boolean'
@@ -1003,6 +1107,10 @@ export interface NexusGenFieldTypeNames {
     feedbackUpdated: 'Feedback'
     runningSessionUpdated: 'SessionBlock'
   }
+  Tag: { // field return type name
+    id: 'ID'
+    name: 'String'
+  }
   User: { // field return type name
     description: 'String'
     email: 'String'
@@ -1012,7 +1120,8 @@ export interface NexusGenFieldTypeNames {
   }
   QuestionData: { // field return type name
     content: 'String'
-    contentPlain: 'String'
+    hasAnswerFeedbacks: 'Boolean'
+    hasSampleSolution: 'Boolean'
     id: 'Int'
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
@@ -1067,6 +1176,9 @@ export interface NexusGenArgTypes {
     deleteFeedbackResponse: { // args
       id: number; // Int!
     }
+    deleteQuestion: { // args
+      id?: number | null; // Int
+    }
     endSession: { // args
       id: string; // ID!
     }
@@ -1091,6 +1203,39 @@ export interface NexusGenArgTypes {
     loginUser: { // args
       email: string; // String!
       password: string; // String!
+    }
+    manipulateChoicesQuestion: { // args
+      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
+      content?: string | null; // String
+      hasAnswerFeedbacks?: boolean | null; // Boolean
+      hasSampleSolution?: boolean | null; // Boolean
+      id?: number | null; // Int
+      name?: string | null; // String
+      options?: NexusGenInputs['OptionsChoicesInput'] | null; // OptionsChoicesInput
+      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
+    }
+    manipulateFREETEXTQuestion: { // args
+      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
+      content?: string | null; // String
+      hasAnswerFeedbacks?: boolean | null; // Boolean
+      hasSampleSolution?: boolean | null; // Boolean
+      id?: number | null; // Int
+      name?: string | null; // String
+      options?: NexusGenInputs['OptionsFreeTextInput'] | null; // OptionsFreeTextInput
+      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
+    }
+    manipulateNUMERICALQuestion: { // args
+      attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
+      content?: string | null; // String
+      hasAnswerFeedbacks?: boolean | null; // Boolean
+      hasSampleSolution?: boolean | null; // Boolean
+      id?: number | null; // Int
+      name?: string | null; // String
+      options?: NexusGenInputs['OptionsNumericalInput'] | null; // OptionsNumericalInput
+      tags?: Array<string | null> | null; // [String]
+      type?: string | null; // String
     }
     markMicroSessionCompleted: { // args
       courseId: string; // ID!
@@ -1168,6 +1313,9 @@ export interface NexusGenArgTypes {
     }
     pinnedFeedbacks: { // args
       id: string; // ID!
+    }
+    question: { // args
+      id: number; // Int!
     }
     runningSessions: { // args
       shortname: string; // String!

@@ -3,7 +3,6 @@ interface QuestionData<Type, Options> {
   name: string
   type: Type
   content: string
-  contentPlain: string
   ownerId: string
   isDeleted: boolean
   isArchived: boolean

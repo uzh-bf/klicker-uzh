@@ -71,7 +71,7 @@ function Markdown({
     }
   }, [content, description])
 
-  return <div className={`markdown ${className ?? ''}`}>{parsedContent}</div>
+  return <div className={className}>{parsedContent}</div>
 }
 
 Markdown.defaultProps = defaultProps

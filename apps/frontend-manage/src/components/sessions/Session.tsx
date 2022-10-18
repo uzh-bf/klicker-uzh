@@ -13,20 +13,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
 
+import { QUESTION_TYPES_SHORT } from 'shared-components'
+
 interface SessionProps {
   sessionName: string
   sessionList: SessionType[]
 }
 
 const defaultProps = {}
-
-const questionTypesShort: Record<string, string> = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE_TEXT: 'FT',
-  NUMERICAL: 'NR',
-  KPRIM: 'KP',
-}
 
 function Session({
   sessionName,
@@ -68,7 +62,7 @@ function Session({
                       >
                         <div>
                           {instance.questionData.name} (
-                          {questionTypesShort[instance.questionData.type]})
+                          {QUESTION_TYPES_SHORT[instance.questionData.type]})
                         </div>
                       </div>
                     ))}

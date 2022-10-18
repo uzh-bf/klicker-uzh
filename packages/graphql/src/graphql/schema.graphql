@@ -17,10 +17,14 @@ type AggregatedConfusionFeedbacks {
 type Attachment {
   description: String
   href: String!
-  id: String!
+  id: ID!
   name: String!
   originalName: String
   type: AttachmentType!
+}
+
+input AttachmentInput {
+  id: String!
 }
 
 enum AttachmentType {
@@ -58,9 +62,17 @@ type Choice {
   value: String!
 }
 
+input ChoiceInput {
+  correct: Boolean
+  feedback: String
+  ix: Int!
+  value: String!
+}
+
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -120,7 +132,8 @@ type FeedbackResponse {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -215,6 +228,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteQuestion(id: Int): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
@@ -224,6 +238,9 @@ type Mutation {
   loginUser(email: String!, password: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
   markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -241,7 +258,8 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -263,6 +281,20 @@ type NumericalRestrictions {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+input OptionsChoicesInput {
+  choices: [ChoiceInput]!
+}
+
+input OptionsFreeTextInput {
+  restrictions: Restrictions
+  solutions: [String]
+}
+
+input OptionsNumericalInput {
+  restrictions: Restrictions
+  solutionRanges: [SolutionRange]
 }
 
 type Participant {
@@ -325,18 +357,37 @@ type Query {
   participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: ID!): Session
+  question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   userProfile: User
+  userQuestions: [Question!]
   userSessions: [Session!]
+}
+
+type Question {
+  attachments: [Attachment!]
+  content: String!
+  createdAt: DateTime!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  questionData: QuestionData!
+  tags: [Tag!]
+  type: String!
+  updatedAt: DateTime
 }
 
 interface QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -361,6 +412,12 @@ type QuestionInstance {
 input ResponseInput {
   choices: [Int!]
   value: String
+}
+
+input Restrictions {
+  max: Float
+  maxLength: Int
+  min: Float
 }
 
 type Session {
@@ -412,6 +469,11 @@ enum SessionStatus {
   SCHEDULED
 }
 
+input SolutionRange {
+  max: Float
+  min: Float
+}
+
 type Subscription {
   feedbackAdded(sessionId: ID!): Feedback
   feedbackCreated(sessionId: ID!): Feedback
@@ -429,6 +491,11 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeys!
+}
+
+type Tag {
+  id: ID!
+  name: String!
 }
 
 type User {

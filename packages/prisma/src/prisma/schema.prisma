@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "interactiveTransactions", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
   output          = "../client"
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
@@ -129,10 +129,12 @@ model Question {
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name         String
-  content      String
-  contentPlain String
-  options      Json
+  name    String
+  content String
+  options Json
+
+  hasSampleSolution  Boolean @default(false)
+  hasAnswerFeedbacks Boolean @default(false)
 
   type QuestionType
 
@@ -148,7 +150,8 @@ model Question {
 }
 
 model Tag {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  name String
 
   questions Question[]
 
@@ -157,6 +160,8 @@ model Tag {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
 }
 
 enum QuestionInstanceType {

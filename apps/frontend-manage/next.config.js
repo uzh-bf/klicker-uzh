@@ -2,6 +2,8 @@
 
 // const { withSentryConfig } = require('@sentry/nextjs')
 
+const withTM = require('next-transpile-modules')(['shared-components'])
+
 const nextConfig = {
   experimental: {
     modularizeImports: {
@@ -73,4 +75,4 @@ const nextConfig = {
 // Make sure adding Sentry options is the last code to run before exporting, to
 // ensure that your source maps include changes from all other Webpack plugins
 // module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-module.exports = nextConfig
+module.exports = withTM(nextConfig)

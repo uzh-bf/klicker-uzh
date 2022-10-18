@@ -3,11 +3,11 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import Image from 'next/future/image'
 import React, { useState } from 'react'
 
-interface QuestionAttachmentProps {
+export interface QuestionAttachmentProps {
   attachment: Attachment
 }
 
-function QuestionAttachment({
+export function QuestionAttachment({
   attachment,
 }: QuestionAttachmentProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false)
