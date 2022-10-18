@@ -1,8 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { GetSingleQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { H3 } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 
+import Markdown from '@klicker-uzh/markdown'
 import { Modal } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS, StudentQuestion } from 'shared-components'
 
@@ -74,6 +75,22 @@ function QuestionPreviewModal({
         inputEmpty={inputEmpty}
         setInputState={setInputState}
       />
+      {/* // TODO: remove this temporary fix to show parsed feedbacks once a unified component for all session types has been created and can be used here */}
+      {dataQuestion?.question?.hasAnswerFeedbacks && (
+        <div className="mt-6 leading-4 prose border-t-4 border-gray-400 border-solid max-w-none">
+          {dataQuestion?.question?.questionData.options.choices.map(
+            (choice: any, index: number) => {
+              console.log(choice)
+              return (
+                <div key={index}>
+                  <H3 className="mt-4">Feedback for Choice {index + 1}</H3>
+                  <Markdown className="mt-2" content={choice.feedback} />
+                </div>
+              )
+            }
+          )}
+        </div>
+      )}
     </Modal>
   )
 }
