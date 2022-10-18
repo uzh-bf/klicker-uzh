@@ -40,7 +40,7 @@ const questionManipulationSchema = Yup.object().shape({
   name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
   tags: Yup.array().of(Yup.string()),
   type: Yup.string()
-    .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM'])
+    .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT'])
     .required(),
   content: Yup.string()
     .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
@@ -65,88 +65,119 @@ const questionManipulationSchema = Yup.object().shape({
         description: Yup.string(),
       })
     )
-    .nullable(true),
+    .nullable(),
 
-  options: Yup.object().when('type', ([type], schema) => {
-    switch (type) {
-      case 'SC':
-      case 'MC':
-      case 'KPRIM': {
-        return schema.shape({
-          // TODO: ensure that there is at least one / exactly one correct answer for MC and SC (KPRIM can also have all wrong answers) - approach based on .when could be promising
-          choices: Yup.array()
+  options: Yup.object().when(
+    ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
+    ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
+      switch (type) {
+        case 'SC':
+        case 'MC':
+        case 'KPRIM': {
+          const baseChoicesSchema = Yup.array()
             .of(
               Yup.object().shape({
                 ix: Yup.number(),
-                value: Yup.string().required(
-                  'Bitte geben Sie einen Wert für die Antwortmöglichkeit ein'
-                ),
+                value: Yup.string().test({
+                  message:
+                    'Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu',
+                  test: (content) =>
+                    !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+                }),
                 correct: Yup.boolean(),
-                feedback: Yup.string(),
+                feedback: hasAnswerFeedbacks
+                  ? Yup.string().test({
+                      message:
+                        'Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu',
+                      test: (content) =>
+                        !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+                    })
+                  : Yup.string(),
               })
             )
-            .test({
+            .min(1)
+
+          if (type === 'KPRIM')
+            return schema.shape({
+              choices: baseChoicesSchema,
+            })
+
+          if (type === 'SC')
+            return schema.shape({
+              choices: baseChoicesSchema.test({
+                message: 'Bei SC-Fragen muss genau eine Antwort korrekt sein.',
+                test: (choices) => {
+                  return (
+                    !hasSampleSolution ||
+                    choices.filter((choice) => choice.correct).length === 1
+                  )
+                },
+              }),
+            })
+
+          return schema.shape({
+            choices: baseChoicesSchema.test({
               message:
-                'Fragen mit Auswahlmöglichkeiten müssen mindestens eine Antwort haben. Bei SC Fragen muss genau eine Antwort korrekt sein. Bei MC Fragen muss mindestens eine Antwort korrekt sein.',
+                'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
               test: (choices) => {
-                return choices ? choices.length > 0 : false
+                return (
+                  !hasSampleSolution ||
+                  choices.filter((choice) => choice.correct).length >= 1
+                )
               },
             }),
-        })
-      }
+          })
+        }
 
-      case 'NUMERICAL': {
-        return schema.shape({
-          // TODO: ensure that min is smaller than max
-          restrictions: Yup.object().shape({
-            min: Yup.number()
-              .nullable(true)
-              .lessThan(Yup.ref('options.restrictions.max')),
-            max: Yup.number()
-              .nullable(true)
-              .moreThan(Yup.ref('options.restrictions.min')),
-          }),
+        case 'NUMERICAL': {
+          const baseSolutionRanges = Yup.array().of(
+            Yup.object().shape({
+              min: Yup.number().nullable(),
+              // TODO: min less than max if defined
+              // .when('max', {
+              //   is: (max) => typeof max !== 'undefined',
+              //   then: (schema) => schema.lessThan(Yup.ref('max')),
+              // }),
+              max: Yup.number().nullable(),
+              // TODO: max more than min if defined
+              // .when('min', {
+              //   is: (min) => typeof min !== 'undefined',
+              //   then: (schema) => schema.moreThan(Yup.ref('min')),
+              // }),
+            })
+          )
 
-          // TODO: fix validation of numerical questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for free text)
-          // TODO: ensure that max is larger than min under consideration that both can be null
-          solutionRanges: Yup.array()
-            .of(
-              Yup.object().shape({
-                min: Yup.number().nullable(true),
-                max: Yup.number().nullable(true),
-              })
-            )
-            .test({
-              message:
-                'Numerische Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-              test: (solutionRanges) => {
-                return solutionRanges ? solutionRanges.length > 0 : false
-              },
+          return schema.shape({
+            restrictions: Yup.object().shape({
+              min: Yup.number().nullable(),
+              // TODO: less than if max defined
+              // .lessThan(Yup.ref('max')),
+              max: Yup.number().nullable(),
+              // TODO: more than if min defined
+              // .moreThan(Yup.ref('min')),
             }),
-        })
-      }
 
-      case 'FREE_TEXT': {
-        return schema.shape({
-          restrictions: {
-            // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-            maxLength: Yup.number().min(1).nullable(true),
-          },
+            solutionRanges: hasSampleSolution
+              ? baseSolutionRanges.min(1)
+              : baseSolutionRanges,
+          })
+        }
 
-          // TODO: fix validation of freetext questions - solution ranges should only be required to be longer than 1 if solutions are activated (same for numerical)
-          solutions: Yup.array()
-            .of(Yup.string())
-            .test({
-              message:
-                'Freitext Fragen mit Lösungsbereich müssen mindestens einen gültigen Lösungsbereich haben.',
-              test: (solutions) => {
-                return solutions ? solutions.length > 0 : false
-              },
+        case 'FREE_TEXT': {
+          const baseSolutions = Yup.array().of(Yup.string().required().min(1))
+
+          return schema.shape({
+            restrictions: Yup.object().shape({
+              // TODO: ensure that this check does not fail if the user enters a number and then deletes it
+              maxLength: Yup.number().min(1).nullable(),
             }),
-        })
+
+            solutions: hasSampleSolution ? baseSolutions.min(1) : baseSolutions,
+          })
+        }
       }
     }
-  }),
+  ),
 })
 
 interface QuestionEditModalProps {
@@ -367,10 +398,8 @@ function QuestionEditModal({
         resetForm,
         setFieldValue,
         setFieldTouched,
+        validateForm,
       }) => {
-        console.log(values)
-        console.error(errors)
-
         if (mode === 'EDIT' && loadingQuestion) {
           return <div></div>
         }
@@ -402,11 +431,12 @@ function QuestionEditModal({
                 className="mt-2 border-uzh-grey-80"
                 onClick={() => handleSetIsOpen(false)}
               >
-                <Button.Label>Close</Button.Label>
+                <Button.Label>Schliessen</Button.Label>
               </Button>
             }
           >
             <div>
+              {JSON.stringify(errors)}
               <div className="z-0 flex flex-row">
                 <Label
                   label="Fragetyp:"
@@ -551,18 +581,20 @@ function QuestionEditModal({
                   <Switch
                     id="solution switch"
                     checked={values.hasSampleSolution || false}
-                    onCheckedChange={(newValue: boolean) =>
+                    onCheckedChange={(newValue: boolean) => {
                       setFieldValue('hasSampleSolution', newValue)
-                    }
+                      validateForm()
+                    }}
                     label="Musterlösung"
                   />
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <Switch
                       id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
-                      onCheckedChange={(newValue: boolean) =>
+                      onCheckedChange={(newValue: boolean) => {
                         setFieldValue('hasAnswerFeedbacks', newValue)
-                      }
+                        validateForm()
+                      }}
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
                       className={twMerge(
@@ -841,8 +873,6 @@ function QuestionEditModal({
                   </div>
                 )}
 
-                {/* // TODO: test this once a free text question was created as well */}
-                {/* // TODO: use field array for the solutions  */}
                 {questionType === 'FREE_TEXT' && (
                   <div className="flex flex-col">
                     <div className="flex flex-row items-center mb-4">
@@ -853,65 +883,50 @@ function QuestionEditModal({
                         className={twMerge(
                           'w-44 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                         )}
-                        value={values.options?.restrictions?.maxLength}
                         placeholder="Antwort Länge"
                         min={0}
                       />
                     </div>
                     {values.hasSampleSolution && (
-                      <div className="flex flex-col gap-1 w-max">
-                        {values.options?.solutions?.map(
-                          (solution: string, index: number) => {
-                            return (
-                              <div
-                                className="flex flex-row items-center gap-2"
-                                key={index}
-                              >
-                                <div className="w-40 font-bold">
-                                  Mögliche Lösung {String(index + 1)}:{' '}
-                                </div>
-                                <FastField
-                                  name={`options.solutions[${index}]`}
-                                  type="text"
-                                  className={twMerge(
-                                    'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
-                                  )}
-                                  value={solution}
-                                  placeholder="Lösung"
-                                />
-                                <Button
-                                  onClick={() => {
-                                    values.options.solutions.splice(index, 1)
-                                    setFieldValue(
-                                      'options.solutions',
-                                      values.options.solutions
-                                    )
-                                  }}
-                                  className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                      <FieldArray name="options.solutions">
+                        {({ push, remove }: FieldArrayRenderProps) => (
+                          <div className="flex flex-col gap-1 w-max">
+                            {values.options.solutions?.map(
+                              (_solution, index) => (
+                                <div
+                                  className="flex flex-row items-center gap-2"
+                                  key={index}
                                 >
-                                  Löschen
-                                </Button>
-                              </div>
-                            )
-                          }
-                        )}
-                        <Button
-                          fluid
-                          className="flex-1 font-bold border border-solid border-uzh-grey-100"
-                          onClick={() => {
-                            if (values.options.solutions) {
-                              setFieldValue(
-                                'values.options.solutions',
-                                values.options.solutions.push('')
+                                  <div className="w-40 font-bold">
+                                    Mögliche Lösung {String(index + 1)}:{' '}
+                                  </div>
+                                  <FastField
+                                    name={`options.solutions.${index}`}
+                                    type="text"
+                                    className={twMerge(
+                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                    )}
+                                    placeholder="Lösung"
+                                  />
+                                  <Button
+                                    onClick={() => remove(index)}
+                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                  >
+                                    Löschen
+                                  </Button>
+                                </div>
                               )
-                            } else {
-                              setFieldValue('options.solutions', [''])
-                            }
-                          }}
-                        >
-                          Neue Lösung hinzufügen
-                        </Button>
-                      </div>
+                            )}
+                            <Button
+                              fluid
+                              className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                              onClick={() => push('')}
+                            >
+                              Neue Lösung hinzufügen
+                            </Button>
+                          </div>
+                        )}
+                      </FieldArray>
                     )}
                   </div>
                 )}
