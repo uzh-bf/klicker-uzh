@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.68...v2.0.0-alpha.69) (2022-10-18)
+
+
+### Bug Fixes
+
+* update build structure for shared-components ([2f37e43](https://github.com/uzh-bf/klicker-uzh/commit/2f37e43363757ff97cc43ab20a7b38379dc375ef))
+
 ## [2.0.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.67...v2.0.0-alpha.68) (2022-10-18)
 
 
