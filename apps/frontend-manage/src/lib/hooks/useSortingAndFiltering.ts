@@ -36,7 +36,9 @@ function reducer(state, action): any {
           ...state,
           filters: {
             ...state.filters,
-            tags: state.filters.tags.filter((tag): boolean => tag !== action.tagName),
+            tags: state.filters.tags.filter(
+              (tag): boolean => tag !== action.tagName
+            ),
           },
         }
       }
@@ -55,7 +57,10 @@ function reducer(state, action): any {
         ...state,
         filters: {
           ...state.filters,
-          archive: typeof action.newValue !== 'undefined' ? action.newValue : !state.filters.archive,
+          archive:
+            typeof action.newValue !== 'undefined'
+              ? action.newValue
+              : !state.filters.archive,
         },
       }
 
@@ -103,8 +108,10 @@ function useSortingAndFiltering(): any {
     handleSearch: (title): void => dispatch({ type: 'SEARCH', title }),
     handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
     handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
-    handleToggleArchive: (newValue): void => dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName, questionType): void => dispatch({ type: 'TAG_CLICK', tagName, questionType }),
+    handleToggleArchive: (newValue): void =>
+      dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
+    handleTagClick: (tagName, questionType): void =>
+      dispatch({ type: 'TAG_CLICK', tagName, questionType }),
   }
 }
 

@@ -13,8 +13,8 @@ module.exports = {
     preflight: false,
   },
   plugins: [
-    require("tailwindcss-radix")({
-      variantPrefix: "rdx",
+    require('tailwindcss-radix')({
+      variantPrefix: 'rdx',
     }),
     require('@tailwindcss/typography'),
     require('@tailwindcss/aspect-ratio'),
