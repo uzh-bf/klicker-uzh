@@ -486,7 +486,15 @@ function QuestionEditModal({
                   />
 
                   {typeof values.content !== 'undefined' && (
-                    <FastField name="content">
+                    <FastField
+                      name="content"
+                      questionType={questionType}
+                      shouldUpdate={(next, prev) =>
+                        next?.formik.values.content !==
+                          prev?.formik.values.content ||
+                        next?.questionType !== prev?.questionType
+                      }
+                    >
                       {({ field, meta }: FastFieldProps) => (
                         <ContentInput
                           autoFocus
@@ -498,6 +506,7 @@ function QuestionEditModal({
                           }
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
+                          key={`${questionType}-content`}
                         />
                       )}
                     </FastField>
@@ -598,6 +607,16 @@ function QuestionEditModal({
                                 {/* // TODO: define maximum height of editor if possible */}
                                 <FastField
                                   name={`options.choices.${index}.value`}
+                                  questionType={questionType}
+                                  shouldUpdate={(next, prev) =>
+                                    next?.formik.values[
+                                      `options.choices.${index}.value`
+                                    ] !==
+                                      prev?.formik.values[
+                                        `options.choices.${index}.value`
+                                      ] ||
+                                    next?.questionType !== prev?.questionType
+                                  }
                                 >
                                   {({ field, meta }: FastFieldProps) => (
                                     <ContentInput
@@ -615,6 +634,7 @@ function QuestionEditModal({
                                       className={{
                                         root: 'bg-white',
                                       }}
+                                      key={`${questionType}-choice-${index}`}
                                     />
                                   )}
                                 </FastField>
@@ -668,6 +688,17 @@ function QuestionEditModal({
                                     </div>
                                     <FastField
                                       name={`options.choices.${index}.feedback`}
+                                      questionType={questionType}
+                                      shouldUpdate={(next, prev) =>
+                                        next?.formik.values[
+                                          `options.choices.${index}.feedback`
+                                        ] !==
+                                          prev?.formik.values[
+                                            `options.choices.${index}.feedback`
+                                          ] ||
+                                        next?.questionType !==
+                                          prev?.questionType
+                                      }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
@@ -690,6 +721,7 @@ function QuestionEditModal({
                                           }}
                                           showToolbarOnFocus={true}
                                           placeholder="Feedback eingeben…"
+                                          key={`${questionType}-feedback-${index}`}
                                         />
                                       )}
                                     </FastField>

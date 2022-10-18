@@ -40,6 +40,7 @@ interface Props {
     toolbar?: string
     content?: string
   }
+  key?: string
 }
 
 const defaultProps = {
@@ -66,6 +67,7 @@ function ContentInput({
   error,
   touched,
   className,
+  key,
 }: Props): React.ReactElement {
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -86,6 +88,7 @@ function ContentInput({
     >
       {/* eslint-disable-next-line react/no-children-prop */}
       <Slate
+        key={key}
         editor={editor}
         value={editorValue}
         onChange={(newValue) => onChange(convertToMd(newValue))}
