@@ -132,7 +132,7 @@ export const AVATAR_LABELS = {
 export const TYPES_LABELS: Record<string, string> = {
   SC: 'Single Choice (SC)',
   MC: 'Multiple Choice (MC)',
-  KPRIM: 'KPRIM',
+  KPRIM: 'KPRIM (KP)',
   NUMERICAL: 'Numerisch (NR)',
   FREE_TEXT: 'Freitext (FT)',
 }
