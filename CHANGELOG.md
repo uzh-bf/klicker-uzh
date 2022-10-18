@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.66...v2.0.0-alpha.67) (2022-10-18)
+
+
+### Bug Fixes
+
+* remove question type import ([3f75d49](https://github.com/uzh-bf/klicker-uzh/commit/3f75d49a80cdf59b891908f247c0c98a0ffd14dd))
+
+
+### Other
+
+* **deploy:** upgrade production environment ([529e372](https://github.com/uzh-bf/klicker-uzh/commit/529e3720254016099668df6e6e2af6eb2c11bc8a))
+* lockfile maintenance ([be74335](https://github.com/uzh-bf/klicker-uzh/commit/be74335638c633d8859b9aa09d4dda5fea54cc2b))
+* **packages/prisma:** update seed commands ([6f4ab09](https://github.com/uzh-bf/klicker-uzh/commit/6f4ab0989bd3d0bf2d49374348074f85d5eebdfa))
+* seed update ([47ebf52](https://github.com/uzh-bf/klicker-uzh/commit/47ebf52c7a6ab21eaa4b3beb5d49137691737c3c))
+* seed update ([21e13b4](https://github.com/uzh-bf/klicker-uzh/commit/21e13b460c10790d5a8187f84b114152916fbaf9))
+* seed update ([420f28d](https://github.com/uzh-bf/klicker-uzh/commit/420f28d7dea17957d79269658ec9be467301605b))
+* seed update ([be0b377](https://github.com/uzh-bf/klicker-uzh/commit/be0b377141298be0e0c7b3b042c4362ec8038fa8))
+* seed update ([4559942](https://github.com/uzh-bf/klicker-uzh/commit/4559942939a990e89e4bffb2c9c2967133b7c855))
+* update seed with test data ([95f7f2a](https://github.com/uzh-bf/klicker-uzh/commit/95f7f2ad4494a19ca1c1421fca31227fdb89856a))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** new group visualization ([0808419](https://github.com/uzh-bf/klicker-uzh/commit/08084198a139782513a91e4430b90fd916e911ea))
+
 ## [2.0.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.65...v2.0.0-alpha.66) (2022-10-09)
 
 
