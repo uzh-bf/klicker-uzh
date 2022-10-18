@@ -26,7 +26,7 @@
     "seed:test": "ENV=development ts-node --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
     "seed:bf1": "ENV=development ts-node --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
     "seed:ami": "ENV=development ts-node --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
-    "seed:prod": "npm-run-all seed:bf1 seed:ami",
+    "seed:prod": "npm-run-all seed:prod:bf1 seed:prod:ami",
     "seed:prod:bf1": "ENV=production ts-node --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
     "seed:prod:ami": "ENV=production ts-node --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
     "size": "size-limit"
