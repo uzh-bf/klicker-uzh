@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.67...v2.0.0-alpha.68) (2022-10-18)
+
+
+### Features
+
+* add question pool and manipulation capabilities ([#2913](https://github.com/uzh-bf/klicker-uzh/issues/2913)) ([6013cd8](https://github.com/uzh-bf/klicker-uzh/commit/6013cd868d120d33e060afcfe636b085c66c0b13))
+
+
+### Other
+
+* **deploy/env-prod:** update production deployment with apha 67 ([cc7b65b](https://github.com/uzh-bf/klicker-uzh/commit/cc7b65b74ca17745faa738183573fdf7dc54a2d6))
+
 ## [2.0.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.66...v2.0.0-alpha.67) (2022-10-18)
 
 
