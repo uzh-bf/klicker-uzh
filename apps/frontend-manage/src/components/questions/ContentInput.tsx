@@ -108,82 +108,49 @@ function ContentInput({
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
               tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              triggerStyle={twMerge(
-                isMarkActive(editor, 'bold') && '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <MarkButton className="" format="bold" icon={faBold} />
+              <MarkButton format="bold" icon={faBold} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
               tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              triggerStyle={twMerge(
-                isMarkActive(editor, 'italic') && '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <MarkButton className="" format="italic" icon={faItalic} />
+              <MarkButton format="italic" icon={faItalic} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
               tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
-              triggerStyle={twMerge(
-                isMarkActive(editor, 'code') && '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <MarkButton className="" format="code" icon={faCode} />
+              <MarkButton format="code" icon={faCode} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
               tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[70%]'}
-              triggerStyle={twMerge(
-                isBlockActive(editor, 'block-quote') &&
-                  '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <BlockButton
-                className=""
-                format="block-quote"
-                icon={faQuoteRight}
-              />
+              <BlockButton format="block-quote" icon={faQuoteRight} />
             </Tooltip>
 
             <Tooltip
               tooltip="Diese Option erzeug eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
               tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
-              triggerStyle={twMerge(
-                isBlockActive(editor, 'numbered-list') &&
-                  '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <BlockButton
-                className=""
-                format="numbered-list"
-                icon={faListOl}
-              />
+              <BlockButton format="numbered-list" icon={faListOl} />
             </Tooltip>
 
             <Tooltip
               tooltip="Diese Option erzeug eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
               tooltipStyle={'text-sm md:text-base max-w-[40%] md:max-w-[50%]'}
-              triggerStyle={twMerge(
-                isBlockActive(editor, 'bulleted-list') &&
-                  '!bg-grey-40 !rounded-md'
-              )}
               withArrow={false}
             >
-              <BlockButton
-                className=""
-                format="bulleted-list"
-                icon={faListUl}
-              />
+              <BlockButton format="bulleted-list" icon={faListUl} />
             </Tooltip>
 
             <Tooltip
@@ -243,8 +210,9 @@ function ContentInput({
             format="paragraph"
             onClick={() => editor.undo()}
             type="button"
+            className="mr-3"
           >
-            <div className="mr-9 mt-0.5">
+            <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateLeft} color="grey" />
             </div>
           </Button>
@@ -254,8 +222,9 @@ function ContentInput({
             format="paragraph"
             onClick={() => editor.redo()}
             type="button"
+            className="mr-0.5"
           >
-            <div className="mt-0.5 mr-4">
+            <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateRight} color="grey" />
             </div>
           </Button>
@@ -381,7 +350,7 @@ const Leaf = ({ attributes, children, leaf }: any) => {
 
   if (leaf.code) {
     formattedChildren = (
-      <code className="bg-grey-40 opacity-80">{formattedChildren}</code>
+      <code className="bg-uzh-grey-40 opacity-80">{formattedChildren}</code>
     )
   }
 
@@ -404,7 +373,7 @@ const BlockButton = ({ format, icon, className }: any) => {
         toggleBlock(editor, format)
       }}
     >
-      <div className={twMerge('ml-1 mt-0.5', className)}>
+      <div className={twMerge('mt-0.5', className)}>
         <FontAwesomeIcon
           icon={icon}
           color={isBlockActive(editor, format) ? 'black' : 'grey'}
@@ -424,7 +393,7 @@ const MarkButton = ({ format, icon, className }: any) => {
         toggleMark(editor, format)
       }}
     >
-      <div className={twMerge('ml-[0.3rem] mt-0.5', className)}>
+      <div className={twMerge('mt-0.5', className)}>
         <FontAwesomeIcon
           icon={icon}
           color={isMarkActive(editor, format) ? 'black' : 'grey'}
@@ -453,9 +422,9 @@ export const Button = React.forwardRef(
       {...props}
       className={twMerge(
         className,
-        'cursor-pointer h-10 flex justify-center items-center w-5 mx-0.5 rounded',
-        active && !reversed && 'bg-grey-40',
-        !active && reversed && 'bg-grey-40'
+        'cursor-pointer h-7 flex justify-center items-center w-7 rounded my-auto',
+        active && !reversed && 'bg-uzh-grey-40',
+        !active && reversed && 'bg-uzh-grey-40'
       )}
       ref={ref}
     />

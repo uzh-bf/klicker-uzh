@@ -54,7 +54,7 @@
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
     "@types/supertest": "^2.0.12",
-    "@uzh-bf/design-system": "0.0.60",
+    "@uzh-bf/design-system": "0.0.61",
     "axios": "0.27.2",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",
