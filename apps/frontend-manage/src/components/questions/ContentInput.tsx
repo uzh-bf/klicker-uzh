@@ -95,7 +95,7 @@ function ContentInput({
       >
         <div
           className={twMerge(
-            'toolbar flex flex-row w-full p-1.5 mr-10 h-10 bg-uzh-grey-20',
+            'toolbar flex flex-row w-full px-1.5 mr-10 h-10 bg-uzh-grey-20',
             showToolbarOnFocus && 'group-focus-within:flex hidden'
           )}
         >
@@ -241,9 +241,10 @@ function ContentInput({
             active={false}
             editor={editor}
             format="paragraph"
-            onMouseDown={() => editor.undo()}
+            onClick={() => editor.undo()}
+            type="button"
           >
-            <div className="ml-1 mt-0.5">
+            <div className="mr-9 mt-0.5">
               <FontAwesomeIcon icon={faRotateLeft} color="grey" />
             </div>
           </Button>
@@ -251,9 +252,10 @@ function ContentInput({
             active={false}
             editor={editor}
             format="paragraph"
-            onMouseDown={() => editor.redo()}
+            onClick={() => editor.redo()}
+            type="button"
           >
-            <div className="ml-1 mt-0.5">
+            <div className="mt-0.5 mr-4">
               <FontAwesomeIcon icon={faRotateRight} color="grey" />
             </div>
           </Button>
@@ -451,7 +453,7 @@ export const Button = React.forwardRef(
       {...props}
       className={twMerge(
         className,
-        'cursor-pointer h-7 w-7 mr-2 rounded',
+        'cursor-pointer h-10 flex justify-center items-center w-5 mx-0.5 rounded',
         active && !reversed && 'bg-grey-40',
         !active && reversed && 'bg-grey-40'
       )}
