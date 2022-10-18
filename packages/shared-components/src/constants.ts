@@ -130,11 +130,11 @@ export const AVATAR_LABELS = {
 }
 
 export const TYPES_LABELS: Record<string, string> = {
+  SC: 'Single Choice (SC)',
+  MC: 'Multiple Choice (MC)',
+  KPRIM: 'KPRIM',
   NUMERICAL: 'Numerisch (NR)',
   FREE_TEXT: 'Freitext (FT)',
-  MC: 'Multiple Choice (MC)',
-  SC: 'Single Choice (SC)',
-  KPRIM: 'KPRIM',
 }
 
 export const TYPES_SHORT: Record<string, string> = {
