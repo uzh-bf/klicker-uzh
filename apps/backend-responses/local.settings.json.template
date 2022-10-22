@@ -1,6 +1,7 @@
 {
   "IsEncrypted": false,
   "Values": {
+    "APP_SECRET": "abcd",
     "NODE_ENV": "development",
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "node",

@@ -1,4 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from '@azure/functions'
+import JWT from 'jsonwebtoken'
 
 import getServiceBus from './sbus'
 
@@ -21,15 +22,27 @@ const httpTrigger: AzureFunction = async function (
     }
   }
 
-  if (!req.body.response) {
+  if (!req.body.response || !req.body.sessionId) {
     return {
       status: 400,
     }
   }
 
+  let messageId = undefined
+  if (req.headers?.cookie) {
+    const token = req.headers.cookie.replace('participant_token=', '')
+    const participantData = JWT.verify(
+      token,
+      process.env.APP_SECRET as string
+    ) as any
+    if (participantData.sub) {
+      messageId = `${participantData.sub}-${req.body.sessionId}`
+    }
+  }
+
   serviceBusSender.sendMessages({
     sessionId: req.body.sessionId,
-    // messageId: req.body.sessionId,
+    messageId,
     body: {
       ...req.body,
       cookie: req.headers?.cookie,
