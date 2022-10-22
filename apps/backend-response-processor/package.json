@@ -1,26 +1,25 @@
 {
   "private": true,
-  "name": "@klicker-uzh/backend-responses",
+  "name": "@klicker-uzh/backend-response-processor",
   "version": "2.0.0-alpha.69",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
-  "module": "dist/backend-responses.esm.js",
+  "module": "dist/backend-response-processor.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "dts build --entry AddResponse/index.ts",
+    "build": "dts build --entry ProcessResponses/index.ts",
     "lint": "dts lint",
     "size": "size-limit",
     "dev": "NODE_ENV=development npm-run-all --parallel dev:dts dev:func",
-    "dev:dts": "dts watch --entry AddResponse/index.ts",
-    "dev:func": "func start -p 7072",
+    "dev:dts": "dts watch --entry ProcessResponses/index.ts",
+    "dev:func": "func start -p 7073",
     "format": "prettier --write .",
     "test": "dts test"
   },
   "dependencies": {
-    "@azure/service-bus": "7.7.2",
     "@klicker-uzh/grading": "^2.0.0-alpha.23",
     "ioredis": "5.2.3",
     "jsonwebtoken": "8.5.1",

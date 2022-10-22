@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build:all": "npm-run-all generate build",
+    "prebuild": "npm run generate",
     "build": "npm-run-all build:ts build:copy",
     "build:ts": "NODE_ENV=production tsup",
     "build:copy": "node src/copy.js",
@@ -61,7 +61,7 @@
     "typescript": "4.8.4"
   },
   "dependencies": {
-    "@prisma/client": "^4.5.0"
+    "@prisma/client": "4.5.0"
   },
   "volta": {
     "extends": "../../package.json"

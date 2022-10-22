@@ -5,17 +5,13 @@
       "cache": false
     },
     "build": {
-      "dependsOn": ["generate", "^build"],
+      "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"]
     },
     "dev": {
       "cache": false,
-      "dependsOn": ["generate", "^build"],
-      "outputs": ["dist/**", ".next/**"]
-    },
-    "generate": {
-      "dependsOn": ["^build"],
-      "outputs": ["src/client/**", "dist/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "dependsOn": ["@klicker-uzh/prisma#build"]
     },
     "publish": {
       "cache": false,
