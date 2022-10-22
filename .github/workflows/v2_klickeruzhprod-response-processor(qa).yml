@@ -1,16 +1,16 @@
-name: Build and deploy backend-responses to Azure Function App (QA)
+name: Build and deploy backend-response-processor to Azure Function App (QA)
 
 on:
   push:
     branches:
       - "v2"
     paths:
-      - "apps/backend-responses/**"
-      - ".github/workflows/v2_klickeruzhprod-responses**"
+      - "apps/backend-response-processor/**"
+      - ".github/workflows/v2_klickeruzhprod-response-processor**"
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-responses' # set this to the path to your web app project, defaults to the repository root
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-response-processor' # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: 'klickeruzhprod-responses'
+          app-name: 'klickeruzhprod-response-processor'
           slot-name: 'qa'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_36EB12B3E64C4803BA587F03A5F2E446 }}
