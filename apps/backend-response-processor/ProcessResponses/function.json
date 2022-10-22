@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "queueName": "dev",
+      "queueName": "%SERVICE_BUS_QUEUE_NAME%",
       "connection": "SERVICE_BUS_CONNECTION_STRING",
       "name": "queueItem",
       "type": "serviceBusTrigger",
