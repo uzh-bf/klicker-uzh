@@ -1,9 +1,14 @@
-name: Build and deploy backend-response-processor to Azure Function App (Production)
+name: Build and deploy backend-response-processor to Azure Function App (QA)
 
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    branches:
+      - "v2"
+    paths:
+      - "apps/backend-response-processor/**"
+      - ".github/workflows/v2_klickeruzhprod-response-processor**"
   workflow_dispatch:
+
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-response-processor' # set this to the path to your web app project, defaults to the repository root
@@ -37,6 +42,6 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-response-processor'
-          slot-name: 'Production'
+          slot-name: 'qa'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_34D9A98CDB984797838066ADF096A6FE }}
