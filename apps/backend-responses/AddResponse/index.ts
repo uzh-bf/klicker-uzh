@@ -137,13 +137,6 @@ const httpTrigger: AzureFunction = async function (
           }
         }
 
-        console.warn(
-          participantData.sub,
-          pointsAwarded,
-          pointsPercentage,
-          responseTiming
-        )
-
         redisMulti.hset(
           `${instanceKey}:responses`,
           participantData.sub,
@@ -277,6 +270,13 @@ const httpTrigger: AzureFunction = async function (
     await redisMulti.exec()
   } catch (e) {
     console.error(e)
+  }
+
+  // TODO: parsing and validation before pushing to service bus
+  // TODO: processing etc. should be extracted to a second service
+
+  context.bindings.outputSbQueue = {
+    sessionId: req.body.sessionId,
   }
 
   return {

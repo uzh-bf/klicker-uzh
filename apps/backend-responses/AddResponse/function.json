@@ -12,6 +12,13 @@
       "type": "http",
       "direction": "out",
       "name": "$return"
+    },
+    {
+      "name": "outputSbQueue",
+      "type": "serviceBus",
+      "queueName": "dev",
+      "connection": "ServiceBusConnectionString",
+      "direction": "out"
     }
   ],
   "scriptFile": "../dist/index.js"

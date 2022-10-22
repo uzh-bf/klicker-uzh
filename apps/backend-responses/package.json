@@ -20,6 +20,7 @@
     "test": "dts test"
   },
   "dependencies": {
+    "@azure/service-bus": "7.7.2",
     "@klicker-uzh/grading": "^2.0.0-alpha.23",
     "ioredis": "5.2.3",
     "jsonwebtoken": "8.5.1",

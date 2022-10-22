@@ -8,7 +8,8 @@
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
     "APP_SECRET": "abcd",
     "REDIS_HOST": "localhost",
-    "REDIS_PORT": 6379
+    "REDIS_PORT": 6379,
+    "ServiceBusConnectionString": ""
   },
   "Host": {
     "CORS": "http://127.0.0.1:3001",
