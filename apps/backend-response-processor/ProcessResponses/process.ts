@@ -22,13 +22,13 @@ const serviceBusTrigger: AzureFunction = async function (
   context: Context,
   queueItem
 ) {
-  context.log(
-    'Node.js ServiceBus queue trigger function processed message',
-    queueItem
-  )
-  context.log('EnqueuedTimeUtc =', context.bindingData.enqueuedTimeUtc)
-  context.log('DeliveryCount =', context.bindingData.deliveryCount)
-  context.log('MessageId =', context.bindingData.messageId)
+  // context.log(
+  //   'Node.js ServiceBus queue trigger function processed message',
+  //   queueItem
+  // )
+  // context.log('EnqueuedTimeUtc =', context.bindingData.enqueuedTimeUtc)
+  // context.log('DeliveryCount =', context.bindingData.deliveryCount)
+  // context.log('MessageId =', context.bindingData.messageId)
 
   const sessionKey = `s:${queueItem.sessionId}`
   const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
@@ -42,15 +42,14 @@ const serviceBusTrigger: AzureFunction = async function (
   if (queueItem.cookie) {
     const token = queueItem.cookie.replace('participant_token=', '')
     participantData = JWT.verify(token, process.env.APP_SECRET as string) as any
-    // TODO: verify that this works with deduplication in the service bus
     // if the participant has already responded to the question instance, return instantly
-    // if (
-    //   participantData &&
-    //   (await redisExec.hexists(`${instanceKey}:responses`, participantData.sub))
-    // ) {
-    //   // TODO: return some other status to display something on the frontend?
-    //   return { status: 200 }
-    // }
+    if (
+      participantData &&
+      (await redisExec.hexists(`${instanceKey}:responses`, participantData.sub))
+    ) {
+      // TODO: return some other status to display something on the frontend?
+      return { status: 200 }
+    }
   }
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
   // if the instance metadata is not available, it has been closed and purged already
