@@ -1,64 +1,93 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
-import Image from 'next/image'
+import Image from 'next/future/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
   participant?: Participant
   title?: string
   courseName?: string
+  courseColor?: string | null
 }
 
-const defaultProps = { title: undefined }
+const defaultProps = {
+  title: undefined,
+  courseColor: undefined,
+}
 
 function Header({
   participant,
   title,
   courseName,
+  courseColor,
 }: HeaderProps): React.ReactElement {
+  const router = useRouter()
+
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-2 text-white bg-slate-800">
+    <div
+      style={{ borderColor: courseColor || undefined }}
+      className={twMerge(
+        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800 border-b-8',
+        !courseColor && 'border-uzh-red-60'
+      )}
+    >
       {title && courseName && (
         <div>
-          <H1 className="mt-1 text-sm font-normal text-uzh-grey-60">
-            {courseName}
-          </H1>
-          <H2 className="mb-0 text-base">{title}</H2>
+          <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>
+          <H2 className="m-0 text-base">{title}</H2>
         </div>
       )}
-      {title && !courseName && <H1 className="text-lg">{title}</H1>}
+
+      {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
+
       <div className="flex flex-row items-center gap-4">
-        <Link href="/">
-          <Button className="hidden text-white bg-slate-800 md:block">
-            Home
-          </Button>
-        </Link>
+        {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
-          <Link href="/profile">
-            <Image
-              src={
-                `https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/${participant.avatar}_small.webp` ||
-                '/placeholder.png'
-              }
-              alt="logo"
-              width="50"
-              height="50"
-              className="bg-white rounded-full "
-            />
-          </Link>
+          router.pathname !== '/' &&
+          (pageInFrame ? (
+            <Button
+              className="hidden text-white bg-slate-800 md:block"
+              onClick={() => router.back()}
+            >
+              Zurück
+            </Button>
+          ) : (
+            <Link href="/">
+              <Button className="hidden text-white bg-slate-800 md:block">
+                Home
+              </Button>
+            </Link>
+          ))
         ) : (
           <Link href="/login">
-            <a className="">
-              <Image
-                src={'/placeholder.png'}
-                alt="logo"
-                width="45"
-                height="45"
-              />
-            </a>
+            <Button className="text-white bg-slate-800">Login</Button>
           </Link>
         )}
+        {participant && !participant?.avatar && (
+          <Link href="/editProfile">
+            <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
+              Profil einrichten
+            </Button>
+          </Link>
+        )}
+        <Link href={participant ? '/profile' : '/login'} className="">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              participant?.avatar ?? 'placeholder'
+            }.svg`}
+            alt=""
+            width="45"
+            height="45"
+            className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
+          />
+        </Link>
       </div>
     </div>
   )

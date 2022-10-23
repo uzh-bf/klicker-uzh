@@ -1,0 +1,3 @@
+subscription FeedbackRemoved($sessionId: ID!) {
+  feedbackRemoved(sessionId: $sessionId)
+}

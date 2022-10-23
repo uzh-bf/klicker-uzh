@@ -3,7 +3,11 @@ import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context, ContextWithOptionalUser } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -43,7 +47,7 @@ export async function loginUser(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '1w',
+      expiresIn: '2w',
     }
   )
 
@@ -51,29 +55,25 @@ export async function loginUser(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   return user.id
 }
 
-export async function logoutUser({ userId }: { userId: string }, ctx: Context) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: userId },
-  })
-
-  if (!user) return null
-
+export async function logoutUser(_, ctx: ContextWithUser) {
   ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
-  return user.id
+  return ctx.user.sub
 }
 
 export async function getUserProfile(
@@ -97,7 +97,7 @@ export function createParticipantToken(participantId: string) {
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '1w',
+      expiresIn: '2w',
     }
   )
 }
@@ -133,28 +133,24 @@ export async function loginParticipant(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 6,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
 }
 
-export async function logoutParticipant({ id }: { id: string }, ctx: Context) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id: id },
-  })
-
-  if (!participant) return null
-
+export async function logoutParticipant(_, ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
     maxAge: 0,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
   })
 
-  return participant.id
+  return ctx.user.sub
 }

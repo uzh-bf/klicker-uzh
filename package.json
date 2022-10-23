@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "2.0.0-alpha.23",
+  "version": "2.0.0-alpha.69",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -35,7 +35,7 @@
     "build": "turbo run build",
     "publish": "turbo run publish",
     "format": "turbo run format",
-    "release": "standard-version --no-verify",
+    "release": "standard-version --dry-run",
     "release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
@@ -46,11 +46,15 @@
   },
   "devDependencies": {
     "standard-version": "9.5.0",
-    "turbo": "1.4.6",
+    "turbo": "1.6.1",
     "yaml": "2.1.1"
   },
+  "dependencies": {
+    "@prisma/client": "4.5.0",
+    "prisma": "4.5.0"
+  },
   "volta": {
-    "node": "18.8.0"
+    "node": "18.11.0"
   },
   "packageManager": "npm@8.15.0",
   "engines": {

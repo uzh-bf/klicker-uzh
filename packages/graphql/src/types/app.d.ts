@@ -3,7 +3,6 @@ interface QuestionData<Type, Options> {
   name: string
   type: Type
   content: string
-  contentPlain: string
   ownerId: string
   isDeleted: boolean
   isArchived: boolean
@@ -21,7 +20,7 @@ interface Choice {
 }
 
 type ChoicesQuestionData = QuestionData<
-  QuestionType.SC | QuestionType.MC,
+  QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
   {
     choices: Choice[]
   }

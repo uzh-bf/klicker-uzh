@@ -3,21 +3,63 @@ import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import Image from 'next/image'
-import Router from 'next/router'
-import { useState } from 'react'
+import Image from 'next/future/image'
+import { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import ErrorNotification from '../components/ErrorNotification'
+import UserNotification from '../components/UserNotification'
 
 const loginSchema = Yup.object().shape({
   username: Yup.string().required('Enter your username'),
   password: Yup.string().required('Enter your password'),
 })
 
+interface BeforeInstallPromptEventReturn {
+  userChoice: string
+  platform: string
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<BeforeInstallPromptEventReturn>
+}
+
 function LoginForm() {
+  const router = useRouter()
+
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
+  const [oniOS, setOniOS] = useState(false)
+  const [onChrome, setOnChrome] = useState(false)
+  const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
+
+  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window?.location?.search)
+    const redirectTo = urlParams?.get('redirect_to')
+    if (redirectTo) {
+      setDecodedRedirectPath(decodeURIComponent(redirectTo))
+    }
+  }, [])
+
+  useEffect(() => {
+    // Check if event is supported
+    if ('onbeforeinstallprompt' in window) {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault()
+        deferredPrompt.current = e as BeforeInstallPromptEvent
+        setOnChrome(true)
+      })
+    } else {
+      // We assume users are on iOS (for now)
+      setOniOS(true)
+    }
+  }, [])
+
+  const onInstallClick = async () => {
+    deferredPrompt.current!.prompt()
+  }
 
   const onSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setError('')
@@ -32,7 +74,9 @@ function LoginForm() {
         resetForm()
       } else {
         console.log('Login successful!', userID)
-        Router.push('/')
+
+        // redirect to the specified redirect path (default: question pool)
+        router.push(decodedRedirectPath)
       }
     } catch (e) {
       console.error(e)
@@ -43,6 +87,7 @@ function LoginForm() {
       resetForm()
     }
   }
+
   return (
     <div className="relative flex flex-col items-center justify-center w-screen h-screen pb-20">
       <Formik
@@ -105,7 +150,12 @@ function LoginForm() {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  {error && <ErrorNotification message={error} />}
+                  {error && (
+                    <UserNotification
+                      notificationType="error"
+                      message={error}
+                    />
+                  )}
                   <div className="flex justify-center mt-7">
                     <Button
                       type="submit"
@@ -115,6 +165,27 @@ function LoginForm() {
                       <Button.Label>Anmelden</Button.Label>
                     </Button>
                   </div>
+                  {onChrome && (
+                    <div className="flex flex-col justify-center md:hidden mt-7">
+                      <UserNotification
+                        notificationType="info"
+                        message="Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind."
+                      >
+                        <Button
+                          className="mt-2 w-fit border-uzh-grey-80"
+                          onClick={onInstallClick}
+                        >
+                          <Button.Label>Jetzt installieren</Button.Label>
+                        </Button>
+                      </UserNotification>
+                    </div>
+                  )}
+                  {oniOS && (
+                    <UserNotification
+                      notificationType="info"
+                      message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+                    />
+                  )}
                 </Form>
               </div>
             </div>

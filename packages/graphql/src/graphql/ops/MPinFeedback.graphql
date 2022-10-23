@@ -1,0 +1,10 @@
+mutation PinFeedback($id: Int!, $isPinned: Boolean!) {
+  pinFeedback(id: $id, isPinned: $isPinned) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+  }
+}

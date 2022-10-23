@@ -18,6 +18,7 @@ query GetUserSessions {
       }
     }
     course {
+      id
       name
       displayName
     }

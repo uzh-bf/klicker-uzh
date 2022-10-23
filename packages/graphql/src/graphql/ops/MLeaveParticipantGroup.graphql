@@ -1,0 +1,11 @@
+mutation LeaveParticipantGroup($groupId: ID!, $courseId: ID!) {
+  leaveParticipantGroup(groupId: $groupId, courseId: $courseId) {
+    id
+    name
+    code
+    participants {
+      id
+      username
+    }
+  }
+}

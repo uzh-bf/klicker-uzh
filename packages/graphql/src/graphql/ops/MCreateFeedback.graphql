@@ -1,13 +1,5 @@
-mutation CreateFeedback(
-  $sessionId: ID!
-  $content: String!
-  $isPublished: Boolean!
-) {
-  createFeedback(
-    sessionId: $sessionId
-    content: $content
-    isPublished: $isPublished
-  ) {
+mutation CreateFeedback($sessionId: ID!, $content: String!) {
+  createFeedback(sessionId: $sessionId, content: $content) {
     id
     isPublished
     isPinned

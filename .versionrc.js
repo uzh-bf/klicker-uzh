@@ -8,7 +8,9 @@ module.exports = {
   bumpFiles: [
     '',
     'docs/',
+    'apps/backend-docker/',
     'apps/backend-responses/',
+    'apps/backend-response-processor/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
     'apps/frontend-manage/',
@@ -18,6 +20,7 @@ module.exports = {
     'packages/lti/',
     'packages/prisma/',
     'packages/markdown/',
+    'packages/shared-components',
   ].reduce(
     (acc, path) => {
       return acc.concat({
@@ -29,6 +32,10 @@ module.exports = {
       {
         filename: `package-lock.json`,
         type: 'json',
+      },
+      {
+        filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+        updater: 'util/yaml-updater.js',
       },
     ]
   ),

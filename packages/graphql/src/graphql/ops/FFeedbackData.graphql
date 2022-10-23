@@ -1,0 +1,16 @@
+fragment FeedbackData on Feedback {
+  id
+  isPublished
+  isPinned
+  isResolved
+  content
+  votes
+  resolvedAt
+  createdAt
+  responses {
+    id
+    content
+    positiveReactions
+    negativeReactions
+  }
+}

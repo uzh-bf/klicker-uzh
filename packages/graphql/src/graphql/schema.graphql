@@ -7,13 +7,24 @@ enum AccessMode {
   RESTRICTED
 }
 
+type AggregatedConfusionFeedbacks {
+  difficulty: Float!
+  numberOfParticipants: Int!
+  speed: Float!
+  timestamp: DateTime
+}
+
 type Attachment {
   description: String
   href: String!
-  id: String!
+  id: ID!
   name: String!
   originalName: String
   type: AttachmentType!
+}
+
+input AttachmentInput {
+  id: String!
 }
 
 enum AttachmentType {
@@ -25,6 +36,18 @@ enum AttachmentType {
   WEBP
 }
 
+input AvatarSettingsInput {
+  accessory: String!
+  clothing: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
@@ -34,13 +57,22 @@ input BlockInput {
 type Choice {
   correct: Boolean
   feedback: String
+  id: ID!
+  ix: Int!
+  value: String!
+}
+
+input ChoiceInput {
+  correct: Boolean
+  feedback: String
   ix: Int!
   value: String!
 }
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -67,6 +99,7 @@ type Course {
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  participantGroups: [ParticipantGroup]!
   sessions: [Session!]!
 }
 
@@ -90,14 +123,17 @@ type Feedback {
 
 type FeedbackResponse {
   content: String!
+  createdAt: DateTime!
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
+  resolvedAt: DateTime
 }
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -115,9 +151,31 @@ type FreeTextRestrictions {
   maxLength: Int
 }
 
+type GroupLeaderboardEntry {
+  id: ID!
+  isMember: Boolean
+  name: String!
+  rank: Int!
+  score: Float!
+}
+
 type InstanceEvaluation {
   choices: JSONObject!
   feedbacks: [QuestionFeedback!]
+  newPointsFrom: DateTime
+  percentile: Float
+  pointsAwarded: Float
+  score: Float!
+}
+
+type InstanceResults {
+  blockIx: Int!
+  id: ID!
+  instanceIx: Int!
+  participants: Int!
+  questionData: QuestionData!
+  results: JSONObject!
+  status: SessionBlockStatus!
 }
 
 """
@@ -128,8 +186,16 @@ scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publicati
 type LeaderboardEntry {
   avatar: String
   id: ID!
+  isSelf: Boolean
+  participantId: ID!
+  rank: Int!
   score: Float!
   username: String!
+}
+
+type LeaderboardStatistics {
+  averageScore: Float!
+  participantCount: Int!
 }
 
 type LearningElement {
@@ -147,6 +213,8 @@ type MicroSession {
   id: ID!
   instances: [QuestionInstance!]!
   name: String!
+  scheduledEndAt: DateTime!
+  scheduledStartAt: DateTime!
 }
 
 type Mutation {
@@ -154,27 +222,44 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
-  createFeedback(content: String!, isPublished: Boolean!, sessionId: ID!): Feedback
+  createFeedback(content: String!, sessionId: ID!): Feedback
+  createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
-  joinCourse(courseId: ID!): Participation
-  leaveCourse(courseId: ID!): Participation
+  deleteFeedback(id: Int!): Feedback
+  deleteFeedbackResponse(id: Int!): Feedback
+  deleteQuestion(id: Int): Question
+  endSession(id: ID!): Session
+  joinCourse(courseId: ID!): ParticipantLearningData
+  joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
+  leaveCourse(courseId: ID!): ParticipantLearningData
+  leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
-  logoutParticipant(id: ID!): ID
-  logoutUser(userId: ID!): ID
+  logoutParticipant: ID
+  logoutUser: ID
+  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
+  markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
+  pinFeedback(id: Int!, isPinned: Boolean!): Feedback
+  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
-  resolveFeedback(id: Int!, newValue: Boolean!): Feedback
+  resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: ID!): Session
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
+  updateGroupAverageScores: Boolean
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -198,44 +283,111 @@ type NumericalSolutionRange {
   min: Float
 }
 
+input OptionsChoicesInput {
+  choices: [ChoiceInput]!
+}
+
+input OptionsFreeTextInput {
+  restrictions: Restrictions
+  solutions: [String]
+}
+
+input OptionsNumericalInput {
+  restrictions: Restrictions
+  solutionRanges: [SolutionRange]
+}
+
 type Participant {
-  avatar: String!
+  avatar: String
+  avatarSettings: JSONObject
   id: ID!
+  participantGroups: [ParticipantGroup]!
   username: String!
+}
+
+type ParticipantGroup {
+  averageMemberScore: Float!
+  code: Int!
+  groupActivityScore: Float!
+  id: ID!
+  name: String!
+  participants: [LeaderboardEntry!]!
+  score: Float!
 }
 
 type ParticipantLearningData {
   course: Course!
+  groupLeaderboard: [GroupLeaderboardEntry!]
+  groupLeaderboardStatistics: LeaderboardStatistics!
   id: ID!
-  participant: Participant!
-  participantToken: String!
-  participation: Participation!
+  leaderboard: [LeaderboardEntry!]
+  leaderboardStatistics: LeaderboardStatistics!
+  participant: Participant
+  participantToken: String
+  participation: Participation
 }
 
 type Participation {
-  course: Course!
+  completedMicroSessions: [String]
+  course: Course
   id: Int!
   isActive: Boolean!
-  points: Int!
+  subscriptions: [PublicSubscriptionData!]
+}
+
+type PublicSubscriptionData {
+  endpoint: String!
+  id: Int!
+}
+
+type PushSubscription {
+  auth: String!
+  endpoint: String!
+  expirationTime: Int
+  id: Int!
+  p256dh: String!
 }
 
 type Query {
+  cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
-  participations: [Participation!]
+  participantGroups(courseId: ID!): [ParticipantGroup!]
+  participations(endpoint: String): [Participation!]
+  pinnedFeedbacks(id: ID!): Session
+  question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: ID!): Session
+  sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   userProfile: User
+  userQuestions: [Question!]
   userSessions: [Session!]
+}
+
+type Question {
+  attachments: [Attachment!]
+  content: String!
+  createdAt: DateTime!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  questionData: QuestionData!
+  tags: [Tag!]
+  type: String!
+  updatedAt: DateTime
 }
 
 interface QuestionData {
   content: String!
-  contentPlain: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -251,7 +403,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [Attachment]!
+  attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
   questionData: QuestionData!
@@ -262,21 +414,30 @@ input ResponseInput {
   value: String
 }
 
+input Restrictions {
+  max: Float
+  maxLength: Int
+  min: Float
+}
+
 type Session {
   accessMode: AccessMode!
   activeBlock: SessionBlock
-  blocks: [SessionBlock!]!
-  confusionFeedbacks: [ConfusionTimestep]
+  blocks: [SessionBlock!]
+  confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
   createdAt: DateTime!
   displayName: String!
   feedbacks: [Feedback]
+  finishedAt: DateTime
   id: ID!
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
+  linkTo: String
   name: String!
   namespace: String!
+  startedAt: DateTime
   status: SessionStatus!
 }
 
@@ -296,11 +457,45 @@ enum SessionBlockStatus {
   SCHEDULED
 }
 
+type SessionEvaluation {
+  id: ID!
+  instanceResults: [InstanceResults!]
+}
+
 enum SessionStatus {
   COMPLETED
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+input SolutionRange {
+  max: Float
+  min: Float
+}
+
+type Subscription {
+  feedbackAdded(sessionId: ID!): Feedback
+  feedbackCreated(sessionId: ID!): Feedback
+  feedbackRemoved(sessionId: ID!): Int
+  feedbackUpdated(sessionId: ID!): Feedback
+  runningSessionUpdated(sessionId: ID!): SessionBlock
+}
+
+input SubscriptionKeys {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeys!
+}
+
+type Tag {
+  id: ID!
+  name: String!
 }
 
 type User {

@@ -1,6 +1,14 @@
 @import 'tailwindcss/src/css/preflight.css';
+@import '@uzh-bf/design-system/dist/fonts-thesans.css';
 @import '@uzh-bf/design-system/dist/index.esm.css';
+@import 'shared-components/src/tailwind.css';
 
 @tailwind base;
+
 @tailwind components;
+
 @tailwind utilities;
+
+.desert-bg {
+  background-image: url('/desert.svg');
+}

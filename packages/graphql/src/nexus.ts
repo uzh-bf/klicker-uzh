@@ -1,3 +1,4 @@
+import { filter, pipe } from '@graphql-yoga/node'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
@@ -13,6 +14,7 @@ import {
   nonNull,
   objectType,
   stringArg,
+  subscriptionType,
 } from 'nexus'
 import {
   Context,
@@ -21,13 +23,31 @@ import {
 } from './lib/context'
 import * as AccountService from './services/accounts'
 import * as FeedbackService from './services/feedbacks'
+import * as ParticipantGroupService from './services/groups'
 import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
+import * as NotificationService from './services/notifications'
 import * as ParticipantService from './services/participants'
+import * as QuestionService from './services/questions'
 import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
+
+export const AvatarSettingsInput = inputObjectType({
+  name: 'AvatarSettingsInput',
+  definition(t) {
+    t.nonNull.string('skinTone')
+    t.nonNull.string('eyes')
+    t.nonNull.string('mouth')
+    t.nonNull.string('hair')
+    t.nonNull.string('accessory')
+    t.nonNull.string('hairColor')
+    t.nonNull.string('clothing')
+    t.nonNull.string('clothingColor')
+    t.nonNull.string('facialHair')
+  },
+})
 
 export const BlockInput = inputObjectType({
   name: 'BlockInput',
@@ -35,6 +55,25 @@ export const BlockInput = inputObjectType({
     t.nonNull.list.nonNull.int('questionIds')
     t.int('randomSelection')
     t.int('timeLimit')
+  },
+})
+
+export const SubscriptionKeysInput = inputObjectType({
+  name: 'SubscriptionKeys',
+  definition(t) {
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
+  },
+})
+
+export const SubscriptionObjectInput = inputObjectType({
+  name: 'SubscriptionObjectInput',
+  definition(t) {
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.field('keys', {
+      type: SubscriptionKeysInput,
+    })
   },
 })
 
@@ -46,6 +85,65 @@ export const ResponseInput = inputObjectType({
   },
 })
 
+export const Restrictions = inputObjectType({
+  name: 'Restrictions',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+    t.int('maxLength')
+  },
+})
+
+export const ChoiceInput = inputObjectType({
+  name: 'ChoiceInput',
+  definition(t) {
+    t.nonNull.int('ix')
+    t.boolean('correct')
+    t.nonNull.string('value')
+    t.string('feedback')
+  },
+})
+
+export const SolutionRange = inputObjectType({
+  name: 'SolutionRange',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+  },
+})
+
+export const OptionsChoicesInput = inputObjectType({
+  name: 'OptionsChoicesInput',
+  definition(t) {
+    t.nonNull.list.field('choices', {
+      type: ChoiceInput,
+    })
+  },
+})
+
+export const OptionsNumericalInput = inputObjectType({
+  name: 'OptionsNumericalInput',
+  definition(t) {
+    t.field('restrictions', { type: Restrictions })
+    t.list.field('solutionRanges', { type: SolutionRange })
+  },
+})
+
+export const OptionsFreeTextInput = inputObjectType({
+  name: 'OptionsFreeTextInput',
+  definition(t) {
+    t.field('restrictions', { type: Restrictions })
+    t.list.string('solutions')
+  },
+})
+
+export const AttachmentInput = inputObjectType({
+  name: 'AttachmentInput',
+  definition(t) {
+    t.nonNull.string('id')
+  },
+})
+
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -54,7 +152,9 @@ export const QuestionData = interfaceType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
-    t.nonNull.string('contentPlain')
+
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
@@ -75,9 +175,18 @@ export const QuestionData = interfaceType({
   },
 })
 
+export const Tag = objectType({
+  name: 'Tag',
+  definition(t) {
+    t.nonNull.id('id')
+    t.nonNull.string('name')
+  },
+})
+
 export const Choice = objectType({
   name: 'Choice',
   definition(t) {
+    t.nonNull.id('id')
     t.nonNull.int('ix')
     t.nonNull.string('value')
     t.boolean('correct')
@@ -172,6 +281,33 @@ export const FreeTextQuestionData = objectType({
   },
 })
 
+export const Question = objectType({
+  name: 'Question',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
+
+    t.nonNull.field('questionData', {
+      type: QuestionData,
+    })
+
+    t.nonNull.date('createdAt')
+    t.date('updatedAt')
+
+    t.list.nonNull.field('attachments', { type: Attachment })
+    t.list.nonNull.field('tags', { type: Tag })
+  },
+})
+
 export const QuestionFeedback = objectType({
   name: 'QuestionFeedback',
   definition(t) {
@@ -191,6 +327,10 @@ export const InstanceEvaluation = objectType({
     t.nonNull.field('choices', {
       type: 'JSONObject',
     })
+    t.nonNull.float('score')
+    t.float('pointsAwarded')
+    t.float('percentile')
+    t.date('newPointsFrom')
   },
 })
 
@@ -202,7 +342,7 @@ export const AttachmentType = enumType({
 export const Attachment = objectType({
   name: 'Attachment',
   definition(t) {
-    t.nonNull.string('id')
+    t.nonNull.id('id')
 
     t.nonNull.string('href')
     t.nonNull.string('name')
@@ -227,7 +367,7 @@ export const QuestionInstance = objectType({
       type: InstanceEvaluation,
     })
 
-    t.nonNull.list.field('attachments', { type: Attachment })
+    t.list.field('attachments', { type: Attachment })
   },
 })
 
@@ -251,6 +391,8 @@ export const Course = objectType({
     t.nonNull.list.nonNull.field('sessions', {
       type: Session,
     })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
   },
 })
 
@@ -281,6 +423,9 @@ export const MicroSession = objectType({
     t.nonNull.string('displayName')
     t.string('description')
 
+    t.nonNull.date('scheduledStartAt')
+    t.nonNull.date('scheduledEndAt')
+
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
@@ -310,8 +455,40 @@ export const Participant = objectType({
   definition(t) {
     t.nonNull.id('id')
 
-    t.nonNull.string('avatar')
     t.nonNull.string('username')
+    t.string('avatar')
+    t.field('avatarSettings', {
+      type: 'JSONObject',
+    })
+
+    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
+  },
+})
+
+export const ParticipantGroup = objectType({
+  name: 'ParticipantGroup',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.int('code')
+
+    t.nonNull.float('groupActivityScore')
+    t.nonNull.float('averageMemberScore')
+    t.nonNull.float('score')
+
+    t.nonNull.list.nonNull.field('participants', {
+      type: LeaderboardEntry,
+    })
+  },
+})
+
+export const PublicSubscriptionData = objectType({
+  name: 'PublicSubscriptionData',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('endpoint')
   },
 })
 
@@ -321,11 +498,51 @@ export const Participation = objectType({
     t.nonNull.int('id')
 
     t.nonNull.boolean('isActive')
-    t.nonNull.int('points')
 
-    t.nonNull.field('course', {
+    t.field('course', {
       type: Course,
     })
+    t.list.nonNull.field('subscriptions', {
+      type: PublicSubscriptionData,
+    })
+    t.list.string('completedMicroSessions')
+  },
+})
+
+export const LeaderboardEntry = objectType({
+  name: 'LeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+    t.nonNull.id('participantId')
+
+    t.nonNull.string('username')
+    t.string('avatar')
+
+    t.nonNull.float('score')
+    t.nonNull.int('rank')
+
+    t.boolean('isSelf')
+  },
+})
+
+export const GroupLeaderboardEntry = objectType({
+  name: 'GroupLeaderboardEntry',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.float('score')
+    t.nonNull.int('rank')
+    t.boolean('isMember')
+  },
+})
+
+export const LeaderboardStatistics = objectType({
+  name: 'LeaderboardStatistics',
+  definition(t) {
+    t.nonNull.int('participantCount')
+    t.nonNull.float('averageScore')
+    // TODO: add histogram bins
   },
 })
 
@@ -334,31 +551,35 @@ export const ParticipantLearningData = objectType({
   definition(t) {
     t.nonNull.id('id')
 
-    t.nonNull.string('participantToken')
+    t.string('participantToken')
 
-    t.nonNull.field('participant', {
+    t.field('participant', {
       type: Participant,
     })
 
-    t.nonNull.field('participation', {
+    t.field('participation', {
       type: Participation,
     })
 
     t.nonNull.field('course', {
       type: Course,
     })
-  },
-})
 
-export const LeaderboardEntry = objectType({
-  name: 'LeaderboardEntry',
-  definition(t) {
-    t.nonNull.id('id')
+    t.list.nonNull.field('leaderboard', {
+      type: LeaderboardEntry,
+    })
 
-    t.nonNull.string('username')
-    t.string('avatar')
+    t.nonNull.field('leaderboardStatistics', {
+      type: LeaderboardStatistics,
+    })
 
-    t.nonNull.float('score')
+    t.list.nonNull.field('groupLeaderboard', {
+      type: GroupLeaderboardEntry,
+    })
+
+    t.nonNull.field('groupLeaderboardStatistics', {
+      type: LeaderboardStatistics,
+    })
   },
 })
 
@@ -392,6 +613,9 @@ export const FeedbackResponse = objectType({
 
     t.nonNull.int('positiveReactions')
     t.nonNull.int('negativeReactions')
+
+    t.date('resolvedAt')
+    t.nonNull.date('createdAt')
   },
 })
 
@@ -404,6 +628,18 @@ export const ConfusionTimestep = objectType({
     t.nonNull.int('speed')
 
     t.nonNull.date('createdAt')
+  },
+})
+
+export const AggregatedConfusionFeedbacks = objectType({
+  name: 'AggregatedConfusionFeedbacks',
+  definition(t) {
+    t.nonNull.float('difficulty')
+    t.nonNull.float('speed')
+
+    t.nonNull.int('numberOfParticipants')
+
+    t.date('timestamp')
   },
 })
 
@@ -453,6 +689,7 @@ export const Session = objectType({
     t.nonNull.string('namespace')
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('linkTo')
 
     t.nonNull.field('status', {
       type: SessionStatus,
@@ -461,7 +698,8 @@ export const Session = objectType({
     t.field('activeBlock', {
       type: SessionBlock,
     })
-    t.nonNull.list.nonNull.field('blocks', {
+
+    t.list.nonNull.field('blocks', {
       type: SessionBlock,
     })
 
@@ -469,11 +707,59 @@ export const Session = objectType({
 
     t.list.field('feedbacks', { type: Feedback })
 
-    t.list.field('confusionFeedbacks', { type: ConfusionTimestep })
+    t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+    t.date('startedAt')
+    t.date('finishedAt')
+  },
+})
+
+export const InstanceResults = objectType({
+  name: 'InstanceResults',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.int('blockIx')
+    t.nonNull.int('instanceIx')
+
+    t.nonNull.field('status', {
+      type: SessionBlockStatus,
+    })
+
+    t.nonNull.field('questionData', {
+      type: QuestionData,
+    })
+
+    t.nonNull.int('participants')
+
+    t.nonNull.field('results', {
+      type: 'JSONObject',
+    })
+  },
+})
+
+export const SessionEvaluation = objectType({
+  name: 'SessionEvaluation',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.list.nonNull.field('instanceResults', {
+      type: InstanceResults,
+    })
+  },
+})
+
+export const PushSubscription = objectType({
+  name: 'PushSubscription',
+  definition(t) {
+    t.nonNull.int('id')
+    t.nonNull.string('endpoint')
+    t.int('expirationTime')
+    t.nonNull.string('p256dh')
+    t.nonNull.string('auth')
   },
 })
 
@@ -529,8 +815,21 @@ export const Query = objectType({
 
     t.list.nonNull.field('participations', {
       type: Participation,
+      args: {
+        endpoint: stringArg(),
+      },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.getParticipations(args, ctx)
+      },
+    })
+
+    t.list.nonNull.field('participantGroups', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.getParticipantGroups(args, ctx)
       },
     })
 
@@ -541,6 +840,36 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.getRunningSession(args, ctx)
+      },
+    })
+
+    t.field('sessionEvaluation', {
+      type: SessionEvaluation,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getSessionEvaluation(args, ctx)
+      },
+    })
+
+    t.field('cockpitSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getCockpitSession(args, ctx)
+      },
+    })
+
+    t.field('pinnedFeedbacks', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getPinnedFeedbacks(args, ctx)
       },
     })
 
@@ -580,12 +909,44 @@ export const Query = objectType({
         return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
       },
     })
+
+    t.list.nonNull.field('userQuestions', {
+      type: Question,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return QuestionService.getUserQuestions({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
+    t.field('question', {
+      type: Question,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.getSingleQuestion(args, ctx)
+      },
+    })
   },
 })
 
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('updateParticipantProfile', {
+      type: Participant,
+      args: {
+        password: stringArg(),
+        username: stringArg(),
+        avatar: stringArg(),
+        avatarSettings: arg({
+          type: AvatarSettingsInput,
+        }),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
+      },
+    })
+
     t.field('loginUser', {
       type: 'ID',
       args: {
@@ -610,20 +971,14 @@ export const Mutation = objectType({
 
     t.field('logoutUser', {
       type: 'ID',
-      args: {
-        userId: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutUser(args, ctx)
       },
     })
 
     t.field('logoutParticipant', {
       type: 'ID',
-      args: {
-        id: nonNull(idArg()),
-      },
-      resolve(_, args, ctx: Context) {
+      resolve(_, args, ctx: ContextWithUser) {
         return AccountService.logoutParticipant(args, ctx)
       },
     })
@@ -640,7 +995,7 @@ export const Mutation = objectType({
     })
 
     t.field('joinCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },
@@ -650,7 +1005,7 @@ export const Mutation = objectType({
     })
 
     t.field('leaveCourse', {
-      type: Participation,
+      type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },
@@ -687,7 +1042,6 @@ export const Mutation = objectType({
       args: {
         sessionId: nonNull(idArg()),
         content: nonNull(stringArg()),
-        isPublished: nonNull(booleanArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.createFeedback(args, ctx)
@@ -698,9 +1052,9 @@ export const Mutation = objectType({
       type: Feedback,
       args: {
         id: nonNull(intArg()),
-        newValue: nonNull(booleanArg()),
+        isResolved: nonNull(booleanArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.resolveFeedback(args, ctx)
       },
     })
@@ -711,8 +1065,28 @@ export const Mutation = objectType({
         id: nonNull(intArg()),
         responseContent: nonNull(stringArg()),
       },
-      resolve(_, args, ctx: ContextWithOptionalUser) {
+      resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.respondToFeedback(args, ctx)
+      },
+    })
+
+    t.field('deleteFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedback(args, ctx)
+      },
+    })
+
+    t.field('deleteFeedbackResponse', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.deleteFeedbackResponse(args, ctx)
       },
     })
 
@@ -741,6 +1115,28 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return FeedbackService.addConfusionTimestep(args, ctx)
+      },
+    })
+
+    t.field('publishFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPublished: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.publishFeedback(args, ctx)
+      },
+    })
+
+    t.field('pinFeedback', {
+      type: Feedback,
+      args: {
+        id: nonNull(intArg()),
+        isPinned: nonNull(booleanArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return FeedbackService.pinFeedback(args, ctx)
       },
     })
 
@@ -785,6 +1181,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('endSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.endSession(args, ctx)
+      },
+    })
+
     t.field('changeSessionSettings', {
       type: Session,
       args: {
@@ -818,6 +1224,199 @@ export const Mutation = objectType({
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.deactivateSessionBlock(args, ctx)
       },
+    })
+
+    t.field('subscribeToPush', {
+      type: Participation,
+      args: {
+        subscriptionObject: nonNull(SubscriptionObjectInput),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return NotificationService.subscribeToPush(args, ctx)
+      },
+    })
+
+    t.field('markMicroSessionCompleted', {
+      type: Participation,
+      args: {
+        courseId: nonNull(idArg()),
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.markMicroSessionCompleted(args, ctx)
+      },
+    })
+
+    t.field('manipulateChoicesQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsChoicesInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateNUMERICALQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsNumericalInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateFREETEXTQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsFreeTextInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('deleteQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.deleteQuestion(args, ctx)
+      },
+    })
+
+    t.field('createParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+        name: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.createParticipantGroup(args, ctx)
+      },
+    })
+
+    t.field('joinParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        courseId: nonNull(idArg()),
+        code: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.joinParticipantGroup(args, ctx)
+      },
+    })
+
+    t.field('leaveParticipantGroup', {
+      type: ParticipantGroup,
+      args: {
+        groupId: nonNull(idArg()),
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+      },
+    })
+
+    t.boolean('updateGroupAverageScores', {
+      resolve(_, _args, ctx: Context) {
+        return ParticipantGroupService.updateGroupAverageScores(ctx)
+      },
+    })
+  },
+})
+
+export const Subscription = subscriptionType({
+  definition(t) {
+    t.field('runningSessionUpdated', {
+      type: SessionBlock,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('runningSessionUpdated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload.block,
+    })
+
+    t.field('feedbackCreated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackCreated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
+
+    t.field('feedbackAdded', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackAdded'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
+    })
+
+    t.int('feedbackRemoved', {
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackRemoved'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload.id,
+    })
+
+    t.field('feedbackUpdated', {
+      type: Feedback,
+      args: {
+        sessionId: nonNull(idArg()),
+      },
+      subscribe: (_, args, ctx) =>
+        pipe(
+          ctx.pubSub.subscribe('feedbackUpdated'),
+          filter((data) => data.sessionId === args.sessionId)
+        ),
+      resolve: (payload) => payload,
     })
   },
 })

@@ -1,0 +1,15 @@
+mutation SubscribeToPush(
+  $courseId: ID!
+  $subscriptionObject: SubscriptionObjectInput!
+) {
+  subscribeToPush(
+    courseId: $courseId
+    subscriptionObject: $subscriptionObject
+  ) {
+    id
+    subscriptions {
+      id
+      endpoint
+    }
+  }
+}

@@ -1,0 +1,88 @@
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
+
+frontendPWA:
+  priorityClassName: staging-workload
+
+  hostname: pwa.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: pwa.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-pwa-tls
+        hosts:
+          - pwa.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+frontendManage:
+  priorityClassName: staging-workload
+
+  hostname: manage.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: manage.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-manage-tls
+        hosts:
+          - manage.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+backendGraphql:
+  priorityClassName: staging-workload
+
+  hostname: backend-sls.klicker-qa.bf-app.ch
+
+  ingress:
+    hosts:
+      - host: backend-sls.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-backend-graphql-tls
+        hosts:
+          - backend-sls.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+redis:
+  architecture: standalone
+  auth:
+    enabled: false

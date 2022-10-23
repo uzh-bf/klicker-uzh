@@ -1,0 +1,10 @@
+mutation ResolveFeedback($id: Int!, $isResolved: Boolean!) {
+  resolveFeedback(id: $id, isResolved: $isResolved) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+  }
+}

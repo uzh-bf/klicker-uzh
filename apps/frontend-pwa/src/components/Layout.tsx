@@ -11,6 +11,7 @@ interface LayoutProps {
   children: React.ReactNode
   displayName?: string
   courseName?: string
+  courseColor?: string | null
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -26,6 +27,7 @@ interface LayoutProps {
 const defaultProps = {
   displayName: 'KlickerUZH',
   courseName: undefined,
+  courseColor: undefined,
   mobileMenuItems: undefined,
   className: '',
   pageNotFound: false,
@@ -35,6 +37,7 @@ function Layout({
   children,
   displayName,
   courseName,
+  courseColor,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -49,32 +52,31 @@ function Layout({
   return (
     <div className="flex flex-col w-full h-full">
       <Head>
-        <title>{`Live Session - ${displayName}`}</title>
+        <title>{`${courseName} - ${displayName}`}</title>
         <meta
           name="description"
-          content={`Live Session - ${displayName}`}
+          content={`${courseName} - ${displayName}`}
           charSet="utf-8"
         ></meta>
       </Head>
 
-      <div className={twMerge('pt-16 pb-16 md:h-screen', className)}>
+      <div className={twMerge('pt-16 pb-16 md:pb-0', className)}>
         <div className="fixed top-0 z-10 w-full">
           <Header
             participant={dataParticipant?.self || undefined}
             title={displayName}
             courseName={courseName}
+            courseColor={courseColor}
           />
         </div>
 
-        <div className="flex flex-col max-w-6xl p-4 md:self-center md:m-auto">
-          {children}
-        </div>
+        <div className="flex flex-col p-4">{children}</div>
 
         <div className="fixed bottom-0 w-full h-14 md:hidden">
           <MobileMenuBar
             menuItems={mobileMenuItems}
             onClick={setActiveMobilePage}
-            participantMissing={!dataParticipant}
+            participantMissing={!dataParticipant?.self}
           />
         </div>
       </div>

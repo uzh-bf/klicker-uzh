@@ -1,11 +1,13 @@
 'use strict'
 
 self.addEventListener('push', function (event) {
-  const data = JSON.parse(event.data.text())
+  console.log(event)
+  const data = event.data.json()
   event.waitUntil(
     registration.showNotification(data.title, {
       body: data.message,
       icon: '/manifest-icon-192.maskable.png',
+      requireInteraction: true,
     })
   )
 })
@@ -28,4 +30,17 @@ self.addEventListener('notificationclick', function (event) {
         return clients.openWindow('/')
       })
   )
+})
+
+// Activate a new service worker immediately when available in order to update the app to the newest version
+self.addEventListener('install', async () => {
+  self.skipWaiting()
+})
+
+// Reload each open page to make sure the new service worker is in charge
+self.addEventListener('activate', async () => {
+  const tabs = await self.clients.matchAll({ type: 'window' })
+  tabs.forEach((tab) => {
+    tab.navigate(tab.url)
+  })
 })

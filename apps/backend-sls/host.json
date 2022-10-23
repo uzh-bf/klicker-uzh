@@ -2,6 +2,9 @@
   "version": "2.0",
   "watchDirectories": ["dist"],
   "logging": {
+    "console": {
+      "isEnabled": true
+    },
     "fileLoggingMode": "always",
     "logLevel": {
       "default": "Information",

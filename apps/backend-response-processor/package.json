@@ -1,0 +1,50 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/backend-response-processor",
+  "version": "2.0.0-alpha.69",
+  "license": "AGPL-3.0",
+  "main": "dist/ProcessResponses/index.js",
+  "typings": "dist/ProcessResponses/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "NODE_ENV=production tsup",
+    "dev": "NODE_ENV=development npm-run-all --parallel dev:ts dev:func",
+    "dev:ts": "NODE_ENV=development tsup --watch",
+    "dev:func": "func start -p 7073",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@klicker-uzh/grading": "^2.0.0-alpha.23",
+    "ioredis": "5.2.3",
+    "jsonwebtoken": "8.5.1",
+    "md5": "2.3.0",
+    "ramda": "0.28.0"
+  },
+  "devDependencies": {
+    "@azure/functions": "3.2.0",
+    "@tsconfig/node18": "1.0.1",
+    "@tsconfig/recommended": "1.0.1",
+    "@types/jsonwebtoken": "^8.5.9",
+    "@types/md5": "2.3.2",
+    "@types/node": "^18.0.0",
+    "@types/ramda": "^0.28.15",
+    "@uzh-bf/design-system": "0.0.61",
+    "dotenv": "16.0.2",
+    "husky": "8.0.1",
+    "npm-run-all": "4.1.5",
+    "prettier": "2.7.1",
+    "prettier-plugin-organize-imports": "3.1.1",
+    "ts-node": "10.9.1",
+    "tslib": "2.4.0",
+    "tsup": "6.2.3",
+    "typescript": "4.8.4"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "engines": {
+    "node": "=18"
+  }
+}

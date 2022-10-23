@@ -1,0 +1,18 @@
+mutation ChangeSessionSettings(
+  $id: ID!
+  $isAudienceInteractionActive: Boolean
+  $isModerationEnabled: Boolean
+  $isGamificationEnabled: Boolean
+) {
+  changeSessionSettings(
+    id: $id
+    isAudienceInteractionActive: $isAudienceInteractionActive
+    isModerationEnabled: $isModerationEnabled
+    isGamificationEnabled: $isGamificationEnabled
+  ) {
+    id
+    isAudienceInteractionActive
+    isModerationEnabled
+    isGamificationEnabled
+  }
+}

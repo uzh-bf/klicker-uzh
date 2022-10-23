@@ -1,70 +1,147 @@
 import {
   ApolloClient,
+  ApolloLink,
   from,
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
+  split,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
-import { concatPagination } from '@apollo/client/utilities'
+import { RetryLink } from '@apollo/client/link/retry'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import merge from 'deepmerge'
+import { getOperationAST } from 'graphql'
+import { createClient } from 'graphql-ws'
+import { GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config'
+import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
 
+interface PageProps {
+  __APOLLO_STATE__: NormalizedCacheObject
+  props?: Record<string, any>
+}
+
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
-let apolloClient: any
+let apolloClient: ApolloClient<NormalizedCacheObject>
 
-const { publicRuntimeConfig } = getConfig()
+function createIsomorphLink() {
+  const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
-const errorLink = onError(({ graphQLErrors, networkError }) => {
-  if (graphQLErrors)
-    graphQLErrors.forEach(
-      ({ message, locations, path, extensions, originalError }) =>
-        console.log(
-          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
-            locations,
-            false,
-            null,
-            true
-          )}, Path: ${path}, Extensions: ${util.inspect(
-            extensions,
-            false,
-            null,
-            true
-          )}, Original: ${originalError}`
-        )
+  const isBrowser = typeof window !== 'undefined'
+
+  const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (graphQLErrors)
+      graphQLErrors.forEach(
+        ({ message, locations, path, extensions, originalError }) => {
+          console.log(
+            `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+              locations,
+              false,
+              null,
+              true
+            )}, Path: ${path}, Extensions: ${util.inspect(
+              extensions,
+              false,
+              null,
+              true
+            )}, Original: ${originalError}`
+          )
+
+          // redirect the user to the login page on errors
+          if (isBrowser && message === 'Unauthorized!') {
+            Router.push(
+              `/login?expired=true&redirect_to=${
+                encodeURIComponent(
+                  window?.location?.pathname + (window?.location?.search ?? '')
+                ) ?? '/'
+              }`
+            )
+          }
+        }
+      )
+    if (networkError) console.log(`[Network error]`, networkError)
+  })
+
+  let link: ApolloLink = new HttpLink({
+    uri: isBrowser
+      ? publicRuntimeConfig.API_URL
+      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+    credentials: 'include',
+  })
+
+  if (isBrowser) {
+    const retryLink = new RetryLink({
+      delay: {
+        initial: 1000,
+        max: Infinity,
+        jitter: true,
+      },
+      attempts: {
+        max: 3,
+      },
+    })
+
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: publicRuntimeConfig.API_URL.replace('http://', 'ws://').replace(
+          'https://',
+          'wss://'
+        ),
+        // connectionParams: () => {
+        //   // Note: getSession() is a placeholder function created by you
+        //   const session = getSession();
+        //   if (!session) {
+        //     return {};
+        //   }
+        //   return {
+        //     Authorization: `Bearer ${session.token}`,
+        //   };
+        // },
+      })
     )
-  if (networkError) console.log(`[Network error]: ${networkError}`)
-})
 
-const httpLink = new HttpLink({
-  uri: publicRuntimeConfig.API_URL,
-  credentials: 'include',
-})
+    link = split(
+      ({ query, operationName }) => {
+        const definition = getOperationAST(query, operationName)
+        return (
+          definition?.kind === 'OperationDefinition' &&
+          definition.operation === 'subscription'
+        )
+      },
+      wsLink,
+      link
+    )
 
-function createApolloClient() {
+    return from([retryLink, errorLink, link])
+  }
+
+  return from([errorLink, link])
+}
+
+// TODO: use the schema link when working on the server?
+function createApolloClient(ctx?: GetServerSidePropsContext) {
+  // const yogaLink = new YogaLink({
+  //   endpoint: publicRuntimeConfig.API_URL,
+  //   credentials: true
+  // })
+
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link: from([errorLink, httpLink]),
-    cache: new InMemoryCache({
-      typePolicies: {
-        Query: {
-          fields: {
-            allPosts: concatPagination(),
-          },
-        },
-      },
-    }),
+    link: createIsomorphLink(),
+    cache: new InMemoryCache(),
   })
 }
 
 export function initializeApollo(
-  initialState = null
+  initialState: NormalizedCacheObject,
+  ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
-  const _apolloClient = apolloClient ?? createApolloClient()
+  const _apolloClient = apolloClient ?? createApolloClient(ctx)
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
   // gets hydrated here
@@ -94,7 +171,10 @@ export function initializeApollo(
   return _apolloClient
 }
 
-export function addApolloState(client: any, pageProps: any) {
+export function addApolloState(
+  client: ApolloClient<NormalizedCacheObject>,
+  pageProps: PageProps
+) {
   if (pageProps?.props) {
     pageProps.props[APOLLO_STATE_PROP_NAME] = client.cache.extract()
   }
@@ -102,7 +182,7 @@ export function addApolloState(client: any, pageProps: any) {
   return pageProps
 }
 
-export function useApollo(pageProps: any) {
+export function useApollo(pageProps: PageProps) {
   const state = pageProps[APOLLO_STATE_PROP_NAME]
   const store = useMemo(() => initializeApollo(state), [state])
   return store

@@ -1,13 +1,15 @@
-import Head from 'next/head'
+import Layout from '@components/Layout'
+import UserNotification from '@components/UserNotification'
 
 const fallback = () => (
-  <>
-    <Head>
-      <title>Klicker UZH PWA</title>
-    </Head>
-    <h1>It seems that you are currently offline.</h1>
-    <h2>Connect your device to the internet in order to use Klicker UZH.</h2>
-  </>
+  <Layout>
+    <div className="flex items-center justify-center align-middle">
+      <UserNotification
+        notificationType="info"
+        message="Sie scheinen im Moment offline zu sein. Verbinden Sie Ihr Gerät mit dem Internet, um die KlickerUZH App nutzen zu können."
+      ></UserNotification>
+    </div>
+  </Layout>
 )
 
 export default fallback

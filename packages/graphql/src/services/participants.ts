@@ -1,6 +1,7 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
+import * as R from 'ramda'
 import {
   Context,
   ContextWithOptionalUser,
@@ -16,21 +17,83 @@ export async function getParticipantProfile(
   { id }: GetParticipantProfileArgs,
   ctx: ContextWithOptionalUser
 ) {
+  if (!ctx.user?.sub) return null
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
-    select: { id: true, avatar: true, username: true },
+    select: { id: true, avatar: true, avatarSettings: true, username: true },
   })
 
   return participant
 }
 
-export async function getParticipations(_: any, ctx: ContextWithUser) {
+interface UpdateParticipantProfileArgs {
+  password?: string
+  username?: string
+  avatar?: string
+  avatarSettings?: any
+}
+
+export async function updateParticipantProfile(
+  { password, username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
+  ctx: ContextWithUser
+) {
+  if (typeof username === 'string') {
+    if (username.length < 5 || username.length > 10) {
+      return null
+    }
+  }
+
+  if (typeof password === 'string') {
+    if (password.length >= 8) {
+      const hashedPassword = await bcrypt.hash(password, 12)
+      return ctx.prisma.participant.update({
+        where: { id: ctx.user.sub },
+        data: { password: hashedPassword, username, avatar, avatarSettings },
+        select: {
+          id: true,
+          avatar: true,
+          avatarSettings: true,
+          username: true,
+        },
+      })
+    } else {
+      // TODO: return error
+    }
+  }
+
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: { username, avatar, avatarSettings },
+    select: {
+      id: true,
+      avatar: true,
+      avatarSettings: true,
+      username: true,
+    },
+  })
+
+  return participant
+}
+
+interface GetParticipationsArgs {
+  endpoint?: string
+}
+
+export async function getParticipations(
+  { endpoint }: GetParticipationsArgs,
+  ctx: ContextWithUser
+) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: { isActive: true },
         include: {
+          subscriptions: endpoint
+            ? {
+                where: { endpoint },
+              }
+            : undefined,
           course: {
             include: {
               microSessions: {
@@ -45,6 +108,8 @@ export async function getParticipations(_: any, ctx: ContextWithUser) {
                 select: {
                   id: true,
                   displayName: true,
+                  scheduledStartAt: true,
+                  scheduledEndAt: true,
                 },
               },
               sessions: {
@@ -52,6 +117,7 @@ export async function getParticipations(_: any, ctx: ContextWithUser) {
                 select: {
                   id: true,
                   displayName: true,
+                  linkTo: true,
                 },
               },
             },
@@ -63,7 +129,10 @@ export async function getParticipations(_: any, ctx: ContextWithUser) {
 
   if (!participant) return []
 
-  return participant.participations
+  return R.sort(
+    R.ascend(R.prop('course.displayName')),
+    participant.participations
+  )
 }
 
 interface JoinCourseArgs {
@@ -74,7 +143,7 @@ export async function joinCourse(
   { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.participation.upsert({
+  const participation = ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
         courseId,
@@ -98,6 +167,11 @@ export async function joinCourse(
       isActive: true,
     },
   })
+
+  return {
+    id: `${courseId}-${ctx.user.sub}`,
+    participation,
+  }
 }
 
 interface LeaveCourseArgs {
@@ -108,7 +182,7 @@ export async function leaveCourse(
   { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.participation.update({
+  const participation = ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
@@ -119,6 +193,11 @@ export async function leaveCourse(
       isActive: false,
     },
   })
+
+  return {
+    id: `${courseId}-${ctx.user.sub}`,
+    participation,
+  }
 }
 
 interface GetCourseOverviewDataArgs {
@@ -138,17 +217,110 @@ export async function getCourseOverviewData(
         },
       },
       include: {
-        course: true,
+        course: {
+          include: {
+            participantGroups: true,
+          },
+        },
+        participant: true,
+        courseLeaderboard: true,
+      },
+    })
+
+    const course = ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    const lbEntries = await course.leaderboard({
+      where: {
+        participation: { isActive: true },
+      },
+      include: {
         participant: true,
       },
     })
 
     if (participation) {
+      const allEntries = lbEntries.reduce(
+        (acc, entry) => {
+          return {
+            mapped: [
+              ...acc.mapped,
+              {
+                id: entry.id,
+                score: entry.score,
+                username: entry.participant.username,
+                avatar: entry.participant.avatar,
+                participantId: entry.participant.id,
+                isSelf: ctx.user?.sub === entry.participant.id,
+              },
+            ],
+            sum: acc.sum + entry.score ?? 0,
+            count: acc.count + 1,
+          }
+        },
+        {
+          mapped: [],
+          sum: 0,
+          count: 0,
+        }
+      )
+
+      const allGroupEntries = participation.course.participantGroups.reduce(
+        (acc, group, ix) => {
+          return {
+            mapped: [
+              ...acc.mapped,
+              {
+                ...group,
+                score: group.averageMemberScore + group.groupActivityScore,
+                rank: ix + 1,
+              },
+            ],
+            count: acc.count + 1,
+            sum: acc.sum + group.averageMemberScore + group.groupActivityScore,
+          }
+        },
+        {
+          mapped: [],
+          count: 0,
+          sum: 0,
+        }
+      )
+
+      const sortByScoreAndUsername = R.curry(R.sortWith)([
+        R.descend(R.prop('score')),
+        R.ascend(R.prop('username')),
+      ])
+
+      const sortedEntries = sortByScoreAndUsername(allEntries.mapped)
+      const sortedGroupEntries = sortByScoreAndUsername(allGroupEntries.mapped)
+
+      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+        if (ix < 10 || entry.participantId === ctx.user?.sub)
+          return { ...entry, rank: ix + 1 }
+        return []
+      })
+
       return {
         id: `${courseId}-${participation.participant.id}`,
         course: participation.course,
         participant: participation.participant,
         participation,
+        leaderboard: filteredEntries,
+        leaderboardStatistics: {
+          participantCount: allEntries.count,
+          averageScore:
+            allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
+        },
+        groupLeaderboard: sortedGroupEntries,
+        groupLeaderboardStatistics: {
+          participantCount: allGroupEntries.count,
+          averageScore:
+            allGroupEntries.count > 0
+              ? allGroupEntries.sum / allGroupEntries.count
+              : 0,
+        },
       }
     }
   }
@@ -171,6 +343,7 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
+    leaderboard: [],
   }
 }
 
@@ -183,31 +356,32 @@ export async function registerParticipantFromLTI(
   { courseId, participantId }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
-  const course = await ctx.prisma.course.findUnique({ where: { id: courseId } })
+  console.log('args', courseId, participantId)
 
-  if (!course) return null
+  if (!courseId) return null
 
-  let participant = await ctx.prisma.participantAccount.findFirst({
-    where: {
-      ssoType: SSOType.LTI,
-      ssoId: participantId,
-    },
-    include: {
-      participant: true,
-    },
-  })
+  try {
+    let participant = await ctx.prisma.participantAccount.findUnique({
+      where: {
+        ssoType_ssoId: {
+          ssoType: SSOType.LTI,
+          ssoId: participantId,
+        },
+      },
+      include: {
+        participant: true,
+      },
+    })
 
-  let participation = null
+    console.log('participant', participant)
 
-  // if there is no participant matching the SSO id from LTI
-  // create a new participant and participant account
-  if (!participant) {
-    let username
-    let password
-    if (process.env.NODE_ENV === 'development') {
-      username = 'tester'
-      password = 'abcd'
-    } else {
+    let participation = null
+
+    // if there is no participant matching the SSO id from LTI
+    // create a new participant and participant account
+    if (!participant) {
+      let username
+      let password
       // generate a random username that can be changed later on
       username = generatePassword.generate({
         length: 8,
@@ -222,41 +396,77 @@ export async function registerParticipantFromLTI(
         symbols: true,
         numbers: true,
       })
-    }
 
-    const hash = await bcrypt.hash(password, 12)
+      console.log('login', username, password)
 
-    participant = await ctx.prisma.participantAccount.create({
-      data: {
-        ssoType: SSOType.LTI,
-        ssoId: participantId,
-        participant: {
-          create: {
-            password: hash,
-            username,
+      const hash = await bcrypt.hash(password, 12)
+
+      participant = await ctx.prisma.participantAccount.create({
+        data: {
+          ssoType: SSOType.LTI,
+          ssoId: participantId,
+          participant: {
+            create: {
+              password: hash,
+              username,
+              participations: {
+                create: {
+                  isActive: false,
+                  course: {
+                    connect: { id: courseId },
+                  },
+                },
+              },
+            },
           },
         },
-      },
-      include: {
-        participant: true,
-      },
-    })
-  } else {
-    participation = await ctx.prisma.participation.findFirst({
-      where: {
-        courseId,
-        participantId: participant.participantId,
-      },
-    })
-  }
+        include: {
+          participant: true,
+        },
+      })
 
-  const jwt = createParticipantToken(participant.participant.id)
+      console.log('new participant', participant)
+    } else {
+      participation = await ctx.prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: participant.participantId,
+          },
+        },
+        create: {
+          isActive: false,
+          course: {
+            connect: {
+              id: courseId,
+            },
+          },
+          participant: {
+            connect: {
+              id: participant.participantId,
+            },
+          },
+        },
+        update: {},
+        include: {
+          participant: true,
+        },
+      })
 
-  return {
-    id: `${courseId}-${participant.participant.id}`,
-    participantToken: jwt,
-    participant: participant.participant,
-    participation,
-    course,
+      console.log('new participation', participation)
+    }
+
+    const jwt = createParticipantToken(participant.participant.id)
+
+    return {
+      id: `${courseId}-${participant.participant.id}`,
+      participantToken: jwt,
+      participant: participant.participant ?? participation?.participant,
+      participation,
+      course: null,
+    }
+  } catch (e) {
+    console.error(e)
+    return null
   }
 }

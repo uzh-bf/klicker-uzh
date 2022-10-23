@@ -27,9 +27,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
     {
       name: 'Logout',
       onClick: async () => {
-        const userIdLogout = await logoutUser({
-          variables: { userId: user.id },
-        })
+        const userIdLogout = await logoutUser()
         userIdLogout.data?.logoutUser
           ? router.push('https://www.klicker.uzh.ch')
           : console.log('Logout failed')
@@ -42,7 +40,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-1 font-bold text-white bg-slate-800">
+    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-1 font-bold text-white bg-slate-800 print:hidden">
       <div>
         <Button
           className="mr-2 border-none bg-slate-800"
@@ -83,10 +81,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 data?.runningSessions.map((session) => (
                   <div
                     className="flex flex-col w-full h-8 px-4 text-black rounded-md cursor-pointer hover:bg-uzh-blue-40 hover:text-uzh-blue-100"
-                    key={session.name}
+                    key={session.id}
                   >
                     <a
-                      onClick={() => router.push(`/running/${session.id}`)}
+                      onClick={() =>
+                        router.push(`sessions/${session.id}/cockpit`)
+                      }
                       className="my-auto text-center"
                     >
                       {session.name}

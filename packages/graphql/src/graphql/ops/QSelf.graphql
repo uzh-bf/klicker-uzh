@@ -3,5 +3,6 @@ query Self {
     id
     username
     avatar
+    avatarSettings
   }
 }

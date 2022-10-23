@@ -1,8 +1,8 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "interactiveTransactions", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
   output          = "../client"
-  binaryTargets   = ["native", "windows", "debian-openssl-1.1.x"]
+  binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
 
 generator erd {
@@ -129,10 +129,12 @@ model Question {
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name         String
-  content      String
-  contentPlain String
-  options      Json
+  name    String
+  content String
+  options Json
+
+  hasSampleSolution  Boolean @default(false)
+  hasAnswerFeedbacks Boolean @default(false)
 
   type QuestionType
 
@@ -148,7 +150,8 @@ model Question {
 }
 
 model Tag {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  name String
 
   questions Question[]
 
@@ -157,15 +160,28 @@ model Tag {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+}
+
+enum QuestionInstanceType {
+  UNSET
+  SESSION
+  MICRO_SESSION
+  LEARNING_ELEMENT
 }
 
 model QuestionInstance {
   id Int @id @default(autoincrement())
 
-  questionData Json
-  participants Int                @default(0)
-  results      Json
-  responses    QuestionResponse[]
+  type  QuestionInstanceType?
+  order Int?
+
+  questionData    Json
+  participants    Int                      @default(0)
+  results         Json
+  responses       QuestionResponse[]
+  detailResponses QuestionResponseDetail[]
 
   sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId    Int?
@@ -183,6 +199,10 @@ model QuestionInstance {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([type, sessionBlockId, order])
+  @@unique([type, learningElementId, order])
+  @@unique([type, microSessionId, order])
 }
 
 // ----- INTERACTIONS -----
@@ -207,8 +227,9 @@ model Course {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
-  participations Participation[]
-  subscriptions  PushSubscription[]
+  participations    Participation[]
+  subscriptions     PushSubscription[]
+  participantGroups ParticipantGroup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -225,20 +246,23 @@ model LeaderboardEntry {
 
   type LeaderboardType
 
-  avatar   String?
-  username String
-  score    Float
+  score Float
 
-  participant   Participant @relation(fields: [participantId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id])
+  participation Participation?
+
+  sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
+  sessionParticipationId Int?
+
+  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId Int?
 
-  session   Session? @relation(fields: [sessionId], references: [id])
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?  @db.Uuid
 
-  course   Course? @relation(fields: [courseId], references: [id])
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 
   @@unique([type, participantId, sessionBlockId])
@@ -255,6 +279,7 @@ enum SessionBlockStatus {
 model SessionBlock {
   id Int @id @default(autoincrement())
 
+  order  Int?
   status SessionBlockStatus @default(SCHEDULED)
 
   expiresAt       DateTime?
@@ -273,6 +298,8 @@ model SessionBlock {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, order])
 }
 
 enum SessionStatus {
@@ -300,6 +327,7 @@ model Session {
   displayName String
   startedAt   DateTime?
   finishedAt  DateTime?
+  linkTo      String?
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus @default(PREPARED)
@@ -409,9 +437,6 @@ model ConfusionTimestep {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String  @db.Uuid
 
-  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String?      @db.Uuid
-
   createdAt DateTime @default(now())
 }
 
@@ -434,20 +459,44 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  username    String    @unique
-  password    String
-  avatar      String    @default("placeholder.png")
+  username       String  @unique
+  password       String
+  avatar         String?
+  avatarSettings Json?
+
   lastLoginAt DateTime?
 
-  accounts           ParticipantAccount[]
-  participations     Participation[]
-  questionResponses  QuestionResponse[]
-  feedbacks          Feedback[]
-  confusionTimesteps ConfusionTimestep[]
-  leaderboards       LeaderboardEntry[]
+  participantGroups       ParticipantGroup[]
+  accounts                ParticipantAccount[]
+  participations          Participation[]
+  questionResponses       QuestionResponse[]
+  detailQuestionResponses QuestionResponseDetail[]
+  feedbacks               Feedback[]
+  leaderboards            LeaderboardEntry[]
+  subscriptions           PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ParticipantGroup {
+  id String @id @default(uuid()) @db.Uuid
+
+  name String
+  code Int
+
+  groupActivityScore Float @default(0)
+  averageMemberScore Float @default(0)
+
+  participants Participant[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, code])
 }
 
 model Participation {
@@ -456,7 +505,6 @@ model Participation {
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
   isActive Boolean @default(true)
-  points   Int     @default(0)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
@@ -464,8 +512,15 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  responses     QuestionResponse[]
-  subscriptions PushSubscription[]
+  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
+  courseLeaderboardId Int?              @unique
+
+  sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
+
+  responses              QuestionResponse[]
+  detailResponses        QuestionResponseDetail[]
+  subscriptions          PushSubscription[]
+  completedMicroSessions String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -476,7 +531,10 @@ model Participation {
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
-  trialsCount Int @default(0)
+  trialsCount        Int       @default(0)
+  totalScore         Float     @default(0)
+  totalPointsAwarded Float     @default(0)
+  lastAwardedAt      DateTime?
 
   response Json
 
@@ -495,18 +553,45 @@ model QuestionResponse {
   @@unique([participantId, questionInstanceId])
 }
 
+model QuestionResponseDetail {
+  id Int @id @default(autoincrement())
+
+  score         Float @default(0)
+  pointsAwarded Float @default(0)
+
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PushSubscription {
   id Int @id @default(autoincrement())
 
-  endpoint String
+  endpoint       String
+  expirationTime Int?
+  p256dh         String
+  auth           String
 
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
-  participation   Participation @relation(fields: [participationId], references: [id])
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
 
-  @@unique([courseId, endpoint])
+  @@unique([participantId, courseId, endpoint])
 }

@@ -64,7 +64,7 @@ function ChoiceOptions({
                 />
               </div>
               <div className="py-2 text-gray-700">
-                {feedbacks[choice.ix].feedback}
+                <Markdown content={feedbacks[choice.ix].feedback} />
               </div>
             </div>
           )}
@@ -152,7 +152,7 @@ function Options({
 
               return (
                 <div className="flex flex-col" key={choice.ix}>
-                  <div className="flex flex-row items-center justify-between p-2 border">
+                  <div className="flex flex-row items-center justify-between gap-4 p-2 border">
                     <div>
                       <Markdown content={choice.value} />
                     </div>
@@ -224,7 +224,7 @@ function Options({
                           />
                         </div> */}
                       <div className="p-2 text-gray-700">
-                        {feedbacks[choice.ix].feedback}
+                        <Markdown content={feedbacks[choice.ix].feedback} />
                       </div>
                     </div>
                   )}
@@ -278,7 +278,11 @@ function OptionsDisplay({
       <div className="self-end mt-4">
         <Button
           className="text-lg"
-          disabled={!isEvaluation && response?.length === 0}
+          disabled={
+            !isEvaluation &&
+            questionType !== QuestionType.KPRIM &&
+            response?.length === 0
+          }
           onClick={onSubmitResponse}
         >
           {isEvaluation ? 'Weiter' : 'Antwort absenden'}

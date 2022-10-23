@@ -1,0 +1,108 @@
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
+
+cron:
+  dailyGroupScores: "5 6,20 * * *"
+
+frontendPWA:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: pwa.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: pwa.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-pwa-tls-uzh
+        hosts:
+          - pwa.klicker.uzh.ch
+      - secretName: klicker-prod-frontend-pwa-tls
+        hosts:
+          - pwa.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+frontendManage:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: manage.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: manage.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-manage-tls-uzh
+        hosts:
+          - manage.klicker.uzh.ch
+      - secretName: klicker-prod-frontend-manage-tls
+        hosts:
+          - manage.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+backendGraphql:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: backend-sls.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: backend-sls.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-backend-graphql-tls-uzh
+        hosts:
+          - backend-sls.klicker.uzh.ch
+      - secretName: klicker-prod-backend-graphql-tls
+        hosts:
+          - backend-sls.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+redis:
+  auth:
+    enabled: false

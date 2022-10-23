@@ -22,6 +22,18 @@
       "@type/*": ["src/types/*"]
     }
   },
-  "include": ["next-env.d.ts", "types/app.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "types/app.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "src/utils/generateAvatars.js"
+  ],
+  "exclude": ["node_modules"],
+  "ts-node": {
+    "transpileOnly": true,
+    "moduleTypes": {
+      "src/utils/generateAvatars.ts": "esm"
+    }
+  }
 }

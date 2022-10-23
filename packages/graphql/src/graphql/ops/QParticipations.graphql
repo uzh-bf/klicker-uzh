@@ -1,17 +1,24 @@
-query Participations {
-  participations {
+query Participations($endpoint: String) {
+  participations(endpoint: $endpoint) {
     id
-    points
+    completedMicroSessions
+    subscriptions {
+      id
+      endpoint
+    }
     course {
       id
       displayName
       microSessions {
         id
         displayName
+        scheduledStartAt
+        scheduledEndAt
       }
       sessions {
         id
         displayName
+        linkTo
       }
     }
   }

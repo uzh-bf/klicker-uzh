@@ -1,0 +1,11 @@
+mutation CreateParticipantGroup($courseId: ID!, $name: String!) {
+  createParticipantGroup(courseId: $courseId, name: $name) {
+    id
+    name
+    code
+    participants {
+      id
+      username
+    }
+  }
+}
