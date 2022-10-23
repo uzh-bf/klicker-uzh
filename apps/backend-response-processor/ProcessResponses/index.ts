@@ -22,6 +22,8 @@ const serviceBusTrigger: AzureFunction = async function (
   context: Context,
   queueItem
 ) {
+  assert(!!redisExec)
+
   const sessionKey = `s:${queueItem.sessionId}`
   const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
   const responseTimestamp = queueItem.responseTimestamp

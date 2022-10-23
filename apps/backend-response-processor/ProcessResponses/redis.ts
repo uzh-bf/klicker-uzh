@@ -4,13 +4,17 @@ let redis: Redis
 
 function getRedis() {
   if (!redis) {
-    redis = new Redis({
-      family: 4,
-      host: process.env.REDIS_HOST,
-      password: process.env.REDIS_PASS ?? '',
-      port: Number(process.env.REDIS_PORT) ?? 6379,
-      tls: process.env.REDIS_TLS ? {} : undefined,
-    })
+    try {
+      redis = new Redis({
+        family: 4,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASS ?? '',
+        port: Number(process.env.REDIS_PORT) ?? 6379,
+        tls: process.env.REDIS_TLS ? {} : undefined,
+      })
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return redis
