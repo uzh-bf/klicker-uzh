@@ -1,4 +1,4 @@
-import { AzureFunction, Context, HttpRequest } from '@azure/functions'
+import type { AzureFunction, Context, HttpRequest } from '@azure/functions'
 import JWT from 'jsonwebtoken'
 
 import getServiceBus from './sbus'

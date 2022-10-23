@@ -1,7 +1,4 @@
-import JWT from 'jsonwebtoken'
-import md5 from 'md5'
-
-import { AzureFunction, Context } from '@azure/functions'
+import type { AzureFunction, Context } from '@azure/functions'
 import {
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
@@ -9,6 +6,9 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
+import JWT from 'jsonwebtoken'
+import md5 from 'md5'
+import assert from 'node:assert/strict'
 import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
@@ -22,42 +22,39 @@ const serviceBusTrigger: AzureFunction = async function (
   context: Context,
   queueItem
 ) {
-  // context.log(
-  //   'Node.js ServiceBus queue trigger function processed message',
-  //   queueItem
-  // )
-  // context.log('EnqueuedTimeUtc =', context.bindingData.enqueuedTimeUtc)
-  // context.log('DeliveryCount =', context.bindingData.deliveryCount)
-  // context.log('MessageId =', context.bindingData.messageId)
-
   const sessionKey = `s:${queueItem.sessionId}`
   const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
   const responseTimestamp = queueItem.responseTimestamp
   const response = queueItem.response
-  if (!response) {
-    return
-  }
+  assert(!!response)
 
   let participantData: { sub: string } | null = null
   if (queueItem.cookie) {
     const token = queueItem.cookie.replace('participant_token=', '')
-    participantData = JWT.verify(token, process.env.APP_SECRET as string) as any
+    try {
+      participantData = JWT.verify(
+        token,
+        process.env.APP_SECRET as string
+      ) as any
+    } catch (e) {
+      context.log('JWT verification failed', e)
+    }
     // if the participant has already responded to the question instance, return instantly
     if (
       participantData &&
       (await redisExec.hexists(`${instanceKey}:responses`, participantData.sub))
     ) {
-      // TODO: return some other status to display something on the frontend?
       return { status: 200 }
     }
   }
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-  // if the instance metadata is not available, it has been closed and purged already
-  if (!instanceInfo) {
-    return {
-      status: 400,
-    }
-  }
+  assert(!!instanceInfo)
+  // // if the instance metadata is not available, it has been closed and purged already
+  // if (!instanceInfo) {
+  //   return {
+  //     status: 400,
+  //   }
+  // }
   const {
     type,
     solutions,
@@ -72,9 +69,10 @@ const serviceBusTrigger: AzureFunction = async function (
       parsedSolutions = JSON.parse(solutions)
     }
   } catch (e) {
-    console.error(e)
+    context.log('Error parsing solutions', e)
   }
-  const redisMulti = redisExec.pipeline()
+
+  const redisMulti = redisExec.multi()
   // compute the timing of the response based on the first response received for the instance
   const responseTiming =
     (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
@@ -234,11 +232,13 @@ const serviceBusTrigger: AzureFunction = async function (
       break
     }
   }
-  // TODO: what if the above fails?
+
   try {
     await redisMulti.exec()
+    return { status: 200 }
   } catch (e) {
-    console.error(e)
+    context.log('Redis transaction failed', e)
+    throw new Error('Redis transaction failed')
   }
 }
 

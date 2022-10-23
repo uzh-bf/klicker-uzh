@@ -10,5 +10,5 @@
       "autoComplete": true
     }
   ],
-  "scriptFile": "../dist/ProcessResponses/process.js"
+  "scriptFile": "../dist/ProcessResponses/index.js"
 }
