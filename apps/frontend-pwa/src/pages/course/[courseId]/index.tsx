@@ -151,7 +151,7 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global">
-            <div className="flex flex-col gap-10 md:flex-row">
+            <div className="flex flex-col gap-8 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
