@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.69...v2.0.0-alpha.70) (2022-10-23)
+
+
+### Features
+
+* refactor response inflow to queue-based processing ([#2978](https://github.com/uzh-bf/klicker-uzh/issues/2978)) ([6a6aa3f](https://github.com/uzh-bf/klicker-uzh/commit/6a6aa3f103663b4cc82c68584ddb185fc97df43a))
+
+
+### Bug Fixes
+
+* **apps/backend-response-processor:** add app setting binding for dynamic queue name ([2440bf3](https://github.com/uzh-bf/klicker-uzh/commit/2440bf36659dac41c61e27e3f714b43d3787093c))
+* **apps/backend-response-processor:** ensure that jsonwebtoken is installed ([4f9a82d](https://github.com/uzh-bf/klicker-uzh/commit/4f9a82d2c769db8717d524ed8de9b9a6797c0afe))
+* **apps/backend-responses:** remove out binding ([8b9ca52](https://github.com/uzh-bf/klicker-uzh/commit/8b9ca52bed0b652ad4a3df9cab1ed12d5afdf361))
+* **apps/frontend-pwa:** update layouts on leaderboard ([af8e1b0](https://github.com/uzh-bf/klicker-uzh/commit/af8e1b094bdf7bebd50d00197e722931bd47fbda))
+* naming of backend response processor function in workflow ([6f24482](https://github.com/uzh-bf/klicker-uzh/commit/6f2448214bb2cdcede2546fe61fb7a97c5cd737f))
+* update deploy for qa response-processor function ([4eb8313](https://github.com/uzh-bf/klicker-uzh/commit/4eb8313ebdb67b34b2ee9b8b116f5ad551876791))
+
+
+### Enhancements
+
+* improve response queue logic ([85f35c8](https://github.com/uzh-bf/klicker-uzh/commit/85f35c85b22687ff53e7aeba47aba9e3bde6338c))
+
+
+### Other
+
+* **apps/backend-response-processor:** add ping trigger for uptime ([f42e4a6](https://github.com/uzh-bf/klicker-uzh/commit/f42e4a6be1f882f46981ce87eb0705c199bba277))
+* deployment of alpha 69 ([573e7ea](https://github.com/uzh-bf/klicker-uzh/commit/573e7ea5fb9df7648e76693f915e2cb41fd559e7))
+* lockfile maintenance ([2355bd2](https://github.com/uzh-bf/klicker-uzh/commit/2355bd2089e2bb8fb55cc84b10018ebc4c8c45eb))
+* lockfile maintenance ([047b777](https://github.com/uzh-bf/klicker-uzh/commit/047b777fd8d5f8a415ea5d41a4023af4bd423298))
+* migrate azure functions to tsup ([9d2ef06](https://github.com/uzh-bf/klicker-uzh/commit/9d2ef06d3eb57eb1ef3c719d9cac7d3ebd3ca618))
+* **packages/graphql:** microlearning bf1 week 5 ([9dea526](https://github.com/uzh-bf/klicker-uzh/commit/9dea526bba0886fc52ad8d1ec0f44ae4e0283d1b))
+* **packages/prisma:** add migration for question response details ([ebd11af](https://github.com/uzh-bf/klicker-uzh/commit/ebd11af7a8c8741dd0623615c25627ca0b0d9307))
+* **packages/prisma:** update prisma interactions to enforce correct .env files per environment ([30efcbf](https://github.com/uzh-bf/klicker-uzh/commit/30efcbf0eac89fa2d22078d8cf45344668d17dc4))
+* seed update ([467392d](https://github.com/uzh-bf/klicker-uzh/commit/467392dacf31b2596ce8cfb46f49d38c2d17bc77))
+
 ## [2.0.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.68...v2.0.0-alpha.69) (2022-10-18)
 
 
