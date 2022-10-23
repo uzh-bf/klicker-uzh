@@ -68,7 +68,7 @@
     "ramda": "0.28.0",
     "size-limit": "8.1.0",
     "ts-node": "10.9.1",
-    "tsup": "6.2.3",
+    "tsup": "6.3.0",
     "typescript": "4.8.4"
   },
   "dependencies": {
