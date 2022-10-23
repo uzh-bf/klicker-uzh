@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.70...v2.0.0-alpha.71) (2022-10-23)
+
+
+### Bug Fixes
+
+* **apps/backend-response*:** use cross-env to not fail windows build in GH actions ([f4c15cf](https://github.com/uzh-bf/klicker-uzh/commit/f4c15cf5073f19b3e937a6eedf7641f732de56cf))
+* **apps/backend-responses:** install tsup in dev mode ([c83f296](https://github.com/uzh-bf/klicker-uzh/commit/c83f296a0563200e07f176b2f3110053f8258869))
+* remove .ts from funcignore ([b738a4f](https://github.com/uzh-bf/klicker-uzh/commit/b738a4f22000865472e529318d25cfee0a49fead))
+
+
+### Other
+
+* **packages/prisma:** seed update ([4c3678b](https://github.com/uzh-bf/klicker-uzh/commit/4c3678bef8930ec9db74c06f60aa225313145ec1))
+
 ## [2.0.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.69...v2.0.0-alpha.70) (2022-10-23)
 
 
