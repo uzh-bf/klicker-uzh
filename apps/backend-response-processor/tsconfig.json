@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["Ping", "ProcessResponses"],
+  "include": ["ProcessResponses"],
   "compilerOptions": {
     "module": "ESNext"
   }

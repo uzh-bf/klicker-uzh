@@ -8,7 +8,6 @@
       "Host.Results": "Information",
       "Function": "Information",
       "Function.ProcessResponses": "Information",
-      "Function.Ping": "Information",
       "Host.Aggregator": "Information"
     },
     "applicationInsights": {
