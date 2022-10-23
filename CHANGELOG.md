@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.71...v2.0.0-alpha.72) (2022-10-23)
+
+
+### Other
+
+* **apps/backend-response-processor:** assert that redis is available ([0fdacad](https://github.com/uzh-bf/klicker-uzh/commit/0fdacad8c838651a6779a200fe1e19f76f6c027d))
+* **apps/backend-response-processor:** remove ping function ([9736c14](https://github.com/uzh-bf/klicker-uzh/commit/9736c1453621b2b1d8d6c5bd491dabb8dcff6204))
+
 ## [2.0.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.70...v2.0.0-alpha.71) (2022-10-23)
 
 
