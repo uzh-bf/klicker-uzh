@@ -27,7 +27,7 @@
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:studio:qa": "dotenv -e .env.qa -- npm run prisma:studio",
     "prisma:studio:prod": "dotenv -e .env.production -- npm run prisma:studio",
-    "preseed": "npm run build:all",
+    "preseed": "npm run build",
     "seed": "npm-run-all seed:bf1 seed:ami seed:test",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
     "seed:bf1": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
