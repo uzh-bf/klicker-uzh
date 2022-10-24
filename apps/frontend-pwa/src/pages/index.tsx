@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
 import Layout from '@components/Layout'
-import UserNotification from '@components/UserNotification'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -15,7 +14,7 @@ import {
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'

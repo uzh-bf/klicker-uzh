@@ -1,13 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
 import Layout from '@components/Layout'
-import UserNotification from '@components/UserNotification'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { NextPageWithLayout } from '@pages/_app'
-import { Button, Prose } from '@uzh-bf/design-system'
+import { Button, Prose, UserNotification } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Router from 'next/router'
 import hash from 'object-hash'

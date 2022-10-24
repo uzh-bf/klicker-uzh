@@ -1,14 +1,13 @@
 import { FetchResult, useMutation } from '@apollo/client'
 import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/future/image'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import UserNotification from '../components/UserNotification'
 
 const loginSchema = Yup.object().shape({
   username: Yup.string().required('Enter your username'),
@@ -104,7 +103,7 @@ function LoginForm() {
                   width={300}
                   height={90}
                   alt="KlickerUZH Logo"
-                  className='mx-auto'
+                  className="mx-auto"
                 />
               </div>
               <H1>Login</H1>
