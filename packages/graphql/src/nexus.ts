@@ -813,7 +813,7 @@ export const Query = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
-        return ParticipantService.getCourseOverviewData(args, ctx)
+        return CourseService.getCourseOverviewData(args, ctx)
       },
     })
 
@@ -1027,7 +1027,7 @@ export const Mutation = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.joinCourse(args, ctx)
+        return CourseService.joinCourse(args, ctx)
       },
     })
 
@@ -1048,7 +1048,7 @@ export const Mutation = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.leaveCourse(args, ctx)
+        return CourseService.leaveCourse(args, ctx)
       },
     })
 
@@ -1186,7 +1186,7 @@ export const Mutation = objectType({
         color: stringArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createCourse(args, ctx)
+        return CourseService.createCourse(args, ctx)
       },
     })
 
