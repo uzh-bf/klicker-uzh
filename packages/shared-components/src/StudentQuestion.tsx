@@ -169,7 +169,7 @@ export const StudentQuestion = ({
         onExpire={onExpire}
       />
 
-      <div className="flex-initial min-h-[6rem] px-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded prose leading-4 max-w-none">
+      <div className="flex-initial min-h-[6rem] px-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded prose leading-6 max-w-none">
         <Markdown content={currentQuestion.content} />
       </div>
 

@@ -3284,8 +3284,8 @@ select {
   font-style: italic;
 }
 
-.leading-4 {
-  line-height: 1rem;
+.leading-6 {
+  line-height: 1.5rem;
 }
 
 .text-black {

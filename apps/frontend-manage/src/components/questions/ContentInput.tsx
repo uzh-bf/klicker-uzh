@@ -52,7 +52,6 @@ const defaultProps = {
 const HOTKEYS: Record<string, string> = {
   'mod+b': 'bold',
   'mod+i': 'italic',
-  'mod+c': 'code',
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 type OrNull<T> = T | null
@@ -231,7 +230,7 @@ function ContentInput({
         </div>
         <div className={twMerge('p-3', className?.content)}>
           <Editable
-            className="leading-4 prose prose-blockquote:text-gray-500 max-w-none"
+            className="leading-7 prose prose-blockquote:text-gray-500 max-w-none"
             autoFocus={autoFocus}
             spellCheck
             placeholder={placeholder}

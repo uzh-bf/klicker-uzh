@@ -78,7 +78,7 @@ function QuestionPreviewModal({
       />
       {/* // TODO: remove this temporary fix to show parsed feedbacks once a unified component for all session types has been created and can be used here */}
       {dataQuestion?.question?.hasAnswerFeedbacks && (
-        <div className="mt-6 leading-4 prose border-t-4 border-gray-400 border-solid max-w-none">
+        <div className="mt-6 leading-6 prose border-t-4 border-gray-400 border-solid max-w-none">
           {dataQuestion?.question?.questionData.options.choices.map(
             (choice: any, index: number) => {
               console.log(choice)
