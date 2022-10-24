@@ -19,7 +19,7 @@ interface ImageProps {
 
 function Image({ alt, src }: ImageProps) {
   return (
-    <div className="p-4 m-auto border rounded">
+    <div className="p-4 mx-auto border rounded">
       <div className="relative h-52">
         <NextImage src={src} className="object-contain" fill alt={alt} />
       </div>
@@ -45,7 +45,7 @@ function MicroSessionIntroduction({ id }: Props) {
       courseName={data.microSession.course.displayName}
       courseColor={data.microSession.course.color}
     >
-      <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:m-auto">
+      <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:mx-auto">
         <H3>{data.microSession.displayName}</H3>
         <Prose className="max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current">
           <DynamicMarkdown

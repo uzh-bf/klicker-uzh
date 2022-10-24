@@ -60,7 +60,7 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className={twMerge('pt-16 pb-16 md:pb-0', className)}>
+      <div className={twMerge('h-full overflow-y-none', className)}>
         <div className="fixed top-0 z-10 w-full">
           <Header
             participant={dataParticipant?.self || undefined}
@@ -70,7 +70,14 @@ function Layout({
           />
         </div>
 
-        <div className="flex flex-col p-4">{children}</div>
+        <div
+          className={twMerge(
+            'flex flex-col p-4 mt-16 md:mb-0 [height:_calc(100%-4rem)] overflow-y-auto',
+            dataParticipant?.self && '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14'
+          )}
+        >
+          {children}
+        </div>
 
         <div className="fixed bottom-0 w-full h-14 md:hidden">
           <MobileMenuBar

@@ -89,7 +89,7 @@ function MicroSessionInstance() {
       courseName={data.microSession.course.displayName}
       courseColor={data.microSession.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {questionData && (
           <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
             <div className="flex-1 basis-2/3">

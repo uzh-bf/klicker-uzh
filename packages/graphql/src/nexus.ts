@@ -22,6 +22,7 @@ import {
   ContextWithUser,
 } from './lib/context'
 import * as AccountService from './services/accounts'
+import * as CourseService from './services/courses'
 import * as FeedbackService from './services/feedbacks'
 import * as ParticipantGroupService from './services/groups'
 import * as LearningElementService from './services/learningElements'
@@ -378,7 +379,10 @@ export const Course = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+
     t.string('color')
+    t.boolean('isArchived')
+    t.string('description')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -809,7 +813,17 @@ export const Query = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
-        return ParticipantService.getCourseOverviewData(args, ctx)
+        return CourseService.getCourseOverviewData(args, ctx)
+      },
+    })
+
+    t.field('basicCourseInformation', {
+      type: Course,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return CourseService.getBasicCourseInformation(args, ctx)
       },
     })
 
@@ -994,13 +1008,37 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createParticipantAndJoinCourse', {
+      type: Participant,
+      args: {
+        username: nonNull(stringArg()),
+        password: nonNull(stringArg()),
+        courseId: nonNull(idArg()),
+        pin: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      },
+    })
+
     t.field('joinCourse', {
       type: ParticipantLearningData,
       args: {
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.joinCourse(args, ctx)
+        return CourseService.joinCourse(args, ctx)
+      },
+    })
+
+    t.field('joinCourseWithPin', {
+      type: Participant,
+      args: {
+        courseId: nonNull(idArg()),
+        pin: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.joinCourseWithPin(args, ctx)
       },
     })
 
@@ -1010,7 +1048,7 @@ export const Mutation = objectType({
         courseId: nonNull(idArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return ParticipantService.leaveCourse(args, ctx)
+        return CourseService.leaveCourse(args, ctx)
       },
     })
 
@@ -1148,7 +1186,7 @@ export const Mutation = objectType({
         color: stringArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createCourse(args, ctx)
+        return CourseService.createCourse(args, ctx)
       },
     })
 

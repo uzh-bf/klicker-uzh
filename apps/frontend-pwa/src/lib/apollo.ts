@@ -138,7 +138,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 }
 
 export function initializeApollo(
-  initialState: NormalizedCacheObject,
+  initialState?: NormalizedCacheObject,
   ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
   const _apolloClient = apolloClient ?? createApolloClient(ctx)

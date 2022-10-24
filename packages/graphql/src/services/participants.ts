@@ -135,218 +135,6 @@ export async function getParticipations(
   )
 }
 
-interface JoinCourseArgs {
-  courseId: string
-}
-
-export async function joinCourse(
-  { courseId }: JoinCourseArgs,
-  ctx: ContextWithUser
-) {
-  const participation = ctx.prisma.participation.upsert({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    create: {
-      isActive: true,
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-    },
-    update: {
-      isActive: true,
-    },
-  })
-
-  return {
-    id: `${courseId}-${ctx.user.sub}`,
-    participation,
-  }
-}
-
-interface LeaveCourseArgs {
-  courseId: string
-}
-
-export async function leaveCourse(
-  { courseId }: LeaveCourseArgs,
-  ctx: ContextWithUser
-) {
-  const participation = ctx.prisma.participation.update({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    data: {
-      isActive: false,
-    },
-  })
-
-  return {
-    id: `${courseId}-${ctx.user.sub}`,
-    participation,
-  }
-}
-
-interface GetCourseOverviewDataArgs {
-  courseId: string
-}
-
-export async function getCourseOverviewData(
-  { courseId }: GetCourseOverviewDataArgs,
-  ctx: ContextWithOptionalUser
-) {
-  if (ctx.user?.sub) {
-    const participation = await ctx.prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
-        },
-      },
-      include: {
-        course: {
-          include: {
-            participantGroups: true,
-          },
-        },
-        participant: true,
-        courseLeaderboard: true,
-      },
-    })
-
-    const course = ctx.prisma.course.findUnique({
-      where: { id: courseId },
-    })
-
-    const lbEntries = await course.leaderboard({
-      where: {
-        participation: { isActive: true },
-      },
-      include: {
-        participant: true,
-      },
-    })
-
-    if (participation) {
-      const allEntries = lbEntries.reduce(
-        (acc, entry) => {
-          return {
-            mapped: [
-              ...acc.mapped,
-              {
-                id: entry.id,
-                score: entry.score,
-                username: entry.participant.username,
-                avatar: entry.participant.avatar,
-                participantId: entry.participant.id,
-                isSelf: ctx.user?.sub === entry.participant.id,
-              },
-            ],
-            sum: acc.sum + entry.score ?? 0,
-            count: acc.count + 1,
-          }
-        },
-        {
-          mapped: [],
-          sum: 0,
-          count: 0,
-        }
-      )
-
-      const allGroupEntries = participation.course.participantGroups.reduce(
-        (acc, group, ix) => {
-          return {
-            mapped: [
-              ...acc.mapped,
-              {
-                ...group,
-                score: group.averageMemberScore + group.groupActivityScore,
-                rank: ix + 1,
-              },
-            ],
-            count: acc.count + 1,
-            sum: acc.sum + group.averageMemberScore + group.groupActivityScore,
-          }
-        },
-        {
-          mapped: [],
-          count: 0,
-          sum: 0,
-        }
-      )
-
-      const sortByScoreAndUsername = R.curry(R.sortWith)([
-        R.descend(R.prop('score')),
-        R.ascend(R.prop('username')),
-      ])
-
-      const sortedEntries = sortByScoreAndUsername(allEntries.mapped)
-      const sortedGroupEntries = sortByScoreAndUsername(allGroupEntries.mapped)
-
-      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.participantId === ctx.user?.sub)
-          return { ...entry, rank: ix + 1 }
-        return []
-      })
-
-      return {
-        id: `${courseId}-${participation.participant.id}`,
-        course: participation.course,
-        participant: participation.participant,
-        participation,
-        leaderboard: filteredEntries,
-        leaderboardStatistics: {
-          participantCount: allEntries.count,
-          averageScore:
-            allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
-        },
-        groupLeaderboard: sortedGroupEntries,
-        groupLeaderboardStatistics: {
-          participantCount: allGroupEntries.count,
-          averageScore:
-            allGroupEntries.count > 0
-              ? allGroupEntries.sum / allGroupEntries.count
-              : 0,
-        },
-      }
-    }
-  }
-
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-  })
-
-  if (!course) return null
-
-  let participant = null
-  if (ctx.user?.sub) {
-    participant = await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-    })
-  }
-
-  return {
-    id: `${courseId}-${participant?.id}`,
-    course,
-    participant,
-    participation: null,
-    leaderboard: [],
-  }
-}
-
 interface RegisterParticipantFromLTIArgs {
   courseId: string
   participantId: string
@@ -468,5 +256,118 @@ export async function registerParticipantFromLTI(
   } catch (e) {
     console.error(e)
     return null
+  }
+}
+
+interface CreateParticipantAndJoinCourseArgs {
+  username: string
+  password: string
+  courseId: string
+  pin: number
+}
+
+export async function createParticipantAndJoinCourse(
+  { username, password, courseId, pin }: CreateParticipantAndJoinCourseArgs,
+  ctx: ContextWithOptionalUser
+) {
+  if (typeof username === 'string') {
+    if (username.length < 5 || username.length > 10) {
+      return null
+    }
+  }
+
+  const existingParticipant = await ctx.prisma.participant.findUnique({
+    where: { username },
+  })
+  const isLoginValid = await bcrypt.compare(
+    password,
+    existingParticipant?.password || ''
+  )
+
+  // if the participant already exists, but the login is incorrect, abort this function call
+  if (existingParticipant && !isLoginValid) {
+    return null
+  }
+
+  // fetch the course and compare the provided pin with the correct value
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+  })
+
+  // if the provided pin is wrong for this course, return null
+  if (!course || course.pinCode !== pin) return null
+
+  if (existingParticipant) {
+    // link the participant to the course by creating a new participation
+    await ctx.prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: existingParticipant.id,
+        },
+      },
+      create: {
+        isActive: true,
+        course: {
+          connect: {
+            id: courseId,
+          },
+        },
+        participant: {
+          connect: {
+            id: existingParticipant.id,
+          },
+        },
+      },
+      update: {},
+    })
+
+    const jwt = createParticipantToken(existingParticipant.id)
+
+    ctx.res.cookie('participant_token', jwt, {
+      domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+      path: '/',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 13,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    })
+
+    return existingParticipant
+  } else {
+    const hashedPassword = await bcrypt.hash(password, 12)
+    // create new participant with the provided username and password, and link the participant to the course by creating a new participation
+    const participant = await ctx.prisma.participant.create({
+      data: {
+        username,
+        password: hashedPassword,
+        participations: {
+          create: {
+            isActive: true,
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+          },
+        },
+      },
+      include: {
+        participations: true,
+      },
+    })
+
+    const jwt = createParticipantToken(participant.id)
+
+    ctx.res.cookie('participant_token', jwt, {
+      domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+      path: '/',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 13,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    })
+
+    return participant
   }
 }

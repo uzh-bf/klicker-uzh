@@ -1,0 +1,5 @@
+mutation JoinCourseWithPin($courseId: ID!, $pin: Int!) {
+  joinCourseWithPin(courseId: $courseId, pin: $pin) {
+    id
+  }
+}

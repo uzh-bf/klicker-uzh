@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
 import Layout from '@components/Layout'
-import UserNotification from '@components/UserNotification'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -15,7 +14,7 @@ import {
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -165,7 +164,7 @@ const Index = function () {
 
   return (
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
-      <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:m-auto md:border md:rounded">
+      <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className="text-xl">Aktive Sessions ({activeSessions.length})</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
