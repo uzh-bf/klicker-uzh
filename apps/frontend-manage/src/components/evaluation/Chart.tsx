@@ -6,7 +6,11 @@ import Wordcloud from './Wordcloud'
 
 interface ChartProps {
   questionType: QuestionType
-  data: { value: string | number; correct: boolean; votes: number }[]
+  data: {
+    value: string | number
+    votes: number
+    answer: Record<string, string>
+  }[]
   showSolution: boolean
   options?: any
   totalResponses: number

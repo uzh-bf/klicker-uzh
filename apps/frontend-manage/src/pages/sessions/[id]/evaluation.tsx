@@ -3,13 +3,10 @@ import Footer from '@components/common/Footer'
 import Chart from '@components/evaluation/Chart'
 import { faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetSessionEvaluationDocument,
-  InstanceResults,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { Prose, Select } from '@uzh-bf/design-system'
+import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
@@ -31,7 +28,7 @@ function Evaluation() {
   const router = useRouter()
 
   // TODO: replace with corresponding database field and query
-  const [showSolution, setShowSolution] = useState(true)
+  const [showSolution, setShowSolution] = useState(false)
   const [activeBlock, setActiveBlock] = useState(0)
   const [activeInstance, setActiveInstance] = useState(0)
 
@@ -47,7 +44,7 @@ function Evaluation() {
     if (!data) return { tabs: [] }
 
     const tabs = data.sessionEvaluation?.instanceResults?.map(
-      (instance: InstanceResults, index) => ({
+      (instance, index) => ({
         id: instance.id,
         blockIx: instance.blockIx,
         instanceIx: instance.instanceIx,
@@ -192,7 +189,13 @@ function Evaluation() {
             <div className="z-10 flex-1 order-2 md:order-1">
               <Chart
                 questionType={currentQuestion.type}
-                data={currentQuestion.results}
+                data={currentQuestion.results.map((question, idx) => {
+                  return {
+                    value: question.value,
+                    votes: question.votes,
+                    answer: currentQuestion.answers[idx],
+                  }
+                })}
                 showSolution={showSolution}
                 totalResponses={currentQuestion.participants}
               />
@@ -216,13 +219,14 @@ function Evaluation() {
                       >
                         <div
                           style={{
-                            backgroundColor: answer.correct
-                              ? '#00de0d'
-                              : CHART_COLORS[innerIndex % 12],
+                            backgroundColor:
+                              answer.correct && showSolution
+                                ? '#00de0d'
+                                : CHART_COLORS[innerIndex % 12],
                           }}
                           className={twMerge(
                             'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                            answer.correct && 'text-black'
+                            answer.correct && showSolution && 'text-black'
                           )}
                         >
                           {String.fromCharCode(65 + innerIndex)}
@@ -289,10 +293,16 @@ function Evaluation() {
               </div>
             </div>
           </div>
-          <Footer className="flex flex-row px-8 py-4">
-            <div className="text-xl grow">
+          <Footer className="flex flex-row justify-between px-8 py-4">
+            <div className="text-xl">
               Total Participants: {currentQuestion.participants}
             </div>
+            <Switch
+              id="showSolution"
+              checked={showSolution}
+              label="Show solution"
+              onCheckedChange={(newValue) => setShowSolution(newValue)}
+            ></Switch>
             <Select
               items={[
                 { label: 'Table', value: 'table' },
