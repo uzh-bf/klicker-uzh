@@ -267,9 +267,13 @@ export async function createCourse(
   { name, displayName, color }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
+  // TODO: ensure that PINs are unique
+  const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+
   return ctx.prisma.course.create({
     data: {
       name,
+      pinCode: randomPin,
       displayName: displayName ?? name,
       color,
       owner: {
