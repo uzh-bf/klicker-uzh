@@ -157,8 +157,10 @@ export interface NexusGenObjects {
   }
   Course: { // root type
     color?: string | null; // String
+    description?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
+    isArchived?: boolean | null; // Boolean
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
@@ -456,8 +458,10 @@ export interface NexusGenFieldTypes {
   }
   Course: { // field return type
     color: string | null; // String
+    description: string | null; // String
     displayName: string; // String!
     id: string; // ID!
+    isArchived: boolean | null; // Boolean
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
@@ -663,6 +667,7 @@ export interface NexusGenFieldTypes {
     p256dh: string; // String!
   }
   Query: { // field return type
+    basicCourseInformation: NexusGenRootTypes['Course'] | null; // Course
     cockpitSession: NexusGenRootTypes['Session'] | null; // Session
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -815,8 +820,10 @@ export interface NexusGenFieldTypeNames {
   }
   Course: { // field return type name
     color: 'String'
+    description: 'String'
     displayName: 'String'
     id: 'ID'
+    isArchived: 'Boolean'
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
@@ -1022,6 +1029,7 @@ export interface NexusGenFieldTypeNames {
     p256dh: 'String'
   }
   Query: { // field return type name
+    basicCourseInformation: 'Course'
     cockpitSession: 'Session'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
@@ -1290,6 +1298,9 @@ export interface NexusGenArgTypes {
     }
   }
   Query: {
+    basicCourseInformation: { // args
+      courseId: string; // ID!
+    }
     cockpitSession: { // args
       id: string; // ID!
     }

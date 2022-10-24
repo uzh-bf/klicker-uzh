@@ -94,8 +94,10 @@ type ConfusionTimestep {
 
 type Course {
   color: String
+  description: String
   displayName: String!
   id: ID!
+  isArchived: Boolean
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
@@ -349,6 +351,7 @@ type PushSubscription {
 }
 
 type Query {
+  basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData

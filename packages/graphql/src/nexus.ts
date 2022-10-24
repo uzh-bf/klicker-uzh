@@ -22,6 +22,7 @@ import {
   ContextWithUser,
 } from './lib/context'
 import * as AccountService from './services/accounts'
+import * as CourseService from './services/courses'
 import * as FeedbackService from './services/feedbacks'
 import * as ParticipantGroupService from './services/groups'
 import * as LearningElementService from './services/learningElements'
@@ -378,7 +379,10 @@ export const Course = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+
     t.string('color')
+    t.boolean('isArchived')
+    t.string('description')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -810,6 +814,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithOptionalUser) {
         return ParticipantService.getCourseOverviewData(args, ctx)
+      },
+    })
+
+    t.field('basicCourseInformation', {
+      type: Course,
+      args: {
+        courseId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return CourseService.getBasicCourseInformation(args, ctx)
       },
     })
 

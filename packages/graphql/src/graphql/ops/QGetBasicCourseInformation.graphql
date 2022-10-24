@@ -1,0 +1,9 @@
+query GetBasicCourseInformation($courseId: ID!) {
+  basicCourseInformation(courseId: $courseId) {
+    id
+    name
+    displayName
+    description
+    color
+  }
+}
