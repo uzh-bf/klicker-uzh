@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.73...v2.0.0-alpha.74) (2022-10-24)
+
+
+### Deployment
+
+* **apps/backend-response-processor:** update workflow ([50d8eac](https://github.com/uzh-bf/klicker-uzh/commit/50d8eac3612ae5648ca20f301bfbe785cbf7418a))
+
 ## [2.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.72...v2.0.0-alpha.73) (2022-10-24)
 
 
