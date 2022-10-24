@@ -28,7 +28,11 @@ const serviceBusTrigger: AzureFunction = async function (
   const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
   const responseTimestamp = queueItem.responseTimestamp
   const response = queueItem.response
-  assert(!!response)
+  if (!response) {
+    return {
+      status: 400,
+    }
+  }
 
   let participantData: { sub: string } | null = null
   if (queueItem.cookie) {
@@ -50,13 +54,13 @@ const serviceBusTrigger: AzureFunction = async function (
     }
   }
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-  assert(!!instanceInfo)
-  // // if the instance metadata is not available, it has been closed and purged already
-  // if (!instanceInfo) {
-  //   return {
-  //     status: 400,
-  //   }
-  // }
+  // if the instance metadata is not available, it has been closed and purged already
+  if (!instanceInfo) {
+    return {
+      status: 400,
+    }
+  }
+
   const {
     type,
     solutions,
@@ -240,7 +244,7 @@ const serviceBusTrigger: AzureFunction = async function (
     return { status: 200 }
   } catch (e) {
     context.log('Redis transaction failed', e)
-    throw new Error('Redis transaction failed')
+    throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
 

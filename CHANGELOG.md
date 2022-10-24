@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.75...v2.0.0-alpha.76) (2022-10-24)
+
+
+### Bug Fixes
+
+* **apps/backend-response-processor:** don't throw on missing response or instance info (ignore) ([18393b2](https://github.com/uzh-bf/klicker-uzh/commit/18393b2449251c60bf61021a0b6b582a5248c030))
+
+
+### Other
+
+* lockfile maintenance ([4ad3cf0](https://github.com/uzh-bf/klicker-uzh/commit/4ad3cf0707b8d449607e6b01653ce3c50279753c))
+* seed update ([0f191fb](https://github.com/uzh-bf/klicker-uzh/commit/0f191fb3c82749c0c9f45355a55e39221f631311))
+* seed update ([b13a581](https://github.com/uzh-bf/klicker-uzh/commit/b13a581f70172a66d1403f57db1ab1cbe6e86707))
+
 ## [2.0.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.74...v2.0.0-alpha.75) (2022-10-24)
 
 ## [2.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.73...v2.0.0-alpha.74) (2022-10-24)
