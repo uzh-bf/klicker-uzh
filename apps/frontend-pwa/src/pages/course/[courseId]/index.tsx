@@ -42,7 +42,7 @@ function GroupVisualization({ participants, scaleFactor }) {
 
   return (
     <div
-      className="relative m-auto"
+      className="relative mx-auto"
       style={{
         height,
         width,
@@ -126,7 +126,7 @@ function CourseOverview({ courseId }: any) {
       courseName={course.displayName}
       courseColor={course.color}
     >
-      <div className="md:m-auto md:max-w-5xl md:w-full md:border md:rounded">
+      <div className="md:mx-auto md:max-w-5xl md:w-full md:border md:rounded">
         <Tabs
           defaultValue="global"
           value={selectedTab}

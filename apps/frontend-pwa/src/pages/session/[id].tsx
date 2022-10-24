@@ -156,7 +156,7 @@ function Index({ id }: Props) {
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
-      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
+      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:mx-auto">
         <div
           className={twMerge(
             'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',

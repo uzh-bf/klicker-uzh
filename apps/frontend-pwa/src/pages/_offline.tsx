@@ -1,5 +1,5 @@
 import Layout from '@components/Layout'
-import UserNotification from '@components/UserNotification'
+import { UserNotification } from '@uzh-bf/design-system'
 
 const fallback = () => (
   <Layout>
