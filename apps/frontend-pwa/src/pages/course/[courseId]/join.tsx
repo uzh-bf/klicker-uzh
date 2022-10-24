@@ -36,8 +36,6 @@ function JoinCourse({ courseId }: { courseId: string }) {
 
   console.log(dataCourse)
 
-  // TODO: implement join course and register at the same time query
-
   // TODO: detect if the user is logged in already and if so, reuse the join course query to join the course or create new join course query
 
   if (loadingParticipant || loadingCourse) {
@@ -46,7 +44,8 @@ function JoinCourse({ courseId }: { courseId: string }) {
 
   // TODO: replace this by a corresponding redirect to 404 in the getServerSideProps function
   if (!dataCourse) {
-    return <div>COURSE NOT AVAILABLE</div>
+    router.push('/404')
+    return <></>
   }
 
   const joinAndRegisterSchema = yup.object({
