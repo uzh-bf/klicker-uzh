@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "2.0.0-alpha.66",
+  "version": "2.0.0-alpha.72",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,7 @@
     "@types/node": "^18.0.0",
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
-    "@uzh-bf/design-system": "0.0.46",
+    "@uzh-bf/design-system": "0.0.61",
     "axios": "0.27.2",
     "dotenv": "16.0.2",
     "dts-cli": "1.6.0",
@@ -47,10 +47,10 @@
     "npm-run-all": "4.1.5",
     "prettier": "2.7.1",
     "prettier-plugin-organize-imports": "3.1.1",
-    "prisma": "4.3.1",
+    "prisma": "4.5.0",
     "tslib": "2.4.0",
     "tsup": "6.2.3",
-    "typescript": "4.8.3"
+    "typescript": "4.8.4"
   },
   "dependencies": {
     "@envelop/parser-cache": "4.7.0",

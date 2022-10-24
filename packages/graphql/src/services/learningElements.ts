@@ -187,6 +187,7 @@ export async function respondToQuestionInstance(
   const score = evaluation?.score || 0
   let pointsAwarded
   let newPointsFrom
+  let lastAwardedAt
   const promises = []
 
   // if the user is logged in and the last response was not within the past 6 days
@@ -207,70 +208,86 @@ export async function respondToQuestionInstance(
         pointsAwarded = 0
       }
 
-      const lastAwardedAt = previousResponseOutsideTimeframe
+      lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
         : instance.responses[0].lastAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
-
-      promises.push(
-        ctx.prisma.questionResponse.update({
-          where: {
-            participantId_questionInstanceId: {
-              participantId: ctx.user.sub,
-              questionInstanceId: id,
-            },
-          },
-          data: {
-            response,
-            trialsCount: {
-              increment: 1,
-            },
-            totalScore: {
-              increment: score,
-            },
-            totalPointsAwarded: {
-              increment: pointsAwarded,
-            },
-            lastAwardedAt,
-          },
-        })
-      )
     } else {
       pointsAwarded = score
 
-      const lastAwardedAt = new Date()
+      lastAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
         .add(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
+    }
 
-      promises.push(
-        ctx.prisma.questionResponse.create({
-          data: {
-            response,
-            participant: {
-              connect: { id: ctx.user.sub },
-            },
-            questionInstance: {
-              connect: { id },
-            },
-            participation: {
-              connect: {
-                courseId_participantId: {
-                  courseId,
-                  participantId: ctx.user.sub,
-                },
+    promises.push(
+      ctx.prisma.questionResponse.upsert({
+        where: {
+          participantId_questionInstanceId: {
+            participantId: ctx.user.sub,
+            questionInstanceId: id,
+          },
+        },
+        create: {
+          totalScore: score,
+          totalPointsAwarded: pointsAwarded,
+          trialsCount: 1,
+          lastAwardedAt,
+          response,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          questionInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
               },
             },
-            totalScore: score,
-            totalPointsAwarded: pointsAwarded,
-            trialsCount: 1,
-            lastAwardedAt,
           },
-        })
-      )
-    }
+        },
+        update: {
+          response,
+          lastAwardedAt,
+          trialsCount: {
+            increment: 1,
+          },
+          totalScore: {
+            increment: score,
+          },
+          totalPointsAwarded: {
+            increment: pointsAwarded,
+          },
+        },
+      }),
+      ctx.prisma.questionResponseDetail.create({
+        data: {
+          score,
+          pointsAwarded,
+          response,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          questionInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+      })
+    )
 
     if (typeof pointsAwarded === 'number') {
       promises.push(

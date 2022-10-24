@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface NUMERICALAnswerOptionsProps {
+export interface NUMERICALAnswerOptionsProps {
   valid: boolean
   value: any
   min: number
@@ -11,7 +11,7 @@ interface NUMERICALAnswerOptionsProps {
   onChange: (value: any) => any
 }
 
-function NUMERICALAnswerOptions({
+export function NUMERICALAnswerOptions({
   valid,
   value,
   min,

@@ -13,7 +13,6 @@ query GetSessionEvaluation($id: ID!) {
         name
         type
         content
-        contentPlain
 
         ... on ChoicesQuestionData {
           options {

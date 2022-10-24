@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "interactiveTransactions", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
   output          = "../client"
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
@@ -129,10 +129,12 @@ model Question {
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name         String
-  content      String
-  contentPlain String
-  options      Json
+  name    String
+  content String
+  options Json
+
+  hasSampleSolution  Boolean @default(false)
+  hasAnswerFeedbacks Boolean @default(false)
 
   type QuestionType
 
@@ -148,7 +150,8 @@ model Question {
 }
 
 model Tag {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  name String
 
   questions Question[]
 
@@ -157,6 +160,8 @@ model Tag {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
 }
 
 enum QuestionInstanceType {
@@ -172,10 +177,11 @@ model QuestionInstance {
   type  QuestionInstanceType?
   order Int?
 
-  questionData Json
-  participants Int                @default(0)
-  results      Json
-  responses    QuestionResponse[]
+  questionData    Json
+  participants    Int                      @default(0)
+  results         Json
+  responses       QuestionResponse[]
+  detailResponses QuestionResponseDetail[]
 
   sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId    Int?
@@ -460,13 +466,14 @@ model Participant {
 
   lastLoginAt DateTime?
 
-  participantGroups ParticipantGroup[]
-  accounts          ParticipantAccount[]
-  participations    Participation[]
-  questionResponses QuestionResponse[]
-  feedbacks         Feedback[]
-  leaderboards      LeaderboardEntry[]
-  subscriptions     PushSubscription[]
+  participantGroups       ParticipantGroup[]
+  accounts                ParticipantAccount[]
+  participations          Participation[]
+  questionResponses       QuestionResponse[]
+  detailQuestionResponses QuestionResponseDetail[]
+  feedbacks               Feedback[]
+  leaderboards            LeaderboardEntry[]
+  subscriptions           PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -511,6 +518,7 @@ model Participation {
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
 
   responses              QuestionResponse[]
+  detailResponses        QuestionResponseDetail[]
   subscriptions          PushSubscription[]
   completedMicroSessions String[]
 
@@ -543,6 +551,27 @@ model QuestionResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, questionInstanceId])
+}
+
+model QuestionResponseDetail {
+  id Int @id @default(autoincrement())
+
+  score         Float @default(0)
+  pointsAwarded Float @default(0)
+
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PushSubscription {

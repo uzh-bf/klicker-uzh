@@ -22,6 +22,9 @@
       "path": "./packages/prisma"
     },
     {
+      "path": "./packages/shared-components"
+    },
+    {
       "path": "../design-system"
     }
   ],

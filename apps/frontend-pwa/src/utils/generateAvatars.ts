@@ -4,7 +4,7 @@ import React from 'react'
 import RDS from 'react-dom/server'
 
 import { BigHead } from '@bigheads/core'
-import { AVATAR_OPTIONS } from '../constants.js'
+import { AVATAR_OPTIONS } from 'shared-components/src/constants'
 
 async function main() {
   AVATAR_OPTIONS.skinTone.forEach((skinTone) => {

@@ -2,7 +2,7 @@ import { Button, Countdown, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import React from 'react'
 
-interface SessionProgressProps {
+export interface SessionProgressProps {
   activeIndex: number
   isSubmitDisabled?: boolean
   numItems: number
@@ -18,7 +18,7 @@ const defaultProps = {
   timeLimit: undefined,
 }
 
-function SessionProgress({
+export function SessionProgress({
   activeIndex,
   isSubmitDisabled,
   numItems,
@@ -52,6 +52,7 @@ function SessionProgress({
         formatter={(val) =>
           val <= 0 ? '0%' : `${((val / numItems) * 100) >> 0}\%`
         }
+        isMaxVisible={true}
       />
 
       <div className="my-auto">

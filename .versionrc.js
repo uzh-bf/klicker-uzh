@@ -10,6 +10,7 @@ module.exports = {
     'docs/',
     'apps/backend-docker/',
     'apps/backend-responses/',
+    'apps/backend-response-processor/',
     'apps/backend-sls/',
     'apps/frontend-learning/',
     'apps/frontend-manage/',
@@ -19,6 +20,7 @@ module.exports = {
     'packages/lti/',
     'packages/prisma/',
     'packages/markdown/',
+    'packages/shared-components',
   ].reduce(
     (acc, path) => {
       return acc.concat({

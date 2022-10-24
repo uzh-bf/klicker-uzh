@@ -32,6 +32,7 @@ jobs:
         run: |
           rm apps/frontend-manage/.env.production
           mv apps/frontend-manage/.env.qa apps/frontend-manage/.env.production
+          cp -R packages/shared-components apps/frontend-manage/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2

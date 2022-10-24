@@ -27,11 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Replace .env.production with .env.qa
+      - name: Prepare filesystem
         shell: bash
         run: |
           rm apps/frontend-pwa/.env.production
           mv apps/frontend-pwa/.env.qa apps/frontend-pwa/.env.production
+          cp -R packages/shared-components apps/frontend-pwa/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2

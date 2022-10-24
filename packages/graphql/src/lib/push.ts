@@ -19,7 +19,7 @@ function sleep(ms) {
 // JOIN "Participant" as p ON s."participantId" = p.id
 // WHERE c.name = 'Asset Management: Investments'
 
-const SUBSCRIPTIONS = []
+const SUBSCRIPTIONS: any[] = []
 
 dotenv.config()
 
@@ -62,7 +62,7 @@ async function sendPushNotifications() {
         },
         JSON.stringify({
           message:
-            'Das Microlearning für BFI Woche 4 ist bis morgen um 09:00 verfügbar.',
+            'Das Microlearning für BFI Woche 5 ist bis morgen um 09:00 verfügbar.',
           title: 'KlickerUZH - Neues Microlearning',
         })
       )

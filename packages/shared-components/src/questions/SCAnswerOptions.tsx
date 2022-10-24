@@ -1,13 +1,14 @@
+import Markdown from '@klicker-uzh/markdown';
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 
-interface SCAnswerOptionsProps {
+export interface SCAnswerOptionsProps {
   choices: { value: string; correct: boolean; feedback: string }[]
   value?: number[]
   onChange: (value: any) => any
 }
 
-function SCAnswerOptions({
+export function SCAnswerOptions({
   choices,
   value,
   onChange,
@@ -23,7 +24,9 @@ function SCAnswerOptions({
             key={choice.value}
             active={value?.includes(index)}
           >
-            <Button.Label>{choice.value}</Button.Label>
+            <Button.Label>
+              <Markdown content={choice.value} />
+            </Button.Label>
           </Button>
         )
       })}

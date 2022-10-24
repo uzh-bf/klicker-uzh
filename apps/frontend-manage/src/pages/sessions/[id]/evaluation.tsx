@@ -10,7 +10,7 @@ import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
-import { CHART_COLORS } from 'src/constants'
+import { CHART_COLORS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 interface Tab {

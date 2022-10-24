@@ -9,8 +9,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSideProps } from 'next'
 import { useEffect, useState } from 'react'
+import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
-import { QUESTION_GROUPS } from '../../constants'
 
 import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'
@@ -206,7 +206,7 @@ function Index({ id }: Props) {
         {isAudienceInteractionActive && (
           <div
             className={twMerge(
-              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block d:rounded-lg',
+              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
               activeMobilePage === 'feedbacks' && 'block'
             )}
           >

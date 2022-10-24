@@ -1,0 +1,79 @@
+mutation ManipulateChoicesQuestion(
+  $id: Int
+  $type: String
+  $name: String
+  $content: String
+  $options: OptionsChoicesInput
+  $hasSampleSolution: Boolean
+  $hasAnswerFeedbacks: Boolean
+  $attachments: [AttachmentInput]
+  $tags: [String]
+) {
+  manipulateChoicesQuestion(
+    id: $id
+    type: $type
+    name: $name
+    content: $content
+    options: $options
+    hasSampleSolution: $hasSampleSolution
+    hasAnswerFeedbacks: $hasAnswerFeedbacks
+    attachments: $attachments
+    tags: $tags
+  ) {
+    id
+    name
+    type
+    content
+
+    hasSampleSolution
+    hasAnswerFeedbacks
+
+    questionData {
+      ... on ChoicesQuestionData {
+        options {
+          choices {
+            ix
+            correct
+            feedback
+            value
+          }
+        }
+      }
+
+      ... on NumericalQuestionData {
+        options {
+          restrictions {
+            min
+            max
+          }
+          solutionRanges {
+            min
+            max
+          }
+        }
+      }
+
+      ... on FreeTextQuestionData {
+        options {
+          restrictions {
+            maxLength
+          }
+          solutions
+        }
+      }
+    }
+
+    tags {
+      id
+      name
+    }
+    attachments {
+      id
+      href
+      name
+      originalName
+      description
+      type
+    }
+  }
+}

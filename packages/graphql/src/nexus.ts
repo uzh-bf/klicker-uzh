@@ -28,6 +28,7 @@ import * as LearningElementService from './services/learningElements'
 import * as MicroLearningService from './services/microLearning'
 import * as NotificationService from './services/notifications'
 import * as ParticipantService from './services/participants'
+import * as QuestionService from './services/questions'
 import * as SessionService from './services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
@@ -84,6 +85,65 @@ export const ResponseInput = inputObjectType({
   },
 })
 
+export const Restrictions = inputObjectType({
+  name: 'Restrictions',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+    t.int('maxLength')
+  },
+})
+
+export const ChoiceInput = inputObjectType({
+  name: 'ChoiceInput',
+  definition(t) {
+    t.nonNull.int('ix')
+    t.boolean('correct')
+    t.nonNull.string('value')
+    t.string('feedback')
+  },
+})
+
+export const SolutionRange = inputObjectType({
+  name: 'SolutionRange',
+  definition(t) {
+    t.float('min')
+    t.float('max')
+  },
+})
+
+export const OptionsChoicesInput = inputObjectType({
+  name: 'OptionsChoicesInput',
+  definition(t) {
+    t.nonNull.list.field('choices', {
+      type: ChoiceInput,
+    })
+  },
+})
+
+export const OptionsNumericalInput = inputObjectType({
+  name: 'OptionsNumericalInput',
+  definition(t) {
+    t.field('restrictions', { type: Restrictions })
+    t.list.field('solutionRanges', { type: SolutionRange })
+  },
+})
+
+export const OptionsFreeTextInput = inputObjectType({
+  name: 'OptionsFreeTextInput',
+  definition(t) {
+    t.field('restrictions', { type: Restrictions })
+    t.list.string('solutions')
+  },
+})
+
+export const AttachmentInput = inputObjectType({
+  name: 'AttachmentInput',
+  definition(t) {
+    t.nonNull.string('id')
+  },
+})
+
 export const QuestionData = interfaceType({
   name: 'QuestionData',
   definition(t) {
@@ -92,7 +152,9 @@ export const QuestionData = interfaceType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
-    t.nonNull.string('contentPlain')
+
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
 
     t.nonNull.boolean('isArchived')
     t.nonNull.boolean('isDeleted')
@@ -110,6 +172,14 @@ export const QuestionData = interfaceType({
       return 'FreeTextQuestionData'
     }
     return null
+  },
+})
+
+export const Tag = objectType({
+  name: 'Tag',
+  definition(t) {
+    t.nonNull.id('id')
+    t.nonNull.string('name')
   },
 })
 
@@ -211,6 +281,33 @@ export const FreeTextQuestionData = objectType({
   },
 })
 
+export const Question = objectType({
+  name: 'Question',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+
+    t.nonNull.boolean('isArchived')
+    t.nonNull.boolean('isDeleted')
+
+    t.nonNull.boolean('hasSampleSolution')
+    t.nonNull.boolean('hasAnswerFeedbacks')
+
+    t.nonNull.field('questionData', {
+      type: QuestionData,
+    })
+
+    t.nonNull.date('createdAt')
+    t.date('updatedAt')
+
+    t.list.nonNull.field('attachments', { type: Attachment })
+    t.list.nonNull.field('tags', { type: Tag })
+  },
+})
+
 export const QuestionFeedback = objectType({
   name: 'QuestionFeedback',
   definition(t) {
@@ -245,7 +342,7 @@ export const AttachmentType = enumType({
 export const Attachment = objectType({
   name: 'Attachment',
   definition(t) {
-    t.nonNull.string('id')
+    t.nonNull.id('id')
 
     t.nonNull.string('href')
     t.nonNull.string('name')
@@ -812,6 +909,23 @@ export const Query = objectType({
         return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
       },
     })
+
+    t.list.nonNull.field('userQuestions', {
+      type: Question,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return QuestionService.getUserQuestions({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
+    t.field('question', {
+      type: Question,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.getSingleQuestion(args, ctx)
+      },
+    })
   },
 })
 
@@ -1131,6 +1245,70 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
+      },
+    })
+
+    t.field('manipulateChoicesQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsChoicesInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateNUMERICALQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsNumericalInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('manipulateFREETEXTQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+        type: stringArg(),
+        name: stringArg(),
+        content: stringArg(),
+        hasSampleSolution: booleanArg(),
+        hasAnswerFeedbacks: booleanArg(),
+        options: arg({ type: 'OptionsFreeTextInput' }),
+        attachments: list(arg({ type: 'AttachmentInput' })),
+        tags: list(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.manipulateQuestion(args, ctx)
+      },
+    })
+
+    t.field('deleteQuestion', {
+      type: Question,
+      args: {
+        id: intArg(),
+      },
+      resolve(_, args, ctx: Context) {
+        return QuestionService.deleteQuestion(args, ctx)
       },
     })
 

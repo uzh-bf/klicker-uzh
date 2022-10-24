@@ -33,7 +33,6 @@
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
-      "src/constants.ts": "esm",
       "src/utils/generateAvatars.ts": "esm"
     }
   }

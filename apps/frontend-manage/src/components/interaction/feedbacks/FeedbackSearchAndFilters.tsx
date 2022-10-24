@@ -57,6 +57,7 @@ function FeedbackSearchAndFilters({
     votes: 'Nach Stimmen sortieren',
   }
 
+  // TODO: search seems to fail in some cases (e.g. when searching for "with" etc.), investigate and fix this bug
   return (
     <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row print:hidden">
       <div className="flex flex-row items-center">

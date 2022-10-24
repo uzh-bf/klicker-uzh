@@ -21,6 +21,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Replace .env.production with .env.qa
+        shell: bash
+        run: |
+          cp -R packages/shared-components apps/frontend-manage/shared-components
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
