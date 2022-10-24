@@ -100,7 +100,7 @@ function LearningElement({ courseId, id }: Props) {
       courseName={data.learningElement.course.displayName}
       courseColor={data.learningElement.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {!currentInstance && (
           <div className="space-y-3">
             <div>

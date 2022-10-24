@@ -1,4 +1,4 @@
-import { pick } from 'ramda'
+import * as R from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
 export async function getBasicCourseInformation(
@@ -12,7 +12,7 @@ export async function getBasicCourseInformation(
   if (!course) {
     return null
   }
-  return pick(['id', 'name', 'displayName', 'description', 'color'], course)
+  return R.pick(['id', 'name', 'displayName', 'description', 'color'], course)
 }
 
 export async function joinCourseWithPin(

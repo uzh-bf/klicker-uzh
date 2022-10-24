@@ -137,7 +137,7 @@ const EditProfile: NextPageWithLayout = () => {
       >
         {({ values, errors, isSubmitting, isValid }) => {
           return (
-            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:m-auto">
+            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
                 // @ts-ignore
                 className="border-b-4 border-uzh-blue-100 h-36 md:h-48 "
