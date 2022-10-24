@@ -3,6 +3,7 @@ import { useParserCache } from '@envelop/parser-cache'
 import { useResponseCache } from '@envelop/response-cache'
 import { useSentry } from '@envelop/sentry'
 import { useValidationCache } from '@envelop/validation-cache'
+import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
 import { useHive } from '@graphql-hive/client'
 import { createServer, Plugin } from '@graphql-yoga/node'
@@ -15,6 +16,9 @@ import { Strategy as JWTStrategy } from 'passport-jwt'
 import { AuthSchema, Rules } from './authorization'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
+  const armor = new EnvelopArmor()
+  const enhancements = armor.protect()
+
   const app = express()
 
   app.use(
@@ -62,6 +66,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const graphQLServer = createServer({
     schema,
     plugins: [
+      ...enhancements.plugins,
       authZEnvelopPlugin({
         rules: Rules,
         authSchema: AuthSchema,
