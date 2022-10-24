@@ -6,10 +6,11 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { initializeApollo } from '@lib/apollo'
-import { Button, H2, Label } from '@uzh-bf/design-system'
+import { Button, H2, Label, UserNotification } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -37,6 +38,7 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   const router = useRouter()
+  const [showError, setError] = useState(false)
 
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
@@ -84,15 +86,20 @@ function JoinCourse({
       courseName={displayName}
       courseColor={color}
     >
-      <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
-      <div>{description}</div>
+      <H2 className="max-w-sm">Kurs &quot;{displayName}&quot; beitreten</H2>
+      <div className="max-w-sm mb-5">
+        Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {displayName}.
+        Sollten Sie bereits über ein Konto verfügen, können sie die
+        entsprechenden Anmeldedaten direkt im Formular eingeben.
+      </div>
+      {/* if the participant is logged in, a simplified form will be displayed */}
       {dataParticipant?.self ? (
         <Formik
           initialValues={{
             pin: '',
           }}
           validationSchema={joinCourseWithPinSchema}
-          onSubmit={async (values, { setSubmitting }) => {
+          onSubmit={async (values, { setSubmitting, resetForm }) => {
             setSubmitting(true)
             const participant = await joinCourseWithPin({
               variables: {
@@ -101,44 +108,40 @@ function JoinCourse({
               },
             })
 
-            if (participant) {
+            if (participant?.data?.joinCourseWithPin) {
               router.push('/')
             } else {
-              console.warn('Error while joining course')
+              setError(true)
             }
             setSubmitting(false)
           }}
         >
           {({ errors, touched, isSubmitting }) => {
             return (
-              <div className="mb-10">
-                <Form className="w-72 sm:w-96">
-                  <Label label="Kurs-PIN" className={'italic'} />
-                  <Field
-                    name="pin"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                      errors.pin &&
-                        touched.pin &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                  />
-                  <ErrorMessage
-                    name="pin"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+              <Form className="max-w-sm">
+                <Label label="Kurs-PIN" className="italic" />
+                <Field
+                  name="pin"
+                  type="text"
+                  className={twMerge(
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                    errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
+                  )}
+                />
+                <ErrorMessage
+                  name="pin"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
 
-                  <Button
-                    className="float-right mt-2 border-uzh-grey-80"
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
-                    <Button.Label>Kurs beitreten</Button.Label>
-                  </Button>
-                </Form>
-              </div>
+                <Button
+                  className="float-right mt-2 border-uzh-grey-80"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  <Button.Label>Kurs beitreten</Button.Label>
+                </Button>
+              </Form>
             )
           }}
         </Formik>
@@ -152,7 +155,7 @@ function JoinCourse({
             pin: '',
           }}
           validationSchema={joinAndRegisterSchema}
-          onSubmit={async (values, { setSubmitting }) => {
+          onSubmit={async (values, { setSubmitting, resetForm }) => {
             setSubmitting(true)
             const participant = await createParticipantAndJoinCourse({
               variables: {
@@ -163,98 +166,105 @@ function JoinCourse({
               },
             })
 
-            if (participant) {
+            if (participant?.data?.createParticipantAndJoinCourse) {
               router.push('/')
             } else {
-              console.warn('Error while joining course')
+              setError(true)
             }
             setSubmitting(false)
           }}
         >
           {({ errors, touched, isSubmitting }) => {
             return (
-              <div className="mb-10">
-                <Form className="w-72 sm:w-96">
-                  <Label label="Nutzername" className={'italic'} />
-                  <Field
-                    name="username"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                      errors.username &&
-                        touched.username &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                  />
-                  <ErrorMessage
-                    name="username"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+              <Form className="max-w-sm">
+                <Label label="Nutzername" className="italic" />
+                <Field
+                  name="username"
+                  type="text"
+                  className={twMerge(
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                    errors.username &&
+                      touched.username &&
+                      'border-red-400 bg-red-50 mb-0'
+                  )}
+                  disabled={isSubmitting}
+                />
+                <ErrorMessage
+                  name="username"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
 
-                  <Label label="Passwort" className={'italic'} />
-                  <Field
-                    name="password"
-                    type="password"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                      errors.password &&
-                        touched.password &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                  />
-                  <ErrorMessage
-                    name="password"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                <Label label="Passwort" className="italic" />
+                <Field
+                  name="password"
+                  type="password"
+                  className={twMerge(
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                    errors.password &&
+                      touched.password &&
+                      'border-red-400 bg-red-50 mb-0'
+                  )}
+                  disabled={isSubmitting}
+                />
+                <ErrorMessage
+                  name="password"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
 
-                  <Label label="Passwort (Wiederholung)" className={'italic'} />
-                  <Field
-                    name="passwordRepetition"
-                    type="password"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                      errors.passwordRepetition &&
-                        touched.passwordRepetition &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                  />
-                  <ErrorMessage
-                    name="passwordRepetition"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                <Label label="Passwort (Wiederholung)" className="italic" />
+                <Field
+                  name="passwordRepetition"
+                  type="password"
+                  className={twMerge(
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                    errors.passwordRepetition &&
+                      touched.passwordRepetition &&
+                      'border-red-400 bg-red-50 mb-0'
+                  )}
+                  disabled={isSubmitting}
+                />
+                <ErrorMessage
+                  name="passwordRepetition"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
 
-                  <Label label="Kurs-PIN" className={'italic'} />
-                  <Field
-                    name="pin"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                      errors.pin &&
-                        touched.pin &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                  />
-                  <ErrorMessage
-                    name="pin"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                <Label label="Kurs-PIN" className="italic" />
+                <Field
+                  name="pin"
+                  type="text"
+                  className={twMerge(
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                    errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
+                  )}
+                  disabled={isSubmitting}
+                />
+                <ErrorMessage
+                  name="pin"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
 
-                  <Button
-                    className="float-right mt-2 border-uzh-grey-80"
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
-                    <Button.Label>Kurs beitreten</Button.Label>
-                  </Button>
-                </Form>
-              </div>
+                <Button
+                  className="float-right mt-2 border-uzh-grey-80"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  <Button.Label>Kurs beitreten</Button.Label>
+                </Button>
+              </Form>
             )
           }}
         </Formik>
+      )}
+      {showError && (
+        <UserNotification
+          message="Es gab einen Fehler bei Ihren Eingeben, bitte prüfen Sie diese erneut."
+          notificationType="error"
+          className="max-w-sm"
+        />
       )}
     </Layout>
   )
