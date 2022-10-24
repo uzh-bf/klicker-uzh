@@ -1,5 +1,6 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
+  CreateParticipantAndJoinCourseDocument,
   GetBasicCourseInformationDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -25,6 +26,10 @@ function JoinCourse({ courseId }: { courseId: string }) {
       pollInterval: 10000,
       skip: !courseId,
     }
+  )
+
+  const [createParticipantAndJoinCourse] = useMutation(
+    CreateParticipantAndJoinCourseDocument
   )
 
   const router = useRouter()
@@ -97,14 +102,26 @@ function JoinCourse({ courseId }: { courseId: string }) {
               pin: '',
             }}
             validationSchema={joinAndRegisterSchema}
-            onSubmit={async (values) => {
+            onSubmit={async (values, { setSubmitting }) => {
+              setSubmitting(true)
               // TODO: join course and create participant
-              // await loginUser({
-              //   variables: { email: values.email, password: values.password },
-              // })
+              const participant = await createParticipantAndJoinCourse({
+                variables: {
+                  courseId: courseId,
+                  username: values.username,
+                  password: values.password,
+                  pin: Number(values.pin),
+                },
+              })
+             
               console.log(values)
               // TODO: redirect to course page
-              // router.push('/')
+              if (participant) {
+                router.push('/')
+              } else {
+                console.warn('Error while joining course')
+              }
+              setSubmitting(false)
             }}
           >
             {({ errors, touched, isSubmitting }) => {
@@ -220,7 +237,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 export default JoinCourse
 
 // ! TEST CASES
-// 1. Course does not exist
-// 2. Course exists, user is not logged in
-// 3. Course exists, user is logged in
-// 4. Course exists, user is logged in and already joined the course
+// 1. Course does not exist - TODO
+// 2. Course exists, user is not logged in - ALL OK
+// 3. Course exists, user is not logged in but has an account - ALL OK
+// 4. Course exists, user is not logged in but has an account and is a participant already - ALL OK
+// 5. Course exists, user is logged in - TODO
+// 6. Course exists, user is logged in and already joined the course - TODO

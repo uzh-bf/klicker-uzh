@@ -1008,6 +1008,19 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createParticipantAndJoinCourse', {
+      type: Participant,
+      args: {
+        username: nonNull(stringArg()),
+        password: nonNull(stringArg()),
+        courseId: nonNull(idArg()),
+        pin: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      },
+    })
+
     t.field('joinCourse', {
       type: ParticipantLearningData,
       args: {

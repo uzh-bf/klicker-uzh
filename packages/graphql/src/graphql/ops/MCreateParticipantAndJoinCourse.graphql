@@ -1,0 +1,17 @@
+mutation CreateParticipantAndJoinCourse(
+  $username: String!
+  $password: String!
+  $courseId: ID!
+  $pin: Int!
+) {
+  createParticipantAndJoinCourse(
+    username: $username
+    password: $password
+    courseId: $courseId
+    pin: $pin
+  ) {
+    id
+    username
+    avatar
+  }
+}
