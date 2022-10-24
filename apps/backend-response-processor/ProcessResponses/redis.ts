@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node'
 import Redis from 'ioredis'
 
 let redis: Redis
@@ -13,7 +14,7 @@ function getRedis() {
         tls: process.env.REDIS_TLS ? {} : undefined,
       })
     } catch (e) {
-      console.error(e)
+      Sentry.captureException(e)
     }
   }
 
