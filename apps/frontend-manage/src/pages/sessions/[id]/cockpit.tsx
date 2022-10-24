@@ -75,7 +75,7 @@ function Cockpit() {
   if (cockpitLoading) return <div>Loading...</div>
 
   // loading is finished, but was not successful
-  if (!cockpitData || cockpitError) {
+  if (!cockpitData?.cockpitSession || cockpitError) {
     // TODO fix router instance not available error
     // router.push('/404')
     return null
