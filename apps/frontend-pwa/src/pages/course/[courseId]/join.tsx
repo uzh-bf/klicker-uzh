@@ -4,6 +4,7 @@ import {
   GetBasicCourseInformationDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { initializeApollo } from '@lib/apollo'
 import { Button, H2, Label } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
@@ -13,20 +14,21 @@ import * as yup from 'yup'
 
 import Layout from '../../../components/Layout'
 
-function JoinCourse({ courseId }: { courseId: string }) {
+function JoinCourse({
+  courseId,
+  displayName,
+  color,
+  description,
+  courseLoading,
+}: {
+  courseId: string
+  displayName: string
+  color: string
+  description: string
+  courseLoading: boolean
+}) {
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
-
-  const { loading: loadingCourse, data: dataCourse } = useQuery(
-    GetBasicCourseInformationDocument,
-    {
-      variables: {
-        courseId: courseId,
-      },
-      pollInterval: 10000,
-      skip: !courseId,
-    }
-  )
 
   const [createParticipantAndJoinCourse] = useMutation(
     CreateParticipantAndJoinCourseDocument
@@ -34,18 +36,10 @@ function JoinCourse({ courseId }: { courseId: string }) {
 
   const router = useRouter()
 
-  console.log(dataCourse)
-
   // TODO: detect if the user is logged in already and if so, reuse the join course query to join the course or create new join course query
 
-  if (loadingParticipant || loadingCourse) {
+  if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
-  }
-
-  // TODO: replace this by a corresponding redirect to 404 in the getServerSideProps function
-  if (!dataCourse) {
-    router.push('/404')
-    return <></>
   }
 
   const joinAndRegisterSchema = yup.object({
@@ -80,14 +74,11 @@ function JoinCourse({ courseId }: { courseId: string }) {
   return (
     <Layout
       displayName="Kurs beitreten"
-      courseName={dataCourse.basicCourseInformation.displayName} // course.displayName
-      courseColor={dataCourse.basicCourseInformation.color} // course.color
+      courseName={displayName}
+      courseColor={color}
     >
-      <H2>
-        Kurs &quot;{dataCourse.basicCourseInformation.displayName}&quot;
-        beitreten
-      </H2>
-      <div>{dataCourse.basicCourseInformation.description}</div>
+      <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
+      <div>{description}</div>
       {dataParticipant?.self ? (
         <div>Join Course with existing account</div>
       ) : (
@@ -103,7 +94,6 @@ function JoinCourse({ courseId }: { courseId: string }) {
             validationSchema={joinAndRegisterSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
-              // TODO: join course and create participant
               const participant = await createParticipantAndJoinCourse({
                 variables: {
                   courseId: courseId,
@@ -112,9 +102,7 @@ function JoinCourse({ courseId }: { courseId: string }) {
                   pin: Number(values.pin),
                 },
               })
-             
-              console.log(values)
-              // TODO: redirect to course page
+
               if (participant) {
                 router.push('/')
               } else {
@@ -226,19 +214,36 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  return {
-    props: {
-      courseId: ctx.params.courseId,
-    },
+  const apolloClient = initializeApollo()
+
+  try {
+    const { data, loading } = await apolloClient.query({
+      query: GetBasicCourseInformationDocument,
+      variables: {
+        courseId: ctx.params.courseId,
+      },
+    })
+
+    return {
+      props: {
+        courseId: ctx.params.courseId,
+        displayName: data?.basicCourseInformation?.displayName,
+        color: data?.basicCourseInformation?.color,
+        description: data?.basicCourseInformation?.description,
+        courseLoading: loading,
+      },
+    }
+  } catch {
+    return { redirect: { destination: '/404', statusCode: 302 } }
   }
 }
 
 export default JoinCourse
 
 // ! TEST CASES
-// 1. Course does not exist - TODO
+// 1. Course does not exist - ALL OK
 // 2. Course exists, user is not logged in - ALL OK
 // 3. Course exists, user is not logged in but has an account - ALL OK
 // 4. Course exists, user is not logged in but has an account and is a participant already - ALL OK
-// 5. Course exists, user is logged in - TODO
-// 6. Course exists, user is logged in and already joined the course - TODO
+// 5. Course exists, user is logged in - // TODO
+// 6. Course exists, user is logged in and already joined the course - // TODO
