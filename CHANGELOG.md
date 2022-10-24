@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.72...v2.0.0-alpha.73) (2022-10-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that strings in answer feedbacks etc. are nullable ([c78f9f3](https://github.com/uzh-bf/klicker-uzh/commit/c78f9f3d0c5e4226239a1b99a84a7c1f1966753a))
+
+
+### Other
+
+* **frontend-manage:** fix line height issues and remove ctrl c combination for code formatting ([aea2b2e](https://github.com/uzh-bf/klicker-uzh/commit/aea2b2e672c9ca1fc734dc1bcdf7d0d33ac392ce))
+* lockfile maintenance ([b8b5706](https://github.com/uzh-bf/klicker-uzh/commit/b8b5706c10cad0f53ae3ca4824d22ce42603b8db))
+* **packages/prisma:** update seed commands ([db1c19f](https://github.com/uzh-bf/klicker-uzh/commit/db1c19f0c18f447074618a1c88c9481c120f02d2))
+* seed update ([77fceaf](https://github.com/uzh-bf/klicker-uzh/commit/77fceafcf19c789178997003510ae9c32dfbf99e))
+
 ## [2.0.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.71...v2.0.0-alpha.72) (2022-10-23)
 
 
