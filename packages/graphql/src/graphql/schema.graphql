@@ -234,6 +234,7 @@ type Mutation {
   deleteQuestion(id: Int): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
+  joinCourseWithPin(courseId: ID!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
   leaveCourse(courseId: ID!): ParticipantLearningData
   leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup

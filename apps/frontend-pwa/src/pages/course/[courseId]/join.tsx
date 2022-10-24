@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateParticipantAndJoinCourseDocument,
   GetBasicCourseInformationDocument,
+  JoinCourseWithPinDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { initializeApollo } from '@lib/apollo'
@@ -33,10 +34,9 @@ function JoinCourse({
   const [createParticipantAndJoinCourse] = useMutation(
     CreateParticipantAndJoinCourseDocument
   )
+  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   const router = useRouter()
-
-  // TODO: detect if the user is logged in already and if so, reuse the join course query to join the course or create new join course query
 
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
@@ -71,6 +71,13 @@ function JoinCourse({
       .required('Bitte geben Sie den Kurs-PIN ein.'),
   })
 
+  const joinCourseWithPinSchema = yup.object({
+    pin: yup
+      .number()
+      .typeError('Bitte geben Sie einen numerischen PIN ein.')
+      .required('Bitte geben Sie den Kurs-PIN ein.'),
+  })
+
   return (
     <Layout
       displayName="Kurs beitreten"
@@ -80,125 +87,174 @@ function JoinCourse({
       <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
       <div>{description}</div>
       {dataParticipant?.self ? (
-        <div>Join Course with existing account</div>
+        <Formik
+          initialValues={{
+            pin: '',
+          }}
+          validationSchema={joinCourseWithPinSchema}
+          onSubmit={async (values, { setSubmitting }) => {
+            setSubmitting(true)
+            const participant = await joinCourseWithPin({
+              variables: {
+                courseId,
+                pin: Number(values.pin),
+              },
+            })
+
+            if (participant) {
+              router.push('/')
+            } else {
+              console.warn('Error while joining course')
+            }
+            setSubmitting(false)
+          }}
+        >
+          {({ errors, touched, isSubmitting }) => {
+            return (
+              <div className="mb-10">
+                <Form className="w-72 sm:w-96">
+                  <Label label="Kurs-PIN" className={'italic'} />
+                  <Field
+                    name="pin"
+                    type="text"
+                    className={twMerge(
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      errors.pin &&
+                        touched.pin &&
+                        'border-red-400 bg-red-50 mb-0'
+                    )}
+                  />
+                  <ErrorMessage
+                    name="pin"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
+
+                  <Button
+                    className="float-right mt-2 border-uzh-grey-80"
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    <Button.Label>Kurs beitreten</Button.Label>
+                  </Button>
+                </Form>
+              </div>
+            )
+          }}
+        </Formik>
       ) : (
-        <div>
-          <Formik
-            initialValues={{
-              email: '',
-              username: '',
-              password: '',
-              passwordRepetition: '',
-              pin: '',
-            }}
-            validationSchema={joinAndRegisterSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              setSubmitting(true)
-              const participant = await createParticipantAndJoinCourse({
-                variables: {
-                  courseId: courseId,
-                  username: values.username,
-                  password: values.password,
-                  pin: Number(values.pin),
-                },
-              })
+        <Formik
+          initialValues={{
+            email: '',
+            username: '',
+            password: '',
+            passwordRepetition: '',
+            pin: '',
+          }}
+          validationSchema={joinAndRegisterSchema}
+          onSubmit={async (values, { setSubmitting }) => {
+            setSubmitting(true)
+            const participant = await createParticipantAndJoinCourse({
+              variables: {
+                courseId: courseId,
+                username: values.username,
+                password: values.password,
+                pin: Number(values.pin),
+              },
+            })
 
-              if (participant) {
-                router.push('/')
-              } else {
-                console.warn('Error while joining course')
-              }
-              setSubmitting(false)
-            }}
-          >
-            {({ errors, touched, isSubmitting }) => {
-              return (
-                <div className="mb-10">
-                  <Form className="w-72 sm:w-96">
-                    <Label label="Nutzername" className={'italic'} />
-                    <Field
-                      name="username"
-                      type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                        errors.username &&
-                          touched.username &&
-                          'border-red-400 bg-red-50 mb-0'
-                      )}
-                    />
-                    <ErrorMessage
-                      name="username"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
+            if (participant) {
+              router.push('/')
+            } else {
+              console.warn('Error while joining course')
+            }
+            setSubmitting(false)
+          }}
+        >
+          {({ errors, touched, isSubmitting }) => {
+            return (
+              <div className="mb-10">
+                <Form className="w-72 sm:w-96">
+                  <Label label="Nutzername" className={'italic'} />
+                  <Field
+                    name="username"
+                    type="text"
+                    className={twMerge(
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      errors.username &&
+                        touched.username &&
+                        'border-red-400 bg-red-50 mb-0'
+                    )}
+                  />
+                  <ErrorMessage
+                    name="username"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
 
-                    <Label label="Passwort" className={'italic'} />
-                    <Field
-                      name="password"
-                      type="password"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                        errors.password &&
-                          touched.password &&
-                          'border-red-400 bg-red-50 mb-0'
-                      )}
-                    />
-                    <ErrorMessage
-                      name="password"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
+                  <Label label="Passwort" className={'italic'} />
+                  <Field
+                    name="password"
+                    type="password"
+                    className={twMerge(
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      errors.password &&
+                        touched.password &&
+                        'border-red-400 bg-red-50 mb-0'
+                    )}
+                  />
+                  <ErrorMessage
+                    name="password"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
 
-                    <Label
-                      label="Passwort (Wiederholung)"
-                      className={'italic'}
-                    />
-                    <Field
-                      name="passwordRepetition"
-                      type="password"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                        errors.passwordRepetition &&
-                          touched.passwordRepetition &&
-                          'border-red-400 bg-red-50 mb-0'
-                      )}
-                    />
-                    <ErrorMessage
-                      name="passwordRepetition"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
+                  <Label label="Passwort (Wiederholung)" className={'italic'} />
+                  <Field
+                    name="passwordRepetition"
+                    type="password"
+                    className={twMerge(
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      errors.passwordRepetition &&
+                        touched.passwordRepetition &&
+                        'border-red-400 bg-red-50 mb-0'
+                    )}
+                  />
+                  <ErrorMessage
+                    name="passwordRepetition"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
 
-                    <Label label="Kurs-PIN" className={'italic'} />
-                    <Field
-                      name="pin"
-                      type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-                        errors.pin &&
-                          touched.pin &&
-                          'border-red-400 bg-red-50 mb-0'
-                      )}
-                    />
-                    <ErrorMessage
-                      name="pin"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
+                  <Label label="Kurs-PIN" className={'italic'} />
+                  <Field
+                    name="pin"
+                    type="text"
+                    className={twMerge(
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      errors.pin &&
+                        touched.pin &&
+                        'border-red-400 bg-red-50 mb-0'
+                    )}
+                  />
+                  <ErrorMessage
+                    name="pin"
+                    component="div"
+                    className="text-sm text-red-400"
+                  />
 
-                    <Button
-                      className="float-right mt-2 border-uzh-grey-80"
-                      type="submit"
-                      disabled={isSubmitting}
-                    >
-                      <Button.Label>Kurs beitreten</Button.Label>
-                    </Button>
-                  </Form>
-                </div>
-              )
-            }}
-          </Formik>
-        </div>
+                  <Button
+                    className="float-right mt-2 border-uzh-grey-80"
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    <Button.Label>Kurs beitreten</Button.Label>
+                  </Button>
+                </Form>
+              </div>
+            )
+          }}
+        </Formik>
       )}
     </Layout>
   )
@@ -239,11 +295,3 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 }
 
 export default JoinCourse
-
-// ! TEST CASES
-// 1. Course does not exist - ALL OK
-// 2. Course exists, user is not logged in - ALL OK
-// 3. Course exists, user is not logged in but has an account - ALL OK
-// 4. Course exists, user is not logged in but has an account and is a participant already - ALL OK
-// 5. Course exists, user is logged in - // TODO
-// 6. Course exists, user is logged in and already joined the course - // TODO

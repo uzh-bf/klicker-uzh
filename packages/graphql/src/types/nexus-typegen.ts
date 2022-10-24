@@ -575,6 +575,7 @@ export interface NexusGenFieldTypes {
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    joinCourseWithPin: NexusGenRootTypes['Participant'] | null; // Participant
     joinParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     leaveCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     leaveParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
@@ -938,6 +939,7 @@ export interface NexusGenFieldTypeNames {
     deleteQuestion: 'Question'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
+    joinCourseWithPin: 'Participant'
     joinParticipantGroup: 'ParticipantGroup'
     leaveCourse: 'ParticipantLearningData'
     leaveParticipantGroup: 'ParticipantGroup'
@@ -1200,6 +1202,10 @@ export interface NexusGenArgTypes {
     }
     joinCourse: { // args
       courseId: string; // ID!
+    }
+    joinCourseWithPin: { // args
+      courseId: string; // ID!
+      pin: number; // Int!
     }
     joinParticipantGroup: { // args
       code: number; // Int!

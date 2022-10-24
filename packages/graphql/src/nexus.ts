@@ -1031,6 +1031,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('joinCourseWithPin', {
+      type: Participant,
+      args: {
+        courseId: nonNull(idArg()),
+        pin: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.joinCourseWithPin(args, ctx)
+      },
+    })
+
     t.field('leaveCourse', {
       type: ParticipantLearningData,
       args: {

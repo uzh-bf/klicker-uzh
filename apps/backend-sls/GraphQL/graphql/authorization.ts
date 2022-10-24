@@ -59,6 +59,7 @@ export const AuthSchema = {
     createSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     createParticipantAndJoinCourse: { __authz: { rules: ['Allow'] } },
     joinCourse: { __authz: { rules: ['IsParticipant'] } },
+    joinCourseWithPin: { __authz: { rules: ['IsParticipant'] } },
     leaveCourse: { __authz: { rules: ['IsParticipant'] } },
     leaveParticipantGroup: { __authz: { rules: ['IsParticipant'] } },
     joinParticipantGroup: { __authz: { rules: ['IsParticipant'] } },
