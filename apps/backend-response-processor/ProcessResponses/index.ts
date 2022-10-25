@@ -28,19 +28,26 @@ const serviceBusTrigger: AzureFunction = async function (
 ) {
   context.log('ProcessResponses function processed a message', queueItem)
 
-  let redisMulti: ChainableCommander
-
   try {
     assert(!!redisExec)
+  } catch (e) {
+    context.log('Redis connection error', e)
+    Sentry.captureException(e)
+    await Sentry.flush(500)
+    throw new Error(`Redis connection error ${String(e)}`)
+  }
 
+  let redisMulti: ChainableCommander
+  redisMulti = redisExec.multi()
+
+  try {
     const sessionKey = `s:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
     const response = queueItem.response
     if (!response) {
-      return {
-        status: 400,
-      }
+      context.log('Missing response', queueItem)
+      return { status: 400 }
     }
 
     let participantData: { sub: string } | null = null
@@ -52,7 +59,7 @@ const serviceBusTrigger: AzureFunction = async function (
           process.env.APP_SECRET as string
         ) as any
       } catch (e) {
-        context.log('JWT verification failed', e)
+        context.log('JWT verification failed', e, queueItem.cookie)
         Sentry.captureException(e)
       }
       // if the participant has already responded to the question instance, return instantly
@@ -63,16 +70,20 @@ const serviceBusTrigger: AzureFunction = async function (
           participantData.sub
         ))
       ) {
+        context.log(
+          'Participant has already responded to this question instance'
+        )
         return { status: 200 }
       }
     }
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo) {
-      return {
-        status: 400,
-      }
+      context.log('Question instance metadata not found', queueItem)
+      return { status: 400 }
     }
+
+    context.log('Instance info', instanceInfo)
 
     const {
       type,
@@ -88,11 +99,10 @@ const serviceBusTrigger: AzureFunction = async function (
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      context.log('Error parsing solutions', e)
+      context.log('Error parsing solutions', e, queueItem)
       Sentry.captureException(e)
     }
 
-    redisMulti = redisExec.multi()
     // compute the timing of the response based on the first response received for the instance
     const responseTiming =
       (responseTimestamp -
@@ -254,18 +264,21 @@ const serviceBusTrigger: AzureFunction = async function (
       }
     }
   } catch (e) {
+    context.log('Error processing response', e, queueItem)
     Sentry.captureException(e)
-    return {
-      status: 500,
-    }
+    redisMulti?.discard()
+    await Sentry.flush(500)
+    return { status: 500 }
   }
 
   try {
     await redisMulti.exec()
     return { status: 200 }
   } catch (e) {
-    context.log('Redis transaction failed', e)
+    context.log('Redis transaction failed', e, queueItem)
     Sentry.captureException(e)
+    redisMulti?.discard()
+    await Sentry.flush(500)
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
