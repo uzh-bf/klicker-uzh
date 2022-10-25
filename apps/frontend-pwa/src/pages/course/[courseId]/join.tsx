@@ -33,9 +33,12 @@ function JoinCourse({
     useQuery(SelfDocument)
 
   const [createParticipantAndJoinCourse] = useMutation(
-    CreateParticipantAndJoinCourseDocument
+    CreateParticipantAndJoinCourseDocument,
+    { refetchQueries: 'active' }
   )
-  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
+  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument, {
+    refetchQueries: 'active',
+  })
 
   const router = useRouter()
   const [showError, setError] = useState(false)
@@ -310,11 +313,26 @@ export const PinField = ({
       <Field
         name="pin"
         type="text"
+        placeholder="### ### ###"
         className={twMerge(
           'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
           errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
         )}
         maxLength={11}
+        onPaste={(e: any) => {
+          e.preventDefault()
+          const paste = e.clipboardData?.getData('text')
+          if (
+            typeof paste === 'string' &&
+            paste.length === 9 &&
+            paste.match(/^[0-9]{9}$/g)
+          ) {
+            setFieldValue(
+              'pin',
+              `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
+            )
+          }
+        }}
         onChange={(e: any) => {
           // regex magic to only allow numerical pins in the format ### ### ###
           const regexToMatch =
