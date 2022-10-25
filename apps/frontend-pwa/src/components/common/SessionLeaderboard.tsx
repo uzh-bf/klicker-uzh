@@ -18,6 +18,8 @@ function Leaderboard({
     fetchPolicy: 'network-only',
   })
 
+  console.log(data)
+
   if (loading || !data) {
     return <div>loading</div>
   }

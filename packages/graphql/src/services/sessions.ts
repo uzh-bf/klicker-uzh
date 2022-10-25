@@ -815,26 +815,39 @@ export async function getLeaderboard(
   { sessionId }: GetLeaderboardArgs,
   ctx: ContextWithUser
 ) {
-  const top10 = await ctx.prisma.session
-    .findUnique({
-      where: {
-        id: sessionId,
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      leaderboard: {
+        orderBy: {
+          score: 'desc',
+        },
+        include: {
+          participant: true,
+          sessionParticipation: true,
+        },
       },
-    })
-    .leaderboard({
-      orderBy: {
-        score: 'desc',
-      },
-      include: {
-        sessionParticipation: true,
-        participant: true,
-      },
-      take: 10,
-    })
+      blocks: true,
+    },
+  })
 
-  return top10.flatMap((entry) => {
-    if (!entry.sessionParticipation.isActive) return []
+  // find the order attribute of the last exectued block
+  const executedBlockOrders = session?.blocks
+    .filter(
+      (sessionBlock) => sessionBlock.status === SessionBlockStatus.EXECUTED
+    )
+    .map((sessionBlock) => Number(sessionBlock.order))
 
+  const lastBlockOrder = executedBlockOrders
+    ? Math.max(...executedBlockOrders)
+    : 0
+
+  return session?.leaderboard?.flatMap((entry) => {
+    if (!entry.sessionParticipation?.isActive) return []
+
+    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
       participantId: ctx.user.sub,
@@ -842,6 +855,7 @@ export async function getLeaderboard(
       avatar: entry.participant.avatar,
       score: entry.score,
       self: entry.participantId === ctx.user.sub,
+      lastBlockOrder,
     }
   })
 }

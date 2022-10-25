@@ -189,6 +189,7 @@ type LeaderboardEntry {
   avatar: String
   id: ID!
   isSelf: Boolean
+  lastBlockOrder: Int
   participantId: ID!
   rank: Int!
   score: Float!

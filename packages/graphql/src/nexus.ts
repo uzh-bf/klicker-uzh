@@ -526,6 +526,8 @@ export const LeaderboardEntry = objectType({
     t.nonNull.int('rank')
 
     t.boolean('isSelf')
+
+    t.int('lastBlockOrder')
   },
 })
 
