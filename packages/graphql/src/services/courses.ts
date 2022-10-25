@@ -178,17 +178,18 @@ export async function getCourseOverviewData(
 
       const allGroupEntries = participation.course.participantGroups.reduce(
         (acc, group, ix) => {
+          const score = group.averageMemberScore + group.groupActivityScore
           return {
             mapped: [
               ...acc.mapped,
               {
                 ...group,
-                score: group.averageMemberScore + group.groupActivityScore,
+                score,
                 rank: ix + 1,
               },
             ],
             count: acc.count + 1,
-            sum: acc.sum + group.averageMemberScore + group.groupActivityScore,
+            sum: acc.sum + score,
           }
         },
         {
