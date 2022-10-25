@@ -41,7 +41,7 @@ const httpTrigger: AzureFunction = async function (
     //   }
     // }
 
-    serviceBusSender.sendMessages({
+    await serviceBusSender.sendMessages({
       sessionId: req.body.sessionId,
       // messageId,
       body: {

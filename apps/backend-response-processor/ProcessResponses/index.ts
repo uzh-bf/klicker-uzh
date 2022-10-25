@@ -28,11 +28,19 @@ const serviceBusTrigger: AzureFunction = async function (
 ) {
   context.log('ProcessResponses function processed a message', queueItem)
 
-  let redisMulti: ChainableCommander = null
-
   try {
     assert(!!redisExec)
+  } catch (e) {
+    context.log('Redis connection error', e)
+    Sentry.captureException(e)
+    await Sentry.flush(500)
+    throw new Error(`Redis connection error ${String(e)}`)
+  }
 
+  let redisMulti: ChainableCommander
+  redisMulti = redisExec.multi()
+
+  try {
     const sessionKey = `s:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
@@ -94,8 +102,6 @@ const serviceBusTrigger: AzureFunction = async function (
       context.log('Error parsing solutions', e, queueItem)
       Sentry.captureException(e)
     }
-
-    redisMulti = redisExec.watch()
 
     // compute the timing of the response based on the first response received for the instance
     const responseTiming =
@@ -261,6 +267,7 @@ const serviceBusTrigger: AzureFunction = async function (
     context.log('Error processing response', e, queueItem)
     Sentry.captureException(e)
     redisMulti?.discard()
+    await Sentry.flush(500)
     return { status: 500 }
   }
 
@@ -271,6 +278,7 @@ const serviceBusTrigger: AzureFunction = async function (
     context.log('Redis transaction failed', e, queueItem)
     Sentry.captureException(e)
     redisMulti?.discard()
+    await Sentry.flush(500)
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
