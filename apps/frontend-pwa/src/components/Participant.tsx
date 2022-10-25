@@ -26,7 +26,7 @@ function Participant({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-1 outline outline-slate-200 outline-1 rounded',
+        'flex flex-row items-center gap-1 border border-slate-200 rounded',
         isHighlighted && 'bg-uzh-grey-20',
         className
       )}
