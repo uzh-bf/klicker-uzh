@@ -1,6 +1,5 @@
 import type { AzureFunction, Context, HttpRequest } from '@azure/functions'
 import * as Sentry from '@sentry/node'
-import JWT from 'jsonwebtoken'
 
 import getServiceBus from './sbus'
 
@@ -20,34 +19,31 @@ const httpTrigger: AzureFunction = async function (
 
   // immediately return on GET -> healthcheck
   if (req.method === 'GET') {
-    return {
-      status: 200,
-    }
+    return { status: 200 }
   }
 
   if (!req.body.response || !req.body.sessionId) {
-    return {
-      status: 400,
-    }
+    context.log('Missing response or sessionId', req.body)
+    return { status: 400 }
   }
 
   try {
-    let messageId = undefined
-    if (req.headers?.cookie) {
-      const token = req.headers.cookie.replace('participant_token=', '')
-      const participantData = JWT.verify(
-        token,
-        process.env.APP_SECRET as string
-      ) as any
+    // let messageId = undefined
+    // if (req.headers?.cookie) {
+    //   const token = req.headers.cookie.replace('participant_token=', '')
+    //   const participantData = JWT.verify(
+    //     token,
+    //     process.env.APP_SECRET as string
+    //   ) as any
 
-      if (participantData.sub) {
-        messageId = `${participantData.sub}-${req.body.sessionId}`
-      }
-    }
+    //   if (participantData.sub) {
+    //     messageId = `${participantData.sub}-${req.body.sessionId}`
+    //   }
+    // }
 
-    serviceBusSender.sendMessages({
+    await serviceBusSender.sendMessages({
       sessionId: req.body.sessionId,
-      messageId,
+      // messageId,
       body: {
         ...req.body,
         cookie: req.headers?.cookie,
@@ -55,16 +51,13 @@ const httpTrigger: AzureFunction = async function (
       },
     })
   } catch (e) {
+    context.log('Error sending message to service bus', e)
     Sentry.captureException(e)
     await Sentry.flush(500)
-    return {
-      status: 500,
-    }
+    return { status: 500 }
   }
 
-  return {
-    status: 200,
-  }
+  return { status: 200 }
 }
 
 export default httpTrigger
