@@ -164,7 +164,8 @@ function CourseOverview({ courseId }: any) {
                 </div>
 
                 <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                  Das Gruppenleaderboard wird täglich aktualisiert.
+                  Das Gruppenleaderboard wird täglich aktualisiert. <br />
+                  Gruppen mit einem Mitglied erhalten keine Punkte.
                 </div>
               </div>
             </div>
