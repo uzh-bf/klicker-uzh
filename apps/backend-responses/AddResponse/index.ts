@@ -47,7 +47,7 @@ const httpTrigger: AzureFunction = async function (
       body: {
         ...req.body,
         cookie: req.headers?.cookie,
-        responseTimestamp: Math.round(Number(new Date()) / 1000),
+        responseTimestamp: Number(new Date()),
       },
     })
   } catch (e) {
