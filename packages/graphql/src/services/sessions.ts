@@ -850,11 +850,10 @@ export async function getLeaderboard(
     // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
-      participantId: ctx.user.sub,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
       score: entry.score,
-      self: entry.participantId === ctx.user.sub,
+      isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
     }
   })

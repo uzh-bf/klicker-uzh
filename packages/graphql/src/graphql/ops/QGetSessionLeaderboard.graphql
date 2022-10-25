@@ -4,6 +4,7 @@ query GetSessionLeaderboard($sessionId: ID!) {
     username
     avatar
     score
+    isSelf
     lastBlockOrder
   }
 }
