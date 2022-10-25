@@ -104,10 +104,14 @@ const serviceBusTrigger: AzureFunction = async function (
     }
 
     // compute the timing of the response based on the first response received for the instance
-    const responseTiming =
+    let responseTiming =
       (responseTimestamp -
         Number(firstResponseReceivedAt ?? responseTimestamp)) /
       1000
+    if (responseTiming <= 0) {
+      responseTiming = 1
+    }
+    context.log('responseTiming', responseTiming)
     let pointsAwarded: number | string = 10
     switch (type) {
       case 'SC':
@@ -139,7 +143,8 @@ const serviceBusTrigger: AzureFunction = async function (
             })
           }
           if (pointsPercentage !== null) {
-            pointsAwarded += (20 * pointsPercentage) / responseTiming
+            context.log('pointsPercentage', pointsPercentage)
+            pointsAwarded += (50 * pointsPercentage) / responseTiming
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
@@ -151,6 +156,7 @@ const serviceBusTrigger: AzureFunction = async function (
             }
           }
           pointsAwarded = Math.round(pointsAwarded)
+          context.log('pointsAwarded', pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
@@ -187,7 +193,7 @@ const serviceBusTrigger: AzureFunction = async function (
               solutionRanges: parsedSolutions,
             })
           ) {
-            pointsAwarded += 20 / responseTiming
+            pointsAwarded += 50 / responseTiming
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
@@ -235,7 +241,7 @@ const serviceBusTrigger: AzureFunction = async function (
               solutions: parsedSolutions,
             })
           ) {
-            pointsAwarded += 20 / responseTiming
+            pointsAwarded += 50 / responseTiming
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
