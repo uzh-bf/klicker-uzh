@@ -2,7 +2,7 @@ import { ParticipantOther, ParticipantSelf } from './Participant'
 
 function GroupLeaderboard({ leaderboard, courseId, groupId, onLeave }) {
   return (
-    <div className="pt-8 space-y-2">
+    <div className="flex-1 w-full space-y-2">
       {leaderboard.flatMap((entry) => {
         if (entry.isSelf) {
           return (
