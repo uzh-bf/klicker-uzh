@@ -150,6 +150,7 @@ const serviceBusTrigger: AzureFunction = async function (
               )
             }
           }
+          pointsAwarded = Math.round(pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
@@ -197,6 +198,7 @@ const serviceBusTrigger: AzureFunction = async function (
               )
             }
           }
+          pointsAwarded = Math.round(pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
@@ -244,6 +246,7 @@ const serviceBusTrigger: AzureFunction = async function (
               )
             }
           }
+          pointsAwarded = Math.round(pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
