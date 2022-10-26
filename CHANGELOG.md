@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.76...v2.0.0-alpha.77) (2022-10-26)
+
+
+### Features
+
+* add a basic version of the session leaderboard ([#2993](https://github.com/uzh-bf/klicker-uzh/issues/2993)) ([41c7a01](https://github.com/uzh-bf/klicker-uzh/commit/41c7a0162e384e2a5fab24c7111f48c960d2338a))
+
+
+### Bug Fixes
+
+* **apps/backend-response-processor:** round points awarded before commit ([bdb79b0](https://github.com/uzh-bf/klicker-uzh/commit/bdb79b08ea71b4c4cec60e12b2bf48493cc54018))
+* **apps/backend-response*:** improve points scheme for gamified sessions ([339e598](https://github.com/uzh-bf/klicker-uzh/commit/339e5980460049e3b09661c07b01c0f3d2aa827b))
+* **apps/backend-responses:** ensure that response timestamp is in seconds ([b38b438](https://github.com/uzh-bf/klicker-uzh/commit/b38b4384b2cd78987f48667089af6699fb828f37))
+
+
+### Dependencies
+
+* upgrade all dependencies ([#2983](https://github.com/uzh-bf/klicker-uzh/issues/2983)) ([d393d77](https://github.com/uzh-bf/klicker-uzh/commit/d393d77b1751efa00b4b8018cb2d09a07030a99a))
+
+
+### Other
+
+* **apps/frontend-pwa:** mention null groups on leaderboard ([5b4cba4](https://github.com/uzh-bf/klicker-uzh/commit/5b4cba4a60a2ee1f7dea28021da154c96509a068))
+* lockfile maintenance ([4a45118](https://github.com/uzh-bf/klicker-uzh/commit/4a45118d42ecf7739a43a629140fe69e9147f927))
+* seed update ([0dae20c](https://github.com/uzh-bf/klicker-uzh/commit/0dae20c63f1b93d119f92e6001f3defe7014eb72))
+
+
+### Enhancements
+
+* **apps/backend-response*:** add sentry for errors ([22f3d63](https://github.com/uzh-bf/klicker-uzh/commit/22f3d6343da2f3312ff982b8e78167291e7c4073))
+* **apps/backend-response*:** improve logic in response backends ([#2994](https://github.com/uzh-bf/klicker-uzh/issues/2994)) ([95ea244](https://github.com/uzh-bf/klicker-uzh/commit/95ea244746fa94be5ad1688aee75d1bce0801bbd))
+* **apps/frontend-pwa:** improve group leaderboard structure ([2a6d813](https://github.com/uzh-bf/klicker-uzh/commit/2a6d8134fc5c9a72a14c35471ca995443a761215))
+* **apps/frontend-pwa:** refetch queries after pin-based join ([5bc7533](https://github.com/uzh-bf/klicker-uzh/commit/5bc7533a66632bd773bbfc373e2af9e46b0edc3a))
+* create page that allows users to join courses based on ID and PIN ([#2979](https://github.com/uzh-bf/klicker-uzh/issues/2979)) ([ee17023](https://github.com/uzh-bf/klicker-uzh/commit/ee17023247a525ba75364b32016a8da688bf8aef))
+* implement pin structure for joining courses ([#2984](https://github.com/uzh-bf/klicker-uzh/issues/2984)) ([5a2b402](https://github.com/uzh-bf/klicker-uzh/commit/5a2b4026f84340f044b2e0c2e0120f3d02194c67))
+
 ## [2.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.75...v2.0.0-alpha.76) (2022-10-24)
 
 
