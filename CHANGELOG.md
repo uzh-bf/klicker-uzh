@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.81...v2.0.0-alpha.82) (2022-10-26)
+
+
+### Bug Fixes
+
+* parse cookie ([97baed4](https://github.com/uzh-bf/klicker-uzh/commit/97baed43468941b66b1c243529254855535d021f))
+
 ## [2.0.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.80...v2.0.0-alpha.81) (2022-10-26)
 
 
