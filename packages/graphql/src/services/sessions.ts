@@ -335,12 +335,10 @@ export async function activateSessionBlock(
 
   if (!session || session.ownerId !== ctx.user.sub) return null
 
-  const newBlockIndex = session.blocks.findIndex(
-    (block) => block.id === sessionBlockId
-  )
+  const newBlock = session.blocks.find((block) => block.id === sessionBlockId)
 
   // if the block is not from the current session, return early
-  if (newBlockIndex === -1) return session
+  if (!newBlock) return session
 
   // if the block is already active, return early
   if (session.activeBlockId === sessionBlockId) return session
@@ -357,6 +355,9 @@ export async function activateSessionBlock(
           where: { id: sessionBlockId },
           data: {
             status: SessionBlockStatus.ACTIVE,
+            expiresAt: newBlock.expiresAt
+              ? dayjs(newBlock.expiresAt).add(60, 'seconds').toDate()
+              : undefined,
           },
         },
       },

@@ -166,7 +166,14 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div></div>
+              <div
+                className={twMerge(
+                  'bg-white hidden min-h-full flex-1 md:p-8',
+                  activeMobilePage === 'leaderboard' && 'block md:hidden'
+                )}
+              >
+                <SessionLeaderboard sessionId={id} />
+              </div>
             ) : (
               <div>Keine Frage aktiv.</div>
             )
@@ -187,12 +194,6 @@ function Index({ id }: Props) {
               timeLimit={activeBlock?.timeLimit as number}
               execution={activeBlock?.execution || 0}
             />
-          )}
-
-          {!activeBlock && selfData?.self && isGamificationEnabled && (
-            <div className={twMerge('w-full bg-white min-h-full')}>
-              <SessionLeaderboard sessionId={id} className="hidden md:block" />
-            </div>
           )}
         </div>
 

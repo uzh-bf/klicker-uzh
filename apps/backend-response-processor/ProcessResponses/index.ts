@@ -54,7 +54,9 @@ const serviceBusTrigger: AzureFunction = async function (
 
     let participantData: { sub: string } | null = null
     if (queueItem.cookie) {
-      const token = queueItem.cookie.replace('participant_token=', '')
+      const token = queueItem.cookie
+        .replace('participant_token=', '')
+        .split(';')[0]
       try {
         participantData = JWT.verify(
           token,
