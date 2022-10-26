@@ -165,7 +165,11 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            <div>Keine Frage aktiv.</div>
+            isGamificationEnabled ? (
+              <div></div>
+            ) : (
+              <div>Keine Frage aktiv.</div>
+            )
           ) : (
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}

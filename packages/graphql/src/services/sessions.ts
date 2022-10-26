@@ -8,6 +8,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
+import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
@@ -844,19 +845,33 @@ export async function getLeaderboard(
     ? Math.max(...executedBlockOrders)
     : 0
 
-  return session?.leaderboard?.flatMap((entry) => {
+  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
     if (!entry.sessionParticipation?.isActive) return []
 
     // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
+      participantId: entry.participant.id,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
       score: entry.score,
-      isSelf: entry.participantId === ctx.user.sub,
+      // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
     }
   })
+
+  const sortByScoreAndUsername = R.curry(R.sortWith)([
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
+  ])
+
+  const sortedEntries = sortByScoreAndUsername(preparedEntries)
+
+  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+    return { ...entry, rank: ix + 1 }
+  })
+
+  return filteredEntries
 }
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled

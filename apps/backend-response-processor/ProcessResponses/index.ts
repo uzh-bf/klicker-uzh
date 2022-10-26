@@ -15,6 +15,8 @@ import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
 
+const TIMING_FACTOR = 0.7
+
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the question options
 
@@ -108,7 +110,7 @@ const serviceBusTrigger: AzureFunction = async function (
       (responseTimestamp -
         Number(firstResponseReceivedAt ?? responseTimestamp)) /
       1000
-    if (responseTiming <= 0) {
+    if (responseTiming < 1) {
       responseTiming = 1
     }
     context.log('responseTiming', responseTiming)
@@ -144,7 +146,8 @@ const serviceBusTrigger: AzureFunction = async function (
           }
           if (pointsPercentage !== null) {
             context.log('pointsPercentage', pointsPercentage)
-            pointsAwarded += (50 * pointsPercentage) / responseTiming
+            pointsAwarded +=
+              (50 * pointsPercentage) / (responseTiming * TIMING_FACTOR)
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
@@ -193,7 +196,7 @@ const serviceBusTrigger: AzureFunction = async function (
               solutionRanges: parsedSolutions,
             })
           ) {
-            pointsAwarded += 50 / responseTiming
+            pointsAwarded += 50 / (responseTiming * TIMING_FACTOR)
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
@@ -241,7 +244,7 @@ const serviceBusTrigger: AzureFunction = async function (
               solutions: parsedSolutions,
             })
           ) {
-            pointsAwarded += 50 / responseTiming
+            pointsAwarded += 50 / (responseTiming * TIMING_FACTOR)
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             if (!firstResponseReceivedAt) {
