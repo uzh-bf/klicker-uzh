@@ -166,12 +166,7 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div
-                className={twMerge(
-                  'bg-white hidden min-h-full flex-1 md:p-8',
-                  activeMobilePage === 'leaderboard' && 'block md:hidden'
-                )}
-              >
+              <div className={twMerge('bg-white min-h-full flex-1 md:p-8')}>
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (
