@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.78...v2.0.0-alpha.79) (2022-10-26)
+
+
+### Features
+
+* **apps/frontend-manage:** add session leaderboard to evaluation screen ([256f130](https://github.com/uzh-bf/klicker-uzh/commit/256f130f4f9a8c11566519a94f39850913892289))
+
+
+### Other
+
+* **deploy:** update production image tag ([62753aa](https://github.com/uzh-bf/klicker-uzh/commit/62753aa927af0f9099121ad5d24ea0efa9edab20))
+
 ## [2.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.77...v2.0.0-alpha.78) (2022-10-26)
 
 
