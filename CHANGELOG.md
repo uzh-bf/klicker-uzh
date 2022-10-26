@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.77...v2.0.0-alpha.78) (2022-10-26)
+
+
+### Other
+
+* seed week 6 ([a8601ea](https://github.com/uzh-bf/klicker-uzh/commit/a8601eaca9150ce613fac282637235201c67ee0b))
+
 ## [2.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.76...v2.0.0-alpha.77) (2022-10-26)
 
 
