@@ -233,6 +233,7 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
+    lastBlockOrder?: number | null; // Int
     participantId: string; // ID!
     rank: number; // Int!
     score: number; // Float!
@@ -534,6 +535,7 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     id: string; // ID!
     isSelf: boolean | null; // Boolean
+    lastBlockOrder: number | null; // Int
     participantId: string; // ID!
     rank: number; // Int!
     score: number; // Float!
@@ -898,6 +900,7 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     id: 'ID'
     isSelf: 'Boolean'
+    lastBlockOrder: 'Int'
     participantId: 'ID'
     rank: 'Int'
     score: 'Float'

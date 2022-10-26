@@ -1,8 +1,12 @@
 query GetSessionLeaderboard($sessionId: ID!) {
   sessionLeaderboard(sessionId: $sessionId) {
     id
+    participantId
+    rank
     username
     avatar
     score
+    isSelf
+    lastBlockOrder
   }
 }

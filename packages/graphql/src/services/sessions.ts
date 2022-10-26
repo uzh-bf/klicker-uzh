@@ -8,6 +8,7 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
+import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 
@@ -815,35 +816,62 @@ export async function getLeaderboard(
   { sessionId }: GetLeaderboardArgs,
   ctx: ContextWithUser
 ) {
-  const top10 = await ctx.prisma.session
-    .findUnique({
-      where: {
-        id: sessionId,
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      leaderboard: {
+        orderBy: {
+          score: 'desc',
+        },
+        include: {
+          participant: true,
+          sessionParticipation: true,
+        },
       },
-    })
-    .leaderboard({
-      orderBy: {
-        score: 'desc',
-      },
-      include: {
-        sessionParticipation: true,
-        participant: true,
-      },
-      take: 10,
-    })
+      blocks: true,
+    },
+  })
 
-  return top10.flatMap((entry) => {
-    if (!entry.sessionParticipation.isActive) return []
+  // find the order attribute of the last exectued block
+  const executedBlockOrders = session?.blocks
+    .filter(
+      (sessionBlock) => sessionBlock.status === SessionBlockStatus.EXECUTED
+    )
+    .map((sessionBlock) => Number(sessionBlock.order))
 
+  const lastBlockOrder = executedBlockOrders
+    ? Math.max(...executedBlockOrders)
+    : 0
+
+  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
+    if (!entry.sessionParticipation?.isActive) return []
+
+    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
-      participantId: ctx.user.sub,
+      participantId: entry.participant.id,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
       score: entry.score,
-      self: entry.participantId === ctx.user.sub,
+      // isSelf: entry.participantId === ctx.user.sub,
+      lastBlockOrder,
     }
   })
+
+  const sortByScoreAndUsername = R.curry(R.sortWith)([
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
+  ])
+
+  const sortedEntries = sortByScoreAndUsername(preparedEntries)
+
+  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+    return { ...entry, rank: ix + 1 }
+  })
+
+  return filteredEntries
 }
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled

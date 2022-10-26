@@ -16,7 +16,7 @@ import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import getConfig from 'next/config'
-import Leaderboard from '../../components/common/Leaderboard'
+import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
@@ -165,7 +165,11 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            <div>Keine Frage aktiv.</div>
+            isGamificationEnabled ? (
+              <div></div>
+            ) : (
+              <div>Keine Frage aktiv.</div>
+            )
           ) : (
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}
@@ -187,7 +191,7 @@ function Index({ id }: Props) {
 
           {!activeBlock && selfData?.self && isGamificationEnabled && (
             <div className={twMerge('w-full bg-white min-h-full')}>
-              <Leaderboard sessionId={id} className="hidden md:block" />
+              <SessionLeaderboard sessionId={id} className="hidden md:block" />
             </div>
           )}
         </div>
@@ -199,7 +203,7 @@ function Index({ id }: Props) {
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <Leaderboard sessionId={id} />
+            <SessionLeaderboard sessionId={id} />
           </div>
         )}
 
