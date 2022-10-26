@@ -98,7 +98,9 @@ function Leaderboard({
     <div className={twMerge(className, '')}>
       <div className="space-y-4">
         <div>
-          <Podium leaderboard={data.sessionLeaderboard?.slice(0, 3)} />
+          {data.sessionLeaderboard?.length > 0 && (
+            <Podium leaderboard={data.sessionLeaderboard?.slice(0, 3)} />
+          )}
         </div>
         <div className="space-y-1">
           {data.sessionLeaderboard?.slice(0, 10).map((entry) => (

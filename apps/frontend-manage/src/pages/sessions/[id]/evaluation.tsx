@@ -4,6 +4,7 @@ import {
   faCheck,
   faChevronDown,
   faChevronUp,
+  faGamepad,
   faSync,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -16,6 +17,7 @@ import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
 import { CHART_COLORS } from 'shared-components/src/constants'
+import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
 
 const Select = ({ items, onChange }) => {
@@ -81,7 +83,7 @@ function Evaluation() {
 
   // TODO: replace with corresponding database field and query
   const [showSolution, setShowSolution] = useState(true)
-  const [activeBlock, setActiveBlock] = useState(0)
+  const [activeBlock, setActiveBlock] = useState<number | string>(0)
   const [activeInstance, setActiveInstance] = useState(0)
 
   console.log(activeBlock, activeInstance)
@@ -224,6 +226,24 @@ function Evaluation() {
             />
           </TabsPrimitive.Trigger>
         ))}
+
+        <TabsPrimitive.Trigger
+          key={`tab-trigger-lb`}
+          value={'tab-lb'}
+          className={twMerge(
+            'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
+          )}
+          onClick={() => {
+            setActiveBlock('lb')
+          }}
+        >
+          <div className="flex flex-row items-center gap-1 text-sm text-left">
+            <div>
+              <FontAwesomeIcon icon={faGamepad} />
+            </div>
+            <div>Leaderboard</div>
+          </div>
+        </TabsPrimitive.Trigger>
       </TabsPrimitive.List>
 
       {currentQuestion && (
@@ -342,6 +362,14 @@ function Evaluation() {
           </div>
         </div>
       )}
+
+      <TabsPrimitive.Content value="tab-lb">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
+          </div>
+        </div>
+      </TabsPrimitive.Content>
     </TabsPrimitive.Root>
   )
 }

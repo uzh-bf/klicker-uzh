@@ -52,4 +52,12 @@ query GetSessionEvaluation($id: ID!) {
       results
     }
   }
+  sessionLeaderboard(sessionId: $id) {
+    id
+    participantId
+    rank
+    username
+    avatar
+    score
+  }
 }
