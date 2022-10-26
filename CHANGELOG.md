@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.80...v2.0.0-alpha.81) (2022-10-26)
+
+
+### Bug Fixes
+
+* leaderboard when nothing active ([d5eb5b5](https://github.com/uzh-bf/klicker-uzh/commit/d5eb5b57ca1cb544c053d3baf752c8ab7c0aea73))
+
 ## [2.0.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.79...v2.0.0-alpha.80) (2022-10-26)
 
 
