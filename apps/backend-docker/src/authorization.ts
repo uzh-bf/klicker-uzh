@@ -83,7 +83,7 @@ export const AuthSchema = {
     pinnedFeedbacks: { __authz: { rules: ['IsUserOrAdmin'] } },
     self: { __authz: { rules: ['Allow'] } },
     session: { __authz: { rules: ['Allow'] } },
-    sessionLeaderboard: { __authz: { rules: ['IsAuthenticated'] } },
+    sessionLeaderboard: { __authz: { rules: ['Allow'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
