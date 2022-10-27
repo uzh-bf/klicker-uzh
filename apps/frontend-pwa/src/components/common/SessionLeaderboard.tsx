@@ -74,6 +74,7 @@ function Leaderboard({
                 selfEntry.lastBlockOrder - 1
               }`
             )
+            if (!prevStoredEntry) return
             setPreviousEntry(prevStoredEntry)
 
             setBlockDelta({
