@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.82...v2.0.0-alpha.83) (2022-10-27)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** allow session leaderboard for everyone ([feb98ae](https://github.com/uzh-bf/klicker-uzh/commit/feb98ae0936ccdca7bf23ca9785549cb840f7589))
+
+
+### Other
+
+* **deploy:** scale to 3 replicas ([35a8582](https://github.com/uzh-bf/klicker-uzh/commit/35a858201e8a1167a7d32483785b7b49f563ea48))
+
 ## [2.0.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.81...v2.0.0-alpha.82) (2022-10-26)
 
 
