@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.83...v2.0.0-alpha.84) (2022-10-27)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** return if no previous entry ([267c2cd](https://github.com/uzh-bf/klicker-uzh/commit/267c2cd3173c2e75e1d9394c1473eb3b6de39024))
+
 ## [2.0.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.82...v2.0.0-alpha.83) (2022-10-27)
 
 
