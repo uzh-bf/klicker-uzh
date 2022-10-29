@@ -57,8 +57,8 @@ const serviceBusTrigger: AzureFunction = async function (
       try {
         const parsedCookie = queueItem.cookie
           .split(';')
-          .map((v) => v.split('='))
-          .reduce((acc, v) => {
+          .map((v: string) => v.split('='))
+          .reduce((acc: Record<string, string>, v: string) => {
             acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
               v[1].trim()
             )

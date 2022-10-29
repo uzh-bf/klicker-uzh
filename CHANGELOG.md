@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.85](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.84...v2.0.0-alpha.85) (2022-10-29)
+
+
+### Deployment
+
+* upgrade to 84 ([10418e2](https://github.com/uzh-bf/klicker-uzh/commit/10418e2a29c20a166cd31e3d3b7accb891f7b7c1))
+
+
+### Enhancements
+
+* add scheduled deactivation of session blocks with time limit ([7346406](https://github.com/uzh-bf/klicker-uzh/commit/734640694c1cd61ad5501ab9803a6b2dc21bf42c))
+* **apps/frontend-pwa:** allow nonsequential execution of learning element ([16b1fdd](https://github.com/uzh-bf/klicker-uzh/commit/16b1fdd0ca025496ea9038cdacad100db28467a6))
+
 ## [2.0.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.83...v2.0.0-alpha.84) (2022-10-27)
 
 
