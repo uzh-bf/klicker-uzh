@@ -29,7 +29,7 @@ function SessionBlock({
         active && 'bg-green-300'
       )}
     >
-      Block ID {block.id}
+      <div className="flex flex-row justify-between"><div>Block ID {block.id}</div>{block.timeLimit && <div>{block.timeLimit}s</div>}</div>
       {block.instances.map((instance: QuestionInstance) => (
         <div key={instance.id} className="text-sm">
           <Ellipsis maxLength={30}>{instance.questionData.content}</Ellipsis>

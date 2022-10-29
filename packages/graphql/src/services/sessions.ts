@@ -11,6 +11,10 @@ import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+// TODO: rework scheduling for serverless
+import schedule from 'node-schedule'
+
+const scheduledJobs: Record<string, any> = {}
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -355,8 +359,8 @@ export async function activateSessionBlock(
           where: { id: sessionBlockId },
           data: {
             status: SessionBlockStatus.ACTIVE,
-            expiresAt: newBlock.expiresAt
-              ? dayjs(newBlock.expiresAt).add(60, 'seconds').toDate()
+            expiresAt: newBlock.timeLimit
+              ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
               : undefined,
           },
         },
@@ -373,6 +377,22 @@ export async function activateSessionBlock(
       },
     },
   })
+
+  if (updatedSession.activeBlock?.expiresAt) {
+    scheduledJobs[sessionBlockId] = schedule.scheduleJob(
+      updatedSession.activeBlock.expiresAt,
+      async () => {
+        await deactivateSessionBlock(
+          {
+            sessionId,
+            sessionBlockId,
+          },
+          ctx,
+          true
+        )
+      }
+    )
+  }
 
   ctx.pubSub.publish('runningSessionUpdated', {
     sessionId,
@@ -554,7 +574,8 @@ async function processCachedData({ cachedResults, activeBlock }) {
 
 export async function deactivateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  isScheduled?: boolean
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: {
@@ -714,6 +735,11 @@ export async function deactivateSessionBlock(
   //     out
   //   }
   // )
+
+  if (!isScheduled && scheduledJobs[sessionBlockId]) {
+    await scheduledJobs[sessionBlockId].cancel()
+    delete scheduledJobs[sessionBlockId]
+  }
 
   unlinkCachedBlockResults({
     ctx,
