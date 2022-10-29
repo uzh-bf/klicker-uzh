@@ -1,8 +1,7 @@
-import { Button, H3, Label, Select, Switch } from '@uzh-bf/design-system'
+import { Button, H3, Label, Select, Switch, FormikTextField } from '@uzh-bf/design-system'
 import { ErrorMessage, Form, Formik } from 'formik'
 import * as yup from 'yup'
 import EditorField from './EditorField'
-import TextField from './TextField'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -76,13 +75,13 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           return (
             <div>
               <Form className="">
-                <TextField
+                <FormikTextField
                   name="name"
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                   className={{ root: 'mb-1' }}
                 />
-                <TextField
+                <FormikTextField
                   name="displayName"
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
@@ -119,7 +118,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       <div key={index} className="flex flex-col">
                         <>
                           <div>Block {index + 1}</div>
-                          <TextField
+                          <FormikTextField
                             id={`blocks.${index}`}
                             value={block.join(', ')}
                             onChange={(newValue: string) => {
