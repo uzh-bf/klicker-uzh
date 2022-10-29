@@ -60,7 +60,7 @@ function LearningElement({ courseId, id }: Props) {
   const totalPointsAwarded = useMemo(() => {
     if (!data?.learningElement) return 0
     return data.learningElement.instances.reduce(
-      (acc, instance) => acc + instance.evaluation?.pointsAwarded,
+      (acc, instance) => acc + (instance?.evaluation?.pointsAwarded ?? 0),
       0
     )
   }, [data?.learningElement?.instances])
@@ -120,12 +120,13 @@ function LearningElement({ courseId, id }: Props) {
               </div>
               <div>
                 {data.learningElement.instances.map((instance) => (
-                  <div className="flex flex-row justify-between">
+                  <div className="flex flex-row justify-between" key={instance.id}>
                     <div>{instance.questionData.name}</div>
-                    <div>
+                    {instance.evaluation ? <div>
                       {instance.evaluation.pointsAwarded} /{' '}
                       {instance.evaluation.score} / 10
-                    </div>
+                    </div>: <div>Not attempted</div>}
+
                   </div>
                 ))}
               </div>
@@ -205,10 +206,12 @@ function LearningElement({ courseId, id }: Props) {
         {currentInstance && (
           <div className="order-1 md:order-2">
             <Progress
+              nonLinear
               isMaxVisible
               formatter={(v) => v}
               value={currentIx}
               max={data.learningElement?.instances?.length ?? 0}
+              onItemClick={(ix: number) => setCurrentIx(ix)}
             />
           </div>
         )}
