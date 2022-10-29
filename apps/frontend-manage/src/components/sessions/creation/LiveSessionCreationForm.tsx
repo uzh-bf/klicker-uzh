@@ -1,6 +1,5 @@
 import { Button, H3, Label, Select, Switch } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { twMerge } from 'tailwind-merge'
+import { ErrorMessage, Form, Formik } from 'formik'
 import * as yup from 'yup'
 import EditorField from './EditorField'
 import TextField from './TextField'
@@ -30,7 +29,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             yup
               .string()
               .required(
-                'Jedes Frageblock muss mindestens eine FrageId enthalten.'
+                'Bitte überprüfen Sie Ihre eingabe und geben sie durch Kommas getrennte Frage-IDs ein.'
               )
           )
           .min(
@@ -76,24 +75,18 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         }) => {
           return (
             <div>
-              {/* {errors.name}, {errors.displayName},{errors.isGamificationActive},
-              {errors.description}, {errors.courseId} */}
               <Form className="">
                 <TextField
+                  name="name"
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-                  field="name"
-                  error={errors.name}
-                  touched={touched.name}
-                  className="mb-1"
+                  className={{ root: 'mb-1' }}
                 />
                 <TextField
+                  name="displayName"
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
-                  field="displayName"
-                  error={errors.displayName}
-                  touched={touched.displayName}
-                  className="mb-1"
+                  className={{ root: 'mb-1' }}
                 />
 
                 <EditorField
@@ -124,26 +117,20 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     />
                     {values.blocks.map((block, index) => (
                       <div key={index} className="flex flex-col">
-                        <div>Block {index + 1}</div>
-                        <Field
-                          id={`blocks.${index}`}
-                          value={block.join(', ')}
-                          onChange={(e: any) => {
-                            setFieldValue(
-                              `blocks[${index}]`,
-                              e.target.value
-                                .replace(/[^0-9\s,]/g, '')
-                                .split(', ')
-                            )
-                          }}
-                          type="text"
-                          className={twMerge(
-                            'w-48 rounded bg-uzh-grey-20 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9',
-                            errors.blocks &&
-                              touched.blocks &&
-                              'border-red-400 bg-red-50'
-                          )}
-                        />
+                        <>
+                          <div>Block {index + 1}</div>
+                          <TextField
+                            id={`blocks.${index}`}
+                            value={block.join(', ')}
+                            onChange={(newValue: string) => {
+                              setFieldValue(
+                                `blocks[${index}]`,
+                                newValue.replace(/[^0-9\s,]/g, '').split(', ')
+                              )
+                            }}
+                          />
+                          {console.log(values.blocks[index].length)}
+                        </>
                       </div>
                     ))}
                   </div>
