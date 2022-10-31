@@ -128,7 +128,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                               )
                             }}
                           />
-                          {console.log(values.blocks[index].length)}
                         </>
                       </div>
                     ))}
