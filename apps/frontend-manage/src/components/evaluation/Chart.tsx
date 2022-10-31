@@ -32,7 +32,6 @@ function Chart({
   data,
   showSolution,
 }: ChartProps): React.ReactElement {
-  console.log(chartType)
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (

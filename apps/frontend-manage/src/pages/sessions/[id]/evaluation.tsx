@@ -36,6 +36,7 @@ function Evaluation() {
   const [showSolution, setShowSolution] = useState(false)
   const [activeBlock, setActiveBlock] = useState<number | string>(0)
   const [activeInstance, setActiveInstance] = useState(0)
+  const [currentQuestion, setCurrentQuestion] = useState(undefined)
   const [chartType, setChartType] = useState('')
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
@@ -78,10 +79,40 @@ function Evaluation() {
   if (error) return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  const currentQuestion = questions?.find(
-    (question) =>
-      question.blockIx == activeBlock && question.instanceIx == activeInstance
-  )
+  // set initial chart type
+  if (chartType === '') {
+    const defaultChartType =
+      ACTIVE_CHART_TYPES[
+        data.sessionEvaluation.instanceResults[0].questionData.type
+      ][0].value
+    setChartType(defaultChartType)
+  }
+
+  // set initial question
+  if (currentQuestion === undefined) {
+    const cQuestion = questions?.find(
+      (question) =>
+        question.blockIx == activeBlock && question.instanceIx == activeInstance
+    )
+    setCurrentQuestion(cQuestion)
+  }
+
+  const onQuestionChange = (newIndex: string, blockIndex: string) => {
+    setActiveBlock(Number(blockIndex))
+    setActiveInstance(Number(newIndex))
+    const currQuestion = questions?.find(
+      (question) =>
+        question.blockIx == activeBlock && question.instanceIx == activeInstance
+    )
+    setCurrentQuestion(currQuestion)
+    // Make sure to only display chart type that is available for current question type
+    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
+      (type) => type.value
+    )
+    if (!possibleChartTypes.includes(currQuestion.type)) {
+      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
+    }
+  }
 
   return (
     <TabsPrimitive.Root
@@ -100,7 +131,7 @@ function Evaluation() {
             )}
             onClick={() => {
               setActiveBlock(Number(blockIx))
-              setActiveInstance(0)
+              // setActiveInstance(0) caused weird behaviour!
             }}
           >
             <div className="flex flex-row items-center gap-1 text-sm text-left">
@@ -118,21 +149,12 @@ function Evaluation() {
                 label: item.label,
               }))}
               onChange={(newIx) => {
-                setActiveBlock(Number(blockIx))
-                setActiveInstance(Number(newIx))
+                console.log(newIx)
+                onQuestionChange(newIx, blockIx)
               }}
             />
           </TabsPrimitive.Trigger>
         ))}
-
-        {currentQuestion && (
-          <Select
-            items={ACTIVE_CHART_TYPES[currentQuestion.type]}
-            onChange={(newValue) => {
-              setChartType(newValue)
-            }}
-          ></Select>
-        )}
 
         <TabsPrimitive.Trigger
           key={`tab-trigger-lb`}
@@ -238,18 +260,26 @@ function Evaluation() {
                       </ul>
                     </div>
                   )}
+                {currentQuestion && (
+                  <Select
+                    items={ACTIVE_CHART_TYPES[currentQuestion.type]}
+                    onChange={(newValue) => {
+                      setChartType(newValue)
+                    }}
+                  ></Select>
+                )}
               </div>
             </div>
           </div>
           <Footer>
             <div className="flex flex-row justify-between px-8 py-4 m-0">
               <div className="text-xl">
-                Total Participants: {currentQuestion.participants}
+                Total Teilnehmende: {currentQuestion.participants}
               </div>
               <Switch
                 id="showSolution"
                 checked={showSolution}
-                label="Show solution"
+                label="Lösung anzeigen"
                 onCheckedChange={(newValue) => setShowSolution(newValue)}
               ></Switch>
             </div>

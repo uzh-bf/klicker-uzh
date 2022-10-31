@@ -22,14 +22,12 @@ function TableChart({
   const tableData = answers.map((answer) => {
     return {
       count: answer.count,
-      // value: String.fromCharCode(65 + Number(item.value)),
       value: answer.value,
       correct: answer.correct ? 'T' : 'F',
       percentage:
         String(((answer.count / totalResponses) * 100).toFixed()) + ' %',
     }
   })
-
   const columns = [
     { label: 'Count', accessor: 'count', sortable: true },
     { label: 'Value', accessor: 'value', sortable: true },
