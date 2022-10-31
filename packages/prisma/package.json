@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "2.0.0-alpha.85",
+  "version": "2.0.0-alpha.86",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,7 +32,7 @@
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
     "seed:bf1": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
     "seed:ami": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
-    "seed:qa": "ENV=development npm-run-all seed:qa:bf1 seed:qa:ami",
+    "seed:qa": "ENV=production npm-run-all seed:qa:bf1 seed:qa:ami",
     "seed:qa:bf1": "ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts dotenv_config_path=.env.qa",
     "seed:qa:ami": "ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts dotenv_config_path=.env.qa",
     "seed:prod": "ENV=production npm-run-all seed:prod:bf1 seed:prod:ami",

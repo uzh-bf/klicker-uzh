@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.86](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.85...v2.0.0-alpha.86) (2022-10-31)
+
+
+### Bug Fixes
+
+* **packages/prisma:** update seed for TEST ([2783730](https://github.com/uzh-bf/klicker-uzh/commit/27837305f0cd60a0c57198b95c70829984e33b41))
+
+
+### Other
+
+* seed update ([cca623f](https://github.com/uzh-bf/klicker-uzh/commit/cca623f501793a49a4733cd526d126890744e39b))
+
+
+### Enhancements
+
+* implement quick wins for timed session blocks and session timeline ([db2d1e9](https://github.com/uzh-bf/klicker-uzh/commit/db2d1e963a5be97a5bc2dc42a088e930635a05ed))
+
 ## [2.0.0-alpha.85](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.84...v2.0.0-alpha.85) (2022-10-29)
 
 
