@@ -1,6 +1,22 @@
-import { Button, H3, Label, Select, Switch, FormikTextField } from '@uzh-bf/design-system'
-import { ErrorMessage, Form, Formik } from 'formik'
+import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  Button,
+  FormikTextField,
+  H3,
+  Label,
+  Select,
+  Switch,
+} from '@uzh-bf/design-system'
+import {
+  ErrorMessage,
+  FieldArray,
+  FieldArrayRenderProps,
+  Form,
+  Formik,
+} from 'formik'
 import * as yup from 'yup'
+
 import EditorField from './EditorField'
 
 interface LiveSessionCreationFormProps {
@@ -72,16 +88,22 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           isSubmitting,
           isValid,
         }) => {
+          function twMerge(arg0: string) {
+            throw new Error('Function not implemented.')
+          }
+
           return (
             <div>
               <Form className="">
                 <FormikTextField
+                  required
                   name="name"
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                   className={{ root: 'mb-1' }}
                 />
                 <FormikTextField
+                  required
                   name="displayName"
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
@@ -105,7 +127,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 </div>
 
                 {/* // TODO: add possibility to add and remove blocks */}
-                <div className="mb-2">
+                <div className="mt-2 mb-2">
                   <div className="flex flex-row items-center flex-1 gap-2">
                     <Label
                       label="Blocks:"
@@ -114,23 +136,53 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       showTooltipSymbol={true}
                       tooltipStyle="font-normal text-sm !w-1/2 opacity-100"
                     />
-                    {values.blocks.map((block, index) => (
-                      <div key={index} className="flex flex-col">
-                        <>
-                          <div>Block {index + 1}</div>
-                          <FormikTextField
-                            id={`blocks.${index}`}
-                            value={block.join(', ')}
-                            onChange={(newValue: string) => {
-                              setFieldValue(
-                                `blocks[${index}]`,
-                                newValue.replace(/[^0-9\s,]/g, '').split(', ')
-                              )
-                            }}
-                          />
-                        </>
-                      </div>
-                    ))}
+                    <FieldArray name="blocks">
+                      {({ push, remove }: FieldArrayRenderProps) => (
+                        <div className="flex flex-row gap-1 overflow-scroll">
+                          {values.blocks.map((block: any, index: number) => (
+                            <div
+                              className="flex flex-row items-center gap-2"
+                              key={index}
+                            >
+                              <div
+                                key={index}
+                                className="flex flex-col p-2 border border-solid rounded-md w-52"
+                              >
+                                <div className="flex flex-row items-center justify-between">
+                                  <div>Block {index + 1}</div>
+                                  <Button
+                                    onClick={() => remove(index)}
+                                    className="ml-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </Button>
+                                </div>
+                                <FormikTextField
+                                  id={`blocks.${index}`}
+                                  value={block.join(', ')}
+                                  onChange={(newValue: string) => {
+                                    setFieldValue(
+                                      `blocks[${index}]`,
+                                      newValue
+                                        .replace(/[^0-9\s,]/g, '')
+                                        .split(', ')
+                                    )
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            fluid
+                            className="flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100"
+                            onClick={() => push([])}
+                          >
+                            <FontAwesomeIcon icon={faPlus} />
+                            <div>Neuer Block</div>
+                          </Button>
+                        </div>
+                      )}
+                    </FieldArray>
                   </div>
                   <ErrorMessage
                     name="blocks"
