@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import Footer from '@components/common/Footer'
+import Select from '@components/common/Select'
 import Chart from '@components/evaluation/Chart'
 import { extractQuestions } from '@components/evaluation/utils'
 import { faCheck, faGamepad, faSync } from '@fortawesome/free-solid-svg-icons'
@@ -7,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { Prose, Select, Switch } from '@uzh-bf/design-system'
+import { Prose, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
@@ -32,7 +33,6 @@ const INSTANCE_STATUS_ICON = {
 function Evaluation() {
   const router = useRouter()
 
-  // TODO: replace with corresponding database field and query
   const [showSolution, setShowSolution] = useState(false)
   const [activeBlock, setActiveBlock] = useState<number | string>(0)
   const [activeInstance, setActiveInstance] = useState(0)
@@ -79,7 +79,7 @@ function Evaluation() {
   if (error) return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  // set initial chart type
+  // set initial chart type after data is present
   if (chartType === '') {
     const defaultChartType =
       ACTIVE_CHART_TYPES[
@@ -88,13 +88,12 @@ function Evaluation() {
     setChartType(defaultChartType)
   }
 
-  // set initial question
+  // set initial question when data is present
   if (currentQuestion === undefined) {
-    const cQuestion = questions?.find(
-      (question) =>
-        question.blockIx == activeBlock && question.instanceIx == activeInstance
+    const currQuestion = questions?.find(
+      (question) => question.blockIx === 0 && question.instanceIx === 0
     )
-    setCurrentQuestion(cQuestion)
+    setCurrentQuestion(currQuestion)
   }
 
   const onQuestionChange = (newIndex: string, blockIndex: string) => {
@@ -102,17 +101,42 @@ function Evaluation() {
     setActiveInstance(Number(newIndex))
     const currQuestion = questions?.find(
       (question) =>
-        question.blockIx == activeBlock && question.instanceIx == activeInstance
+        question.blockIx === Number(blockIndex) &&
+        question.instanceIx === Number(newIndex)
     )
     setCurrentQuestion(currQuestion)
+
     // Make sure to only display chart type that is available for current question type
     const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
       (type) => type.value
     )
-    if (!possibleChartTypes.includes(currQuestion.type)) {
+    if (!possibleChartTypes.includes(chartType)) {
       setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
     }
   }
+
+  const onBlockChange = (blockIndex: string) => {
+    setActiveBlock(Number(blockIndex))
+    setActiveInstance(0) // This causes weird behavior: when clicking on the select of another tab than the currently active one,
+    // this function is called a new tab + new question is selected (hence the displayed chart changes)
+    // before a new question is selected via the select
+    // but not having it causes weir behavior as well
+
+    // If we reset the instance, we also need to change the current question
+    const currQuestion = questions?.find(
+      (question) =>
+        question.blockIx === Number(blockIndex) && question.instanceIx === 0
+    )
+    // Make sure to only display chart type that is available for current question type
+    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
+      (type) => type.value
+    )
+    if (!possibleChartTypes.includes(chartType)) {
+      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
+    }
+  }
+
+  console.log('current Question', currentQuestion)
 
   return (
     <TabsPrimitive.Root
@@ -130,8 +154,7 @@ function Evaluation() {
               'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
             )}
             onClick={() => {
-              setActiveBlock(Number(blockIx))
-              // setActiveInstance(0) caused weird behaviour!
+              onBlockChange(blockIx)
             }}
           >
             <div className="flex flex-row items-center gap-1 text-sm text-left">
@@ -149,7 +172,6 @@ function Evaluation() {
                 label: item.label,
               }))}
               onChange={(newIx) => {
-                console.log(newIx)
                 onQuestionChange(newIx, blockIx)
               }}
             />
@@ -262,8 +284,11 @@ function Evaluation() {
                   )}
                 {currentQuestion && (
                   <Select
+                    // TODO: Find out why default is sometimes empty
+                    defaultValue={chartType}
                     items={ACTIVE_CHART_TYPES[currentQuestion.type]}
                     onChange={(newValue) => {
+                      console.log('newValue', newValue)
                       setChartType(newValue)
                     }}
                   ></Select>
@@ -286,7 +311,7 @@ function Evaluation() {
           </Footer>
         </div>
       )}
-
+      {/* TODO: Find way to empty currentQuestion when this tab is selected */}
       <TabsPrimitive.Content value="tab-lb">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
