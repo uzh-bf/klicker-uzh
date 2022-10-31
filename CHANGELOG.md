@@ -2,6 +2,174 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.86](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.85...v2.0.0-alpha.86) (2022-10-31)
+
+
+### Bug Fixes
+
+* **packages/prisma:** update seed for TEST ([2783730](https://github.com/uzh-bf/klicker-uzh/commit/27837305f0cd60a0c57198b95c70829984e33b41))
+
+
+### Other
+
+* seed update ([cca623f](https://github.com/uzh-bf/klicker-uzh/commit/cca623f501793a49a4733cd526d126890744e39b))
+
+
+### Enhancements
+
+* implement quick wins for timed session blocks and session timeline ([db2d1e9](https://github.com/uzh-bf/klicker-uzh/commit/db2d1e963a5be97a5bc2dc42a088e930635a05ed))
+
+## [2.0.0-alpha.85](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.84...v2.0.0-alpha.85) (2022-10-29)
+
+
+### Deployment
+
+* upgrade to 84 ([10418e2](https://github.com/uzh-bf/klicker-uzh/commit/10418e2a29c20a166cd31e3d3b7accb891f7b7c1))
+
+
+### Enhancements
+
+* add scheduled deactivation of session blocks with time limit ([7346406](https://github.com/uzh-bf/klicker-uzh/commit/734640694c1cd61ad5501ab9803a6b2dc21bf42c))
+* **apps/frontend-pwa:** allow nonsequential execution of learning element ([16b1fdd](https://github.com/uzh-bf/klicker-uzh/commit/16b1fdd0ca025496ea9038cdacad100db28467a6))
+
+## [2.0.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.83...v2.0.0-alpha.84) (2022-10-27)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** return if no previous entry ([267c2cd](https://github.com/uzh-bf/klicker-uzh/commit/267c2cd3173c2e75e1d9394c1473eb3b6de39024))
+
+## [2.0.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.82...v2.0.0-alpha.83) (2022-10-27)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** allow session leaderboard for everyone ([feb98ae](https://github.com/uzh-bf/klicker-uzh/commit/feb98ae0936ccdca7bf23ca9785549cb840f7589))
+
+
+### Other
+
+* **deploy:** scale to 3 replicas ([35a8582](https://github.com/uzh-bf/klicker-uzh/commit/35a858201e8a1167a7d32483785b7b49f563ea48))
+
+## [2.0.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.81...v2.0.0-alpha.82) (2022-10-26)
+
+
+### Bug Fixes
+
+* parse cookie ([97baed4](https://github.com/uzh-bf/klicker-uzh/commit/97baed43468941b66b1c243529254855535d021f))
+
+## [2.0.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.80...v2.0.0-alpha.81) (2022-10-26)
+
+
+### Bug Fixes
+
+* leaderboard when nothing active ([d5eb5b5](https://github.com/uzh-bf/klicker-uzh/commit/d5eb5b57ca1cb544c053d3baf752c8ab7c0aea73))
+
+## [2.0.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.79...v2.0.0-alpha.80) (2022-10-26)
+
+
+### Bug Fixes
+
+* final fixes ([7ef7470](https://github.com/uzh-bf/klicker-uzh/commit/7ef74703d181d9323bf56e93a2b1689aa2caa99d))
+
+
+### Other
+
+* release update for prod ([738625d](https://github.com/uzh-bf/klicker-uzh/commit/738625d80a46810a3ee44003ca5d539e4048c338))
+
+## [2.0.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.78...v2.0.0-alpha.79) (2022-10-26)
+
+
+### Features
+
+* **apps/frontend-manage:** add session leaderboard to evaluation screen ([256f130](https://github.com/uzh-bf/klicker-uzh/commit/256f130f4f9a8c11566519a94f39850913892289))
+
+
+### Other
+
+* **deploy:** update production image tag ([62753aa](https://github.com/uzh-bf/klicker-uzh/commit/62753aa927af0f9099121ad5d24ea0efa9edab20))
+
+## [2.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.77...v2.0.0-alpha.78) (2022-10-26)
+
+
+### Other
+
+* seed week 6 ([a8601ea](https://github.com/uzh-bf/klicker-uzh/commit/a8601eaca9150ce613fac282637235201c67ee0b))
+
+## [2.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.76...v2.0.0-alpha.77) (2022-10-26)
+
+
+### Features
+
+* add a basic version of the session leaderboard ([#2993](https://github.com/uzh-bf/klicker-uzh/issues/2993)) ([41c7a01](https://github.com/uzh-bf/klicker-uzh/commit/41c7a0162e384e2a5fab24c7111f48c960d2338a))
+
+
+### Bug Fixes
+
+* **apps/backend-response-processor:** round points awarded before commit ([bdb79b0](https://github.com/uzh-bf/klicker-uzh/commit/bdb79b08ea71b4c4cec60e12b2bf48493cc54018))
+* **apps/backend-response*:** improve points scheme for gamified sessions ([339e598](https://github.com/uzh-bf/klicker-uzh/commit/339e5980460049e3b09661c07b01c0f3d2aa827b))
+* **apps/backend-responses:** ensure that response timestamp is in seconds ([b38b438](https://github.com/uzh-bf/klicker-uzh/commit/b38b4384b2cd78987f48667089af6699fb828f37))
+
+
+### Dependencies
+
+* upgrade all dependencies ([#2983](https://github.com/uzh-bf/klicker-uzh/issues/2983)) ([d393d77](https://github.com/uzh-bf/klicker-uzh/commit/d393d77b1751efa00b4b8018cb2d09a07030a99a))
+
+
+### Other
+
+* **apps/frontend-pwa:** mention null groups on leaderboard ([5b4cba4](https://github.com/uzh-bf/klicker-uzh/commit/5b4cba4a60a2ee1f7dea28021da154c96509a068))
+* lockfile maintenance ([4a45118](https://github.com/uzh-bf/klicker-uzh/commit/4a45118d42ecf7739a43a629140fe69e9147f927))
+* seed update ([0dae20c](https://github.com/uzh-bf/klicker-uzh/commit/0dae20c63f1b93d119f92e6001f3defe7014eb72))
+
+
+### Enhancements
+
+* **apps/backend-response*:** add sentry for errors ([22f3d63](https://github.com/uzh-bf/klicker-uzh/commit/22f3d6343da2f3312ff982b8e78167291e7c4073))
+* **apps/backend-response*:** improve logic in response backends ([#2994](https://github.com/uzh-bf/klicker-uzh/issues/2994)) ([95ea244](https://github.com/uzh-bf/klicker-uzh/commit/95ea244746fa94be5ad1688aee75d1bce0801bbd))
+* **apps/frontend-pwa:** improve group leaderboard structure ([2a6d813](https://github.com/uzh-bf/klicker-uzh/commit/2a6d8134fc5c9a72a14c35471ca995443a761215))
+* **apps/frontend-pwa:** refetch queries after pin-based join ([5bc7533](https://github.com/uzh-bf/klicker-uzh/commit/5bc7533a66632bd773bbfc373e2af9e46b0edc3a))
+* create page that allows users to join courses based on ID and PIN ([#2979](https://github.com/uzh-bf/klicker-uzh/issues/2979)) ([ee17023](https://github.com/uzh-bf/klicker-uzh/commit/ee17023247a525ba75364b32016a8da688bf8aef))
+* implement pin structure for joining courses ([#2984](https://github.com/uzh-bf/klicker-uzh/issues/2984)) ([5a2b402](https://github.com/uzh-bf/klicker-uzh/commit/5a2b4026f84340f044b2e0c2e0120f3d02194c67))
+
+## [2.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.75...v2.0.0-alpha.76) (2022-10-24)
+
+
+### Bug Fixes
+
+* **apps/backend-response-processor:** don't throw on missing response or instance info (ignore) ([18393b2](https://github.com/uzh-bf/klicker-uzh/commit/18393b2449251c60bf61021a0b6b582a5248c030))
+
+
+### Other
+
+* lockfile maintenance ([4ad3cf0](https://github.com/uzh-bf/klicker-uzh/commit/4ad3cf0707b8d449607e6b01653ce3c50279753c))
+* seed update ([0f191fb](https://github.com/uzh-bf/klicker-uzh/commit/0f191fb3c82749c0c9f45355a55e39221f631311))
+* seed update ([b13a581](https://github.com/uzh-bf/klicker-uzh/commit/b13a581f70172a66d1403f57db1ab1cbe6e86707))
+
+## [2.0.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.74...v2.0.0-alpha.75) (2022-10-24)
+
+## [2.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.73...v2.0.0-alpha.74) (2022-10-24)
+
+
+### Deployment
+
+* **apps/backend-response-processor:** update workflow ([50d8eac](https://github.com/uzh-bf/klicker-uzh/commit/50d8eac3612ae5648ca20f301bfbe785cbf7418a))
+
+## [2.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.72...v2.0.0-alpha.73) (2022-10-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that strings in answer feedbacks etc. are nullable ([c78f9f3](https://github.com/uzh-bf/klicker-uzh/commit/c78f9f3d0c5e4226239a1b99a84a7c1f1966753a))
+
+
+### Other
+
+* **frontend-manage:** fix line height issues and remove ctrl c combination for code formatting ([aea2b2e](https://github.com/uzh-bf/klicker-uzh/commit/aea2b2e672c9ca1fc734dc1bcdf7d0d33ac392ce))
+* lockfile maintenance ([b8b5706](https://github.com/uzh-bf/klicker-uzh/commit/b8b5706c10cad0f53ae3ca4824d22ce42603b8db))
+* **packages/prisma:** update seed commands ([db1c19f](https://github.com/uzh-bf/klicker-uzh/commit/db1c19f0c18f447074618a1c88c9481c120f02d2))
+* seed update ([77fceaf](https://github.com/uzh-bf/klicker-uzh/commit/77fceafcf19c789178997003510ae9c32dfbf99e))
+
 ## [2.0.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.71...v2.0.0-alpha.72) (2022-10-23)
 
 

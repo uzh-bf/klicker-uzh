@@ -67,7 +67,7 @@ function Cockpit() {
     variables: {
       id: router.query.id as string,
     },
-    pollInterval: 10000,
+    pollInterval: 1000,
     skip: !router.query.id,
   })
 
@@ -75,7 +75,7 @@ function Cockpit() {
   if (cockpitLoading) return <div>Loading...</div>
 
   // loading is finished, but was not successful
-  if (!cockpitData || cockpitError) {
+  if (!cockpitData?.cockpitSession || cockpitError) {
     // TODO fix router instance not available error
     // router.push('/404')
     return null

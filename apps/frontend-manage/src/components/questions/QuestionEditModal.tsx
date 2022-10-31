@@ -84,7 +84,7 @@ const questionManipulationSchema = Yup.object().shape({
                   test: (content) =>
                     !content?.match(/^(<br>(\n)*)$/g) && content !== '',
                 }),
-                correct: Yup.boolean(),
+                correct: Yup.boolean().nullable(),
                 feedback: hasAnswerFeedbacks
                   ? Yup.string().test({
                       message:
@@ -92,7 +92,7 @@ const questionManipulationSchema = Yup.object().shape({
                       test: (content) =>
                         !content?.match(/^(<br>(\n)*)$/g) && content !== '',
                     })
-                  : Yup.string(),
+                  : Yup.string().nullable(),
               })
             )
             .min(1)

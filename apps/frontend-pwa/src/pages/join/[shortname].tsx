@@ -27,7 +27,7 @@ function Join({ isInactive, shortname }: Props) {
   }
 
   return (
-    <div className="max-w-6xl p-4 m-auto mt-4 border rounded">
+    <div className="max-w-6xl p-4 mx-auto mt-4 border rounded">
       {data.runningSessions.map((session) => (
         <div className="" key={session.id}>
           <Link href={`/session/${session.id}`}>

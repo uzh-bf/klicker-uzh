@@ -8,8 +8,13 @@ import {
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
+import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+// TODO: rework scheduling for serverless
+import schedule from 'node-schedule'
+
+const scheduledJobs: Record<string, any> = {}
 
 function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
@@ -59,28 +64,6 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
       return {} as FreeTextQuestionResults
     }
   }
-}
-
-interface CreateCourseArgs {
-  name: string
-  displayName?: string
-  color?: string
-}
-
-export async function createCourse(
-  { name, displayName, color }: CreateCourseArgs,
-  ctx: ContextWithUser
-) {
-  return ctx.prisma.course.create({
-    data: {
-      name,
-      displayName: displayName ?? name,
-      color,
-      owner: {
-        connect: { id: ctx.user.sub },
-      },
-    },
-  })
 }
 
 interface BlockArgs {
@@ -356,12 +339,10 @@ export async function activateSessionBlock(
 
   if (!session || session.ownerId !== ctx.user.sub) return null
 
-  const newBlockIndex = session.blocks.findIndex(
-    (block) => block.id === sessionBlockId
-  )
+  const newBlock = session.blocks.find((block) => block.id === sessionBlockId)
 
   // if the block is not from the current session, return early
-  if (newBlockIndex === -1) return session
+  if (!newBlock) return session
 
   // if the block is already active, return early
   if (session.activeBlockId === sessionBlockId) return session
@@ -378,6 +359,9 @@ export async function activateSessionBlock(
           where: { id: sessionBlockId },
           data: {
             status: SessionBlockStatus.ACTIVE,
+            expiresAt: newBlock.timeLimit
+              ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
+              : undefined,
           },
         },
       },
@@ -393,6 +377,22 @@ export async function activateSessionBlock(
       },
     },
   })
+
+  if (updatedSession.activeBlock?.expiresAt) {
+    scheduledJobs[sessionBlockId] = schedule.scheduleJob(
+      updatedSession.activeBlock.expiresAt,
+      async () => {
+        await deactivateSessionBlock(
+          {
+            sessionId,
+            sessionBlockId,
+          },
+          ctx,
+          true
+        )
+      }
+    )
+  }
 
   ctx.pubSub.publish('runningSessionUpdated', {
     sessionId,
@@ -574,7 +574,8 @@ async function processCachedData({ cachedResults, activeBlock }) {
 
 export async function deactivateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  isScheduled?: boolean
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: {
@@ -729,11 +730,21 @@ export async function deactivateSessionBlock(
     block: null,
   })
 
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: session.id,
+  })
+
   // const leaderboardUpdates = Object.entries(sessionLeaderboard).map(
   //   ([id, score]) => {
   //     out
   //   }
   // )
+
+  if (!isScheduled && scheduledJobs[sessionBlockId]) {
+    await scheduledJobs[sessionBlockId].cancel()
+    delete scheduledJobs[sessionBlockId]
+  }
 
   unlinkCachedBlockResults({
     ctx,
@@ -837,35 +848,62 @@ export async function getLeaderboard(
   { sessionId }: GetLeaderboardArgs,
   ctx: ContextWithUser
 ) {
-  const top10 = await ctx.prisma.session
-    .findUnique({
-      where: {
-        id: sessionId,
+  const session = await ctx.prisma.session.findUnique({
+    where: {
+      id: sessionId,
+    },
+    include: {
+      leaderboard: {
+        orderBy: {
+          score: 'desc',
+        },
+        include: {
+          participant: true,
+          sessionParticipation: true,
+        },
       },
-    })
-    .leaderboard({
-      orderBy: {
-        score: 'desc',
-      },
-      include: {
-        sessionParticipation: true,
-        participant: true,
-      },
-      take: 10,
-    })
+      blocks: true,
+    },
+  })
 
-  return top10.flatMap((entry) => {
-    if (!entry.sessionParticipation.isActive) return []
+  // find the order attribute of the last exectued block
+  const executedBlockOrders = session?.blocks
+    .filter(
+      (sessionBlock) => sessionBlock.status === SessionBlockStatus.EXECUTED
+    )
+    .map((sessionBlock) => Number(sessionBlock.order))
 
+  const lastBlockOrder = executedBlockOrders
+    ? Math.max(...executedBlockOrders)
+    : 0
+
+  const preparedEntries = session?.leaderboard?.flatMap((entry) => {
+    if (!entry.sessionParticipation?.isActive) return []
+
+    // TODO: remove the lastBlockOrder attribute from the nexus type LeaderboardEntry once the leaderboard comparison is moved to the server
     return {
       id: entry.id,
-      participantId: ctx.user.sub,
+      participantId: entry.participant.id,
       username: entry.participant.username,
       avatar: entry.participant.avatar,
       score: entry.score,
-      self: entry.participantId === ctx.user.sub,
+      // isSelf: entry.participantId === ctx.user.sub,
+      lastBlockOrder,
     }
   })
+
+  const sortByScoreAndUsername = R.curry(R.sortWith)([
+    R.descend(R.prop('score')),
+    R.ascend(R.prop('username')),
+  ])
+
+  const sortedEntries = sortByScoreAndUsername(preparedEntries)
+
+  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
+    return { ...entry, rank: ix + 1 }
+  })
+
+  return filteredEntries
 }
 
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled

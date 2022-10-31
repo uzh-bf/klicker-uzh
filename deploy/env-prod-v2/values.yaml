@@ -27,7 +27,8 @@ frontendPWA:
           - pwa.klicker-prod.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    # type: RollingUpdate
+    type: Recreate
 
   resources:
     requests:
@@ -60,7 +61,8 @@ frontendManage:
           - manage.klicker-prod.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    # type: RollingUpdate
+    type: Recreate
 
   resources:
     requests:
@@ -93,7 +95,8 @@ backendGraphql:
           - backend-sls.klicker-prod.bf-app.ch
 
   strategy:
-    type: RollingUpdate
+    # type: RollingUpdate
+    type: Recreate
 
   resources:
     requests:

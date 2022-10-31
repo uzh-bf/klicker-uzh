@@ -20,67 +20,8 @@ import { ParticipantOther } from '../../../components/Participant'
 import { Podium } from '../../../components/Podium'
 import Tabs from '../../../components/Tabs'
 
-import Image from 'next/future/image'
 import { useState } from 'react'
-
-const POSITIONS = [
-  [77, 75],
-  [69, 98],
-  [101, 83],
-  [93, 106],
-  [123, 92],
-  [115, 115],
-  [146, 100],
-  [138, 123],
-  [170, 108],
-  [162, 131],
-]
-
-function GroupVisualization({ participants, scaleFactor }) {
-  const height = 351 * scaleFactor
-  const width = 248 * scaleFactor
-
-  return (
-    <div
-      className="relative m-auto"
-      style={{
-        height,
-        width,
-      }}
-    >
-      <div className="absolute top-0 left-0 right-0">
-        <Image
-          className="border shadow rounded-xl"
-          src="/rakete_mond.png"
-          width={width}
-          height={height}
-        />
-        {/* <Image className="" src="/rocket_base.svg" fill /> */}
-      </div>
-
-      {participants.slice(0, 10).map((participant, ix) => (
-        <Image
-          key={participant.avatar}
-          className="absolute rounded-full"
-          style={{
-            top: `${POSITIONS[ix][0] * scaleFactor}px`,
-            left: `${POSITIONS[ix][1] * scaleFactor}px`,
-          }}
-          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-            participant.avatar ?? 'placeholder'
-          }.svg`}
-          alt=""
-          height={16 * scaleFactor}
-          width={16 * scaleFactor}
-        />
-      ))}
-    </div>
-  )
-}
-
-GroupVisualization.defaultProps = {
-  scaleFactor: 1.7,
-}
+import GroupVisualization from '../../../components/GroupVisualization'
 
 function CourseOverview({ courseId }: any) {
   const [selectedTab, setSelectedTab] = useState('global')
@@ -126,7 +67,7 @@ function CourseOverview({ courseId }: any) {
       courseName={course.displayName}
       courseColor={course.color}
     >
-      <div className="md:m-auto md:max-w-5xl md:w-full md:border md:rounded">
+      <div className="md:mx-auto md:max-w-5xl md:w-full md:border md:rounded">
         <Tabs
           defaultValue="global"
           value={selectedTab}
@@ -201,7 +142,7 @@ function CourseOverview({ courseId }: any) {
                       </div>
                     ))}
                   <div className="pt-8 space-y-2">
-                    {groupLeaderboard?.map((entry) => (
+                    {groupLeaderboard.map((entry) => (
                       <ParticipantOther
                         key={entry.id}
                         pseudonym={entry.name}
@@ -223,7 +164,8 @@ function CourseOverview({ courseId }: any) {
                 </div>
 
                 <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                  Das Gruppenleaderboard wird täglich aktualisiert.
+                  Das Gruppenleaderboard wird täglich aktualisiert. <br />
+                  Gruppen mit einem Mitglied erhalten keine Punkte.
                 </div>
               </div>
             </div>
@@ -237,37 +179,41 @@ function CourseOverview({ courseId }: any) {
                   <div>{group.code}</div>
                 </H3>
 
-                <GroupVisualization participants={group.participants} />
-                <GroupLeaderboard
-                  courseId={courseId}
-                  groupId={group.id}
-                  leaderboard={group.participants}
-                  onLeave={() => {
-                    leaveParticipantGroup({
-                      variables: {
-                        courseId,
-                        groupId: group.id,
-                      },
-                      refetchQueries: [GetCourseOverviewDataDocument],
-                    })
+                <div className="flex flex-row flex-wrap gap-4 pt-2">
+                  <div className="flex flex-col flex-1">
+                    <GroupLeaderboard
+                      courseId={courseId}
+                      groupId={group.id}
+                      leaderboard={group.participants}
+                      onLeave={() => {
+                        leaveParticipantGroup({
+                          variables: {
+                            courseId,
+                            groupId: group.id,
+                          },
+                          refetchQueries: [GetCourseOverviewDataDocument],
+                        })
 
-                    setSelectedTab('global')
-                  }}
-                />
+                        setSelectedTab('global')
+                      }}
+                    />
 
-                <div className="self-end mt-6 text-sm w-60 text-slate-600">
-                  <div className="flex flex-row justify-between">
-                    <div>Punkte durch Mitglieder</div>
-                    <div>{group.averageMemberScore}</div>
+                    <div className="self-end mt-6 text-sm w-60 text-slate-600">
+                      <div className="flex flex-row justify-between">
+                        <div>Punkte durch Mitglieder</div>
+                        <div>{group.averageMemberScore}</div>
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <div>Punkte aus Gruppenaktivitäten</div>
+                        <div>{group.groupActivityScore}</div>
+                      </div>
+                      <div className="flex flex-row justify-between font-bold">
+                        <div>Total Punkte</div>
+                        <div>{group.score}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-row justify-between">
-                    <div>Punkte aus Gruppenaktivitäten</div>
-                    <div>{group.groupActivityScore}</div>
-                  </div>
-                  <div className="flex flex-row justify-between font-bold">
-                    <div>Total Punkte</div>
-                    <div>{group.score}</div>
-                  </div>
+                  <GroupVisualization participants={group.participants} />
                 </div>
               </div>
             </Tabs.TabContent>

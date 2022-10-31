@@ -16,7 +16,7 @@ import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import getConfig from 'next/config'
-import Leaderboard from '../../components/common/Leaderboard'
+import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import Layout from '../../components/Layout'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
@@ -156,7 +156,7 @@ function Index({ id }: Props) {
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
-      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:m-auto">
+      <div className="gap-4 md:flex md:flex-row md:w-full md:max-w-7xl md:mx-auto">
         <div
           className={twMerge(
             'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
@@ -165,7 +165,13 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            <div>Keine Frage aktiv.</div>
+            isGamificationEnabled ? (
+              <div className={twMerge('bg-white min-h-full flex-1 md:p-8')}>
+                <SessionLeaderboard sessionId={id} />
+              </div>
+            ) : (
+              <div>Keine Frage aktiv.</div>
+            )
           ) : (
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}
@@ -184,12 +190,6 @@ function Index({ id }: Props) {
               execution={activeBlock?.execution || 0}
             />
           )}
-
-          {!activeBlock && selfData?.self && isGamificationEnabled && (
-            <div className={twMerge('w-full bg-white min-h-full')}>
-              <Leaderboard sessionId={id} className="hidden md:block" />
-            </div>
-          )}
         </div>
 
         {selfData?.self && isGamificationEnabled && (
@@ -199,7 +199,7 @@ function Index({ id }: Props) {
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <Leaderboard sessionId={id} />
+            <SessionLeaderboard sessionId={id} />
           </div>
         )}
 

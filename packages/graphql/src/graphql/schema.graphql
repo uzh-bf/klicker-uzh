@@ -94,8 +94,10 @@ type ConfusionTimestep {
 
 type Course {
   color: String
+  description: String
   displayName: String!
   id: ID!
+  isArchived: Boolean
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
@@ -187,6 +189,7 @@ type LeaderboardEntry {
   avatar: String
   id: ID!
   isSelf: Boolean
+  lastBlockOrder: Int
   participantId: ID!
   rank: Int!
   score: Float!
@@ -223,6 +226,7 @@ type Mutation {
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
+  createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
@@ -231,6 +235,7 @@ type Mutation {
   deleteQuestion(id: Int): Question
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
+  joinCourseWithPin(courseId: ID!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
   leaveCourse(courseId: ID!): ParticipantLearningData
   leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
@@ -349,6 +354,7 @@ type PushSubscription {
 }
 
 type Query {
+  basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
@@ -446,6 +452,7 @@ type SessionBlock {
   expiresAt: DateTime
   id: Int!
   instances: [QuestionInstance!]!
+  order: Int!
   randomSelection: Boolean
   status: SessionBlockStatus!
   timeLimit: Int

@@ -17,6 +17,7 @@ query GetCockpitSession($id: ID!) {
     }
     blocks {
       id
+      order
       status
       expiresAt
       timeLimit

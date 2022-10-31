@@ -60,7 +60,7 @@ function LearningElement({ courseId, id }: Props) {
   const totalPointsAwarded = useMemo(() => {
     if (!data?.learningElement) return 0
     return data.learningElement.instances.reduce(
-      (acc, instance) => acc + instance.evaluation?.pointsAwarded,
+      (acc, instance) => acc + (instance?.evaluation?.pointsAwarded ?? 0),
       0
     )
   }, [data?.learningElement?.instances])
@@ -100,7 +100,7 @@ function LearningElement({ courseId, id }: Props) {
       courseName={data.learningElement.course.displayName}
       courseColor={data.learningElement.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-5xl md:m-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {!currentInstance && (
           <div className="space-y-3">
             <div>
@@ -120,12 +120,13 @@ function LearningElement({ courseId, id }: Props) {
               </div>
               <div>
                 {data.learningElement.instances.map((instance) => (
-                  <div className="flex flex-row justify-between">
+                  <div className="flex flex-row justify-between" key={instance.id}>
                     <div>{instance.questionData.name}</div>
-                    <div>
+                    {instance.evaluation ? <div>
                       {instance.evaluation.pointsAwarded} /{' '}
                       {instance.evaluation.score} / 10
-                    </div>
+                    </div>: <div>Not attempted</div>}
+
                   </div>
                 ))}
               </div>
@@ -205,10 +206,12 @@ function LearningElement({ courseId, id }: Props) {
         {currentInstance && (
           <div className="order-1 md:order-2">
             <Progress
+              nonLinear
               isMaxVisible
               formatter={(v) => v}
               value={currentIx}
               max={data.learningElement?.instances?.length ?? 0}
+              onItemClick={(ix: number) => setCurrentIx(ix)}
             />
           </div>
         )}

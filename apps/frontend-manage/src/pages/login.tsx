@@ -39,6 +39,7 @@ function LoginForm() {
                   width={300}
                   height={90}
                   alt="KlickerUZH Logo"
+                  className="mx-auto"
                 />
               </div>
               <H1>Login</H1>

@@ -1,13 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
 import Layout from '@components/Layout'
-import UserNotification from '@components/UserNotification'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { NextPageWithLayout } from '@pages/_app'
-import { Button, Prose } from '@uzh-bf/design-system'
+import { Button, Prose, UserNotification } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Router from 'next/router'
 import hash from 'object-hash'
@@ -138,7 +137,7 @@ const EditProfile: NextPageWithLayout = () => {
       >
         {({ values, errors, isSubmitting, isValid }) => {
           return (
-            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:m-auto">
+            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
                 // @ts-ignore
                 className="border-b-4 border-uzh-blue-100 h-36 md:h-48 "

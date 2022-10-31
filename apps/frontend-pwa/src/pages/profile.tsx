@@ -18,7 +18,7 @@ const Profile = () => {
 
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
-      <div className="flex flex-col items-center md:max-w-md md:border md:rounded md:p-4 md:m-auto md:w-full">
+      <div className="flex flex-col items-center md:max-w-md md:border md:rounded md:p-4 md:mx-auto md:w-full">
         <H1>{data.self.username}</H1>
 
         <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
