@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import Footer from '@components/common/Footer'
 import Chart from '@components/evaluation/Chart'
+import { extractQuestions } from '@components/evaluation/utils'
 import { faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -10,7 +11,10 @@ import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
-import { CHART_COLORS } from 'shared-components/src/constants'
+import {
+  ACTIVE_CHART_TYPES,
+  CHART_COLORS,
+} from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 interface Tab {
@@ -31,6 +35,7 @@ function Evaluation() {
   const [showSolution, setShowSolution] = useState(false)
   const [activeBlock, setActiveBlock] = useState(0)
   const [activeInstance, setActiveInstance] = useState(0)
+  const [chartType, setChartType] = useState('')
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
@@ -66,62 +71,7 @@ function Evaluation() {
 
   const questions = useMemo(() => {
     if (!data) return []
-
-    return data.sessionEvaluation?.instanceResults?.map((instance) => {
-      const baseData = {
-        blockIx: instance.blockIx,
-        instanceIx: instance.instanceIx,
-        content: instance.questionData.content,
-        type: instance.questionData.type,
-      }
-
-      const answers = []
-
-      if (
-        instance.questionData.type === 'SC' ||
-        instance.questionData.type === 'MC' ||
-        instance.questionData.type === 'KPRIM'
-      ) {
-        // answerArray should include both all answer possibilities as well as a correct / false attribute for them
-        instance.questionData.options.choices.map((choice: any) => {
-          answers.push({ value: choice.value, correct: choice.correct })
-        })
-      } else if (instance.questionData.type === 'NUMERICAL') {
-        // answerArray should include the correct answer ranges with correct attribute and the restrictions with an undefined correct attribute
-        answers.push({
-          value: instance.questionData.options.restrictions,
-          correct: undefined,
-        })
-        instance.questionData.options.solutionRanges?.forEach(
-          (range: { min: number; max: number }) => {
-            answers.push({
-              value: range,
-              correct: true,
-            })
-          }
-        )
-      } else if (instance.questionData.type === 'FREE_TEXT') {
-        // answerArray should include the correct keywords together with a correct: true attribute
-        instance.questionData.options.solutions.forEach((solution: string) => {
-          answers.push({
-            value: solution,
-            correct: true,
-          })
-        })
-      }
-
-      const results = Object.values(instance.results).map((answer) => ({
-        value: answer.value,
-        votes: answer.count,
-      }))
-
-      return {
-        ...baseData,
-        answers,
-        results,
-        participants: instance.participants,
-      }
-    })
+    return extractQuestions(data)
   }, [data])
 
   if (error) return <div>An error occurred, please try again later.</div>
@@ -167,13 +117,21 @@ function Evaluation() {
                 label: item.label,
               }))}
               onChange={(newIx) => {
-                console.log(newIx)
                 setActiveBlock(Number(blockIx))
                 setActiveInstance(Number(newIx))
               }}
             />
           </TabsPrimitive.Trigger>
         ))}
+
+        {currentQuestion && (
+          <Select
+            items={ACTIVE_CHART_TYPES[currentQuestion.type]}
+            onChange={(newValue) => {
+              setChartType(newValue)
+            }}
+          ></Select>
+        )}
       </TabsPrimitive.List>
 
       {currentQuestion && (
@@ -188,16 +146,9 @@ function Evaluation() {
           <div className="flex flex-col flex-1 md:flex-row">
             <div className="z-10 flex-1 order-2 md:order-1">
               <Chart
-                questionType={currentQuestion.type}
-                data={currentQuestion.results.map((question, idx) => {
-                  return {
-                    value: question.value,
-                    votes: question.votes,
-                    answer: currentQuestion.answers[idx],
-                  }
-                })}
+                chartType={chartType}
+                data={currentQuestion}
                 showSolution={showSolution}
-                totalResponses={currentQuestion.participants}
               />
             </div>
             <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
@@ -205,111 +156,84 @@ function Evaluation() {
                 {(currentQuestion.type === 'SC' ||
                   currentQuestion.type === 'MC' ||
                   currentQuestion.type === 'KPRIM') &&
-                  currentQuestion.answers.map(
-                    (
-                      answer: {
-                        value: String | { min: number; max: number }
-                        correct?: Boolean
-                      },
-                      innerIndex: number
-                    ) => (
+                  currentQuestion.answers.map((answer, innerIndex) => (
+                    <div
+                      key={currentQuestion.answers[innerIndex].value}
+                      className="flex flex-row"
+                    >
                       <div
-                        key={currentQuestion.results[innerIndex].value}
-                        className="flex flex-row"
+                        style={{
+                          backgroundColor:
+                            answer.correct && showSolution
+                              ? '#00de0d'
+                              : CHART_COLORS[innerIndex % 12],
+                        }}
+                        className={twMerge(
+                          'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                          answer.correct && showSolution && 'text-black'
+                        )}
                       >
-                        <div
-                          style={{
-                            backgroundColor:
-                              answer.correct && showSolution
-                                ? '#00de0d'
-                                : CHART_COLORS[innerIndex % 12],
-                          }}
-                          className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                            answer.correct && showSolution && 'text-black'
-                          )}
-                        >
-                          {String.fromCharCode(65 + innerIndex)}
-                        </div>
-                        <Markdown
-                          content={answer.value}
-                          className="w-[calc(100%-3rem)]"
-                        />
+                        {String.fromCharCode(65 + innerIndex)}
                       </div>
-                    )
-                  )}
+                      <Markdown
+                        content={answer.value}
+                        className="w-[calc(100%-3rem)]"
+                      />
+                    </div>
+                  ))}
 
                 {currentQuestion.type === 'NUMERICAL' && (
                   <div>
-                    {/* <div className="mb-3">
-                        {answerCollection[index].answers
-                          .filter(
-                            (answer: any) =>
-                              typeof answer.correct === 'undefined'
-                          )
-                          .map((answer: any, index: number) => (
-                            <div key={index}>
-                              Einschränkungen: Wert zwischen {answer.value.min}{' '}
-                              und {answer.value.max}
-                            </div>
-                          ))}
-                      </div> */}
                     <div className="font-bold">Erlaubter Antwortbereich:</div>
-                    {currentQuestion.answers.map(
-                      (
-                        answer: {
-                          value: String | { min: number; max: number }
-                          correct?: Boolean
-                        },
-                        innerIndex: number
-                      ) => (
-                        <div key={innerIndex}>
-                          [{answer.value.min ?? '-∞'},{answer.value.max ?? '+∞'}
-                          ]
+                    <div>
+                      [{currentQuestion.restrictions!.min ?? '-∞'},
+                      {currentQuestion.restrictions!.max ?? '+∞'}]
+                    </div>
+                    {showSolution && currentQuestion.solutions!.solutionRanges && (
+                      <div>
+                        <div className="mt-2 font-bold">
+                          Korrekte Lösungsbereiche:
                         </div>
-                      )
+                        {currentQuestion.solutions!.solutionRanges.map(
+                          (range, innerIndex) => (
+                            <div key={innerIndex}>
+                              [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                            </div>
+                          )
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
-
-                {currentQuestion.type === 'FREE_TEXT' && (
-                  <div>
-                    <div className="font-bold">Schlüsselwörter Lösung:</div>
-                    <ul>
-                      {currentQuestion.answers.map(
-                        (
-                          answer: {
-                            value: String | { min: number; max: number }
-                            correct?: Boolean
-                          },
-                          innerIndex: number
-                        ) => (
-                          <li key={innerIndex}>{`- ${answer.value}`}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
+                {currentQuestion.type === 'FREE_TEXT' &&
+                  currentQuestion.solutions!.freeTextSolutions &&
+                  showSolution && (
+                    <div>
+                      <div className="font-bold">Schlüsselwörter Lösung:</div>
+                      <ul>
+                        {currentQuestion.solutions!.freeTextSolutions.map(
+                          (keyword, innerIndex) => (
+                            <li key={innerIndex}>{`- ${keyword}`}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
-          <Footer className="flex flex-row justify-between px-8 py-4">
-            <div className="text-xl">
-              Total Participants: {currentQuestion.participants}
+          <Footer>
+            <div className="flex flex-row justify-between px-8 py-4 m-0">
+              <div className="text-xl">
+                Total Participants: {currentQuestion.participants}
+              </div>
+              <Switch
+                id="showSolution"
+                checked={showSolution}
+                label="Show solution"
+                onCheckedChange={(newValue) => setShowSolution(newValue)}
+              ></Switch>
             </div>
-            <Switch
-              id="showSolution"
-              checked={showSolution}
-              label="Show solution"
-              onCheckedChange={(newValue) => setShowSolution(newValue)}
-            ></Switch>
-            <Select
-              items={[
-                { label: 'Table', value: 'table' },
-                { label: 'Bar Chart', value: 'barChart' },
-              ]}
-              onChange={() => {}}
-            ></Select>
           </Footer>
         </div>
       )}

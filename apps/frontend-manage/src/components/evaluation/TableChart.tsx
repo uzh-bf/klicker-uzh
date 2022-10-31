@@ -4,10 +4,10 @@ import Table from '../common/Table'
 
 interface TableChartProps {
   questionType: QuestionType
-  data: {
+  answers: {
     value: string | number
-    answer: Record<string, string>
-    votes: number
+    count: number
+    correct: boolean
   }[]
   showSolution: boolean
   totalResponses: number
@@ -15,18 +15,18 @@ interface TableChartProps {
 
 function TableChart({
   questionType,
-  data,
+  answers,
   showSolution,
   totalResponses,
 }: TableChartProps): React.ReactElement {
-  const tableData = data.map((item) => {
-    console.log('correct', item.answer.correct)
+  const tableData = answers.map((answer) => {
     return {
-      count: item.votes,
-      value: String.fromCharCode(65 + Number(item.value)),
-      correct: item.answer.correct ? 'T' : 'F',
+      count: answer.count,
+      // value: String.fromCharCode(65 + Number(item.value)),
+      value: answer.value,
+      correct: answer.correct ? 'T' : 'F',
       percentage:
-        String(((item.votes / totalResponses) * 100).toFixed()) + ' %',
+        String(((answer.count / totalResponses) * 100).toFixed()) + ' %',
     }
   })
 
@@ -37,9 +37,6 @@ function TableChart({
   ]
   if (showSolution)
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
-
-  console.log('render table')
-  console.log(tableData)
   return <Table data={tableData} columns={columns}></Table>
 }
 

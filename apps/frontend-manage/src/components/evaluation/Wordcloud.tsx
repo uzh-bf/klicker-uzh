@@ -2,7 +2,7 @@ import React from 'react'
 import { TagCloud } from 'react-tagcloud'
 
 interface WordcloudProps {
-  data: any
+  data: { value: string; count: number }[]
 }
 
 const defaultValues = {}

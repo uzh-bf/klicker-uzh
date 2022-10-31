@@ -144,3 +144,28 @@ export const TYPES_SHORT: Record<string, string> = {
   SC: 'SC',
   KPRIM: 'KP',
 }
+
+export const ACTIVE_CHART_TYPES: Record<string, Record<string, string>[]> = {
+  FREE_TEXT: [
+    { label: 'Table', value: 'table' },
+    { label: 'Word Cloud', value: 'wordCloud' },
+  ],
+  NUMERICAL: [
+    { label: 'Table', value: 'table' },
+    { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Word Cloud', value: 'wordCloud' },
+    { label: 'Histogram', value: 'histogram' },
+  ],
+  SC: [
+    { label: 'Table', value: 'table' },
+    { label: 'Bar Chart', value: 'barChart' },
+  ],
+  MC: [
+    { label: 'Table', value: 'table' },
+    { label: 'Bar Chart', value: 'barChart' },
+  ],
+  KPRIM: [
+    { label: 'Table', value: 'table' },
+    { label: 'Bar Chart', value: 'barChart' },
+  ],
+}

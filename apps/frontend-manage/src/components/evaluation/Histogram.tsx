@@ -14,10 +14,10 @@ import {
 
 interface HistogramProps {
   brush?: boolean
-  data: {
-    correct: boolean
-    votes: number
-    value: string | number
+  answers: {
+    correct?: boolean
+    count: number
+    value: string
   }[]
   solution?: number
   statistics?: any
@@ -33,7 +33,7 @@ const defaultValues = {
 
 function Histogram({
   brush,
-  data,
+  answers,
   solution,
   statistics,
   min,
@@ -42,9 +42,9 @@ function Histogram({
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
-    const mappedData = data.map((item) => ({
+    const mappedData = answers.map((item) => ({
       value: +item.value,
-      votes: +item.votes,
+      count: +item.count,
     }))
 
     // calculate the borders of the histogram
@@ -70,11 +70,11 @@ function Histogram({
 
     // map the bins to recharts objects
     return bins.map((bin): any => ({
-      votes: sumBy(bin, 'votes'),
+      count: sumBy(bin, 'count'),
       value: `${round(round(bin.x0, 2) / round(bin.x1, 2), 1)}`,
       label: `${bin.x0}/${bin.x1}`,
     }))
-  }, [data, numBins])
+  }, [answers, numBins])
 
   return (
     <div>
@@ -103,7 +103,7 @@ function Histogram({
           />
           <CartesianGrid strokeDasharray="5 5" />
           <Tooltip />
-          <Bar dataKey="votes" fill="rgb(19, 149, 186)" />
+          <Bar dataKey="count" fill="rgb(19, 149, 186)" />
 
           {/* // TODO: reintroduce statistics when ready
       {statistics && [

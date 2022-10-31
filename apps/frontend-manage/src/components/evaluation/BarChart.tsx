@@ -17,31 +17,31 @@ import {
 
 interface BarChartProps {
   questionType: QuestionType
-  data: { value: string | number; correct: boolean; votes: number }[]
+  answers: { value: string; correct?: boolean; count: number }[]
   showSolution: boolean
   totalResponses: number
 }
 
-const defaultValues = {}
-
 function BarChart({
   questionType,
-  data,
+  answers,
   showSolution,
   totalResponses,
 }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = data.map((d) => {
+  const dataWithLabels = answers.map((d, idx) => {
     const labelIn =
-      d.votes / totalResponses > SMALL_BAR_THRESHOLD ? d.votes : undefined
+      d.count / totalResponses > SMALL_BAR_THRESHOLD ? d.count : undefined
     const labelOut =
-      d.votes / totalResponses <= SMALL_BAR_THRESHOLD ? d.votes : undefined
+      d.count / totalResponses <= SMALL_BAR_THRESHOLD ? d.count : undefined
     const xLabel =
       questionType === 'NUMERICAL'
         ? d.value
-        : String.fromCharCode(Number(d.value) + 65)
-    return { ...d, labelIn, labelOut, xLabel }
+        : String.fromCharCode(Number(idx) + 65)
+    return { count: d.count, labelIn, labelOut, xLabel }
   })
+
+  // debugger
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
@@ -79,9 +79,9 @@ function BarChart({
         />
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <Bar
-          dataKey="votes"
-          isAnimationActive={false}
+          dataKey="count"
           // HACK: don't animate as it causes labels to disappear
+          //isAnimationActive={false}
           maxBarSize={100}
         >
           <LabelList
@@ -100,7 +100,7 @@ function BarChart({
             stroke="white"
             style={{ fontSize: '2rem' }}
           />
-          {data.map(
+          {answers.map(
             (row, index): React.ReactElement => (
               <Cell
                 fill={
@@ -108,7 +108,7 @@ function BarChart({
                     ? '#00de0d'
                     : CHART_COLORS[index % 12]
                 }
-                key={row.value}
+                key={index}
               />
             )
           )}

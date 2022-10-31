@@ -1,54 +1,74 @@
-import { QuestionType } from '@klicker-uzh/prisma'
+import {
+  NumericalRestrictions,
+  NumericalSolutionRange,
+} from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import BarChart from './BarChart'
 import Histogram from './Histogram'
 import TableChart from './TableChart'
 import Wordcloud from './Wordcloud'
 
 interface ChartProps {
-  questionType: QuestionType
+  chartType: string
   data: {
-    value: string | number
-    votes: number
-    answer: Record<string, string>
+    answers: any
+    blockIx: number
+    instanceIx: number
+    content: string
+    type: string
+    participants: number
+    restrictions?: NumericalRestrictions // Only in NUMERICAL
+    solutions?: {
+      solutionRanges?: NumericalSolutionRange[] // Only in NUMERICAL
+      freeTextSolutions?: string[] // Only in FREE_TEXT
+    }
   }[]
+
   showSolution: boolean
-  options?: any
-  totalResponses: number
 }
 
-const defaultValues = {}
-
 function Chart({
-  questionType,
+  chartType,
   data,
   showSolution,
-  options,
-  totalResponses,
 }: ChartProps): React.ReactElement {
-  if (
-    questionType === 'SC' ||
-    questionType === 'MC' ||
-    questionType === 'KPRIM'
-  ) {
+  console.log(chartType)
+  if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (
       <TableChart
-        data={data}
-        questionType={questionType}
+        answers={data.answers}
+        questionType={data.type}
         showSolution={showSolution}
-        totalResponses={totalResponses}
+        totalResponses={data.participants}
       />
     )
-  } else if (questionType === 'NUMERICAL') {
+  } else if (chartType === 'histogram') {
     return (
       <Histogram
-        data={data}
-        min={options?.restrictions?.min}
-        max={options?.restrictions?.max}
+        answers={data.answers}
+        min={data.restrictions.min}
+        max={data.restrictions.max}
       />
     )
-  } else if (questionType === 'FREE_TEXT') {
-    return <Wordcloud data={data} />
+  } else if (chartType === 'wordCloud') {
+    return (
+      <Wordcloud
+        data={data.answers.map((answer) => ({
+          value: answer.value,
+          count: answer.count,
+        }))}
+      />
+    )
+  } else if (chartType === 'barChart') {
+    return (
+      <BarChart
+        answers={data.answers}
+        questionType={data.type}
+        showSolution={showSolution}
+        totalResponses={data.participants}
+      />
+    )
   } else {
     return <div>There exists no chart for this question type yet</div>
   }
