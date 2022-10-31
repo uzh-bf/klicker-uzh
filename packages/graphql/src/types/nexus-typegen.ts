@@ -382,6 +382,7 @@ export interface NexusGenObjects {
     expiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id: number; // Int!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    order: number; // Int!
     randomSelection?: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit?: number | null; // Int
@@ -742,6 +743,7 @@ export interface NexusGenFieldTypes {
     expiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: number; // Int!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    order: number; // Int!
     randomSelection: boolean | null; // Boolean
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
     timeLimit: number | null; // Int
@@ -1107,6 +1109,7 @@ export interface NexusGenFieldTypeNames {
     expiresAt: 'DateTime'
     id: 'Int'
     instances: 'QuestionInstance'
+    order: 'Int'
     randomSelection: 'Boolean'
     status: 'SessionBlockStatus'
     timeLimit: 'Int'

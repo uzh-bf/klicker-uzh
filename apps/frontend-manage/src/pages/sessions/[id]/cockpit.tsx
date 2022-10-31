@@ -67,7 +67,7 @@ function Cockpit() {
     variables: {
       id: router.query.id as string,
     },
-    pollInterval: 10000,
+    pollInterval: 1000,
     skip: !router.query.id,
   })
 

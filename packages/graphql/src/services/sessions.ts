@@ -730,6 +730,11 @@ export async function deactivateSessionBlock(
     block: null,
   })
 
+  ctx.emitter.emit('invalidate', {
+    typename: 'Session',
+    id: session.id,
+  })
+
   // const leaderboardUpdates = Object.entries(sessionLeaderboard).map(
   //   ([id, score]) => {
   //     out

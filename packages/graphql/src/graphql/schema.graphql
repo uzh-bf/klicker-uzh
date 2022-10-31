@@ -452,6 +452,7 @@ type SessionBlock {
   expiresAt: DateTime
   id: Int!
   instances: [QuestionInstance!]!
+  order: Int!
   randomSelection: Boolean
   status: SessionBlockStatus!
   timeLimit: Int

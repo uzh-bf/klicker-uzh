@@ -659,6 +659,8 @@ export const SessionBlock = objectType({
   definition(t) {
     t.nonNull.int('id')
 
+    t.nonNull.int('order')
+
     t.nonNull.field('status', {
       type: SessionBlockStatus,
     })
