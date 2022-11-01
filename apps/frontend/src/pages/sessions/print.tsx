@@ -92,6 +92,7 @@ function Print(): React.ReactElement<any> {
                   <div className="flex flex-row h-full">
                     <div className="h-[60%] w-[1100px]">
                       <Chart
+                        activeInstance={0}
                         activeVisualization={activeVisualization}
                         data={results.data}
                         instanceId={activeInstance.id}
