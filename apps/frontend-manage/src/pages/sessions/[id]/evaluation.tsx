@@ -86,8 +86,6 @@ function Evaluation() {
   const [activeBlock, setActiveBlock] = useState<number | string>(0)
   const [activeInstance, setActiveInstance] = useState(0)
 
-  console.log(activeBlock, activeInstance)
-
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
