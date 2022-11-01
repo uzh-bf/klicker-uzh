@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.2...v1.8.3) (2022-11-01)
+
+
+### Bug Fixes
+
+* **apps/frontend:** fix failing production build because of type issue with activeInstance ([86c22b1](https://github.com/uzh-bf/klicker-uzh/commit/86c22b17372f158b163dbbc44b60c7a8c3b57d2e))
+
 ### [1.8.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.1...v1.8.2) (2022-11-01)
 
 
