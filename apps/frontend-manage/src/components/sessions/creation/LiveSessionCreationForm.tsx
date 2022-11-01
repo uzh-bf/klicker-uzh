@@ -1,5 +1,7 @@
+import { useMutation } from '@apollo/client'
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CreateSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
@@ -17,8 +19,6 @@ import {
 } from 'formik'
 import * as yup from 'yup'
 
-import EditorField from './EditorField'
-
 interface LiveSessionCreationFormProps {
   courses?: {
     label: string
@@ -27,6 +27,8 @@ interface LiveSessionCreationFormProps {
 }
 
 function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
+  const [createSession] = useMutation(CreateSessionDocument)
+
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
       .string()
@@ -34,7 +36,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
     displayName: yup
       .string()
       .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
-    description: yup.string(),
+    // description: yup.string(),
     blocks: yup
       .array()
       .of(
@@ -53,7 +55,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           )
       ),
     courseId: yup.string(),
-    isGamificationActive: yup
+    isGamificationEnabled: yup
       .boolean()
       .required('Bitte spezifizieren Sie, ob die Session gamified sein soll.'),
   })
@@ -65,17 +67,39 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         initialValues={{
           name: '',
           displayName: '',
-          description: '',
-          blocks: [['2', '200'], ['3', '4'], ['100']],
-          courseId: courses ? courses[0].value : '',
-          isGamificationActive: false,
+          // description: '',
+          blocks: [['']],
+          courseId: '',
+          isGamificationEnabled: false,
         }}
         isInitialValid={false}
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values) => {
-          // TODO: creation session with corresponding mutation
-          // TODO: remove possibly existing whitespaces from questionId strings and cast them to numbers and remove empty strings
-          // TODO: if numbers were entered without a space in between, they can still be of the form 33,33,33 and have to be split up here
+          const blockQuestions = values.blocks
+            .filter((block) => block.length > 0)
+            .map((block) => {
+              return {
+                questionIds: block.flatMap((question) => {
+                  return question
+                    .replace(/\s/g, '')
+                    .split(',')
+                    .map((questionId) => parseInt(questionId))
+                }),
+              }
+            })
+
+          createSession({
+            variables: {
+              name: values.name,
+              displayName: values.displayName,
+              blocks: blockQuestions,
+              courseId: values.courseId,
+              isGamificationEnabled: values.isGamificationEnabled,
+            },
+          })
+
+          // TODO: handle the case where some of the entered questionIds are invalid / do not exist
+          // TODO: add possibilities to add time limits to questions
           console.log(values)
           alert('submission triggered')
         }}
@@ -110,7 +134,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className={{ root: 'mb-1' }}
                 />
 
-                <EditorField
+                {/* <EditorField
                   label="Beschreibung"
                   field={values.description}
                   fieldName="description"
@@ -124,7 +148,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                </div>
+                </div> */}
 
                 {/* // TODO: add possibility to add and remove blocks */}
                 <div className="mt-2 mb-2">
@@ -201,7 +225,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <>
                       <div className="mr-2">Kurs:</div>
                       <Select
-                        items={courses}
+                        items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
                         onChange={(newValue: string) =>
                           setFieldValue('courseId', newValue)
                         }
@@ -211,9 +235,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   <Switch
                     label="Gamification"
                     id="gamification-switch"
-                    checked={values.isGamificationActive}
+                    checked={values.isGamificationEnabled}
                     onCheckedChange={(newValue: boolean) =>
-                      setFieldValue('isGamificationActive', newValue)
+                      setFieldValue('isGamificationEnabled', newValue)
                     }
                     className="ml-4"
                   />

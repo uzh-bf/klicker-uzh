@@ -1,0 +1,12 @@
+query GetUserCourses {
+  userCourses {
+    id
+    isArchived
+    pinCode
+    name
+    displayName
+    description
+    createdAt
+    updatedAt
+  }
+}

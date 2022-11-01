@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  GetUserCoursesDocument,
+  GetUserQuestionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -28,6 +32,21 @@ function Index() {
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
+
+  const {
+    loading: loadingCourses,
+    error: errorCourses,
+    data: dataCourses,
+  } = useQuery(GetUserCoursesDocument)
+
+  const courseSelection = useMemo(
+    () =>
+      dataCourses?.userCourses?.map((course: Course) => ({
+        label: course.displayName,
+        value: course.id,
+      })),
+    [dataCourses]
+  )
 
   const {
     filters,
@@ -103,15 +122,9 @@ function Index() {
               <div className="p-3">
                 <TabsPrimitive.Content
                   value="live-session"
-                  className="overflow-y-scroll md:h-64"
+                  className="overflow-y-scroll md:h-72"
                 >
-                  <LiveSessionCreationForm
-                    // TODO: replace by query result
-                    courses={[
-                      { label: 'BF1', value: '1234' },
-                      { label: 'AMI', value: '5678' },
-                    ]}
-                  />
+                  <LiveSessionCreationForm courses={courseSelection} />
                 </TabsPrimitive.Content>
                 <TabsPrimitive.Content
                   value="micro-session"

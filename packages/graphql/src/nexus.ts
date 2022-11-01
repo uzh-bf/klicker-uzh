@@ -384,6 +384,8 @@ export const Course = objectType({
     t.boolean('isArchived')
     t.string('description')
 
+    t.int('pinCode')
+
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
     })
@@ -397,6 +399,9 @@ export const Course = objectType({
     })
 
     t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
+
+    t.date('createdAt')
+    t.date('updatedAt')
   },
 })
 
@@ -921,6 +926,13 @@ export const Query = objectType({
       },
     })
 
+    t.list.nonNull.field('userCourses', {
+      type: Course,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return CourseService.getUserCourses({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
     t.list.nonNull.field('userSessions', {
       type: Session,
       resolve(_, _args, ctx: ContextWithUser) {
@@ -1207,6 +1219,7 @@ export const Mutation = objectType({
           )
         ),
         courseId: stringArg(),
+        isGamificationEnabled: booleanArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createSession(args, ctx)

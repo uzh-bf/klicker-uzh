@@ -1,0 +1,17 @@
+mutation CreateSession(
+  $name: String!
+  $displayName: String!
+  $blocks: [BlockInput!]!
+  $courseId: String
+  $isGamificationEnabled: Boolean
+) {
+  createSession(
+    name: $name
+    displayName: $displayName
+    blocks: $blocks
+    courseId: $courseId
+    isGamificationEnabled: $isGamificationEnabled
+  ) {
+    id
+  }
+}

@@ -77,10 +77,17 @@ interface CreateSessionArgs {
   displayName?: string | null
   blocks: BlockArgs[]
   courseId?: string
+  isGamificationEnabled?: boolean
 }
 
 export async function createSession(
-  { name, displayName, blocks, courseId }: CreateSessionArgs,
+  {
+    name,
+    displayName,
+    blocks,
+    courseId,
+    isGamificationEnabled,
+  }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
   const allQuestionsIds = new Set(
@@ -104,6 +111,7 @@ export async function createSession(
     data: {
       name,
       displayName: displayName ?? name,
+      isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
         create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
           const newInstances = questionIds.map((questionId, ix) => {
