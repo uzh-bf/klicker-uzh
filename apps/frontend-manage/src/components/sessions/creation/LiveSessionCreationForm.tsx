@@ -74,7 +74,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         }}
         isInitialValid={false}
         validationSchema={liveSessionCreationSchema}
-        onSubmit={async (values) => {
+        onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
             .filter((block) => block.length > 0)
             .map((block) => {
@@ -88,20 +88,26 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               }
             })
 
-          createSession({
-            variables: {
-              name: values.name,
-              displayName: values.displayName,
-              blocks: blockQuestions,
-              courseId: values.courseId,
-              isGamificationEnabled: values.isGamificationEnabled,
-            },
-          })
+          try {
+            const session = await createSession({
+              variables: {
+                name: values.name,
+                displayName: values.displayName,
+                blocks: blockQuestions,
+                courseId: values.courseId,
+                isGamificationEnabled: values.isGamificationEnabled,
+              },
+            })
+            if (session.data?.createSession) {
+              // TODO: show success message / toast
+              // TODO: redirect to session overview
+              resetForm()
+            }
+          } catch (error) {
+            alert('Bitte geben Sie nur gültige Frage-IDs ein.')
+          }
 
-          // TODO: handle the case where some of the entered questionIds are invalid / do not exist
           // TODO: add possibilities to add time limits to questions
-          console.log(values)
-          alert('submission triggered')
         }}
       >
         {({

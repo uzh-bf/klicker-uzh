@@ -13,6 +13,7 @@ import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
 import schedule from 'node-schedule'
+import { GraphQLError } from 'graphql'
 
 const scheduledJobs: Record<string, any> = {}
 
@@ -97,11 +98,16 @@ export async function createSession(
   const questions = await ctx.prisma.question.findMany({
     where: {
       id: { in: Array.from(allQuestionsIds) },
+      ownerId: ctx.user.sub,
     },
     include: {
       attachments: true,
     },
   })
+
+  if (questions.length !== allQuestionsIds.size) {
+    throw new GraphQLError('Not all questions could be found')
+  }
 
   const questionMap = questions.reduce<
     Record<number, Question & { attachments: Attachment[] }>
