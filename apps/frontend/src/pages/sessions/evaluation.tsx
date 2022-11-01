@@ -181,6 +181,7 @@ function Evaluation(): React.ReactElement {
                 <EvaluationLayout {...layoutProps}>
                   {!(showFeedback || showConfusionTS) && question && (
                     <Chart
+                      activeInstance={activeInstanceIndex}
                       activeVisualization={activeVisualizations[question.type]}
                       data={results.data}
                       handleShowGraph={(): void => setShowGraph(true)}
