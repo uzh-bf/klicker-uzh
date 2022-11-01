@@ -12,8 +12,8 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
-import schedule from 'node-schedule'
 import { GraphQLError } from 'graphql'
+import schedule from 'node-schedule'
 
 const scheduledJobs: Record<string, any> = {}
 
@@ -982,6 +982,7 @@ export async function getUserSessions(
   { userId }: { userId: string },
   ctx: ContextWithOptionalUser
 ) {
+  console.log('starting getUserSession')
   const userSessions = await ctx.prisma.user.findUnique({
     where: {
       id: userId,
@@ -1018,7 +1019,9 @@ export async function getUserSessions(
         session
       ),
       blocks: session.blocks.map(pick(['id', 'instances'])),
-      course: pick(['id', 'name', 'displayName'], session.course),
+      course: session.course
+        ? pick(['id', 'name', 'displayName'], session.course)
+        : undefined,
     }
   })
 }
