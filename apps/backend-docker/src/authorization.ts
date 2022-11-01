@@ -84,6 +84,7 @@ export const AuthSchema = {
     self: { __authz: { rules: ['Allow'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['Allow'] } },
+    userCourses: { __authz: { rules: ['IsUserOrAdmin'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },

@@ -1,14 +1,22 @@
 import { useQuery } from '@apollo/client'
-import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  GetUserCoursesDocument,
+  GetUserQuestionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
-import { Button } from '@uzh-bf/design-system'
+import { Button, H4 } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
+import LearningElementCreationForm from '../components/sessions/creation/LearningElementCreationForm'
+import LiveSessionCreationForm from '../components/sessions/creation/LiveSessionCreationForm'
+import MicroSessionCreationForm from '../components/sessions/creation/MicroSessionCreationForm'
 
 function Index() {
   // TODO: add toasts
@@ -24,6 +32,21 @@ function Index() {
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
+
+  const {
+    loading: loadingCourses,
+    error: errorCourses,
+    data: dataCourses,
+  } = useQuery(GetUserCoursesDocument)
+
+  const courseSelection = useMemo(
+    () =>
+      dataCourses?.userCourses?.map((course: Course) => ({
+        label: course.displayName,
+        value: course.id,
+      })),
+    [dataCourses]
+  )
 
   const {
     filters,
@@ -64,10 +87,60 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full">
-        {/* // TODO: add session creation / edit form
-        <div className="flex justify-center mx-10 md:h-72 print-hidden md:mx-20">
-          <div className="max-w-[100rem] h-full w-full mt-6 gap-5">
-            {editSessionId ? (
+        <div className="flex justify-center mx-10 print-hidden">
+          <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
+            {/* // TODO: replace by proper session creation component */}
+            <TabsPrimitive.Root defaultValue="live-session">
+              <TabsPrimitive.List className="flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60">
+                <TabsPrimitive.Trigger
+                  value="live-session"
+                  className="flex-1 hover:bg-uzh-blue-20"
+                >
+                  <H4 className="flex flex-col justify-center h-full">
+                    Live-Session
+                  </H4>
+                </TabsPrimitive.Trigger>
+                <div className="border-r-2 border-solid border-uzh-grey-60" />
+                <TabsPrimitive.Trigger
+                  value="micro-session"
+                  className="flex-1 hover:bg-uzh-blue-20"
+                >
+                  <H4 className="flex flex-col justify-center h-full">
+                    Micro-Session
+                  </H4>
+                </TabsPrimitive.Trigger>
+                <div className="border-r-2 border-solid border-uzh-grey-60" />
+                <TabsPrimitive.Trigger
+                  value="learning-element"
+                  className="flex-1 hover:bg-uzh-blue-20"
+                >
+                  <H4 className="flex flex-col justify-center h-full">
+                    Learning Element
+                  </H4>
+                </TabsPrimitive.Trigger>
+              </TabsPrimitive.List>
+              <div className="p-3">
+                <TabsPrimitive.Content
+                  value="live-session"
+                  className="overflow-y-scroll md:h-72"
+                >
+                  <LiveSessionCreationForm courses={courseSelection} />
+                </TabsPrimitive.Content>
+                <TabsPrimitive.Content
+                  value="micro-session"
+                  className="overflow-y-scroll md:h-64"
+                >
+                  <MicroSessionCreationForm />
+                </TabsPrimitive.Content>
+                <TabsPrimitive.Content
+                  value="learning-element"
+                  className="overflow-y-scroll md:h-64"
+                >
+                  <LearningElementCreationForm />
+                </TabsPrimitive.Content>
+              </div>
+            </TabsPrimitive.Root>
+            {/* {editSessionId ? (
               <SessionEditForm
                 handleCreateSession={onCreateSession}
                 handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
@@ -103,12 +176,12 @@ function Index() {
                 sessionParticipants={sessionParticipants}
                 setSessionName={setSessionName}
               />
-            )}
+            )} */}
           </div>
-        </div> */}
+        </div>
         <div className="flex justify-center mx-auto">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 mx-10 md:mx-20">
-            // TODO Tags
+            {/* // TODO Tags */}
             {/* <TagList
               activeTags={filters.tags}
               activeType={filters.type}
@@ -159,7 +232,7 @@ function Index() {
                           !isQuestionCreationModalOpen
                         )
                       }
-                      className="bg-uzh-blue-80 font-bold text-white float-right mb-3"
+                      className="float-right mb-3 font-bold text-white bg-uzh-blue-80"
                     >
                       FRAGE ERSTELLEN
                     </Button>

@@ -94,6 +94,7 @@ type ConfusionTimestep {
 
 type Course {
   color: String
+  createdAt: DateTime
   description: String
   displayName: String!
   id: ID!
@@ -102,7 +103,9 @@ type Course {
   microSessions: [MicroSession!]!
   name: String!
   participantGroups: [ParticipantGroup]!
+  pinCode: Int
   sessions: [Session!]!
+  updatedAt: DateTime
 }
 
 """
@@ -228,7 +231,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: ID!): Feedback
   createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
-  createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, name: String!): Session
+  createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, isGamificationEnabled: Boolean, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -369,6 +372,7 @@ type Query {
   session(id: ID!): Session
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
   userSessions: [Session!]

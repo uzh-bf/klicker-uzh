@@ -64,8 +64,6 @@ async function main() {
                       `public/avatars3/${hashedProps}.svg`,
                       avatarString
                     )
-
-                    console.log(hashedProps)
                   })
                 })
               })

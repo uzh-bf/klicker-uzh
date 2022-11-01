@@ -12,6 +12,7 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
+import { GraphQLError } from 'graphql'
 import schedule from 'node-schedule'
 
 const scheduledJobs: Record<string, any> = {}
@@ -77,10 +78,17 @@ interface CreateSessionArgs {
   displayName?: string | null
   blocks: BlockArgs[]
   courseId?: string
+  isGamificationEnabled?: boolean
 }
 
 export async function createSession(
-  { name, displayName, blocks, courseId }: CreateSessionArgs,
+  {
+    name,
+    displayName,
+    blocks,
+    courseId,
+    isGamificationEnabled,
+  }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
   const allQuestionsIds = new Set(
@@ -90,52 +98,61 @@ export async function createSession(
   const questions = await ctx.prisma.question.findMany({
     where: {
       id: { in: Array.from(allQuestionsIds) },
+      ownerId: ctx.user.sub,
     },
     include: {
       attachments: true,
     },
   })
 
+  if (questions.length !== allQuestionsIds.size) {
+    throw new GraphQLError('Not all questions could be found')
+  }
+
   const questionMap = questions.reduce<
     Record<number, Question & { attachments: Attachment[] }>
   >((acc, question) => ({ ...acc, [question.id]: question }), {})
 
-  return ctx.prisma.session.create({
+  const session = await ctx.prisma.session.create({
     data: {
       name,
       displayName: displayName ?? name,
+      isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
-        create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
-          const newInstances = questionIds.map((questionId, ix) => {
-            const question = questionMap[questionId]
-            const processedQuestionData = processQuestionData(question)
-            const questionAttachmentInstances = question.attachments.map(
-              pick(['type', 'href', 'name', 'description', 'originalName'])
-            )
+        create: blocks.map(
+          ({ questionIds, randomSelection, timeLimit }, blockIx) => {
+            const newInstances = questionIds.map((questionId, ix) => {
+              const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
+              const questionAttachmentInstances = question.attachments.map(
+                pick(['type', 'href', 'name', 'description', 'originalName'])
+              )
+              return {
+                order: ix,
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: { id: questionId },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+                attachments: {
+                  create: questionAttachmentInstances,
+                },
+              }
+            })
+
             return {
-              order: ix,
-              questionData: processedQuestionData,
-              results: prepareInitialInstanceResults(processedQuestionData),
-              question: {
-                connect: { id: questionId },
-              },
-              owner: {
-                connect: { id: ctx.user.sub },
-              },
-              attachments: {
-                create: questionAttachmentInstances,
+              order: blockIx,
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
               },
             }
-          })
-
-          return {
-            randomSelection,
-            timeLimit,
-            instances: {
-              create: newInstances,
-            },
           }
-        }),
+        ),
       },
       owner: {
         connect: { id: ctx.user.sub },
@@ -150,6 +167,10 @@ export async function createSession(
       blocks: true,
     },
   })
+
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: session.id })
+
+  return session
 }
 
 interface StartSessionArgs {
@@ -965,6 +986,7 @@ export async function getUserSessions(
   { userId }: { userId: string },
   ctx: ContextWithOptionalUser
 ) {
+  console.log('starting getUserSession')
   const userSessions = await ctx.prisma.user.findUnique({
     where: {
       id: userId,
@@ -1001,7 +1023,9 @@ export async function getUserSessions(
         session
       ),
       blocks: session.blocks.map(pick(['id', 'instances'])),
-      course: pick(['id', 'name', 'displayName'], session.course),
+      course: session.course
+        ? pick(['id', 'name', 'displayName'], session.course)
+        : undefined,
     }
   })
 }

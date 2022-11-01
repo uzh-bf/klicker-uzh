@@ -8,7 +8,7 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
     "SERVICE_BUS_CONNECTION_STRING": "",
-    "SERVICE_BUS_QUEUE_NAME": "dev"
+    "SERVICE_BUS_QUEUE_NAME": "q-dev"
   },
   "Host": {
     "CORS": "http://127.0.0.1:3001",

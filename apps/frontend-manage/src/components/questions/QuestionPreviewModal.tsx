@@ -81,7 +81,6 @@ function QuestionPreviewModal({
         <div className="mt-6 leading-6 prose border-t-4 border-gray-400 border-solid max-w-none">
           {dataQuestion?.question?.questionData.options.choices.map(
             (choice: any, index: number) => {
-              console.log(choice)
               return (
                 <div key={index}>
                   <H3 className="mt-4">Feedback for Choice {index + 1}</H3>
