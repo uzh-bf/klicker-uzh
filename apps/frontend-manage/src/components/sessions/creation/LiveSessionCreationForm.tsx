@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client'
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CreateSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateSessionDocument,
+  GetUserSessionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
@@ -17,6 +20,8 @@ import {
   Form,
   Formik,
 } from 'formik'
+import { useRouter } from 'next/router'
+import toast, { Toaster } from 'react-hot-toast'
 import * as yup from 'yup'
 
 interface LiveSessionCreationFormProps {
@@ -28,6 +33,7 @@ interface LiveSessionCreationFormProps {
 
 function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
+  const router = useRouter()
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -62,6 +68,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
 
   return (
     <div>
+      <Toaster position="top-right" reverseOrder={false} />
       <H3>Live-Session erstellen</H3>
       <Formik
         initialValues={{
@@ -97,11 +104,12 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 courseId: values.courseId,
                 isGamificationEnabled: values.isGamificationEnabled,
               },
+              refetchQueries: [GetUserSessionsDocument],
             })
             if (session.data?.createSession) {
-              // TODO: show success message / toast
-              // TODO: redirect to session overview
+              toast.success('Session erfolgreich erstellt!')
               resetForm()
+              router.push('/sessions')
             }
           } catch (error) {
             alert('Bitte geben Sie nur gültige Frage-IDs ein.')

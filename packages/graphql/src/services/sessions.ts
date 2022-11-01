@@ -113,7 +113,7 @@ export async function createSession(
     Record<number, Question & { attachments: Attachment[] }>
   >((acc, question) => ({ ...acc, [question.id]: question }), {})
 
-  return ctx.prisma.session.create({
+  const session = await ctx.prisma.session.create({
     data: {
       name,
       displayName: displayName ?? name,
@@ -167,6 +167,10 @@ export async function createSession(
       blocks: true,
     },
   })
+
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: session.id })
+
+  return session
 }
 
 interface StartSessionArgs {
