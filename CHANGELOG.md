@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.1...v1.8.2) (2022-11-01)
+
+
+### Bug Fixes
+
+* **backend:** move from eager deletion of results to late unlink ([56ddcf0](https://github.com/uzh-bf/klicker-uzh/commit/56ddcf06916239afed87f7802213e1182a1193b1))
+* **frontend:** ensure chart only displays solution if enabled ([5b7c73e](https://github.com/uzh-bf/klicker-uzh/commit/5b7c73e5eb2151076031bd478cc95918f94edf56))
+
+
+### Enhancements
+
+* **frontend:** add percentage figures to multiple choice question evaluation ([e4d6aad](https://github.com/uzh-bf/klicker-uzh/commit/e4d6aade403f201647b2b0b8b4b2cc03e010624d))
+* **frontend:** revised show solution logic on evaluation ([ffc4397](https://github.com/uzh-bf/klicker-uzh/commit/ffc439739da8db3407ff1f45301e2ecc523c819f))
+* **frontend:** turn off showGraph and showSolution on change of active instance on running session evaluation ([0df3316](https://github.com/uzh-bf/klicker-uzh/commit/0df331632380312f9c88fc09b112fdb9e2e2bbed))
+
+
+### Other
+
+* **deploy:** uninstall QA environment on old infra ([f068132](https://github.com/uzh-bf/klicker-uzh/commit/f068132b92f1a3b7f2030ee37a0ab950b26abc5b))
+* **deploy:** update redis dependency in helm chart ([9cfbed4](https://github.com/uzh-bf/klicker-uzh/commit/9cfbed45d36a504a2c746830d68c6bc735b84724))
+* **docs:** remove blog page from klicker website and replace it by corresponding community entries ([1f3d2fb](https://github.com/uzh-bf/klicker-uzh/commit/1f3d2fb68a7fa582ee1c678d8b38bf89724315f5))
+* ensure that cache runds on 6379 ([027757f](https://github.com/uzh-bf/klicker-uzh/commit/027757f738da3ccacd8552e6421166471b62cdee))
+* **frontend:** always show solution on evaluation of completed sessions ([78de783](https://github.com/uzh-bf/klicker-uzh/commit/78de7839033a001e040914a7364044ccca51be3d))
+
 ### [1.8.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.0...v1.8.1) (2022-08-02)
 
 
