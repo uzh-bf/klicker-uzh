@@ -14,3 +14,5 @@ secrets*.yaml
 *.pem
 
 /apps/functions/local.settings.json
+
+.vscode

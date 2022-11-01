@@ -2,6 +2,8 @@ import * as pulumi from '@pulumi/pulumi'
 import * as azure from '@pulumi/azure-native'
 import * as k8s from '@pulumi/kubernetes'
 
+const cfg = new pulumi.Config()
+
 const PREFIX = 'klicker'
 const LOCATION = 'westeurope'
 
@@ -127,6 +129,9 @@ const logAnalytics = new azure.operationalinsights.Workspace(
       name: azure.operationalinsights.WorkspaceSkuNameEnum.PerGB2018,
     },
     retentionInDays: 30,
+    workspaceCapping: {
+      dailyQuotaGb: 0.4,
+    },
   }
 )
 
@@ -164,7 +169,29 @@ const klickerProdCosmosDB = new azure.documentdb.DatabaseAccount(
     identity: {
       type: 'None',
     },
-    ipRules: [],
+    ipRules: [
+      {
+        ipAddressOrRange: '51.138.0.0/16',
+      },
+      {
+        ipAddressOrRange: '51.124.0.0/16',
+      },
+      {
+        ipAddressOrRange: '20.50.2.42',
+      },
+      {
+        ipAddressOrRange: '40.114.174.73',
+      },
+      {
+        ipAddressOrRange: '20.126.0.0/16',
+      },
+      {
+        ipAddressOrRange: '20.31.0.0/16',
+      },
+      {
+        ipAddressOrRange: '20.105.0.0/16',
+      },
+    ],
     kind: 'MongoDB',
     location: LOCATION,
     locations: [
@@ -219,8 +246,10 @@ const k8sCluster = new azure.containerservice.ManagedCluster(
     agentPoolProfiles: [
       {
         availabilityZones: ['1', '2', '3'],
-        count: 1,
-        enableAutoScaling: false,
+        count: 3,
+        enableAutoScaling: true,
+        maxCount: 2,
+        minCount: 1,
         enableFIPS: false,
         enableNodePublicIP: false,
         kubeletDiskType: 'OS',
@@ -238,6 +267,7 @@ const k8sCluster = new azure.containerservice.ManagedCluster(
       },
       {
         availabilityZones: ['1', '2', '3'],
+        count: 0,
         minCount: 0,
         maxCount: 1,
         enableAutoScaling: true,

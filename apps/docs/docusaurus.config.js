@@ -38,7 +38,6 @@ module.exports = {
           editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/apps/docs',
           routeBasePath: '/',
         },
-        blog: {},
         pages: {},
         sitemap: {},
         theme: {
@@ -76,6 +75,14 @@ module.exports = {
           {
             from: '/',
             to: '/home',
+          },
+          {
+            from: '/tos',
+            to: '/terms_of_service',
+          },
+          {
+            from: '/privacy',
+            to: '/privacy_policy',
           },
         ],
       },

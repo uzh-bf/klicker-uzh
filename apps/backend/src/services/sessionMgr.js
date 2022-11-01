@@ -355,31 +355,19 @@ const computeInstanceResults = async ({ id, question }) => {
   const instanceKey = `instance:${id}`
 
   // setup a transaction for result extraction from redis
-  const redisResponse = await responseCache
-    .multi()
-    .hgetall(`${instanceKey}:results`)
-    .del(`${instanceKey}:info`, `${instanceKey}:results`)
-    .exec()
-
-  if (!redisResponse) {
-    return null
-  }
-
-  const redisResults = redisResponse[0][1]
+  const redisResults = await responseCache.hgetall(`${instanceKey}:results`)
 
   if (QUESTION_GROUPS.CHOICES.includes(question.type)) {
-    return choicesToResults(redisResults)
+    const results = choicesToResults(redisResults)
+    await responseCache.unlink(`${instanceKey}:info`, `${instanceKey}:results`)
+    return results
   }
-
   if (QUESTION_GROUPS.FREE.includes(question.type)) {
     // extract the response hashes from redis
-    const responseHashes = await responseCache
-      .multi()
-      .hgetall(`${instanceKey}:responseHashes`)
-      .del(`${instanceKey}:responseHashes`)
-      .exec()
-
-    return freeToResults(redisResults, responseHashes[0][1])
+    const responseHashes = await responseCache.hgetall(`${instanceKey}:responseHashes`)
+    const results = freeToResults(redisResults, responseHashes[0][1])
+    await responseCache.unlink(`${instanceKey}:responseHashes`)
+    return results
   }
 
   return null
@@ -900,7 +888,9 @@ async function deactivateBlockById({ userId, sessionId, blockId, incrementActive
       instance.isOpen = false
 
       // compute the instance results based on redis cache contents
-      instance.results = await computeInstanceResults(instance)
+      const computedResults = await computeInstanceResults(instance)
+      if (instance.results && !computedResults) return instance.save()
+      instance.results = computedResults
       instance.blockedParticipants = await getBlockedParticipants(instance)
       if (session.settings.storageMode === SESSION_STORAGE_MODE.COMPLETE) {
         const { responses, dropped } = await getFullResponseData(instance)

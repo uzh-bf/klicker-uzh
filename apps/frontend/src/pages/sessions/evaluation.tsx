@@ -126,7 +126,7 @@ function Evaluation(): React.ReactElement {
         const { feedbacks, confusionTS } = session
 
         return (
-          <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
+          <ComputeActiveInstance activeInstances={activeInstances} sessionId={sessionId} sessionStatus={sessionStatus}>
             {({
               activeInstance,
               activeInstanceIndex,
@@ -156,7 +156,7 @@ function Evaluation(): React.ReactElement {
                     ...activeVisualizations,
                     [questionType]: visualizationType,
                   }),
-                onToggleShowSolution: (): void => setShowSolution(!showSolution),
+                setShowSolution,
                 options,
                 pageTitle: intl.formatMessage(messages.pageTitle),
                 sessionId,
@@ -181,6 +181,7 @@ function Evaluation(): React.ReactElement {
                 <EvaluationLayout {...layoutProps}>
                   {!(showFeedback || showConfusionTS) && question && (
                     <Chart
+                      activeInstance={activeInstanceIndex}
                       activeVisualization={activeVisualizations[question.type]}
                       data={results.data}
                       handleShowGraph={(): void => setShowGraph(true)}

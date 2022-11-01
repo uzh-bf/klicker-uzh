@@ -24,7 +24,7 @@ The KlickerUZH project is publicly managed and documented in this repository. A 
 The following additional resources might be of interest to you:
 
 - [Documentation](https://www.klicker.uzh.ch/introduction/getting_started)
-- [Frequently Asked Questions](https://www.klicker.uzh.ch/faq/faq)
+- [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://www.klicker.uzh.ch/community)
 - [Roadmap](https://klicker-uzh.feedbear.com)
 

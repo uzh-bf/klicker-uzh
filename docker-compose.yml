@@ -62,7 +62,7 @@ services:
   redis_exec:
     image: redis:5.0.9
     ports:
-      - 6379:6379
+      - 6380:6379
     networks:
       - klicker-dev
     volumes:
@@ -72,7 +72,7 @@ services:
   redis_cache:
     image: redis:5.0.9
     ports:
-      - 6380:6379
+      - 6379:6379
     networks:
       - klicker-dev
 

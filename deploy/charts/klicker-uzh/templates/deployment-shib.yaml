@@ -73,10 +73,10 @@ spec:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-shibboleth
           volumeMounts:
-            - mountPath: /etc/shibboleth/sp-cert.pem
-              name: sp-cert
+            - mountPath: /etc/shibboleth/sp-cert-2022.pem
+              name: sp-cert-2022
               readOnly: true
-              subPath: sp-cert.pem
+              subPath: sp-cert-2022.pem
             - mountPath: /etc/shibboleth/sp-key.pem
               name: sp-key
               readOnly: true
@@ -87,12 +87,12 @@ spec:
             {{- toYaml .Values.shibboleth.resources | nindent 12 }}
 
       volumes:
-        - name: sp-cert
+        - name: sp-cert-2022
           secret:
             defaultMode: 288
             items:
-              - key: sp-cert.pem
-                path: sp-cert.pem
+              - key: sp-cert-2022.pem
+                path: sp-cert-2022.pem
             secretName: {{ include "chart.fullname" . }}-secret-shibboleth
         - name: sp-key
           secret:

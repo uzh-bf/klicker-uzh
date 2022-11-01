@@ -13,6 +13,7 @@ import { SESSION_STATUS } from '../../constants'
 
 // TODO
 interface Props {
+  activeInstance: number
   activeVisualization: string
   data?: {
     correct?: boolean
@@ -61,6 +62,7 @@ const chartTypes = {
 }
 
 function Chart({
+  activeInstance,
   activeVisualization,
   data,
   instanceId,
@@ -109,7 +111,7 @@ function Chart({
                   instanceId={instanceId}
                   isColored={questionType !== 'FREE_RANGE'}
                   isPublic={isPublic}
-                  isSolutionShown={showSolution}
+                  isSolutionShown={showSolution[activeInstance]}
                   numBins={numBins}
                   questionType={questionType}
                   restrictions={restrictions}

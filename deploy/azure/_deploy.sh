@@ -1,3 +1,3 @@
 #!/bin/sh
 
-doppler run -- pulumi $1
+doppler run --config prd -- pulumi $1
