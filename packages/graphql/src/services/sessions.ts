@@ -113,37 +113,40 @@ export async function createSession(
       displayName: displayName ?? name,
       isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
-        create: blocks.map(({ questionIds, randomSelection, timeLimit }) => {
-          const newInstances = questionIds.map((questionId, ix) => {
-            const question = questionMap[questionId]
-            const processedQuestionData = processQuestionData(question)
-            const questionAttachmentInstances = question.attachments.map(
-              pick(['type', 'href', 'name', 'description', 'originalName'])
-            )
+        create: blocks.map(
+          ({ questionIds, randomSelection, timeLimit }, blockIx) => {
+            const newInstances = questionIds.map((questionId, ix) => {
+              const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
+              const questionAttachmentInstances = question.attachments.map(
+                pick(['type', 'href', 'name', 'description', 'originalName'])
+              )
+              return {
+                order: ix,
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: { id: questionId },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+                attachments: {
+                  create: questionAttachmentInstances,
+                },
+              }
+            })
+
             return {
-              order: ix,
-              questionData: processedQuestionData,
-              results: prepareInitialInstanceResults(processedQuestionData),
-              question: {
-                connect: { id: questionId },
-              },
-              owner: {
-                connect: { id: ctx.user.sub },
-              },
-              attachments: {
-                create: questionAttachmentInstances,
+              order: blockIx,
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
               },
             }
-          })
-
-          return {
-            randomSelection,
-            timeLimit,
-            instances: {
-              create: newInstances,
-            },
           }
-        }),
+        ),
       },
       owner: {
         connect: { id: ctx.user.sub },
