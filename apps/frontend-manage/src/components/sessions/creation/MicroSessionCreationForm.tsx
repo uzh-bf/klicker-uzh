@@ -5,6 +5,7 @@ import * as yup from 'yup'
 interface MicroSessionCreationFormProps {}
 
 function MicroSessionCreationForm({}: MicroSessionCreationFormProps) {
+    // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
   const microSessionCreationSchema = yup.object().shape({
     // TODO: implement schema for session creation mutation
   })
