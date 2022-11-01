@@ -157,6 +157,7 @@ export interface NexusGenObjects {
   }
   Course: { // root type
     color?: string | null; // String
+    createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
     description?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
@@ -165,7 +166,9 @@ export interface NexusGenObjects {
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
+    pinCode?: number | null; // Int
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
   }
   Feedback: { // root type
     content: string; // String!
@@ -460,6 +463,7 @@ export interface NexusGenFieldTypes {
   }
   Course: { // field return type
     color: string | null; // String
+    createdAt: NexusGenScalars['DateTime'] | null; // DateTime
     description: string | null; // String
     displayName: string; // String!
     id: string; // ID!
@@ -468,7 +472,9 @@ export interface NexusGenFieldTypes {
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
+    pinCode: number | null; // Int
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
   Feedback: { // field return type
     content: string; // String!
@@ -687,6 +693,7 @@ export interface NexusGenFieldTypes {
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    userCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
@@ -826,6 +833,7 @@ export interface NexusGenFieldTypeNames {
   }
   Course: { // field return type name
     color: 'String'
+    createdAt: 'DateTime'
     description: 'String'
     displayName: 'String'
     id: 'ID'
@@ -834,7 +842,9 @@ export interface NexusGenFieldTypeNames {
     microSessions: 'MicroSession'
     name: 'String'
     participantGroups: 'ParticipantGroup'
+    pinCode: 'Int'
     sessions: 'Session'
+    updatedAt: 'DateTime'
   }
   Feedback: { // field return type name
     content: 'String'
@@ -1053,6 +1063,7 @@ export interface NexusGenFieldTypeNames {
     session: 'Session'
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
+    userCourses: 'Course'
     userProfile: 'User'
     userQuestions: 'Question'
     userSessions: 'Session'
@@ -1188,6 +1199,7 @@ export interface NexusGenArgTypes {
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
       courseId?: string | null; // String
       displayName?: string | null; // String
+      isGamificationEnabled?: boolean | null; // Boolean
       name: string; // String!
     }
     deactivateSessionBlock: { // args

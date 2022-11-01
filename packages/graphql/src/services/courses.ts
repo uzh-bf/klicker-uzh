@@ -283,3 +283,23 @@ export async function createCourse(
     },
   })
 }
+
+export async function getUserCourses(
+  { userId }: { userId: string },
+  ctx: ContextWithOptionalUser
+) {
+  const userCourses = await ctx.prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    include: {
+      courses: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return userCourses?.courses ?? []
+}

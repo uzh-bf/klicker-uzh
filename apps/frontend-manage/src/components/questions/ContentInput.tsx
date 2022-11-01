@@ -39,6 +39,7 @@ interface Props {
     root?: string
     toolbar?: string
     content?: string
+    editor?: string
   }
   key?: string
 }
@@ -230,7 +231,7 @@ function ContentInput({
         </div>
         <div className={twMerge('p-3', className?.content)}>
           <Editable
-            className="leading-7 prose prose-blockquote:text-gray-500 max-w-none"
+            className={twMerge("leading-7 prose prose-blockquote:text-gray-500 max-w-none", className?.editor)}
             autoFocus={autoFocus}
             spellCheck
             placeholder={placeholder}
