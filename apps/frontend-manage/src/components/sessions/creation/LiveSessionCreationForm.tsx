@@ -60,6 +60,13 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             'Bitte beachten das Eingabteformat beachten und sicherstellen, dass jeder Block mind. eine Frage enthält. Für Sessions ohne Fragen bitten den Default-Block löschen.'
           )
       ),
+    // timeLimits is an array with the same length as blocks and contains the time limit for each block which is a string that contains an integer that is at least zero
+    timeLimits: yup.array().of(
+      yup
+        .string()
+        .matches(/^[0-9]+$/, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
+        .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
+    ),
     courseId: yup.string(),
     isGamificationEnabled: yup
       .boolean()
@@ -76,6 +83,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           displayName: '',
           // description: '',
           blocks: [['']],
+          timeLimits: [''],
           courseId: '',
           isGamificationEnabled: false,
         }}
@@ -84,7 +92,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
             .filter((block) => block.length > 0)
-            .map((block) => {
+            .map((block, idx) => {
               return {
                 questionIds: block.flatMap((question) => {
                   return question
@@ -92,6 +100,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     .split(',')
                     .map((questionId) => parseInt(questionId))
                 }),
+                timeLimit:
+                  values.timeLimits[idx] !== '' &&
+                  Number(values.timeLimits[idx]) > 0
+                    ? Number(values.timeLimits[idx])
+                    : undefined,
               }
             })
 
@@ -109,6 +122,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             if (session.data?.createSession) {
               toast.success('Session erfolgreich erstellt!')
               resetForm()
+              // TODO: fix that invalidation seems not to work with some larger sessions
               router.push('/sessions')
             }
           } catch (error) {
@@ -198,6 +212,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 <FormikTextField
                                   id={`blocks.${index}`}
                                   value={block.join(', ')}
+                                  className={{ root: 'mb-1' }}
                                   onChange={(newValue: string) => {
                                     setFieldValue(
                                       `blocks[${index}]`,
@@ -206,6 +221,18 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                         .split(', ')
                                     )
                                   }}
+                                  placeholder="Frage-Ids"
+                                />
+                                <FormikTextField
+                                  id={`timeLimits.${index}`}
+                                  value={values.timeLimits[index]}
+                                  onChange={(newValue: string) => {
+                                    setFieldValue(
+                                      `timeLimits[${index}]`,
+                                      newValue.replace(/[^0-9]/g, '')
+                                    )
+                                  }}
+                                  placeholder="Zeit-Limit [s]"
                                 />
                               </div>
                             </div>
