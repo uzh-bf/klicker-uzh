@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Prose, Switch } from '@uzh-bf/design-system'
+import { Prose, Switch, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
@@ -20,7 +20,6 @@ import {
 import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
-import Select from '../../../components/common/Select'
 import Chart from '../../../components/evaluation/Chart'
 
 // TODO: maybe move this util to another file / component or to this component - having util files in the components seems strange?
@@ -199,7 +198,6 @@ function Evaluation() {
                 onChange={(newValue) => setSelectedInstance(newValue)}
                 className={{
                   trigger: 'shadow-sm border-uzh-blue-80',
-                  viewport: 'text-sm',
                 }}
                 value={
                   selectedInstance === ''
@@ -342,6 +340,7 @@ function Evaluation() {
                         className="flex flex-row"
                       >
                         <div
+                          // TODO: use single color for answer options to highlight correct one? or some other approach to distinguish better
                           style={{
                             backgroundColor:
                               answer.correct && showSolution
