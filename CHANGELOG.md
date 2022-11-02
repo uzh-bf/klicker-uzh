@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.3...v1.8.4) (2022-11-02)
+
+
+### Bug Fixes
+
+* responseHashes is not an array anymore ([ab5c3d1](https://github.com/uzh-bf/klicker-uzh/commit/ab5c3d101733ae70fff522bdedc3472ce31430ff))
+
 ### [1.8.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.2...v1.8.3) (2022-11-01)
 
 
