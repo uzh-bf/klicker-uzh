@@ -218,7 +218,7 @@ function Evaluation() {
                   setSelectedInstance(blocks[idx].questions[0].id)
                 }}
                 className={twMerge(
-                  'px-3 py-2',
+                  'px-3 py-2 hover:bg-uzh-blue-20',
                   idx === selectedBlock
                     ? 'border-b-2 border-solid border-uzh-blue-80'
                     : 'border-b-2 border-transparent'
@@ -236,7 +236,7 @@ function Evaluation() {
             <RadixTab.Trigger
               value="leaderboard"
               className={twMerge(
-                'px-3 py-2',
+                'px-3 py-2 hover:bg-uzh-blue-20',
                 leaderboardActive
                   ? 'border-b-2 border-solid border-uzh-blue-80'
                   : 'border-b-2 border-transparent'
