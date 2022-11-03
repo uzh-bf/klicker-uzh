@@ -1352,7 +1352,7 @@ export async function getSessionEvaluation(
 
   return {
     id: `${id}-eval`,
-    blocks: [...executedBlocks, activeBlock && activeBlock],
+    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),

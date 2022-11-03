@@ -279,7 +279,7 @@ type NumericalQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: NumericalQuestionOptions!
-  statistics: Statistics!
+  statistics: Statistics
   type: String!
 }
 

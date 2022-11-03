@@ -278,7 +278,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    statistics: NexusGenRootTypes['Statistics']; // Statistics!
+    statistics?: NexusGenRootTypes['Statistics'] | null; // Statistics
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -645,7 +645,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    statistics: NexusGenRootTypes['Statistics']; // Statistics!
+    statistics: NexusGenRootTypes['Statistics'] | null; // Statistics
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type

@@ -545,7 +545,7 @@ export type NumericalQuestionData = QuestionData & {
   isDeleted: Scalars['Boolean'];
   name: Scalars['String'];
   options: NumericalQuestionOptions;
-  statistics: Statistics;
+  statistics?: Maybe<Statistics>;
   type: Scalars['String'];
 };
 
@@ -1311,7 +1311,7 @@ export type GetSessionEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, blocks?: Array<{ __typename?: 'Blocks', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name?: string | null, status: string } | null> | null } | null> | null, instanceResults?: Array<{ __typename?: 'InstanceResults', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, statistics: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null }, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
+export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, blocks?: Array<{ __typename?: 'Blocks', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name?: string | null, status: string } | null> | null } | null> | null, instanceResults?: Array<{ __typename?: 'InstanceResults', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, statistics?: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null } | null, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
 
 export type GetSessionLeaderboardQueryVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1851,7 +1851,7 @@ export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends
   isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   options?: Resolver<ResolversTypes['NumericalQuestionOptions'], ParentType, ContextType>;
-  statistics?: Resolver<ResolversTypes['Statistics'], ParentType, ContextType>;
+  statistics?: Resolver<Maybe<ResolversTypes['Statistics']>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

@@ -21,7 +21,6 @@ type baseData = {
 
 export function extractQuestions(data: GetSessionEvaluationQuery) {
   if (!data.sessionEvaluation?.instanceResults) return []
-  console.log('DATA', data)
 
   return data.sessionEvaluation.instanceResults.map((instance) => {
     const questionType = instance.questionData.type
