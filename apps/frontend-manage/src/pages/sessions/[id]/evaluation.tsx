@@ -7,6 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Blocks } from '@klicker-uzh/graphql/src/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch } from '@uzh-bf/design-system'
@@ -36,12 +37,12 @@ function Evaluation() {
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
   const [leaderboardActive, setLeaderboardActive] = useState(false)
-
   const [showSolution, setShowSolution] = useState(false)
-  const [activeBlock, setActiveBlock] = useState<number | string>(0)
-  const [activeInstance, setActiveInstance] = useState(0)
-  const [currentQuestion, setCurrentQuestion] = useState(undefined)
   const [chartType, setChartType] = useState('')
+
+  // TODO: remove / replace
+  const [activeBlock, setActiveBlock] = useState<number | string>(0)
+  const [currentQuestion, setCurrentQuestion] = useState(undefined)
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
     variables: {
@@ -51,43 +52,23 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
-  // TODO: query confusion feedbacks and display them in the evaluation
-
-  // TODO: move to backend service and directly deliver this data to the client
-  // returns an array of blocks with the blockId and question instances
-  const blocks = useMemo(() => {
-    const tabs = data?.sessionEvaluation?.instanceResults?.map((instance) => ({
-      id: instance.id,
-      blockIx: instance.blockIx,
-      instanceOrder: instance.instanceIx,
-      title: instance.questionData.name,
-      status: instance.status,
-    }))
-
-    if (!data || !tabs) return []
-
-    return Object.entries(groupBy((tab) => tab.blockIx.toString(), tabs)).map(
-      ([key, value]) => ({
-        blockId: key,
-        questions: value,
-      })
-    )
+  const blocks: Blocks[] = useMemo(() => {
+    return data?.sessionEvaluation?.blocks || []
   }, [data])
-
-  console.log('blocks', blocks)
 
   const tabs = useMemo(
     () =>
       blocks.map((block) => {
         return {
-          label: 'Block ' + String(parseInt(block.blockId) + 1),
-          value: block.blockId,
+          label: 'Block ' + String(block.blockIx + 1),
+          value: block.blockIx,
         }
       }),
     [blocks]
   )
-  console.log('tabs', tabs)
+
+  // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
+  // TODO: query confusion feedbacks and display them in the evaluation
 
   // TODO: remove
   const { groupedTabs } = useMemo(() => {
@@ -140,7 +121,6 @@ function Evaluation() {
 
   const onQuestionChange = (newIndex: string, blockIndex: string) => {
     setActiveBlock(Number(blockIndex))
-    setActiveInstance(Number(newIndex))
     const currQuestion = questions?.find(
       (question) =>
         question.blockIx === Number(blockIndex) &&
@@ -159,10 +139,6 @@ function Evaluation() {
 
   const onBlockChange = (blockIndex: string) => {
     setActiveBlock(Number(blockIndex))
-    setActiveInstance(0) // This causes weird behavior: when clicking on the select of another tab than the currently active one,
-    // this function is called and a new tab + new question is selected (hence the displayed chart changes)
-    // before a new question is selected via the select
-    // but not having it causes weir behavior as well
 
     // If we reset the instance, we also need to change the current question
     const currQuestion = questions?.find(
@@ -178,30 +154,30 @@ function Evaluation() {
     }
   }
 
-  console.log('current Question', currentQuestion)
+  // console.log('current Question', currentQuestion)
 
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
     <>
       <RadixTab.Root>
-        <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid">
+        <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
           {blocks[selectedBlock] && (
-            <div className="flex flex-row items-center gap-3 my-auto">
+            <div className="flex flex-row items-center gap-3">
               <div className="font-bold">Question:</div>
 
               <Select
-                items={blocks[selectedBlock].questions
-                  .sort((a, b) => a.instanceOrder - b.instanceOrder)
+                items={blocks[selectedBlock].tabData
+                  .sort((a, b) => a.questionIx - b.questionIx)
                   .map((question) => {
-                    return { label: question.title, value: question.id }
+                    return { label: question.name, value: question.id }
                   })}
                 onChange={(newValue) => setSelectedInstance(newValue)}
                 className={{
-                  trigger: 'shadow-sm border-uzh-blue-80',
+                  trigger: 'shadow-sm border-uzh-blue-80 m-0',
                 }}
                 value={
                   selectedInstance === ''
-                    ? blocks[selectedBlock].questions[0].id
+                    ? blocks[selectedBlock].tabData[0].id
                     : selectedInstance
                 }
               />
@@ -211,11 +187,11 @@ function Evaluation() {
             {tabs.map((tab, idx) => (
               <RadixTab.Trigger
                 key={tab.value}
-                value={tab.value}
+                value={String(tab.value)}
                 onClick={() => {
                   setSelectedBlock(idx)
                   setLeaderboardActive(false)
-                  setSelectedInstance(blocks[idx].questions[0].id)
+                  setSelectedInstance(blocks[idx].tabData[0].id)
                 }}
                 className={twMerge(
                   'px-3 py-2 hover:bg-uzh-blue-20',
@@ -227,7 +203,7 @@ function Evaluation() {
                 <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon
                     size="xs"
-                    icon={INSTANCE_STATUS_ICON[blocks[idx].questions[0].status]}
+                    icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
                   />
                   <div>{tab.label}</div>
                 </div>
@@ -256,62 +232,11 @@ function Evaluation() {
           </div>
         </RadixTab.List>
       </RadixTab.Root>
+      {/* // ! OLD CODE BELOW */}
       <RadixTab.Root
         value={`tab-${activeBlock}`}
         className="flex flex-col h-full"
       >
-        <RadixTab.List className="flex flex-row m-2">
-          {groupedTabs?.map(([blockIx, items], groupIx) => (
-            <RadixTab.Trigger
-              key={`tab-trigger-${blockIx}`}
-              value={'tab' + blockIx}
-              className={twMerge(
-                'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
-              )}
-              onClick={() => {
-                onBlockChange(blockIx)
-              }}
-            >
-              <div className="flex flex-row items-center gap-1 text-sm text-left">
-                <div>
-                  <FontAwesomeIcon
-                    size="xs"
-                    icon={INSTANCE_STATUS_ICON[items[0].status]}
-                  />
-                </div>
-                <div>Block {Number(blockIx) + 1}</div>
-              </div>
-              {/* <Select
-                items={items.map((item) => ({
-                  value: String(item.instanceIx),
-                  label: item.label,
-                }))}
-                onChange={(newIx) => {
-                  onQuestionChange(newIx, blockIx)
-                }}
-              /> */}
-            </RadixTab.Trigger>
-          ))}
-
-          <RadixTab.Trigger
-            key="tab-trigger-lb"
-            value="tab-lb"
-            className={twMerge(
-              'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
-            )}
-            onClick={() => {
-              setActiveBlock('lb')
-            }}
-          >
-            <div className="flex flex-row items-center gap-1 text-sm text-left">
-              <div>
-                <FontAwesomeIcon icon={faGamepad} />
-              </div>
-              <div>Leaderboard</div>
-            </div>
-          </RadixTab.Trigger>
-        </RadixTab.List>
-
         {currentQuestion && (
           <div>
             <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
