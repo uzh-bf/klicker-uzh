@@ -1252,7 +1252,7 @@ export async function getSessionEvaluation(
 
   // if the session is running and a block is active
   // fetch the current results from the execution cache
-  let activeInstanceResults = []
+  let activeInstanceResults: any[] = []
   if (session.status === SessionStatus.RUNNING && session.activeBlock) {
     const activeInstanceIds = session.activeBlock.instances.map(
       (instance) => instance.id
@@ -1278,11 +1278,11 @@ export async function getSessionEvaluation(
         )
 
         return {
-          id: `${instance.id}-eval`,
-          blockIx: session.activeBlock.order,
-          instanceIx: instance.order,
+          id: `${instance?.id}-eval`,
+          blockIx: session.activeBlock?.order,
+          instanceIx: instance?.order,
           status: session.activeBlock!.status,
-          questionData: instance.questionData,
+          questionData: instance?.questionData,
           participants: results.participants,
           results: results.results,
         }
@@ -1331,7 +1331,7 @@ export async function getSessionEvaluation(
     tabData: block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
       questionIx: instance.order,
-      name: instance.questionData.name,
+      name: instance.questionData?.name,
       status: block.status,
     })),
   }))
@@ -1344,8 +1344,8 @@ export async function getSessionEvaluation(
       tabData: session.activeBlock.instances.map((instance) => ({
         id: `${instance.id}-eval`,
         questionIx: instance.order,
-        name: instance.questionData.name,
-        status: session.activeBlock.status,
+        name: instance.questionData?.name,
+        status: session.activeBlock?.status,
       })),
     }
   }
