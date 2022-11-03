@@ -243,6 +243,19 @@ export const NumericalQuestionOptions = objectType({
   },
 })
 
+export const Statistics = objectType({
+  name: 'Statistics',
+  definition(t) {
+    t.float('max')
+    t.float('mean')
+    t.float('median')
+    t.float('min')
+    t.float('q1')
+    t.float('q3')
+    t.float('sd')
+  },
+})
+
 export const NumericalQuestionData = objectType({
   name: 'NumericalQuestionData',
   definition(t) {
@@ -250,6 +263,9 @@ export const NumericalQuestionData = objectType({
 
     t.nonNull.field('options', {
       type: NumericalQuestionOptions,
+    })
+    t.field('statistics', {
+      type: Statistics,
     })
   },
 })
@@ -754,11 +770,34 @@ export const InstanceResults = objectType({
   },
 })
 
+export const TabData = objectType({
+  name: 'TabData',
+  definition(t) {
+    t.nonNull.id('id')
+    t.nonNull.int('questionIx')
+    t.string('name')
+    t.nonNull.string('status')
+  },
+})
+
+export const Blocks = objectType({
+  name: 'Blocks',
+  definition(t) {
+    t.nonNull.int('blockIx')
+    t.nonNull.string('blockStatus')
+    t.list.field('tabData', {
+      type: TabData,
+    })
+  },
+})
+
 export const SessionEvaluation = objectType({
   name: 'SessionEvaluation',
   definition(t) {
     t.nonNull.id('id')
-
+    t.list.field('blocks', {
+      type: Blocks,
+    })
     t.list.nonNull.field('instanceResults', {
       type: InstanceResults,
     })

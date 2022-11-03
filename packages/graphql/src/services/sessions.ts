@@ -13,6 +13,7 @@ import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
 import { GraphQLError } from 'graphql'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 
 const scheduledJobs: Record<string, any> = {}
@@ -1160,6 +1161,57 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
+function checkCorrectnessFreeText(instance) {
+  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution )(exact match)
+  if (instance.questionData.type === 'FREE_TEXT') {
+    for (const id in instance.results) {
+      if (
+        instance.questionData.options.solutions &&
+        instance.questionData.options.solutions.includes(
+          instance.results[id].value
+        )
+      ) {
+        instance.results[id].correct = true
+      } else {
+        instance.results[id].correct = false
+      }
+    }
+  }
+  return instance
+}
+
+function computeStatistics(instance) {
+  // Compute the statistics for numerical questions
+  if (instance.questionData.type === 'NUMERICAL') {
+    const results = []
+    for (const key in instance.results) {
+      results.push(instance.results[key])
+    }
+    const valueArray = results.reduce((acc, { count, value }) => {
+      const elements = Array(count).fill(parseFloat(value))
+      return acc.concat(elements)
+    }, [])
+    const hasResults = valueArray.length > 0
+
+    instance.questionData.statistics = {
+      max: hasResults && max(valueArray),
+      mean: hasResults && mean(valueArray),
+      median: hasResults && median(valueArray),
+      min: hasResults && min(valueArray),
+      q1: hasResults && quantileSeq(valueArray, 0.25),
+      q3: hasResults && quantileSeq(valueArray, 0.75),
+      sd: hasResults && std(valueArray),
+    }
+  }
+  return instance
+}
+
+function completeQuestionData(instances) {
+  return instances.map((instance) =>
+    computeStatistics(checkCorrectnessFreeText(instance))
+  )
+}
+
 export async function getSessionEvaluation(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1243,7 +1295,25 @@ export async function getSessionEvaluation(
     )
   }
 
-  const executedInstanceResults = session.blocks.flatMap((block) =>
+  activeInstanceResults = activeInstanceResults.map((instance) => {
+    if (instance.questionData.type === 'FREE_TEXT') {
+      for (const id in instance.results) {
+        if (
+          instance.questionData.options.solutions &&
+          instance.questionData.options.solutions.includes(
+            instance.results[id].value
+          )
+        ) {
+          instance.results[id].correct = true
+        } else {
+          instance.results[id].correct = false
+        }
+      }
+    }
+    return instance
+  })
+
+  let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
       blockIx: block.order,
@@ -1255,8 +1325,37 @@ export async function getSessionEvaluation(
     }))
   )
 
+  const executedBlocks = session.blocks.map((block) => ({
+    blockIx: block.order,
+    blockStatus: block.status,
+    tabData: block.instances.map((instance) => ({
+      id: `${instance.id}-eval`,
+      questionIx: instance.order,
+      name: instance.questionData.name,
+      status: block.status,
+    })),
+  }))
+
+  let activeBlock
+  if (session.status === SessionStatus.RUNNING && session.activeBlock) {
+    activeBlock = {
+      blockIx: session.activeBlock.order,
+      blockStatus: session.activeBlock.status,
+      tabData: session.activeBlock.instances.map((instance) => ({
+        id: `${instance.id}-eval`,
+        questionIx: instance.order,
+        name: instance.questionData.name,
+        status: session.activeBlock.status,
+      })),
+    }
+  }
+
   return {
     id: `${id}-eval`,
-    instanceResults: [...executedInstanceResults, ...activeInstanceResults],
+    blocks: [...executedBlocks, activeBlock && activeBlock],
+    instanceResults: [
+      ...completeQuestionData(executedInstanceResults),
+      ...completeQuestionData(activeInstanceResults),
+    ],
   }
 }

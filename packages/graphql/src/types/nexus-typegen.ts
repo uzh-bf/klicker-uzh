@@ -128,6 +128,11 @@ export interface NexusGenObjects {
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
+  Blocks: { // root type
+    blockIx: number; // Int!
+    blockStatus: string; // String!
+    tabData?: Array<NexusGenRootTypes['TabData'] | null> | null; // [TabData]
+  }
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
@@ -273,6 +278,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    statistics: NexusGenRootTypes['Statistics']; // Statistics!
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -391,10 +397,26 @@ export interface NexusGenObjects {
     timeLimit?: number | null; // Int
   }
   SessionEvaluation: { // root type
+    blocks?: Array<NexusGenRootTypes['Blocks'] | null> | null; // [Blocks]
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
+  Statistics: { // root type
+    max?: number | null; // Float
+    mean?: number | null; // Float
+    median?: number | null; // Float
+    min?: number | null; // Float
+    q1?: number | null; // Float
+    q3?: number | null; // Float
+    sd?: number | null; // Float
+  }
   Subscription: {};
+  TabData: { // root type
+    id: string; // ID!
+    name?: string | null; // String
+    questionIx: number; // Int!
+    status: string; // String!
+  }
   Tag: { // root type
     id: string; // ID!
     name: string; // String!
@@ -433,6 +455,11 @@ export interface NexusGenFieldTypes {
     name: string; // String!
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
+  }
+  Blocks: { // field return type
+    blockIx: number; // Int!
+    blockStatus: string; // String!
+    tabData: Array<NexusGenRootTypes['TabData'] | null> | null; // [TabData]
   }
   Choice: { // field return type
     correct: boolean | null; // Boolean
@@ -618,6 +645,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    statistics: NexusGenRootTypes['Statistics']; // Statistics!
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
@@ -756,8 +784,18 @@ export interface NexusGenFieldTypes {
     timeLimit: number | null; // Int
   }
   SessionEvaluation: { // field return type
+    blocks: Array<NexusGenRootTypes['Blocks'] | null> | null; // [Blocks]
     id: string; // ID!
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+  }
+  Statistics: { // field return type
+    max: number | null; // Float
+    mean: number | null; // Float
+    median: number | null; // Float
+    min: number | null; // Float
+    q1: number | null; // Float
+    q3: number | null; // Float
+    sd: number | null; // Float
   }
   Subscription: { // field return type
     feedbackAdded: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -765,6 +803,12 @@ export interface NexusGenFieldTypes {
     feedbackRemoved: number | null; // Int
     feedbackUpdated: NexusGenRootTypes['Feedback'] | null; // Feedback
     runningSessionUpdated: NexusGenRootTypes['SessionBlock'] | null; // SessionBlock
+  }
+  TabData: { // field return type
+    id: string; // ID!
+    name: string | null; // String
+    questionIx: number; // Int!
+    status: string; // String!
   }
   Tag: { // field return type
     id: string; // ID!
@@ -803,6 +847,11 @@ export interface NexusGenFieldTypeNames {
     name: 'String'
     originalName: 'String'
     type: 'AttachmentType'
+  }
+  Blocks: { // field return type name
+    blockIx: 'Int'
+    blockStatus: 'String'
+    tabData: 'TabData'
   }
   Choice: { // field return type name
     correct: 'Boolean'
@@ -988,6 +1037,7 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     options: 'NumericalQuestionOptions'
+    statistics: 'Statistics'
     type: 'String'
   }
   NumericalQuestionOptions: { // field return type name
@@ -1126,8 +1176,18 @@ export interface NexusGenFieldTypeNames {
     timeLimit: 'Int'
   }
   SessionEvaluation: { // field return type name
+    blocks: 'Blocks'
     id: 'ID'
     instanceResults: 'InstanceResults'
+  }
+  Statistics: { // field return type name
+    max: 'Float'
+    mean: 'Float'
+    median: 'Float'
+    min: 'Float'
+    q1: 'Float'
+    q3: 'Float'
+    sd: 'Float'
   }
   Subscription: { // field return type name
     feedbackAdded: 'Feedback'
@@ -1135,6 +1195,12 @@ export interface NexusGenFieldTypeNames {
     feedbackRemoved: 'Int'
     feedbackUpdated: 'Feedback'
     runningSessionUpdated: 'SessionBlock'
+  }
+  TabData: { // field return type name
+    id: 'ID'
+    name: 'String'
+    questionIx: 'Int'
+    status: 'String'
   }
   Tag: { // field return type name
     id: 'ID'

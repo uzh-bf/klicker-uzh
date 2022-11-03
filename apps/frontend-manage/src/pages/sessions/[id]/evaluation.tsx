@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Prose, Switch, Select } from '@uzh-bf/design-system'
+import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
@@ -160,7 +160,7 @@ function Evaluation() {
   const onBlockChange = (blockIndex: string) => {
     setActiveBlock(Number(blockIndex))
     setActiveInstance(0) // This causes weird behavior: when clicking on the select of another tab than the currently active one,
-    // this function is called a new tab + new question is selected (hence the displayed chart changes)
+    // this function is called and a new tab + new question is selected (hence the displayed chart changes)
     // before a new question is selected via the select
     // but not having it causes weir behavior as well
 

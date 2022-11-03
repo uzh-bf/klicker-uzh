@@ -1,6 +1,16 @@
 query GetSessionEvaluation($id: ID!) {
   sessionEvaluation(id: $id) {
     id
+    blocks {
+      blockIx
+      blockStatus
+      tabData {
+        id
+        questionIx
+        name
+        status
+      }
+    }
     instanceResults {
       id
 
@@ -26,6 +36,15 @@ query GetSessionEvaluation($id: ID!) {
         }
 
         ... on NumericalQuestionData {
+          statistics {
+            max
+            mean
+            median
+            min
+            q1
+            q3
+            sd
+          }
           options {
             restrictions {
               min

@@ -54,6 +54,12 @@ input BlockInput {
   timeLimit: Int
 }
 
+type Blocks {
+  blockIx: Int!
+  blockStatus: String!
+  tabData: [TabData]
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -273,6 +279,7 @@ type NumericalQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: NumericalQuestionOptions!
+  statistics: Statistics!
   type: String!
 }
 
@@ -469,6 +476,7 @@ enum SessionBlockStatus {
 }
 
 type SessionEvaluation {
+  blocks: [Blocks]
   id: ID!
   instanceResults: [InstanceResults!]
 }
@@ -483,6 +491,16 @@ enum SessionStatus {
 input SolutionRange {
   max: Float
   min: Float
+}
+
+type Statistics {
+  max: Float
+  mean: Float
+  median: Float
+  min: Float
+  q1: Float
+  q3: Float
+  sd: Float
 }
 
 type Subscription {
@@ -502,6 +520,13 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeys!
+}
+
+type TabData {
+  id: ID!
+  name: String
+  questionIx: Int!
+  status: String!
 }
 
 type Tag {
