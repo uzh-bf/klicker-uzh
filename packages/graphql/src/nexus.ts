@@ -775,17 +775,17 @@ export const TabData = objectType({
   definition(t) {
     t.nonNull.id('id')
     t.nonNull.int('questionIx')
-    t.string('name')
+    t.nonNull.string('name')
     t.nonNull.string('status')
   },
 })
 
-export const Blocks = objectType({
-  name: 'Blocks',
+export const Block = objectType({
+  name: 'Block',
   definition(t) {
     t.nonNull.int('blockIx')
     t.nonNull.string('blockStatus')
-    t.list.field('tabData', {
+    t.list.nonNull.field('tabData', {
       type: TabData,
     })
   },
@@ -795,8 +795,8 @@ export const SessionEvaluation = objectType({
   name: 'SessionEvaluation',
   definition(t) {
     t.nonNull.id('id')
-    t.list.field('blocks', {
-      type: Blocks,
+    t.list.nonNull.field('blocks', {
+      type: Block,
     })
     t.list.nonNull.field('instanceResults', {
       type: InstanceResults,

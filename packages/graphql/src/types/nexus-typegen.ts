@@ -128,10 +128,10 @@ export interface NexusGenObjects {
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
-  Blocks: { // root type
+  Block: { // root type
     blockIx: number; // Int!
     blockStatus: string; // String!
-    tabData?: Array<NexusGenRootTypes['TabData'] | null> | null; // [TabData]
+    tabData?: NexusGenRootTypes['TabData'][] | null; // [TabData!]
   }
   Choice: { // root type
     correct?: boolean | null; // Boolean
@@ -397,7 +397,7 @@ export interface NexusGenObjects {
     timeLimit?: number | null; // Int
   }
   SessionEvaluation: { // root type
-    blocks?: Array<NexusGenRootTypes['Blocks'] | null> | null; // [Blocks]
+    blocks?: NexusGenRootTypes['Block'][] | null; // [Block!]
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
@@ -413,7 +413,7 @@ export interface NexusGenObjects {
   Subscription: {};
   TabData: { // root type
     id: string; // ID!
-    name?: string | null; // String
+    name: string; // String!
     questionIx: number; // Int!
     status: string; // String!
   }
@@ -456,10 +456,10 @@ export interface NexusGenFieldTypes {
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
-  Blocks: { // field return type
+  Block: { // field return type
     blockIx: number; // Int!
     blockStatus: string; // String!
-    tabData: Array<NexusGenRootTypes['TabData'] | null> | null; // [TabData]
+    tabData: NexusGenRootTypes['TabData'][] | null; // [TabData!]
   }
   Choice: { // field return type
     correct: boolean | null; // Boolean
@@ -784,7 +784,7 @@ export interface NexusGenFieldTypes {
     timeLimit: number | null; // Int
   }
   SessionEvaluation: { // field return type
-    blocks: Array<NexusGenRootTypes['Blocks'] | null> | null; // [Blocks]
+    blocks: NexusGenRootTypes['Block'][] | null; // [Block!]
     id: string; // ID!
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
   }
@@ -806,7 +806,7 @@ export interface NexusGenFieldTypes {
   }
   TabData: { // field return type
     id: string; // ID!
-    name: string | null; // String
+    name: string; // String!
     questionIx: number; // Int!
     status: string; // String!
   }
@@ -848,7 +848,7 @@ export interface NexusGenFieldTypeNames {
     originalName: 'String'
     type: 'AttachmentType'
   }
-  Blocks: { // field return type name
+  Block: { // field return type name
     blockIx: 'Int'
     blockStatus: 'String'
     tabData: 'TabData'
@@ -1176,7 +1176,7 @@ export interface NexusGenFieldTypeNames {
     timeLimit: 'Int'
   }
   SessionEvaluation: { // field return type name
-    blocks: 'Blocks'
+    blocks: 'Block'
     id: 'ID'
     instanceResults: 'InstanceResults'
   }

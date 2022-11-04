@@ -67,17 +67,17 @@ export type AvatarSettingsInput = {
   skinTone: Scalars['String'];
 };
 
+export type Block = {
+  __typename?: 'Block';
+  blockIx: Scalars['Int'];
+  blockStatus: Scalars['String'];
+  tabData?: Maybe<Array<Maybe<TabData>>>;
+};
+
 export type BlockInput = {
   questionIds: Array<Scalars['Int']>;
   randomSelection?: InputMaybe<Scalars['Int']>;
   timeLimit?: InputMaybe<Scalars['Int']>;
-};
-
-export type Blocks = {
-  __typename?: 'Blocks';
-  blockIx: Scalars['Int'];
-  blockStatus: Scalars['String'];
-  tabData?: Maybe<Array<Maybe<TabData>>>;
 };
 
 export type Choice = {
@@ -828,7 +828,7 @@ export enum SessionBlockStatus {
 
 export type SessionEvaluation = {
   __typename?: 'SessionEvaluation';
-  blocks?: Maybe<Array<Maybe<Blocks>>>;
+  blocks?: Maybe<Array<Block>>;
   id: Scalars['ID'];
   instanceResults?: Maybe<Array<InstanceResults>>;
 };
@@ -904,7 +904,7 @@ export type SubscriptionObjectInput = {
 export type TabData = {
   __typename?: 'TabData';
   id: Scalars['ID'];
-  name?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
   questionIx: Scalars['Int'];
   status: Scalars['String'];
 };
@@ -1311,7 +1311,7 @@ export type GetSessionEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, blocks?: Array<{ __typename?: 'Blocks', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name?: string | null, status: string } | null> | null } | null> | null, instanceResults?: Array<{ __typename?: 'InstanceResults', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, statistics?: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null } | null, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
+export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, blocks?: Array<{ __typename?: 'Block', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name: string, status: string } | null> | null }> | null, instanceResults?: Array<{ __typename?: 'InstanceResults', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, statistics?: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null } | null, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
 
 export type GetSessionLeaderboardQueryVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1469,8 +1469,8 @@ export type ResolversTypes = {
   AttachmentInput: AttachmentInput;
   AttachmentType: AttachmentType;
   AvatarSettingsInput: AvatarSettingsInput;
+  Block: ResolverTypeWrapper<Block>;
   BlockInput: BlockInput;
-  Blocks: ResolverTypeWrapper<Blocks>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Choice: ResolverTypeWrapper<Choice>;
   ChoiceInput: ChoiceInput;
@@ -1538,8 +1538,8 @@ export type ResolversParentTypes = {
   Attachment: Attachment;
   AttachmentInput: AttachmentInput;
   AvatarSettingsInput: AvatarSettingsInput;
+  Block: Block;
   BlockInput: BlockInput;
-  Blocks: Blocks;
   Boolean: Scalars['Boolean'];
   Choice: Choice;
   ChoiceInput: ChoiceInput;
@@ -1617,7 +1617,7 @@ export type AttachmentResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type BlocksResolvers<ContextType = any, ParentType extends ResolversParentTypes['Blocks'] = ResolversParentTypes['Blocks']> = {
+export type BlockResolvers<ContextType = any, ParentType extends ResolversParentTypes['Block'] = ResolversParentTypes['Block']> = {
   blockIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   blockStatus?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   tabData?: Resolver<Maybe<Array<Maybe<ResolversTypes['TabData']>>>, ParentType, ContextType>;
@@ -2033,7 +2033,7 @@ export type SessionBlockResolvers<ContextType = any, ParentType extends Resolver
 };
 
 export type SessionEvaluationResolvers<ContextType = any, ParentType extends ResolversParentTypes['SessionEvaluation'] = ResolversParentTypes['SessionEvaluation']> = {
-  blocks?: Resolver<Maybe<Array<Maybe<ResolversTypes['Blocks']>>>, ParentType, ContextType>;
+  blocks?: Resolver<Maybe<Array<ResolversTypes['Block']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   instanceResults?: Resolver<Maybe<Array<ResolversTypes['InstanceResults']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2060,7 +2060,7 @@ export type SubscriptionResolvers<ContextType = any, ParentType extends Resolver
 
 export type TabDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['TabData'] = ResolversParentTypes['TabData']> = {
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   questionIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2084,7 +2084,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 export type Resolvers<ContextType = any> = {
   AggregatedConfusionFeedbacks?: AggregatedConfusionFeedbacksResolvers<ContextType>;
   Attachment?: AttachmentResolvers<ContextType>;
-  Blocks?: BlocksResolvers<ContextType>;
+  Block?: BlockResolvers<ContextType>;
   Choice?: ChoiceResolvers<ContextType>;
   ChoicesQuestionData?: ChoicesQuestionDataResolvers<ContextType>;
   ChoicesQuestionOptions?: ChoicesQuestionOptionsResolvers<ContextType>;

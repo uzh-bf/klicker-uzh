@@ -7,7 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Blocks,
+  Block,
   GetSessionEvaluationDocument,
   InstanceResults,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -55,12 +55,12 @@ function Evaluation() {
 
   console.log(data?.sessionEvaluation)
 
-  const blocks: Blocks[] = useMemo(() => {
-    return data?.sessionEvaluation?.blocks || []
+  const blocks: Block[] = useMemo(() => {
+    return data?.sessionEvaluation?.blocks ?? []
   }, [data])
 
   const instanceResults: InstanceResults[] = useMemo(() => {
-    return data?.sessionEvaluation?.instanceResults || []
+    return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
 
   const tabs = useMemo(
@@ -84,6 +84,15 @@ function Evaluation() {
   }, [instanceResults])
 
   console.log('extracted data', questions)
+
+  const selectData = useMemo(() => {
+    if (!blocks || !blocks[selectedBlock]) return []
+    return blocks[selectedBlock].tabData
+      ?.sort((a, b) => (a?.questionIx || 0) - (b?.questionIx || 0))
+      .map((question) => {
+        return { label: question?.name || '', value: question?.id || '' }
+      })
+  }, [blocks, selectedBlock])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -111,24 +120,21 @@ function Evaluation() {
     <>
       <RadixTab.Root>
         <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
-          {blocks[selectedBlock] && (
+          {blocks && blocks[selectedBlock] && (
             <div className="flex flex-row items-center gap-3">
               <div className="font-bold">Question:</div>
 
               <Select
-                items={blocks[selectedBlock].tabData
-                  .sort((a, b) => a.questionIx - b.questionIx)
-                  .map((question) => {
-                    return { label: question.name, value: question.id }
-                  })}
+                items={selectData || []}
                 onChange={(newValue) => setSelectedInstance(newValue)}
                 className={{
                   root: 'h-full',
-                  trigger: 'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
+                  trigger:
+                    'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
                 }}
                 value={
                   selectedInstance === ''
-                    ? blocks[selectedBlock].tabData[0].id
+                    ? blocks[selectedBlock].tabData[0].id || 0
                     : selectedInstance
                 }
               />

@@ -48,16 +48,16 @@ input AvatarSettingsInput {
   skinTone: String!
 }
 
+type Block {
+  blockIx: Int!
+  blockStatus: String!
+  tabData: [TabData!]
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
   timeLimit: Int
-}
-
-type Blocks {
-  blockIx: Int!
-  blockStatus: String!
-  tabData: [TabData]
 }
 
 type Choice {
@@ -476,7 +476,7 @@ enum SessionBlockStatus {
 }
 
 type SessionEvaluation {
-  blocks: [Blocks]
+  blocks: [Block!]
   id: ID!
   instanceResults: [InstanceResults!]
 }
@@ -524,7 +524,7 @@ input SubscriptionObjectInput {
 
 type TabData {
   id: ID!
-  name: String
+  name: String!
   questionIx: Int!
   status: String!
 }
