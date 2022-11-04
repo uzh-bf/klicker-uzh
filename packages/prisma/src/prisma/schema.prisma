@@ -63,6 +63,7 @@ model User {
   sessions          Session[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
+  groupActivities   GroupActivity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -189,6 +190,8 @@ model QuestionInstance {
   learningElementId String?          @db.Uuid
   microSession      MicroSession?    @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   microSessionId    String?          @db.Uuid
+  groupActivity     GroupActivity?   @relation(fields: [groupActivityId], references: [id])
+  groupActivityId   String?          @db.Uuid
 
   attachments AttachmentInstance[]
 
@@ -212,7 +215,7 @@ model Course {
 
   isArchived Boolean @default(false)
 
-  pinCode Int @default(123456789)  @unique
+  pinCode Int @unique @default(123456789)
 
   name        String
   displayName String
@@ -223,6 +226,7 @@ model Course {
   learningElements LearningElement[]
   microSessions    MicroSession[]
   leaderboard      LeaderboardEntry[]
+  groupActivities  GroupActivity[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -385,6 +389,71 @@ model MicroSession {
   ownerId  String @db.Uuid
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ParameterType {
+  NUMBER
+  STRING
+}
+
+model GroupActivityParameter {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type    ParameterType
+  options String[]
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id])
+  groupActivityId String?        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivityClue {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type  ParameterType
+  value String
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id])
+  groupActivityId String?        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivity {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
+
+  description      String?
+  scheduledStartAt DateTime
+  scheduledEndAt   DateTime
+
+  parameters GroupActivityParameter[]
+  clues      GroupActivityClue[]
+  instances  QuestionInstance[]
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GroupActivityInstance {
+  id String @id @default(uuid()) @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
