@@ -3,6 +3,7 @@ import {
   GetSessionEvaluationQuery,
   NumericalRestrictions,
   NumericalSolutionRange,
+  InstanceResults,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
@@ -19,10 +20,10 @@ type baseData = {
   }
 }
 
-export function extractQuestions(data: GetSessionEvaluationQuery) {
-  if (!data.sessionEvaluation?.instanceResults) return []
+export function extractQuestions(instanceResults: InstanceResults[]) {
+  if (!instanceResults) return []
 
-  return data.sessionEvaluation.instanceResults.map((instance) => {
+  return instanceResults.map((instance) => {
     const questionType = instance.questionData.type
     const baseData: baseData = {
       blockIx: instance.blockIx,

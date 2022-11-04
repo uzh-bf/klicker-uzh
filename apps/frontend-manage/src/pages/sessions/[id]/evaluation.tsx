@@ -6,13 +6,15 @@ import {
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Blocks } from '@klicker-uzh/graphql/src/ops'
+import {
+  Blocks,
+  GetSessionEvaluationDocument,
+  InstanceResults,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { groupBy } from 'ramda'
 import { useMemo, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
@@ -41,7 +43,6 @@ function Evaluation() {
   const [chartType, setChartType] = useState('')
 
   // TODO: remove / replace
-  const [activeBlock, setActiveBlock] = useState<number | string>(0)
   const [currentQuestion, setCurrentQuestion] = useState(undefined)
 
   const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
@@ -52,8 +53,14 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
+  console.log(data?.sessionEvaluation)
+
   const blocks: Blocks[] = useMemo(() => {
     return data?.sessionEvaluation?.blocks || []
+  }, [data])
+
+  const instanceResults: InstanceResults[] = useMemo(() => {
+    return data?.sessionEvaluation?.instanceResults || []
   }, [data])
 
   const tabs = useMemo(
@@ -70,33 +77,13 @@ function Evaluation() {
   // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
   // TODO: query confusion feedbacks and display them in the evaluation
 
-  // TODO: remove
-  const { groupedTabs } = useMemo(() => {
-    const tabs = data?.sessionEvaluation?.instanceResults?.map(
-      (instance, index) => ({
-        id: instance.id,
-        blockIx: instance.blockIx,
-        instanceIx: instance.instanceIx,
-        value: 'tab' + index,
-        title: instance.questionData.name,
-        status: instance.status,
-        label: instance.questionData.name,
-      })
-    )
-
-    if (!data || !tabs) return {}
-
-    const groupedTabs = Object.entries(
-      groupBy((tab) => tab.blockIx.toString(), tabs)
-    )
-
-    return { tabs, groupedTabs }
-  }, [data])
-
+  // TODO: possibly replace / rewrite if requested
   const questions = useMemo(() => {
-    if (!data) return []
-    return extractQuestions(data)
-  }, [data])
+    if (!instanceResults) return []
+    return extractQuestions(instanceResults)
+  }, [instanceResults])
+
+  console.log('extracted data', questions)
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -119,43 +106,6 @@ function Evaluation() {
     setCurrentQuestion(currQuestion)
   }
 
-  const onQuestionChange = (newIndex: string, blockIndex: string) => {
-    setActiveBlock(Number(blockIndex))
-    const currQuestion = questions?.find(
-      (question) =>
-        question.blockIx === Number(blockIndex) &&
-        question.instanceIx === Number(newIndex)
-    )
-    setCurrentQuestion(currQuestion)
-
-    // Make sure to only display chart type that is available for current question type
-    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
-      (type) => type.value
-    )
-    if (!possibleChartTypes.includes(chartType)) {
-      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
-    }
-  }
-
-  const onBlockChange = (blockIndex: string) => {
-    setActiveBlock(Number(blockIndex))
-
-    // If we reset the instance, we also need to change the current question
-    const currQuestion = questions?.find(
-      (question) =>
-        question.blockIx === Number(blockIndex) && question.instanceIx === 0
-    )
-    // Make sure to only display chart type that is available for current question type
-    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
-      (type) => type.value
-    )
-    if (!possibleChartTypes.includes(chartType)) {
-      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
-    }
-  }
-
-  // console.log('current Question', currentQuestion)
-
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
     <>
@@ -173,7 +123,8 @@ function Evaluation() {
                   })}
                 onChange={(newValue) => setSelectedInstance(newValue)}
                 className={{
-                  trigger: 'shadow-sm border-uzh-blue-80 m-0',
+                  root: 'h-full',
+                  trigger: 'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
                 }}
                 value={
                   selectedInstance === ''
@@ -233,10 +184,7 @@ function Evaluation() {
         </RadixTab.List>
       </RadixTab.Root>
       {/* // ! OLD CODE BELOW */}
-      <RadixTab.Root
-        value={`tab-${activeBlock}`}
-        className="flex flex-col h-full"
-      >
+      <RadixTab.Root className="flex flex-col h-full">
         {currentQuestion && (
           <div>
             <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
