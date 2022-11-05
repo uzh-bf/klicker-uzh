@@ -99,6 +99,7 @@ export interface NexusGenInputs {
 export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
+  ParameterType: "NUMBER" | "STRING"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
 }
@@ -208,8 +209,23 @@ export interface NexusGenObjects {
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
+  GroupActivityClue: { // root type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
+    type: NexusGenEnums['ParameterType']; // ParameterType!
+    unit?: string | null; // String
+    value: string; // String!
+  }
   GroupActivityDetails: { // root type
-    id: number; // Int!
+    clues: NexusGenRootTypes['GroupActivityClue'][]; // [GroupActivityClue!]!
+    description?: string | null; // String
+    displayName: string; // String!
+    id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
+    scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
+    scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
   GroupLeaderboardEntry: { // root type
     id: string; // ID!
@@ -517,8 +533,23 @@ export interface NexusGenFieldTypes {
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
+  GroupActivityClue: { // field return type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
+    type: NexusGenEnums['ParameterType']; // ParameterType!
+    unit: string | null; // String
+    value: string; // String!
+  }
   GroupActivityDetails: { // field return type
-    id: number; // Int!
+    clues: NexusGenRootTypes['GroupActivityClue'][]; // [GroupActivityClue!]!
+    description: string | null; // String
+    displayName: string; // String!
+    id: string; // ID!
+    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    name: string; // String!
+    scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
+    scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
   GroupLeaderboardEntry: { // field return type
     id: string; // ID!
@@ -891,8 +922,23 @@ export interface NexusGenFieldTypeNames {
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
   }
+  GroupActivityClue: { // field return type name
+    displayName: 'String'
+    id: 'ID'
+    name: 'String'
+    type: 'ParameterType'
+    unit: 'String'
+    value: 'String'
+  }
   GroupActivityDetails: { // field return type name
-    id: 'Int'
+    clues: 'GroupActivityClue'
+    description: 'String'
+    displayName: 'String'
+    id: 'ID'
+    instances: 'QuestionInstance'
+    name: 'String'
+    scheduledEndAt: 'DateTime'
+    scheduledStartAt: 'DateTime'
   }
   GroupLeaderboardEntry: { // field return type name
     id: 'ID'

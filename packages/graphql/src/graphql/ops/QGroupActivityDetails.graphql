@@ -1,5 +1,40 @@
+#import "./FQuestionData.graphql"
+
 query GroupActivityDetails($activityId: ID!, $groupId: ID!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id
+
+    name
+    displayName
+    description
+    scheduledStartAt
+    scheduledEndAt
+
+    clues {
+      id
+      name
+      displayName
+      type
+      value
+      unit
+    }
+
+    instances {
+      id
+      ...QuestionData
+      evaluation {
+        feedbacks {
+          ix
+          feedback
+          correct
+          value
+        }
+        choices
+        score
+        pointsAwarded
+        percentile
+        newPointsFrom
+      }
+    }
   }
 }

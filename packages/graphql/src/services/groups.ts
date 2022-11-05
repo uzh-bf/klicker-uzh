@@ -298,7 +298,11 @@ export async function getGroupActivityDetails(
     where: { id: activityId },
     include: {
       clues: true,
-      instances: true,
+      instances: {
+        orderBy: {
+          order: 'asc'
+        }
+      },
       parameters: true,
     },
   })

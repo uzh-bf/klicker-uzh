@@ -156,8 +156,24 @@ type FreeTextRestrictions {
   maxLength: Int
 }
 
+type GroupActivityClue {
+  displayName: String!
+  id: ID!
+  name: String!
+  type: ParameterType!
+  unit: String
+  value: String!
+}
+
 type GroupActivityDetails {
-  id: Int!
+  clues: [GroupActivityClue!]!
+  description: String
+  displayName: String!
+  id: ID!
+  instances: [QuestionInstance!]!
+  name: String!
+  scheduledEndAt: DateTime!
+  scheduledStartAt: DateTime!
 }
 
 type GroupLeaderboardEntry {
@@ -307,6 +323,11 @@ input OptionsFreeTextInput {
 input OptionsNumericalInput {
   restrictions: Restrictions
   solutionRanges: [SolutionRange]
+}
+
+enum ParameterType {
+  NUMBER
+  STRING
 }
 
 type Participant {

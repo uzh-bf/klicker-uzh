@@ -46,6 +46,7 @@
     "shared-components": "*",
     "sharp": "0.31.1",
     "tailwind-merge": "1.7.0",
+    "ts-pattern": "4.0.5",
     "yup": "0.32.11"
   },
   "devDependencies": {

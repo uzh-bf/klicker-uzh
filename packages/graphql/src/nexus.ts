@@ -776,10 +776,45 @@ export const PushSubscription = objectType({
   },
 })
 
+export const ParameterType = enumType({
+  name: 'ParameterType',
+  members: DB.ParameterType,
+})
+
+export const GroupActivityClue = objectType({
+  name: 'GroupActivityClue',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.nonNull.string('value')
+    t.string('unit')
+    t.nonNull.field('type', {
+      type: ParameterType,
+    })
+
+
+  },
+})
+
 export const GroupActivityDetails = objectType({
   name: 'GroupActivityDetails',
   definition(t) {
     t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.string('description')
+    t.nonNull.date('scheduledStartAt')
+    t.nonNull.date('scheduledEndAt')
+
+    t.nonNull.list.nonNull.field('clues', {
+      type: GroupActivityClue,
+    })
+    t.nonNull.list.nonNull.field('instances', {
+      type: QuestionInstance,
+    })
   },
 })
 
