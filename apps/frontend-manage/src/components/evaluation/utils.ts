@@ -7,6 +7,7 @@ import {
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
 type baseData = {
+  id: string
   blockIx: number
   instanceIx: number
   content: string
@@ -22,6 +23,7 @@ export function extractQuestions(instanceResults: InstanceResults[]) {
   return instanceResults.map((instance) => {
     const questionType = instance.questionData.type
     const baseData: baseData = {
+      id: instance.id,
       blockIx: instance.blockIx,
       instanceIx: instance.instanceIx,
       content: instance.questionData.content,

@@ -14,7 +14,7 @@ import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -121,22 +121,8 @@ function Evaluation() {
     if (!instanceResults) return []
 
     // TODO: possibly replace / rewrite if requested
-    const questionData = extractQuestions(instanceResults)
-
-    if (questionData.length !== 0) {
-      if (chartType === '') {
-        setChartType(ACTIVE_CHART_TYPES[questionData[0].type][0].value)
-      }
-      if (Object.entries(currentQuestion).length === 0) {
-        const currQuestion = questionData?.find(
-          (question) => question.blockIx === 0 && question.instanceIx === 0
-        )
-        setCurrentQuestion(currQuestion || {})
-      }
-    }
-
-    return questionData
-  }, [chartType, currentQuestion, instanceResults])
+    return extractQuestions(instanceResults)
+  }, [instanceResults])
 
   console.log('extracted data', questions)
 
@@ -148,6 +134,21 @@ function Evaluation() {
         return { label: question?.name || '', value: question?.id || '' }
       })
   }, [blocks, selectedBlock])
+
+  useEffect(() => {
+    if (questions.length === 0) return
+
+    if (chartType === '') {
+      setChartType(ACTIVE_CHART_TYPES[questions[0].type][0].value)
+    }
+    const currQuestion = questions?.find((question) =>
+      selectedInstance !== ''
+        ? question.id === selectedInstance
+        : question.blockIx === selectedBlock
+    )
+    console.log('currQuestion', currQuestion)
+    setCurrentQuestion(currQuestion)
+  }, [questions, chartType, selectedBlock, selectedInstance])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -328,7 +329,7 @@ function Evaluation() {
         </div>
       </RadixTab.Content>
 
-      <Footer className='mx-0'>
+      <Footer className="mx-0">
         <div className="flex flex-row justify-between p-4 pr-8 m-0">
           <div className="text-xl">
             Total Teilnehmende: {currentQuestion.participants}
