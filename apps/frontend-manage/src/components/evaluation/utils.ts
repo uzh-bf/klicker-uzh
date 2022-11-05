@@ -1,9 +1,8 @@
 import {
   Choice,
-  GetSessionEvaluationQuery,
+  InstanceResults,
   NumericalRestrictions,
   NumericalSolutionRange,
-  InstanceResults,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
@@ -14,10 +13,7 @@ type baseData = {
   type: string
   participants: number
   restrictions?: NumericalRestrictions // Only in NUMERICAL
-  solutions?: {
-    solutionRanges?: NumericalSolutionRange[] // Only in NUMERICAL
-    freeTextSolutions?: string[] // Only in FREE_TEXT
-  }
+  solutions?: NumericalSolutionRange[] | string[]
 }
 
 export function extractQuestions(instanceResults: InstanceResults[]) {
@@ -51,8 +47,7 @@ export function extractQuestions(instanceResults: InstanceResults[]) {
       }
       baseData.solutions = {}
       if (instance.questionData.options.solutionRanges) {
-        baseData.solutions.solutionRanges =
-          instance.questionData.options.solutionRanges
+        baseData.solutions = instance.questionData.options.solutionRanges
       }
       answers = Object.values(instance.results).map((answer) => ({
         value: answer.value,
@@ -61,8 +56,7 @@ export function extractQuestions(instanceResults: InstanceResults[]) {
     } else if (instance.questionData.type === 'FREE_TEXT') {
       baseData.solutions = {}
       if (instance.questionData.options.solutions) {
-        baseData.solutions.freeTextSolutions =
-          instance.questionData.options.solutions
+        baseData.solutions = instance.questionData.options.solutions
       }
       answers = Object.values(instance.results).map((answer) => ({
         value: answer.value,

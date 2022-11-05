@@ -19,7 +19,6 @@ import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
 } from 'shared-components/src/constants'
-import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
@@ -40,9 +39,43 @@ function Evaluation() {
   const [leaderboardActive, setLeaderboardActive] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState('')
-
-  // TODO: remove / replace
-  const [currentQuestion, setCurrentQuestion] = useState(undefined)
+  const [currentQuestion, setCurrentQuestion] = useState<
+    | {
+        type: 'SC' | 'MC' | 'KPRIM'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; correct: boolean; count: number }[]
+      } // choices question types
+    | {
+        type: 'FREE_TEXT'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        solutions: string[]
+      } // free text question type
+    | {
+        // TODO
+        type: 'NUMERICAL'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        restrictions: { min?: number; max?: number }
+        solutions: { min?: number; max?: number }[]
+      } // numerical text question type
+  >({
+    type: 'SC',
+    content: '',
+    blockIx: 0,
+    instanceIx: 0,
+    participants: 0,
+    answers: [],
+  })
 
   const {
     data,
@@ -84,11 +117,26 @@ function Evaluation() {
   // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
   // TODO: query confusion feedbacks and display them in the evaluation
 
-  // TODO: possibly replace / rewrite if requested
   const questions = useMemo(() => {
     if (!instanceResults) return []
-    return extractQuestions(instanceResults)
-  }, [instanceResults])
+
+    // TODO: possibly replace / rewrite if requested
+    const questionData = extractQuestions(instanceResults)
+
+    if (questionData.length !== 0) {
+      if (chartType === '') {
+        setChartType(ACTIVE_CHART_TYPES[questionData[0].type][0].value)
+      }
+      if (Object.entries(currentQuestion).length === 0) {
+        const currQuestion = questionData?.find(
+          (question) => question.blockIx === 0 && question.instanceIx === 0
+        )
+        setCurrentQuestion(currQuestion || {})
+      }
+    }
+
+    return questionData
+  }, [chartType, currentQuestion, instanceResults])
 
   console.log('extracted data', questions)
 
@@ -104,21 +152,6 @@ function Evaluation() {
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
-
-  // TODO: still refactor this stuff
-  // set initial chart type after data is present
-  if (chartType === '') {
-    const defaultChartType = ACTIVE_CHART_TYPES[questions[0].type][0].value
-    setChartType(defaultChartType)
-  }
-
-  // set initial question when data is present
-  if (currentQuestion === undefined) {
-    const currQuestion = questions?.find(
-      (question) => question.blockIx === 0 && question.instanceIx === 0
-    )
-    setCurrentQuestion(currQuestion)
-  }
 
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
@@ -194,133 +227,113 @@ function Evaluation() {
           </div>
         </RadixTab.List>
       </RadixTab.Root>
-      {/* // ! OLD CODE BELOW */}
-      <RadixTab.Root className="flex flex-col h-full">
-        {currentQuestion && (
-          <div>
-            <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
-              <Markdown
-                className="flex flex-row content-between p-2"
-                content={currentQuestion.content}
+      {currentQuestion && selectedBlock !== -1 && (
+        <div>
+          <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
+            <Markdown
+              className="flex flex-row content-between p-2"
+              content={currentQuestion.content}
+            />
+          </Prose>
+
+          <div className="flex flex-col flex-1 md:flex-row">
+            <div className="z-10 flex-1 order-2 md:order-1">
+              <Chart
+                chartType={chartType}
+                data={currentQuestion}
+                showSolution={showSolution}
               />
-            </Prose>
-
-            <div className="flex flex-col flex-1 md:flex-row">
-              <div className="z-10 flex-1 order-2 md:order-1">
-                <Chart
-                  chartType={chartType}
-                  data={currentQuestion}
-                  showSolution={showSolution}
-                />
-              </div>
-              <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-                <div className="flex flex-col gap-2">
-                  {(currentQuestion.type === 'SC' ||
-                    currentQuestion.type === 'MC' ||
-                    currentQuestion.type === 'KPRIM') &&
-                    currentQuestion.answers.map((answer, innerIndex) => (
+            </div>
+            <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
+              <div className="flex flex-col gap-2">
+                {(currentQuestion.type === 'SC' ||
+                  currentQuestion.type === 'MC' ||
+                  currentQuestion.type === 'KPRIM') &&
+                  currentQuestion.answers.map((answer, innerIndex) => (
+                    <div
+                      key={currentQuestion.answers[innerIndex].value}
+                      className="flex flex-row"
+                    >
                       <div
-                        key={currentQuestion.answers[innerIndex].value}
-                        className="flex flex-row"
-                      >
-                        <div
-                          // TODO: use single color for answer options to highlight correct one? or some other approach to distinguish better
-                          style={{
-                            backgroundColor:
-                              answer.correct && showSolution
-                                ? '#00de0d'
-                                : CHART_COLORS[innerIndex % 12],
-                          }}
-                          className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                            answer.correct && showSolution && 'text-black'
-                          )}
-                        >
-                          {String.fromCharCode(65 + innerIndex)}
-                        </div>
-                        <Markdown
-                          content={answer.value}
-                          className="w-[calc(100%-3rem)]"
-                        />
-                      </div>
-                    ))}
-
-                  {currentQuestion.type === 'NUMERICAL' && (
-                    <div>
-                      <div className="font-bold">Erlaubter Antwortbereich:</div>
-                      <div>
-                        [{currentQuestion.restrictions!.min ?? '-∞'},
-                        {currentQuestion.restrictions!.max ?? '+∞'}]
-                      </div>
-                      {showSolution &&
-                        currentQuestion.solutions!.solutionRanges && (
-                          <div>
-                            <div className="mt-2 font-bold">
-                              Korrekte Lösungsbereiche:
-                            </div>
-                            {currentQuestion.solutions!.solutionRanges.map(
-                              (range, innerIndex) => (
-                                <div key={innerIndex}>
-                                  [{range.min ?? '-∞'},{range.max ?? '+∞'}]
-                                </div>
-                              )
-                            )}
-                          </div>
+                        // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                        style={{
+                          backgroundColor:
+                            answer.correct && showSolution
+                              ? '#00de0d'
+                              : CHART_COLORS[innerIndex % 12],
+                        }}
+                        className={twMerge(
+                          'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                          answer.correct && showSolution && 'text-black'
                         )}
+                      >
+                        {String.fromCharCode(65 + innerIndex)}
+                      </div>
+                      <Markdown
+                        content={answer.value}
+                        className="w-[calc(100%-3rem)]"
+                      />
                     </div>
-                  )}
-                  {currentQuestion.type === 'FREE_TEXT' &&
-                    currentQuestion.solutions!.freeTextSolutions &&
-                    showSolution && (
+                  ))}
+
+                {currentQuestion.type === 'NUMERICAL' && (
+                  <div>
+                    <div className="font-bold">Erlaubter Antwortbereich:</div>
+                    <div>
+                      [{currentQuestion.restrictions!.min ?? '-∞'},
+                      {currentQuestion.restrictions!.max ?? '+∞'}]
+                    </div>
+                    {showSolution && currentQuestion.solutions && (
                       <div>
-                        <div className="font-bold">Schlüsselwörter Lösung:</div>
-                        <ul>
-                          {currentQuestion.solutions!.freeTextSolutions.map(
-                            (keyword, innerIndex) => (
-                              <li key={innerIndex}>{`- ${keyword}`}</li>
-                            )
-                          )}
-                        </ul>
+                        <div className="mt-2 font-bold">
+                          Korrekte Lösungsbereiche:
+                        </div>
+                        {currentQuestion.solutions.map((range, innerIndex) => (
+                          <div key={innerIndex}>
+                            [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                          </div>
+                        ))}
                       </div>
                     )}
-                  {/* {currentQuestion && (
-                    <Select
-                      // TODO: Find out why default is sometimes empty
-                      defaultValue={chartType}
-                      items={ACTIVE_CHART_TYPES[currentQuestion.type]}
-                      onChange={(newValue) => {
-                        console.log('newValue', newValue)
-                        setChartType(newValue)
-                      }}
-                    ></Select>
-                  )} */}
-                </div>
+                  </div>
+                )}
+                {currentQuestion.type === 'FREE_TEXT' &&
+                  currentQuestion.solutions &&
+                  showSolution && (
+                    <div>
+                      <div className="font-bold">Schlüsselwörter Lösung:</div>
+                      <ul>
+                        {currentQuestion.solutions.map(
+                          (keyword, innerIndex) => (
+                            <li key={innerIndex}>{`- ${keyword}`}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
             </div>
-            <Footer>
-              <div className="flex flex-row justify-between px-8 py-4 m-0">
-                <div className="text-xl">
-                  Total Teilnehmende: {currentQuestion.participants}
-                </div>
-                <Switch
-                  id="showSolution"
-                  checked={showSolution}
-                  label="Lösung anzeigen"
-                  onCheckedChange={(newValue) => setShowSolution(newValue)}
-                ></Switch>
-              </div>
-            </Footer>
           </div>
-        )}
-        {/* TODO: Find way to empty currentQuestion when this tab is selected */}
-        <RadixTab.Content value="tab-lb">
-          <div className="p-4 border-t">
-            <div className="max-w-5xl mx-auto text-xl">
-              <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
-            </div>
+        </div>
+        //   <div className="p-4 border-t">
+        //   <div className="max-w-5xl mx-auto text-xl">
+        //     <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
+        //   </div>
+        // </div>
+      )}
+      <Footer>
+        <div className="flex flex-row justify-between px-8 py-4 m-0">
+          <div className="text-xl">
+            Total Teilnehmende: {currentQuestion.participants}
           </div>
-        </RadixTab.Content>
-      </RadixTab.Root>
+          <Switch
+            id="showSolution"
+            checked={showSolution}
+            label="Lösung anzeigen"
+            onCheckedChange={(newValue) => setShowSolution(newValue)}
+          ></Switch>
+        </div>
+      </Footer>
     </>
   )
 }
