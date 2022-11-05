@@ -133,7 +133,7 @@ function Evaluation() {
                 items={selectData || []}
                 onChange={(newValue) => setSelectedInstance(newValue)}
                 className={{
-                  root: 'h-full',
+                  root: 'h-full z-20',
                   trigger:
                     'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
                 }}
