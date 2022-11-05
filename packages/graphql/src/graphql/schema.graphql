@@ -156,6 +156,10 @@ type FreeTextRestrictions {
   maxLength: Int
 }
 
+type GroupActivityDetails {
+  id: Int!
+}
+
 type GroupLeaderboardEntry {
   id: ID!
   isMember: Boolean
@@ -361,6 +365,7 @@ type Query {
   cockpitSession(id: ID!): Session
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
+  groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
   microSession(id: ID!): MicroSession
   participantGroups(courseId: ID!): [ParticipantGroup!]

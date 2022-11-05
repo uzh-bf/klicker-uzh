@@ -284,3 +284,40 @@ export async function updateGroupAverageScores(ctx: Context) {
 
   return true
 }
+
+interface GetGroupActivityDetailsArgs {
+  activityId: string
+  groupId: string
+}
+
+export async function getGroupActivityDetails(
+  { activityId, groupId }: GetGroupActivityDetailsArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      clues: true,
+      instances: true,
+      parameters: true,
+    },
+  })
+
+  const group = await ctx.prisma.participantGroup.findUnique({
+    where: { id: groupId },
+  })
+
+  if (!groupActivity || !group) return null
+
+  console.log(groupActivity, group)
+
+  // TODO: check whether the requesting participant is part of the group
+  // TODO: if the group opens the activity for the first time -> create an individualized instance
+  // TODO: compute and create clue assignments when the activity instance is first created
+  // TODO: adapt clue assignments on each opening of the details?
+  // TODO: otherwise, return the existing group activity instance
+
+  return groupActivity
+}
+
+export async function submitGroupActivityDecisions() {}

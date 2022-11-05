@@ -776,6 +776,13 @@ export const PushSubscription = objectType({
   },
 })
 
+export const GroupActivityDetails = objectType({
+  name: 'GroupActivityDetails',
+  definition(t) {
+    t.nonNull.int('id')
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -954,6 +961,17 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return QuestionService.getSingleQuestion(args, ctx)
+      },
+    })
+
+    t.field('groupActivityDetails', {
+      type: GroupActivityDetails,
+      args: {
+        activityId: nonNull(idArg()),
+        groupId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.getGroupActivityDetails(args, ctx)
       },
     })
   },

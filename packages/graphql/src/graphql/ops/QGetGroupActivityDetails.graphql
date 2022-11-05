@@ -1,0 +1,5 @@
+query GroupActivityDetails($activityId: ID!, $groupId: ID!) {
+  groupActivityDetails(activityId: $activityId, groupId: $groupId) {
+    id
+  }
+}

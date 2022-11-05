@@ -208,6 +208,9 @@ export interface NexusGenObjects {
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
   }
+  GroupActivityDetails: { // root type
+    id: number; // Int!
+  }
   GroupLeaderboardEntry: { // root type
     id: string; // ID!
     isMember?: boolean | null; // Boolean
@@ -514,6 +517,9 @@ export interface NexusGenFieldTypes {
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
   }
+  GroupActivityDetails: { // field return type
+    id: number; // Int!
+  }
   GroupLeaderboardEntry: { // field return type
     id: string; // ID!
     isMember: boolean | null; // Boolean
@@ -682,6 +688,7 @@ export interface NexusGenFieldTypes {
     cockpitSession: NexusGenRootTypes['Session'] | null; // Session
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    groupActivityDetails: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
@@ -884,6 +891,9 @@ export interface NexusGenFieldTypeNames {
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
   }
+  GroupActivityDetails: { // field return type name
+    id: 'Int'
+  }
   GroupLeaderboardEntry: { // field return type name
     id: 'ID'
     isMember: 'Boolean'
@@ -1052,6 +1062,7 @@ export interface NexusGenFieldTypeNames {
     cockpitSession: 'Session'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
+    groupActivityDetails: 'GroupActivityDetails'
     learningElement: 'LearningElement'
     microSession: 'MicroSession'
     participantGroups: 'ParticipantGroup'
@@ -1341,6 +1352,10 @@ export interface NexusGenArgTypes {
     }
     getCourseOverviewData: { // args
       courseId: string; // ID!
+    }
+    groupActivityDetails: { // args
+      activityId: string; // ID!
+      groupId: string; // ID!
     }
     learningElement: { // args
       id: string; // ID!
