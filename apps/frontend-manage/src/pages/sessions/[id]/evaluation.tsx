@@ -7,9 +7,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Block,
   GetSessionEvaluationDocument,
-  InstanceResults,
+  GetSessionEvaluationQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
@@ -45,7 +44,15 @@ function Evaluation() {
   // TODO: remove / replace
   const [currentQuestion, setCurrentQuestion] = useState(undefined)
 
-  const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
+  const {
+    data,
+    loading,
+    error,
+  }: {
+    data: GetSessionEvaluationQuery | undefined
+    loading: any
+    error?: any
+  } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -55,11 +62,11 @@ function Evaluation() {
 
   console.log(data?.sessionEvaluation)
 
-  const blocks: Block[] = useMemo(() => {
+  const blocks = useMemo(() => {
     return data?.sessionEvaluation?.blocks ?? []
   }, [data])
 
-  const instanceResults: InstanceResults[] = useMemo(() => {
+  const instanceResults = useMemo(() => {
     return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
 
@@ -98,12 +105,10 @@ function Evaluation() {
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
+  // TODO: still refactor this stuff
   // set initial chart type after data is present
   if (chartType === '') {
-    const defaultChartType =
-      ACTIVE_CHART_TYPES[
-        data.sessionEvaluation.instanceResults[0].questionData.type
-      ][0].value
+    const defaultChartType = ACTIVE_CHART_TYPES[questions[0].type][0].value
     setChartType(defaultChartType)
   }
 
@@ -134,7 +139,7 @@ function Evaluation() {
                 }}
                 value={
                   selectedInstance === ''
-                    ? blocks[selectedBlock].tabData[0].id || 0
+                    ? blocks[selectedBlock].tabData[0].id
                     : selectedInstance
                 }
               />
