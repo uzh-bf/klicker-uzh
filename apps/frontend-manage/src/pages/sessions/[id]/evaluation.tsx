@@ -155,174 +155,181 @@ function Evaluation() {
 
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
-    <>
-      <RadixTab.Root>
-        <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
-          {blocks && blocks[selectedBlock] && (
-            <div className="flex flex-row items-center gap-3">
-              <div className="font-bold">Question:</div>
+    <RadixTab.Root className="h-full">
+      <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
+        {blocks && blocks[selectedBlock] && (
+          <div className="flex flex-row items-center gap-3">
+            <div className="font-bold">Question:</div>
 
-              <Select
-                items={selectData || []}
-                onChange={(newValue) => setSelectedInstance(newValue)}
-                className={{
-                  root: 'h-full z-20',
-                  trigger:
-                    'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
-                }}
-                value={
-                  selectedInstance === ''
-                    ? blocks[selectedBlock].tabData[0].id
-                    : selectedInstance
-                }
-              />
-            </div>
-          )}
-          <div className="ml-auto">
-            {tabs.map((tab, idx) => (
-              <RadixTab.Trigger
-                key={tab.value}
-                value={String(tab.value)}
-                onClick={() => {
-                  setSelectedBlock(idx)
-                  setLeaderboardActive(false)
-                  setSelectedInstance(blocks[idx].tabData[0].id)
-                }}
-                className={twMerge(
-                  'px-3 py-2 hover:bg-uzh-blue-20',
-                  idx === selectedBlock
-                    ? 'border-b-2 border-solid border-uzh-blue-80'
-                    : 'border-b-2 border-transparent'
-                )}
-              >
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon
-                    size="xs"
-                    icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
-                  />
-                  <div>{tab.label}</div>
-                </div>
-              </RadixTab.Trigger>
-            ))}
+            <Select
+              items={selectData || []}
+              onChange={(newValue) => setSelectedInstance(newValue)}
+              className={{
+                root: 'h-full z-20',
+                trigger:
+                  'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
+              }}
+              value={
+                selectedInstance === ''
+                  ? blocks[selectedBlock].tabData[0].id
+                  : selectedInstance
+              }
+            />
+          </div>
+        )}
+        <div className="ml-auto">
+          {tabs.map((tab, idx) => (
             <RadixTab.Trigger
-              value="leaderboard"
+              key={tab.value}
+              value={String(tab.value)}
+              onClick={() => {
+                setSelectedBlock(idx)
+                setLeaderboardActive(false)
+                setSelectedInstance(blocks[idx].tabData[0].id)
+              }}
               className={twMerge(
                 'px-3 py-2 hover:bg-uzh-blue-20',
-                leaderboardActive
+                idx === selectedBlock
                   ? 'border-b-2 border-solid border-uzh-blue-80'
                   : 'border-b-2 border-transparent'
               )}
-              onClick={() => {
-                setSelectedBlock(-1)
-                setLeaderboardActive(true)
-              }}
             >
               <div className="flex flex-row items-center gap-2">
-                <div>
-                  <FontAwesomeIcon icon={faGamepad} />
-                </div>
-                <div>Leaderboard</div>
+                <FontAwesomeIcon
+                  size="xs"
+                  icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
+                />
+                <div>{tab.label}</div>
               </div>
             </RadixTab.Trigger>
-          </div>
-        </RadixTab.List>
-      </RadixTab.Root>
-      {currentQuestion && selectedBlock !== -1 && (
-        <div>
-          <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
-            <Markdown
-              className="flex flex-row content-between p-2"
-              content={currentQuestion.content}
-            />
-          </Prose>
-
-          <div className="flex flex-col flex-1 md:flex-row">
-            <div className="z-10 flex-1 order-2 md:order-1">
-              <Chart
-                chartType={chartType}
-                data={currentQuestion}
-                showSolution={showSolution}
-              />
+          ))}
+          <RadixTab.Trigger
+            value="leaderboard"
+            className={twMerge(
+              'px-3 py-2 hover:bg-uzh-blue-20',
+              leaderboardActive
+                ? 'border-b-2 border-solid border-uzh-blue-80'
+                : 'border-b-2 border-transparent'
+            )}
+            onClick={() => {
+              setSelectedBlock(-1)
+              setLeaderboardActive(true)
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div>
+                <FontAwesomeIcon icon={faGamepad} />
+              </div>
+              <div>Leaderboard</div>
             </div>
-            <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-              <div className="flex flex-col gap-2">
-                {(currentQuestion.type === 'SC' ||
-                  currentQuestion.type === 'MC' ||
-                  currentQuestion.type === 'KPRIM') &&
-                  currentQuestion.answers.map((answer, innerIndex) => (
-                    <div
-                      key={currentQuestion.answers[innerIndex].value}
-                      className="flex flex-row"
-                    >
-                      <div
-                        // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                        style={{
-                          backgroundColor:
-                            answer.correct && showSolution
-                              ? '#00de0d'
-                              : CHART_COLORS[innerIndex % 12],
-                        }}
-                        className={twMerge(
-                          'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                          answer.correct && showSolution && 'text-black'
-                        )}
-                      >
-                        {String.fromCharCode(65 + innerIndex)}
-                      </div>
-                      <Markdown
-                        content={answer.value}
-                        className="w-[calc(100%-3rem)]"
-                      />
-                    </div>
-                  ))}
+          </RadixTab.Trigger>
+        </div>
+      </RadixTab.List>
+      <RadixTab.Content value={String(currentQuestion.blockIx)}>
+        {currentQuestion && selectedBlock !== -1 && (
+          <div>
+            <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
+              <Markdown
+                className="flex flex-row content-between p-2"
+                content={currentQuestion.content}
+              />
+            </Prose>
 
-                {currentQuestion.type === 'NUMERICAL' && (
-                  <div>
-                    <div className="font-bold">Erlaubter Antwortbereich:</div>
-                    <div>
-                      [{currentQuestion.restrictions!.min ?? '-∞'},
-                      {currentQuestion.restrictions!.max ?? '+∞'}]
-                    </div>
-                    {showSolution && currentQuestion.solutions && (
-                      <div>
-                        <div className="mt-2 font-bold">
-                          Korrekte Lösungsbereiche:
+            <div className="flex flex-col flex-1 md:flex-row">
+              <div className="z-10 flex-1 order-2 md:order-1">
+                <Chart
+                  chartType={chartType}
+                  data={currentQuestion}
+                  showSolution={showSolution}
+                />
+              </div>
+              <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
+                <div className="flex flex-col gap-2">
+                  {(currentQuestion.type === 'SC' ||
+                    currentQuestion.type === 'MC' ||
+                    currentQuestion.type === 'KPRIM') &&
+                    currentQuestion.answers.map((answer, innerIndex) => (
+                      <div
+                        key={currentQuestion.answers[innerIndex].value}
+                        className="flex flex-row"
+                      >
+                        <div
+                          // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                          style={{
+                            backgroundColor:
+                              answer.correct && showSolution
+                                ? '#00de0d'
+                                : CHART_COLORS[innerIndex % 12],
+                          }}
+                          className={twMerge(
+                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                            answer.correct && showSolution && 'text-black'
+                          )}
+                        >
+                          {String.fromCharCode(65 + innerIndex)}
                         </div>
-                        {currentQuestion.solutions.map((range, innerIndex) => (
-                          <div key={innerIndex}>
-                            [{range.min ?? '-∞'},{range.max ?? '+∞'}]
-                          </div>
-                        ))}
+                        <Markdown
+                          content={answer.value}
+                          className="w-[calc(100%-3rem)]"
+                        />
                       </div>
-                    )}
-                  </div>
-                )}
-                {currentQuestion.type === 'FREE_TEXT' &&
-                  currentQuestion.solutions &&
-                  showSolution && (
+                    ))}
+
+                  {currentQuestion.type === 'NUMERICAL' && (
                     <div>
-                      <div className="font-bold">Schlüsselwörter Lösung:</div>
-                      <ul>
-                        {currentQuestion.solutions.map(
-                          (keyword, innerIndex) => (
-                            <li key={innerIndex}>{`- ${keyword}`}</li>
-                          )
-                        )}
-                      </ul>
+                      <div className="font-bold">Erlaubter Antwortbereich:</div>
+                      <div>
+                        [{currentQuestion.restrictions!.min ?? '-∞'},
+                        {currentQuestion.restrictions!.max ?? '+∞'}]
+                      </div>
+                      {showSolution && currentQuestion.solutions && (
+                        <div>
+                          <div className="mt-2 font-bold">
+                            Korrekte Lösungsbereiche:
+                          </div>
+                          {currentQuestion.solutions.map(
+                            (range, innerIndex) => (
+                              <div key={innerIndex}>
+                                [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
+                  {currentQuestion.type === 'FREE_TEXT' &&
+                    currentQuestion.solutions &&
+                    showSolution && (
+                      <div>
+                        <div className="font-bold">Schlüsselwörter Lösung:</div>
+                        <ul>
+                          {currentQuestion.solutions.map(
+                            (keyword, innerIndex) => (
+                              <li key={innerIndex}>{`- ${keyword}`}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
           </div>
+        )}
+      </RadixTab.Content>
+      <RadixTab.Content value="leaderboard">
+        {' '}
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            LEADERBOARD PLACEHOLDER
+            {/* <SessionLeaderboard leaderboard={data.sessionLeaderboard} /> */}
+          </div>
         </div>
-        //   <div className="p-4 border-t">
-        //   <div className="max-w-5xl mx-auto text-xl">
-        //     <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
-        //   </div>
-        // </div>
-      )}
-      <Footer>
-        <div className="flex flex-row justify-between px-8 py-4 m-0">
+      </RadixTab.Content>
+
+      <Footer className='mx-0'>
+        <div className="flex flex-row justify-between p-4 pr-8 m-0">
           <div className="text-xl">
             Total Teilnehmende: {currentQuestion.participants}
           </div>
@@ -334,7 +341,7 @@ function Evaluation() {
           ></Switch>
         </div>
       </Footer>
-    </>
+    </RadixTab.Root>
   )
 }
 
