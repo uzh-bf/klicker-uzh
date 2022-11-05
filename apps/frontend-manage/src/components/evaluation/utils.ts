@@ -11,7 +11,7 @@ type baseData = {
   blockIx: number
   instanceIx: number
   content: string
-  type: string
+  type: 'SC' | 'MC' | 'KPRIM' | 'FREE_TEXT' | 'NUMERICAL'
   participants: number
   restrictions?: NumericalRestrictions // Only in NUMERICAL
   solutions?: NumericalSolutionRange[] | string[]

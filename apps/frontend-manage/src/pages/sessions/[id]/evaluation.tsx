@@ -1,6 +1,8 @@
 import { useQuery } from '@apollo/client'
 import {
   faCheck,
+  faComment,
+  faFaceSmile,
   faGamepad,
   faSync,
   IconDefinition,
@@ -36,7 +38,6 @@ function Evaluation() {
 
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
-  const [leaderboardActive, setLeaderboardActive] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState('')
   const [currentQuestion, setCurrentQuestion] = useState<
@@ -58,7 +59,6 @@ function Evaluation() {
         solutions: string[]
       } // free text question type
     | {
-        // TODO
         type: 'NUMERICAL'
         content: string
         blockIx: number
@@ -93,8 +93,6 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  console.log(data?.sessionEvaluation)
-
   const blocks = useMemo(() => {
     return data?.sessionEvaluation?.blocks ?? []
   }, [data])
@@ -124,8 +122,6 @@ function Evaluation() {
     return extractQuestions(instanceResults)
   }, [instanceResults])
 
-  console.log('extracted data', questions)
-
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
     return blocks[selectedBlock].tabData
@@ -146,7 +142,6 @@ function Evaluation() {
         ? question.id === selectedInstance
         : question.blockIx === selectedBlock
     )
-    console.log('currQuestion', currQuestion)
     setCurrentQuestion(currQuestion)
   }, [questions, chartType, selectedBlock, selectedInstance])
 
@@ -185,15 +180,9 @@ function Evaluation() {
               value={String(tab.value)}
               onClick={() => {
                 setSelectedBlock(idx)
-                setLeaderboardActive(false)
                 setSelectedInstance(blocks[idx].tabData[0].id)
               }}
-              className={twMerge(
-                'px-3 py-2 hover:bg-uzh-blue-20',
-                idx === selectedBlock
-                  ? 'border-b-2 border-solid border-uzh-blue-80'
-                  : 'border-b-2 border-transparent'
-              )}
+              className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
             >
               <div className="flex flex-row items-center gap-2">
                 <FontAwesomeIcon
@@ -206,15 +195,9 @@ function Evaluation() {
           ))}
           <RadixTab.Trigger
             value="leaderboard"
-            className={twMerge(
-              'px-3 py-2 hover:bg-uzh-blue-20',
-              leaderboardActive
-                ? 'border-b-2 border-solid border-uzh-blue-80'
-                : 'border-b-2 border-transparent'
-            )}
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
             onClick={() => {
               setSelectedBlock(-1)
-              setLeaderboardActive(true)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -224,10 +207,38 @@ function Evaluation() {
               <div>Leaderboard</div>
             </div>
           </RadixTab.Trigger>
+          <RadixTab.Trigger
+            value="feedbacks"
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            onClick={() => {
+              setSelectedBlock(-1)
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div>
+                <FontAwesomeIcon icon={faComment} />
+              </div>
+              <div>Feedbacks</div>
+            </div>
+          </RadixTab.Trigger>
+          <RadixTab.Trigger
+            value="confusion"
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            onClick={() => {
+              setSelectedBlock(-1)
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div>
+                <FontAwesomeIcon icon={faFaceSmile} />
+              </div>
+              <div>Confusion</div>
+            </div>
+          </RadixTab.Trigger>
         </div>
       </RadixTab.List>
-      <RadixTab.Content value={String(currentQuestion.blockIx)}>
-        {currentQuestion && selectedBlock !== -1 && (
+      {currentQuestion && (
+        <RadixTab.Content value={String(currentQuestion.blockIx)}>
           <div>
             <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
               <Markdown
@@ -317,30 +328,48 @@ function Evaluation() {
               </div>
             </div>
           </div>
-        )}
-      </RadixTab.Content>
+        </RadixTab.Content>
+      )}
       <RadixTab.Content value="leaderboard">
-        {' '}
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
             LEADERBOARD PLACEHOLDER
+            {/* // TODO: implement */}
             {/* <SessionLeaderboard leaderboard={data.sessionLeaderboard} /> */}
+          </div>
+        </div>
+      </RadixTab.Content>
+      <RadixTab.Content value="feedbacks">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            FEEDBACKS PLACEHOLDER
+            {/* // TODO: implement */}
+          </div>
+        </div>
+      </RadixTab.Content>
+      <RadixTab.Content value="confusion">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            CONFUSION PLACEHOLDER
+            {/* // TODO: implement */}
           </div>
         </div>
       </RadixTab.Content>
 
       <Footer className="mx-0">
-        <div className="flex flex-row justify-between p-4 pr-8 m-0">
-          <div className="text-xl">
-            Total Teilnehmende: {currentQuestion.participants}
+        {currentQuestion && (
+          <div className="flex flex-row justify-between p-4 pr-8 m-0">
+            <div className="text-xl">
+              Total Teilnehmende: {currentQuestion.participants}
+            </div>
+            <Switch
+              id="showSolution"
+              checked={showSolution}
+              label="Lösung anzeigen"
+              onCheckedChange={(newValue) => setShowSolution(newValue)}
+            ></Switch>
           </div>
-          <Switch
-            id="showSolution"
-            checked={showSolution}
-            label="Lösung anzeigen"
-            onCheckedChange={(newValue) => setShowSolution(newValue)}
-          ></Switch>
-        </div>
+        )}
       </Footer>
     </RadixTab.Root>
   )
