@@ -779,7 +779,7 @@ export const PushSubscription = objectType({
 export const GroupActivityDetails = objectType({
   name: 'GroupActivityDetails',
   definition(t) {
-    t.nonNull.int('id')
+    t.nonNull.id('id')
   },
 })
 
