@@ -19,6 +19,11 @@ const httpTrigger: AzureFunction = async function (
 
   // immediately return on GET -> healthcheck
   if (req.method === 'GET') {
+    await serviceBusSender.sendMessages({
+      sessionId: 'ping',
+
+    })
+
     return { status: 200 }
   }
 

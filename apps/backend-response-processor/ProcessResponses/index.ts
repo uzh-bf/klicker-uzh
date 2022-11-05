@@ -39,6 +39,10 @@ const serviceBusTrigger: AzureFunction = async function (
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
+  if (queueItem?.sessionId === 'ping') {
+    return { status: 200 }
+  }
+
   let redisMulti: ChainableCommander
   redisMulti = redisExec.multi()
 
