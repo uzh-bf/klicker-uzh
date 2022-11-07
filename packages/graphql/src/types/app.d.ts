@@ -37,6 +37,7 @@ type FreeTextQuestionData = QuestionData<
 type NumericalQuestionData = QuestionData<
   QuestionType.NUMERICAL,
   {
+    accuracy?: number
     restrictions?: {
       min?: number
       max?: number

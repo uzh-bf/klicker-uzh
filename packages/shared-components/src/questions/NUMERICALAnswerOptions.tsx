@@ -4,14 +4,22 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface NUMERICALAnswerOptionsProps {
+  disabled?: boolean
+  accuracy?: number
+  placeholder?: string
+  unit?: string
   valid: boolean
-  value: any
+  value: string | number
   min: number
   max: number
   onChange: (value: any) => any
 }
 
 export function NUMERICALAnswerOptions({
+  disabled,
+  accuracy,
+  placeholder,
+  unit,
   valid,
   value,
   min,
@@ -24,17 +32,28 @@ export function NUMERICALAnswerOptions({
         {typeof min === 'number' && <div className="mr-6">Min: {min}</div>}
         {typeof max === 'number' && <div>Max: {max}</div>}
       </div>
-      <input
-        type="text"
-        value={value}
-        className={twMerge(
-          'rounded focus:border focus:border-solid focus:border-uzh-blue-80',
-          !valid && 'border-red-600'
+      <div className="flex flex-row">
+        <input
+          disabled={disabled}
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          className={twMerge(
+            'rounded-l focus:border focus:border-solid focus:border-uzh-blue-80 flex-1',
+            !valid && 'border-red-600',
+            !unit && 'rounded-r',
+            disabled && 'bg-gray-200 text-gray-500'
+          )}
+          onChange={(e): void =>
+            onChange(e.target.value.replace(/[^0-9.-]/g, ''))
+          }
+        />
+        {unit && (
+          <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600">
+            {unit}
+          </div>
         )}
-        onChange={(e): void =>
-          onChange(e.target.value.replace(/[^0-9.-]/g, ''))
-        }
-      />
+      </div>
       {!valid && (
         <div className="text-black">
           <FontAwesomeIcon
@@ -42,7 +61,7 @@ export function NUMERICALAnswerOptions({
             className="mr-1.5 ml-0.5 text-red-700"
           />
           Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen
-          Bereich
+          Bereich.
         </div>
       )}
     </div>

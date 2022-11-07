@@ -11,6 +11,7 @@ module.exports = {
   },
   corePlugins: {
     preflight: false,
+    aspectRatio: false,
   },
   plugins: [
     require('tailwindcss-radix')({

@@ -6,33 +6,38 @@ import { QuestionType } from '@type/app'
 import { Button } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
 import { useMemo } from 'react'
+import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
 interface ChoiceOptionsProps {
+  disabled?: boolean
   choices: Choice[]
   isEvaluation?: boolean
+  isCompact?: boolean
   feedbacks: any
   response?: number[]
   onChange: (ix: number) => void
 }
 function ChoiceOptions({
+  disabled,
   choices,
   onChange,
   isEvaluation,
   feedbacks,
   response,
+  isCompact,
 }: ChoiceOptionsProps) {
   return (
-    <div className="space-y-2">
+    <div className={twMerge(isCompact ? 'flex flex-row gap-2' : 'space-y-2')}>
       {choices.map((choice) => (
         <div key={choice.value} className="w-full">
           <Button
-            disabled={isEvaluation}
+            disabled={disabled || isEvaluation}
             active={response?.includes(choice.ix)}
             className={twMerge(
               'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
               isEvaluation && 'text-gray-700',
-              isEvaluation &&
+              (disabled || isEvaluation) &&
                 response?.includes(choice.ix) &&
                 'border-gray-400 text-gray-800'
               // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
@@ -44,7 +49,7 @@ function ChoiceOptions({
               <Markdown content={choice.value} />
             </Button.Label>
           </Button>
-          {feedbacks?.[choice.ix] && (
+          {!isCompact && feedbacks?.[choice.ix] && (
             <div
               className={twMerge(
                 'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50'
@@ -75,36 +80,48 @@ function ChoiceOptions({
 }
 
 interface OptionsProps {
+  disabled?: boolean
   options: any
   questionType: QuestionType
   isEvaluation?: boolean
   feedbacks: any
   response: any
+  withGuidance?: boolean
+  isCompact?: boolean
+  isResponseValid: boolean
   onChangeResponse: (value: any) => void
 }
 
-function Options({
+export function Options({
+  disabled,
   options,
   questionType,
   isEvaluation,
   feedbacks,
   response,
+  isResponseValid,
   onChangeResponse,
+  withGuidance,
+  isCompact,
 }: OptionsProps) {
   switch (questionType) {
     case QuestionType.SC:
       return (
         <div>
-          <div className="mb-4 italic">
-            Wähle <span className="font-bold">eine</span> der folgenden
-            Optionen:
-          </div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              Wähle <span className="font-bold">eine</span> der folgenden
+              Optionen:
+            </div>
+          )}
           <ChoiceOptions
+            disabled={disabled}
             choices={options.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
             response={response}
             onChange={(ix) => onChangeResponse([ix])}
+            isCompact={isCompact}
           />
         </div>
       )
@@ -112,11 +129,14 @@ function Options({
     case QuestionType.MC:
       return (
         <div>
-          <div className="mb-4 italic">
-            Wähle <span className="font-bold">eine oder mehrere</span> der
-            folgenden Optionen:
-          </div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              Wähle <span className="font-bold">eine oder mehrere</span> der
+              folgenden Optionen:
+            </div>
+          )}
           <ChoiceOptions
+            disabled={disabled}
             choices={options.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
@@ -131,6 +151,7 @@ function Options({
                 }
               })
             }
+            isCompact={isCompact}
           />
         </div>
       )
@@ -138,10 +159,12 @@ function Options({
     case QuestionType.KPRIM:
       return (
         <div>
-          <div className="mb-4 italic">
-            Beurteile folgende Aussagen auf ihre{' '}
-            <span className="font-bold">Richtigkeit</span>:
-          </div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              Beurteile folgende Aussagen auf ihre{' '}
+              <span className="font-bold">Richtigkeit</span>:
+            </div>
+          )}
           <div className="space-y-1">
             {options.choices.map((choice: Choice) => {
               const correctAnswer =
@@ -165,7 +188,7 @@ function Options({
                             ? 'bg-green-200 text-green-700'
                             : 'bg-red-200 text-red-700')
                         }
-                        disabled={isEvaluation}
+                        disabled={disabled || isEvaluation}
                         active={response?.includes(choice.ix)}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
@@ -188,7 +211,7 @@ function Options({
                             ? 'bg-green-200 text-green-700'
                             : 'bg-red-200 text-red-700')
                         }
-                        disabled={isEvaluation}
+                        disabled={disabled || isEvaluation}
                         active={!response?.includes(choice.ix)}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
@@ -235,9 +258,40 @@ function Options({
         </div>
       )
 
+    case QuestionType.NUMERICAL:
+      return (
+        <div>
+          {withGuidance && (
+            <div className="mb-2 italic">
+              Gib eine <span className="font-bold">Zahl</span> ein
+              {options?.accuracy &&
+                ` (gerundet auf ${options.accuracy} Nachkommastellen)`}
+              :
+            </div>
+          )}
+          <NUMERICALAnswerOptions
+            disabled={disabled}
+            accuracy={options?.accuracy}
+            placeholder={options?.placeholder}
+            unit={options?.unit}
+            min={options?.restrictions?.min}
+            max={options?.restrictions?.max}
+            value={response}
+            onChange={onChangeResponse}
+            valid={isResponseValid}
+          />
+        </div>
+      )
+
     default:
       return null
   }
+}
+
+Options.defaultProps = {
+  withGuidance: true,
+  isCompact: false,
+  isResponseValid: true,
 }
 
 interface OptionsDisplayProps {

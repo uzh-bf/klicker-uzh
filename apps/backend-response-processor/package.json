@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-response-processor",
-  "version": "2.0.0-alpha.86",
+  "version": "2.0.0-alpha.90",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -31,7 +31,11 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
+<<<<<<< HEAD
     "@uzh-bf/design-system": "0.0.70",
+=======
+    "@uzh-bf/design-system": "0.0.73",
+>>>>>>> 00f9fbb1d7c5d01e84d6bd41af1abd5d59eed988
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.1",

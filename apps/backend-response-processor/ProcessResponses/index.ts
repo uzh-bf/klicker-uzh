@@ -39,6 +39,13 @@ const serviceBusTrigger: AzureFunction = async function (
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
+  if (queueItem?.sessionId === 'ping') {
+    await fetch(
+      'https://betteruptime.com/api/v1/heartbeat/pT3NjExsLvqufrtTGR3H15Mr'
+    )
+    return { status: 200 }
+  }
+
   let redisMulti: ChainableCommander
   redisMulti = redisExec.multi()
 

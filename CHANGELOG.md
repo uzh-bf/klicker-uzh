@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.90](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.89...v2.0.0-alpha.90) (2022-11-07)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove sample solution coloring on entries of evaluation ([57e2879](https://github.com/uzh-bf/klicker-uzh/commit/57e2879a374e6bb0e8f7353426e8e7de3989cabf))
+
+## [2.0.0-alpha.89](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.88...v2.0.0-alpha.89) (2022-11-07)
+
+
+### Bug Fixes
+
+* show unavailability of group activity and link to it from the group page ([3ea971a](https://github.com/uzh-bf/klicker-uzh/commit/3ea971adaab054b02a86784c6a9652fcb7c08ca3))
+
+## [2.0.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.87...v2.0.0-alpha.88) (2022-11-07)
+
+
+### Enhancements
+
+* **apps/backend-response-processor:** add a heartbeat when pinged ([cace206](https://github.com/uzh-bf/klicker-uzh/commit/cace2063088270360c685464d52a4cd8aa4c288a))
+
+## [2.0.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.86...v2.0.0-alpha.87) (2022-11-07)
+
+
+### Features
+
+* add group activities ([#3027](https://github.com/uzh-bf/klicker-uzh/issues/3027)) ([5224744](https://github.com/uzh-bf/klicker-uzh/commit/52247440dc492cfeb4a738f66653099bea397fc9))
+
+
+### Enhancements
+
+* basic live session creation form ([#3002](https://github.com/uzh-bf/klicker-uzh/issues/3002)) ([78afb74](https://github.com/uzh-bf/klicker-uzh/commit/78afb745b8ccaec9226687f0845b53bdf616c2cb))
+
+
+### Other
+
+* **packages/prisma:** seed update ([c03dd84](https://github.com/uzh-bf/klicker-uzh/commit/c03dd84c176eb7689a7813af87d5e0f7fa47a7a7))
+* prod release ([e38d0da](https://github.com/uzh-bf/klicker-uzh/commit/e38d0da00df5e4d0ce9e9958aa180a71404f9d69))
+* seed update ([d7c0d7f](https://github.com/uzh-bf/klicker-uzh/commit/d7c0d7f9b60fbb77a0dfec297c9aa3ec413ba1bc))
+* seed update ([689e66d](https://github.com/uzh-bf/klicker-uzh/commit/689e66d69fad75dc33c3f30ac89b40d65c6d23fa))
+* seed update for ami week 7 ([d1c2602](https://github.com/uzh-bf/klicker-uzh/commit/d1c26024265e74d48a80195cef40c98c8c8024ea))
+* seed update for ami week 7 ([f469852](https://github.com/uzh-bf/klicker-uzh/commit/f469852cda2896ae451d655975e67242e2d59711))
+* update local settings files with new queue name ([fa09602](https://github.com/uzh-bf/klicker-uzh/commit/fa09602c7260b1f8246762f3796a5fd1071fd247))
+
 ## [2.0.0-alpha.86](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.85...v2.0.0-alpha.86) (2022-10-31)
 
 

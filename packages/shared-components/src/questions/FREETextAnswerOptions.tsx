@@ -1,11 +1,13 @@
 import React from 'react'
 
 export interface FREETextAnswerOptionsProps {
-  maxLength: number
+  placeholder?: string
+  maxLength?: number
   onChange: (value: any) => any
 }
 
 export function FREETextAnswerOptions({
+  placeholder,
   maxLength,
   onChange,
 }: FREETextAnswerOptionsProps): React.ReactElement {
@@ -18,10 +20,13 @@ export function FREETextAnswerOptions({
         onChange={(e): void => onChange(e.target.value)}
         rows={3}
         maxLength={maxLength}
+        placeholder={placeholder}
       />
-      <div className="text-sm italic text-right">
-        (maximal {maxLength} Zeichen)
-      </div>
+      {maxLength && (
+        <div className="text-sm italic text-right">
+          (maximal {maxLength} Zeichen)
+        </div>
+      )}
     </div>
   )
 }

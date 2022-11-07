@@ -13,13 +13,16 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { ParticipantOther } from '../../../components/Participant'
 import { Podium } from '../../../components/Podium'
 import Tabs from '../../../components/Tabs'
 
+import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Link from 'next/link'
 import { useState } from 'react'
 import GroupVisualization from '../../../components/GroupVisualization'
 
@@ -173,13 +176,13 @@ function CourseOverview({ courseId }: any) {
 
           {data.participantGroups?.map((group) => (
             <Tabs.TabContent key={group.id} value={group.id}>
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-4">
                 <H3 className="flex flex-row justify-between">
                   <div>Gruppe {group.name}</div>
                   <div>{group.code}</div>
                 </H3>
 
-                <div className="flex flex-row flex-wrap gap-4 pt-2">
+                <div className="flex flex-row flex-wrap gap-4">
                   <div className="flex flex-col flex-1">
                     <GroupLeaderboard
                       courseId={courseId}
@@ -215,6 +218,23 @@ function CourseOverview({ courseId }: any) {
                   </div>
                   <GroupVisualization participants={group.participants} />
                 </div>
+
+                {data.getCourseOverviewData?.course.id ===
+                  '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2' && (
+                  <div className="mt-8">
+                    <H4>Gruppenaktivitäten</H4>
+                    <Link
+                      href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
+                    >
+                      <a className="inline-flex items-center gap-2 hover:text-orange-700">
+                        <FontAwesomeIcon icon={faExternalLink} />
+                        <span>
+                          Gruppenquest - 07.11.22 17:00 bis 14.11.22 10:00
+                        </span>
+                      </a>
+                    </Link>
+                  </div>
+                )}
               </div>
             </Tabs.TabContent>
           ))}

@@ -70,6 +70,8 @@ export const AuthSchema = {
     startSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     respondToQuestionInstance: { __authz: { rules: ['Allow'] } },
     updateGroupAverageScores: { __authz: { rules: ['Allow'] } },
+    startGroupActivity: { __authz: { rules: ['IsParticipant'] } },
+    submitGroupActivityDecisions: { __authz: { rules: ['IsParticipant'] } },
   },
   Query: {
     '*': { __authz: { rules: ['Allow'] } },
@@ -88,6 +90,7 @@ export const AuthSchema = {
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
+    groupActivityDetails: { __authz: { rules: ['IsParticipant'] } },
   },
   Subscription: {
     '*': { __authz: { rules: ['Allow'] } },
