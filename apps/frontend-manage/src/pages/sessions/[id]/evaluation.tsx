@@ -124,11 +124,9 @@ function Evaluation() {
 
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
-    return blocks[selectedBlock].tabData
-      ?.sort((a, b) => (a?.questionIx || 0) - (b?.questionIx || 0))
-      .map((question) => {
-        return { label: question?.name || '', value: question?.id || '' }
-      })
+    return blocks[selectedBlock].tabData?.map((question) => {
+      return { label: question?.name || '', value: question?.id || '' }
+    })
   }, [blocks, selectedBlock])
 
   useEffect(() => {
@@ -182,7 +180,10 @@ function Evaluation() {
                 setSelectedBlock(idx)
                 setSelectedInstance(blocks[idx].tabData[0].id)
               }}
-              className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+              className={twMerge(
+                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                idx === selectedBlock && 'border-solid border-uzh-blue-80'
+              )}
             >
               <div className="flex flex-row items-center gap-2">
                 <FontAwesomeIcon
@@ -195,9 +196,12 @@ function Evaluation() {
           ))}
           <RadixTab.Trigger
             value="leaderboard"
-            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            className={twMerge(
+              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+              selectedBlock === tabs.length && 'border-solid border-uzh-blue-80'
+            )}
             onClick={() => {
-              setSelectedBlock(-1)
+              setSelectedBlock(tabs.length)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -209,9 +213,13 @@ function Evaluation() {
           </RadixTab.Trigger>
           <RadixTab.Trigger
             value="feedbacks"
-            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            className={twMerge(
+              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+              selectedBlock === tabs.length + 1 &&
+                'border-solid border-uzh-blue-80'
+            )}
             onClick={() => {
-              setSelectedBlock(-1)
+              setSelectedBlock(tabs.length + 1)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -223,9 +231,13 @@ function Evaluation() {
           </RadixTab.Trigger>
           <RadixTab.Trigger
             value="confusion"
-            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            className={twMerge(
+              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+              selectedBlock === tabs.length + 2 &&
+                'border-solid border-uzh-blue-80'
+            )}
             onClick={() => {
-              setSelectedBlock(-1)
+              setSelectedBlock(tabs.length + 2)
             }}
           >
             <div className="flex flex-row items-center gap-2">
