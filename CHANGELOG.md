@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.91...v2.0.0-alpha.92) (2022-11-07)
+
+
+### Bug Fixes
+
+* add 20 seconds buffer at the end of scheduled block close ([19dd416](https://github.com/uzh-bf/klicker-uzh/commit/19dd41691dca93298aaf0dff50875ca79aaea035))
+
 ## [2.0.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.90...v2.0.0-alpha.91) (2022-11-07)
 
 
