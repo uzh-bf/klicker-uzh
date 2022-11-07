@@ -1,11 +1,11 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { FormikTextField, Tooltip } from '@uzh-bf/design-system'
+import { FormikTextField, ThemeContext, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { repeat } from 'ramda'
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Legend,
@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface EvaluationConfusionProps {
@@ -36,6 +37,7 @@ function MatchingEmoji({ value }: { value: number }) {
 }
 
 function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
+  const theme = useContext(ThemeContext)
   const xIntervalDefault = 120
   const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
   const runningWindowDefault = 3
@@ -134,10 +136,16 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
         <div className="ml-2">
           <Tooltip
             tooltip="Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende der Klicker-Session. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden."
-            tooltipStyle="max-w-[20%] md:max-w-[30%] text-sm opacity-100"
+            tooltipStyle="max-w-[20%] md:max-w-[30%] text-sm opacity-100 z-10"
             withArrow={false}
           >
-            <FontAwesomeIcon icon={faQuestion} size="lg" />
+            <FontAwesomeIcon
+              icon={faQuestion}
+              className={twMerge(
+                'w-3 h-3 p-1 mt-1 text-white rounded-full border border-solid border-white',
+                theme.primaryBgDark
+              )}
+            />
           </Tooltip>
         </div>
 
