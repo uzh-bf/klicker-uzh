@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.90...v2.0.0-alpha.91) (2022-11-07)
+
+
+### Bug Fixes
+
+* dates for group task, sizing of clue text ([f3816b2](https://github.com/uzh-bf/klicker-uzh/commit/f3816b2778b18c5cd0fc8eb328bbd7dbc1ebfb4c))
+
 ## [2.0.0-alpha.90](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.89...v2.0.0-alpha.90) (2022-11-07)
 
 
