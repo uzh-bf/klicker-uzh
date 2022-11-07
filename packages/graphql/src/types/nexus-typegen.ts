@@ -464,6 +464,7 @@ export interface NexusGenObjects {
   }
   SessionEvaluation: { // root type
     blocks?: NexusGenRootTypes['Block'][] | null; // [Block!]
+    feedbacks?: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
     isGamificationEnabled: boolean; // Boolean!
@@ -916,6 +917,7 @@ export interface NexusGenFieldTypes {
   }
   SessionEvaluation: { // field return type
     blocks: NexusGenRootTypes['Block'][] | null; // [Block!]
+    feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
     isGamificationEnabled: boolean; // Boolean!
@@ -1378,6 +1380,7 @@ export interface NexusGenFieldTypeNames {
   }
   SessionEvaluation: { // field return type name
     blocks: 'Block'
+    feedbacks: 'Feedback'
     id: 'ID'
     instanceResults: 'InstanceResults'
     isGamificationEnabled: 'Boolean'

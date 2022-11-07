@@ -1245,6 +1245,15 @@ export async function getSessionEvaluation(
           },
         },
       },
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      },
+      // confusionFeedbacks: true,
     },
   })
 
@@ -1265,11 +1274,10 @@ export async function getSessionEvaluation(
       activeInstanceIds,
     })
 
-    const { instanceResults, sessionLeaderboard, blockLeaderboard } =
-      await processCachedData({
-        cachedResults,
-        activeBlock: session.activeBlock,
-      })
+    const { instanceResults } = await processCachedData({
+      cachedResults,
+      activeBlock: session.activeBlock,
+    })
 
     activeInstanceResults = Object.entries(instanceResults).map(
       ([id, results]) => {
@@ -1359,5 +1367,7 @@ export async function getSessionEvaluation(
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],
+    feedbacks: session.feedbacks,
+    confusionFeedbacks: session.confusionFeedbacks,
   }
 }

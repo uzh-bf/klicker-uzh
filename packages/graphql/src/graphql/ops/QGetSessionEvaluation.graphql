@@ -72,6 +72,28 @@ query GetSessionEvaluation($id: ID!) {
       participants
       results
     }
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      resolvedAt
+      createdAt
+      responses {
+        id
+        content
+        positiveReactions
+        negativeReactions
+      }
+    }
+    # confusionFeedbacks {
+    #   timestamp
+    #   speed
+    #   difficulty
+    #   numberOfParticipants
+    # }
   }
   sessionLeaderboard(sessionId: $id) {
     id

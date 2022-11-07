@@ -565,6 +565,7 @@ enum SessionBlockStatus {
 
 type SessionEvaluation {
   blocks: [Block!]
+  feedbacks: [Feedback!]
   id: ID!
   instanceResults: [InstanceResults!]
   isGamificationEnabled: Boolean!

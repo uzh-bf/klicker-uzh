@@ -869,6 +869,7 @@ export const SessionEvaluation = objectType({
     t.list.nonNull.field('instanceResults', {
       type: InstanceResults,
     })
+    t.list.nonNull.field('feedbacks', { type: Feedback })
   },
 })
 
