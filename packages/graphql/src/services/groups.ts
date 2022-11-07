@@ -1,9 +1,9 @@
 import { LeaderboardType } from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
 import { pickRandom, round } from 'mathjs'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
-
 interface CreateParticipantGroupArgs {
   courseId: string
   name: string
@@ -329,13 +329,10 @@ export async function getGroupActivityDetails(
     return null
   }
 
-  // before or after the active date, return null
-  // if (
-  //   groupActivity.scheduledStartAt > new Date() ||
-  //   groupActivity.scheduledEndAt < new Date()
-  // ) {
-  //   return null
-  // }
+  // before the active date, return null
+  if (dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())) {
+    return null
+  }
 
   const activityInstance = await ctx.prisma.groupActivityInstance.findUnique({
     where: {
