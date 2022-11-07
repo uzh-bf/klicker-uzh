@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.93](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.92...v2.0.0-alpha.93) (2022-11-07)
+
+
+### Other
+
+* **apps/backend-responses:** log the request method ([1e42eb7](https://github.com/uzh-bf/klicker-uzh/commit/1e42eb7f81ddc70521f5a4d6403861afae95612f))
+
 ## [2.0.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.91...v2.0.0-alpha.92) (2022-11-07)
 
 
