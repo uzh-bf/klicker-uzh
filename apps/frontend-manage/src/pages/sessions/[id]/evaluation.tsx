@@ -21,6 +21,7 @@ import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
 } from 'shared-components/src/constants'
+import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
@@ -161,7 +162,7 @@ function Evaluation() {
               className={{
                 root: 'h-full z-20',
                 trigger:
-                  'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
+                  'shadow-sm rounded-none m-0 border-none hover:bg-uzh-blue-20',
               }}
               value={
                 selectedInstance === ''
@@ -342,15 +343,13 @@ function Evaluation() {
           </div>
         </RadixTab.Content>
       )}
-      <RadixTab.Content value="leaderboard">
+      {data.sessionLeaderboard && <RadixTab.Content value="leaderboard">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
-            LEADERBOARD PLACEHOLDER
-            {/* // TODO: implement */}
-            {/* <SessionLeaderboard leaderboard={data.sessionLeaderboard} /> */}
+            <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
           </div>
         </div>
-      </RadixTab.Content>
+      </RadixTab.Content>}
       <RadixTab.Content value="feedbacks">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
