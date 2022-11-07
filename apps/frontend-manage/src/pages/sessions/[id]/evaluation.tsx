@@ -117,9 +117,6 @@ function Evaluation() {
     [blocks]
   )
 
-  // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
-  // TODO: query confusion feedbacks and display them in the evaluation
-
   const questions = useMemo(() => {
     if (!instanceResults) return []
 
@@ -154,8 +151,8 @@ function Evaluation() {
 
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
-    <RadixTab.Root className="h-full">
-      <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11 print:hidden">
+    <RadixTab.Root className="flex flex-col h-full overflow-y-none">
+      <RadixTab.List className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-3">
             <div className="font-bold">Question:</div>
@@ -164,7 +161,7 @@ function Evaluation() {
               items={selectData || []}
               onChange={(newValue) => setSelectedInstance(newValue)}
               className={{
-                root: 'h-full z-20',
+                root: 'h-11 z-20',
                 trigger:
                   'shadow-sm rounded-none m-0 border-none hover:bg-uzh-blue-20',
               }}
@@ -261,159 +258,166 @@ function Evaluation() {
           )}
         </div>
       </RadixTab.List>
-      {currentQuestion && (
-        <RadixTab.Content value={String(currentQuestion.blockIx)}>
-          <div>
-            <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
-              <Markdown
-                className="flex flex-row content-between p-2"
-                content={currentQuestion.content}
-              />
-            </Prose>
 
-            <div className="flex flex-col flex-1 md:flex-row">
-              <div className="z-10 flex-1 order-2 md:order-1">
-                <Chart
-                  chartType={chartType}
-                  data={currentQuestion}
-                  showSolution={showSolution}
+      <div className="flex-1 overflow-y-auto">
+        {currentQuestion && (
+          <RadixTab.Content value={String(currentQuestion.blockIx)}>
+            <div>
+              <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
+                <Markdown
+                  className="flex flex-row content-between p-2"
+                  content={currentQuestion.content}
                 />
-              </div>
-              <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-                <div className="flex flex-col gap-2">
-                  {(currentQuestion.type === 'SC' ||
-                    currentQuestion.type === 'MC' ||
-                    currentQuestion.type === 'KPRIM') &&
-                    currentQuestion.answers.map((answer, innerIndex) => (
-                      <div
-                        key={currentQuestion.answers[innerIndex].value}
-                        className="flex flex-row"
-                      >
-                        <div
-                          // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                          style={{
-                            backgroundColor:
-                              answer.correct && showSolution
-                                ? '#00de0d'
-                                : CHART_COLORS[innerIndex % 12],
-                          }}
-                          className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                            answer.correct && showSolution && 'text-black'
-                          )}
-                        >
-                          {String.fromCharCode(65 + innerIndex)}
-                        </div>
-                        <Markdown
-                          content={answer.value}
-                          className="w-[calc(100%-3rem)]"
-                        />
-                      </div>
-                    ))}
+              </Prose>
 
-                  {currentQuestion.type === 'NUMERICAL' && (
-                    <div>
-                      <div className="font-bold">Erlaubter Antwortbereich:</div>
-                      <div>
-                        [{currentQuestion.restrictions!.min ?? '-∞'},
-                        {currentQuestion.restrictions!.max ?? '+∞'}]
-                      </div>
-                      {showSolution && currentQuestion.solutions && (
-                        <div>
-                          <div className="mt-2 font-bold">
-                            Korrekte Lösungsbereiche:
+              <div className="flex flex-col flex-1 md:flex-row">
+                <div className="z-10 flex-1 order-2 md:order-1">
+                  <Chart
+                    chartType={chartType}
+                    data={currentQuestion}
+                    showSolution={showSolution}
+                  />
+                </div>
+                <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
+                  <div className="flex flex-col gap-2">
+                    {(currentQuestion.type === 'SC' ||
+                      currentQuestion.type === 'MC' ||
+                      currentQuestion.type === 'KPRIM') &&
+                      currentQuestion.answers.map((answer, innerIndex) => (
+                        <div
+                          key={currentQuestion.answers[innerIndex].value}
+                          className="flex flex-row"
+                        >
+                          <div
+                            // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                            style={{
+                              backgroundColor:
+                                answer.correct && showSolution
+                                  ? '#00de0d'
+                                  : CHART_COLORS[innerIndex % 12],
+                            }}
+                            className={twMerge(
+                              'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                              answer.correct && showSolution && 'text-black'
+                            )}
+                          >
+                            {String.fromCharCode(65 + innerIndex)}
                           </div>
-                          {currentQuestion.solutions.map(
-                            (range, innerIndex) => (
-                              <div key={innerIndex}>
-                                [{range.min ?? '-∞'},{range.max ?? '+∞'}]
-                              </div>
-                            )
-                          )}
+                          <Markdown
+                            content={answer.value}
+                            className="w-[calc(100%-3rem)]"
+                          />
                         </div>
-                      )}
-                    </div>
-                  )}
-                  {currentQuestion.type === 'FREE_TEXT' &&
-                    currentQuestion.solutions &&
-                    showSolution && (
+                      ))}
+
+                    {currentQuestion.type === 'NUMERICAL' && (
                       <div>
-                        <div className="font-bold">Schlüsselwörter Lösung:</div>
-                        <ul>
-                          {currentQuestion.solutions.map(
-                            (keyword, innerIndex) => (
-                              <li key={innerIndex}>{`- ${keyword}`}</li>
-                            )
-                          )}
-                        </ul>
+                        <div className="font-bold">
+                          Erlaubter Antwortbereich:
+                        </div>
+                        <div>
+                          [{currentQuestion.restrictions!.min ?? '-∞'},
+                          {currentQuestion.restrictions!.max ?? '+∞'}]
+                        </div>
+                        {showSolution && currentQuestion.solutions && (
+                          <div>
+                            <div className="mt-2 font-bold">
+                              Korrekte Lösungsbereiche:
+                            </div>
+                            {currentQuestion.solutions.map(
+                              (range, innerIndex) => (
+                                <div key={innerIndex}>
+                                  [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
+                    {currentQuestion.type === 'FREE_TEXT' &&
+                      currentQuestion.solutions &&
+                      showSolution && (
+                        <div>
+                          <div className="font-bold">
+                            Schlüsselwörter Lösung:
+                          </div>
+                          <ul>
+                            {currentQuestion.solutions.map(
+                              (keyword, innerIndex) => (
+                                <li key={innerIndex}>{`- ${keyword}`}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
                 </div>
               </div>
             </div>
+          </RadixTab.Content>
+        )}
+        <RadixTab.Content value="leaderboard">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
+                <div className="mt-6">
+                  <SessionLeaderboard
+                    leaderboard={data.sessionLeaderboard}
+                    className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
+                  />
+                </div>
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Bisher waren keine Teilnehmenden während dieser Session
+              angemeldet und haben Punkte gesammelt."
+                />
+              )}
+            </div>
           </div>
         </RadixTab.Content>
-      )}
-      <RadixTab.Content value="leaderboard">
-        <div className="p-4 border-t">
-          <div className="max-w-5xl mx-auto text-xl">
-            {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
-              <div className="mt-6">
-                <SessionLeaderboard
-                  leaderboard={data.sessionLeaderboard}
-                  className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
+
+        <RadixTab.Content value="feedbacks">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionEvaluation?.feedbacks &&
+              data.sessionEvaluation?.feedbacks.length > 0 ? (
+                <EvaluationFeedbacks
+                  feedbacks={data.sessionEvaluation?.feedbacks}
                 />
-              </div>
-            ) : (
-              <UserNotification
-                className="text-lg"
-                notificationType="error"
-                message="Bisher waren keine Teilnehmenden während dieser Session
-              angemeldet und haben Punkte gesammelt."
-              />
-            )}
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Diese Session enthält bisher keine Feedbacks."
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </RadixTab.Content>
+        </RadixTab.Content>
+        <RadixTab.Content value="confusion">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionEvaluation?.confusionFeedbacks &&
+              data.sessionEvaluation?.confusionFeedbacks.length > 0 ? (
+                <EvaluationConfusion
+                  confusionTS={data.sessionEvaluation?.confusionFeedbacks}
+                />
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Diese Session enthält bisher keine Confusion Feedbacks."
+                />
+              )}
+            </div>
+          </div>
+        </RadixTab.Content>
+      </div>
 
-      <RadixTab.Content value="feedbacks">
-        <div className="p-4 border-t">
-          <div className="max-w-5xl mx-auto text-xl">
-            {data.sessionEvaluation?.feedbacks &&
-            data.sessionEvaluation?.feedbacks.length > 0 ? (
-              <EvaluationFeedbacks
-                feedbacks={data.sessionEvaluation?.feedbacks}
-              />
-            ) : (
-              <UserNotification
-                className="text-lg"
-                notificationType="error"
-                message="Diese Session enthält bisher keine Feedbacks."
-              />
-            )}
-          </div>
-        </div>
-      </RadixTab.Content>
-      <RadixTab.Content value="confusion">
-        <div className="p-4 border-t">
-          <div className="max-w-5xl mx-auto text-xl">
-            {data.sessionEvaluation?.confusionFeedbacks &&
-            data.sessionEvaluation?.confusionFeedbacks.length > 0 ? (
-              <EvaluationConfusion
-                confusionTS={data.sessionEvaluation?.confusionFeedbacks}
-              />
-            ) : (
-              <UserNotification
-                className="text-lg"
-                notificationType="error"
-                message="Diese Session enthält bisher keine Confusion Feedbacks."
-              />
-            )}
-          </div>
-        </div>
-      </RadixTab.Content>
-
-      <Footer className="mx-0">
+      <Footer className="relative flex-none h-18">
         {currentQuestion && (
           <div className="flex flex-row justify-between p-4 pr-8 m-0">
             <div className="text-xl">
@@ -424,7 +428,7 @@ function Evaluation() {
               checked={showSolution}
               label="Lösung anzeigen"
               onCheckedChange={(newValue) => setShowSolution(newValue)}
-            ></Switch>
+            />
           </div>
         )}
       </Footer>

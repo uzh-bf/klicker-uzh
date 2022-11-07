@@ -14,7 +14,7 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
   return (
     <footer
       className={twMerge(
-        'absolute bottom-0 w-full -ml-4 bg-slate-100 print:hidden ',
+        'absolute bottom-0 w-full bg-slate-100 print:hidden',
         className
       )}
     >
