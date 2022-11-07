@@ -177,6 +177,31 @@ export const QuestionData = interfaceType({
   },
 })
 
+export const EvaluationData = interfaceType({
+  name: 'EvaluationData',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('type')
+    t.nonNull.string('content')
+  },
+  resolveType: (item) => {
+    if (
+      item.type === DB.QuestionType.SC ||
+      item.type === DB.QuestionType.MC ||
+      item.type === DB.QuestionType.KPRIM
+    ) {
+      return 'ChoicesEvaluationData'
+    } else if (item.type === DB.QuestionType.NUMERICAL) {
+      return 'NumericalEvaluationData'
+    } else if (item.type === DB.QuestionType.FREE_TEXT) {
+      return 'FreeTextEvaluationData'
+    }
+    return null
+  },
+})
+
 export const Tag = objectType({
   name: 'Tag',
   definition(t) {
@@ -209,6 +234,17 @@ export const ChoicesQuestionData = objectType({
   name: 'ChoicesQuestionData',
   definition(t) {
     t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: ChoicesQuestionOptions,
+    })
+  },
+})
+
+export const ChoicesEvaluationData = objectType({
+  name: 'ChoicesEvaluationData',
+  definition(t) {
+    t.implements(EvaluationData)
 
     t.nonNull.field('options', {
       type: ChoicesQuestionOptions,
@@ -274,6 +310,20 @@ export const NumericalQuestionData = objectType({
   },
 })
 
+export const NumericalEvaluationData = objectType({
+  name: 'NumericalEvaluationData',
+  definition(t) {
+    t.implements(EvaluationData)
+
+    t.nonNull.field('options', {
+      type: NumericalQuestionOptions,
+    })
+    t.field('statistics', {
+      type: Statistics,
+    })
+  },
+})
+
 export const FreeTextRestrictions = objectType({
   name: 'FreeTextRestrictions',
   definition(t) {
@@ -295,6 +345,17 @@ export const FreeTextQuestionData = objectType({
   name: 'FreeTextQuestionData',
   definition(t) {
     t.implements(QuestionData)
+
+    t.nonNull.field('options', {
+      type: FreeTextQuestionOptions,
+    })
+  },
+})
+
+export const FreeTextEvaluationData = objectType({
+  name: 'FreeTextEvaluationData',
+  definition(t) {
+    t.implements(EvaluationData)
 
     t.nonNull.field('options', {
       type: FreeTextQuestionOptions,
@@ -764,7 +825,7 @@ export const InstanceResults = objectType({
     })
 
     t.nonNull.field('questionData', {
-      type: QuestionData,
+      type: EvaluationData,
     })
 
     t.nonNull.int('participants')
@@ -780,17 +841,17 @@ export const TabData = objectType({
   definition(t) {
     t.nonNull.id('id')
     t.nonNull.int('questionIx')
-    t.string('name')
+    t.nonNull.string('name')
     t.nonNull.string('status')
   },
 })
 
-export const Blocks = objectType({
-  name: 'Blocks',
+export const Block = objectType({
+  name: 'Block',
   definition(t) {
     t.nonNull.int('blockIx')
     t.nonNull.string('blockStatus')
-    t.list.field('tabData', {
+    t.list.nonNull.field('tabData', {
       type: TabData,
     })
   },
@@ -800,8 +861,8 @@ export const SessionEvaluation = objectType({
   name: 'SessionEvaluation',
   definition(t) {
     t.nonNull.id('id')
-    t.list.field('blocks', {
-      type: Blocks,
+    t.list.nonNull.field('blocks', {
+      type: Block,
     })
     t.list.nonNull.field('instanceResults', {
       type: InstanceResults,

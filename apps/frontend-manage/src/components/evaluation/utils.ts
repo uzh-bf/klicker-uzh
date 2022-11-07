@@ -1,31 +1,29 @@
 import {
   Choice,
-  GetSessionEvaluationQuery,
+  InstanceResults,
   NumericalRestrictions,
   NumericalSolutionRange,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
 type baseData = {
+  id: string
   blockIx: number
   instanceIx: number
   content: string
-  type: string
+  type: 'SC' | 'MC' | 'KPRIM' | 'FREE_TEXT' | 'NUMERICAL'
   participants: number
   restrictions?: NumericalRestrictions // Only in NUMERICAL
-  solutions?: {
-    solutionRanges?: NumericalSolutionRange[] // Only in NUMERICAL
-    freeTextSolutions?: string[] // Only in FREE_TEXT
-  }
+  solutions?: NumericalSolutionRange[] | string[]
 }
 
-export function extractQuestions(data: GetSessionEvaluationQuery) {
-  if (!data.sessionEvaluation?.instanceResults) return []
-  console.log('DATA', data)
+export function extractQuestions(instanceResults: InstanceResults[]) {
+  if (!instanceResults) return []
 
-  return data.sessionEvaluation.instanceResults.map((instance) => {
+  return instanceResults.map((instance) => {
     const questionType = instance.questionData.type
     const baseData: baseData = {
+      id: instance.id,
       blockIx: instance.blockIx,
       instanceIx: instance.instanceIx,
       content: instance.questionData.content,
@@ -51,8 +49,7 @@ export function extractQuestions(data: GetSessionEvaluationQuery) {
       }
       baseData.solutions = {}
       if (instance.questionData.options.solutionRanges) {
-        baseData.solutions.solutionRanges =
-          instance.questionData.options.solutionRanges
+        baseData.solutions = instance.questionData.options.solutionRanges
       }
       answers = Object.values(instance.results).map((answer) => ({
         value: answer.value,
@@ -61,8 +58,7 @@ export function extractQuestions(data: GetSessionEvaluationQuery) {
     } else if (instance.questionData.type === 'FREE_TEXT') {
       baseData.solutions = {}
       if (instance.questionData.options.solutions) {
-        baseData.solutions.freeTextSolutions =
-          instance.questionData.options.solutions
+        baseData.solutions = instance.questionData.options.solutions
       }
       answers = Object.values(instance.results).map((answer) => ({
         value: answer.value,

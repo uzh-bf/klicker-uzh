@@ -48,16 +48,16 @@ input AvatarSettingsInput {
   skinTone: String!
 }
 
+type Block {
+  blockIx: Int!
+  blockStatus: String!
+  tabData: [TabData!]
+}
+
 input BlockInput {
   questionIds: [Int!]!
   randomSelection: Int
   timeLimit: Int
-}
-
-type Blocks {
-  blockIx: Int!
-  blockStatus: String!
-  tabData: [TabData]
 }
 
 type Choice {
@@ -73,6 +73,14 @@ input ChoiceInput {
   feedback: String
   ix: Int!
   value: String!
+}
+
+type ChoicesEvaluationData implements EvaluationData {
+  content: String!
+  id: Int!
+  name: String!
+  options: ChoicesQuestionOptions!
+  type: String!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -119,6 +127,13 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTime
 
+interface EvaluationData {
+  content: String!
+  id: Int!
+  name: String!
+  type: String!
+}
+
 type Feedback {
   content: String!
   createdAt: DateTime
@@ -139,6 +154,14 @@ type FeedbackResponse {
   negativeReactions: Int!
   positiveReactions: Int!
   resolvedAt: DateTime
+}
+
+type FreeTextEvaluationData implements EvaluationData {
+  content: String!
+  id: Int!
+  name: String!
+  options: FreeTextQuestionOptions!
+  type: String!
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -227,7 +250,7 @@ type InstanceResults {
   id: ID!
   instanceIx: Int!
   participants: Int!
-  questionData: QuestionData!
+  questionData: EvaluationData!
   results: JSONObject!
   status: SessionBlockStatus!
 }
@@ -313,6 +336,15 @@ type Mutation {
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
+}
+
+type NumericalEvaluationData implements EvaluationData {
+  content: String!
+  id: Int!
+  name: String!
+  options: NumericalQuestionOptions!
+  statistics: Statistics
+  type: String!
 }
 
 type NumericalQuestionData implements QuestionData {
@@ -532,7 +564,7 @@ enum SessionBlockStatus {
 }
 
 type SessionEvaluation {
-  blocks: [Blocks]
+  blocks: [Block!]
   id: ID!
   instanceResults: [InstanceResults!]
 }
@@ -580,7 +612,7 @@ input SubscriptionObjectInput {
 
 type TabData {
   id: ID!
-  name: String
+  name: String!
   questionIx: Int!
   status: String!
 }

@@ -1,7 +1,3 @@
-import {
-  NumericalRestrictions,
-  NumericalSolutionRange,
-} from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import BarChart from './BarChart'
 import Histogram from './Histogram'
@@ -10,19 +6,34 @@ import Wordcloud from './Wordcloud'
 
 interface ChartProps {
   chartType: string
-  data: {
-    answers: any
-    blockIx: number
-    instanceIx: number
-    content: string
-    type: string
-    participants: number
-    restrictions?: NumericalRestrictions // Only in NUMERICAL
-    solutions?: {
-      solutionRanges?: NumericalSolutionRange[] // Only in NUMERICAL
-      freeTextSolutions?: string[] // Only in FREE_TEXT
-    }
-  }[]
+  data:
+    | {
+        type: 'SC' | 'MC' | 'KPRIM'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; correct: boolean; count: number }[]
+      } // choices question types
+    | {
+        type: 'FREE_TEXT'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        solutions: string[]
+      } // free text question type
+    | {
+        type: 'NUMERICAL'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        restrictions: { min?: number; max?: number }
+        solutions: { min?: number; max?: number }[]
+      }
 
   showSolution: boolean
 }

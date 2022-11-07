@@ -24,7 +24,7 @@ query GetSessionEvaluation($id: ID!) {
         type
         content
 
-        ... on ChoicesQuestionData {
+        ... on ChoicesEvaluationData {
           options {
             choices {
               ix
@@ -35,7 +35,7 @@ query GetSessionEvaluation($id: ID!) {
           }
         }
 
-        ... on NumericalQuestionData {
+        ... on NumericalEvaluationData {
           statistics {
             max
             mean
@@ -57,7 +57,7 @@ query GetSessionEvaluation($id: ID!) {
           }
         }
 
-        ... on FreeTextQuestionData {
+        ... on FreeTextEvaluationData {
           options {
             restrictions {
               maxLength

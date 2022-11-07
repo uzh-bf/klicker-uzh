@@ -1,23 +1,26 @@
 import { useQuery } from '@apollo/client'
 import {
   faCheck,
+  faComment,
+  faFaceSmile,
   faGamepad,
   faSync,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSessionEvaluationDocument,
+  GetSessionEvaluationQuery,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { groupBy } from 'ramda'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
 } from 'shared-components/src/constants'
-import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
@@ -35,15 +38,54 @@ function Evaluation() {
 
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
-  const [leaderboardActive, setLeaderboardActive] = useState(false)
-
   const [showSolution, setShowSolution] = useState(false)
-  const [activeBlock, setActiveBlock] = useState<number | string>(0)
-  const [activeInstance, setActiveInstance] = useState(0)
-  const [currentQuestion, setCurrentQuestion] = useState(undefined)
   const [chartType, setChartType] = useState('')
+  const [currentQuestion, setCurrentQuestion] = useState<
+    | {
+        type: 'SC' | 'MC' | 'KPRIM'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; correct: boolean; count: number }[]
+      } // choices question types
+    | {
+        type: 'FREE_TEXT'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        solutions: string[]
+      } // free text question type
+    | {
+        type: 'NUMERICAL'
+        content: string
+        blockIx: number
+        instanceIx: number
+        participants: number
+        answers: { value: string; count: number }[]
+        restrictions: { min?: number; max?: number }
+        solutions: { min?: number; max?: number }[]
+      } // numerical text question type
+  >({
+    type: 'SC',
+    content: '',
+    blockIx: 0,
+    instanceIx: 0,
+    participants: 0,
+    answers: [],
+  })
 
-  const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
+  const {
+    data,
+    loading,
+    error,
+  }: {
+    data: GetSessionEvaluationQuery | undefined
+    loading: any
+    error?: any
+  } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -51,268 +93,152 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
-  // TODO: query confusion feedbacks and display them in the evaluation
-
-  // TODO: move to backend service and directly deliver this data to the client
-  // returns an array of blocks with the blockId and question instances
   const blocks = useMemo(() => {
-    const tabs = data?.sessionEvaluation?.instanceResults?.map((instance) => ({
-      id: instance.id,
-      blockIx: instance.blockIx,
-      instanceOrder: instance.instanceIx,
-      title: instance.questionData.name,
-      status: instance.status,
-    }))
-
-    if (!data || !tabs) return []
-
-    return Object.entries(groupBy((tab) => tab.blockIx.toString(), tabs)).map(
-      ([key, value]) => ({
-        blockId: key,
-        questions: value,
-      })
-    )
+    return data?.sessionEvaluation?.blocks ?? []
   }, [data])
 
-  console.log('blocks', blocks)
+  const instanceResults = useMemo(() => {
+    return data?.sessionEvaluation?.instanceResults ?? []
+  }, [data])
 
   const tabs = useMemo(
     () =>
       blocks.map((block) => {
         return {
-          label: 'Block ' + String(parseInt(block.blockId) + 1),
-          value: block.blockId,
+          label: 'Block ' + String(block.blockIx + 1),
+          value: block.blockIx,
         }
       }),
     [blocks]
   )
-  console.log('tabs', tabs)
 
-  // TODO: remove
-  const { groupedTabs } = useMemo(() => {
-    const tabs = data?.sessionEvaluation?.instanceResults?.map(
-      (instance, index) => ({
-        id: instance.id,
-        blockIx: instance.blockIx,
-        instanceIx: instance.instanceIx,
-        value: 'tab' + index,
-        title: instance.questionData.name,
-        status: instance.status,
-        label: instance.questionData.name,
-      })
-    )
-
-    if (!data || !tabs) return {}
-
-    const groupedTabs = Object.entries(
-      groupBy((tab) => tab.blockIx.toString(), tabs)
-    )
-
-    return { tabs, groupedTabs }
-  }, [data])
+  // TODO: query feedbacks and display them in the evaluation / ensure that they are delivered correctly if already implemented
+  // TODO: query confusion feedbacks and display them in the evaluation
 
   const questions = useMemo(() => {
-    if (!data) return []
-    return extractQuestions(data)
-  }, [data])
+    if (!instanceResults) return []
+
+    // TODO: possibly replace / rewrite if requested
+    return extractQuestions(instanceResults)
+  }, [instanceResults])
+
+  const selectData = useMemo(() => {
+    if (!blocks || !blocks[selectedBlock]) return []
+    return blocks[selectedBlock].tabData
+      ?.sort((a, b) => (a?.questionIx || 0) - (b?.questionIx || 0))
+      .map((question) => {
+        return { label: question?.name || '', value: question?.id || '' }
+      })
+  }, [blocks, selectedBlock])
+
+  useEffect(() => {
+    if (questions.length === 0) return
+
+    if (chartType === '') {
+      setChartType(ACTIVE_CHART_TYPES[questions[0].type][0].value)
+    }
+    const currQuestion = questions?.find((question) =>
+      selectedInstance !== ''
+        ? question.id === selectedInstance
+        : question.blockIx === selectedBlock
+    )
+    setCurrentQuestion(currQuestion)
+  }, [questions, chartType, selectedBlock, selectedInstance])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  // set initial chart type after data is present
-  if (chartType === '') {
-    const defaultChartType =
-      ACTIVE_CHART_TYPES[
-        data.sessionEvaluation.instanceResults[0].questionData.type
-      ][0].value
-    setChartType(defaultChartType)
-  }
-
-  // set initial question when data is present
-  if (currentQuestion === undefined) {
-    const currQuestion = questions?.find(
-      (question) => question.blockIx === 0 && question.instanceIx === 0
-    )
-    setCurrentQuestion(currQuestion)
-  }
-
-  const onQuestionChange = (newIndex: string, blockIndex: string) => {
-    setActiveBlock(Number(blockIndex))
-    setActiveInstance(Number(newIndex))
-    const currQuestion = questions?.find(
-      (question) =>
-        question.blockIx === Number(blockIndex) &&
-        question.instanceIx === Number(newIndex)
-    )
-    setCurrentQuestion(currQuestion)
-
-    // Make sure to only display chart type that is available for current question type
-    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
-      (type) => type.value
-    )
-    if (!possibleChartTypes.includes(chartType)) {
-      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
-    }
-  }
-
-  const onBlockChange = (blockIndex: string) => {
-    setActiveBlock(Number(blockIndex))
-    setActiveInstance(0) // This causes weird behavior: when clicking on the select of another tab than the currently active one,
-    // this function is called and a new tab + new question is selected (hence the displayed chart changes)
-    // before a new question is selected via the select
-    // but not having it causes weir behavior as well
-
-    // If we reset the instance, we also need to change the current question
-    const currQuestion = questions?.find(
-      (question) =>
-        question.blockIx === Number(blockIndex) && question.instanceIx === 0
-    )
-    // Make sure to only display chart type that is available for current question type
-    const possibleChartTypes = ACTIVE_CHART_TYPES[currQuestion.type].map(
-      (type) => type.value
-    )
-    if (!possibleChartTypes.includes(chartType)) {
-      setChartType(ACTIVE_CHART_TYPES[currQuestion.type][0].value)
-    }
-  }
-
-  console.log('current Question', currentQuestion)
-
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
-    <>
-      <RadixTab.Root>
-        <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid">
-          {blocks[selectedBlock] && (
-            <div className="flex flex-row items-center gap-3 my-auto">
-              <div className="font-bold">Question:</div>
+    <RadixTab.Root className="h-full">
+      <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
+        {blocks && blocks[selectedBlock] && (
+          <div className="flex flex-row items-center gap-3">
+            <div className="font-bold">Question:</div>
 
-              <Select
-                items={blocks[selectedBlock].questions
-                  .sort((a, b) => a.instanceOrder - b.instanceOrder)
-                  .map((question) => {
-                    return { label: question.title, value: question.id }
-                  })}
-                onChange={(newValue) => setSelectedInstance(newValue)}
-                className={{
-                  trigger: 'shadow-sm border-uzh-blue-80',
-                }}
-                value={
-                  selectedInstance === ''
-                    ? blocks[selectedBlock].questions[0].id
-                    : selectedInstance
-                }
-              />
-            </div>
-          )}
-          <div className="ml-auto">
-            {tabs.map((tab, idx) => (
-              <RadixTab.Trigger
-                key={tab.value}
-                value={tab.value}
-                onClick={() => {
-                  setSelectedBlock(idx)
-                  setLeaderboardActive(false)
-                  setSelectedInstance(blocks[idx].questions[0].id)
-                }}
-                className={twMerge(
-                  'px-3 py-2 hover:bg-uzh-blue-20',
-                  idx === selectedBlock
-                    ? 'border-b-2 border-solid border-uzh-blue-80'
-                    : 'border-b-2 border-transparent'
-                )}
-              >
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon
-                    size="xs"
-                    icon={INSTANCE_STATUS_ICON[blocks[idx].questions[0].status]}
-                  />
-                  <div>{tab.label}</div>
-                </div>
-              </RadixTab.Trigger>
-            ))}
-            <RadixTab.Trigger
-              value="leaderboard"
-              className={twMerge(
-                'px-3 py-2 hover:bg-uzh-blue-20',
-                leaderboardActive
-                  ? 'border-b-2 border-solid border-uzh-blue-80'
-                  : 'border-b-2 border-transparent'
-              )}
-              onClick={() => {
-                setSelectedBlock(-1)
-                setLeaderboardActive(true)
+            <Select
+              items={selectData || []}
+              onChange={(newValue) => setSelectedInstance(newValue)}
+              className={{
+                root: 'h-full z-20',
+                trigger:
+                  'shadow-sm rounded-none m-0 border-none bg-uzh-blue-20 hover:bg-uzh-blue-40',
               }}
+              value={
+                selectedInstance === ''
+                  ? blocks[selectedBlock].tabData[0].id
+                  : selectedInstance
+              }
+            />
+          </div>
+        )}
+        <div className="ml-auto">
+          {tabs.map((tab, idx) => (
+            <RadixTab.Trigger
+              key={tab.value}
+              value={String(tab.value)}
+              onClick={() => {
+                setSelectedBlock(idx)
+                setSelectedInstance(blocks[idx].tabData[0].id)
+              }}
+              className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
             >
               <div className="flex flex-row items-center gap-2">
-                <div>
-                  <FontAwesomeIcon icon={faGamepad} />
-                </div>
-                <div>Leaderboard</div>
+                <FontAwesomeIcon
+                  size="xs"
+                  icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
+                />
+                <div>{tab.label}</div>
               </div>
-            </RadixTab.Trigger>
-          </div>
-        </RadixTab.List>
-      </RadixTab.Root>
-      <RadixTab.Root
-        value={`tab-${activeBlock}`}
-        className="flex flex-col h-full"
-      >
-        <RadixTab.List className="flex flex-row m-2">
-          {groupedTabs?.map(([blockIx, items], groupIx) => (
-            <RadixTab.Trigger
-              key={`tab-trigger-${blockIx}`}
-              value={'tab' + blockIx}
-              className={twMerge(
-                'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
-              )}
-              onClick={() => {
-                onBlockChange(blockIx)
-              }}
-            >
-              <div className="flex flex-row items-center gap-1 text-sm text-left">
-                <div>
-                  <FontAwesomeIcon
-                    size="xs"
-                    icon={INSTANCE_STATUS_ICON[items[0].status]}
-                  />
-                </div>
-                <div>Block {Number(blockIx) + 1}</div>
-              </div>
-              {/* <Select
-                items={items.map((item) => ({
-                  value: String(item.instanceIx),
-                  label: item.label,
-                }))}
-                onChange={(newIx) => {
-                  onQuestionChange(newIx, blockIx)
-                }}
-              /> */}
             </RadixTab.Trigger>
           ))}
-
           <RadixTab.Trigger
-            key="tab-trigger-lb"
-            value="tab-lb"
-            className={twMerge(
-              'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
-            )}
+            value="leaderboard"
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
             onClick={() => {
-              setActiveBlock('lb')
+              setSelectedBlock(-1)
             }}
           >
-            <div className="flex flex-row items-center gap-1 text-sm text-left">
+            <div className="flex flex-row items-center gap-2">
               <div>
                 <FontAwesomeIcon icon={faGamepad} />
               </div>
               <div>Leaderboard</div>
             </div>
           </RadixTab.Trigger>
-        </RadixTab.List>
-
-        {currentQuestion && (
+          <RadixTab.Trigger
+            value="feedbacks"
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            onClick={() => {
+              setSelectedBlock(-1)
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div>
+                <FontAwesomeIcon icon={faComment} />
+              </div>
+              <div>Feedbacks</div>
+            </div>
+          </RadixTab.Trigger>
+          <RadixTab.Trigger
+            value="confusion"
+            className="px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 focus:border-solid focus:border-uzh-blue-80"
+            onClick={() => {
+              setSelectedBlock(-1)
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div>
+                <FontAwesomeIcon icon={faFaceSmile} />
+              </div>
+              <div>Confusion</div>
+            </div>
+          </RadixTab.Trigger>
+        </div>
+      </RadixTab.List>
+      {currentQuestion && (
+        <RadixTab.Content value={String(currentQuestion.blockIx)}>
           <div>
             <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
               <Markdown
@@ -340,7 +266,7 @@ function Evaluation() {
                         className="flex flex-row"
                       >
                         <div
-                          // TODO: use single color for answer options to highlight correct one? or some other approach to distinguish better
+                          // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
                           style={{
                             backgroundColor:
                               answer.correct && showSolution
@@ -368,30 +294,29 @@ function Evaluation() {
                         [{currentQuestion.restrictions!.min ?? '-∞'},
                         {currentQuestion.restrictions!.max ?? '+∞'}]
                       </div>
-                      {showSolution &&
-                        currentQuestion.solutions!.solutionRanges && (
-                          <div>
-                            <div className="mt-2 font-bold">
-                              Korrekte Lösungsbereiche:
-                            </div>
-                            {currentQuestion.solutions!.solutionRanges.map(
-                              (range, innerIndex) => (
-                                <div key={innerIndex}>
-                                  [{range.min ?? '-∞'},{range.max ?? '+∞'}]
-                                </div>
-                              )
-                            )}
+                      {showSolution && currentQuestion.solutions && (
+                        <div>
+                          <div className="mt-2 font-bold">
+                            Korrekte Lösungsbereiche:
                           </div>
-                        )}
+                          {currentQuestion.solutions.map(
+                            (range, innerIndex) => (
+                              <div key={innerIndex}>
+                                [{range.min ?? '-∞'},{range.max ?? '+∞'}]
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   {currentQuestion.type === 'FREE_TEXT' &&
-                    currentQuestion.solutions!.freeTextSolutions &&
+                    currentQuestion.solutions &&
                     showSolution && (
                       <div>
                         <div className="font-bold">Schlüsselwörter Lösung:</div>
                         <ul>
-                          {currentQuestion.solutions!.freeTextSolutions.map(
+                          {currentQuestion.solutions.map(
                             (keyword, innerIndex) => (
                               <li key={innerIndex}>{`- ${keyword}`}</li>
                             )
@@ -399,45 +324,54 @@ function Evaluation() {
                         </ul>
                       </div>
                     )}
-                  {/* {currentQuestion && (
-                    <Select
-                      // TODO: Find out why default is sometimes empty
-                      defaultValue={chartType}
-                      items={ACTIVE_CHART_TYPES[currentQuestion.type]}
-                      onChange={(newValue) => {
-                        console.log('newValue', newValue)
-                        setChartType(newValue)
-                      }}
-                    ></Select>
-                  )} */}
                 </div>
               </div>
-            </div>
-            <Footer>
-              <div className="flex flex-row justify-between px-8 py-4 m-0">
-                <div className="text-xl">
-                  Total Teilnehmende: {currentQuestion.participants}
-                </div>
-                <Switch
-                  id="showSolution"
-                  checked={showSolution}
-                  label="Lösung anzeigen"
-                  onCheckedChange={(newValue) => setShowSolution(newValue)}
-                ></Switch>
-              </div>
-            </Footer>
-          </div>
-        )}
-        {/* TODO: Find way to empty currentQuestion when this tab is selected */}
-        <RadixTab.Content value="tab-lb">
-          <div className="p-4 border-t">
-            <div className="max-w-5xl mx-auto text-xl">
-              <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
             </div>
           </div>
         </RadixTab.Content>
-      </RadixTab.Root>
-    </>
+      )}
+      <RadixTab.Content value="leaderboard">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            LEADERBOARD PLACEHOLDER
+            {/* // TODO: implement */}
+            {/* <SessionLeaderboard leaderboard={data.sessionLeaderboard} /> */}
+          </div>
+        </div>
+      </RadixTab.Content>
+      <RadixTab.Content value="feedbacks">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            FEEDBACKS PLACEHOLDER
+            {/* // TODO: implement */}
+          </div>
+        </div>
+      </RadixTab.Content>
+      <RadixTab.Content value="confusion">
+        <div className="p-4 border-t">
+          <div className="max-w-5xl mx-auto text-xl">
+            CONFUSION PLACEHOLDER
+            {/* // TODO: implement */}
+          </div>
+        </div>
+      </RadixTab.Content>
+
+      <Footer className="mx-0">
+        {currentQuestion && (
+          <div className="flex flex-row justify-between p-4 pr-8 m-0">
+            <div className="text-xl">
+              Total Teilnehmende: {currentQuestion.participants}
+            </div>
+            <Switch
+              id="showSolution"
+              checked={showSolution}
+              label="Lösung anzeigen"
+              onCheckedChange={(newValue) => setShowSolution(newValue)}
+            ></Switch>
+          </div>
+        )}
+      </Footer>
+    </RadixTab.Root>
   )
 }
 
