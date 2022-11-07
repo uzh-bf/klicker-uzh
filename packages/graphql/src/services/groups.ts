@@ -1,7 +1,8 @@
 import { LeaderboardType } from '@klicker-uzh/prisma'
-import { round } from 'mathjs'
+import { pickRandom, round } from 'mathjs'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
+import { shuffle } from '../lib/util'
 
 interface CreateParticipantGroupArgs {
   courseId: string
@@ -283,4 +284,288 @@ export async function updateGroupAverageScores(ctx: Context) {
   }
 
   return true
+}
+
+interface GetGroupActivityDetailsArgs {
+  activityId: string
+  groupId: string
+}
+
+export async function getGroupActivityDetails(
+  { activityId, groupId }: GetGroupActivityDetailsArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      course: true,
+      clues: {
+        orderBy: {
+          displayName: 'asc',
+        },
+      },
+      instances: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
+      parameters: true,
+    },
+  })
+
+  const group = await ctx.prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      participants: true,
+    },
+  })
+
+  if (!groupActivity || !group) return null
+
+  // ensure that the requesting participant is part of the group
+  if (
+    !group.participants.some((participant) => participant.id === ctx.user.sub)
+  ) {
+    return null
+  }
+
+  // before or after the active date, return null
+  // if (
+  //   groupActivity.scheduledStartAt > new Date() ||
+  //   groupActivity.scheduledEndAt < new Date()
+  // ) {
+  //   return null
+  // }
+
+  const activityInstance = await ctx.prisma.groupActivityInstance.findUnique({
+    where: {
+      groupActivityId_groupId: {
+        groupActivityId: activityId,
+        groupId,
+      },
+    },
+    include: {
+      clueInstanceAssignment: {
+        include: {
+          groupActivityClueInstance: true,
+          participant: {
+            select: {
+              id: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return {
+    ...groupActivity,
+    group,
+    activityInstance: activityInstance
+      ? {
+          ...activityInstance,
+          clues: activityInstance?.clueInstanceAssignment.map(
+            (clueAssignment) => {
+              if (clueAssignment.participantId === ctx.user.sub) {
+                return {
+                  ...clueAssignment.groupActivityClueInstance,
+                  participant: {
+                    ...clueAssignment.participant,
+                    isSelf: true,
+                  },
+                }
+              }
+
+              return {
+                ...R.dissoc('value', clueAssignment.groupActivityClueInstance),
+                participant: {
+                  ...clueAssignment.participant,
+                  isSelf: false,
+                },
+              }
+            }
+          ),
+        }
+      : null,
+  }
+}
+
+export async function startGroupActivity(
+  { activityId, groupId }: GetGroupActivityDetailsArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      course: true,
+      clues: {
+        orderBy: {
+          displayName: 'asc',
+        },
+      },
+      instances: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
+      parameters: true,
+    },
+  })
+
+  const group = await ctx.prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      participants: true,
+    },
+  })
+
+  if (!groupActivity || !group) return null
+
+  // ensure that the requesting participant is part of the group
+  if (
+    !group.participants.some((participant) => participant.id === ctx.user.sub)
+  ) {
+    return null
+  }
+
+  const groupMemberCount = group.participants.length
+  if (groupMemberCount < 2) return null
+
+  const allClues = [
+    ...groupActivity.clues.map(
+      R.pick(['name', 'displayName', 'type', 'unit', 'value'])
+    ),
+    ...groupActivity.parameters.map((parameter) => ({
+      ...R.pick(['name', 'displayName', 'type', 'unit'], parameter),
+      value: pickRandom(parameter.options),
+    })),
+  ]
+
+  try {
+    const activityInstance = await ctx.prisma.$transaction(async (prisma) => {
+      const activityInstance = await prisma.groupActivityInstance.create({
+        data: {
+          group: {
+            connect: { id: groupId },
+          },
+          groupActivity: {
+            connect: { id: activityId },
+          },
+          clues: {
+            create: allClues,
+          },
+        },
+        include: {
+          clues: true,
+        },
+      })
+
+      const shuffledClues = shuffle(activityInstance.clues)
+
+      const cluesPerMember = Math.ceil(
+        groupActivity.clues.length / groupMemberCount
+      )
+
+      const clueAssignments = group.participants.flatMap((participant, ix) => {
+        const start = ix * cluesPerMember
+        const end = start + cluesPerMember
+        const clues = shuffledClues.slice(start, end)
+
+        return clues.map((clue) => ({
+          groupActivityClueInstance: {
+            connect: { id: clue.id },
+          },
+          participant: {
+            connect: { id: participant.id },
+          },
+        }))
+      })
+
+      const updatedActivityInstance = await prisma.groupActivityInstance.update(
+        {
+          where: { id: activityInstance.id },
+          data: {
+            clueInstanceAssignment: {
+              create: clueAssignments,
+            },
+          },
+          include: {
+            clueInstanceAssignment: {
+              include: {
+                groupActivityClueInstance: true,
+                participant: true,
+              },
+            },
+          },
+        }
+      )
+
+      return updatedActivityInstance
+    })
+
+    return {
+      ...groupActivity,
+      group,
+      activityInstance,
+    }
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+interface SubmitGroupActivityDecisionsArgs {
+  activityInstanceId: number
+  decisions: {
+    id: number
+    response?: string
+    selectedOptions?: number[]
+  }[]
+}
+
+export async function submitGroupActivityDecisions(
+  { activityInstanceId, decisions }: SubmitGroupActivityDecisionsArgs,
+  ctx: ContextWithUser
+) {
+  const groupActivityInstance =
+    await ctx.prisma.groupActivityInstance.findUnique({
+      where: { id: activityInstanceId },
+      include: {
+        group: {
+          include: {
+            participants: {
+              where: {
+                id: ctx.user.sub,
+              },
+            },
+          },
+        },
+      },
+    })
+
+  // if the instance does not exist or the logged-in participant is not part of the group
+  // or if the results have already been submitted
+  if (
+    !groupActivityInstance ||
+    groupActivityInstance.group.participants.length === 0 ||
+    !!groupActivityInstance.decisionsSubmittedAt
+  ) {
+    return null
+  }
+
+  const updatedActivityInstance = await ctx.prisma.groupActivityInstance.update(
+    {
+      where: { id: activityInstanceId },
+      data: {
+        decisions,
+        decisionsSubmittedAt: new Date(),
+      },
+    }
+  )
+
+  return {
+    id: groupActivityInstance.groupActivityId,
+  }
 }

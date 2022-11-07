@@ -15,6 +15,8 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+// ----- USER ACCOUNTS -----
+
 enum UserRole {
   PARTICIPANT
   USER
@@ -63,12 +65,13 @@ model User {
   sessions          Session[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
+  groupActivities   GroupActivity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// ----- QUESTION MANAGEMENT -----
+// ----- QUESTION POOL -----
 
 enum AttachmentType {
   PNG
@@ -169,6 +172,7 @@ enum QuestionInstanceType {
   SESSION
   MICRO_SESSION
   LEARNING_ELEMENT
+  GROUP_ACTIVITY
 }
 
 model QuestionInstance {
@@ -189,6 +193,8 @@ model QuestionInstance {
   learningElementId String?          @db.Uuid
   microSession      MicroSession?    @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   microSessionId    String?          @db.Uuid
+  groupActivity     GroupActivity?   @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId   String?          @db.Uuid
 
   attachments AttachmentInstance[]
 
@@ -203,16 +209,17 @@ model QuestionInstance {
   @@unique([type, sessionBlockId, order])
   @@unique([type, learningElementId, order])
   @@unique([type, microSessionId, order])
+  @@unique([type, groupActivityId, order])
 }
 
-// ----- INTERACTIONS -----
+// ----- COURSES -----
 
 model Course {
   id String @id @default(uuid()) @db.Uuid
 
   isArchived Boolean @default(false)
 
-  pinCode Int @default(123456789)  @unique
+  pinCode Int @unique @default(123456789)
 
   name        String
   displayName String
@@ -223,6 +230,7 @@ model Course {
   learningElements LearningElement[]
   microSessions    MicroSession[]
   leaderboard      LeaderboardEntry[]
+  groupActivities  GroupActivity[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -269,6 +277,8 @@ model LeaderboardEntry {
   @@unique([type, participantId, sessionId])
   @@unique([type, participantId, courseId])
 }
+
+// ----- SESSIONS -----
 
 enum SessionBlockStatus {
   SCHEDULED
@@ -352,6 +362,8 @@ model Session {
   updatedAt DateTime @updatedAt
 }
 
+// ----- LEARNING ELEMENTS -----
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
@@ -367,6 +379,8 @@ model LearningElement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ----- MICROLEARNING -----
 
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
@@ -389,6 +403,122 @@ model MicroSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ----- GROUP ACTIVITIES -----
+
+enum ParameterType {
+  NUMBER
+  STRING
+}
+
+model GroupActivityParameter {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type    ParameterType
+  options String[]
+  unit    String?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivityClue {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type  ParameterType
+  value String
+  unit  String?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivityClueInstance {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type  ParameterType
+  value String
+  unit  String?
+
+  assignments             GroupActivityClueAssignment[]
+  groupActivityInstance   GroupActivityInstance         @relation(fields: [groupActivityInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityInstanceId Int
+
+  @@unique([groupActivityInstanceId, name])
+}
+
+model GroupActivity {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
+
+  description      String?
+  scheduledStartAt DateTime
+  scheduledEndAt   DateTime
+
+  parameters        GroupActivityParameter[]
+  clues             GroupActivityClue[]
+  instances         QuestionInstance[]
+  activityInstances GroupActivityInstance[]
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GroupActivityClueAssignment {
+  id Int @id @default(autoincrement())
+
+  groupActivityClueInstance   GroupActivityClueInstance @relation(fields: [groupActivityClueInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityClueInstanceId Int
+  groupActivityInstance       GroupActivityInstance     @relation(fields: [groupActivityInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityInstanceId     Int
+  participant                 Participant               @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId               String                    @db.Uuid
+}
+
+model GroupActivityInstance {
+  id Int @id @default(autoincrement())
+
+  clues                  GroupActivityClueInstance[]
+  clueInstanceAssignment GroupActivityClueAssignment[]
+
+  decisions            Json?
+  decisionsSubmittedAt DateTime?
+  results              Json?
+  resultsComputedAt    DateTime?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupActivityId, groupId])
+}
+
+// ----- LIVE Q&A -----
 
 model Feedback {
   id Int @id @default(autoincrement())
@@ -474,6 +604,7 @@ model Participant {
   feedbacks               Feedback[]
   leaderboards            LeaderboardEntry[]
   subscriptions           PushSubscription[]
+  clueAssignments         GroupActivityClueAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -488,7 +619,8 @@ model ParticipantGroup {
   groupActivityScore Float @default(0)
   averageMemberScore Float @default(0)
 
-  participants Participant[]
+  participants    Participant[]
+  groupActivities GroupActivityInstance[]
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseId String @db.Uuid
@@ -527,6 +659,8 @@ model Participation {
 
   @@unique([courseId, participantId])
 }
+
+// ----- RESPONSE TRACKING -----
 
 model QuestionResponse {
   id Int @id @default(autoincrement())
@@ -573,6 +707,8 @@ model QuestionResponseDetail {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ----- PUSH SUBSCRIPTIONS -----
 
 model PushSubscription {
   id Int @id @default(autoincrement())

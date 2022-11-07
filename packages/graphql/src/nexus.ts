@@ -125,6 +125,7 @@ export const OptionsChoicesInput = inputObjectType({
 export const OptionsNumericalInput = inputObjectType({
   name: 'OptionsNumericalInput',
   definition(t) {
+    t.int('accuracy')
     t.field('restrictions', { type: Restrictions })
     t.list.field('solutionRanges', { type: SolutionRange })
   },
@@ -234,6 +235,9 @@ export const NumericalSolutionRange = objectType({
 export const NumericalQuestionOptions = objectType({
   name: 'NumericalQuestionOptions',
   definition(t) {
+    t.int('accuracy')
+    t.string('placeholder')
+    t.string('unit')
     t.field('restrictions', {
       type: NumericalRestrictions,
     })
@@ -469,8 +473,9 @@ export const Participant = objectType({
     t.field('avatarSettings', {
       type: 'JSONObject',
     })
+    t.boolean('isSelf')
 
-    t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
+    t.list.nonNull.field('participantGroups', { type: ParticipantGroup })
   },
 })
 
@@ -776,6 +781,93 @@ export const PushSubscription = objectType({
   },
 })
 
+export const GroupActivityDecisionInput = inputObjectType({
+  name: 'GroupActivityDecisionInput',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.list.nonNull.int('selectedOptions')
+    t.string('response')
+  },
+})
+
+export const ParameterType = enumType({
+  name: 'ParameterType',
+  members: DB.ParameterType,
+})
+
+export const GroupActivityClue = objectType({
+  name: 'GroupActivityClue',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+  },
+})
+
+export const GroupActivityClueWithValue = objectType({
+  name: 'GroupActivityClueWithValue',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.string('value')
+    t.string('unit')
+    t.nonNull.field('type', {
+      type: ParameterType,
+    })
+
+    t.nonNull.field('participant', {
+      type: Participant,
+    })
+  },
+})
+
+export const GroupActivityInstance = objectType({
+  name: 'GroupActivityInstance',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.list.nonNull.field('clues', {
+      type: GroupActivityClueWithValue,
+    })
+
+    t.list.nonNull.json('decisions')
+    t.date('decisionsSubmittedAt')
+  },
+})
+
+export const GroupActivityDetails = objectType({
+  name: 'GroupActivityDetails',
+  definition(t) {
+    t.nonNull.id('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.string('description')
+    t.nonNull.date('scheduledStartAt')
+    t.nonNull.date('scheduledEndAt')
+
+    t.nonNull.field('group', {
+      type: ParticipantGroup,
+    })
+    t.nonNull.field('course', {
+      type: Course,
+    })
+    t.field('activityInstance', {
+      type: GroupActivityInstance,
+    })
+    t.nonNull.list.nonNull.field('clues', {
+      type: GroupActivityClue,
+    })
+    t.nonNull.list.nonNull.field('instances', {
+      type: QuestionInstance,
+    })
+  },
+})
+
 export const Query = objectType({
   name: 'Query',
   definition(t) {
@@ -954,6 +1046,17 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return QuestionService.getSingleQuestion(args, ctx)
+      },
+    })
+
+    t.field('groupActivityDetails', {
+      type: GroupActivityDetails,
+      args: {
+        activityId: nonNull(idArg()),
+        groupId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.getGroupActivityDetails(args, ctx)
       },
     })
   },
@@ -1403,6 +1506,30 @@ export const Mutation = objectType({
     t.boolean('updateGroupAverageScores', {
       resolve(_, _args, ctx: Context) {
         return ParticipantGroupService.updateGroupAverageScores(ctx)
+      },
+    })
+
+    t.field('startGroupActivity', {
+      type: GroupActivityDetails,
+      args: {
+        activityId: nonNull(idArg()),
+        groupId: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.startGroupActivity(args, ctx)
+      },
+    })
+
+    t.field('submitGroupActivityDecisions', {
+      type: GroupActivityDetails,
+      args: {
+        activityInstanceId: nonNull(intArg()),
+        decisions: nonNull(
+          list(nonNull(arg({ type: 'GroupActivityDecisionInput' })))
+        ),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
       },
     })
   },

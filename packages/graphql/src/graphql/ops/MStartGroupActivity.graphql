@@ -1,0 +1,5 @@
+mutation StartGroupActivity($activityId: ID!, $groupId: ID!) {
+  startGroupActivity(activityId: $activityId, groupId: $groupId) {
+    id
+  }
+}

@@ -173,13 +173,13 @@ function CourseOverview({ courseId }: any) {
 
           {data.participantGroups?.map((group) => (
             <Tabs.TabContent key={group.id} value={group.id}>
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-4">
                 <H3 className="flex flex-row justify-between">
                   <div>Gruppe {group.name}</div>
                   <div>{group.code}</div>
                 </H3>
 
-                <div className="flex flex-row flex-wrap gap-4 pt-2">
+                <div className="flex flex-row flex-wrap gap-4">
                   <div className="flex flex-col flex-1">
                     <GroupLeaderboard
                       courseId={courseId}

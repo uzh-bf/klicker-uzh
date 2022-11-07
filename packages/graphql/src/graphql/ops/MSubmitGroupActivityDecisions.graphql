@@ -1,0 +1,11 @@
+mutation SubmitGroupActivityDecisions(
+  $activityInstanceId: Int!
+  $decisions: [GroupActivityDecisionInput!]!
+) {
+  submitGroupActivityDecisions(
+    activityInstanceId: $activityInstanceId
+    decisions: $decisions
+  ) {
+    id
+  }
+}
