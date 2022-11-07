@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faCheck,
   faComment,
@@ -16,7 +16,6 @@ import {
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -155,7 +154,7 @@ function Evaluation() {
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
     <RadixTab.Root className="h-full">
-      <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11">
+      <RadixTab.List className="flex flex-row justify-between px-3 border-b-2 border-solid h-11 print:hidden">
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-3">
             <div className="font-bold">Question:</div>
@@ -376,54 +375,9 @@ function Evaluation() {
           <div className="max-w-5xl mx-auto text-xl">
             {data.sessionEvaluation?.feedbacks &&
             data.sessionEvaluation?.feedbacks.length > 0 ? (
-              <div>
-                {/* // TODO: implement */}
-                FEEDBACKS SEARCH TOOLS
-                <div className="flex flex-col gap-3">
-                  {data.sessionEvaluation?.feedbacks.map((feedback) => (
-                    <div key={feedback.content}>
-                      <div className="w-full p-2 border border-solid rounded-md border-uzh-grey-40">
-                        <div className="flex flex-row justify-between">
-                          <div>{feedback.content}</div>
-                          <div className="flex flex-row items-center text-gray-500">
-                            <div>{feedback.votes}</div>
-                            <FontAwesomeIcon
-                              icon={faThumbsUp}
-                              className="ml-1.5"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-row justify-between text-base text-gray-500">
-                          <div>
-                            {dayjs(feedback.createdAt).format(
-                              'DD.MM.YYYY HH:mm'
-                            )}
-                          </div>
-                          {feedback.isResolved && (
-                            <div className="flex flex-row items-center">
-                              <FontAwesomeIcon
-                                icon={faCheck}
-                                className="mr-1.5"
-                              />
-                              <div>Während der Session gelöst</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {feedback.responses?.map((response, responseIx) => (
-                        <div
-                          key={response?.content}
-                          className="w-full pl-12 mt-1 text-base"
-                        >
-                          <div className="border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50 bg-uzh-blue-20">
-                            {response?.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <EvaluationFeedbacks
+                feedbacks={data.sessionEvaluation?.feedbacks}
+              />
             ) : (
               <UserNotification
                 className="text-lg"
