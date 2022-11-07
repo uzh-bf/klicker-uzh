@@ -40,9 +40,9 @@ const serviceBusTrigger: AzureFunction = async function (
   }
 
   if (queueItem?.sessionId === 'ping') {
-    await fetch(
-      'https://betteruptime.com/api/v1/heartbeat/pT3NjExsLvqufrtTGR3H15Mr'
-    )
+    // await fetch(
+    //   'https://betteruptime.com/api/v1/heartbeat/pT3NjExsLvqufrtTGR3H15Mr'
+    // )
     return { status: 200 }
   }
 

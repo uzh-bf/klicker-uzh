@@ -35,7 +35,7 @@ function SessionBlock({
   const untilExpiration = useMemo(
     () =>
       block.expiresAt
-        ? dayjs(block.expiresAt).diff(dayjs(), 'second')
+        ? dayjs(block.expiresAt).add(20, 'second').diff(dayjs(), 'second')
         : block.timeLimit,
     [block.expiresAt, block.timeLimit]
   )

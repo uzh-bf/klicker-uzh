@@ -21,7 +21,7 @@ const httpTrigger: AzureFunction = async function (
   if (req.method === 'GET') {
     await serviceBusSender.sendMessages({
       sessionId: 'ping',
-      body: {}
+      body: {},
     })
 
     return { status: 200 }

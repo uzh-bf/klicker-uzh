@@ -401,7 +401,7 @@ export async function activateSessionBlock(
 
   if (updatedSession.activeBlock?.expiresAt) {
     scheduledJobs[sessionBlockId] = schedule.scheduleJob(
-      updatedSession.activeBlock.expiresAt,
+      dayjs(updatedSession.activeBlock.expiresAt).add(20, 'second').toDate(),
       async () => {
         await deactivateSessionBlock(
           {
