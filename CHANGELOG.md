@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.87...v2.0.0-alpha.88) (2022-11-07)
+
+
+### Enhancements
+
+* **apps/backend-response-processor:** add a heartbeat when pinged ([cace206](https://github.com/uzh-bf/klicker-uzh/commit/cace2063088270360c685464d52a4cd8aa4c288a))
+
 ## [2.0.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.86...v2.0.0-alpha.87) (2022-11-07)
 
 
