@@ -281,13 +281,11 @@ function Evaluation() {
                       >
                         <div
                           style={{
-                            backgroundColor: answer.correct
-                              ? '#00de0d'
-                              : CHART_COLORS[innerIndex % 12],
+                            backgroundColor: CHART_COLORS[innerIndex % 12],
                           }}
                           className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                            answer.correct && 'text-black'
+                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold'
+                            // answer.correct && 'text-black'
                           )}
                         >
                           {String.fromCharCode(65 + innerIndex)}
