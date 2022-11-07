@@ -22,7 +22,7 @@
     "@radix-ui/react-dropdown-menu": "2.0.1",
     "@radix-ui/react-select": "1.1.1",
     "@radix-ui/react-tabs": "1.0.1",
-    "@sentry/nextjs": "7.13.0",
+    "@sentry/nextjs": "7.17.4",
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "0.0.73",
     "d3": "7.6.1",
