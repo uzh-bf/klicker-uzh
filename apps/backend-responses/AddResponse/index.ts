@@ -15,7 +15,7 @@ const httpTrigger: AzureFunction = async function (
   context: Context,
   req: HttpRequest
 ) {
-  context.log('AddResponse function processed a request', req.body)
+  context.log('AddResponse function processed a request', req.method, req.body)
 
   // immediately return on GET -> healthcheck
   if (req.method === 'GET') {
