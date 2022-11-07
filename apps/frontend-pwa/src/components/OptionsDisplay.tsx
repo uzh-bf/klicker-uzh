@@ -10,6 +10,7 @@ import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAns
 import { twMerge } from 'tailwind-merge'
 
 interface ChoiceOptionsProps {
+  disabled?: boolean
   choices: Choice[]
   isEvaluation?: boolean
   isCompact?: boolean
@@ -18,6 +19,7 @@ interface ChoiceOptionsProps {
   onChange: (ix: number) => void
 }
 function ChoiceOptions({
+  disabled,
   choices,
   onChange,
   isEvaluation,
@@ -30,12 +32,12 @@ function ChoiceOptions({
       {choices.map((choice) => (
         <div key={choice.value} className="w-full">
           <Button
-            disabled={isEvaluation}
+            disabled={disabled || isEvaluation}
             active={response?.includes(choice.ix)}
             className={twMerge(
               'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
               isEvaluation && 'text-gray-700',
-              isEvaluation &&
+              (disabled || isEvaluation) &&
                 response?.includes(choice.ix) &&
                 'border-gray-400 text-gray-800'
               // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
@@ -78,6 +80,7 @@ function ChoiceOptions({
 }
 
 interface OptionsProps {
+  disabled?: boolean
   options: any
   questionType: QuestionType
   isEvaluation?: boolean
@@ -90,6 +93,7 @@ interface OptionsProps {
 }
 
 export function Options({
+  disabled,
   options,
   questionType,
   isEvaluation,
@@ -111,6 +115,7 @@ export function Options({
             </div>
           )}
           <ChoiceOptions
+            disabled={disabled}
             choices={options.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
@@ -131,6 +136,7 @@ export function Options({
             </div>
           )}
           <ChoiceOptions
+            disabled={disabled}
             choices={options.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
@@ -182,7 +188,7 @@ export function Options({
                             ? 'bg-green-200 text-green-700'
                             : 'bg-red-200 text-red-700')
                         }
-                        disabled={isEvaluation}
+                        disabled={disabled || isEvaluation}
                         active={response?.includes(choice.ix)}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
@@ -205,7 +211,7 @@ export function Options({
                             ? 'bg-green-200 text-green-700'
                             : 'bg-red-200 text-red-700')
                         }
-                        disabled={isEvaluation}
+                        disabled={disabled || isEvaluation}
                         active={!response?.includes(choice.ix)}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
@@ -256,9 +262,18 @@ export function Options({
       return (
         <div>
           {withGuidance && (
-            <div className="mb-4 italic">Gib eine Zahl ein:</div>
+            <div className="mb-2 italic">
+              Gib eine <span className="font-bold">Zahl</span> ein
+              {options?.accuracy &&
+                ` (gerundet auf ${options.accuracy} Nachkommastellen)`}
+              :
+            </div>
           )}
           <NUMERICALAnswerOptions
+            disabled={disabled}
+            accuracy={options?.accuracy}
+            placeholder={options?.placeholder}
+            unit={options?.unit}
             min={options?.restrictions?.min}
             max={options?.restrictions?.max}
             value={response}
@@ -267,6 +282,7 @@ export function Options({
           />
         </div>
       )
+
     default:
       return null
   }

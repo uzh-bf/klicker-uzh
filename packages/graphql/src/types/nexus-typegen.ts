@@ -61,6 +61,11 @@ export interface NexusGenInputs {
     ix: number; // Int!
     value: string; // String!
   }
+  GroupActivityDecisionInput: { // input type
+    id: number; // Int!
+    response?: string | null; // String
+    selectedOptions?: number[] | null; // [Int!]
+  }
   OptionsChoicesInput: { // input type
     choices: Array<NexusGenInputs['ChoiceInput'] | null>; // [ChoiceInput]!
   }
@@ -69,6 +74,7 @@ export interface NexusGenInputs {
     solutions?: Array<string | null> | null; // [String]
   }
   OptionsNumericalInput: { // input type
+    accuracy?: number | null; // Int
     restrictions?: NexusGenInputs['Restrictions'] | null; // Restrictions
     solutionRanges?: Array<NexusGenInputs['SolutionRange'] | null> | null; // [SolutionRange]
   }
@@ -213,19 +219,34 @@ export interface NexusGenObjects {
     displayName: string; // String!
     id: string; // ID!
     name: string; // String!
+  }
+  GroupActivityClueWithValue: { // root type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
+    participant: NexusGenRootTypes['Participant']; // Participant!
     type: NexusGenEnums['ParameterType']; // ParameterType!
     unit?: string | null; // String
-    value: string; // String!
+    value?: string | null; // String
   }
   GroupActivityDetails: { // root type
+    activityInstance?: NexusGenRootTypes['GroupActivityInstance'] | null; // GroupActivityInstance
     clues: NexusGenRootTypes['GroupActivityClue'][]; // [GroupActivityClue!]!
+    course: NexusGenRootTypes['Course']; // Course!
     description?: string | null; // String
     displayName: string; // String!
+    group: NexusGenRootTypes['ParticipantGroup']; // ParticipantGroup!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
+  }
+  GroupActivityInstance: { // root type
+    clues: NexusGenRootTypes['GroupActivityClueWithValue'][]; // [GroupActivityClueWithValue!]!
+    decisions?: NexusGenScalars['JSONObject'][] | null; // [JSONObject!]
+    decisionsSubmittedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    id: number; // Int!
   }
   GroupLeaderboardEntry: { // root type
     id: string; // ID!
@@ -295,8 +316,11 @@ export interface NexusGenObjects {
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
+    accuracy?: number | null; // Int
+    placeholder?: string | null; // String
     restrictions?: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
     solutionRanges?: NexusGenRootTypes['NumericalSolutionRange'][] | null; // [NumericalSolutionRange!]
+    unit?: string | null; // String
   }
   NumericalRestrictions: { // root type
     max?: number | null; // Int
@@ -310,7 +334,8 @@ export interface NexusGenObjects {
     avatar?: string | null; // String
     avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
-    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
+    isSelf?: boolean | null; // Boolean
+    participantGroups?: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     username: string; // String!
   }
   ParticipantGroup: { // root type
@@ -537,19 +562,34 @@ export interface NexusGenFieldTypes {
     displayName: string; // String!
     id: string; // ID!
     name: string; // String!
+  }
+  GroupActivityClueWithValue: { // field return type
+    displayName: string; // String!
+    id: string; // ID!
+    name: string; // String!
+    participant: NexusGenRootTypes['Participant']; // Participant!
     type: NexusGenEnums['ParameterType']; // ParameterType!
     unit: string | null; // String
-    value: string; // String!
+    value: string | null; // String
   }
   GroupActivityDetails: { // field return type
+    activityInstance: NexusGenRootTypes['GroupActivityInstance'] | null; // GroupActivityInstance
     clues: NexusGenRootTypes['GroupActivityClue'][]; // [GroupActivityClue!]!
+    course: NexusGenRootTypes['Course']; // Course!
     description: string | null; // String
     displayName: string; // String!
+    group: NexusGenRootTypes['ParticipantGroup']; // ParticipantGroup!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
     name: string; // String!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
+  }
+  GroupActivityInstance: { // field return type
+    clues: NexusGenRootTypes['GroupActivityClueWithValue'][]; // [GroupActivityClueWithValue!]!
+    decisions: NexusGenScalars['JSONObject'][] | null; // [JSONObject!]
+    decisionsSubmittedAt: NexusGenScalars['DateTime'] | null; // DateTime
+    id: number; // Int!
   }
   GroupLeaderboardEntry: { // field return type
     id: string; // ID!
@@ -639,7 +679,9 @@ export interface NexusGenFieldTypes {
     resolveFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     respondToQuestionInstance: NexusGenRootTypes['QuestionInstance'] | null; // QuestionInstance
+    startGroupActivity: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     startSession: NexusGenRootTypes['Session'] | null; // Session
+    submitGroupActivityDecisions: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     subscribeToPush: NexusGenRootTypes['Participation'] | null; // Participation
     updateGroupAverageScores: boolean | null; // Boolean
     updateParticipantProfile: NexusGenRootTypes['Participant'] | null; // Participant
@@ -658,8 +700,11 @@ export interface NexusGenFieldTypes {
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
+    accuracy: number | null; // Int
+    placeholder: string | null; // String
     restrictions: NexusGenRootTypes['NumericalRestrictions'] | null; // NumericalRestrictions
     solutionRanges: NexusGenRootTypes['NumericalSolutionRange'][] | null; // [NumericalSolutionRange!]
+    unit: string | null; // String
   }
   NumericalRestrictions: { // field return type
     max: number | null; // Int
@@ -673,7 +718,8 @@ export interface NexusGenFieldTypes {
     avatar: string | null; // String
     avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
-    participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
+    isSelf: boolean | null; // Boolean
+    participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     username: string; // String!
   }
   ParticipantGroup: { // field return type
@@ -926,19 +972,34 @@ export interface NexusGenFieldTypeNames {
     displayName: 'String'
     id: 'ID'
     name: 'String'
+  }
+  GroupActivityClueWithValue: { // field return type name
+    displayName: 'String'
+    id: 'ID'
+    name: 'String'
+    participant: 'Participant'
     type: 'ParameterType'
     unit: 'String'
     value: 'String'
   }
   GroupActivityDetails: { // field return type name
+    activityInstance: 'GroupActivityInstance'
     clues: 'GroupActivityClue'
+    course: 'Course'
     description: 'String'
     displayName: 'String'
+    group: 'ParticipantGroup'
     id: 'ID'
     instances: 'QuestionInstance'
     name: 'String'
     scheduledEndAt: 'DateTime'
     scheduledStartAt: 'DateTime'
+  }
+  GroupActivityInstance: { // field return type name
+    clues: 'GroupActivityClueWithValue'
+    decisions: 'JSONObject'
+    decisionsSubmittedAt: 'DateTime'
+    id: 'Int'
   }
   GroupLeaderboardEntry: { // field return type name
     id: 'ID'
@@ -1028,7 +1089,9 @@ export interface NexusGenFieldTypeNames {
     resolveFeedback: 'Feedback'
     respondToFeedback: 'Feedback'
     respondToQuestionInstance: 'QuestionInstance'
+    startGroupActivity: 'GroupActivityDetails'
     startSession: 'Session'
+    submitGroupActivityDecisions: 'GroupActivityDetails'
     subscribeToPush: 'Participation'
     updateGroupAverageScores: 'Boolean'
     updateParticipantProfile: 'Participant'
@@ -1047,8 +1110,11 @@ export interface NexusGenFieldTypeNames {
     type: 'String'
   }
   NumericalQuestionOptions: { // field return type name
+    accuracy: 'Int'
+    placeholder: 'String'
     restrictions: 'NumericalRestrictions'
     solutionRanges: 'NumericalSolutionRange'
+    unit: 'String'
   }
   NumericalRestrictions: { // field return type name
     max: 'Int'
@@ -1062,6 +1128,7 @@ export interface NexusGenFieldTypeNames {
     avatar: 'String'
     avatarSettings: 'JSONObject'
     id: 'ID'
+    isSelf: 'Boolean'
     participantGroups: 'ParticipantGroup'
     username: 'String'
   }
@@ -1363,8 +1430,16 @@ export interface NexusGenArgTypes {
       id: number; // Int!
       response: NexusGenInputs['ResponseInput']; // ResponseInput!
     }
+    startGroupActivity: { // args
+      activityId: string; // ID!
+      groupId: string; // ID!
+    }
     startSession: { // args
       id: string; // ID!
+    }
+    submitGroupActivityDecisions: { // args
+      activityInstanceId: number; // Int!
+      decisions: NexusGenInputs['GroupActivityDecisionInput'][]; // [GroupActivityDecisionInput!]!
     }
     subscribeToPush: { // args
       courseId: string; // ID!

@@ -470,9 +470,10 @@ model GroupActivity {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
-  parameters GroupActivityParameter[]
-  clues      GroupActivityClue[]
-  instances  QuestionInstance[]
+  parameters        GroupActivityParameter[]
+  clues             GroupActivityClue[]
+  instances         QuestionInstance[]
+  activityInstances GroupActivityInstance[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid
@@ -500,14 +501,21 @@ model GroupActivityInstance {
   clues                  GroupActivityClueInstance[]
   clueInstanceAssignment GroupActivityClueAssignment[]
 
-  decisions Json
-  results   Json
+  decisions            Json?
+  decisionsSubmittedAt DateTime?
+  results              Json?
+  resultsComputedAt    DateTime?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
 
   group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupId String           @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([groupActivityId, groupId])
 }
 
 // ----- LIVE Q&A -----
@@ -596,10 +604,10 @@ model Participant {
   feedbacks               Feedback[]
   leaderboards            LeaderboardEntry[]
   subscriptions           PushSubscription[]
+  clueAssignments         GroupActivityClueAssignment[]
 
-  createdAt                   DateTime                      @default(now())
-  updatedAt                   DateTime                      @updatedAt
-  GroupActivityClueAssignment GroupActivityClueAssignment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ParticipantGroup {

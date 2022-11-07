@@ -160,20 +160,43 @@ type GroupActivityClue {
   displayName: String!
   id: ID!
   name: String!
+}
+
+type GroupActivityClueWithValue {
+  displayName: String!
+  id: ID!
+  name: String!
+  participant: Participant!
   type: ParameterType!
   unit: String
-  value: String!
+  value: String
+}
+
+input GroupActivityDecisionInput {
+  id: Int!
+  response: String
+  selectedOptions: [Int!]
 }
 
 type GroupActivityDetails {
+  activityInstance: GroupActivityInstance
   clues: [GroupActivityClue!]!
+  course: Course!
   description: String
   displayName: String!
+  group: ParticipantGroup!
   id: ID!
   instances: [QuestionInstance!]!
   name: String!
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
+}
+
+type GroupActivityInstance {
+  clues: [GroupActivityClueWithValue!]!
+  decisions: [JSONObject!]
+  decisionsSubmittedAt: DateTime
+  id: Int!
 }
 
 type GroupLeaderboardEntry {
@@ -276,7 +299,9 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
+  startGroupActivity(activityId: ID!, groupId: ID!): GroupActivityDetails
   startSession(id: ID!): Session
+  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityDetails
   subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateGroupAverageScores: Boolean
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
@@ -297,8 +322,11 @@ type NumericalQuestionData implements QuestionData {
 }
 
 type NumericalQuestionOptions {
+  accuracy: Int
+  placeholder: String
   restrictions: NumericalRestrictions
   solutionRanges: [NumericalSolutionRange!]
+  unit: String
 }
 
 type NumericalRestrictions {
@@ -321,6 +349,7 @@ input OptionsFreeTextInput {
 }
 
 input OptionsNumericalInput {
+  accuracy: Int
   restrictions: Restrictions
   solutionRanges: [SolutionRange]
 }
@@ -334,7 +363,8 @@ type Participant {
   avatar: String
   avatarSettings: JSONObject
   id: ID!
-  participantGroups: [ParticipantGroup]!
+  isSelf: Boolean
+  participantGroups: [ParticipantGroup!]
   username: String!
 }
 

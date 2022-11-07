@@ -8,7 +8,7 @@ import Header from './common/Header'
 import MobileMenuBar from './common/MobileMenuBar'
 
 interface LayoutProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   displayName?: string
   courseName?: string
   courseColor?: string | null
@@ -73,7 +73,8 @@ function Layout({
         <div
           className={twMerge(
             'flex flex-col p-4 mt-16 md:mb-0 [height:_calc(100%-4rem)] overflow-y-auto',
-            dataParticipant?.self && '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14'
+            dataParticipant?.self &&
+              '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14'
           )}
         >
           {children}

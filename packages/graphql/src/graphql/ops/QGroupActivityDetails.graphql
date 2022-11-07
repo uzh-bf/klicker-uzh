@@ -14,9 +14,6 @@ query GroupActivityDetails($activityId: ID!, $groupId: ID!) {
       id
       name
       displayName
-      type
-      value
-      unit
     }
 
     instances {
@@ -35,6 +32,46 @@ query GroupActivityDetails($activityId: ID!, $groupId: ID!) {
         percentile
         newPointsFrom
       }
+    }
+
+    course {
+      id
+      displayName
+      color
+    }
+
+    group {
+      id
+      name
+      participants {
+        id
+        username
+        avatar
+        isSelf
+      }
+    }
+
+    activityInstance {
+      id
+
+      clues {
+        id
+        name
+        displayName
+        type
+        unit
+        value
+
+        participant {
+          id
+          username
+          avatar
+          isSelf
+        }
+      }
+
+      decisions
+      decisionsSubmittedAt
     }
   }
 }

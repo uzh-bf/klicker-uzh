@@ -13,10 +13,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4 } from '@uzh-bf/design-system'
+import { Button, H3 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
-import Link from 'next/link'
 import { ParticipantOther } from '../../../components/Participant'
 import { Podium } from '../../../components/Podium'
 import Tabs from '../../../components/Tabs'
@@ -215,15 +214,6 @@ function CourseOverview({ courseId }: any) {
                     </div>
                   </div>
                   <GroupVisualization participants={group.participants} />
-                </div>
-
-                <H4>Gruppenquest</H4>
-                <div>
-                  <Link
-                    href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
-                  >
-                    Zur Gruppenaktivität 1
-                  </Link>
                 </div>
               </div>
             </Tabs.TabContent>

@@ -18,6 +18,9 @@ fragment QuestionData on QuestionInstance {
 
     ... on NumericalQuestionData {
       options {
+        accuracy
+        placeholder
+        unit
         restrictions {
           min
           max
