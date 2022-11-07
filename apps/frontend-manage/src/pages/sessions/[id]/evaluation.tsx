@@ -14,7 +14,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Prose, Select, Switch } from '@uzh-bf/design-system'
+import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -195,59 +195,66 @@ function Evaluation() {
               </div>
             </RadixTab.Trigger>
           ))}
-          <RadixTab.Trigger
-            value="leaderboard"
-            className={twMerge(
-              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-              selectedBlock === tabs.length && 'border-solid border-uzh-blue-80'
-            )}
-            onClick={() => {
-              setSelectedBlock(tabs.length)
-            }}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <div>
-                <FontAwesomeIcon icon={faGamepad} />
+          {data.sessionEvaluation?.isGamificationEnabled && (
+            <RadixTab.Trigger
+              value="leaderboard"
+              className={twMerge(
+                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                selectedBlock === tabs.length &&
+                  'border-solid border-uzh-blue-80'
+              )}
+              onClick={() => {
+                setSelectedBlock(tabs.length)
+              }}
+            >
+              <div className="flex flex-row items-center gap-2">
+                <div>
+                  <FontAwesomeIcon icon={faGamepad} />
+                </div>
+                <div>Leaderboard</div>
               </div>
-              <div>Leaderboard</div>
-            </div>
-          </RadixTab.Trigger>
-          <RadixTab.Trigger
-            value="feedbacks"
-            className={twMerge(
-              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-              selectedBlock === tabs.length + 1 &&
-                'border-solid border-uzh-blue-80'
-            )}
-            onClick={() => {
-              setSelectedBlock(tabs.length + 1)
-            }}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <div>
-                <FontAwesomeIcon icon={faComment} />
-              </div>
-              <div>Feedbacks</div>
-            </div>
-          </RadixTab.Trigger>
-          <RadixTab.Trigger
-            value="confusion"
-            className={twMerge(
-              'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-              selectedBlock === tabs.length + 2 &&
-                'border-solid border-uzh-blue-80'
-            )}
-            onClick={() => {
-              setSelectedBlock(tabs.length + 2)
-            }}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <div>
-                <FontAwesomeIcon icon={faFaceSmile} />
-              </div>
-              <div>Confusion</div>
-            </div>
-          </RadixTab.Trigger>
+            </RadixTab.Trigger>
+          )}
+          {data.sessionEvaluation?.status === 'COMPLETED' && (
+            <>
+              <RadixTab.Trigger
+                value="feedbacks"
+                className={twMerge(
+                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                  selectedBlock === tabs.length + 1 &&
+                    'border-solid border-uzh-blue-80'
+                )}
+                onClick={() => {
+                  setSelectedBlock(tabs.length + 1)
+                }}
+              >
+                <div className="flex flex-row items-center gap-2">
+                  <div>
+                    <FontAwesomeIcon icon={faComment} />
+                  </div>
+                  <div>Feedbacks</div>
+                </div>
+              </RadixTab.Trigger>
+              <RadixTab.Trigger
+                value="confusion"
+                className={twMerge(
+                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                  selectedBlock === tabs.length + 2 &&
+                    'border-solid border-uzh-blue-80'
+                )}
+                onClick={() => {
+                  setSelectedBlock(tabs.length + 2)
+                }}
+              >
+                <div className="flex flex-row items-center gap-2">
+                  <div>
+                    <FontAwesomeIcon icon={faFaceSmile} />
+                  </div>
+                  <div>Confusion</div>
+                </div>
+              </RadixTab.Trigger>
+            </>
+          )}
         </div>
       </RadixTab.List>
       {currentQuestion && (
@@ -343,13 +350,23 @@ function Evaluation() {
           </div>
         </RadixTab.Content>
       )}
-      {data.sessionLeaderboard && <RadixTab.Content value="leaderboard">
+      <RadixTab.Content value="leaderboard">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
-            <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
+            {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
+              <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
+            ) : (
+              <UserNotification
+                className="text-lg"
+                notificationType="error"
+                message="Bisher waren keine Teilnehmenden während dieser Session
+              angemeldet und haben Punkte gesammelt."
+              />
+            )}
           </div>
         </div>
-      </RadixTab.Content>}
+      </RadixTab.Content>
+
       <RadixTab.Content value="feedbacks">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">

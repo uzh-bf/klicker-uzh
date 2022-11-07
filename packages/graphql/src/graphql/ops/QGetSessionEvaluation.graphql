@@ -1,6 +1,8 @@
 query GetSessionEvaluation($id: ID!) {
   sessionEvaluation(id: $id) {
     id
+    status
+    isGamificationEnabled
     blocks {
       blockIx
       blockStatus

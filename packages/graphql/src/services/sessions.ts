@@ -1352,6 +1352,8 @@ export async function getSessionEvaluation(
 
   return {
     id: `${id}-eval`,
+    status: session.status,
+    isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
       ...completeQuestionData(executedInstanceResults),

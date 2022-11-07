@@ -567,6 +567,8 @@ type SessionEvaluation {
   blocks: [Block!]
   id: ID!
   instanceResults: [InstanceResults!]
+  isGamificationEnabled: Boolean!
+  status: SessionStatus!
 }
 
 enum SessionStatus {

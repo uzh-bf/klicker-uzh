@@ -466,6 +466,8 @@ export interface NexusGenObjects {
     blocks?: NexusGenRootTypes['Block'][] | null; // [Block!]
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+    isGamificationEnabled: boolean; // Boolean!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   Statistics: { // root type
     max?: number | null; // Float
@@ -916,6 +918,8 @@ export interface NexusGenFieldTypes {
     blocks: NexusGenRootTypes['Block'][] | null; // [Block!]
     id: string; // ID!
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+    isGamificationEnabled: boolean; // Boolean!
+    status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
   Statistics: { // field return type
     max: number | null; // Float
@@ -1376,6 +1380,8 @@ export interface NexusGenFieldTypeNames {
     blocks: 'Block'
     id: 'ID'
     instanceResults: 'InstanceResults'
+    isGamificationEnabled: 'Boolean'
+    status: 'SessionStatus'
   }
   Statistics: { // field return type name
     max: 'Float'

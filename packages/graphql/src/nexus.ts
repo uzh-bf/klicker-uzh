@@ -861,6 +861,8 @@ export const SessionEvaluation = objectType({
   name: 'SessionEvaluation',
   definition(t) {
     t.nonNull.id('id')
+    t.nonNull.field('status', { type: SessionStatus })
+    t.nonNull.boolean('isGamificationEnabled')
     t.list.nonNull.field('blocks', {
       type: Block,
     })
