@@ -565,6 +565,7 @@ enum SessionBlockStatus {
 
 type SessionEvaluation {
   blocks: [Block!]
+  confusionFeedbacks: [ConfusionTimestep!]
   feedbacks: [Feedback!]
   id: ID!
   instanceResults: [InstanceResults!]

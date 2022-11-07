@@ -870,6 +870,8 @@ export const SessionEvaluation = objectType({
       type: InstanceResults,
     })
     t.list.nonNull.field('feedbacks', { type: Feedback })
+
+    t.list.nonNull.field('confusionFeedbacks', { type: ConfusionTimestep })
   },
 })
 

@@ -14,10 +14,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Field, Form, Formik, useFormik } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
 
 interface IFeedback {
   id: number
@@ -54,19 +53,6 @@ function Feedback({
 }: Props) {
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
-
-  const formik = useFormik({
-    initialValues: {
-      response: '',
-    },
-    validationSchema: Yup.object().shape({
-      response: Yup.string().min(1).required(),
-    }),
-    onSubmit: (values, { resetForm }) => {
-      onRespondToFeedback(id, values.response)
-      resetForm()
-    },
-  })
 
   return (
     <div>

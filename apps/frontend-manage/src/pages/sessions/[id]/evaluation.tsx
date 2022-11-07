@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
 import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faCheck,
@@ -391,8 +392,18 @@ function Evaluation() {
       <RadixTab.Content value="confusion">
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
-            CONFUSION PLACEHOLDER
-            {/* // TODO: implement */}
+            {data.sessionEvaluation?.confusionFeedbacks &&
+            data.sessionEvaluation?.confusionFeedbacks.length > 0 ? (
+              <EvaluationConfusion
+                confusionTS={data.sessionEvaluation?.confusionFeedbacks}
+              />
+            ) : (
+              <UserNotification
+                className="text-lg"
+                notificationType="error"
+                message="Diese Session enthält bisher keine Confusion Feedbacks."
+              />
+            )}
           </div>
         </div>
       </RadixTab.Content>

@@ -89,12 +89,11 @@ query GetSessionEvaluation($id: ID!) {
         negativeReactions
       }
     }
-    # confusionFeedbacks {
-    #   timestamp
-    #   speed
-    #   difficulty
-    #   numberOfParticipants
-    # }
+    confusionFeedbacks {
+      speed
+      difficulty
+      createdAt
+    }
   }
   sessionLeaderboard(sessionId: $id) {
     id

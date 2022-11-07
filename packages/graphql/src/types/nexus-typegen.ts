@@ -464,6 +464,7 @@ export interface NexusGenObjects {
   }
   SessionEvaluation: { // root type
     blocks?: NexusGenRootTypes['Block'][] | null; // [Block!]
+    confusionFeedbacks?: NexusGenRootTypes['ConfusionTimestep'][] | null; // [ConfusionTimestep!]
     feedbacks?: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
     instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
@@ -917,6 +918,7 @@ export interface NexusGenFieldTypes {
   }
   SessionEvaluation: { // field return type
     blocks: NexusGenRootTypes['Block'][] | null; // [Block!]
+    confusionFeedbacks: NexusGenRootTypes['ConfusionTimestep'][] | null; // [ConfusionTimestep!]
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
     instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
@@ -1380,6 +1382,7 @@ export interface NexusGenFieldTypeNames {
   }
   SessionEvaluation: { // field return type name
     blocks: 'Block'
+    confusionFeedbacks: 'ConfusionTimestep'
     feedbacks: 'Feedback'
     id: 'ID'
     instanceResults: 'InstanceResults'

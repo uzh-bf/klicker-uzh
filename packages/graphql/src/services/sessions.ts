@@ -1253,7 +1253,7 @@ export async function getSessionEvaluation(
           updatedAt: 'desc',
         },
       },
-      // confusionFeedbacks: true,
+      confusionFeedbacks: true,
     },
   })
 
