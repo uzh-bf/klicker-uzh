@@ -85,7 +85,7 @@ function GroupActivityDetails() {
         <base target="_blank" />
       </Head>
 
-      <div className="flex flex-col gap-8 p-4 mx-auto border rounded max-w-[1800px] lg:flex-row">
+      <div className="flex flex-col lg:gap-12 p-4 mx-auto border rounded max-w-[1800px] lg:flex-row">
         <div className="lg:flex-1">
           <div className="">
             <H1>Ausgangslage</H1>
@@ -99,7 +99,7 @@ function GroupActivityDetails() {
           <div className="py-4">
             <H1>Eure Hinweise</H1>
 
-            <div className="grid grid-cols-1 gap-2 mt-2 text-sm md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 mt-2 text-xs md:grid-cols-2">
               {!data.groupActivityDetails.activityInstance &&
                 data.groupActivityDetails.clues.map((clue) => {
                   return (

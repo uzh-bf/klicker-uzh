@@ -229,7 +229,7 @@ function CourseOverview({ courseId }: any) {
                       <a className="inline-flex items-center gap-2 hover:text-orange-700">
                         <FontAwesomeIcon icon={faExternalLink} />
                         <span>
-                          Gruppenquest - 07.11.22 17:00 bis 14.11.22 10:00
+                          Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
                         </span>
                       </a>
                     </Link>
