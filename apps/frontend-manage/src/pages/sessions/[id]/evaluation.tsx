@@ -358,10 +358,12 @@ function Evaluation() {
         <div className="p-4 border-t">
           <div className="max-w-5xl mx-auto text-xl">
             {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
-              <SessionLeaderboard
-                leaderboard={data.sessionLeaderboard}
-                className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
-              />
+              <div className="mt-6">
+                <SessionLeaderboard
+                  leaderboard={data.sessionLeaderboard}
+                  className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
+                />
+              </div>
             ) : (
               <UserNotification
                 className="text-lg"
