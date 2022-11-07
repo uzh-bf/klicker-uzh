@@ -19,9 +19,20 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
     <div className="flex flex-col gap-3">
       <FeedbackSearchAndFilters
         className="text-base"
-        disabled={sortedFeedbacks?.length === 0}
+        disabled={{
+          search: feedbacks?.length === 0,
+          filters: feedbacks?.length === 0,
+          print: feedbacks?.length === 0,
+          sorting: feedbacks?.length === 0,
+        }}
         {...filterProps}
       />
+      {sortedFeedbacks?.length === 0 && (
+        <div>
+          Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen
+          überein...
+        </div>
+      )}
       {sortedFeedbacks?.map((feedback) => (
         <div key={feedback.content}>
           <div className="w-full p-2 border border-solid rounded-md border-uzh-grey-40">

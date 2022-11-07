@@ -1,18 +1,30 @@
 // TODO: eliminate duplicated content and imporve layout instead dynamically
 
-import {
-  faArrowUpShortWide,
-  faFilter,
-  faPrint,
-} from '@fortawesome/free-solid-svg-icons'
+import { faFilter, faPrint } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Checkbox, Dropdown, ThemeContext } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Select,
+  ThemeContext,
+} from '@uzh-bf/design-system'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-// import { Input } from 'semantic-ui-react'
 
 interface Props {
-  disabled?: boolean
+  disabled?: {
+    search?: boolean
+    filters?: boolean
+    print?: boolean
+    sorting?: boolean
+  }
+  hidden?: {
+    search?: boolean
+    filters?: boolean
+    print?: boolean
+    sorting?: boolean
+  }
   searchString?: string
   withSearch?: boolean
   showResolved: boolean
@@ -30,13 +42,15 @@ interface Props {
 }
 
 const defaultProps = {
-  disabled: false,
+  disabled: undefined,
+  hidden: undefined,
   searchString: '',
   withSearch: false,
 }
 
 function FeedbackSearchAndFilters({
   disabled,
+  hidden,
   withSearch,
   searchString,
   setSearchString,
@@ -54,10 +68,32 @@ function FeedbackSearchAndFilters({
 }: Props) {
   const theme = useContext(ThemeContext)
 
-  const sortLabels: Record<string, string> = {
-    recency: 'Nach Zeitpunkt sortieren',
-    votes: 'Nach Stimmen sortieren',
-  }
+  const filter: {
+    label: string
+    checked: boolean
+    onChange: () => void
+  }[] = [
+    {
+      label: 'Gelöst',
+      checked: showResolved,
+      onChange: () => setShowResolved((current: boolean) => !current),
+    },
+    {
+      label: 'Offen',
+      checked: showOpen,
+      onChange: () => setShowOpen((current: boolean) => !current),
+    },
+    {
+      label: 'Ungepinnt',
+      checked: showUnpinned,
+      onChange: () => setShowUnpinned((current: boolean) => !current),
+    },
+    {
+      label: 'Unveröffentlicht',
+      checked: showUnpublished,
+      onChange: () => setShowUnpublished((current: boolean) => !current),
+    },
+  ]
 
   // TODO: search seems to fail in some cases (e.g. when searching for "with" etc.), investigate and fix this bug
   return (
@@ -68,169 +104,105 @@ function FeedbackSearchAndFilters({
       )}
     >
       <div className="flex flex-row items-center">
-        {withSearch && (
+        {withSearch && !hidden?.search && (
           <input
+            disabled={disabled?.search}
             value={searchString}
             onChange={(e: any) => setSearchString(e.target.value)}
             placeholder="Suche..."
-            className="py-2 px-1.5 border border-solid rounded-md border-uzh-grey-60 order-1 w-full md:mr-2 md:w-64 md:order-0"
+            className={twMerge(
+              'py-2 px-1.5 border border-solid rounded-md border-uzh-grey-60 order-1 w-full md:mr-2 md:w-64 md:order-0',
+              disabled?.search && 'cursor-not-allowed'
+            )}
           />
         )}
-        <div className="block mr-1 md:mr-0 xl:hidden order-0 md:order-1">
-          <Dropdown
-            trigger={
-              <FontAwesomeIcon
-                icon={faFilter}
-                className={twMerge(
-                  'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md  hover:shadow-none',
-                  `hover:${theme.primaryBg}`
-                )}
-              />
-            }
-            items={[
-              {
-                label: (
-                  <span
+        {!hidden?.filters && (
+          <>
+            <div className="block mr-1 md:mr-0 xl:hidden order-0 md:order-1">
+              <Dropdown
+                disabled={disabled?.filters}
+                trigger={
+                  <FontAwesomeIcon
+                    icon={faFilter}
                     className={twMerge(
-                      'flex items-center hover:cursor-pointer px-2 py-0.5',
-                      `hover:${theme.primaryBgDark}`
+                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md  hover:shadow-none',
+                      `hover:${theme.primaryBg}`,
+                      disabled?.filters && 'hover:bg-white shadow-none'
                     )}
-                  >
-                    <Checkbox checked={showResolved} onCheck={undefined} />
-                    Gelöst
-                  </span>
-                ),
-                onClick: () => setShowResolved((current: boolean) => !current),
-              },
-              {
-                label: (
-                  <span
-                    className={twMerge(
-                      'flex items-center hover:cursor-pointer px-2 py-0.5',
-                      `hover:${theme.primaryBgDark}`
-                    )}
-                  >
-                    <Checkbox checked={showOpen} onCheck={undefined} />
-                    Offen
-                  </span>
-                ),
-                onClick: () => setShowOpen((current: boolean) => !current),
-              },
-              {
-                label: (
-                  <span
-                    className={twMerge(
-                      'flex items-center hover:cursor-pointer px-2 py-0.5',
-                      `hover:${theme.primaryBgDark}`
-                    )}
-                  >
-                    <Checkbox checked={showUnpinned} onCheck={undefined} />
-                    Ungepinnt
-                  </span>
-                ),
-                onClick: () => setShowUnpinned((current: boolean) => !current),
-              },
-              {
-                label: (
-                  <span
-                    className={twMerge(
-                      'flex items-center hover:cursor-pointer px-2 py-0.5',
-                      `hover:${theme.primaryBgDark}`
-                    )}
-                  >
-                    <Checkbox checked={showUnpublished} onCheck={undefined} />
-                    Unveröffentlicht
-                  </span>
-                ),
-                onClick: () =>
-                  setShowUnpublished((current: boolean) => !current),
-              },
-            ]}
-          />
-        </div>
-
-        <div className="flex-row flex-wrap justify-between flex-initial order-1 hidden mt-4 mb-1 ml-4 xl:flex md:mt-0">
-          <div className="inline-block">
-            <span className="flex items-center">
-              <Checkbox
-                checked={showResolved}
-                onCheck={() => setShowResolved((current: boolean) => !current)}
-              />
-              Gelöst
-            </span>
-          </div>
-
-          <div className="inline-block">
-            <span className="flex items-center">
-              <Checkbox
-                checked={showOpen}
-                className="ml-4"
-                onCheck={() => setShowOpen((current: boolean) => !current)}
-              />
-              Offen
-            </span>
-          </div>
-
-          <div className="inline-block">
-            <span className="flex items-center">
-              <Checkbox
-                checked={showUnpinned}
-                className="ml-4"
-                onCheck={() => setShowUnpinned((current: boolean) => !current)}
-              />
-              Ungepinnt
-            </span>
-          </div>
-
-          <div className="inline-block">
-            <span className="flex items-center">
-              <Checkbox
-                checked={showUnpublished}
-                className="ml-4"
-                onCheck={() =>
-                  setShowUnpublished((current: boolean) => !current)
+                  />
                 }
+                items={filter.map((filter) => {
+                  return {
+                    label: (
+                      <span
+                        className={twMerge(
+                          'flex items-center hover:cursor-pointer px-2 py-0.5',
+                          `hover:${theme.primaryBgDark}`
+                        )}
+                      >
+                        <Checkbox
+                          checked={filter.checked}
+                          onCheck={undefined}
+                        />
+                        {filter.label}
+                      </span>
+                    ),
+                    onClick: filter.onChange,
+                  }
+                })}
               />
-              Unveröffentlich
-            </span>
-          </div>
-        </div>
+            </div>
+
+            <div className="flex-row flex-wrap justify-between flex-initial order-1 hidden gap-3 mt-4 mb-1 ml-4 xl:flex md:mt-0">
+              {filter.map((filter) => (
+                <div className="inline-block" key={filter.label}>
+                  <span
+                    className={twMerge(
+                      'flex items-center',
+                      disabled?.filters && 'text-gray-500'
+                    )}
+                  >
+                    <Checkbox
+                      checked={filter.checked}
+                      onCheck={filter.onChange}
+                      disabled={disabled?.filters}
+                    />
+                    {filter.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-row">
-        <Button
-          className="justify-center mt-4 mr-2 w-11 h-11 md:mt-0"
-          onClick={() => window.print()}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faPrint} />
-          </Button.Icon>
-        </Button>
+        {!hidden?.print && (
+          <Button
+            className={twMerge(
+              'justify-center mt-4 w-11 h-11 md:mt-0',
+              !hidden?.sorting && 'mr-2'
+            )}
+            onClick={() => window.print()}
+            disabled={disabled?.print}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faPrint} />
+            </Button.Icon>
+          </Button>
+        )}
 
-        {/* // TODO: readd disabled attribute if required */}
-        <Dropdown
-          trigger={
-            <span
-              className={twMerge(
-                'flex items-center hover:cursor-pointer px-2 py-2 border border-solid border-uzh-grey-60 rounded-md',
-                `hover:${theme.primaryBg}`
-              )}
-            >
-              <FontAwesomeIcon icon={faArrowUpShortWide} className="mr-2" />
-              {sortLabels[sortBy]}
-            </span>
-          }
-          items={[
-            {
-              label: 'Nach Zeitpunkt sortieren',
-              onClick: () => setSortBy('recency'),
-            },
-            {
-              label: 'Nach Stimmen sortieren',
-              onClick: () => setSortBy('votes'),
-            },
-          ]}
-        />
+        {!hidden?.sorting && (
+          <Select
+            disabled={disabled?.sorting}
+            value={sortBy}
+            items={[
+              { value: 'votes', label: 'Nach Stimmen sortieren' },
+              { value: 'recency', label: 'Nach Zeitpunkt sortieren' },
+            ]}
+            onChange={(newValue: string) => setSortBy(newValue)}
+          />
+        )}
       </div>
     </div>
   )
