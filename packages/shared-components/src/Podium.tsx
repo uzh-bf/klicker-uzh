@@ -7,12 +7,12 @@ function SinglePodium({ username, avatar, score, className }) {
   return (
     <div
       className={twMerge(
-        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500',
+        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-md text-sm',
         className
       )}
     >
       <ParticipantOther
-        className="text-sm bg-white shadow border-slate-400"
+        className="bg-white shadow border-slate-400"
         pseudonym={username}
         avatar={avatar}
         points={score ?? 0}
@@ -24,8 +24,12 @@ function SinglePodium({ username, avatar, score, className }) {
 
 interface PodiumProps {
   leaderboard: LeaderboardEntry[]
+  className?: {
+    root?: string
+    single?: string
+  }
 }
-export function Podium({ leaderboard }: PodiumProps) {
+export function Podium({ leaderboard, className }: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
     return {
@@ -38,21 +42,21 @@ export function Podium({ leaderboard }: PodiumProps) {
   return (
     <div className="flex flex-col gap-4 md:items-end md:flex-row">
       <SinglePodium
-        className="order-2 h-[70px] md:order-1"
+        className={twMerge('order-2 h-[70px] md:order-1', className?.single)}
         username={rank2?.username}
         avatar={rank2?.avatar}
         score={rank2?.score}
       />
 
       <SinglePodium
-        className="order-1 h-[80px] md:order-2"
+        className={twMerge('order-1 h-[80px] md:order-2', className?.single)}
         username={rank1?.username}
         avatar={rank1?.avatar}
         score={rank1?.score}
       />
 
       <SinglePodium
-        className="order-3 h-[60px]"
+        className={twMerge('order-3 h-[60px]', className?.single)}
         username={rank3?.username}
         avatar={rank3?.avatar}
         score={rank3?.score}
