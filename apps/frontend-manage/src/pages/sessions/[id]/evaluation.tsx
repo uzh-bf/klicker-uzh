@@ -34,7 +34,6 @@ import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
 
 // TODO: maybe move this util to another file / component or to this component - having util files in the components seems strange?
-import { extractQuestions } from '../../../components/evaluation/utils'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
@@ -130,13 +129,6 @@ function Evaluation() {
     [blocks]
   )
 
-  const questions = useMemo(() => {
-    if (!instanceResults) return []
-
-    // TODO: possibly replace / rewrite if requested
-    return extractQuestions(instanceResults)
-  }, [instanceResults])
-
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
     return blocks[selectedBlock].tabData?.map((question) => {
@@ -145,17 +137,18 @@ function Evaluation() {
   }, [blocks, selectedBlock])
 
   useEffect(() => {
-    if (questions.length === 0) return
+    if (!instanceResults || instanceResults.length === 0) return
 
     setChartType(
-      ACTIVE_CHART_TYPES[questions[0].type][0].value as DB.QuestionType
+      ACTIVE_CHART_TYPES[instanceResults[0].questionData.type][0]
+        .value as DB.QuestionType
     )
 
     const currInstance = instanceResults?.find(
       (instance) => instance.id === selectedInstance
     )
     if (currInstance) setCurrentInstance(currInstance)
-  }, [questions, chartType, selectedBlock, selectedInstance, instanceResults])
+  }, [selectedInstance, instanceResults])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
