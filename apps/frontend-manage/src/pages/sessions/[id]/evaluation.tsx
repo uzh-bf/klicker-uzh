@@ -344,11 +344,25 @@ function Evaluation() {
                             ?.max ?? '+∞'}
                           ]
                         </div>
+                        <div className="mt-4 font-bold">Statistik:</div>
+                        {Object.entries(currentInstance.questionData.statistics)
+                          .slice(1, -1)
+                          .map((statistic, index) => {
+                            return (
+                              <div
+                                key={index}
+                                className="flex justify-between mb-2 border-b-2"
+                              >
+                                <span>{statistic[0]}</span>
+                                <span>{statistic[1]}</span>
+                              </div>
+                            )
+                          })}
                         {showSolution &&
                           currentInstance.questionData.options
                             .solutionRanges && (
                             <div>
-                              <div className="mt-2 font-bold">
+                              <div className="mt-4 font-bold">
                                 Korrekte Lösungsbereiche:
                               </div>
                               {currentInstance.questionData.options.solutionRanges.map(
