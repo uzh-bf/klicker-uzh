@@ -139,6 +139,14 @@ export async function getCourseOverviewData(
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
+      include: {
+        awards: {
+          include: {
+            participant: true,
+            participantGroup: true,
+          },
+        },
+      },
     })
 
     const lbEntries = await course.leaderboard({
@@ -238,6 +246,14 @@ export async function getCourseOverviewData(
 
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
+    include: {
+      awards: {
+        include: {
+          participant: true,
+          participantGroup: true,
+        },
+      },
+    },
   })
 
   if (!course) return null

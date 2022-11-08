@@ -135,6 +135,17 @@ export interface NexusGenObjects {
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
+  AwardEntry: { // root type
+    course: NexusGenRootTypes['Course']; // Course!
+    description: string; // String!
+    displayName: string; // String!
+    id: number; // Int!
+    name: string; // String!
+    order: number; // Int!
+    participant?: NexusGenRootTypes['Participant'] | null; // Participant
+    participantGroup?: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
+    type: string; // String!
+  }
   Choice: { // root type
     correct?: boolean | null; // Boolean
     feedback?: string | null; // String
@@ -163,6 +174,7 @@ export interface NexusGenObjects {
     speed: number; // Int!
   }
   Course: { // root type
+    awards?: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color?: string | null; // String
     createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
     description?: string | null; // String
@@ -478,6 +490,17 @@ export interface NexusGenFieldTypes {
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
+  AwardEntry: { // field return type
+    course: NexusGenRootTypes['Course']; // Course!
+    description: string; // String!
+    displayName: string; // String!
+    id: number; // Int!
+    name: string; // String!
+    order: number; // Int!
+    participant: NexusGenRootTypes['Participant'] | null; // Participant
+    participantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
+    type: string; // String!
+  }
   Choice: { // field return type
     correct: boolean | null; // Boolean
     feedback: string | null; // String
@@ -506,6 +529,7 @@ export interface NexusGenFieldTypes {
     speed: number; // Int!
   }
   Course: { // field return type
+    awards: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color: string | null; // String
     createdAt: NexusGenScalars['DateTime'] | null; // DateTime
     description: string | null; // String
@@ -888,6 +912,17 @@ export interface NexusGenFieldTypeNames {
     originalName: 'String'
     type: 'AttachmentType'
   }
+  AwardEntry: { // field return type name
+    course: 'Course'
+    description: 'String'
+    displayName: 'String'
+    id: 'Int'
+    name: 'String'
+    order: 'Int'
+    participant: 'Participant'
+    participantGroup: 'ParticipantGroup'
+    type: 'String'
+  }
   Choice: { // field return type name
     correct: 'Boolean'
     feedback: 'String'
@@ -916,6 +951,7 @@ export interface NexusGenFieldTypeNames {
     speed: 'Int'
   }
   Course: { // field return type name
+    awards: 'AwardEntry'
     color: 'String'
     createdAt: 'DateTime'
     description: 'String'
