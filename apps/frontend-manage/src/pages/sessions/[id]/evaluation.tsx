@@ -346,7 +346,7 @@ function Evaluation() {
                         </div>
                         <div className="mt-4 font-bold">Statistik:</div>
                         {Object.entries(currentInstance.questionData.statistics)
-                          .slice(1, -1)
+                          .slice(1)
                           .map((statistic, index) => {
                             return (
                               <div
@@ -354,7 +354,10 @@ function Evaluation() {
                                 className="flex justify-between mb-2 border-b-2"
                               >
                                 <span>{statistic[0]}</span>
-                                <span>{statistic[1]}</span>
+                                <span>
+                                  {Math.round(parseFloat(statistic[1]) * 100) /
+                                    100}
+                                </span>
                               </div>
                             )
                           })}
