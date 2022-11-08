@@ -176,57 +176,59 @@ function CourseOverview({ courseId }: any) {
               </div>
             </div>
 
-            <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
-              <H3 className="mb-2 text-base">BF-Champion Awards</H3>
-              <div className="flex flex-row gap-6 text-sm text-gray-700">
-                <div className="flex-1 space-y-1">
-                  {course.awards
-                    ?.filter((award) => award.type === 'PARTICIPANT')
-                    .map((award) => (
-                      <div
-                        key={award.id}
-                        className={twMerge(
-                          'flex flex-row justify-between',
-                          award.participant && 'text-orange-700'
-                        )}
-                      >
-                        <div className="flex flex-row gap-3">
-                          <div>{award.displayName}:</div>
-                          <div>
-                            {award.participant
-                              ? `🥳  ${award.participant.username}  🥳`
-                              : 'offen'}
+            {course?.awards?.length != 0 && (
+              <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
+                <H3 className="mb-2 text-base">BF-Champion Awards</H3>
+                <div className="flex flex-row gap-6 text-sm text-gray-700">
+                  <div className="flex-1 space-y-1">
+                    {course.awards
+                      ?.filter((award) => award.type === 'PARTICIPANT')
+                      .map((award) => (
+                        <div
+                          key={award.id}
+                          className={twMerge(
+                            'flex flex-row justify-between',
+                            award.participant && 'text-orange-700'
+                          )}
+                        >
+                          <div className="flex flex-row gap-3">
+                            <div>{award.displayName}:</div>
+                            <div>
+                              {award.participant
+                                ? `🥳  ${award.participant.username}  🥳`
+                                : 'offen'}
+                            </div>
                           </div>
+                          <div>{award.description}</div>
                         </div>
-                        <div>{award.description}</div>
-                      </div>
-                    ))}
-                </div>
-                <div className="flex-1 space-y-1">
-                  {course.awards
-                    ?.filter((award) => award.type === 'GROUP')
-                    .map((award) => (
-                      <div
-                        key={award.id}
-                        className={twMerge(
-                          'flex flex-row justify-between',
-                          award.participantGroup && 'text-orange-700'
-                        )}
-                      >
-                        <div className="flex flex-row gap-3">
-                          <div>{award.displayName}:</div>
-                          <div>
-                            {award.participantGroup
-                              ? `🥳  ${award.participantGroup.name}  🥳`
-                              : 'offen'}
+                      ))}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    {course.awards
+                      ?.filter((award) => award.type === 'GROUP')
+                      .map((award) => (
+                        <div
+                          key={award.id}
+                          className={twMerge(
+                            'flex flex-row justify-between',
+                            award.participantGroup && 'text-orange-700'
+                          )}
+                        >
+                          <div className="flex flex-row gap-3">
+                            <div>{award.displayName}:</div>
+                            <div>
+                              {award.participantGroup
+                                ? `🥳  ${award.participantGroup.name}  🥳`
+                                : 'offen'}
+                            </div>
                           </div>
+                          <div>{award.description}</div>
                         </div>
-                        <div>{award.description}</div>
-                      </div>
-                    ))}
+                      ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </Tabs.TabContent>
 
           {data.participantGroups?.map((group) => (
