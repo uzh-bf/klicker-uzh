@@ -45,7 +45,9 @@ function Participant({
           </div>
         )}
 
-        <div className="first:ml-2 text-slate-700">{pseudonym ?? 'Frei'}</div>
+        <div className="overflow-hidden first:ml-2 text-slate-700 text-ellipsis">
+          {pseudonym ?? 'Frei'}
+        </div>
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
