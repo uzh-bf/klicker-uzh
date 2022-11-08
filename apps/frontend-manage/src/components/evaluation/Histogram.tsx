@@ -95,7 +95,7 @@ function Histogram({
           <Tooltip />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
           {/* // TODO: For some reason, this does not work */}
-          {data.questionData.statistics && [
+          {data.statistics && [
             <ReferenceLine
               isFront
               label={{
@@ -104,9 +104,9 @@ function Histogram({
                 position: 'top',
                 value: 'MEAN',
               }}
-              key={data.questionData.statistics.mean}
+              key={data.statistics.mean}
               stroke="blue"
-              x={Math.round(data.questionData.statistics.mean)}
+              x={Math.round(data.statistics.mean)}
             />,
             <ReferenceLine
               isFront
@@ -116,9 +116,9 @@ function Histogram({
                 position: 'top',
                 value: 'MEDIAN',
               }}
-              key={data.questionData.statistics.median}
+              key={data.statistics.median}
               stroke="red"
-              x={Math.round(data.questionData.statistics.median)}
+              x={Math.round(data.statistics.median)}
             />,
             <ReferenceLine
               isFront
@@ -128,9 +128,9 @@ function Histogram({
                 position: 'top',
                 value: 'Q1',
               }}
-              key={data.questionData.statistics.q1}
+              key={data.statistics.q1}
               stroke="black"
-              x={Math.round(data.questionData.statistics.q1)}
+              x={Math.round(data.statistics.q1)}
             />,
             <ReferenceLine
               isFront
@@ -140,9 +140,9 @@ function Histogram({
                 position: 'top',
                 value: 'Q3',
               }}
-              key={data.questionData.statistics.q3}
+              key={data.statistics.q3}
               stroke="black"
-              x={Math.round(data.questionData.statistics.q3)}
+              x={Math.round(data.statistics.q3)}
             />,
           ]}
           {/* 

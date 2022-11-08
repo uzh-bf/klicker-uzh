@@ -304,9 +304,6 @@ export const NumericalQuestionData = objectType({
     t.nonNull.field('options', {
       type: NumericalQuestionOptions,
     })
-    t.field('statistics', {
-      type: Statistics,
-    })
   },
 })
 
@@ -832,6 +829,9 @@ export const InstanceResult = objectType({
 
     t.nonNull.field('results', {
       type: 'JSONObject',
+    })
+    t.field('statistics', {
+      type: Statistics,
     })
   },
 })

@@ -646,8 +646,6 @@ export async function deactivateSessionBlock(
       activeBlock: session.activeBlock,
     })
 
-  // console.log(instanceResults, sessionLeaderboard, blockLeaderboard)
-
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.session.update({
     where: {
@@ -1182,7 +1180,7 @@ function checkCorrectnessFreeText(instance) {
 
 function computeStatistics(instance) {
   // Compute the statistics for numerical questions
-  if (instance.questionData.type === 'NUMERICAL') {
+  if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
     const results = []
     for (const key in instance.results) {
       results.push(instance.results[key])
@@ -1193,7 +1191,7 @@ function computeStatistics(instance) {
     }, [])
     const hasResults = valueArray.length > 0
 
-    instance.questionData.statistics = {
+    instance.statistics = {
       max: hasResults && max(valueArray),
       mean: hasResults && mean(valueArray),
       median: hasResults && median(valueArray),
@@ -1303,24 +1301,6 @@ export async function getSessionEvaluation(
     )
   }
 
-  activeInstanceResults = activeInstanceResults.map((instance) => {
-    if (instance.questionData.type === 'FREE_TEXT') {
-      for (const id in instance.results) {
-        if (
-          instance.questionData.options.solutions &&
-          instance.questionData.options.solutions.includes(
-            instance.results[id].value
-          )
-        ) {
-          instance.results[id].correct = true
-        } else {
-          instance.results[id].correct = false
-        }
-      }
-    }
-    return instance
-  })
-
   let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
@@ -1356,6 +1336,19 @@ export async function getSessionEvaluation(
         status: session.activeBlock?.status,
       })),
     }
+  }
+
+  const temp = {
+    id: `${id}-eval`,
+    status: session.status,
+    isGamificationEnabled: session.isGamificationEnabled,
+    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
+    instanceResults: [
+      ...completeQuestionData(executedInstanceResults),
+      ...completeQuestionData(activeInstanceResults),
+    ],
+    feedbacks: session.feedbacks,
+    confusionFeedbacks: session.confusionFeedbacks,
   }
 
   return {

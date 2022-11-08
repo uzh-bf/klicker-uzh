@@ -2811,6 +2811,18 @@
             "deprecationReason": null
           },
           {
+            "name": "statistics",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Statistics",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "status",
             "description": null,
             "args": [],
@@ -5526,18 +5538,6 @@
                 "name": "NumericalQuestionOptions",
                 "ofType": null
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "statistics",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Statistics",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null

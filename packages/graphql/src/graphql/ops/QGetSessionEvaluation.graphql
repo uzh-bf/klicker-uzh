@@ -38,15 +38,6 @@ query GetSessionEvaluation($id: ID!) {
         }
 
         ... on NumericalEvaluationData {
-          statistics {
-            max
-            mean
-            median
-            min
-            q1
-            q3
-            sd
-          }
           options {
             restrictions {
               min
@@ -71,6 +62,15 @@ query GetSessionEvaluation($id: ID!) {
 
       participants
       results
+      statistics {
+        max
+        mean
+        median
+        min
+        q1
+        q3
+        sd
+      }
     }
     feedbacks {
       id

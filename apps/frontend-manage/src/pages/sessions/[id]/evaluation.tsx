@@ -76,6 +76,7 @@ function Evaluation() {
           options: FreeTextQuestionOptions
         }
     results: Object
+    statistics: Object
     status: SessionBlockStatus
   }>({
     blockIx: 0,
@@ -90,6 +91,7 @@ function Evaluation() {
       options: { choices: [] },
     },
     results: {},
+    statistics: {},
     status: SessionBlockStatus.Executed,
   })
 
@@ -109,8 +111,6 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  console.log(data)
-
   const blocks = useMemo(() => {
     return data?.sessionEvaluation?.blocks ?? []
   }, [data])
@@ -118,9 +118,6 @@ function Evaluation() {
   const instanceResults = useMemo(() => {
     return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
-
-  console.log('instanceResults', instanceResults)
-  console.log('current instance', currentInstance)
 
   const tabs = useMemo(
     () =>
@@ -345,7 +342,7 @@ function Evaluation() {
                           ]
                         </div>
                         <div className="mt-4 font-bold">Statistik:</div>
-                        {Object.entries(currentInstance.questionData.statistics)
+                        {Object.entries(currentInstance.statistics)
                           .slice(1)
                           .map((statistic, index) => {
                             return (

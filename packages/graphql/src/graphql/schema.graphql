@@ -252,6 +252,7 @@ type InstanceResult {
   participants: Int!
   questionData: EvaluationData!
   results: JSONObject!
+  statistics: Statistics
   status: SessionBlockStatus!
 }
 
@@ -356,7 +357,6 @@ type NumericalQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: NumericalQuestionOptions!
-  statistics: Statistics
   type: String!
 }
 

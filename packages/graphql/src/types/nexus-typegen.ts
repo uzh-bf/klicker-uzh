@@ -289,6 +289,7 @@ export interface NexusGenObjects {
     participants: number; // Int!
     questionData: NexusGenRootTypes['EvaluationData']; // EvaluationData!
     results: NexusGenScalars['JSONObject']; // JSONObject!
+    statistics?: NexusGenRootTypes['Statistics'] | null; // Statistics
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
   LeaderboardEntry: { // root type
@@ -340,7 +341,6 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    statistics?: NexusGenRootTypes['Statistics'] | null; // Statistics
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -681,6 +681,7 @@ export interface NexusGenFieldTypes {
     participants: number; // Int!
     questionData: NexusGenRootTypes['EvaluationData']; // EvaluationData!
     results: NexusGenScalars['JSONObject']; // JSONObject!
+    statistics: NexusGenRootTypes['Statistics'] | null; // Statistics
     status: NexusGenEnums['SessionBlockStatus']; // SessionBlockStatus!
   }
   LeaderboardEntry: { // field return type
@@ -773,7 +774,6 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    statistics: NexusGenRootTypes['Statistics'] | null; // Statistics
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
@@ -1145,6 +1145,7 @@ export interface NexusGenFieldTypeNames {
     participants: 'Int'
     questionData: 'EvaluationData'
     results: 'JSONObject'
+    statistics: 'Statistics'
     status: 'SessionBlockStatus'
   }
   LeaderboardEntry: { // field return type name
@@ -1237,7 +1238,6 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     options: 'NumericalQuestionOptions'
-    statistics: 'Statistics'
     type: 'String'
   }
   NumericalQuestionOptions: { // field return type name
