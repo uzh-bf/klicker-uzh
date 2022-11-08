@@ -127,6 +127,7 @@ interface ComputeAwardedPointsArgs {
   timeToZeroBonus?: number
   getsMaxPoints?: boolean
   defaultPoints?: number
+  defaultCorrectPoints?: number
   pointsPercentage?: number | null
 }
 export function computeAwardedPoints({
@@ -136,9 +137,10 @@ export function computeAwardedPoints({
   timeToZeroBonus,
   getsMaxPoints,
   defaultPoints,
+  defaultCorrectPoints,
   pointsPercentage,
 }: ComputeAwardedPointsArgs): number {
-  const slope = maxBonus / (timeToZeroBonus ?? 40)
+  const slope = maxBonus / (timeToZeroBonus ?? 20)
 
   // default number of points each student gets independent of the correctness of the answer
   let awardedPoints = defaultPoints ?? 0
@@ -152,12 +154,13 @@ export function computeAwardedPoints({
   // if the student gets the question right, they get the full points or partial points depending on the question type
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    awardedPoints += Math.max(
-      pointsPercentage * (maxBonus - slope * responseTiming),
-      0
-    )
+    awardedPoints +=
+      pointsPercentage * (defaultCorrectPoints || 0) +
+      Math.max(pointsPercentage * (maxBonus - slope * responseTiming), 0)
   } else if (getsMaxPoints) {
-    awardedPoints += Math.max(maxBonus - slope * responseTiming, 0)
+    awardedPoints +=
+      (defaultCorrectPoints || 0) +
+      Math.max(maxBonus - slope * responseTiming, 0)
   }
 
   console.log('awarded points', awardedPoints)

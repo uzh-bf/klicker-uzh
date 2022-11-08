@@ -16,9 +16,10 @@ import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
 
-const MAX_BONUS_POINTS = 15 // maximum 15 bonus points for fastest answer
-const TIME_TO_ZERO_BONUS = 40 // 40 seconds until the bonus points are zero
+const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
+const TIME_TO_ZERO_BONUS = 20 // seconds until the bonus points are zero
 const DEFAULT_POINTS = 10 // points a participant gets for participating in a poll
+const DEFAULT_CORRECT_POINTS = 5 // points a participant gets for answering correctly (independent of time)
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the question options
@@ -160,10 +161,15 @@ const serviceBusTrigger: AzureFunction = async function (
             maxBonus: MAX_BONUS_POINTS,
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
+            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsPercentage,
           })
 
-          if (pointsPercentage !== null && !firstResponseReceivedAt) {
+          if (
+            pointsPercentage !== null &&
+            pointsPercentage === 1 &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -214,6 +220,7 @@ const serviceBusTrigger: AzureFunction = async function (
             getsMaxPoints: parsedSolutions && answerCorrect,
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
+            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
           })
 
           if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
@@ -267,6 +274,7 @@ const serviceBusTrigger: AzureFunction = async function (
             getsMaxPoints: Boolean(answerCorrect),
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
+            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
           })
 
           if (answerCorrect && !firstResponseReceivedAt) {
