@@ -216,8 +216,9 @@ function Evaluation() {
               </div>
             </RadixTab.Trigger>
           )}
-          {data.sessionEvaluation?.status === 'COMPLETED' && (
-            <>
+
+          {data.sessionEvaluation?.status === 'COMPLETED' &&
+            data.sessionEvaluation?.feedbacks?.length !== 0 && (
               <RadixTab.Trigger
                 value="feedbacks"
                 className={twMerge(
@@ -236,6 +237,9 @@ function Evaluation() {
                   <div>Feedbacks</div>
                 </div>
               </RadixTab.Trigger>
+            )}
+          {data.sessionEvaluation?.status === 'COMPLETED' &&
+            data.sessionEvaluation?.confusionFeedbacks?.length !== 0 && (
               <RadixTab.Trigger
                 value="confusion"
                 className={twMerge(
@@ -254,8 +258,7 @@ function Evaluation() {
                   <div>Confusion</div>
                 </div>
               </RadixTab.Trigger>
-            </>
-          )}
+            )}
         </div>
       </RadixTab.List>
 
@@ -397,6 +400,7 @@ function Evaluation() {
             </div>
           </div>
         </RadixTab.Content>
+
         <RadixTab.Content value="confusion">
           <div className="p-4 border-t">
             <div className="max-w-5xl mx-auto text-xl">
