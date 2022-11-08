@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.94](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.93...v2.0.0-alpha.94) (2022-11-08)
+
+
+### Enhancements
+
+* **apps/frontend-*:** small styling improvements for in-frame pages ([351a351](https://github.com/uzh-bf/klicker-uzh/commit/351a351711742aac145e840fbecbcaefead7d232))
+
 ## [2.0.0-alpha.93](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.92...v2.0.0-alpha.93) (2022-11-07)
 
 
