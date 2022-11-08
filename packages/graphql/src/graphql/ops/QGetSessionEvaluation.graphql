@@ -90,6 +90,7 @@ query GetSessionEvaluation($id: ID!) {
       }
     }
     confusionFeedbacks {
+      id
       speed
       difficulty
       createdAt

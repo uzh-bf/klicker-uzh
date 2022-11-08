@@ -11,12 +11,15 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChoicesQuestionOptions,
+  FreeTextQuestionOptions,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
-  InstanceResult,
+  NumericalQuestionOptions,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import * as DB from '@klicker-uzh/prisma'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -44,58 +47,50 @@ function Evaluation() {
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
   const [showSolution, setShowSolution] = useState(false)
-  const [chartType, setChartType] = useState('')
-  const [currentInstance, setCurrentInstance] = useState<InstanceResult>({
+  const [chartType, setChartType] = useState<DB.QuestionType>('SC')
+  const [currentInstance, setCurrentInstance] = useState<{
+    blockIx: number
+    id: string
+    instanceIx: number
+    participants: number
+    questionData:
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'SC' | 'MC' | 'KPRIM'
+          options: ChoicesQuestionOptions
+        }
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'NUMERICAL'
+          options: NumericalQuestionOptions
+        }
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'FREE_TEXT'
+          options: FreeTextQuestionOptions
+        }
+    results: Object
+    status: SessionBlockStatus
+  }>({
     blockIx: 0,
     id: '',
     instanceIx: 0,
     participants: 0,
     questionData: {
-      content: '',
       id: 0,
       name: '',
-      type: '',
+      content: '',
+      type: 'SC',
+      options: { choices: [] },
     },
     results: {},
     status: SessionBlockStatus.Executed,
-  })
-
-  // TODO: replace
-  const [currentQuestion, setCurrentQuestion] = useState<
-    | {
-        type: 'SC' | 'MC' | 'KPRIM'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; correct: boolean; count: number }[]
-      } // choices question types
-    | {
-        type: 'FREE_TEXT'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; count: number }[]
-        solutions: string[]
-      } // free text question type
-    | {
-        type: 'NUMERICAL'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; count: number }[]
-        restrictions: { min?: number; max?: number }
-        solutions: { min?: number; max?: number }[]
-      } // numerical text question type
-  >({
-    type: 'SC',
-    content: '',
-    blockIx: 0,
-    instanceIx: 0,
-    participants: 0,
-    answers: [],
   })
 
   const {
@@ -155,15 +150,9 @@ function Evaluation() {
   useEffect(() => {
     if (questions.length === 0) return
 
-    if (chartType === '') {
-      setChartType(ACTIVE_CHART_TYPES[questions[0].type][0].value)
-    }
-    const currQuestion = questions?.find((question) =>
-      selectedInstance !== ''
-        ? question.id === selectedInstance
-        : question.blockIx === selectedBlock
+    setChartType(
+      ACTIVE_CHART_TYPES[questions[0].type][0].value as DB.QuestionType
     )
-    setCurrentQuestion(currQuestion)
 
     const currInstance = instanceResults?.find(
       (instance) => instance.id === selectedInstance
@@ -289,13 +278,13 @@ function Evaluation() {
       </RadixTab.List>
 
       <div className="flex-1 overflow-y-auto">
-        {currentQuestion && (
-          <RadixTab.Content value={String(currentQuestion.blockIx)}>
+        {currentInstance && (
+          <RadixTab.Content value={String(currentInstance.blockIx)}>
             <div>
               <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
                 <Markdown
                   className="flex flex-row content-between p-2"
-                  content={currentQuestion.content}
+                  content={currentInstance.questionData.content}
                 />
               </Prose>
 
@@ -309,70 +298,79 @@ function Evaluation() {
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
                   <div className="flex flex-col gap-2">
-                    {(currentQuestion.type === 'SC' ||
-                      currentQuestion.type === 'MC' ||
-                      currentQuestion.type === 'KPRIM') &&
-                      currentQuestion.answers.map((answer, innerIndex) => (
-                        <div
-                          key={currentQuestion.answers[innerIndex].value}
-                          className="flex flex-row"
-                        >
+                    {(currentInstance.questionData.type === 'SC' ||
+                      currentInstance.questionData.type === 'MC' ||
+                      currentInstance.questionData.type === 'KPRIM') &&
+                      currentInstance.questionData.options.choices.map(
+                        (choice, innerIndex) => (
                           <div
-                            // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                            style={{
-                              backgroundColor:
-                                answer.correct && showSolution
-                                  ? '#00de0d'
-                                  : CHART_COLORS[innerIndex % 12],
-                            }}
-                            className={twMerge(
-                              'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                              answer.correct && showSolution && 'text-black'
-                            )}
+                            key={`${currentInstance.blockIx}-${innerIndex}`}
+                            className="flex flex-row"
                           >
-                            {String.fromCharCode(65 + innerIndex)}
+                            <div
+                              // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                              style={{
+                                backgroundColor:
+                                  choice.correct && showSolution
+                                    ? '#00de0d'
+                                    : CHART_COLORS[innerIndex % 12],
+                              }}
+                              className={twMerge(
+                                'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                                choice.correct && showSolution && 'text-black'
+                              )}
+                            >
+                              {String.fromCharCode(65 + innerIndex)}
+                            </div>
+                            <Markdown
+                              content={choice.value}
+                              className="w-[calc(100%-3rem)]"
+                            />
                           </div>
-                          <Markdown
-                            content={answer.value}
-                            className="w-[calc(100%-3rem)]"
-                          />
-                        </div>
-                      ))}
+                        )
+                      )}
 
-                    {currentQuestion.type === 'NUMERICAL' && (
+                    {currentInstance.questionData.type === 'NUMERICAL' && (
                       <div>
                         <div className="font-bold">
                           Erlaubter Antwortbereich:
                         </div>
                         <div>
-                          [{currentQuestion.restrictions!.min ?? '-∞'},
-                          {currentQuestion.restrictions!.max ?? '+∞'}]
+                          [
+                          {currentInstance.questionData.options.restrictions
+                            ?.min ?? '-∞'}
+                          ,
+                          {currentInstance.questionData.options.restrictions
+                            ?.max ?? '+∞'}
+                          ]
                         </div>
-                        {showSolution && currentQuestion.solutions && (
-                          <div>
-                            <div className="mt-2 font-bold">
-                              Korrekte Lösungsbereiche:
+                        {showSolution &&
+                          currentInstance.questionData.options
+                            .solutionRanges && (
+                            <div>
+                              <div className="mt-2 font-bold">
+                                Korrekte Lösungsbereiche:
+                              </div>
+                              {currentInstance.questionData.options.solutionRanges.map(
+                                (range, innerIndex) => (
+                                  <div key={innerIndex}>
+                                    [{range?.min || '-∞'},{range?.max || '+∞'}]
+                                  </div>
+                                )
+                              )}
                             </div>
-                            {currentQuestion.solutions.map(
-                              (range, innerIndex) => (
-                                <div key={innerIndex}>
-                                  [{range.min ?? '-∞'},{range.max ?? '+∞'}]
-                                </div>
-                              )
-                            )}
-                          </div>
-                        )}
+                          )}
                       </div>
                     )}
-                    {currentQuestion.type === 'FREE_TEXT' &&
-                      currentQuestion.solutions &&
+                    {currentInstance.questionData.type === 'FREE_TEXT' &&
+                      currentInstance.questionData.options.solutions &&
                       showSolution && (
                         <div>
                           <div className="font-bold">
                             Schlüsselwörter Lösung:
                           </div>
                           <ul>
-                            {currentQuestion.solutions.map(
+                            {currentInstance.questionData.options.solutions.map(
                               (keyword, innerIndex) => (
                                 <li key={innerIndex}>{`- ${keyword}`}</li>
                               )
@@ -448,10 +446,10 @@ function Evaluation() {
       </div>
 
       <Footer className="relative flex-none h-18">
-        {currentQuestion && (
+        {currentInstance && (
           <div className="flex flex-row justify-between p-4 pr-8 m-0">
             <div className="text-xl">
-              Total Teilnehmende: {currentQuestion.participants}
+              Total Teilnehmende: {currentInstance.participants}
             </div>
             <Switch
               id="showSolution"
