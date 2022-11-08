@@ -49,6 +49,10 @@ function Layout({
     data: dataParticipant,
   } = useQuery(SelfDocument)
 
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   return (
     <div className="flex flex-col w-full h-full">
       <Head>
@@ -74,7 +78,8 @@ function Layout({
           className={twMerge(
             'flex flex-col p-4 mt-16 md:mb-0 [height:_calc(100%-4rem)] overflow-y-auto',
             dataParticipant?.self &&
-              '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14'
+              '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14',
+            pageInFrame && 'px-0'
           )}
         >
           {children}
