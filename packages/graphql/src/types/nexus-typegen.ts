@@ -282,7 +282,7 @@ export interface NexusGenObjects {
     pointsAwarded?: number | null; // Float
     score: number; // Float!
   }
-  InstanceResults: { // root type
+  InstanceResult: { // root type
     blockIx: number; // Int!
     id: string; // ID!
     instanceIx: number; // Int!
@@ -467,7 +467,7 @@ export interface NexusGenObjects {
     confusionFeedbacks?: NexusGenRootTypes['ConfusionTimestep'][] | null; // [ConfusionTimestep!]
     feedbacks?: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
-    instanceResults?: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+    instanceResults?: NexusGenRootTypes['InstanceResult'][] | null; // [InstanceResult!]
     isGamificationEnabled: boolean; // Boolean!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
@@ -674,7 +674,7 @@ export interface NexusGenFieldTypes {
     pointsAwarded: number | null; // Float
     score: number; // Float!
   }
-  InstanceResults: { // field return type
+  InstanceResult: { // field return type
     blockIx: number; // Int!
     id: string; // ID!
     instanceIx: number; // Int!
@@ -921,7 +921,7 @@ export interface NexusGenFieldTypes {
     confusionFeedbacks: NexusGenRootTypes['ConfusionTimestep'][] | null; // [ConfusionTimestep!]
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     id: string; // ID!
-    instanceResults: NexusGenRootTypes['InstanceResults'][] | null; // [InstanceResults!]
+    instanceResults: NexusGenRootTypes['InstanceResult'][] | null; // [InstanceResult!]
     isGamificationEnabled: boolean; // Boolean!
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
@@ -1138,7 +1138,7 @@ export interface NexusGenFieldTypeNames {
     pointsAwarded: 'Float'
     score: 'Float'
   }
-  InstanceResults: { // field return type name
+  InstanceResult: { // field return type name
     blockIx: 'Int'
     id: 'ID'
     instanceIx: 'Int'
@@ -1385,7 +1385,7 @@ export interface NexusGenFieldTypeNames {
     confusionFeedbacks: 'ConfusionTimestep'
     feedbacks: 'Feedback'
     id: 'ID'
-    instanceResults: 'InstanceResults'
+    instanceResults: 'InstanceResult'
     isGamificationEnabled: 'Boolean'
     status: 'SessionStatus'
   }

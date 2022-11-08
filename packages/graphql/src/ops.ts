@@ -278,8 +278,8 @@ export type InstanceEvaluation = {
   score: Scalars['Float'];
 };
 
-export type InstanceResults = {
-  __typename?: 'InstanceResults';
+export type InstanceResult = {
+  __typename?: 'InstanceResult';
   blockIx: Scalars['Int'];
   id: Scalars['ID'];
   instanceIx: Scalars['Int'];
@@ -945,7 +945,7 @@ export type SessionEvaluation = {
   confusionFeedbacks?: Maybe<Array<ConfusionTimestep>>;
   feedbacks?: Maybe<Array<Feedback>>;
   id: Scalars['ID'];
-  instanceResults?: Maybe<Array<InstanceResults>>;
+  instanceResults?: Maybe<Array<InstanceResult>>;
   isGamificationEnabled: Scalars['Boolean'];
   status: SessionStatus;
 };
@@ -1444,7 +1444,7 @@ export type GetSessionEvaluationQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, status: SessionStatus, isGamificationEnabled: boolean, blocks?: Array<{ __typename?: 'Block', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name: string, status: string }> | null }> | null, instanceResults?: Array<{ __typename?: 'InstanceResults', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesEvaluationData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextEvaluationData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalEvaluationData', id: number, name: string, type: string, content: string, statistics?: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null } | null, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null, feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt?: any | null, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, createdAt: any, content: string, positiveReactions: number, negativeReactions: number } | null> | null }> | null, confusionFeedbacks?: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, createdAt: any }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
+export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, status: SessionStatus, isGamificationEnabled: boolean, blocks?: Array<{ __typename?: 'Block', blockIx: number, blockStatus: string, tabData?: Array<{ __typename?: 'TabData', id: string, questionIx: number, name: string, status: string }> | null }> | null, instanceResults?: Array<{ __typename?: 'InstanceResult', id: string, blockIx: number, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesEvaluationData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoicesQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextEvaluationData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalEvaluationData', id: number, name: string, type: string, content: string, statistics?: { __typename?: 'Statistics', max?: number | null, mean?: number | null, median?: number | null, min?: number | null, q1?: number | null, q3?: number | null, sd?: number | null } | null, options: { __typename?: 'NumericalQuestionOptions', restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null, feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt?: any | null, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, createdAt: any, content: string, positiveReactions: number, negativeReactions: number } | null> | null }> | null, confusionFeedbacks?: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, createdAt: any }> | null } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
 
 export type GetSessionLeaderboardQueryVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1637,7 +1637,7 @@ export type ResolversTypes = {
   GroupLeaderboardEntry: ResolverTypeWrapper<GroupLeaderboardEntry>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   InstanceEvaluation: ResolverTypeWrapper<InstanceEvaluation>;
-  InstanceResults: ResolverTypeWrapper<InstanceResults>;
+  InstanceResult: ResolverTypeWrapper<InstanceResult>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']>;
   LeaderboardEntry: ResolverTypeWrapper<LeaderboardEntry>;
@@ -1716,7 +1716,7 @@ export type ResolversParentTypes = {
   GroupLeaderboardEntry: GroupLeaderboardEntry;
   ID: Scalars['ID'];
   InstanceEvaluation: InstanceEvaluation;
-  InstanceResults: InstanceResults;
+  InstanceResult: InstanceResult;
   Int: Scalars['Int'];
   JSONObject: Scalars['JSONObject'];
   LeaderboardEntry: LeaderboardEntry;
@@ -1974,7 +1974,7 @@ export type InstanceEvaluationResolvers<ContextType = any, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type InstanceResultsResolvers<ContextType = any, ParentType extends ResolversParentTypes['InstanceResults'] = ResolversParentTypes['InstanceResults']> = {
+export type InstanceResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['InstanceResult'] = ResolversParentTypes['InstanceResult']> = {
   blockIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   instanceIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2281,7 +2281,7 @@ export type SessionEvaluationResolvers<ContextType = any, ParentType extends Res
   confusionFeedbacks?: Resolver<Maybe<Array<ResolversTypes['ConfusionTimestep']>>, ParentType, ContextType>;
   feedbacks?: Resolver<Maybe<Array<ResolversTypes['Feedback']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  instanceResults?: Resolver<Maybe<Array<ResolversTypes['InstanceResults']>>, ParentType, ContextType>;
+  instanceResults?: Resolver<Maybe<Array<ResolversTypes['InstanceResult']>>, ParentType, ContextType>;
   isGamificationEnabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['SessionStatus'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2353,7 +2353,7 @@ export type Resolvers<ContextType = any> = {
   GroupActivityInstance?: GroupActivityInstanceResolvers<ContextType>;
   GroupLeaderboardEntry?: GroupLeaderboardEntryResolvers<ContextType>;
   InstanceEvaluation?: InstanceEvaluationResolvers<ContextType>;
-  InstanceResults?: InstanceResultsResolvers<ContextType>;
+  InstanceResult?: InstanceResultResolvers<ContextType>;
   JSONObject?: GraphQLScalarType;
   LeaderboardEntry?: LeaderboardEntryResolvers<ContextType>;
   LeaderboardStatistics?: LeaderboardStatisticsResolvers<ContextType>;

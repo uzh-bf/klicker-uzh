@@ -2711,7 +2711,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "InstanceResults",
+        "name": "InstanceResult",
         "description": null,
         "fields": [
           {
@@ -8201,7 +8201,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "InstanceResults",
+                  "name": "InstanceResult",
                   "ofType": null
                 }
               }

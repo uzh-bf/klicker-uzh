@@ -13,6 +13,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
+  InstanceResult,
+  SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
@@ -43,6 +45,22 @@ function Evaluation() {
   const [selectedInstance, setSelectedInstance] = useState('')
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState('')
+  const [currentInstance, setCurrentInstance] = useState<InstanceResult>({
+    blockIx: 0,
+    id: '',
+    instanceIx: 0,
+    participants: 0,
+    questionData: {
+      content: '',
+      id: 0,
+      name: '',
+      type: '',
+    },
+    results: {},
+    status: SessionBlockStatus.Executed,
+  })
+
+  // TODO: replace
   const [currentQuestion, setCurrentQuestion] = useState<
     | {
         type: 'SC' | 'MC' | 'KPRIM'
@@ -106,6 +124,9 @@ function Evaluation() {
     return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
 
+  console.log('instanceResults', instanceResults)
+  console.log('current instance', currentInstance)
+
   const tabs = useMemo(
     () =>
       blocks.map((block) => {
@@ -143,7 +164,12 @@ function Evaluation() {
         : question.blockIx === selectedBlock
     )
     setCurrentQuestion(currQuestion)
-  }, [questions, chartType, selectedBlock, selectedInstance])
+
+    const currInstance = instanceResults?.find(
+      (instance) => instance.id === selectedInstance
+    )
+    if (currInstance) setCurrentInstance(currInstance)
+  }, [questions, chartType, selectedBlock, selectedInstance, instanceResults])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>

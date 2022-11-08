@@ -812,8 +812,8 @@ export const Session = objectType({
   },
 })
 
-export const InstanceResults = objectType({
-  name: 'InstanceResults',
+export const InstanceResult = objectType({
+  name: 'InstanceResult',
   definition(t) {
     t.nonNull.id('id')
 
@@ -867,7 +867,7 @@ export const SessionEvaluation = objectType({
       type: Block,
     })
     t.list.nonNull.field('instanceResults', {
-      type: InstanceResults,
+      type: InstanceResult,
     })
     t.list.nonNull.field('feedbacks', { type: Feedback })
 

@@ -245,7 +245,7 @@ type InstanceEvaluation {
   score: Float!
 }
 
-type InstanceResults {
+type InstanceResult {
   blockIx: Int!
   id: ID!
   instanceIx: Int!
@@ -568,7 +568,7 @@ type SessionEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   feedbacks: [Feedback!]
   id: ID!
-  instanceResults: [InstanceResults!]
+  instanceResults: [InstanceResult!]
   isGamificationEnabled: Boolean!
   status: SessionStatus!
 }
