@@ -106,7 +106,7 @@ function Histogram({
               }}
               key={data.statistics.mean}
               stroke="blue"
-              x={Math.round(data.statistics.mean)}
+              x={Math.round(data.statistics.mean || 0)}
             />,
             <ReferenceLine
               isFront
@@ -118,7 +118,7 @@ function Histogram({
               }}
               key={data.statistics.median}
               stroke="red"
-              x={Math.round(data.statistics.median)}
+              x={Math.round(data.statistics.median || 0)}
             />,
             <ReferenceLine
               isFront
@@ -130,7 +130,7 @@ function Histogram({
               }}
               key={data.statistics.q1}
               stroke="black"
-              x={Math.round(data.statistics.q1)}
+              x={Math.round(data.statistics.q1 || 0)}
             />,
             <ReferenceLine
               isFront
@@ -142,7 +142,7 @@ function Histogram({
               }}
               key={data.statistics.q3}
               stroke="black"
-              x={Math.round(data.statistics.q3)}
+              x={Math.round(data.statistics.q3 || 0)}
             />,
           ]}
           {/* 

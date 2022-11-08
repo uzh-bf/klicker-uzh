@@ -17,6 +17,7 @@ import {
   GetSessionEvaluationQuery,
   NumericalQuestionOptions,
   SessionBlockStatus,
+  Statistics,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as DB from '@klicker-uzh/prisma'
@@ -75,7 +76,7 @@ function Evaluation() {
           options: FreeTextQuestionOptions
         }
     results: Object
-    statistics: Object
+    statistics: Statistics
     status: SessionBlockStatus
   }>({
     blockIx: 0,
