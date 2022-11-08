@@ -745,7 +745,7 @@ model AwardEntry {
   id Int @id @default(autoincrement())
 
   order       Int
-  type        String
+  type        AwardType
   name        String
   displayName String
   description String

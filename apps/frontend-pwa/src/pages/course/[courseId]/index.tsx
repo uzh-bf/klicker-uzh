@@ -95,7 +95,31 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global" className="md:px-4">
-            <div className="flex flex-col gap-4  overflow-x-auto md:flex-row">
+            <div className="mb-4">
+              <H3>BF-Champion</H3>
+              <div className="flex flex-row gap-4">
+                <div className="flex-1">
+                  {course.awards
+                    ?.filter((award) => award.type === 'PARTICIPANT')
+                    .map((award) => (
+                      <div key={award.id}>
+                        {award.displayName} - {award.description}
+                      </div>
+                    ))}
+                </div>
+                <div className="flex-1">
+                  {course.awards
+                    ?.filter((award) => award.type === 'GROUP')
+                    .map((award) => (
+                      <div key={award.id}>
+                        {award.displayName} - {award.description}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
@@ -145,14 +169,16 @@ function CourseOverview({ courseId }: any) {
                       </div>
                     ))}
                   <div className="pt-8 space-y-2">
-                    {groupLeaderboard.map((entry) => (
-                      <ParticipantOther
-                        key={entry.id}
-                        pseudonym={entry.name}
-                        points={entry.score}
-                        withAvatar={false}
-                      />
-                    ))}
+                    {groupLeaderboard
+                      .filter((entry) => entry.score > 0)
+                      .map((entry) => (
+                        <ParticipantOther
+                          key={entry.id}
+                          pseudonym={entry.name}
+                          points={entry.score}
+                          withAvatar={false}
+                        />
+                      ))}
                   </div>
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
