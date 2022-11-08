@@ -289,37 +289,53 @@ function Evaluation() {
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
                   <div className="flex flex-col gap-2">
+                    <div className="font-bold">Diagramm Typ:</div>
+                    <Select
+                      className={{ root: '-mt-1 mb-1' }}
+                      items={
+                        ACTIVE_CHART_TYPES[currentInstance.questionData.type]
+                      }
+                      value={chartType}
+                      onChange={(newValue: string) =>
+                        setChartType(newValue as DB.QuestionType)
+                      }
+                    />
+
                     {(currentInstance.questionData.type === 'SC' ||
                       currentInstance.questionData.type === 'MC' ||
-                      currentInstance.questionData.type === 'KPRIM') &&
-                      currentInstance.questionData.options.choices.map(
-                        (choice, innerIndex) => (
-                          <div
-                            key={`${currentInstance.blockIx}-${innerIndex}`}
-                            className="flex flex-row"
-                          >
+                      currentInstance.questionData.type === 'KPRIM') && (
+                      <div className="flex flex-col gap-2">
+                        <div className="font-bold">Antwortmöglichkeiten</div>
+                        {currentInstance.questionData.options.choices.map(
+                          (choice, innerIndex) => (
                             <div
-                              // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
-                              style={{
-                                backgroundColor:
-                                  choice.correct && showSolution
-                                    ? '#00de0d'
-                                    : CHART_COLORS[innerIndex % 12],
-                              }}
-                              className={twMerge(
-                                'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
-                                choice.correct && showSolution && 'text-black'
-                              )}
+                              key={`${currentInstance.blockIx}-${innerIndex}`}
+                              className="flex flex-row"
                             >
-                              {String.fromCharCode(65 + innerIndex)}
+                              <div
+                                // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                                style={{
+                                  backgroundColor:
+                                    choice.correct && showSolution
+                                      ? '#00de0d'
+                                      : CHART_COLORS[innerIndex % 12],
+                                }}
+                                className={twMerge(
+                                  'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                                  choice.correct && showSolution && 'text-black'
+                                )}
+                              >
+                                {String.fromCharCode(65 + innerIndex)}
+                              </div>
+                              <Markdown
+                                content={choice.value}
+                                className="w-[calc(100%-3rem)]"
+                              />
                             </div>
-                            <Markdown
-                              content={choice.value}
-                              className="w-[calc(100%-3rem)]"
-                            />
-                          </div>
-                        )
-                      )}
+                          )
+                        )}
+                      </div>
+                    )}
 
                     {currentInstance.questionData.type === 'NUMERICAL' && (
                       <div>

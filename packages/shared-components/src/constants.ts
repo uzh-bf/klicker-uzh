@@ -149,7 +149,10 @@ export const TYPES_SHORT: Record<string, string> = {
   KPRIM: 'KP',
 }
 
-export const ACTIVE_CHART_TYPES: Record<string, Record<string, string>[]> = {
+export const ACTIVE_CHART_TYPES: Record<
+  string,
+  { label: string; value: string }[]
+> = {
   FREE_TEXT: [
     { label: 'Table', value: 'table' },
     { label: 'Word Cloud', value: 'wordCloud' },
