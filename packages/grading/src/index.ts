@@ -119,3 +119,47 @@ export function gradeQuestionFreeText({
 
   return 0
 }
+
+interface ComputeAwardedPointsArgs {
+  firstResponseReceivedAt: string
+  responseTimestamp: number
+  maxBonus: number
+  timeToZeroBonus?: number
+  getsMaxPoints?: boolean
+  defaultPoints?: number
+  pointsPercentage?: number | null
+}
+export function computeAwardedPoints({
+  firstResponseReceivedAt,
+  responseTimestamp,
+  maxBonus,
+  timeToZeroBonus,
+  getsMaxPoints,
+  defaultPoints,
+  pointsPercentage,
+}: ComputeAwardedPointsArgs): number {
+  const slope = maxBonus / (timeToZeroBonus ?? 40)
+
+  // default number of points each student gets independent of the correctness of the answer
+  let awardedPoints = defaultPoints ?? 0
+
+  // time between the first response and the current response
+  let responseTiming =
+    (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
+    1000
+  console.log('responseTiming', responseTiming)
+
+  // if the student gets the question right, they get the full points or partial points depending on the question type
+  // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
+  if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
+    awardedPoints += Math.max(
+      pointsPercentage * (maxBonus - slope * responseTiming),
+      0
+    )
+  } else if (getsMaxPoints) {
+    awardedPoints += Math.max(maxBonus - slope * responseTiming, 0)
+  }
+
+  console.log('awarded points', awardedPoints)
+  return Math.round(awardedPoints)
+}

@@ -1,5 +1,6 @@
 import type { AzureFunction, Context } from '@azure/functions'
 import {
+  computeAwardedPoints,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -15,7 +16,9 @@ import { toLower, trim } from 'ramda'
 
 import getRedis from './redis'
 
-const TIMING_FACTOR = 0.7
+const MAX_BONUS_POINTS = 15 // maximum 15 bonus points for fastest answer
+const TIME_TO_ZERO_BONUS = 40 // 40 seconds until the bonus points are zero
+const DEFAULT_POINTS = 10 // points a participant gets for participating in a poll
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the question options
@@ -120,16 +123,8 @@ const serviceBusTrigger: AzureFunction = async function (
       Sentry.captureException(e)
     }
 
-    // compute the timing of the response based on the first response received for the instance
-    let responseTiming =
-      (responseTimestamp -
-        Number(firstResponseReceivedAt ?? responseTimestamp)) /
-      1000
-    if (responseTiming < 1) {
-      responseTiming = 1
-    }
-    context.log('responseTiming', responseTiming)
-    let pointsAwarded: number | string = 10
+    let pointsAwarded: number | string = 0
+
     switch (type) {
       case 'SC':
       case 'MC':
@@ -159,22 +154,24 @@ const serviceBusTrigger: AzureFunction = async function (
               solution: parsedSolutions,
             })
           }
-          if (pointsPercentage !== null) {
-            context.log('pointsPercentage', pointsPercentage)
-            pointsAwarded +=
-              (50 * pointsPercentage) / (responseTiming * TIMING_FACTOR)
+          pointsAwarded = computeAwardedPoints({
+            firstResponseReceivedAt,
+            responseTimestamp,
+            maxBonus: MAX_BONUS_POINTS,
+            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            defaultPoints: DEFAULT_POINTS,
+            pointsPercentage,
+          })
+
+          if (pointsPercentage !== null && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            if (!firstResponseReceivedAt) {
-              redisExec.hset(
-                `${instanceKey}:info`,
-                'firstResponseReceivedAt',
-                responseTimestamp
-              )
-            }
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
           }
-          pointsAwarded = Math.round(pointsAwarded)
-          context.log('pointsAwarded', pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
@@ -203,26 +200,31 @@ const serviceBusTrigger: AzureFunction = async function (
           response.value
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+
+        const answerCorrect = gradeQuestionNumerical({
+          response: response.value,
+          solutionRanges: parsedSolutions,
+        })
+
         if (participantData) {
-          if (
-            parsedSolutions &&
-            gradeQuestionNumerical({
-              response: response.value,
-              solutionRanges: parsedSolutions,
-            })
-          ) {
-            pointsAwarded += 50 / (responseTiming * TIMING_FACTOR)
+          pointsAwarded = computeAwardedPoints({
+            firstResponseReceivedAt,
+            responseTimestamp,
+            maxBonus: MAX_BONUS_POINTS,
+            getsMaxPoints: parsedSolutions && answerCorrect,
+            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            defaultPoints: DEFAULT_POINTS,
+          })
+
+          if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            if (!firstResponseReceivedAt) {
-              redisExec.hset(
-                `${instanceKey}:info`,
-                'firstResponseReceivedAt',
-                responseTimestamp
-              )
-            }
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
           }
-          pointsAwarded = Math.round(pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
@@ -253,24 +255,29 @@ const serviceBusTrigger: AzureFunction = async function (
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
         if (participantData) {
-          if (
-            gradeQuestionFreeText({
-              response: cleanResponseValue,
-              solutions: parsedSolutions,
-            })
-          ) {
-            pointsAwarded += 50 / (responseTiming * TIMING_FACTOR)
+          const answerCorrect = gradeQuestionFreeText({
+            response: cleanResponseValue,
+            solutions: parsedSolutions,
+          })
+
+          pointsAwarded = computeAwardedPoints({
+            firstResponseReceivedAt,
+            responseTimestamp,
+            maxBonus: MAX_BONUS_POINTS,
+            getsMaxPoints: Boolean(answerCorrect),
+            timeToZeroBonus: TIME_TO_ZERO_BONUS,
+            defaultPoints: DEFAULT_POINTS,
+          })
+
+          if (answerCorrect && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            if (!firstResponseReceivedAt) {
-              redisExec.hset(
-                `${instanceKey}:info`,
-                'firstResponseReceivedAt',
-                responseTimestamp
-              )
-            }
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
           }
-          pointsAwarded = Math.round(pointsAwarded)
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
