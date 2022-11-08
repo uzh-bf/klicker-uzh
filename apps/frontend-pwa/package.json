@@ -13,7 +13,7 @@
     "generateAvatars": "ts-node --esm src/utils/generateAvatars.ts"
   },
   "dependencies": {
-    "@apollo/client": "3.7.0",
+    "@apollo/client": "3.7.1",
     "@bigheads/core": "0.3.3",
     "@fortawesome/fontawesome-svg-core": "6.2.0",
     "@fortawesome/free-regular-svg-icons": "6.2.0",
