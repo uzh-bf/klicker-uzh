@@ -87,8 +87,8 @@ export function gradeQuestionNumerical({
   if (!solutionRanges || solutionRanges.length === 0) return null
 
   const withinRanges = solutionRanges.map(({ min, max }) => {
-    if (min && response <= min) return false
-    if (max && response >= max) return false
+    if (min && response < min) return false
+    if (max && response > max) return false
     return true
   })
 
