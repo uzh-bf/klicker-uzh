@@ -121,7 +121,7 @@ export function gradeQuestionFreeText({
 }
 
 interface ComputeAwardedPointsArgs {
-  firstResponseReceivedAt: string
+  firstResponseReceivedAt: string | null
   responseTimestamp: number
   maxBonus: number
   timeToZeroBonus?: number
