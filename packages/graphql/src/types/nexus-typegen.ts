@@ -105,6 +105,7 @@ export interface NexusGenInputs {
 export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
+  AwardType: "GROUP" | "PARTICIPANT"
   ParameterType: "NUMBER" | "STRING"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
@@ -144,7 +145,7 @@ export interface NexusGenObjects {
     order: number; // Int!
     participant?: NexusGenRootTypes['Participant'] | null; // Participant
     participantGroup?: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
-    type: string; // String!
+    type: NexusGenEnums['AwardType']; // AwardType!
   }
   Choice: { // root type
     correct?: boolean | null; // Boolean
@@ -499,7 +500,7 @@ export interface NexusGenFieldTypes {
     order: number; // Int!
     participant: NexusGenRootTypes['Participant'] | null; // Participant
     participantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
-    type: string; // String!
+    type: NexusGenEnums['AwardType']; // AwardType!
   }
   Choice: { // field return type
     correct: boolean | null; // Boolean
@@ -921,7 +922,7 @@ export interface NexusGenFieldTypeNames {
     order: 'Int'
     participant: 'Participant'
     participantGroup: 'ParticipantGroup'
-    type: 'String'
+    type: 'AwardType'
   }
   Choice: { // field return type name
     correct: 'Boolean'

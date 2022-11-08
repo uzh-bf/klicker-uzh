@@ -872,10 +872,10 @@ export const GroupActivityDetails = objectType({
   },
 })
 
-// export const AwardType = enumType({
-//   name: 'AwardType',
-//   members: DB.AwardType,
-// })
+export const AwardType = enumType({
+  name: 'AwardType',
+  members: DB.AwardType,
+})
 
 export const AwardEntry = objectType({
   name: 'AwardEntry',
@@ -883,10 +883,9 @@ export const AwardEntry = objectType({
     t.nonNull.int('id')
 
     t.nonNull.int('order')
-    // t.nonNull.field('type', {
-    //   type: AwardType,
-    // })
-    t.nonNull.string('type')
+    t.nonNull.field('type', {
+      type: AwardType,
+    })
     t.nonNull.string('name')
     t.nonNull.string('displayName')
     t.nonNull.string('description')

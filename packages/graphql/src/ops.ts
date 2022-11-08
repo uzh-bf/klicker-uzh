@@ -77,8 +77,13 @@ export type AwardEntry = {
   order: Scalars['Int'];
   participant?: Maybe<Participant>;
   participantGroup?: Maybe<ParticipantGroup>;
-  type: Scalars['String'];
+  type: AwardType;
 };
+
+export enum AwardType {
+  Group = 'GROUP',
+  Participant = 'PARTICIPANT'
+}
 
 export type BlockInput = {
   questionIds: Array<Scalars['Int']>;
@@ -1335,7 +1340,7 @@ export type GetCourseOverviewDataQueryVariables = Exact<{
 }>;
 
 
-export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course: { __typename?: 'Course', id: string, name: string, displayName: string, color?: string | null, awards?: Array<{ __typename?: 'AwardEntry', id: number, order: number, type: string, name: string, displayName: string, description: string, participant?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null, participantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string } | null }> | null }, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, rank: number }> | null, leaderboardStatistics: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number }, groupLeaderboard?: Array<{ __typename?: 'GroupLeaderboardEntry', id: string, name: string, score: number }> | null, groupLeaderboardStatistics: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } } | null, participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, averageMemberScore: number, groupActivityScore: number, score: number, participants: Array<{ __typename?: 'LeaderboardEntry', id: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null }> }> | null };
+export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course: { __typename?: 'Course', id: string, name: string, displayName: string, color?: string | null, awards?: Array<{ __typename?: 'AwardEntry', id: number, order: number, type: AwardType, name: string, displayName: string, description: string, participant?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null, participantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string } | null }> | null }, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: string, participantId: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, rank: number }> | null, leaderboardStatistics: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number }, groupLeaderboard?: Array<{ __typename?: 'GroupLeaderboardEntry', id: string, name: string, score: number }> | null, groupLeaderboardStatistics: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } } | null, participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, averageMemberScore: number, groupActivityScore: number, score: number, participants: Array<{ __typename?: 'LeaderboardEntry', id: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null }> }> | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   sessionId: Scalars['ID'];
@@ -1558,6 +1563,7 @@ export type ResolversTypes = {
   AttachmentType: AttachmentType;
   AvatarSettingsInput: AvatarSettingsInput;
   AwardEntry: ResolverTypeWrapper<AwardEntry>;
+  AwardType: AwardType;
   BlockInput: BlockInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Choice: ResolverTypeWrapper<Choice>;
@@ -1721,7 +1727,7 @@ export type AwardEntryResolvers<ContextType = any, ParentType extends ResolversP
   order?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   participant?: Resolver<Maybe<ResolversTypes['Participant']>, ParentType, ContextType>;
   participantGroup?: Resolver<Maybe<ResolversTypes['ParticipantGroup']>, ParentType, ContextType>;
-  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['AwardType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

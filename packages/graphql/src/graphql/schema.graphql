@@ -57,7 +57,12 @@ type AwardEntry {
   order: Int!
   participant: Participant
   participantGroup: ParticipantGroup
-  type: String!
+  type: AwardType!
+}
+
+enum AwardType {
+  GROUP
+  PARTICIPANT
 }
 
 input BlockInput {
