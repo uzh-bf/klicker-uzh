@@ -46,7 +46,7 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
-    <ResponsiveContainer height={600} className="z-10">
+    <ResponsiveContainer className="mb-4" height={600} width="99%">
       <BarChartRecharts
         data={dataWithLabels}
         margin={{
