@@ -7,12 +7,12 @@ function SinglePodium({ username, avatar, score, className }) {
   return (
     <div
       className={twMerge(
-        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500',
+        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-lg',
         className
       )}
     >
       <ParticipantOther
-        className="text-sm bg-white shadow border-slate-400"
+        className="text-xs bg-white shadow border-slate-400"
         pseudonym={username}
         avatar={avatar}
         points={score ?? 0}
@@ -36,7 +36,7 @@ export function Podium({ leaderboard }: PodiumProps) {
   }, [leaderboard])
 
   return (
-    <div className="flex flex-col gap-4 md:items-end md:flex-row">
+    <div className="flex flex-col gap-2 md:items-end md:flex-row">
       <SinglePodium
         className="order-2 h-[70px] md:order-1"
         username={rank2?.username}

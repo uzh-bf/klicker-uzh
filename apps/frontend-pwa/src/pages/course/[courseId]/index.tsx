@@ -70,7 +70,7 @@ function CourseOverview({ courseId }: any) {
       courseName={course.displayName}
       courseColor={course.color}
     >
-      <div className="md:mx-auto md:max-w-5xl md:w-full md:border md:rounded">
+      <div className="md:mx-auto md:max-w-6xl md:w-full md:border md:rounded">
         <Tabs
           defaultValue="global"
           value={selectedTab}
@@ -94,8 +94,8 @@ function CourseOverview({ courseId }: any) {
             />
           </Tabs.TabList>
 
-          <Tabs.TabContent key="course" value="global">
-            <div className="flex flex-col gap-8 overflow-x-auto md:flex-row">
+          <Tabs.TabContent key="course" value="global" className="md:px-4">
+            <div className="flex flex-col gap-4  overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
