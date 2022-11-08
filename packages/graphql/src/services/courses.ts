@@ -135,6 +135,9 @@ export async function getCourseOverviewData(
                 participant: true,
                 participantGroup: true,
               },
+              orderBy: {
+                order: 'asc',
+              },
             },
           },
         },
