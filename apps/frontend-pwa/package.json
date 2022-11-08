@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-pwa",
-  "version": "2.0.0-alpha.96",
+  "version": "2.0.0-alpha.97",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3001",

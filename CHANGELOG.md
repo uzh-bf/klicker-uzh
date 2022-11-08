@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.96...v2.0.0-alpha.97) (2022-11-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only show bf champion if any awards are defined ([293eafd](https://github.com/uzh-bf/klicker-uzh/commit/293eafd7f4ee6cea825fdb4ba45b156debc1eb36))
+
+
+### Other
+
+* lockfile maintenance ([0bb53fb](https://github.com/uzh-bf/klicker-uzh/commit/0bb53fb342ff6dd91e2b6562f30f6125281e6a3b))
+
 ## [2.0.0-alpha.96](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.95...v2.0.0-alpha.96) (2022-11-08)
 
 
