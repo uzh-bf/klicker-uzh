@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.96](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.95...v2.0.0-alpha.96) (2022-11-08)
+
+
+### Features
+
+* basic awards with manual assignment ([#3042](https://github.com/uzh-bf/klicker-uzh/issues/3042)) ([499ead8](https://github.com/uzh-bf/klicker-uzh/commit/499ead8c115f789ee34484f25a4631ac8179d1c1))
+
+
+### Enhancements
+
+* implement modified and improved grading functions for point distribution ([#3031](https://github.com/uzh-bf/klicker-uzh/issues/3031)) ([e7b433b](https://github.com/uzh-bf/klicker-uzh/commit/e7b433bb40370d715af53636a38862da1b7362e4))
+
 ## [2.0.0-alpha.95](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.94...v2.0.0-alpha.95) (2022-11-08)
 
 
