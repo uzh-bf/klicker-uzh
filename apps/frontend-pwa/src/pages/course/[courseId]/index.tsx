@@ -24,6 +24,7 @@ import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Link from 'next/link'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/GroupVisualization'
 
 function CourseOverview({ courseId }: any) {
@@ -95,7 +96,7 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global" className="md:px-4">
-            <div className="flex flex-col gap-4  overflow-x-auto md:flex-row">
+            <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
@@ -144,15 +145,17 @@ function CourseOverview({ courseId }: any) {
                         geht&apos;s!
                       </div>
                     ))}
-                  <div className="pt-8 space-y-2">
-                    {groupLeaderboard.map((entry) => (
-                      <ParticipantOther
-                        key={entry.id}
-                        pseudonym={entry.name}
-                        points={entry.score}
-                        withAvatar={false}
-                      />
-                    ))}
+                  <div className="pt-8 space-y-2 overflow-y-scroll max-h-[400px]">
+                    {groupLeaderboard
+                      .filter((entry) => entry.score > 0)
+                      .map((entry) => (
+                        <ParticipantOther
+                          key={entry.id}
+                          pseudonym={entry.name}
+                          points={entry.score}
+                          withAvatar={false}
+                        />
+                      ))}
                   </div>
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
@@ -169,6 +172,58 @@ function CourseOverview({ courseId }: any) {
                 <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
                   Das Gruppenleaderboard wird täglich aktualisiert. <br />
                   Gruppen mit einem Mitglied erhalten keine Punkte.
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
+              <H3 className="mb-2 text-base">BF-Champion Awards</H3>
+              <div className="flex flex-row gap-6 text-sm text-gray-700">
+                <div className="flex-1 space-y-1">
+                  {course.awards
+                    ?.filter((award) => award.type === 'PARTICIPANT')
+                    .map((award) => (
+                      <div
+                        key={award.id}
+                        className={twMerge(
+                          'flex flex-row justify-between',
+                          award.participant && 'text-orange-700'
+                        )}
+                      >
+                        <div className="flex flex-row gap-3">
+                          <div>{award.displayName}:</div>
+                          <div>
+                            {award.participant
+                              ? `🥳  ${award.participant.username}  🥳`
+                              : 'offen'}
+                          </div>
+                        </div>
+                        <div>{award.description}</div>
+                      </div>
+                    ))}
+                </div>
+                <div className="flex-1 space-y-1">
+                  {course.awards
+                    ?.filter((award) => award.type === 'GROUP')
+                    .map((award) => (
+                      <div
+                        key={award.id}
+                        className={twMerge(
+                          'flex flex-row justify-between',
+                          award.participantGroup && 'text-orange-700'
+                        )}
+                      >
+                        <div className="flex flex-row gap-3">
+                          <div>{award.displayName}:</div>
+                          <div>
+                            {award.participantGroup
+                              ? `🥳  ${award.participantGroup.name}  🥳`
+                              : 'offen'}
+                          </div>
+                        </div>
+                        <div>{award.description}</div>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>

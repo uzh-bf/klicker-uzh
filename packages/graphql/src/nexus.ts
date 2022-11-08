@@ -404,6 +404,10 @@ export const Course = objectType({
 
     t.nonNull.list.field('participantGroups', { type: ParticipantGroup })
 
+    t.list.nonNull.field('awards', {
+      type: AwardEntry,
+    })
+
     t.date('createdAt')
     t.date('updatedAt')
   },
@@ -864,6 +868,38 @@ export const GroupActivityDetails = objectType({
     })
     t.nonNull.list.nonNull.field('instances', {
       type: QuestionInstance,
+    })
+  },
+})
+
+export const AwardType = enumType({
+  name: 'AwardType',
+  members: DB.AwardType,
+})
+
+export const AwardEntry = objectType({
+  name: 'AwardEntry',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.int('order')
+    t.nonNull.field('type', {
+      type: AwardType,
+    })
+    t.nonNull.string('name')
+    t.nonNull.string('displayName')
+    t.nonNull.string('description')
+
+    t.nonNull.field('course', {
+      type: Course,
+    })
+
+    t.field('participant', {
+      type: Participant,
+    })
+
+    t.field('participantGroup', {
+      type: ParticipantGroup,
     })
   },
 })
