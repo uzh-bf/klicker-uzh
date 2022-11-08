@@ -1,3 +1,4 @@
+import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import BarChart from './BarChart'
 import Histogram from './Histogram'
@@ -6,35 +7,7 @@ import Wordcloud from './Wordcloud'
 
 interface ChartProps {
   chartType: string
-  data:
-    | {
-        type: 'SC' | 'MC' | 'KPRIM'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; correct: boolean; count: number }[]
-      } // choices question types
-    | {
-        type: 'FREE_TEXT'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; count: number }[]
-        solutions: string[]
-      } // free text question type
-    | {
-        type: 'NUMERICAL'
-        content: string
-        blockIx: number
-        instanceIx: number
-        participants: number
-        answers: { value: string; count: number }[]
-        restrictions: { min?: number; max?: number }
-        solutions: { min?: number; max?: number }[]
-      }
-
+  data: InstanceResult
   showSolution: boolean
 }
 
@@ -45,40 +18,13 @@ function Chart({
 }: ChartProps): React.ReactElement {
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
-    return (
-      <TableChart
-        answers={data.answers}
-        questionType={data.type}
-        showSolution={showSolution}
-        totalResponses={data.participants}
-      />
-    )
+    return <TableChart data={data} showSolution={showSolution} />
   } else if (chartType === 'histogram') {
-    return (
-      <Histogram
-        answers={data.answers}
-        min={data.restrictions.min}
-        max={data.restrictions.max}
-      />
-    )
+    return <Histogram data={data} showSolution={showSolution} />
   } else if (chartType === 'wordCloud') {
-    return (
-      <Wordcloud
-        data={data.answers.map((answer) => ({
-          value: answer.value,
-          count: answer.count,
-        }))}
-      />
-    )
+    return <Wordcloud data={data} showSolution={showSolution} />
   } else if (chartType === 'barChart') {
-    return (
-      <BarChart
-        answers={data.answers}
-        questionType={data.type}
-        showSolution={showSolution}
-        totalResponses={data.participants}
-      />
-    )
+    return <BarChart data={data} showSolution={showSolution} />
   } else {
     return <div>There exists no chart for this question type yet</div>
   }

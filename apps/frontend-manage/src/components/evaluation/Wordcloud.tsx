@@ -1,13 +1,21 @@
-import React from 'react'
+import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import React, { useMemo } from 'react'
 import { TagCloud } from 'react-tagcloud'
 
 interface WordcloudProps {
-  data: { value: string; count: number }[]
+  data: InstanceResult
+  showSolution: boolean // TODO: not implemented yet
 }
 
-const defaultValues = {}
-
 function Wordcloud({ data }: WordcloudProps): React.ReactElement {
+  const tags = useMemo(() => {
+    return Object.values(data.results).map((result) => {
+      return {
+        count: result.count,
+        value: result.value,
+      }
+    })
+  }, [data])
   return (
     <div className="flex w-full h-full p-4">
       <TagCloud
@@ -15,7 +23,7 @@ function Wordcloud({ data }: WordcloudProps): React.ReactElement {
         maxSize={60}
         minSize={18}
         shuffle={false}
-        tags={data}
+        tags={tags}
       />
     </div>
   )

@@ -1,3 +1,4 @@
+import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import React, { useMemo, useState } from 'react'
@@ -6,6 +7,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,43 +15,31 @@ import {
 } from 'recharts'
 
 interface HistogramProps {
-  brush?: boolean
-  answers: {
-    correct?: boolean
-    count: number
-    value: string
-  }[]
-  solution?: number
-  statistics?: any
-  min?: number
-  max?: number
-}
-
-const defaultValues = {
-  brush: false,
-  solution: undefined,
-  statistics: undefined,
+  brush?: boolean // TODO: Not implemented yet
+  data: InstanceResult
+  showSolution: boolean // TODO: Not implemented yet
 }
 
 function Histogram({
   brush,
-  answers,
-  solution,
-  statistics,
-  min,
-  max,
+  data,
+  showSolution,
 }: HistogramProps): React.ReactElement {
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
-    const mappedData = answers.map((item) => ({
-      value: +item.value,
-      count: +item.count,
+    const mappedData = Object.values(data.results).map((result) => ({
+      value: result.value,
+      count: result.count,
     }))
 
     // calculate the borders of the histogram
-    const computedMin = min ?? minBy(mappedData, (o): number => o.value)?.value
-    const computedMax = max ?? maxBy(mappedData, (o): number => o.value)?.value
+    const computedMin =
+      data.questionData.options?.restrictions?.min ??
+      minBy(mappedData, (o): number => o.value)?.value
+    const computedMax =
+      data.questionData.options?.restrictions?.max ??
+      maxBy(mappedData, (o): number => o.value)?.value
 
     // calculate the number of bins according to freedman diaconis
     const defaultThreshold = thresholdFreedmanDiaconis(
@@ -74,7 +64,7 @@ function Histogram({
       value: `${round(round(bin.x0, 2) / round(bin.x1, 2), 1)}`,
       label: `${bin.x0}/${bin.x1}`,
     }))
-  }, [answers, numBins])
+  }, [data, numBins])
 
   return (
     <div>
@@ -104,61 +94,60 @@ function Histogram({
           <CartesianGrid strokeDasharray="5 5" />
           <Tooltip />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
-
-          {/* // TODO: reintroduce statistics when ready
-      {statistics && [
-        <ReferenceLine
-          isFront
-          label={{
-            fill: 'blue',
-            fontSize: '1rem',
-            position: 'top',
-            value: 'MEAN',
-          }}
-          key={statistics.mean}
-          stroke="blue"
-          x={Math.round(statistics.mean)}
-        />,
-        <ReferenceLine
-          isFront
-          label={{
-            fill: 'red',
-            fontSize: '1rem',
-            position: 'top',
-            value: 'MEDIAN',
-          }}
-          key={statistics.median}
-          stroke="red"
-          x={Math.round(statistics.median)}
-        />,
-        <ReferenceLine
-          isFront
-          label={{
-            fill: 'black',
-            fontSize: '1rem',
-            position: 'top',
-            value: 'Q1',
-          }}
-          key={statistics.q1}
-          stroke="black"
-          x={Math.round(statistics.q1)}
-        />,
-        <ReferenceLine
-          isFront
-          label={{
-            fill: 'black',
-            fontSize: '1rem',
-            position: 'top',
-            value: 'Q3',
-          }}
-          key={statistics.q3}
-          stroke="black"
-          x={Math.round(statistics.q3)}
-        />,
-      ]}
-
-      { // TODO: illustrate solution when ready
-        solution && (
+          {/* // TODO: For some reason, this does not work */}
+          {data.questionData.statistics && [
+            <ReferenceLine
+              isFront
+              label={{
+                fill: 'blue',
+                fontSize: '1rem',
+                position: 'top',
+                value: 'MEAN',
+              }}
+              key={data.questionData.statistics.mean}
+              stroke="blue"
+              x={Math.round(data.questionData.statistics.mean)}
+            />,
+            <ReferenceLine
+              isFront
+              label={{
+                fill: 'red',
+                fontSize: '1rem',
+                position: 'top',
+                value: 'MEDIAN',
+              }}
+              key={data.questionData.statistics.median}
+              stroke="red"
+              x={Math.round(data.questionData.statistics.median)}
+            />,
+            <ReferenceLine
+              isFront
+              label={{
+                fill: 'black',
+                fontSize: '1rem',
+                position: 'top',
+                value: 'Q1',
+              }}
+              key={data.questionData.statistics.q1}
+              stroke="black"
+              x={Math.round(data.questionData.statistics.q1)}
+            />,
+            <ReferenceLine
+              isFront
+              label={{
+                fill: 'black',
+                fontSize: '1rem',
+                position: 'top',
+                value: 'Q3',
+              }}
+              key={data.questionData.statistics.q3}
+              stroke="black"
+              x={Math.round(data.questionData.statistics.q3)}
+            />,
+          ]}
+          {/* 
+      { // TODO: illustrate solution ranges when ready
+        showSolution && (
         <ReferenceLine isFront stroke="green" x={Math.round(solution)} />
       )}
 
@@ -167,7 +156,7 @@ function Histogram({
         </BarChart>
       </ResponsiveContainer>
 
-      <div>
+      <div className="float-right mr-4">
         Bins:{' '}
         <input
           type="number"

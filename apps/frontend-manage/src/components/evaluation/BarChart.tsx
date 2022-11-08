@@ -1,4 +1,4 @@
-import { QuestionType } from '@klicker-uzh/prisma'
+import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
   Bar,
@@ -12,33 +12,32 @@ import {
 } from 'recharts'
 import {
   CHART_COLORS,
+  QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
 
 interface BarChartProps {
-  questionType: QuestionType
-  answers: { value: string; correct?: boolean; count: number }[]
+  data: InstanceResult
   showSolution: boolean
-  totalResponses: number
 }
 
-function BarChart({
-  questionType,
-  answers,
-  showSolution,
-  totalResponses,
-}: BarChartProps): React.ReactElement {
+function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = answers.map((d, idx) => {
+  const dataWithLabels = Object.values(data.results).map((result, idx) => {
+    console.log(result)
     const labelIn =
-      d.count / totalResponses > SMALL_BAR_THRESHOLD ? d.count : undefined
+      result.count / data.participants > SMALL_BAR_THRESHOLD
+        ? result.count
+        : undefined
     const labelOut =
-      d.count / totalResponses <= SMALL_BAR_THRESHOLD ? d.count : undefined
+      result.count / data.participants <= SMALL_BAR_THRESHOLD
+        ? result.count
+        : undefined
     const xLabel =
-      questionType === 'NUMERICAL'
-        ? d.value
+      data.questionData.type === 'NUMERICAL'
+        ? result.value
         : String.fromCharCode(Number(idx) + 65)
-    return { count: d.count, labelIn, labelOut, xLabel }
+    return { count: result.count, labelIn, labelOut, xLabel }
   })
 
   // debugger
@@ -100,18 +99,19 @@ function BarChart({
             stroke="white"
             style={{ fontSize: '2rem' }}
           />
-          {answers.map(
-            (row, index): React.ReactElement => (
-              <Cell
-                fill={
-                  showSolution && row.correct
-                    ? '#00de0d'
-                    : CHART_COLORS[index % 12]
-                }
-                key={index}
-              />
-            )
-          )}
+          {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
+            data.questionData.options.choices.map(
+              (choice: Choice, index: number): React.ReactElement => (
+                <Cell
+                  fill={
+                    showSolution && choice.correct
+                      ? '#00de0d'
+                      : CHART_COLORS[index % 12]
+                  }
+                  key={index}
+                />
+              )
+            )}
         </Bar>
       </BarChartRecharts>
     </ResponsiveContainer>

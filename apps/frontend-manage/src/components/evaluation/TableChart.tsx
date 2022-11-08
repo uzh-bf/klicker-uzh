@@ -1,39 +1,54 @@
-import { QuestionType } from '@klicker-uzh/prisma'
-import React from 'react'
+import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import React, { useMemo } from 'react'
+import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import Table from '../common/Table'
 
 interface TableChartProps {
-  questionType: QuestionType
-  answers: {
-    value: string | number
-    count: number
-    correct: boolean
-  }[]
+  data: InstanceResult
   showSolution: boolean
-  totalResponses: number
 }
 
 function TableChart({
-  questionType,
-  answers,
+  data,
   showSolution,
-  totalResponses,
 }: TableChartProps): React.ReactElement {
-  const tableData = answers.map((answer) => {
-    return {
-      count: answer.count,
-      value: answer.value,
-      correct: answer.correct ? 'T' : 'F',
-      percentage:
-        String(((answer.count / totalResponses) * 100).toFixed()) + ' %',
+  const tableData = useMemo(() => {
+    if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
+      return data.questionData.options.choices.map(
+        (choice: Choice, index: number) => {
+          return {
+            count: data.results[index].count,
+            value: choice.value,
+            correct: choice.correct ? 'T' : 'F',
+            percentage:
+              String(
+                (
+                  (data.results[index].count / data.participants) *
+                  100
+                ).toFixed()
+              ) + ' %',
+          }
+        }
+      )
+    } else {
+      return Object.values(data.results).map((result) => {
+        return {
+          count: result.count,
+          value: result.value,
+          correct: result.correct ? 'T' : 'F',
+          percentage:
+            String(((result.count / data.participants) * 100).toFixed()) + ' %',
+        }
+      })
     }
-  })
+  }, [data])
   const columns = [
     { label: 'Count', accessor: 'count', sortable: true },
     { label: 'Value', accessor: 'value', sortable: true },
     { label: '%', accessor: 'percentage', sortable: true },
   ]
-  if (showSolution)
+  if (showSolution && !(data.questionData.type === 'NUMERICAL'))
+    // Don't show True/False for numerical questions right now, as it is not implemented in current klicker either
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
   return <Table data={tableData} columns={columns}></Table>
 }

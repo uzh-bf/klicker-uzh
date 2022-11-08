@@ -303,7 +303,7 @@ function Evaluation() {
                 <div className="z-10 flex-1 order-2 md:order-1">
                   <Chart
                     chartType={chartType}
-                    data={currentQuestion}
+                    data={currentInstance}
                     showSolution={showSolution}
                   />
                 </div>
