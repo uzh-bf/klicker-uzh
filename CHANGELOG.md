@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.97...v2.0.0-alpha.98) (2022-11-09)
+
+
+### Other
+
+* **deploy:** update version of prod deployment ([a9cbf9f](https://github.com/uzh-bf/klicker-uzh/commit/a9cbf9fc01070826c9bb05ad9c0bb36171c2585a))
+
+
+### Enhancements
+
+* **frontend-pwa:** add survey promotion and remove points on podium ([e574566](https://github.com/uzh-bf/klicker-uzh/commit/e5745660ca95218faa2f4c5b122564247e992e37))
+
 ## [2.0.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.96...v2.0.0-alpha.97) (2022-11-08)
 
 
