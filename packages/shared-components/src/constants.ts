@@ -158,21 +158,21 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'Word Cloud', value: 'wordCloud' },
   ],
   NUMERICAL: [
+    { label: 'Histogram', value: 'histogram' },
     { label: 'Table', value: 'table' },
     { label: 'Bar Chart', value: 'barChart' },
     { label: 'Word Cloud', value: 'wordCloud' },
-    { label: 'Histogram', value: 'histogram' },
   ],
   SC: [
-    { label: 'Table', value: 'table' },
     { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Table', value: 'table' },
   ],
   MC: [
-    { label: 'Table', value: 'table' },
     { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Table', value: 'table' },
   ],
   KPRIM: [
-    { label: 'Table', value: 'table' },
     { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Table', value: 'table' },
   ],
 }

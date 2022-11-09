@@ -20,7 +20,6 @@ import {
   Statistics,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import * as DB from '@klicker-uzh/prisma'
 import * as RadixTab from '@radix-ui/react-tabs'
 import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -47,7 +46,7 @@ function Evaluation() {
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
   const [showSolution, setShowSolution] = useState(false)
-  const [chartType, setChartType] = useState<DB.QuestionType>('SC')
+  const [chartType, setChartType] = useState<string>('table')
   const [currentInstance, setCurrentInstance] = useState<{
     blockIx: number
     id: string
@@ -140,11 +139,6 @@ function Evaluation() {
   useEffect(() => {
     if (!instanceResults || instanceResults.length === 0) return
 
-    setChartType(
-      ACTIVE_CHART_TYPES[instanceResults[0].questionData.type][0]
-        .value as DB.QuestionType
-    )
-
     if (selectedInstance === '' && currentInstance.id === '') {
       setSelectedInstance(instanceResults[0].id)
       setCurrentInstance(instanceResults[0])
@@ -154,7 +148,23 @@ function Evaluation() {
       (instance) => instance.id === selectedInstance
     )
     if (currInstance) setCurrentInstance(currInstance)
-  }, [selectedInstance, instanceResults, currentInstance.id])
+
+    const possibleChartTypes = ACTIVE_CHART_TYPES[
+      currentInstance?.questionData.type
+    ].map((type) => type.value)
+
+    if (!possibleChartTypes.includes(chartType)) {
+      setChartType(
+        ACTIVE_CHART_TYPES[currentInstance?.questionData.type][0].value
+      )
+    }
+  }, [
+    selectedInstance,
+    instanceResults,
+    currentInstance.id,
+    chartType,
+    currentInstance.questionData.type,
+  ])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -304,9 +314,7 @@ function Evaluation() {
                         ACTIVE_CHART_TYPES[currentInstance.questionData.type]
                       }
                       value={chartType}
-                      onChange={(newValue: string) =>
-                        setChartType(newValue as DB.QuestionType)
-                      }
+                      onChange={(newValue: string) => setChartType(newValue)}
                     />
 
                     {(currentInstance.questionData.type === 'SC' ||
