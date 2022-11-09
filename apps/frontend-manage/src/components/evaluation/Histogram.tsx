@@ -1,12 +1,13 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
-import { histogram, thresholdFreedmanDiaconis } from 'd3'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import React, { useMemo, useState } from 'react'
 // TODO: replace lodash with ramda
 import {
   Bar,
   BarChart,
+  Brush,
   CartesianGrid,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -15,9 +16,9 @@ import {
 } from 'recharts'
 
 interface HistogramProps {
-  brush?: boolean // TODO: Not implemented yet
   data: InstanceResult
-  showSolution: boolean // TODO: Not implemented yet
+  showSolution: boolean
+  brush?: boolean // TODO: Not implemented yet
 }
 
 function Histogram({
@@ -33,37 +34,44 @@ function Histogram({
       count: result.count,
     }))
 
-    // calculate the borders of the histogram
-    const computedMin =
-      data.questionData.options?.restrictions?.min ??
-      minBy(mappedData, (o): number => o.value)?.value
-    const computedMax =
-      data.questionData.options?.restrictions?.max ??
-      maxBy(mappedData, (o): number => o.value)?.value
+    // create array with numbin entries and fill it evenly with values between data.questionData.options.solutionRanges.min and data.questionData.options.solutionRanges.max if they are defined and min of mappedData - 10 and max of mappedData + 10 if not
+    const min = data.questionData.options.restrictions['min']
+      ? data.questionData.options.restrictions.min
+      : minBy(mappedData, 'value')?.value - 10
+    const max = data.questionData.options.restrictions['max']
+      ? data.questionData.options.restrictions.max
+      : maxBy(mappedData, 'value')?.value + 10
 
-    // calculate the number of bins according to freedman diaconis
-    const defaultThreshold = thresholdFreedmanDiaconis(
-      mappedData.map((o): number => +o.value),
-      computedMin,
-      computedMax
-    )
+    let dataArray = Array.from({ length: numBins }, (_, i) => {
+      return {
+        value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
+      }
+    })
 
-    // setup the D3 histogram generator
-    // use either the passed number of bins or the default threshold
-    const histGen = histogram()
-      .domain([computedMin, computedMax])
-      .value((o): number => round(o.value, 2))
-      .thresholds(numBins || defaultThreshold)
+    // prepare the dataArray by adding a count of elements and label to each bin
+    dataArray = dataArray.map((bin) => {
+      const binWidth =
+        dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
+      const count = sumBy(
+        mappedData.filter((result) => {
+          return (
+            result.value >= bin.value - binWidth / 2 &&
+            result.value < bin.value + binWidth / 2
+          )
+        }),
+        'count'
+      )
+      return {
+        value: round(bin.value, 2),
+        count,
+        label: `${round(bin.value - binWidth / 2, 1)} - ${round(
+          bin.value + binWidth / 2,
+          1
+        )}`,
+      }
+    })
 
-    // bin the data using D3
-    const bins = histGen(mappedData)
-
-    // map the bins to recharts objects
-    return bins.map((bin): any => ({
-      count: sumBy(bin, 'count'),
-      value: `${round(round(bin.x0, 2) / round(bin.x1, 2), 1)}`,
-      label: `${bin.x0}/${bin.x1}`,
-    }))
+    return dataArray
   }, [data, numBins])
 
   return (
@@ -78,7 +86,7 @@ function Histogram({
             top: 24,
           }}
         >
-          <XAxis dataKey="label" />
+          <XAxis dataKey="value" type="number" />
           <YAxis
             domain={[
               0,
@@ -92,9 +100,23 @@ function Histogram({
             ]}
           />
           <CartesianGrid strokeDasharray="5 5" />
-          <Tooltip />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="p-2 bg-white border border-solid rounded-md border-uzh-grey-100">
+                    <div>Bereich: {payload[0].payload.label}</div>
+                    <div className="font-bold text-uzh-blue-80">
+                      Count: {payload[0].payload.count}
+                    </div>
+                  </div>
+                )
+              }
+              return null
+            }}
+          />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
-          {/* // TODO: For some reason, this does not work */}
+
           {data.statistics && [
             <ReferenceLine
               isFront
@@ -145,20 +167,40 @@ function Histogram({
               x={Math.round(data.statistics.q3 || 0)}
             />,
           ]}
-          {/* 
-      { // TODO: illustrate solution ranges when ready
-        showSolution && (
-        <ReferenceLine isFront stroke="green" x={Math.round(solution)} />
-      )}
+          {showSolution &&
+            data.questionData.options.solutionRanges.map(
+              (
+                solutionRange: { min?: number; max?: number },
+                index: number
+              ) => (
+                <ReferenceArea
+                  key={index}
+                  x1={solutionRange.min}
+                  x2={solutionRange.max}
+                  stroke="green"
+                  fill="green"
+                  enableBackground="#FFFFFF"
+                  label={{
+                    fill: 'green',
+                    fontSize: '1rem',
+                    position: 'top',
+                    value: 'Korrekt',
+                  }}
+                />
+              )
+            )}
 
-      { // TODO
-        brush && <Brush dataKey="value" height={30} stroke="#8884d8" />} */}
+          {/* // TODO: fix brush */}
+          {/* {brush && (
+            <Brush dataKey="value" type="number" height={30} stroke="#8884d8" />
+          )} */}
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="float-right mr-4">
-        Bins:{' '}
+      <div className="flex flex-row items-center float-right gap-2 mr-4">
+        <div className="font-bold">Bins:</div>
         <input
+          className="rounded-md"
           type="number"
           value={numBins}
           onChange={(e) => setNumBins(+e.target.value)}

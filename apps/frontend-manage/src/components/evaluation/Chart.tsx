@@ -20,7 +20,7 @@ function Chart({
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return <TableChart data={data} showSolution={showSolution} />
   } else if (chartType === 'histogram') {
-    return <Histogram data={data} showSolution={showSolution} />
+    return <Histogram data={data} showSolution={showSolution} brush={true} />
   } else if (chartType === 'wordCloud') {
     return <Wordcloud data={data} showSolution={showSolution} />
   } else if (chartType === 'barChart') {
