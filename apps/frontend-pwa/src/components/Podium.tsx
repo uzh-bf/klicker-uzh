@@ -15,7 +15,6 @@ function SinglePodium({ username, avatar, score, className }) {
         className="text-xs bg-white shadow border-slate-400"
         pseudonym={username}
         avatar={avatar}
-        points={score ?? 0}
         withAvatar={!!avatar}
       />
     </div>
