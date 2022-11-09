@@ -1189,6 +1189,21 @@ function computeStatistics(instance) {
       const elements = Array(count).fill(parseFloat(value))
       return acc.concat(elements)
     }, [])
+
+    // set correct attribute to each of the instance.results elements depending on solutionRanges
+    for (const id in instance.results) {
+      const value = parseFloat(instance.results[id].value)
+      const solutionRanges = instance.questionData.options.solutionRanges
+      let correct = false
+      for (const range of solutionRanges) {
+        if (value >= range['min'] && value <= range['max']) {
+          correct = true
+          break
+        }
+      }
+      instance.results[id].correct = correct
+    }
+
     const hasResults = valueArray.length > 0
 
     instance.statistics = {
