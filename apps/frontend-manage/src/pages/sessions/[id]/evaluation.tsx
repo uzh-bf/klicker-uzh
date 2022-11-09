@@ -145,11 +145,16 @@ function Evaluation() {
         .value as DB.QuestionType
     )
 
+    if (selectedInstance === '' && currentInstance.id === '') {
+      setSelectedInstance(instanceResults[0].id)
+      setCurrentInstance(instanceResults[0])
+    }
+
     const currInstance = instanceResults?.find(
       (instance) => instance.id === selectedInstance
     )
     if (currInstance) setCurrentInstance(currInstance)
-  }, [selectedInstance, instanceResults])
+  }, [selectedInstance, instanceResults, currentInstance.id])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -157,7 +162,10 @@ function Evaluation() {
 
   // TODO: think about mobile layout (maybe at least tablet support)
   return (
-    <RadixTab.Root className="flex flex-col h-full overflow-y-none">
+    <RadixTab.Root
+      className="flex flex-col h-full overflow-y-none"
+      defaultValue="0"
+    >
       <RadixTab.List className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-3">
