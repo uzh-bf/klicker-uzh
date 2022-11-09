@@ -178,8 +178,8 @@ function Evaluation() {
     >
       <RadixTab.List className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
         {blocks && blocks[selectedBlock] && (
-          <div className="flex flex-row items-center gap-3">
-            <div className="font-bold">Question:</div>
+          <div className="flex flex-row items-center gap-2">
+            <div className="font-bold">Frage:</div>
 
             <Select
               items={selectData || []}

@@ -154,25 +154,25 @@ export const ACTIVE_CHART_TYPES: Record<
   { label: string; value: string }[]
 > = {
   FREE_TEXT: [
-    { label: 'Table', value: 'table' },
+    { label: 'Tabelle', value: 'table' },
     { label: 'Word Cloud', value: 'wordCloud' },
   ],
   NUMERICAL: [
-    { label: 'Histogram', value: 'histogram' },
-    { label: 'Table', value: 'table' },
+    { label: 'Histogramm', value: 'histogram' },
+    { label: 'Tabelle', value: 'table' },
     { label: 'Bar Chart', value: 'barChart' },
     { label: 'Word Cloud', value: 'wordCloud' },
   ],
   SC: [
     { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Table', value: 'table' },
+    { label: 'Tabelle', value: 'table' },
   ],
   MC: [
     { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Table', value: 'table' },
+    { label: 'Tabelle', value: 'table' },
   ],
   KPRIM: [
     { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Table', value: 'table' },
+    { label: 'Tabelle', value: 'table' },
   ],
 }
