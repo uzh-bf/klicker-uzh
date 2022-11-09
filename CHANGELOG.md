@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.98...v2.0.0-alpha.99) (2022-11-09)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** enlarge text for podium ([3c8cea0](https://github.com/uzh-bf/klicker-uzh/commit/3c8cea078b837fc5588c447a274028e74ebe8046))
+
 ## [2.0.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.97...v2.0.0-alpha.98) (2022-11-09)
 
 
