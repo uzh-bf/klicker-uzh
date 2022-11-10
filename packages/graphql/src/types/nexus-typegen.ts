@@ -105,6 +105,7 @@ export interface NexusGenInputs {
 export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
+  AwardType: "GROUP" | "PARTICIPANT"
   ParameterType: "NUMBER" | "STRING"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
@@ -134,6 +135,17 @@ export interface NexusGenObjects {
     name: string; // String!
     originalName?: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
+  }
+  AwardEntry: { // root type
+    course: NexusGenRootTypes['Course']; // Course!
+    description: string; // String!
+    displayName: string; // String!
+    id: number; // Int!
+    name: string; // String!
+    order: number; // Int!
+    participant?: NexusGenRootTypes['Participant'] | null; // Participant
+    participantGroup?: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
+    type: NexusGenEnums['AwardType']; // AwardType!
   }
   Block: { // root type
     blockIx: number; // Int!
@@ -175,6 +187,7 @@ export interface NexusGenObjects {
     speed: number; // Int!
   }
   Course: { // root type
+    awards?: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color?: string | null; // String
     createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
     description?: string | null; // String
@@ -527,6 +540,17 @@ export interface NexusGenFieldTypes {
     originalName: string | null; // String
     type: NexusGenEnums['AttachmentType']; // AttachmentType!
   }
+  AwardEntry: { // field return type
+    course: NexusGenRootTypes['Course']; // Course!
+    description: string; // String!
+    displayName: string; // String!
+    id: number; // Int!
+    name: string; // String!
+    order: number; // Int!
+    participant: NexusGenRootTypes['Participant'] | null; // Participant
+    participantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
+    type: NexusGenEnums['AwardType']; // AwardType!
+  }
   Block: { // field return type
     blockIx: number; // Int!
     blockStatus: string; // String!
@@ -567,6 +591,7 @@ export interface NexusGenFieldTypes {
     speed: number; // Int!
   }
   Course: { // field return type
+    awards: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color: string | null; // String
     createdAt: NexusGenScalars['DateTime'] | null; // DateTime
     description: string | null; // String
@@ -991,6 +1016,17 @@ export interface NexusGenFieldTypeNames {
     originalName: 'String'
     type: 'AttachmentType'
   }
+  AwardEntry: { // field return type name
+    course: 'Course'
+    description: 'String'
+    displayName: 'String'
+    id: 'Int'
+    name: 'String'
+    order: 'Int'
+    participant: 'Participant'
+    participantGroup: 'ParticipantGroup'
+    type: 'AwardType'
+  }
   Block: { // field return type name
     blockIx: 'Int'
     blockStatus: 'String'
@@ -1031,6 +1067,7 @@ export interface NexusGenFieldTypeNames {
     speed: 'Int'
   }
   Course: { // field return type name
+    awards: 'AwardEntry'
     color: 'String'
     createdAt: 'DateTime'
     description: 'String'

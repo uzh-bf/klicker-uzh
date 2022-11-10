@@ -2,6 +2,84 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.98...v2.0.0-alpha.99) (2022-11-09)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** enlarge text for podium ([3c8cea0](https://github.com/uzh-bf/klicker-uzh/commit/3c8cea078b837fc5588c447a274028e74ebe8046))
+
+## [2.0.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.97...v2.0.0-alpha.98) (2022-11-09)
+
+
+### Other
+
+* **deploy:** update version of prod deployment ([a9cbf9f](https://github.com/uzh-bf/klicker-uzh/commit/a9cbf9fc01070826c9bb05ad9c0bb36171c2585a))
+
+
+### Enhancements
+
+* **frontend-pwa:** add survey promotion and remove points on podium ([e574566](https://github.com/uzh-bf/klicker-uzh/commit/e5745660ca95218faa2f4c5b122564247e992e37))
+
+## [2.0.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.96...v2.0.0-alpha.97) (2022-11-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only show bf champion if any awards are defined ([293eafd](https://github.com/uzh-bf/klicker-uzh/commit/293eafd7f4ee6cea825fdb4ba45b156debc1eb36))
+
+
+### Other
+
+* lockfile maintenance ([0bb53fb](https://github.com/uzh-bf/klicker-uzh/commit/0bb53fb342ff6dd91e2b6562f30f6125281e6a3b))
+
+## [2.0.0-alpha.96](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.95...v2.0.0-alpha.96) (2022-11-08)
+
+
+### Features
+
+* basic awards with manual assignment ([#3042](https://github.com/uzh-bf/klicker-uzh/issues/3042)) ([499ead8](https://github.com/uzh-bf/klicker-uzh/commit/499ead8c115f789ee34484f25a4631ac8179d1c1))
+
+
+### Enhancements
+
+* implement modified and improved grading functions for point distribution ([#3031](https://github.com/uzh-bf/klicker-uzh/issues/3031)) ([e7b433b](https://github.com/uzh-bf/klicker-uzh/commit/e7b433bb40370d715af53636a38862da1b7362e4))
+
+## [2.0.0-alpha.95](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.94...v2.0.0-alpha.95) (2022-11-08)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add text-ellipsis on overflowing participant name ([6f39af8](https://github.com/uzh-bf/klicker-uzh/commit/6f39af8bdd8244f4db69cd5efd3f71e3721f2098))
+
+## [2.0.0-alpha.94](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.93...v2.0.0-alpha.94) (2022-11-08)
+
+
+### Enhancements
+
+* **apps/frontend-*:** small styling improvements for in-frame pages ([351a351](https://github.com/uzh-bf/klicker-uzh/commit/351a351711742aac145e840fbecbcaefead7d232))
+
+## [2.0.0-alpha.93](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.92...v2.0.0-alpha.93) (2022-11-07)
+
+
+### Other
+
+* **apps/backend-responses:** log the request method ([1e42eb7](https://github.com/uzh-bf/klicker-uzh/commit/1e42eb7f81ddc70521f5a4d6403861afae95612f))
+
+## [2.0.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.91...v2.0.0-alpha.92) (2022-11-07)
+
+
+### Bug Fixes
+
+* add 20 seconds buffer at the end of scheduled block close ([19dd416](https://github.com/uzh-bf/klicker-uzh/commit/19dd41691dca93298aaf0dff50875ca79aaea035))
+
+## [2.0.0-alpha.91](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.90...v2.0.0-alpha.91) (2022-11-07)
+
+
+### Bug Fixes
+
+* dates for group task, sizing of clue text ([f3816b2](https://github.com/uzh-bf/klicker-uzh/commit/f3816b2778b18c5cd0fc8eb328bbd7dbc1ebfb4c))
+
 ## [2.0.0-alpha.90](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.89...v2.0.0-alpha.90) (2022-11-07)
 
 

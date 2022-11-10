@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseElement from '@components/CourseElement'
 import Layout from '@components/Layout'
+import SurveyPromotion from '@components/SurveyPromotion'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -244,6 +245,8 @@ const Index = function () {
         {userInfo && (
           <UserNotification notificationType="info" message={userInfo} />
         )}
+
+        <SurveyPromotion courseId={courses?.[0]?.id} />
       </div>
     </Layout>
   )

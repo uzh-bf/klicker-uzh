@@ -15,6 +15,24 @@ query GetCourseOverviewData($courseId: ID!) {
       name
       displayName
       color
+
+      awards {
+        id
+        order
+        type
+        name
+        displayName
+        description
+        participant {
+          id
+          username
+          avatar
+        }
+        participantGroup {
+          id
+          name
+        }
+      }
     }
     leaderboard {
       id

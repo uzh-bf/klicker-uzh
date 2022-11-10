@@ -231,6 +231,7 @@ model Course {
   microSessions    MicroSession[]
   leaderboard      LeaderboardEntry[]
   groupActivities  GroupActivity[]
+  awards           AwardEntry[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -605,6 +606,7 @@ model Participant {
   leaderboards            LeaderboardEntry[]
   subscriptions           PushSubscription[]
   clueAssignments         GroupActivityClueAssignment[]
+  awards                  AwardEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -621,6 +623,7 @@ model ParticipantGroup {
 
   participants    Participant[]
   groupActivities GroupActivityInstance[]
+  awards          AwardEntry[]
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseId String @db.Uuid
@@ -730,4 +733,35 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@unique([participantId, courseId, endpoint])
+}
+
+// ----- AWARDS -----
+enum AwardType {
+  PARTICIPANT
+  GROUP
+}
+
+model AwardEntry {
+  id Int @id @default(autoincrement())
+
+  order       Int
+  type        AwardType
+  name        String
+  displayName String
+  description String
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId String?      @db.Uuid
+
+  participantGroup   ParticipantGroup? @relation(fields: [participantGroupId], references: [id])
+  participantGroupId String?           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, type, order])
+  @@unique([courseId, type, name])
 }

@@ -48,6 +48,23 @@ input AvatarSettingsInput {
   skinTone: String!
 }
 
+type AwardEntry {
+  course: Course!
+  description: String!
+  displayName: String!
+  id: Int!
+  name: String!
+  order: Int!
+  participant: Participant
+  participantGroup: ParticipantGroup
+  type: AwardType!
+}
+
+enum AwardType {
+  GROUP
+  PARTICIPANT
+}
+
 type Block {
   blockIx: Int!
   blockStatus: String!
@@ -107,6 +124,7 @@ type ConfusionTimestep {
 }
 
 type Course {
+  awards: [AwardEntry!]
   color: String
   createdAt: DateTime
   description: String
