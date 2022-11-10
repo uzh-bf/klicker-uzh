@@ -1,0 +1,11 @@
+query GetLearningElements {
+  learningElements {
+    id
+    displayName
+    course {
+      id
+      displayName
+      color
+    }
+  }
+}

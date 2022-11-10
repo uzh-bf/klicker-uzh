@@ -320,7 +320,8 @@ export interface NexusGenObjects {
     participantCount: number; // Int!
   }
   LearningElement: { // root type
-    course: NexusGenRootTypes['Course']; // Course!
+    course?: NexusGenRootTypes['Course'] | null; // Course
+    courseId?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
@@ -724,7 +725,8 @@ export interface NexusGenFieldTypes {
     participantCount: number; // Int!
   }
   LearningElement: { // field return type
-    course: NexusGenRootTypes['Course']; // Course!
+    course: NexusGenRootTypes['Course'] | null; // Course
+    courseId: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
@@ -869,6 +871,7 @@ export interface NexusGenFieldTypes {
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     groupActivityDetails: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
+    learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
@@ -1201,6 +1204,7 @@ export interface NexusGenFieldTypeNames {
   }
   LearningElement: { // field return type name
     course: 'Course'
+    courseId: 'String'
     displayName: 'String'
     id: 'ID'
     instances: 'QuestionInstance'
@@ -1345,6 +1349,7 @@ export interface NexusGenFieldTypeNames {
     getCourseOverviewData: 'ParticipantLearningData'
     groupActivityDetails: 'GroupActivityDetails'
     learningElement: 'LearningElement'
+    learningElements: 'LearningElement'
     microSession: 'MicroSession'
     participantGroups: 'ParticipantGroup'
     participations: 'Participation'

@@ -320,3 +320,31 @@ export async function getUserCourses(
 
   return userCourses?.courses ?? []
 }
+
+export async function getUserLearningElements(ctx: ContextWithUser) {
+  const participantCoursesWithLearningElements =
+    await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      include: {
+        participations: {
+          include: {
+            course: {
+              include: {
+                learningElements: {
+                  orderBy: {
+                    displayName: 'asc',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+  if (!participantCoursesWithLearningElements) return []
+
+  return participantCoursesWithLearningElements.participations.flatMap(
+    (participation) => participation.course.learningElements
+  )
+}
