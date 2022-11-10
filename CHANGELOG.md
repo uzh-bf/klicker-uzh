@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.100](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.99...v2.0.0-alpha.100) (2022-11-10)
+
+
+### Features
+
+* new evaluation page ([#3023](https://github.com/uzh-bf/klicker-uzh/issues/3023)) ([64ef4e3](https://github.com/uzh-bf/klicker-uzh/commit/64ef4e3d3ae79b85890eed63e543248d9f92f53b))
+
+
+### Other
+
+* **deploy:** update production version ([d7af987](https://github.com/uzh-bf/klicker-uzh/commit/d7af987efcb9cddf1ea1b77b7ebce6c55da91daf))
+
 ## [2.0.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.98...v2.0.0-alpha.99) (2022-11-09)
 
 
