@@ -5,7 +5,6 @@ import React, { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
-  Brush,
   CartesianGrid,
   ReferenceArea,
   ReferenceLine,
@@ -17,8 +16,27 @@ import {
 
 interface HistogramProps {
   data: InstanceResult
-  showSolution: boolean
+  showSolution: {
+    general: boolean
+    mean?: boolean
+    median?: boolean
+    q1?: boolean
+    q3?: boolean
+    sd?: boolean
+  }
   brush?: boolean // TODO: Not implemented yet
+}
+
+const defaultProps = {
+  showSolution: {
+    general: false,
+    mean: false,
+    median: false,
+    q1: false,
+    q3: false,
+    sd: false,
+  },
+  brush: false,
 }
 
 function Histogram({
@@ -116,8 +134,7 @@ function Histogram({
             }}
           />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
-
-          {data.statistics && [
+          {data.statistics && showSolution.mean && (
             <ReferenceLine
               isFront
               label={{
@@ -129,7 +146,9 @@ function Histogram({
               key={data.statistics.mean}
               stroke="blue"
               x={Math.round(data.statistics.mean || 0)}
-            />,
+            />
+          )}
+          {data.statistics && showSolution.median && (
             <ReferenceLine
               isFront
               label={{
@@ -141,7 +160,9 @@ function Histogram({
               key={data.statistics.median}
               stroke="red"
               x={Math.round(data.statistics.median || 0)}
-            />,
+            />
+          )}
+          {data.statistics && showSolution.q1 && (
             <ReferenceLine
               isFront
               label={{
@@ -153,7 +174,9 @@ function Histogram({
               key={data.statistics.q1}
               stroke="black"
               x={Math.round(data.statistics.q1 || 0)}
-            />,
+            />
+          )}
+          {data.statistics && showSolution.q3 && (
             <ReferenceLine
               isFront
               label={{
@@ -165,9 +188,25 @@ function Histogram({
               key={data.statistics.q3}
               stroke="black"
               x={Math.round(data.statistics.q3 || 0)}
-            />,
-          ]}
-          {showSolution &&
+            />
+          )}
+          {data.statistics && showSolution.sd && (
+            <ReferenceArea
+              key="sd-area"
+              x1={(data.statistics.mean || 0) - (data.statistics.sd ?? 0)}
+              x2={(data.statistics.mean || 0) + (data.statistics.sd ?? 0)}
+              fill="gray"
+              enableBackground="#FFFFFF"
+              label={{
+                fill: 'red',
+                fontSize: '1rem',
+                position: 'insideTopRight',
+                value: '+- 1 SD',
+              }}
+            />
+          )}
+
+          {showSolution.general &&
             data.questionData.options.solutionRanges.map(
               (
                 solutionRange: { min?: number; max?: number },
@@ -189,7 +228,6 @@ function Histogram({
                 />
               )
             )}
-
           {/* // TODO: fix brush */}
           {/* {brush && (
             <Brush dataKey="value" type="number" height={30} stroke="#8884d8" />
@@ -210,4 +248,5 @@ function Histogram({
   )
 }
 
+Histogram.defaultProps = defaultProps
 export default Histogram

@@ -9,18 +9,32 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
+  statisticsShowSolution?: {
+    mean?: boolean
+    median?: boolean
+    q1?: boolean
+    q3?: boolean
+    sd?: boolean
+  }
 }
 
 function Chart({
   chartType,
   data,
   showSolution,
+  statisticsShowSolution,
 }: ChartProps): React.ReactElement {
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return <TableChart data={data} showSolution={showSolution} />
   } else if (chartType === 'histogram') {
-    return <Histogram data={data} showSolution={showSolution} brush={true} />
+    return (
+      <Histogram
+        data={data}
+        showSolution={{ general: showSolution, ...statisticsShowSolution }}
+        brush={true}
+      />
+    )
   } else if (chartType === 'wordCloud') {
     return <Wordcloud data={data} showSolution={showSolution} />
   } else if (chartType === 'barChart') {

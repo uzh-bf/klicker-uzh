@@ -21,7 +21,13 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
+import {
+  Checkbox,
+  Prose,
+  Select,
+  Switch,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -42,6 +48,27 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 
 function Evaluation() {
   const router = useRouter()
+
+  const [showMean, setShowMean] = useState(true)
+  const [showMedian, setShowMedian] = useState(false)
+  const [showq1, setShowq1] = useState(false)
+  const [showq3, setShowq3] = useState(false)
+  const [showSd, setShowSd] = useState(false)
+
+  const statisticStates: Record<string, boolean> = {
+    mean: showMean,
+    median: showMedian,
+    q1: showq1,
+    q3: showq3,
+    sd: showSd,
+  }
+  const statisticSetters: Record<string, any> = {
+    mean: () => setShowMean(!showMean),
+    median: () => setShowMedian(!showMedian),
+    q1: () => setShowq1(!showq1),
+    q3: () => setShowq3(!showq3),
+    sd: () => setShowSd(!showSd),
+  }
 
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
@@ -303,6 +330,13 @@ function Evaluation() {
                     chartType={chartType}
                     data={currentInstance}
                     showSolution={showSolution}
+                    statisticsShowSolution={{
+                      mean: showMean,
+                      median: showMedian,
+                      q1: showq1,
+                      q3: showq3,
+                      sd: showSd,
+                    }}
                   />
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
@@ -371,12 +405,31 @@ function Evaluation() {
                         {Object.entries(currentInstance.statistics)
                           .slice(1)
                           .map((statistic, index) => {
+                            console.log(statistic[0])
+                            console.log(statisticStates[statistic[0]])
                             return (
                               <div
                                 key={index}
                                 className="flex justify-between mb-2 border-b-2"
                               >
-                                <span>{statistic[0]}</span>
+                                <span
+                                  className={twMerge(
+                                    'flex flex-row items-center',
+                                    typeof statisticStates[statistic[0]] ===
+                                      'undefined' && 'ml-6'
+                                  )}
+                                >
+                                  {typeof statisticStates[statistic[0]] !==
+                                    'undefined' && (
+                                    <Checkbox
+                                      checked={statisticStates[statistic[0]]}
+                                      onCheck={statisticSetters[statistic[0]]}
+                                      size="sm"
+                                      className="border-black rounded-sm"
+                                    />
+                                  )}
+                                  {statistic[0]}
+                                </span>
                                 <span>
                                   {Math.round(parseFloat(statistic[1]) * 100) /
                                     100}
