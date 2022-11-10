@@ -62,14 +62,9 @@ function Histogram({
         ? data.questionData.options.restrictions.max
         : maxBy(mappedData, 'value')?.value + 10
 
-    let dataArray = Array.from({ length: numBins }, (_, i) => {
-      return {
-        value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
-      }
-    })
-
-    // prepare the dataArray by adding a count of elements and label to each bin
-    dataArray = dataArray.map((bin) => {
+    const dataArray = Array.from({ length: numBins }, (_, i) => ({
+      value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
+    })).map((bin) => {
       const binWidth =
         dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
       const count = sumBy(
