@@ -416,11 +416,11 @@ function Evaluation() {
                                   className={twMerge(
                                     'flex flex-row items-center',
                                     typeof statisticStates[statistic[0]] ===
-                                      'undefined' && 'ml-6'
+                                      'undefined' && chartType === 'histogram' && 'ml-6'
                                   )}
                                 >
                                   {typeof statisticStates[statistic[0]] !==
-                                    'undefined' && (
+                                    'undefined' && chartType === 'histogram' && (
                                     <Checkbox
                                       checked={statisticStates[statistic[0]]}
                                       onCheck={statisticSetters[statistic[0]]}
