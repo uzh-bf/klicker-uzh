@@ -99,9 +99,9 @@ function useFeedbackFilter(
     )
   }, [filteredFeedbacks, sortBy])
 
-  return [
-    sortedFeedbacks,
-    {
+  return {
+    sortedFeedbacks: sortedFeedbacks,
+    filterProps: {
       setShowResolved,
       setShowUnpublished,
       setShowUnpinned,
@@ -116,7 +116,7 @@ function useFeedbackFilter(
       showUnpublished,
       withSearch,
     },
-  ]
+  }
 }
 
 export default useFeedbackFilter

@@ -5,7 +5,13 @@ import { Podium } from './Podium'
 
 interface LeaderboardProps {
   leaderboard: any[]
-  className?: string
+  className?: {
+    root?: string
+    podium?: string
+    podiumSingle?: string
+    list?: string
+    listItem?: string
+  }
 }
 
 function Leaderboard({
@@ -13,14 +19,20 @@ function Leaderboard({
   className,
 }: LeaderboardProps): React.ReactElement {
   return (
-    <div className={twMerge(className, '')}>
+    <div className={className?.root}>
       <div className="space-y-4">
         <div>
           {leaderboard?.length > 0 && (
-            <Podium leaderboard={leaderboard?.slice(0, 3)} />
+            <Podium
+              leaderboard={leaderboard?.slice(0, 3)}
+              className={{
+                root: className?.podium,
+                single: className?.podiumSingle,
+              }}
+            />
           )}
         </div>
-        <div className="space-y-1">
+        <div className={twMerge('space-y-1', className?.list)}>
           {leaderboard?.slice(0, 10).map((entry) => (
             <ParticipantOther
               key={entry.id}
@@ -28,6 +40,7 @@ function Leaderboard({
               pseudonym={entry.username}
               avatar={entry.avatar ?? 'placeholder'}
               points={entry.score}
+              className={className?.listItem}
             />
           ))}
         </div>

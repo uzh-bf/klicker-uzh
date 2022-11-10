@@ -140,10 +140,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           isSubmitting,
           isValid,
         }) => {
-          function twMerge(arg0: string) {
-            throw new Error('Function not implemented.')
-          }
-
           return (
             <div>
               <Form className="">

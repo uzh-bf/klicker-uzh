@@ -1,79 +1,47 @@
 import { useQuery } from '@apollo/client'
-import Chart from '@components/evaluation/Chart'
+import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
+import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faCheck,
-  faChevronDown,
-  faChevronUp,
+  faComment,
+  faFaceSmile,
   faGamepad,
   faSync,
+  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSessionEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesQuestionOptions,
+  FreeTextQuestionOptions,
+  GetSessionEvaluationDocument,
+  GetSessionEvaluationQuery,
+  NumericalQuestionOptions,
+  SessionBlockStatus,
+  Statistics,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import * as SelectPrimitive from '@radix-ui/react-select'
-import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { Button, Prose } from '@uzh-bf/design-system'
+import * as RadixTab from '@radix-ui/react-tabs'
+import {
+  Checkbox,
+  Prose,
+  Select,
+  Switch,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { groupBy } from 'ramda'
-import { useMemo, useState } from 'react'
-import { CHART_COLORS } from 'shared-components/src/constants'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ACTIVE_CHART_TYPES,
+  CHART_COLORS,
+} from 'shared-components/src/constants'
 import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
+import Footer from '../../../components/common/Footer'
+import Chart from '../../../components/evaluation/Chart'
 
-const Select = ({ items, onChange }) => {
-  return (
-    <SelectPrimitive.Root
-      defaultValue={String(items[0].instanceIx)}
-      onValueChange={onChange}
-    >
-      <SelectPrimitive.Trigger asChild aria-label="Food">
-        <Button className="text-sm">
-          <SelectPrimitive.Value />
-          <SelectPrimitive.Icon className="ml-2">
-            <FontAwesomeIcon icon={faChevronDown} />
-          </SelectPrimitive.Icon>
-        </Button>
-      </SelectPrimitive.Trigger>
-      <SelectPrimitive.Content>
-        <SelectPrimitive.ScrollUpButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
-          <FontAwesomeIcon icon={faChevronUp} />
-        </SelectPrimitive.ScrollUpButton>
-        <SelectPrimitive.Viewport className="p-2 bg-white rounded-lg shadow-lg dark:bg-gray-800 z-[9999]">
-          <SelectPrimitive.Group>
-            {items.map((item, ix) => (
-              <SelectPrimitive.Item
-                key={item.instanceIx}
-                value={String(item.instanceIx)}
-                className={twMerge(
-                  'relative flex items-center px-8 py-2 rounded-md text-gray-700 dark:text-gray-300 font-medium focus:bg-gray-100 dark:focus:bg-gray-900',
-                  'radix-disabled:opacity-50',
-                  'focus:outline-none select-none'
-                )}
-              >
-                <SelectPrimitive.ItemText>
-                  {item.label}
-                </SelectPrimitive.ItemText>
-                <SelectPrimitive.ItemIndicator className="absolute inline-flex items-center left-2">
-                  <FontAwesomeIcon icon={faCheck} />
-                </SelectPrimitive.ItemIndicator>
-              </SelectPrimitive.Item>
-            ))}
-          </SelectPrimitive.Group>
-        </SelectPrimitive.Viewport>
-        <SelectPrimitive.ScrollDownButton className="flex items-center justify-center text-gray-700 dark:text-gray-300">
-          <FontAwesomeIcon icon={faChevronDown} />
-        </SelectPrimitive.ScrollDownButton>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Root>
-  )
-}
-interface Tab {
-  status: 'EXECUTED' | 'ACTIVE'
-  title: string
-  value: string
-}
+// TODO: maybe move this util to another file / component or to this component - having util files in the components seems strange?
 
-const INSTANCE_STATUS_ICON = {
+const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
   ACTIVE: faSync,
 }
@@ -81,12 +49,87 @@ const INSTANCE_STATUS_ICON = {
 function Evaluation() {
   const router = useRouter()
 
-  // TODO: replace with corresponding database field and query
-  const [showSolution, setShowSolution] = useState(true)
-  const [activeBlock, setActiveBlock] = useState<number | string>(0)
-  const [activeInstance, setActiveInstance] = useState(0)
+  const [showMean, setShowMean] = useState(true)
+  const [showMedian, setShowMedian] = useState(false)
+  const [showq1, setShowq1] = useState(false)
+  const [showq3, setShowq3] = useState(false)
+  const [showSd, setShowSd] = useState(false)
 
-  const { data, loading, error } = useQuery(GetSessionEvaluationDocument, {
+  const statisticStates: Record<string, boolean> = {
+    mean: showMean,
+    median: showMedian,
+    q1: showq1,
+    q3: showq3,
+    sd: showSd,
+  }
+  const statisticSetters: Record<string, any> = {
+    mean: () => setShowMean(!showMean),
+    median: () => setShowMedian(!showMedian),
+    q1: () => setShowq1(!showq1),
+    q3: () => setShowq3(!showq3),
+    sd: () => setShowSd(!showSd),
+  }
+
+  const [selectedBlock, setSelectedBlock] = useState(0)
+  const [selectedInstance, setSelectedInstance] = useState('')
+  const [showSolution, setShowSolution] = useState(false)
+  const [chartType, setChartType] = useState<string>('table')
+  const [currentInstance, setCurrentInstance] = useState<{
+    blockIx: number
+    id: string
+    instanceIx: number
+    participants: number
+    questionData:
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'SC' | 'MC' | 'KPRIM'
+          options: ChoicesQuestionOptions
+        }
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'NUMERICAL'
+          options: NumericalQuestionOptions
+        }
+      | {
+          id: number
+          name: string
+          content: string
+          type: 'FREE_TEXT'
+          options: FreeTextQuestionOptions
+        }
+    results: Object
+    statistics: Statistics
+    status: SessionBlockStatus
+  }>({
+    blockIx: 0,
+    id: '',
+    instanceIx: 0,
+    participants: 0,
+    questionData: {
+      id: 0,
+      name: '',
+      content: '',
+      type: 'SC',
+      options: { choices: [] },
+    },
+    results: {},
+    statistics: {},
+    status: SessionBlockStatus.Executed,
+  })
+
+  const {
+    data,
+    loading,
+    error,
+  }: {
+    data: GetSessionEvaluationQuery | undefined
+    loading: any
+    error?: any
+  } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -94,279 +137,423 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  const { groupedTabs } = useMemo(() => {
-    if (!data) return { tabs: [] }
-
-    const tabs = data.sessionEvaluation?.instanceResults?.map(
-      (instance, index) => ({
-        id: instance.id,
-        blockIx: instance.blockIx,
-        instanceIx: instance.instanceIx,
-        value: 'tab' + index,
-        title: instance.questionData.name,
-        status: instance.status,
-        label: instance.questionData.name,
-      })
-    )
-
-    if (!tabs) return { tabs: [] }
-
-    const groupedTabs = Object.entries(
-      groupBy((tab) => tab.blockIx.toString(), tabs)
-    )
-
-    return { tabs, groupedTabs }
+  const blocks = useMemo(() => {
+    return data?.sessionEvaluation?.blocks ?? []
   }, [data])
 
-  const questions = useMemo(() => {
-    if (!data) return []
-
-    return data.sessionEvaluation?.instanceResults?.map((instance) => {
-      const baseData = {
-        blockIx: instance.blockIx,
-        instanceIx: instance.instanceIx,
-        content: instance.questionData.content,
-        type: instance.questionData.type,
-      }
-
-      const answers = []
-
-      if (
-        instance.questionData.type === 'SC' ||
-        instance.questionData.type === 'MC' ||
-        instance.questionData.type === 'KPRIM'
-      ) {
-        // answerArray should include both all answer possibilities as well as a correct / false attribute for them
-        instance.questionData.options.choices.map((choice: any) => {
-          answers.push({ value: choice.value, correct: choice.correct })
-        })
-      } else if (instance.questionData.type === 'NUMERICAL') {
-        // answerArray should include the correct answer ranges with correct attribute and the restrictions with an undefined correct attribute
-        answers.push({
-          value: instance.questionData.options.restrictions,
-          correct: undefined,
-        })
-        instance.questionData.options.solutionRanges?.forEach(
-          (range: { min: number; max: number }) => {
-            answers.push({
-              value: range,
-              correct: true,
-            })
-          }
-        )
-      } else if (instance.questionData.type === 'FREE_TEXT') {
-        // answerArray should include the correct keywords together with a correct: true attribute
-        instance.questionData.options.solutions.forEach((solution: string) => {
-          answers.push({
-            value: solution,
-            correct: true,
-          })
-        })
-      }
-
-      const results = Object.values(instance.results).map((answer) => ({
-        value: answer.value,
-        votes: answer.count,
-      }))
-
-      return {
-        ...baseData,
-        answers,
-        results,
-        participants: instance.participants,
-      }
-    })
+  const instanceResults = useMemo(() => {
+    return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
 
-  if (error) return <div>An error occurred, please try again later.</div>
-  if (loading || !data) return <div>Loading...</div>
-
-  const currentQuestion = questions?.find(
-    (question) =>
-      question.blockIx == activeBlock && question.instanceIx == activeInstance
+  const tabs = useMemo(
+    () =>
+      blocks.map((block) => {
+        return {
+          label: 'Block ' + String(block.blockIx + 1),
+          value: block.blockIx,
+        }
+      }),
+    [blocks]
   )
 
+  const selectData = useMemo(() => {
+    if (!blocks || !blocks[selectedBlock]) return []
+    return blocks[selectedBlock].tabData?.map((question) => {
+      return { label: question?.name || '', value: question?.id || '' }
+    })
+  }, [blocks, selectedBlock])
+
+  useEffect(() => {
+    if (!instanceResults || instanceResults.length === 0) return
+
+    if (selectedInstance === '' && currentInstance.id === '') {
+      setSelectedInstance(instanceResults[0].id)
+      setCurrentInstance(instanceResults[0])
+    }
+
+    const currInstance = instanceResults?.find(
+      (instance) => instance.id === selectedInstance
+    )
+    if (currInstance) setCurrentInstance(currInstance)
+
+    const possibleChartTypes = ACTIVE_CHART_TYPES[
+      currentInstance?.questionData.type
+    ].map((type) => type.value)
+
+    if (!possibleChartTypes.includes(chartType)) {
+      setChartType(
+        ACTIVE_CHART_TYPES[currentInstance?.questionData.type][0].value
+      )
+    }
+  }, [
+    selectedInstance,
+    instanceResults,
+    currentInstance.id,
+    chartType,
+    currentInstance.questionData.type,
+  ])
+
+  if (error && !data)
+    return <div>An error occurred, please try again later.</div>
+  if (loading || !data) return <div>Loading...</div>
+
+  // TODO: think about mobile layout (maybe at least tablet support)
   return (
-    <TabsPrimitive.Root
-      value={`tab-${activeBlock}`}
-      className="flex flex-col h-full p-1"
+    <RadixTab.Root
+      className="flex flex-col h-full overflow-y-none"
+      defaultValue="0"
     >
-      <TabsPrimitive.List
-        className={twMerge('flex-initial flex flex-col md:flex-row')}
-      >
-        {groupedTabs?.map(([blockIx, items], groupIx) => (
-          <TabsPrimitive.Trigger
-            key={`tab-trigger-${blockIx}`}
-            value={'tab' + blockIx}
-            className={twMerge(
-              'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
-            )}
-            onClick={() => {
-              setActiveBlock(Number(blockIx))
-              setActiveInstance(0)
-            }}
-          >
-            <div className="flex flex-row items-center gap-1 text-sm text-left">
-              <div>
+      <RadixTab.List className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
+        {blocks && blocks[selectedBlock] && (
+          <div className="flex flex-row items-center gap-2">
+            <div className="font-bold">Frage:</div>
+
+            <Select
+              items={selectData || []}
+              onChange={(newValue) => setSelectedInstance(newValue)}
+              className={{
+                root: 'h-11 z-20',
+                trigger:
+                  'shadow-sm rounded-none m-0 border-none hover:bg-uzh-blue-20',
+              }}
+              value={
+                selectedInstance === ''
+                  ? blocks[selectedBlock].tabData[0].id
+                  : selectedInstance
+              }
+            />
+          </div>
+        )}
+        <div className="ml-auto">
+          {tabs.map((tab, idx) => (
+            <RadixTab.Trigger
+              key={tab.value}
+              value={String(tab.value)}
+              onClick={() => {
+                setSelectedBlock(idx)
+                setSelectedInstance(blocks[idx].tabData[0].id)
+              }}
+              className={twMerge(
+                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                idx === selectedBlock && 'border-solid border-uzh-blue-80'
+              )}
+            >
+              <div className="flex flex-row items-center gap-2">
                 <FontAwesomeIcon
                   size="xs"
-                  icon={INSTANCE_STATUS_ICON[items[0].status]}
+                  icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
                 />
+                <div>{tab.label}</div>
               </div>
-              <div>Block {Number(blockIx) + 1}</div>
-            </div>
-            <Select
-              items={items}
-              onChange={(newIx) => {
-                setActiveBlock(Number(blockIx))
-                setActiveInstance(Number(newIx))
+            </RadixTab.Trigger>
+          ))}
+          {data.sessionEvaluation?.isGamificationEnabled && (
+            <RadixTab.Trigger
+              value="leaderboard"
+              className={twMerge(
+                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                selectedBlock === tabs.length &&
+                  'border-solid border-uzh-blue-80'
+              )}
+              onClick={() => {
+                setSelectedBlock(tabs.length)
               }}
-            />
-          </TabsPrimitive.Trigger>
-        ))}
-
-        <TabsPrimitive.Trigger
-          key={`tab-trigger-lb`}
-          value={'tab-lb'}
-          className={twMerge(
-            'px-2 py-1 border-r first:border-l border-b-2 border-b-uzh-grey-100 rdx-state-active:border-b-uzh-blue-100 hover:border-b-uzh-blue-60 hover:text-uzh-blue-100 text-slate-700 rdx-state-active:text-slate-900'
+            >
+              <div className="flex flex-row items-center gap-2">
+                <div>
+                  <FontAwesomeIcon icon={faGamepad} />
+                </div>
+                <div>Leaderboard</div>
+              </div>
+            </RadixTab.Trigger>
           )}
-          onClick={() => {
-            setActiveBlock('lb')
-          }}
-        >
-          <div className="flex flex-row items-center gap-1 text-sm text-left">
-            <div>
-              <FontAwesomeIcon icon={faGamepad} />
-            </div>
-            <div>Leaderboard</div>
-          </div>
-        </TabsPrimitive.Trigger>
-      </TabsPrimitive.List>
 
-      {currentQuestion && (
-        <div>
-          <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
-            <Markdown
-              className="flex flex-row content-between p-2"
-              content={currentQuestion.content}
-            />
-          </Prose>
-
-          <div className="flex flex-col flex-1 md:flex-row">
-            <div className="z-10 flex-1 order-2 md:order-1">
-              <Chart
-                questionType={currentQuestion.type}
-                data={currentQuestion.results}
-                showSolution={showSolution}
-                totalResponses={currentQuestion.participants}
-              />
-            </div>
-            <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-              <div className="flex flex-col gap-2">
-                {(currentQuestion.type === 'SC' ||
-                  currentQuestion.type === 'MC' ||
-                  currentQuestion.type === 'KPRIM') &&
-                  currentQuestion.answers.map(
-                    (
-                      answer: {
-                        value: String | { min: number; max: number }
-                        correct?: Boolean
-                      },
-                      innerIndex: number
-                    ) => (
-                      <div
-                        key={currentQuestion.results[innerIndex].value}
-                        className="flex flex-row"
-                      >
-                        <div
-                          style={{
-                            backgroundColor: CHART_COLORS[innerIndex % 12],
-                          }}
-                          className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold'
-                            // answer.correct && 'text-black'
-                          )}
-                        >
-                          {String.fromCharCode(65 + innerIndex)}
-                        </div>
-                        <Markdown
-                          content={answer.value}
-                          className="w-[calc(100%-3rem)]"
-                        />
-                      </div>
-                    )
-                  )}
-
-                {currentQuestion.type === 'NUMERICAL' && (
+          {data.sessionEvaluation?.status === 'COMPLETED' &&
+            data.sessionEvaluation?.feedbacks?.length !== 0 && (
+              <RadixTab.Trigger
+                value="feedbacks"
+                className={twMerge(
+                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                  selectedBlock === tabs.length + 1 &&
+                    'border-solid border-uzh-blue-80'
+                )}
+                onClick={() => {
+                  setSelectedBlock(tabs.length + 1)
+                }}
+              >
+                <div className="flex flex-row items-center gap-2">
                   <div>
-                    {/* <div className="mb-3">
-                        {answerCollection[index].answers
-                          .filter(
-                            (answer: any) =>
-                              typeof answer.correct === 'undefined'
-                          )
-                          .map((answer: any, index: number) => (
-                            <div key={index}>
-                              Einschränkungen: Wert zwischen {answer.value.min}{' '}
-                              und {answer.value.max}
+                    <FontAwesomeIcon icon={faComment} />
+                  </div>
+                  <div>Feedbacks</div>
+                </div>
+              </RadixTab.Trigger>
+            )}
+          {data.sessionEvaluation?.status === 'COMPLETED' &&
+            data.sessionEvaluation?.confusionFeedbacks?.length !== 0 && (
+              <RadixTab.Trigger
+                value="confusion"
+                className={twMerge(
+                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
+                  selectedBlock === tabs.length + 2 &&
+                    'border-solid border-uzh-blue-80'
+                )}
+                onClick={() => {
+                  setSelectedBlock(tabs.length + 2)
+                }}
+              >
+                <div className="flex flex-row items-center gap-2">
+                  <div>
+                    <FontAwesomeIcon icon={faFaceSmile} />
+                  </div>
+                  <div>Confusion</div>
+                </div>
+              </RadixTab.Trigger>
+            )}
+        </div>
+      </RadixTab.List>
+
+      <div className="flex-1 overflow-y-auto">
+        {currentInstance && (
+          <RadixTab.Content value={String(currentInstance.blockIx)}>
+            <div>
+              <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
+                <Markdown
+                  className="flex flex-row content-between p-2"
+                  content={currentInstance.questionData.content}
+                />
+              </Prose>
+
+              <div className="flex flex-col flex-1 md:flex-row">
+                <div className="z-10 flex-1 order-2 md:order-1">
+                  <Chart
+                    chartType={chartType}
+                    data={currentInstance}
+                    showSolution={showSolution}
+                    statisticsShowSolution={{
+                      mean: showMean,
+                      median: showMedian,
+                      q1: showq1,
+                      q3: showq3,
+                      sd: showSd,
+                    }}
+                  />
+                </div>
+                <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
+                  <div className="flex flex-col gap-2">
+                    <div className="font-bold">Diagramm Typ:</div>
+                    <Select
+                      className={{ root: '-mt-1 mb-1' }}
+                      items={
+                        ACTIVE_CHART_TYPES[currentInstance.questionData.type]
+                      }
+                      value={chartType}
+                      onChange={(newValue: string) => setChartType(newValue)}
+                    />
+
+                    {(currentInstance.questionData.type === 'SC' ||
+                      currentInstance.questionData.type === 'MC' ||
+                      currentInstance.questionData.type === 'KPRIM') && (
+                      <div className="flex flex-col gap-2">
+                        <div className="font-bold">Antwortmöglichkeiten</div>
+                        {currentInstance.questionData.options.choices.map(
+                          (choice, innerIndex) => (
+                            <div
+                              key={`${currentInstance.blockIx}-${innerIndex}`}
+                              className="flex flex-row"
+                            >
+                              <div
+                                // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
+                                style={{
+                                  backgroundColor:
+                                    choice.correct && showSolution
+                                      ? '#00de0d'
+                                      : CHART_COLORS[innerIndex % 12],
+                                }}
+                                className={twMerge(
+                                  'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                                  choice.correct && showSolution && 'text-black'
+                                )}
+                              >
+                                {String.fromCharCode(65 + innerIndex)}
+                              </div>
+                              <Markdown
+                                content={choice.value}
+                                className="w-[calc(100%-3rem)]"
+                              />
                             </div>
-                          ))}
-                      </div> */}
-                    <div className="font-bold">Erlaubter Antwortbereich:</div>
-                    {currentQuestion.answers.map(
-                      (
-                        answer: {
-                          value: String | { min: number; max: number }
-                          correct?: Boolean
-                        },
-                        innerIndex: number
-                      ) => (
-                        <div key={innerIndex}>
-                          [{answer.value.min ?? '-∞'},{answer.value.max ?? '+∞'}
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {currentInstance.questionData.type === 'NUMERICAL' && (
+                      <div>
+                        <div className="font-bold">
+                          Erlaubter Antwortbereich:
+                        </div>
+                        <div>
+                          [
+                          {currentInstance.questionData.options.restrictions
+                            ?.min ?? '-∞'}
+                          ,
+                          {currentInstance.questionData.options.restrictions
+                            ?.max ?? '+∞'}
                           ]
                         </div>
-                      )
+                        <div className="mt-4 font-bold">Statistik:</div>
+                        {Object.entries(currentInstance.statistics)
+                          .slice(1)
+                          .map((statistic, index) => {
+                            console.log(statistic[0])
+                            console.log(statisticStates[statistic[0]])
+                            return (
+                              <div
+                                key={index}
+                                className="flex justify-between mb-2 border-b-2"
+                              >
+                                <span
+                                  className={twMerge(
+                                    'flex flex-row items-center',
+                                    typeof statisticStates[statistic[0]] ===
+                                      'undefined' && chartType === 'histogram' && 'ml-6'
+                                  )}
+                                >
+                                  {typeof statisticStates[statistic[0]] !==
+                                    'undefined' && chartType === 'histogram' && (
+                                    <Checkbox
+                                      checked={statisticStates[statistic[0]]}
+                                      onCheck={statisticSetters[statistic[0]]}
+                                      size="sm"
+                                      className="border-black rounded-sm"
+                                    />
+                                  )}
+                                  {statistic[0]}
+                                </span>
+                                <span>
+                                  {Math.round(parseFloat(statistic[1]) * 100) /
+                                    100}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        {showSolution &&
+                          currentInstance.questionData.options
+                            .solutionRanges && (
+                            <div>
+                              <div className="mt-4 font-bold">
+                                Korrekte Lösungsbereiche:
+                              </div>
+                              {currentInstance.questionData.options.solutionRanges.map(
+                                (range, innerIndex) => (
+                                  <div key={innerIndex}>
+                                    [{range?.min || '-∞'},{range?.max || '+∞'}]
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                      </div>
                     )}
-                  </div>
-                )}
-
-                {currentQuestion.type === 'FREE_TEXT' && (
-                  <div>
-                    <div className="font-bold">Schlüsselwörter Lösung:</div>
-                    <ul>
-                      {currentQuestion.answers.map(
-                        (
-                          answer: {
-                            value: String | { min: number; max: number }
-                            correct?: Boolean
-                          },
-                          innerIndex: number
-                        ) => (
-                          <li key={innerIndex}>{`- ${answer.value}`}</li>
-                        )
+                    {currentInstance.questionData.type === 'FREE_TEXT' &&
+                      currentInstance.questionData.options.solutions &&
+                      showSolution && (
+                        <div>
+                          <div className="font-bold">
+                            Schlüsselwörter Lösung:
+                          </div>
+                          <ul>
+                            {currentInstance.questionData.options.solutions.map(
+                              (keyword, innerIndex) => (
+                                <li key={innerIndex}>{`- ${keyword}`}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
                       )}
-                    </ul>
                   </div>
-                )}
+                </div>
               </div>
             </div>
+          </RadixTab.Content>
+        )}
+        <RadixTab.Content value="leaderboard">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
+                <div className="mt-6">
+                  <SessionLeaderboard
+                    leaderboard={data.sessionLeaderboard}
+                    className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
+                  />
+                </div>
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Bisher waren keine Teilnehmenden während dieser Session
+              angemeldet und haben Punkte gesammelt."
+                />
+              )}
+            </div>
           </div>
+        </RadixTab.Content>
 
-          <div className="flex flex-row items-center flex-initial p-2 text-xl border-t">
-            Teilnehmende: {currentQuestion.participants}
+        <RadixTab.Content value="feedbacks">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionEvaluation?.feedbacks &&
+              data.sessionEvaluation?.feedbacks.length > 0 ? (
+                <EvaluationFeedbacks
+                  feedbacks={data.sessionEvaluation?.feedbacks}
+                />
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Diese Session enthält bisher keine Feedbacks."
+                />
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        </RadixTab.Content>
 
-      <TabsPrimitive.Content value="tab-lb">
-        <div className="p-4 border-t">
-          <div className="max-w-5xl mx-auto text-xl">
-            <SessionLeaderboard leaderboard={data.sessionLeaderboard} />
+        <RadixTab.Content value="confusion">
+          <div className="p-4 border-t">
+            <div className="max-w-5xl mx-auto text-xl">
+              {data.sessionEvaluation?.confusionFeedbacks &&
+              data.sessionEvaluation?.confusionFeedbacks.length > 0 ? (
+                <EvaluationConfusion
+                  confusionTS={data.sessionEvaluation?.confusionFeedbacks}
+                />
+              ) : (
+                <UserNotification
+                  className="text-lg"
+                  notificationType="error"
+                  message="Diese Session enthält bisher keine Confusion Feedbacks."
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </TabsPrimitive.Content>
-    </TabsPrimitive.Root>
+        </RadixTab.Content>
+      </div>
+
+      <Footer className="relative flex-none h-18">
+        {currentInstance && (
+          <div className="flex flex-row justify-between p-4 pr-8 m-0">
+            <div className="text-xl">
+              Total Teilnehmende: {currentInstance.participants}
+            </div>
+            <Switch
+              id="showSolution"
+              checked={showSolution}
+              label="Lösung anzeigen"
+              onCheckedChange={(newValue) => setShowSolution(newValue)}
+            />
+          </div>
+        )}
+      </Footer>
+    </RadixTab.Root>
   )
 }
 

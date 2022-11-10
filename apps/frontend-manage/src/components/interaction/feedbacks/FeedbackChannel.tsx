@@ -41,7 +41,7 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
-  const [sortedFeedbacks, filterProps] = useFeedbackFilter(feedbacks, {
+  const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
   // const [feedbackLength, setFeedbackLength] = useState(0)

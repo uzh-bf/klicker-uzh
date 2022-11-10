@@ -1006,6 +1006,10 @@ html,
   margin-left: 0.25rem;
 }
 
+.mr-20 {
+  margin-right: 5rem;
+}
+
 .mr-2 {
   margin-right: 0.5rem;
 }
@@ -1844,6 +1848,11 @@ html,
   color: rgb(181 189 197 / var(--tw-text-opacity));
 }
 
+.text-gray-500 {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity));
+}
+
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
@@ -1862,11 +1871,6 @@ html,
 .text-gray-700 {
   --tw-text-opacity: 1;
   color: rgb(55 65 81 / var(--tw-text-opacity));
-}
-
-.text-gray-500 {
-  --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity));
 }
 
 .text-gray-800 {
@@ -2027,6 +2031,11 @@ html,
 .hover\:border-uzh-red-40:hover {
   --tw-border-opacity: 1;
   border-color: rgb(241 191 169 / var(--tw-border-opacity));
+}
+
+.hover\:bg-white:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 
 .hover\:bg-uzh-red-20:hover {
@@ -3246,6 +3255,10 @@ select {
   display: flex;
 }
 
+.table {
+  display: table;
+}
+
 .grid {
   display: grid;
 }
@@ -3377,6 +3390,11 @@ select {
 .rounded-r {
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
+}
+
+.rounded-t-md {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
 }
 
 .rounded-l {

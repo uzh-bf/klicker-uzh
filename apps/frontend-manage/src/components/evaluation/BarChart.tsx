@@ -1,4 +1,4 @@
-import { QuestionType } from '@klicker-uzh/prisma'
+import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
   Bar,
@@ -12,40 +12,41 @@ import {
 } from 'recharts'
 import {
   CHART_COLORS,
+  QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
 
 interface BarChartProps {
-  questionType: QuestionType
-  data: { value: string | number; correct: boolean; votes: number }[]
+  data: InstanceResult
   showSolution: boolean
-  totalResponses: number
 }
 
-const defaultValues = {}
-
-function BarChart({
-  questionType,
-  data,
-  showSolution,
-  totalResponses,
-}: BarChartProps): React.ReactElement {
+function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = data.map((d) => {
-    const labelIn =
-      d.votes / totalResponses > SMALL_BAR_THRESHOLD ? d.votes : undefined
-    const labelOut =
-      d.votes / totalResponses <= SMALL_BAR_THRESHOLD ? d.votes : undefined
-    const xLabel =
-      questionType === 'NUMERICAL'
-        ? d.value
-        : String.fromCharCode(Number(d.value) + 65)
-    return { ...d, labelIn, labelOut, xLabel }
-  })
+  const dataWithLabels = Object.values(data.results).map(
+    (result, idx) => {
+      console.log(result)
+      const labelIn =
+        result.count / data.participants > SMALL_BAR_THRESHOLD
+          ? result.count
+          : undefined
+      const labelOut =
+        result.count / data.participants <= SMALL_BAR_THRESHOLD
+          ? result.count
+          : undefined
+      const xLabel =
+        data.questionData.type === 'NUMERICAL'
+          ? result.value
+          : String.fromCharCode(Number(idx) + 65)
+      return { count: result.count, labelIn, labelOut, xLabel }
+    }
+  )
+
+  // debugger
 
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
-    <ResponsiveContainer height={600} className="z-10">
+    <ResponsiveContainer className="mb-4" height={600} width="99%">
       <BarChartRecharts
         data={dataWithLabels}
         margin={{
@@ -79,9 +80,9 @@ function BarChart({
         />
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <Bar
-          dataKey="votes"
-          isAnimationActive={false}
+          dataKey="count"
           // HACK: don't animate as it causes labels to disappear
+          //isAnimationActive={false}
           maxBarSize={100}
         >
           <LabelList
@@ -100,18 +101,19 @@ function BarChart({
             stroke="white"
             style={{ fontSize: '2rem' }}
           />
-          {data.map(
-            (row, index): React.ReactElement => (
-              <Cell
-                fill={
-                  showSolution && row.correct
-                    ? '#00de0d'
-                    : CHART_COLORS[index % 12]
-                }
-                key={row.value}
-              />
-            )
-          )}
+          {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
+            data.questionData.options.choices.map(
+              (choice: Choice, index: number): React.ReactElement => (
+                <Cell
+                  fill={
+                    showSolution && choice.correct
+                      ? '#00de0d'
+                      : CHART_COLORS[index % 12]
+                  }
+                  key={index}
+                />
+              )
+            )}
         </Bar>
       </BarChartRecharts>
     </ResponsiveContainer>

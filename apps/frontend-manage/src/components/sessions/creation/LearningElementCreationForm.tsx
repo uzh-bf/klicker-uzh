@@ -5,6 +5,7 @@ import * as yup from 'yup'
 interface LearningElementCreationFormProps {}
 
 function LearningElementCreationForm({}: LearningElementCreationFormProps) {
+  // TODO: keep in mind that only questions with solutions and feedbacks should be used for learning elements
   const learningElementCreationSchema = yup.object().shape({
     // TODO: implement schema for session creation mutation
   })

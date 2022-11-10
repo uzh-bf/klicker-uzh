@@ -13,6 +13,7 @@ import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
 import { GraphQLError } from 'graphql'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 
 const scheduledJobs: Record<string, any> = {}
@@ -645,8 +646,6 @@ export async function deactivateSessionBlock(
       activeBlock: session.activeBlock,
     })
 
-  // console.log(instanceResults, sessionLeaderboard, blockLeaderboard)
-
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.session.update({
     where: {
@@ -1160,6 +1159,72 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
+function checkCorrectnessFreeText(instance) {
+  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution )(exact match)
+  if (instance.questionData.type === 'FREE_TEXT') {
+    for (const id in instance.results) {
+      if (
+        instance.questionData.options.solutions &&
+        instance.questionData.options.solutions.includes(
+          instance.results[id].value
+        )
+      ) {
+        instance.results[id].correct = true
+      } else {
+        instance.results[id].correct = false
+      }
+    }
+  }
+  return instance
+}
+
+function computeStatistics(instance) {
+  // Compute the statistics for numerical questions
+  if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
+    const results = []
+    for (const key in instance.results) {
+      results.push(instance.results[key])
+    }
+    const valueArray = results.reduce((acc, { count, value }) => {
+      const elements = Array(count).fill(parseFloat(value))
+      return acc.concat(elements)
+    }, [])
+
+    // set correct attribute to each of the instance.results elements depending on solutionRanges
+    for (const id in instance.results) {
+      const value = parseFloat(instance.results[id].value)
+      const solutionRanges = instance.questionData.options.solutionRanges
+      let correct = false
+      for (const range of solutionRanges) {
+        if (value >= range['min'] && value <= range['max']) {
+          correct = true
+          break
+        }
+      }
+      instance.results[id].correct = correct
+    }
+
+    const hasResults = valueArray.length > 0
+
+    instance.statistics = {
+      max: hasResults && max(valueArray),
+      mean: hasResults && mean(valueArray),
+      median: hasResults && median(valueArray),
+      min: hasResults && min(valueArray),
+      q1: hasResults && quantileSeq(valueArray, 0.25),
+      q3: hasResults && quantileSeq(valueArray, 0.75),
+      sd: hasResults && std(valueArray),
+    }
+  }
+  return instance
+}
+
+function completeQuestionData(instances) {
+  return instances.map((instance) =>
+    computeStatistics(checkCorrectnessFreeText(instance))
+  )
+}
+
 export async function getSessionEvaluation(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1193,6 +1258,15 @@ export async function getSessionEvaluation(
           },
         },
       },
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      },
+      confusionFeedbacks: true,
     },
   })
 
@@ -1200,7 +1274,7 @@ export async function getSessionEvaluation(
 
   // if the session is running and a block is active
   // fetch the current results from the execution cache
-  let activeInstanceResults = []
+  let activeInstanceResults: any[] = []
   if (session.status === SessionStatus.RUNNING && session.activeBlock) {
     const activeInstanceIds = session.activeBlock.instances.map(
       (instance) => instance.id
@@ -1213,11 +1287,10 @@ export async function getSessionEvaluation(
       activeInstanceIds,
     })
 
-    const { instanceResults, sessionLeaderboard, blockLeaderboard } =
-      await processCachedData({
-        cachedResults,
-        activeBlock: session.activeBlock,
-      })
+    const { instanceResults } = await processCachedData({
+      cachedResults,
+      activeBlock: session.activeBlock,
+    })
 
     activeInstanceResults = Object.entries(instanceResults).map(
       ([id, results]) => {
@@ -1226,11 +1299,11 @@ export async function getSessionEvaluation(
         )
 
         return {
-          id: `${instance.id}-eval`,
-          blockIx: session.activeBlock.order,
-          instanceIx: instance.order,
+          id: `${instance?.id}-eval`,
+          blockIx: session.activeBlock?.order,
+          instanceIx: instance?.order,
           status: session.activeBlock!.status,
-          questionData: instance.questionData,
+          questionData: instance?.questionData,
           participants: results.participants,
           results: results.results,
         }
@@ -1243,7 +1316,7 @@ export async function getSessionEvaluation(
     )
   }
 
-  const executedInstanceResults = session.blocks.flatMap((block) =>
+  let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
       blockIx: block.order,
@@ -1255,8 +1328,54 @@ export async function getSessionEvaluation(
     }))
   )
 
+  const executedBlocks = session.blocks.map((block) => ({
+    blockIx: block.order,
+    blockStatus: block.status,
+    tabData: block.instances.map((instance) => ({
+      id: `${instance.id}-eval`,
+      questionIx: instance.order,
+      name: instance.questionData?.name,
+      status: block.status,
+    })),
+  }))
+
+  let activeBlock
+  if (session.status === SessionStatus.RUNNING && session.activeBlock) {
+    activeBlock = {
+      blockIx: session.activeBlock.order,
+      blockStatus: session.activeBlock.status,
+      tabData: session.activeBlock.instances.map((instance) => ({
+        id: `${instance.id}-eval`,
+        questionIx: instance.order,
+        name: instance.questionData?.name,
+        status: session.activeBlock?.status,
+      })),
+    }
+  }
+
+  const temp = {
+    id: `${id}-eval`,
+    status: session.status,
+    isGamificationEnabled: session.isGamificationEnabled,
+    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
+    instanceResults: [
+      ...completeQuestionData(executedInstanceResults),
+      ...completeQuestionData(activeInstanceResults),
+    ],
+    feedbacks: session.feedbacks,
+    confusionFeedbacks: session.confusionFeedbacks,
+  }
+
   return {
     id: `${id}-eval`,
-    instanceResults: [...executedInstanceResults, ...activeInstanceResults],
+    status: session.status,
+    isGamificationEnabled: session.isGamificationEnabled,
+    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
+    instanceResults: [
+      ...completeQuestionData(executedInstanceResults),
+      ...completeQuestionData(activeInstanceResults),
+    ],
+    feedbacks: session.feedbacks,
+    confusionFeedbacks: session.confusionFeedbacks,
   }
 }

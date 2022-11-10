@@ -1,13 +1,13 @@
-export const SMALL_BAR_THRESHOLD = 0.05
+export const SMALL_BAR_THRESHOLD: number = 0.05
 
-export const SESSION_STATUS = {
+export const SESSION_STATUS: Record<string, string> = {
   SCHEDULED: 'SCHEDULED',
   PREPARED: 'PREPARED',
   ACTIVE: 'ACTIVE',
   EXECUTED: 'EXECUTED',
 }
 
-export const CHART_TYPES = {
+export const CHART_TYPES: Record<string, string> = {
   BAR_CHART: 'BAR_CHART',
   CLOUD_CHART: 'CLOUD_CHART',
   HISTOGRAM: 'HISTOGRAM',
@@ -16,7 +16,7 @@ export const CHART_TYPES = {
   TABLE: 'TABLE',
 }
 
-export const CHART_COLORS = [
+export const CHART_COLORS: string[] = [
   'rgb(19, 149, 186)', // 1
   'rgb(241, 108, 32)', // 7
   'rgb(13, 60, 85)', // 4
@@ -31,7 +31,7 @@ export const CHART_COLORS = [
   'rgb(236, 170, 56)', // 9
 ]
 
-export const QUESTION_TYPES = {
+export const QUESTION_TYPES: Record<string, string> = {
   FREE_TEXT: 'FREE_TEXT',
   NUMERICAL: 'NUMERICAL',
   MC: 'MC',
@@ -39,7 +39,7 @@ export const QUESTION_TYPES = {
   KPRIM: 'KPRIM',
 }
 
-export const QUESTION_GROUPS = {
+export const QUESTION_GROUPS: Record<string, string[]> = {
   CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.KPRIM],
   FREE_TEXT: [QUESTION_TYPES.FREE_TEXT],
   NUMERICAL: [QUESTION_TYPES.NUMERICAL],
@@ -59,7 +59,11 @@ export const QUESTION_GROUPS = {
   WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
 }
 
-export const QUESTION_SORTINGS = [
+export const QUESTION_SORTINGS: {
+  content: string
+  id: string
+  labelStart: string
+}[] = [
   { content: 'Creation Date', id: 'CREATED', labelStart: 'sort numeric' },
   { content: 'Last Usage', id: 'USED', labelStart: 'sort numeric' },
   { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
@@ -74,7 +78,7 @@ export const QUESTION_TYPES_SHORT: Record<string, string> = {
   KPRIM: 'KP',
 }
 
-export const AVATAR_OPTIONS = {
+export const AVATAR_OPTIONS: Record<string, string[]> = {
   skinTone: ['light', 'dark'],
   eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],
   eyebrows: ['raised'],
@@ -90,7 +94,7 @@ export const AVATAR_OPTIONS = {
   clothingColor: ['blue', 'green', 'red'],
 }
 
-export const AVATAR_LABELS = {
+export const AVATAR_LABELS: Record<string, string> = {
   breasts: 'Weiblich',
   chest: 'Männlich',
   normal: 'Normal',
@@ -143,4 +147,32 @@ export const TYPES_SHORT: Record<string, string> = {
   MC: 'MC',
   SC: 'SC',
   KPRIM: 'KP',
+}
+
+export const ACTIVE_CHART_TYPES: Record<
+  string,
+  { label: string; value: string }[]
+> = {
+  FREE_TEXT: [
+    { label: 'Tabelle', value: 'table' },
+    { label: 'Word Cloud', value: 'wordCloud' },
+  ],
+  NUMERICAL: [
+    { label: 'Histogramm', value: 'histogram' },
+    { label: 'Tabelle', value: 'table' },
+    { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Word Cloud', value: 'wordCloud' },
+  ],
+  SC: [
+    { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Tabelle', value: 'table' },
+  ],
+  MC: [
+    { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Tabelle', value: 'table' },
+  ],
+  KPRIM: [
+    { label: 'Bar Chart', value: 'barChart' },
+    { label: 'Tabelle', value: 'table' },
+  ],
 }
