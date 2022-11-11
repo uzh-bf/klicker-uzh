@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.102](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.101...v2.0.0-alpha.102) (2022-11-11)
+
+
+### Bug Fixes
+
+* ensure that courseId is fetched for learning element repetition ([8df5a12](https://github.com/uzh-bf/klicker-uzh/commit/8df5a12084531988f114500afc05b96b558f2c50))
+
 ## [2.0.0-alpha.101](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.100...v2.0.0-alpha.101) (2022-11-10)
 
 
