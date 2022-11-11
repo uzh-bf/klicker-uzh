@@ -15,7 +15,10 @@ function Repetition() {
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className="text-xl">Repetition</H1>
         {data?.learningElements.map((element) => (
-          <Link href={`/course/${element.courseId}/element/${element.id}`}>
+          <Link
+            key={element.id}
+            href={`/course/${element.courseId}/element/${element.id}`}
+          >
             <Button
               className={twMerge(
                 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
