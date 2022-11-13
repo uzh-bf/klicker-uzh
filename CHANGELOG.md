@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.5...v1.8.6) (2022-11-13)
+
+
+### Other
+
+* **apps/backend:** update from Raven to Sentry package ([5eb215e](https://github.com/uzh-bf/klicker-uzh/commit/5eb215eddc32f6b45a30cddcb6bb16d2cdc586c4))
+
 ### [1.8.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.4...v1.8.5) (2022-11-13)
 
 
