@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.4...v1.8.5) (2022-11-13)
+
+
+### Bug Fixes
+
+* ensure that deactivation of instances works even if redis results are already gone ([2e8a310](https://github.com/uzh-bf/klicker-uzh/commit/2e8a310b95dd6e1309f6b1d6600015076814760e))
+
 ### [1.8.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.3...v1.8.4) (2022-11-02)
 
 
