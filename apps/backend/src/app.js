@@ -43,9 +43,11 @@ if (SERVICES_CFG.apm.enabled) {
   apm = require('elastic-apm-node')
 }
 
-let Raven
+let Sentry
+let Tracing
 if (SERVICES_CFG.sentry.enabled) {
-  Raven = require('raven')
+  Sentry = require('@sentry/node')
+  Tracing = require('@sentry/tracing')
 }
 
 const AccountService = require('./services/accounts')
@@ -141,40 +143,32 @@ if (process.env.NODE_ENV !== 'test') {
 
 // add production middlewares
 if (isProd) {
-  if (Raven) {
-    // if a sentry dsn is set, configure raven
-    Raven.config(SERVICES_CFG.sentry.dsn, {
-      environment: process.env.NODE_ENV,
-    }).install()
-    middleware = [Raven.requestHandler(), compression(), ...middleware, Raven.errorHandler()]
+  if (Sentry) {
+    Sentry.init({
+      dsn: SERVICES_CFG.sentry.dsn,
+      integrations: [
+        // enable HTTP calls tracing
+        new Sentry.Integrations.Http({ tracing: true }),
+        // enable Express.js middleware tracing
+        new Tracing.Integrations.Express({ app }),
+      ],
+
+      // Set tracesSampleRate to 1.0 to capture 100%
+      // of transactions for performance monitoring.
+      // We recommend adjusting this value in production
+      tracesSampleRate: 0.1,
+    })
+
+    middleware = [
+      Sentry.Handlers.requestHandler(),
+      Sentry.Handlers.tracingHandler(),
+      compression(),
+      ...middleware,
+      Sentry.Handlers.errorHandler(),
+    ]
   } else {
     middleware = [compression(), ...middleware]
   }
-
-  // add an elastic APM middleware
-  middleware.push((req, res, next) => {
-    // set the APM transaction name
-    if (apm) {
-      // if the transaction is a single operation
-      if (req.body.operationName) {
-        apm.setTransactionName(req.body.operationName)
-      } else if (Array.isArray(req.body)) {
-        // if the transaction is a batch of operations
-        const operationsConcat = req.body
-          .map((o) => o.operationName)
-          .sort()
-          .join('/')
-        apm.setTransactionName(operationsConcat)
-      }
-
-      // if the request is authenticated, set the user context
-      if (req.auth) {
-        apm.setUserContext({ id: req.auth.sub })
-      }
-    }
-
-    next()
-  })
 
   // add a rate limiting middleware
   if (SECURITY_CFG.rateLimit.enabled) {
@@ -195,8 +189,8 @@ if (isProd) {
           apm.captureError(error)
         }
 
-        if (Raven) {
-          Raven.captureException(error)
+        if (Sentry) {
+          Sentry.captureException(error)
         }
       },
       store: new RedisStore({
@@ -245,9 +239,9 @@ const schemaWithAuthentication = applyMiddleware(schema, permissions)
     formatError: (e) => {
       console.log(pe.render(e))
 
-      if (isProd && Raven) {
+      if (isProd && Sentry) {
         if (e.path || e.name !== 'GraphQLError') {
-          Raven.captureException(e, {
+          Sentry.captureException(e, {
             tags: { graphql: 'exec_error' },
             extra: {
               source: e.source && e.source.body,
@@ -256,7 +250,7 @@ const schemaWithAuthentication = applyMiddleware(schema, permissions)
             },
           })
         } else {
-          Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
+          Sentry.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
             tags: { graphql: 'wrong_query' },
             extra: {
               source: e.source && e.source.body,

@@ -51,3 +51,12 @@ data:
   MOVO_CONNECTION_STRING: {{ .Values.services.movo.connectionString | quote }}
   MOVO_NOTIFICATION_TOKEN: {{ .Values.services.movo.notificationToken | quote }}
   {{ end }}
+
+  {{- if .Values.analytics.sentry.backend.enabled }}
+  SENTRY_ENABLED: {{ .Values.analytics.sentry.backend.enabled | quote }}
+  SENTRY_DSN: {{ .Values.analytics.sentry.backend.dsn | quote }}
+  SENTRY_ORG: {{ .Values.analytics.sentry.backend.org | quote }}
+  SENTRY_PROJECT: {{ .Values.analytics.sentry.backend.project | quote }}
+  SENTRY_ENV: {{ .Values.analytics.sentry.backend.environment | quote }}
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  {{ end }}

@@ -378,12 +378,12 @@ module.exports = convict({
     sentry: {
       enabled: {
         default: false,
-        env: 'SERVICES_SENTRY_ENABLED',
+        env: 'SENTRY_ENABLED',
         format: 'Boolean',
       },
       dsn: {
         default: undefined,
-        env: 'SERVICES_SENTRY_DSN',
+        env: 'SENTRY_DSN',
         format: 'url',
         sensitive: true,
       },
