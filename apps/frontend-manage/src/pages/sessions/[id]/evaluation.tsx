@@ -2,6 +2,8 @@ import { useQuery } from '@apollo/client'
 import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
 import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
+  faArrowLeft,
+  faArrowRight,
   faCheck,
   faChevronLeft,
   faChevronRight,
@@ -256,6 +258,67 @@ function Evaluation() {
                   : selectedInstance
               }
             />
+            <RadixTab.Trigger
+              value={String(
+                instanceResults[
+                  instanceResults.findIndex(
+                    (instance) => instance.id === currentInstance.id
+                  ) - 1
+                ]?.blockIx
+              )}
+              onClick={() => {
+                const instanceIndex = instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                )
+
+                setSelectedInstance(instanceResults[instanceIndex - 1].id)
+                setSelectedBlock(instanceResults[instanceIndex - 1].blockIx)
+              }}
+              disabled={
+                instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                ) === 0
+              }
+              className={twMerge(
+                instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                ) === 0 && 'text-uzh-grey-80 cursor-not-allowed'
+              )}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </RadixTab.Trigger>
+            <RadixTab.Trigger
+              value={String(
+                instanceResults[
+                  instanceResults.findIndex(
+                    (instance) => instance.id === currentInstance.id
+                  ) + 1
+                ]?.blockIx
+              )}
+              onClick={() => {
+                const instanceIndex = instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                )
+
+                setSelectedInstance(instanceResults[instanceIndex + 1].id)
+                setSelectedBlock(instanceResults[instanceIndex + 1].blockIx)
+              }}
+              disabled={
+                instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                ) ===
+                instanceResults.length - 1
+              }
+              className={twMerge(
+                instanceResults.findIndex(
+                  (instance) => instance.id === currentInstance.id
+                ) ===
+                  instanceResults.length - 1 &&
+                  'text-uzh-grey-80 cursor-not-allowed'
+              )}
+            >
+              <FontAwesomeIcon icon={faArrowRight} />
+            </RadixTab.Trigger>
           </div>
         )}
         <div className="flex flex-row ml-auto">
