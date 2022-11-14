@@ -3,6 +3,8 @@ import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfu
 import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faCheck,
+  faChevronLeft,
+  faChevronRight,
   faComment,
   faFaceSmile,
   faGamepad,
@@ -272,13 +274,13 @@ function Evaluation() {
           >
             <div
               className={twMerge(
-                'flex flex-row items-center h-full px-1 pb-1 hover:bg-uzh-blue-20',
+                'flex flex-row items-center h-full px-2 hover:bg-uzh-blue-20',
                 (blocks.length <= 2 * width + 1 ||
                   selectedBlock - width <= 0) &&
                   'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
               )}
             >
-              &bull;&bull;&bull;
+              <FontAwesomeIcon icon={faChevronLeft} size="lg" />
             </div>
           </RadixTab.Trigger>
 
@@ -332,13 +334,13 @@ function Evaluation() {
           >
             <div
               className={twMerge(
-                'flex flex-row items-center h-full px-1 pb-1 hover:bg-uzh-blue-20',
+                'flex flex-row items-center h-full px-2 hover:bg-uzh-blue-20',
                 (blocks.length <= 2 * width + 1 ||
                   selectedBlock + width >= blocks.length - 1) &&
                   'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
               )}
             >
-              &bull;&bull;&bull;
+              <FontAwesomeIcon icon={faChevronRight} size="lg" />
             </div>
           </RadixTab.Trigger>
           {data.sessionEvaluation?.isGamificationEnabled && (
