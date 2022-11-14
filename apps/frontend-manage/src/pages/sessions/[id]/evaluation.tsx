@@ -47,15 +47,15 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 function Evaluation() {
   const router = useRouter()
 
-  const [selectedBlock, setSelectedBlock] = useState(0)
-  const [leaderboard, setLeaderboard] = useState(false)
-  const [feedbacks, setFeedbacks] = useState(false)
-  const [confusion, setConfusion] = useState(false)
+  const [selectedBlock, setSelectedBlock] = useState<number>(0)
+  const [leaderboard, setLeaderboard] = useState<boolean>(false)
+  const [feedbacks, setFeedbacks] = useState<boolean>(false)
+  const [confusion, setConfusion] = useState<boolean>(false)
 
-  const [selectedInstance, setSelectedInstance] = useState('')
-  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState(0)
-  const [showSolution, setShowSolution] = useState(false)
-  const [chartType, setChartType] = useState<string>('table')
+  const [selectedInstance, setSelectedInstance] = useState<string>('')
+  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0)
+  const [showSolution, setShowSolution] = useState<boolean>(false)
+  const [chartType, setChartType] = useState<string>('')
   const [statisticStates, setStatisticStates] = useState<{
     [key: string]: boolean
   }>({
