@@ -52,19 +52,20 @@ function Histogram({
       count: result.count,
     }))
 
-    // create array with numbin entries and fill it evenly with values between data.questionData.options.solutionRanges.min and data.questionData.options.solutionRanges.max if they are defined and min of mappedData - 10 and max of mappedData + 10 if not
     const min =
       typeof data.questionData.options.restrictions['min'] === 'number'
-        ? data.questionData.options.restrictions.min
+        ? data.questionData.options.restrictions['min']
         : minBy(mappedData, 'value')?.value - 10
     const max =
       typeof data.questionData.options.restrictions['max'] === 'number'
-        ? data.questionData.options.restrictions.max
+        ? data.questionData.options.restrictions['max']
         : maxBy(mappedData, 'value')?.value + 10
 
-    const dataArray = Array.from({ length: numBins }, (_, i) => ({
+    let dataArray = Array.from({ length: numBins }, (_, i) => ({
       value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
-    })).map((bin) => {
+    }))
+
+    dataArray = dataArray.map((bin) => {
       const binWidth =
         dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
       const count = sumBy(

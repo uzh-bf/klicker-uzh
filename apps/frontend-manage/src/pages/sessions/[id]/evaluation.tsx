@@ -405,8 +405,6 @@ function Evaluation() {
                         {Object.entries(currentInstance.statistics)
                           .slice(1)
                           .map((statistic, index) => {
-                            console.log(statistic[0])
-                            console.log(statisticStates[statistic[0]])
                             return (
                               <div
                                 key={index}
@@ -416,18 +414,21 @@ function Evaluation() {
                                   className={twMerge(
                                     'flex flex-row items-center',
                                     typeof statisticStates[statistic[0]] ===
-                                      'undefined' && chartType === 'histogram' && 'ml-6'
+                                      'undefined' &&
+                                      chartType === 'histogram' &&
+                                      'ml-6'
                                   )}
                                 >
                                   {typeof statisticStates[statistic[0]] !==
-                                    'undefined' && chartType === 'histogram' && (
-                                    <Checkbox
-                                      checked={statisticStates[statistic[0]]}
-                                      onCheck={statisticSetters[statistic[0]]}
-                                      size="sm"
-                                      className="border-black rounded-sm"
-                                    />
-                                  )}
+                                    'undefined' &&
+                                    chartType === 'histogram' && (
+                                      <Checkbox
+                                        checked={statisticStates[statistic[0]]}
+                                        onCheck={statisticSetters[statistic[0]]}
+                                        size="sm"
+                                        className="border-black rounded-sm"
+                                      />
+                                    )}
                                   {statistic[0]}
                                 </span>
                                 <span>
