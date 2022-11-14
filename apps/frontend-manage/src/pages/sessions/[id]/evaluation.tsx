@@ -39,8 +39,6 @@ import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
 
-// TODO: maybe move this util to another file / component or to this component - having util files in the components seems strange?
-
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
   ACTIVE: faSync,
