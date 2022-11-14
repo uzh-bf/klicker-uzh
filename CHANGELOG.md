@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.6...v1.8.7) (2022-11-14)
+
+
+### Bug Fixes
+
+* fix evaluation active question issues ([e69c45f](https://github.com/uzh-bf/klicker-uzh/commit/e69c45f0dc5f44550cd0ade77b2633d9d624e8c3))
+
+
+### Other
+
+* **deploy:** extend chart for backend sentry integration ([2b785ec](https://github.com/uzh-bf/klicker-uzh/commit/2b785ec14108841295eb6acc118e73853b023dfd))
+
 ### [1.8.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.5...v1.8.6) (2022-11-13)
 
 
