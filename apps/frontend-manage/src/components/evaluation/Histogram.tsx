@@ -24,7 +24,6 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
-  brush?: boolean // TODO: Not implemented yet
 }
 
 const defaultProps = {
@@ -36,14 +35,9 @@ const defaultProps = {
     q3: false,
     sd: false,
   },
-  brush: false,
 }
 
-function Histogram({
-  brush,
-  data,
-  showSolution,
-}: HistogramProps): React.ReactElement {
+function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
@@ -87,14 +81,16 @@ function Histogram({
       }
     })
 
-    return dataArray
+    return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
+  console.log('statistics', data.statistics)
+  console.log('sd', showSolution.sd)
   return (
     <div>
       <ResponsiveContainer width="99%" height={500}>
         <BarChart
-          data={processedData}
+          data={processedData.data}
           margin={{
             bottom: 16,
             left: -24,
@@ -102,7 +98,11 @@ function Histogram({
             top: 24,
           }}
         >
-          <XAxis dataKey="value" type="number" />
+          <XAxis
+            dataKey="value"
+            type="number"
+            domain={[processedData.domain.min, processedData.domain.max]}
+          />
           <YAxis
             domain={[
               0,
@@ -141,7 +141,7 @@ function Histogram({
                 position: 'top',
                 value: 'MEAN',
               }}
-              key={data.statistics.mean}
+              key={`mean-` + data.statistics.mean}
               stroke="blue"
               x={Math.round(data.statistics.mean || 0)}
             />
@@ -155,7 +155,7 @@ function Histogram({
                 position: 'top',
                 value: 'MEDIAN',
               }}
-              key={data.statistics.median}
+              key={`median-` + data.statistics.median}
               stroke="red"
               x={Math.round(data.statistics.median || 0)}
             />
@@ -169,7 +169,7 @@ function Histogram({
                 position: 'top',
                 value: 'Q1',
               }}
-              key={data.statistics.q1}
+              key={`q1-` + data.statistics.q1}
               stroke="black"
               x={Math.round(data.statistics.q1 || 0)}
             />
@@ -183,7 +183,7 @@ function Histogram({
                 position: 'top',
                 value: 'Q3',
               }}
-              key={data.statistics.q3}
+              key={`q3-` + data.statistics.q3}
               stroke="black"
               x={Math.round(data.statistics.q3 || 0)}
             />
@@ -191,8 +191,14 @@ function Histogram({
           {data.statistics && showSolution.sd && (
             <ReferenceArea
               key="sd-area"
-              x1={(data.statistics.mean || 0) - (data.statistics.sd ?? 0)}
-              x2={(data.statistics.mean || 0) + (data.statistics.sd ?? 0)}
+              x1={Math.max(
+                (data.statistics.mean || 0) - (data.statistics.sd ?? 0),
+                processedData.domain.min
+              )}
+              x2={Math.min(
+                (data.statistics.mean || 0) + (data.statistics.sd ?? 0),
+                processedData.domain.max
+              )}
               fill="gray"
               enableBackground="#FFFFFF"
               label={{
@@ -226,10 +232,6 @@ function Histogram({
                 />
               )
             )}
-          {/* // TODO: fix brush */}
-          {/* {brush && (
-            <Brush dataKey="value" type="number" height={30} stroke="#8884d8" />
-          )} */}
         </BarChart>
       </ResponsiveContainer>
 

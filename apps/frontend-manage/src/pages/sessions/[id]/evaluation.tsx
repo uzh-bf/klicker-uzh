@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import Statistic from '@components/evaluation/Statistic'
 import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
 import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
@@ -21,18 +22,13 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import {
-  Checkbox,
-  Prose,
-  Select,
-  Switch,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
+  STATISTICS_ORDER,
 } from 'shared-components/src/constants'
 import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
 import { twMerge } from 'tailwind-merge'
@@ -49,31 +45,19 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 function Evaluation() {
   const router = useRouter()
 
-  const [showMean, setShowMean] = useState(true)
-  const [showMedian, setShowMedian] = useState(false)
-  const [showq1, setShowq1] = useState(false)
-  const [showq3, setShowq3] = useState(false)
-  const [showSd, setShowSd] = useState(false)
-
-  const statisticStates: Record<string, boolean> = {
-    mean: showMean,
-    median: showMedian,
-    q1: showq1,
-    q3: showq3,
-    sd: showSd,
-  }
-  const statisticSetters: Record<string, any> = {
-    mean: () => setShowMean(!showMean),
-    median: () => setShowMedian(!showMedian),
-    q1: () => setShowq1(!showq1),
-    q3: () => setShowq3(!showq3),
-    sd: () => setShowSd(!showSd),
-  }
-
   const [selectedBlock, setSelectedBlock] = useState(0)
   const [selectedInstance, setSelectedInstance] = useState('')
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState<string>('table')
+  const [statisticStates, setStatisticStates] = useState<{
+    [key: string]: boolean
+  }>({
+    mean: false,
+    median: false,
+    q1: false,
+    q3: false,
+    sd: false,
+  })
   const [currentInstance, setCurrentInstance] = useState<{
     blockIx: number
     id: string
@@ -331,11 +315,11 @@ function Evaluation() {
                     data={currentInstance}
                     showSolution={showSolution}
                     statisticsShowSolution={{
-                      mean: showMean,
-                      median: showMedian,
-                      q1: showq1,
-                      q3: showq3,
-                      sd: showSd,
+                      mean: statisticStates.mean,
+                      median: statisticStates.median,
+                      q1: statisticStates.q1,
+                      q3: statisticStates.q3,
+                      sd: statisticStates.sd,
                     }}
                   />
                 </div>
@@ -404,38 +388,34 @@ function Evaluation() {
                         <div className="mt-4 font-bold">Statistik:</div>
                         {Object.entries(currentInstance.statistics)
                           .slice(1)
-                          .map((statistic, index) => {
+                          .sort(
+                            (a, b) =>
+                              STATISTICS_ORDER.indexOf(a[0]) -
+                              STATISTICS_ORDER.indexOf(b[0])
+                          )
+                          .map((statistic) => {
+                            const statisticName = statistic[0]
                             return (
-                              <div
-                                key={index}
-                                className="flex justify-between mb-2 border-b-2"
-                              >
-                                <span
-                                  className={twMerge(
-                                    'flex flex-row items-center',
-                                    typeof statisticStates[statistic[0]] ===
-                                      'undefined' &&
-                                      chartType === 'histogram' &&
-                                      'ml-6'
-                                  )}
-                                >
-                                  {typeof statisticStates[statistic[0]] !==
-                                    'undefined' &&
-                                    chartType === 'histogram' && (
-                                      <Checkbox
-                                        checked={statisticStates[statistic[0]]}
-                                        onCheck={statisticSetters[statistic[0]]}
-                                        size="sm"
-                                        className="border-black rounded-sm"
-                                      />
-                                    )}
-                                  {statistic[0]}
-                                </span>
-                                <span>
-                                  {Math.round(parseFloat(statistic[1]) * 100) /
-                                    100}
-                                </span>
-                              </div>
+                              <Statistic
+                                key={statisticName}
+                                statisticName={statisticName}
+                                value={statistic[1]}
+                                hasCheckbox={
+                                  !(
+                                    statisticName === 'min' ||
+                                    statisticName === 'max'
+                                  )
+                                }
+                                chartType={chartType}
+                                checked={statisticStates[statisticName]}
+                                onCheck={() => {
+                                  setStatisticStates({
+                                    ...statisticStates,
+                                    [statisticName]:
+                                      !statisticStates[statisticName],
+                                  })
+                                }}
+                              />
                             )
                           })}
                         {showSolution &&

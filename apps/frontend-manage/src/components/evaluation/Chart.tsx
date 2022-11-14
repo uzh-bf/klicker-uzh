@@ -32,7 +32,6 @@ function Chart({
       <Histogram
         data={data}
         showSolution={{ general: showSolution, ...statisticsShowSolution }}
-        brush={true}
       />
     )
   } else if (chartType === 'wordCloud') {

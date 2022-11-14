@@ -1160,18 +1160,21 @@ export async function getPinnedFeedbacks(
 }
 
 function checkCorrectnessFreeText(instance) {
-  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution )(exact match)
+  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match)
   if (instance.questionData.type === 'FREE_TEXT') {
     for (const id in instance.results) {
-      if (
-        instance.questionData.options.solutions &&
-        instance.questionData.options.solutions.includes(
-          instance.results[id].value
-        )
-      ) {
-        instance.results[id].correct = true
+      if (instance.questionData?.options.solutions) {
+        if (
+          instance.questionData.options.solutions.includes(
+            instance.results[id].value
+          )
+        ) {
+          instance.results[id].correct = true
+        } else {
+          instance.results[id].correct = false
+        }
       } else {
-        instance.results[id].correct = false
+        instance.results[id].correct = undefined
       }
     }
   }
@@ -1193,12 +1196,15 @@ function computeStatistics(instance) {
     // set correct attribute to each of the instance.results elements depending on solutionRanges
     for (const id in instance.results) {
       const value = parseFloat(instance.results[id].value)
-      const solutionRanges = instance.questionData.options.solutionRanges
-      let correct = false
-      for (const range of solutionRanges) {
-        if (value >= range['min'] && value <= range['max']) {
-          correct = true
-          break
+      let correct = undefined
+      if (instance.questionData.options.solutionRanges) {
+        correct = false
+        const solutionRanges = instance.questionData.options.solutionRanges
+        for (const range of solutionRanges) {
+          if (value >= range['min'] && value <= range['max']) {
+            correct = true
+            break
+          }
         }
       }
       instance.results[id].correct = correct
@@ -1218,6 +1224,47 @@ function computeStatistics(instance) {
   }
   return instance
 }
+
+// function computeStatistics(instance) {
+//   // Compute the statistics for numerical questions
+//   if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
+//     const results = []
+//     for (const key in instance.results) {
+//       results.push(instance.results[key])
+//     }
+//     const valueArray = results.reduce((acc, { count, value }) => {
+//       const elements = Array(count).fill(parseFloat(value))
+//       return acc.concat(elements)
+//     }, [])
+
+//     // set correct attribute to each of the instance.results elements depending on solutionRanges
+//     for (const id in instance.results) {
+//       const value = parseFloat(instance.results[id].value)
+//       const solutionRanges = instance.questionData.options.solutionRanges
+//       let correct = false
+//       for (const range of solutionRanges) {
+//         if (value >= range['min'] && value <= range['max']) {
+//           correct = true
+//           break
+//         }
+//       }
+//       instance.results[id].correct = correct
+//     }
+
+//     const hasResults = valueArray.length > 0
+
+//     instance.statistics = {
+//       max: hasResults && max(valueArray),
+//       mean: hasResults && mean(valueArray),
+//       median: hasResults && median(valueArray),
+//       min: hasResults && min(valueArray),
+//       q1: hasResults && quantileSeq(valueArray, 0.25),
+//       q3: hasResults && quantileSeq(valueArray, 0.75),
+//       sd: hasResults && std(valueArray),
+//     }
+//   }
+//   return instance
+// }
 
 function completeQuestionData(instances) {
   return instances.map((instance) =>

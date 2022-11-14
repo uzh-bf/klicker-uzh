@@ -35,7 +35,12 @@ function TableChart({
         return {
           count: result.count,
           value: result.value,
-          correct: result.correct ? 'T' : 'F',
+          correct:
+            result.correct === undefined
+              ? '--'
+              : result.correct === true
+              ? 'T'
+              : 'F',
           percentage:
             String(((result.count / data.participants) * 100).toFixed()) + ' %',
         }
