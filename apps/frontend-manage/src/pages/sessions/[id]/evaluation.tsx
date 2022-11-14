@@ -71,6 +71,10 @@ function Evaluation() {
   }
 
   const [selectedBlock, setSelectedBlock] = useState(0)
+  const [leaderboard, setLeaderboard] = useState(false)
+  const [feedbacks, setFeedbacks] = useState(false)
+  const [confusion, setConfusion] = useState(false)
+
   const [selectedInstance, setSelectedInstance] = useState('')
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState<string>('table')
@@ -145,21 +149,50 @@ function Evaluation() {
     return data?.sessionEvaluation?.instanceResults ?? []
   }, [data])
 
-  const tabs = useMemo(
-    () =>
-      blocks.map((block) => {
-        return {
-          label: 'Block ' + String(block.blockIx + 1),
-          value: block.blockIx,
-        }
-      }),
-    [blocks]
-  )
+  // the tabs array will only include the tabs that should be rendered (at most 2 * width + 1 tabs) to prevent overflows
+  const width = 1
+  const tabs = useMemo(() => {
+    const tabs = blocks.map((block) => {
+      return {
+        label: 'Block ' + String(block.blockIx + 1),
+        value: block.blockIx,
+      }
+    })
+
+    // if fewer tabs than the maximum amount are available, return all tabs
+    if (tabs.length <= 2 * width + 1) {
+      return tabs
+    }
+    // return width tabs on both sides of the selected tab and the selected tab itself
+    else if (
+      selectedBlock >= width &&
+      selectedBlock <= tabs.length - width - 1
+    ) {
+      return tabs.filter(
+        (tab) =>
+          tab.value <= selectedBlock + width &&
+          tab.value >= selectedBlock - width
+      )
+    }
+    // if the selected tab is too close to the end for width on both sides, return the last 2 * width + 1 tabs
+    else if (selectedBlock >= blocks.length - 2) {
+      return tabs.filter((tab) => tab.value >= blocks.length - 2 * width - 1)
+    }
+
+    // if the selected tab is too close to the beginning for width on both sides, return the first 2 * width + 1 tabs
+    return tabs.slice(0, 2 * width + 1)
+  }, [blocks, selectedBlock])
 
   const selectData = useMemo(() => {
     if (!blocks || !blocks[selectedBlock]) return []
     return blocks[selectedBlock].tabData?.map((question) => {
-      return { label: question?.name || '', value: question?.id || '' }
+      return {
+        label: question?.name,
+        // question?.name.length > 10
+        //   ? `${question?.name.toString().substr(0, 10)}...`
+        //   : question?.name || '',
+        value: question?.id || '',
+      }
     })
   }, [blocks, selectedBlock])
 
@@ -197,7 +230,6 @@ function Evaluation() {
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  // TODO: think about mobile layout (maybe at least tablet support)
   return (
     <RadixTab.Root
       className="flex flex-col h-full overflow-y-none"
@@ -212,9 +244,9 @@ function Evaluation() {
               items={selectData || []}
               onChange={(newValue) => setSelectedInstance(newValue)}
               className={{
-                root: 'h-11 z-20',
+                root: 'h-[2.65rem] z-20',
                 trigger:
-                  'shadow-sm rounded-none m-0 border-none hover:bg-uzh-blue-20',
+                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20',
               }}
               value={
                 selectedInstance === ''
@@ -224,39 +256,102 @@ function Evaluation() {
             />
           </div>
         )}
-        <div className="ml-auto">
-          {tabs.map((tab, idx) => (
+        <div className="flex flex-row ml-auto">
+          <RadixTab.Trigger
+            value={String(selectedBlock - 1)}
+            onClick={() => {
+              setSelectedInstance(blocks[selectedBlock - 1].tabData[0].id)
+              setLeaderboard(false)
+              setFeedbacks(false)
+              setConfusion(false)
+              selectedBlock === 0 ? null : setSelectedBlock(selectedBlock - 1)
+            }}
+            disabled={
+              blocks.length <= 2 * width + 1 || selectedBlock - width <= 0
+            }
+          >
+            <div
+              className={twMerge(
+                'flex flex-row items-center h-full px-1 pb-1 hover:bg-uzh-blue-20',
+                (blocks.length <= 2 * width + 1 ||
+                  selectedBlock - width <= 0) &&
+                  'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
+              )}
+            >
+              &bull;&bull;&bull;
+            </div>
+          </RadixTab.Trigger>
+
+          {tabs.map((tab) => (
             <RadixTab.Trigger
               key={tab.value}
               value={String(tab.value)}
               onClick={() => {
-                setSelectedBlock(idx)
-                setSelectedInstance(blocks[idx].tabData[0].id)
+                setSelectedBlock(tab.value)
+                setLeaderboard(false)
+                setFeedbacks(false)
+                setConfusion(false)
+                setSelectedInstance(blocks[tab.value].tabData[0].id)
               }}
               className={twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                idx === selectedBlock && 'border-solid border-uzh-blue-80'
+                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 w-[7rem] text-center',
+                !leaderboard &&
+                  !feedbacks &&
+                  !confusion &&
+                  tab.value === selectedBlock &&
+                  'border-solid border-uzh-blue-80'
               )}
             >
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex flex-row items-center justify-center w-full gap-2">
                 <FontAwesomeIcon
                   size="xs"
-                  icon={INSTANCE_STATUS_ICON[blocks[idx].tabData[0].status]}
+                  icon={
+                    INSTANCE_STATUS_ICON[blocks[tab.value].tabData[0].status]
+                  }
                 />
                 <div>{tab.label}</div>
               </div>
             </RadixTab.Trigger>
           ))}
+
+          <RadixTab.Trigger
+            value={String(selectedBlock + 1)}
+            onClick={() => {
+              setSelectedInstance(blocks[selectedBlock + 1].tabData[0].id)
+              setLeaderboard(false)
+              setFeedbacks(false)
+              setConfusion(false)
+              selectedBlock === blocks.length - 1
+                ? null
+                : setSelectedBlock(selectedBlock + 1)
+            }}
+            disabled={
+              blocks.length <= 2 * width + 1 ||
+              selectedBlock + width >= blocks.length - 1
+            }
+          >
+            <div
+              className={twMerge(
+                'flex flex-row items-center h-full px-1 pb-1 hover:bg-uzh-blue-20',
+                (blocks.length <= 2 * width + 1 ||
+                  selectedBlock + width >= blocks.length - 1) &&
+                  'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
+              )}
+            >
+              &bull;&bull;&bull;
+            </div>
+          </RadixTab.Trigger>
           {data.sessionEvaluation?.isGamificationEnabled && (
             <RadixTab.Trigger
               value="leaderboard"
               className={twMerge(
                 'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                selectedBlock === tabs.length &&
-                  'border-solid border-uzh-blue-80'
+                leaderboard && 'border-solid border-uzh-blue-80'
               )}
               onClick={() => {
-                setSelectedBlock(tabs.length)
+                setLeaderboard(true)
+                setFeedbacks(false)
+                setConfusion(false)
               }}
             >
               <div className="flex flex-row items-center gap-2">
@@ -274,11 +369,12 @@ function Evaluation() {
                 value="feedbacks"
                 className={twMerge(
                   'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                  selectedBlock === tabs.length + 1 &&
-                    'border-solid border-uzh-blue-80'
+                  feedbacks && 'border-solid border-uzh-blue-80'
                 )}
                 onClick={() => {
-                  setSelectedBlock(tabs.length + 1)
+                  setFeedbacks(true)
+                  setLeaderboard(false)
+                  setConfusion(false)
                 }}
               >
                 <div className="flex flex-row items-center gap-2">
@@ -295,11 +391,12 @@ function Evaluation() {
                 value="confusion"
                 className={twMerge(
                   'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                  selectedBlock === tabs.length + 2 &&
-                    'border-solid border-uzh-blue-80'
+                  confusion && 'border-solid border-uzh-blue-80'
                 )}
                 onClick={() => {
-                  setSelectedBlock(tabs.length + 2)
+                  setConfusion(true)
+                  setLeaderboard(false)
+                  setFeedbacks(false)
                 }}
               >
                 <div className="flex flex-row items-center gap-2">
