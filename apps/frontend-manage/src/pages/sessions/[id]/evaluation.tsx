@@ -639,7 +639,7 @@ function Evaluation() {
       </div>
 
       <Footer className="relative flex-none h-18">
-        {currentInstance && (
+        {currentInstance && !feedbacks && !confusion && !leaderboard && (
           <div className="flex flex-row justify-between p-4 pr-8 m-0">
             <div className="text-xl">
               Total Teilnehmende: {currentInstance.participants}
