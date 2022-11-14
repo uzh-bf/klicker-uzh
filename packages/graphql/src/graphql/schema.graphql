@@ -296,7 +296,8 @@ type LeaderboardStatistics {
 }
 
 type LearningElement {
-  course: Course!
+  course: Course
+  courseId: String
   displayName: String!
   id: ID!
   instances: [QuestionInstance!]!
@@ -475,6 +476,7 @@ type Query {
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
+  learningElements: [LearningElement!]!
   microSession(id: ID!): MicroSession
   participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]

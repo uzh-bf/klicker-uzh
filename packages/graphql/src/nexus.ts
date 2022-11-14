@@ -499,7 +499,8 @@ export const LearningElement = objectType({
       type: QuestionInstance,
     })
 
-    t.nonNull.field('course', {
+    t.string('courseId')
+    t.field('course', {
       type: Course,
     })
   },
@@ -1198,6 +1199,13 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+      },
+    })
+
+    t.nonNull.list.nonNull.field('learningElements', {
+      type: LearningElement,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return CourseService.getUserLearningElements(ctx)
       },
     })
   },

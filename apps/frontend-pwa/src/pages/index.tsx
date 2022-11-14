@@ -6,6 +6,7 @@ import {
   faBookOpenReader,
   faChalkboard,
   faCheck,
+  faGraduationCap,
   faLink,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -166,7 +167,25 @@ const Index = function () {
   return (
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
       <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        <H1 className="text-xl">Aktive Sessions ({activeSessions.length})</H1>
+        <H1 className="text-xl">Fragen aus deinen Kursen</H1>
+        <div className="flex flex-col mt-2">
+          <Link href="/repetition">
+            <Button
+              className={twMerge(
+                'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
+              )}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faGraduationCap} />
+              </Button.Icon>
+              <Button.Label className="flex-1 text-left">
+                <div>Repetition</div>
+              </Button.Label>
+            </Button>
+          </Link>
+        </div>
+
+        <H1 className="mt-8 text-xl">Aktive Sessions</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
           {activeSessions.map((session) => (
@@ -181,7 +200,7 @@ const Index = function () {
                   />
                 </Button.Icon>
                 <Button.Label className="flex-1">
-                  <div className="flex flex-col items-center justify-between md:flex-row">
+                  <div className="flex flex-row items-end justify-between md:flex-row">
                     <div>{session.displayName}</div>
                     <div className="text-sm">{session.courseName}</div>
                   </div>
@@ -191,9 +210,7 @@ const Index = function () {
           ))}
         </div>
 
-        <H1 className="text-xl">
-          Aktives Microlearning ({activeMicrolearning.length})
-        </H1>
+        <H1 className="text-xl">Aktives Microlearning</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeMicrolearning.length === 0 && (
             <div>Kein aktives Microlearning.</div>
@@ -227,7 +244,7 @@ const Index = function () {
           ))}
         </div>
 
-        <H1 className="text-xl">Meine Kurse ({courses.length})</H1>
+        <H1 className="text-xl">Meine Kurse</H1>
         <div className="flex flex-col gap-2 mt-2">
           {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
           {courses.map((course) => (
