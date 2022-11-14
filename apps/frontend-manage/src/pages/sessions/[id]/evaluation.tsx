@@ -55,6 +55,7 @@ function Evaluation() {
   const [confusion, setConfusion] = useState(false)
 
   const [selectedInstance, setSelectedInstance] = useState('')
+  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState(0)
   const [showSolution, setShowSolution] = useState(false)
   const [chartType, setChartType] = useState<string>('table')
   const [statisticStates, setStatisticStates] = useState<{
@@ -192,6 +193,11 @@ function Evaluation() {
       setCurrentInstance(instanceResults[0])
     }
 
+    const currentInstanceIndex = instanceResults.findIndex(
+      (instance) => instance.id === selectedInstance
+    )
+    setSelectedInstanceIndex(currentInstanceIndex)
+
     const currInstance = instanceResults?.find(
       (instance) => instance.id === selectedInstance
     )
@@ -230,7 +236,11 @@ function Evaluation() {
 
             <Select
               items={selectData || []}
-              onChange={(newValue) => setSelectedInstance(newValue)}
+              onChange={(newValue) => {
+                if (newValue !== '') {
+                  setSelectedInstance(newValue)
+                }
+              }}
               className={{
                 root: 'h-[2.65rem] z-20',
                 trigger:
@@ -244,60 +254,39 @@ function Evaluation() {
             />
             <RadixTab.Trigger
               value={String(
-                instanceResults[
-                  instanceResults.findIndex(
-                    (instance) => instance.id === currentInstance.id
-                  ) - 1
-                ]?.blockIx
+                instanceResults[selectedInstanceIndex - 1]?.blockIx
               )}
               onClick={() => {
-                const instanceIndex = instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
+                setSelectedInstance(
+                  instanceResults[selectedInstanceIndex - 1].id
                 )
-
-                setSelectedInstance(instanceResults[instanceIndex - 1].id)
-                setSelectedBlock(instanceResults[instanceIndex - 1].blockIx)
+                setSelectedBlock(
+                  instanceResults[selectedInstanceIndex - 1].blockIx
+                )
               }}
-              disabled={
-                instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
-                ) === 0
-              }
+              disabled={selectedInstanceIndex === 0}
               className={twMerge(
-                instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
-                ) === 0 && 'text-uzh-grey-80 cursor-not-allowed'
+                selectedInstanceIndex === 0 &&
+                  'text-uzh-grey-80 cursor-not-allowed'
               )}
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </RadixTab.Trigger>
             <RadixTab.Trigger
               value={String(
-                instanceResults[
-                  instanceResults.findIndex(
-                    (instance) => instance.id === currentInstance.id
-                  ) + 1
-                ]?.blockIx
+                instanceResults[selectedInstanceIndex + 1]?.blockIx
               )}
               onClick={() => {
-                const instanceIndex = instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
+                setSelectedInstance(
+                  instanceResults[selectedInstanceIndex + 1].id
                 )
-
-                setSelectedInstance(instanceResults[instanceIndex + 1].id)
-                setSelectedBlock(instanceResults[instanceIndex + 1].blockIx)
+                setSelectedBlock(
+                  instanceResults[selectedInstanceIndex + 1].blockIx
+                )
               }}
-              disabled={
-                instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
-                ) ===
-                instanceResults.length - 1
-              }
+              disabled={selectedInstanceIndex === instanceResults.length - 1}
               className={twMerge(
-                instanceResults.findIndex(
-                  (instance) => instance.id === currentInstance.id
-                ) ===
-                  instanceResults.length - 1 &&
+                selectedInstanceIndex === instanceResults.length - 1 &&
                   'text-uzh-grey-80 cursor-not-allowed'
               )}
             >
