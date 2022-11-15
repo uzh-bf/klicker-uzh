@@ -447,11 +447,14 @@ function QuestionEditModal({
                 />
                 {mode === 'CREATE' ? (
                   <Select
+                    name='question_create_select'
+                    placeholder='Fragetyp auswählen'
                     items={dropdownOptions}
                     onChange={(newValue: string) => {
                       resetForm()
                       setNewQuestionType(newValue)
                     }}
+                    value={newQuestionType}
                   />
                 ) : (
                   <div className="my-auto">

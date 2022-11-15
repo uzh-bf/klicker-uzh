@@ -233,6 +233,7 @@ function Evaluation() {
             <div className="font-bold">Frage:</div>
 
             <Select
+              name="instance_selection"
               items={selectData || []}
               onChange={(newValue) => {
                 if (newValue !== '') {
@@ -476,6 +477,7 @@ function Evaluation() {
                   <div className="flex flex-col gap-2">
                     <div className="font-bold">Diagramm Typ:</div>
                     <Select
+                      name="chartType_selection"
                       className={{ root: '-mt-1 mb-1' }}
                       items={
                         ACTIVE_CHART_TYPES[currentInstance.questionData.type]
