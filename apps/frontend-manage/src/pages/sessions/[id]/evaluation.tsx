@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import Ellipsis from '@components/common/Ellipsis'
 import Statistic from '@components/evaluation/Statistic'
 import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
 import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
@@ -174,9 +175,10 @@ function Evaluation() {
     if (!blocks || !blocks[selectedBlock]) return []
     return blocks[selectedBlock].tabData?.map((question) => {
       return {
-        label: question?.name.length > 120
-        ? `${question?.name.substr(0, 120)}...`
-        : question?.name,
+        label:
+          question?.name.length > 120
+            ? `${question?.name.substr(0, 120)}...`
+            : question?.name,
         shortLabel:
           question?.name.length > 20
             ? `${question?.name.substr(0, 20)}...`
@@ -516,10 +518,12 @@ function Evaluation() {
                               >
                                 {String.fromCharCode(65 + innerIndex)}
                               </div>
-                              <Markdown
-                                content={choice.value}
-                                className="w-[calc(100%-3rem)]"
-                              />
+
+                              <div className="w-[calc(100%-3rem)]">
+                                <Ellipsis maxLength={60}>
+                                  {choice.value}
+                                </Ellipsis>
+                              </div>
                             </div>
                           )
                         )}
