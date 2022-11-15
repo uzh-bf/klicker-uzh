@@ -174,10 +174,13 @@ function Evaluation() {
     if (!blocks || !blocks[selectedBlock]) return []
     return blocks[selectedBlock].tabData?.map((question) => {
       return {
-        label: question?.name,
-        // question?.name.length > 10
-        //   ? `${question?.name.toString().substr(0, 10)}...`
-        //   : question?.name || '',
+        label: question?.name.length > 120
+        ? `${question?.name.substr(0, 120)}...`
+        : question?.name,
+        shortLabel:
+          question?.name.length > 20
+            ? `${question?.name.substr(0, 20)}...`
+            : undefined,
         value: question?.id || '',
       }
     })
@@ -230,27 +233,6 @@ function Evaluation() {
       <RadixTab.List className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
         {blocks && blocks[selectedBlock] && (
           <div className="flex flex-row items-center gap-2">
-            <div className="font-bold">Frage:</div>
-
-            <Select
-              name="instance_selection"
-              items={selectData || []}
-              onChange={(newValue) => {
-                if (newValue !== '') {
-                  setSelectedInstance(newValue)
-                }
-              }}
-              className={{
-                root: 'h-[2.65rem] z-20',
-                trigger:
-                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20',
-              }}
-              value={
-                selectedInstance === ''
-                  ? blocks[selectedBlock].tabData[0].id
-                  : selectedInstance
-              }
-            />
             <RadixTab.Trigger
               value={String(
                 instanceResults[selectedInstanceIndex - 1]?.blockIx
@@ -291,6 +273,28 @@ function Evaluation() {
             >
               <FontAwesomeIcon icon={faArrowRight} />
             </RadixTab.Trigger>
+
+            <div className="ml-2 font-bold">Frage:</div>
+
+            <Select
+              name="instance_selection"
+              items={selectData || []}
+              onChange={(newValue) => {
+                if (newValue !== '') {
+                  setSelectedInstance(newValue)
+                }
+              }}
+              className={{
+                root: 'h-[2.65rem] z-20',
+                trigger:
+                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20',
+              }}
+              value={
+                selectedInstance === ''
+                  ? blocks[selectedBlock].tabData[0].id
+                  : selectedInstance
+              }
+            />
           </div>
         )}
         <div className="flex flex-row ml-auto">
@@ -453,7 +457,7 @@ function Evaluation() {
             <div>
               <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
                 <Markdown
-                  className="flex flex-row content-between p-2"
+                  className="flex flex-row content-between p-2 hover:text-black"
                   content={currentInstance.questionData.content}
                 />
               </Prose>
