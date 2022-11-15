@@ -47,10 +47,12 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
     }))
 
     const min =
+      data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['min'] === 'number'
         ? data.questionData.options.restrictions['min']
         : minBy(mappedData, 'value')?.value - 10
     const max =
+      data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['max'] === 'number'
         ? data.questionData.options.restrictions['max']
         : maxBy(mappedData, 'value')?.value + 10
