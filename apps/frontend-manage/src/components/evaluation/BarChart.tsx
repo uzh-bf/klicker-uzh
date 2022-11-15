@@ -25,7 +25,6 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
   const dataWithLabels = Object.values(data.results).map(
     (result, idx) => {
-      console.log(result)
       const labelIn =
         result.count / data.participants > SMALL_BAR_THRESHOLD
           ? result.count
