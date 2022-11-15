@@ -26,7 +26,7 @@
     "@radix-ui/react-toggle": "1.0.1",
     "@sentry/nextjs": "7.15.0",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.0.76",
+    "@uzh-bf/design-system": "0.0.80",
     "body-parser": "1.20.1",
     "dayjs": "1.11.6",
     "deepmerge": "4.2.2",
@@ -45,7 +45,7 @@
     "react-dom": "18.2.0",
     "shared-components": "*",
     "sharp": "0.31.1",
-    "tailwind-merge": "1.7.0",
+    "tailwind-merge": "1.8.0",
     "ts-pattern": "4.0.5",
     "yup": "0.32.11"
   },
