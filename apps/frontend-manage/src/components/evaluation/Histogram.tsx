@@ -86,8 +86,6 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
     return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
-  console.log('statistics', data.statistics)
-  console.log('sd', showSolution.sd)
   return (
     <div>
       <ResponsiveContainer width="99%" height={500}>
