@@ -1,17 +1,24 @@
 import Markdown from '@klicker-uzh/markdown'
 import { Tooltip } from '@uzh-bf/design-system'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   children: string
   maxLength: number
   withoutPopup?: boolean
+  className?: {
+    root?: string
+    tooltip?: string
+    markdown?: string
+  }
 }
 
 function Ellipsis({
   children,
   maxLength,
   withoutPopup,
+  className,
 }: Props): React.ReactElement {
   const parsedContent = (
     <Markdown
@@ -20,6 +27,7 @@ function Ellipsis({
           ? children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')
           : 'no content'
       }
+      className={className?.markdown}
     />
   )
 
@@ -55,6 +63,7 @@ function Ellipsis({
               .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')} **...**`
           : 'no content'
       }
+      className={className?.markdown}
     />
   )
 
@@ -70,13 +79,16 @@ function Ellipsis({
 
   // return shortened content including tooltip with full content (if not explicitely disabled)
   return (
-    <span>
+    <span className={className?.root}>
       {withoutPopup ? (
         shortenedParsedContent
       ) : (
         <Tooltip
           tooltip={parsedContent}
-          tooltipStyle={'!opacity-100 text-sm max-w-[50%] md:max-w-[60%]'}
+          tooltipStyle={twMerge(
+            '!opacity-100 text-sm max-w-[50%] md:max-w-[60%]',
+            className?.tooltip
+          )}
           withArrow={false}
         >
           {shortenedParsedContent}

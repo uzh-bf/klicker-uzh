@@ -520,7 +520,10 @@ function Evaluation() {
                               </div>
 
                               <div className="w-[calc(100%-3rem)]">
-                                <Ellipsis maxLength={60}>
+                                <Ellipsis
+                                  maxLength={60}
+                                  className={{ tooltip: 'z-20 float-right' }}
+                                >
                                   {choice.value}
                                 </Ellipsis>
                               </div>
