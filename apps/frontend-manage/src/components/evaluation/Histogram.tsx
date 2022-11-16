@@ -210,7 +210,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
             />
           )}
 
-          {showSolution.general &&
+          {showSolution.general && data.questionData.options.solutionRanges &&
             data.questionData.options.solutionRanges.map(
               (
                 solutionRange: { min?: number; max?: number },
