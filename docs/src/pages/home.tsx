@@ -281,67 +281,64 @@ const TitleImage = ({ imgSrc }) => {
   const { isDarkTheme } = useColorMode()
 
   return (
-    <div
-      className={twMerge(
-        'mb-10 text-center ',
-        !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent'
-      )}
-    >
-      {/* // TODO: readd fixed class to these buttons so that they stay at the top of the page to enable login everywhere on landing page */}
-      <div className="z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
-        <DocsButton
-          text="Login"
-          url="https://app.klicker.uzh.ch/user/login"
-          className="bg-white w-36"
-        />
-        <DocsButton
-          text="Sign Up"
-          url="https://app.klicker.uzh.ch/user/registration"
-          className="bg-white w-36"
-        />
-      </div>
-
-      <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1000px] lg:pt-0">
-        <Image
-          alt="KlickerUZH Running Session with Audience Interaction"
-          img={imgSrc}
-        />
-      </div>
-
-      <h1 className="items-center justify-center mt-4 mb-4">
-        <KlickerLogo className="w-44 sm:w-48 md:w-64" />
-        <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
-          Open Source Audience Interaction
+    <>
+      <div className="sticky z-10 top-[3.75rem]">
+        <div className="flex flex-row-reverse justify-center w-full gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start sm:bg-transparent-400">
+          <DocsButton
+            text="Login"
+            url="https://app.klicker.uzh.ch/user/login"
+            className="bg-white w-36"
+          />
+          <DocsButton
+            text="Sign Up"
+            url="https://app.klicker.uzh.ch/user/registration"
+            className="bg-white w-36"
+          />
         </div>
-      </h1>
-
-      <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
-        <DocsButton
-          text="Sign Up"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="https://app.klicker.uzh.ch/user/registration"
-        />
-        <DocsButton
-          text="Getting Started"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="introduction/getting_started"
-        />
-        <DocsButton
-          text="Get Involved"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="development"
-        />
       </div>
-    </div>
+      <div className="mb-10 text-center ">
+        <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1000px] lg:pt-0">
+          <Image
+            alt="KlickerUZH Running Session with Audience Interaction"
+            img={imgSrc}
+          />
+        </div>
+
+        <h1 className="items-center justify-center mt-4 mb-4">
+          <KlickerLogo className="w-44 sm:w-48 md:w-64 lg:w-80" />
+          <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
+            Open Source Audience Interaction
+          </div>
+        </h1>
+
+        <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
+          <DocsButton
+            text="Sign Up"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="https://app.klicker.uzh.ch/user/registration"
+          />
+          <DocsButton
+            text="Getting Started"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="introduction/getting_started"
+          />
+          <DocsButton
+            text="Get Involved"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="development"
+          />
+        </div>
+      </div>
+    </>
   )
 }
 
