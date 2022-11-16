@@ -287,7 +287,8 @@ const TitleImage = ({ imgSrc }) => {
         !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent'
       )}
     >
-      <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
+      {/* // TODO: readd fixed class to these buttons so that they stay at the top of the page to enable login everywhere on landing page */}
+      <div className="z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
         <DocsButton
           text="Login"
           url="https://app.klicker.uzh.ch/user/login"
@@ -300,7 +301,7 @@ const TitleImage = ({ imgSrc }) => {
         />
       </div>
 
-      <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1200px] lg:pt-14">
+      <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1000px] lg:pt-0">
         <Image
           alt="KlickerUZH Running Session with Audience Interaction"
           img={imgSrc}
