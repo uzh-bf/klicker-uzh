@@ -1,8 +1,8 @@
+import { faMessage } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import React from 'react'
-
 import RoadmapTile from '../components/development/RoadmapTile'
-import DocsButton from '../components/DocsButton'
 
 const Development = () => {
   const tileContent = [
@@ -12,27 +12,51 @@ const Development = () => {
         'New interaction modalities for virtual and physical classrooms improve interaction between lecturers and participants.',
       useCases: [
         {
-          content: 'Live Q&A in large classrooms (released)',
+          content: 'Live Q&A',
           href: '/use_cases/live_qa',
+          status: 'Released in v2.0 (HS21)',
         },
         {
-          content: 'Real-time feedback on comprehension (released)',
+          content: 'Real-Time Feedback',
           href: '/use_cases/real_time_feedback',
+          status: 'Released in v2.0 (HS21)',
         },
-        { content: 'Poll-based experiments (in progress)' },
+        {
+          content: 'Learning Elements & Microlearning',
+          href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
+          status: 'Release in v3.0 Beta (FS23)',
+        },
+        // { content: 'Poll-Based Experiments', status: 'Under Consideration' },
       ],
       tags: [
-        { text: 'Working On', color: 'green' },
-        { text: 'Fall 21 - Spring 22', color: 'lightgray' },
+        { text: 'Working On', color: 'orange' },
+        { text: 'Fall 21 - Spring 23', color: 'lightgray' },
       ],
     },
     {
       title: 'Gamification and Engagement',
       content:
         'The incorporation of gamified interactions allows lecturers to increase engagement in their (virtual) classrooms.',
+      useCases: [
+        {
+          content: 'Gamified Live Quizzes',
+          href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
+          status: 'Release in v3.0 Beta (FS23)',
+        },
+        {
+          content: 'Challenges and Awards',
+          href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
+          status: 'Release in v3.0 Beta (FS23)',
+        },
+        {
+          content: 'Group Activities',
+          href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
+          status: 'Work In Progress',
+        },
+      ],
       tags: [
-        { text: 'Planned', color: 'gray' },
-        { text: 'Spring 22 - Fall 22', color: 'lightgray' },
+        { text: 'Working On', color: 'orange' },
+        { text: 'Fall 22 - Spring 23', color: 'lightgray' },
       ],
     },
     {
@@ -41,13 +65,35 @@ const Development = () => {
         'Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions.',
       tags: [
         { text: 'Planned', color: 'gray' },
-        { text: 'Fall 22 - Spring 23', color: 'lightgray' },
+        { text: 'Spring 23 - Fall 23', color: 'lightgray' },
       ],
     },
   ]
 
   return (
     <Layout title="Development">
+      <div className="flex flex-row items-center gap-6 p-4 bg-uzh-red-20">
+        <div>
+          <FontAwesomeIcon icon={faMessage} />
+        </div>
+        <div>
+          <div className="font-bold">
+            KlickerUZH v3.0 - Concept and Request for Feedback
+          </div>
+          <div>
+            We have just published our{' '}
+            <a
+              href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
+              target="_blank"
+            >
+              new concept and ideas
+            </a>{' '}
+            for the upcoming KlickerUZH v3.0, which will be released in beta
+            next February. Please have a look and let us know what you think!
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-6xl p-8 m-auto">
         <div className="flex flex-row items-start justify-between h-12 mb-4">
           <div className="mb-8 text-3xl font-bold md:mb-0">
@@ -86,38 +132,14 @@ const Development = () => {
           ))}
         </div>
 
-        <div className="flex flex-col gap-8 md:flex-row">
-          <div className="w-full md:w-1/2">
-            <div className="mb-4 text-3xl font-bold">Public Roadmap</div>
-            <div className="mb-4">
-              In order to simplify the workflow and to enable interaction with
-              our user community, a public roadmap is available on Feedbear
-              allowing you to see what we are currently working on. The same
-              platform also enables you to submit feature requests and bug
-              reports, as well as to like inputs from other users. This helps us
-              to prioritize features requested more often by our users.
-            </div>
-            <DocsButton
-              url="https://klicker-uzh.feedbear.com/boards/feature-requests"
-              text="Roadmap on Feedbear"
-            />
-          </div>
-          <div className="w-full md:w-1/2">
-            <div className="mb-4 text-3xl font-bold">Community</div>
-            <div className="mb-4">
-              We strive to develop our roadmap and goals based on the needs of
-              our users. The goal of our project on "Digital Skills" is to
-              improve your capabilities in the area of digital interactions. If
-              you are interested in classroom interaction and would like to be
-              involved in future developments, we welcome you to join our
-              KlickerUZH user community through the following link. To log in on
-              the platform, just use your KlickerUZH credentials.
-            </div>
-            <DocsButton
-              url="https://www.klicker.uzh.ch/community"
-              text="User Community"
-            />
-          </div>
+        <div>
+          <div className="mb-4 text-3xl font-bold">Public Roadmap</div>
+          <iframe
+            className="overflow-hidden border border-gray-300 border-solid rounded"
+            src="https://klicker-uzh.feedbear.com/roadmap?embed=true"
+            width="100%"
+            height="900px"
+          ></iframe>
         </div>
       </div>
     </Layout>
