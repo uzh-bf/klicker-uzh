@@ -528,7 +528,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     <div>
                       We have just published our{' '}
                       <a
-                        href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
+                        href="https://swiy.co/kuzh"
                         rel="noreferrer"
                         target="_blank"
                       >
