@@ -1160,18 +1160,20 @@ export async function getPinnedFeedbacks(
 }
 
 function checkCorrectnessFreeText(instance) {
-  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution )(exact match)
+  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
   if (instance.questionData.type === 'FREE_TEXT') {
     for (const id in instance.results) {
-      if (
-        instance.questionData.options.solutions &&
-        instance.questionData.options.solutions.includes(
-          instance.results[id].value
+      if (instance.questionData?.options.solutions) {
+        const solutions = instance.questionData.options.solutions.map(
+          (solution: string) => solution.toLowerCase()
         )
-      ) {
-        instance.results[id].correct = true
+        if (solutions.includes(instance.results[id].value.toLowerCase())) {
+          instance.results[id].correct = true
+        } else {
+          instance.results[id].correct = false
+        }
       } else {
-        instance.results[id].correct = false
+        instance.results[id].correct = undefined
       }
     }
   }
@@ -1193,13 +1195,29 @@ function computeStatistics(instance) {
     // set correct attribute to each of the instance.results elements depending on solutionRanges
     for (const id in instance.results) {
       const value = parseFloat(instance.results[id].value)
-      const solutionRanges = instance.questionData.options.solutionRanges
-      let correct = false
-      for (const range of solutionRanges) {
-        if (value >= range['min'] && value <= range['max']) {
-          correct = true
-          break
+      let correct = undefined
+
+      if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length !==
+          0
+      ) {
+        correct = false
+        const solutionRanges = instance.questionData.options.solutionRanges
+        for (const range of solutionRanges) {
+          if (value >= range['min'] && value <= range['max']) {
+            correct = true
+            break
+          }
         }
+      } else if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length ===
+          0
+      ) {
+        instance.results[id].correct = true
       }
       instance.results[id].correct = correct
     }

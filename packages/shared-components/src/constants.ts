@@ -176,3 +176,13 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'Tabelle', value: 'table' },
   ],
 }
+
+export const STATISTICS_ORDER: string[] = [
+  'min',
+  'max',
+  'mean',
+  'median',
+  'q1',
+  'q3',
+  'sd',
+]

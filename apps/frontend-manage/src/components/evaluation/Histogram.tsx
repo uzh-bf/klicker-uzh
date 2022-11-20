@@ -24,7 +24,6 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
-  brush?: boolean // TODO: Not implemented yet
 }
 
 const defaultProps = {
@@ -36,14 +35,9 @@ const defaultProps = {
     q3: false,
     sd: false,
   },
-  brush: false,
 }
 
-function Histogram({
-  brush,
-  data,
-  showSolution,
-}: HistogramProps): React.ReactElement {
+function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
@@ -52,19 +46,22 @@ function Histogram({
       count: result.count,
     }))
 
-    // create array with numbin entries and fill it evenly with values between data.questionData.options.solutionRanges.min and data.questionData.options.solutionRanges.max if they are defined and min of mappedData - 10 and max of mappedData + 10 if not
     const min =
+      data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['min'] === 'number'
-        ? data.questionData.options.restrictions.min
-        : minBy(mappedData, 'value')?.value - 10
+        ? data.questionData.options.restrictions['min']
+        : (minBy(mappedData, 'value')?.value || 0) - 10
     const max =
+      data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['max'] === 'number'
-        ? data.questionData.options.restrictions.max
-        : maxBy(mappedData, 'value')?.value + 10
+        ? data.questionData.options.restrictions['max']
+        : (maxBy(mappedData, 'value')?.value || 0) + 10
 
-    const dataArray = Array.from({ length: numBins }, (_, i) => ({
+    let dataArray = Array.from({ length: numBins }, (_, i) => ({
       value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
-    })).map((bin) => {
+    }))
+
+    dataArray = dataArray.map((bin) => {
       const binWidth =
         dataArray.length > 1 ? dataArray[1].value - dataArray[0].value : 1
       const count = sumBy(
@@ -86,14 +83,14 @@ function Histogram({
       }
     })
 
-    return dataArray
+    return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
   return (
     <div>
       <ResponsiveContainer width="99%" height={500}>
         <BarChart
-          data={processedData}
+          data={processedData.data}
           margin={{
             bottom: 16,
             left: -24,
@@ -101,7 +98,11 @@ function Histogram({
             top: 24,
           }}
         >
-          <XAxis dataKey="value" type="number" />
+          <XAxis
+            dataKey="value"
+            type="number"
+            domain={[processedData.domain.min, processedData.domain.max]}
+          />
           <YAxis
             domain={[
               0,
@@ -140,7 +141,7 @@ function Histogram({
                 position: 'top',
                 value: 'MEAN',
               }}
-              key={data.statistics.mean}
+              key={`mean-` + data.statistics.mean}
               stroke="blue"
               x={Math.round(data.statistics.mean || 0)}
             />
@@ -154,7 +155,7 @@ function Histogram({
                 position: 'top',
                 value: 'MEDIAN',
               }}
-              key={data.statistics.median}
+              key={`median-` + data.statistics.median}
               stroke="red"
               x={Math.round(data.statistics.median || 0)}
             />
@@ -168,7 +169,7 @@ function Histogram({
                 position: 'top',
                 value: 'Q1',
               }}
-              key={data.statistics.q1}
+              key={`q1-` + data.statistics.q1}
               stroke="black"
               x={Math.round(data.statistics.q1 || 0)}
             />
@@ -182,7 +183,7 @@ function Histogram({
                 position: 'top',
                 value: 'Q3',
               }}
-              key={data.statistics.q3}
+              key={`q3-` + data.statistics.q3}
               stroke="black"
               x={Math.round(data.statistics.q3 || 0)}
             />
@@ -190,8 +191,14 @@ function Histogram({
           {data.statistics && showSolution.sd && (
             <ReferenceArea
               key="sd-area"
-              x1={(data.statistics.mean || 0) - (data.statistics.sd ?? 0)}
-              x2={(data.statistics.mean || 0) + (data.statistics.sd ?? 0)}
+              x1={Math.max(
+                (data.statistics.mean || 0) - (data.statistics.sd ?? 0),
+                processedData.domain.min
+              )}
+              x2={Math.min(
+                (data.statistics.mean || 0) + (data.statistics.sd ?? 0),
+                processedData.domain.max
+              )}
               fill="gray"
               enableBackground="#FFFFFF"
               label={{
@@ -203,7 +210,7 @@ function Histogram({
             />
           )}
 
-          {showSolution.general &&
+          {showSolution.general && data.questionData.options.solutionRanges &&
             data.questionData.options.solutionRanges.map(
               (
                 solutionRange: { min?: number; max?: number },
@@ -225,10 +232,6 @@ function Histogram({
                 />
               )
             )}
-          {/* // TODO: fix brush */}
-          {/* {brush && (
-            <Brush dataKey="value" type="number" height={30} stroke="#8884d8" />
-          )} */}
         </BarChart>
       </ResponsiveContainer>
 

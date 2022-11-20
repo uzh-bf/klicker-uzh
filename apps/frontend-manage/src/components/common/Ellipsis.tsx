@@ -1,18 +1,24 @@
 import Markdown from '@klicker-uzh/markdown'
+import { Tooltip } from '@uzh-bf/design-system'
 import React from 'react'
-// TODO: readd tooltip
-// import CustomTooltip from './CustomTooltip'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   children: string
-  maxLength?: number
+  maxLength: number
   withoutPopup?: boolean
+  className?: {
+    root?: string
+    tooltip?: string
+    markdown?: string
+  }
 }
 
 function Ellipsis({
   children,
   maxLength,
   withoutPopup,
+  className,
 }: Props): React.ReactElement {
   const parsedContent = (
     <Markdown
@@ -21,6 +27,7 @@ function Ellipsis({
           ? children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')
           : 'no content'
       }
+      className={className?.markdown}
     />
   )
 
@@ -56,6 +63,7 @@ function Ellipsis({
               .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')} **...**`
           : 'no content'
       }
+      className={className?.markdown}
     />
   )
 
@@ -71,24 +79,26 @@ function Ellipsis({
 
   // return shortened content including tooltip with full content (if not explicitely disabled)
   return (
-    <span>
-      {withoutPopup
-        ? shortenedParsedContent
-        : // TODO: readd content with tooltip
-          // <CustomTooltip
-          //   tooltip={parsedContent}
-          //   tooltipStyle={'!opacity-100 text-sm max-w-[50%] md:max-w-[60%]'}
-          //   withArrow={false}
-          // >
-          //   {shortenedParsedContent}
-          // </CustomTooltip>
-          shortenedParsedContent}
+    <span className={className?.root}>
+      {withoutPopup ? (
+        shortenedParsedContent
+      ) : (
+        <Tooltip
+          tooltip={parsedContent}
+          tooltipStyle={twMerge(
+            '!opacity-100 text-sm max-w-[50%] md:max-w-[60%]',
+            className?.tooltip
+          )}
+          withArrow={false}
+        >
+          {shortenedParsedContent}
+        </Tooltip>
+      )}
     </span>
   )
 }
 
 Ellipsis.defaultProps = {
-  maxLength: 60,
   withoutPopup: false,
 }
 
