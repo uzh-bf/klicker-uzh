@@ -528,7 +528,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     <div>
                       We have just published our{' '}
                       <a
-                        href="https://swiy.co/kuzh"
+                        href="https://ref.bf-app.ch/klickeruzh-v3"
                         rel="noreferrer"
                         target="_blank"
                       >
