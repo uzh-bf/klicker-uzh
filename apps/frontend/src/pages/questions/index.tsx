@@ -63,7 +63,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
     true,
-    'gamification-survey-visible'
+    'klicker-v3-survey-visible'
   )
 
   const [creationMode, setCreationMode] = useState(
@@ -518,25 +518,31 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
         {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && !creationMode && (
           <div className="fixed bottom-0 left-0 right-0 sm:right-[10%] sm:left-[10%]">
-            <Message
-              warning
-              className="!rounded-none"
-              content={
-                <FormattedMessage
-                  defaultMessage="We would like to invite you to participate in our newest survey on Gamification and Game-Based Learning (see {link}, duration ca. 10min). Based on your feedback, we will also implement functionalities in the KlickerUZH."
-                  id="questionPool.survey"
-                  values={{
-                    link: (
-                      <a href="https://ref.bf-app.ch/gamification-klicker" rel="noreferrer" target="_blank">
-                        link
-                      </a>
-                    ),
-                  }}
-                />
-              }
-              icon="bullhorn"
-              onDismiss={() => setIsSurveyBannerVisible(false)}
-            />
+            <div className="flex flex-row items-center gap-6 p-4 bg-uzh-red-20">
+              <Message
+                warning
+                className="rounded-none"
+                content={
+                  <>
+                    <div className="font-bold">KlickerUZH v3.0 - Concept and Request for Feedback</div>
+                    <div>
+                      We have just published our{' '}
+                      <a
+                        href="https://ref.bf-app.ch/klickeruzh-v3"
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        new concept and ideas
+                      </a>{' '}
+                      for the upcoming KlickerUZH v3.0, which will be released in beta next February. Please have a look
+                      and let us know what you think!
+                    </div>
+                  </>
+                }
+                icon="bullhorn"
+                onDismiss={() => setIsSurveyBannerVisible(false)}
+              />
+            </div>
           </div>
         )}
       </div>
