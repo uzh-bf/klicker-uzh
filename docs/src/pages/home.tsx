@@ -2,6 +2,8 @@ import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useColorMode } from '@docusaurus/theme-common'
+import { faMessage } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Image from '@theme/IdealImage'
 import Layout from '@theme/Layout'
 import ImageTextBlock from '../components/common/ImageTextBlock'
@@ -149,8 +151,28 @@ function Home() {
 
   return (
     <Layout title="Welcome">
+      <div className="flex flex-row items-center gap-6 p-4 bg-uzh-red-20">
+        <div>
+          <FontAwesomeIcon icon={faMessage} />
+        </div>
+        <div>
+          <div className="font-bold">
+            KlickerUZH v3.0 - Concept and Request for Feedback
+          </div>
+          <div>
+            We have just published our{' '}
+            <a
+              href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
+              target="_blank"
+            >
+              new concept and ideas
+            </a>{' '}
+            for the upcoming KlickerUZH v3.0, which will be released in beta
+            next February. Please have a look and let us know what you think!
+          </div>
+        </div>
+      </div>
       <TitleImage imgSrc={require('../../static/img/timeline_mac.png')} />
-
       <div className="flex flex-col gap-8 p-4 m-auto max-w-7xl md:gap-16 md:p-8">
         <div className="flex flex-col justify-between gap-12 md:flex-row md:gap-4">
           <ImageTile
@@ -259,66 +281,64 @@ const TitleImage = ({ imgSrc }) => {
   const { isDarkTheme } = useColorMode()
 
   return (
-    <div
-      className={twMerge(
-        'mb-10 text-center ',
-        !isDarkTheme && 'sm:bg-gradient-to-b sm:from-gray-400 sm:to-transparent'
-      )}
-    >
-      <div className="fixed z-10 flex flex-row-reverse justify-center w-full h-20 gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start">
-        <DocsButton
-          text="Login"
-          url="https://app.klicker.uzh.ch/user/login"
-          className="bg-white w-36"
-        />
-        <DocsButton
-          text="Sign Up"
-          url="https://app.klicker.uzh.ch/user/registration"
-          className="bg-white w-36"
-        />
-      </div>
-
-      <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1200px] lg:pt-14">
-        <Image
-          alt="KlickerUZH Running Session with Audience Interaction"
-          img={imgSrc}
-        />
-      </div>
-
-      <h1 className="items-center justify-center mt-4 mb-4">
-        <KlickerLogo className="w-44 sm:w-48 md:w-64" />
-        <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
-          Open Source Audience Interaction
+    <>
+      <div className="sticky z-10 top-[3.75rem]">
+        <div className="flex flex-row-reverse justify-center w-full gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start sm:bg-transparent-400">
+          <DocsButton
+            text="Login"
+            url="https://app.klicker.uzh.ch/user/login"
+            className="bg-white w-36"
+          />
+          <DocsButton
+            text="Sign Up"
+            url="https://app.klicker.uzh.ch/user/registration"
+            className="bg-white w-36"
+          />
         </div>
-      </h1>
-
-      <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
-        <DocsButton
-          text="Sign Up"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="https://app.klicker.uzh.ch/user/registration"
-        />
-        <DocsButton
-          text="Getting Started"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="introduction/getting_started"
-        />
-        <DocsButton
-          text="Get Involved"
-          className={twMerge(
-            'w-64 md:w-52 md:text-lg',
-            !isDarkTheme && 'bg-gray-50'
-          )}
-          url="development"
-        />
       </div>
-    </div>
+      <div className="mb-10 text-center ">
+        <div className="m-auto max-w-[80%] pt-20 text-center md:max-w-[1000px] lg:pt-0">
+          <Image
+            alt="KlickerUZH Running Session with Audience Interaction"
+            img={imgSrc}
+          />
+        </div>
+
+        <h1 className="items-center justify-center mt-4 mb-4">
+          <KlickerLogo className="w-44 sm:w-48 md:w-64 lg:w-80" />
+          <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
+            Open Source Audience Interaction
+          </div>
+        </h1>
+
+        <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
+          <DocsButton
+            text="Sign Up"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="https://app.klicker.uzh.ch/user/registration"
+          />
+          <DocsButton
+            text="Getting Started"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="introduction/getting_started"
+          />
+          <DocsButton
+            text="Get Involved"
+            className={twMerge(
+              'w-64 md:w-52 md:text-lg',
+              !isDarkTheme && 'bg-gray-50'
+            )}
+            url="development"
+          />
+        </div>
+      </div>
+    </>
   )
 }
 
