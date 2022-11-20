@@ -100,11 +100,15 @@ export const StudentQuestion = ({
   const onFreeTextValueChange = (inputValue: any): void => {
     const inputEmpty = !inputValue || inputValue.length === 0
 
-    const schema = Yup.object().shape({
-      input: Yup.string()
-        .max(currentQuestion.options?.restrictions?.maxLength)
-        .required(),
-    })
+    let schema = Yup.object().shape({ input: Yup.string() })
+
+    if (currentQuestion.options?.restrictions?.maxLength) {
+      schema = Yup.object().shape({
+        input: Yup.string()
+          .max(currentQuestion.options?.restrictions?.maxLength)
+          .required(),
+      })
+    }
 
     try {
       const isValid = schema.validateSync({ input: inputValue })
