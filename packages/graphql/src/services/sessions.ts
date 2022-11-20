@@ -1196,7 +1196,13 @@ function computeStatistics(instance) {
     for (const id in instance.results) {
       const value = parseFloat(instance.results[id].value)
       let correct = undefined
-      if (instance.questionData.options.solutionRanges) {
+
+      if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length !==
+          0
+      ) {
         correct = false
         const solutionRanges = instance.questionData.options.solutionRanges
         for (const range of solutionRanges) {
@@ -1205,6 +1211,13 @@ function computeStatistics(instance) {
             break
           }
         }
+      } else if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length ===
+          0
+      ) {
+        instance.results[id].correct = true
       }
       instance.results[id].correct = correct
     }
