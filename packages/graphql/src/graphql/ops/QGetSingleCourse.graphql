@@ -7,5 +7,39 @@ query GetSingleCourse($courseId: ID!) {
     displayName
     description
     color
+    sessions {
+      id
+      name
+      displayName
+      isGamificationEnabled
+      pinCode
+      accessMode
+      status
+      createdAt
+      blocks {
+        id
+        instances {
+          id
+        }
+      }
+    }
+    learningElements {
+      id
+      name
+      displayName
+      instances {
+        id
+      }
+    }
+    microSessions {
+      id
+      name
+      displayName
+      scheduledStartAt
+      scheduledEndAt
+      instances {
+        id
+      }
+    }
   }
 }

@@ -355,7 +355,31 @@ export async function getCourseData(
 ) {
   const course = ctx.prisma.course.findUnique({
     where: { id },
+    include: {
+      sessions: {
+        include: {
+          blocks: {
+            include: {
+              instances: true,
+            },
+          },
+        },
+      },
+      learningElements: {
+        include: {
+          instances: true,
+        },
+      },
+      microSessions: {
+        include: {
+          instances: true,
+        },
+      },
+    },
   })
+
+  // TODO: pick only required data from blocks - e.g. only id if number is the only interesting thing
+  // TODO: order sessions, etc. such that not yet executed sessions are first and then ordered by creation date
 
   return course
 }

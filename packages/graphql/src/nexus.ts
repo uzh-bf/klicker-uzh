@@ -787,6 +787,7 @@ export const Session = objectType({
     t.nonNull.string('name')
     t.nonNull.string('displayName')
     t.string('linkTo')
+    t.int('pinCode')
 
     t.nonNull.field('status', {
       type: SessionStatus,

@@ -463,6 +463,7 @@ export interface NexusGenObjects {
     linkTo?: string | null; // String
     name: string; // String!
     namespace: string; // String!
+    pinCode?: number | null; // Int
     startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
@@ -933,6 +934,7 @@ export interface NexusGenFieldTypes {
     linkTo: string | null; // String
     name: string; // String!
     namespace: string; // String!
+    pinCode: number | null; // Int
     startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
   }
@@ -1413,6 +1415,7 @@ export interface NexusGenFieldTypeNames {
     linkTo: 'String'
     name: 'String'
     namespace: 'String'
+    pinCode: 'Int'
     startedAt: 'DateTime'
     status: 'SessionStatus'
   }

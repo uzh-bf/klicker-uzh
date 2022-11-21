@@ -564,6 +564,7 @@ type Session {
   linkTo: String
   name: String!
   namespace: String!
+  pinCode: Int
   startedAt: DateTime
   status: SessionStatus!
 }
