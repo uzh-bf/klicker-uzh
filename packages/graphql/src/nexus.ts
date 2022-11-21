@@ -482,6 +482,8 @@ export const Course = objectType({
       type: AwardEntry,
     })
 
+    t.list.field('leaderboard', { type: LeaderboardEntry })
+
     t.date('createdAt')
     t.date('updatedAt')
   },
@@ -615,6 +617,10 @@ export const LeaderboardEntry = objectType({
     t.nonNull.int('rank')
 
     t.boolean('isSelf')
+
+    t.field('participation', {
+      type: Participation,
+    })
 
     t.int('lastBlockOrder')
   },

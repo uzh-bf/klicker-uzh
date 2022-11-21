@@ -131,6 +131,7 @@ type Course {
   displayName: String!
   id: ID!
   isArchived: Boolean
+  leaderboard: [LeaderboardEntry]
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
@@ -285,6 +286,7 @@ type LeaderboardEntry {
   isSelf: Boolean
   lastBlockOrder: Int
   participantId: ID!
+  participation: Participation
   rank: Int!
   score: Float!
   username: String!

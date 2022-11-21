@@ -41,5 +41,12 @@ query GetSingleCourse($courseId: ID!) {
         id
       }
     }
+    leaderboard {
+      id
+      score
+      participation {
+        isActive
+      }
+    }
   }
 }

@@ -194,6 +194,7 @@ export interface NexusGenObjects {
     displayName: string; // String!
     id: string; // ID!
     isArchived?: boolean | null; // Boolean
+    leaderboard?: Array<NexusGenRootTypes['LeaderboardEntry'] | null> | null; // [LeaderboardEntry]
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
@@ -311,6 +312,7 @@ export interface NexusGenObjects {
     isSelf?: boolean | null; // Boolean
     lastBlockOrder?: number | null; // Int
     participantId: string; // ID!
+    participation?: NexusGenRootTypes['Participation'] | null; // Participation
     rank: number; // Int!
     score: number; // Float!
     username: string; // String!
@@ -600,6 +602,7 @@ export interface NexusGenFieldTypes {
     displayName: string; // String!
     id: string; // ID!
     isArchived: boolean | null; // Boolean
+    leaderboard: Array<NexusGenRootTypes['LeaderboardEntry'] | null> | null; // [LeaderboardEntry]
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
@@ -717,6 +720,7 @@ export interface NexusGenFieldTypes {
     isSelf: boolean | null; // Boolean
     lastBlockOrder: number | null; // Int
     participantId: string; // ID!
+    participation: NexusGenRootTypes['Participation'] | null; // Participation
     rank: number; // Int!
     score: number; // Float!
     username: string; // String!
@@ -1081,6 +1085,7 @@ export interface NexusGenFieldTypeNames {
     displayName: 'String'
     id: 'ID'
     isArchived: 'Boolean'
+    leaderboard: 'LeaderboardEntry'
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
@@ -1198,6 +1203,7 @@ export interface NexusGenFieldTypeNames {
     isSelf: 'Boolean'
     lastBlockOrder: 'Int'
     participantId: 'ID'
+    participation: 'Participation'
     rank: 'Int'
     score: 'Float'
     username: 'String'

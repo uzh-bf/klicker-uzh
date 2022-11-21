@@ -375,6 +375,11 @@ export async function getCourseData(
           instances: true,
         },
       },
+      leaderboard: {
+        include: {
+          participation: true,
+        },
+      },
     },
   })
 

@@ -24,6 +24,13 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
   })
 
+  const publicLeaderboardEntries = dataCourse?.course?.leaderboard?.filter(
+    (entry) => entry?.participation?.isActive || false
+  )
+
+  // TODO: use these leaderboard entries in the course leaderboard on the lecturer course page
+  console.log(publicLeaderboardEntries)
+
   console.log(dataCourse)
 
   if (loadingCourse) return <div>Loading...</div>
@@ -34,7 +41,12 @@ function CourseOverviewPage() {
   return (
     <Layout>
       <div className="w-full mb-4">
-        <H2>Kurs: {dataCourse?.course?.name}</H2>
+        <div className="flex flex-row items-center justify-between">
+          <H2>Kurs: {dataCourse?.course?.name}</H2>
+          <div>
+            Anzahl Teilnehmer: {dataCourse?.course?.leaderboard?.length || 0}
+          </div>
+        </div>
         {dataCourse?.course?.description ? (
           descriptionEditMode ? (
             <CourseDescription
@@ -69,7 +81,7 @@ function CourseOverviewPage() {
         )}
       </div>
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-3/4">
+        <div className="w-full md:w-3/4 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
           <div className="mb-4">
             <H3>Sessionen</H3>
             {dataCourse?.course?.sessions &&
@@ -116,8 +128,8 @@ function CourseOverviewPage() {
             )}
           </div>
         </div>
-        <div className="w-full md:w-1/4">
-          <H3>Course Leaderboard</H3>
+        <div className="w-full md:w-1/4 md:pl-2">
+          <H3>Kurs Leaderboard</H3>
         </div>
       </div>
     </Layout>
