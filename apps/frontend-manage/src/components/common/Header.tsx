@@ -7,7 +7,7 @@ import {
   User,
 } from '@klicker-uzh/graphql/dist/ops'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 
@@ -56,48 +56,32 @@ function Header({ user }: HeaderProps): React.ReactElement {
         </Button>
       </div>
       <div className="flex flex-row gap-4">
-        <DropdownMenu.Root
-          open={runningDropdown}
-          onOpenChange={setRunningDropdown}
-        >
-          <DropdownMenu.Trigger className="h-full">
-            <Button
-              className="text-green-600 border-none bg-slate-800 hover:text-uzh-blue-100"
-              onClick={() => router.push('/profile')}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon
-                  icon={faPlayCircle}
-                  className="-mb-1 -ml-2 h-7"
-                />
-              </Button.Icon>
-            </Button>
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Content className="flex flex-col p-1 bg-white border border-t-0 border-solid rounded-md border-uzh-grey-80">
-            <DropdownMenu.Item className="[all:_unset]" onClick={() => null}>
-              {data?.runningSessions &&
-                data?.runningSessions.length > 0 &&
-                data?.runningSessions.map((session) => (
-                  <div
-                    className="flex flex-col w-full h-8 px-4 text-black rounded-md cursor-pointer hover:bg-uzh-blue-40 hover:text-uzh-blue-100"
-                    key={session.id}
-                  >
-                    <a
-                      onClick={() =>
-                        router.push(`sessions/${session.id}/cockpit`)
-                      }
-                      className="my-auto text-center"
-                    >
-                      {session.name}
-                    </a>
-                  </div>
-                ))}
-            </DropdownMenu.Item>
-
-            <DropdownMenu.Arrow className="fill-white" />
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <Dropdown
+          disabled={
+            !data?.runningSessions || data?.runningSessions.length === 0
+          }
+          trigger={
+            <div className="flex flex-row items-center justify-center p-2 text-green-600 border-none rounded bg-slate-800 hover:text-uzh-blue-100 hover:bg-uzh-blue-40 h-9 w-9">
+              <FontAwesomeIcon icon={faPlayCircle} className="h-7" />
+            </div>
+          }
+          items={
+            data?.runningSessions && data?.runningSessions.length > 0
+              ? data?.runningSessions.map((session) => {
+                  return {
+                    label: session.name,
+                    onClick: () =>
+                      router.push(`sessions/${session.id}/cockpit`),
+                  }
+                })
+              : []
+          }
+          className={{
+            viewport:
+              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
+            item: 'text-black hover:!text-uzh-blue-100 hover:bg-uzh-blue-20',
+          }}
+        />
 
         <DropdownMenu.Root open={userDropdown} onOpenChange={setUserDropdown}>
           <DropdownMenu.Trigger className="h-full">
