@@ -47,11 +47,13 @@ function CourseOverviewPage() {
                 content={dataCourse.course.description}
                 className="w-full p-2 rounded"
               />
-              <Button onClick={() => setDescriptionEditMode(true)}>
+              <Button
+                onClick={() => setDescriptionEditMode(true)}
+                className="h-10"
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faPencil} />
                 </Button.Icon>
-                <Button.Label>Beschreibung bearbeiten</Button.Label>
               </Button>
             </div>
           )
@@ -67,7 +69,7 @@ function CourseOverviewPage() {
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-3/4">
           <div className="mb-4">
-            <H3>Live Sessions</H3>
+            <H3>Sessionen</H3>
             {dataCourse?.course?.sessions &&
             dataCourse.course.sessions.length > 0 ? (
               <div className="flex flex-row gap-2 overflow-x-scroll">
@@ -93,7 +95,7 @@ function CourseOverviewPage() {
             )}
           </div>
           <div className="mb-4">
-            <H3>Micro-Learnings</H3>
+            <H3>Micro-Sessions</H3>
             {dataCourse?.course?.microSessions &&
             dataCourse.course.microSessions.length > 0 ? (
               <div className="flex flex-row gap-2 overflow-x-scroll">

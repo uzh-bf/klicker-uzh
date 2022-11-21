@@ -1,4 +1,6 @@
+import Ellipsis from '@components/common/Ellipsis'
 import {
+  faArrowRight,
   faCalculator,
   faCheck,
   faClock,
@@ -6,10 +8,11 @@ import {
   faPlay,
   faTrophy,
   faUserGroup,
+  faUpRightFromSquare
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
-import { H4 } from '@uzh-bf/design-system'
+import Link from 'next/link'
 
 interface SessionTileProps {
   session: Partial<Session>
@@ -34,13 +37,39 @@ function SessionTile({ session }: SessionTileProps) {
     >
       <div>
         <div className="flex flex-row justify-between">
-          <H4>{session.name}</H4>
+          <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+            {session.name || ''}
+          </Ellipsis>
           <div>{statusMap[session.status || 'PREPARED']}</div>
         </div>
-        <div className="italic">
-          {session.blocks?.length} Blöcke, {numOfQuestions} Fragen
+        <div className="mb-1 italic">
+          {session.blocks?.length || '0'} Blöcke, {numOfQuestions || '0'} Fragen
         </div>
-        <div>PIN: {session.pinCode}</div>
+        {/* // TODO: link to session editing for scheduled / prepared sessions */}
+        {/* {(session.status === 'SCHEDULED' || session.status === 'PREPARED') && (
+          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+            <FontAwesomeIcon icon={faArrowRight} />
+            <Link href={`/sessions`}>
+              Session editieren
+            </Link>
+          </div>
+        )} */}
+        {session.status === 'RUNNING' && (
+          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+            <FontAwesomeIcon icon={faArrowRight} />
+            <Link href={`/sessions/${session.id}/cockpit`}>
+              Laufende Session
+            </Link>
+          </div>
+        )}
+        {session.status === 'COMPLETED' && (
+          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+            <FontAwesomeIcon icon={faUpRightFromSquare} />
+            <Link href={`/sessions/${session.id}/evaluation`} passHref>
+              <a target="_blank" rel="noopener noreferrer">Evaluation</a>
+            </Link>
+          </div>
+        )}
       </div>
       <div className="flex flex-row gap-2 ">
         <div className="py-0.5 px-1 text-sm rounded bg-uzh-red-40 flex flex-row items-center gap-1">
