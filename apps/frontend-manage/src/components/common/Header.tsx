@@ -3,6 +3,7 @@ import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetRunningSessionsDocument,
+  GetUserCoursesDocument,
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -18,6 +19,12 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const [logoutUser] = useMutation(LogoutUserDocument)
+
+  const {
+    loading: loadingCourses,
+    error: errorCourses,
+    data: dataCourses,
+  } = useQuery(GetUserCoursesDocument)
 
   const userDropdownContent = [
     { name: 'Settings', onClick: () => router.push('/settings') },
@@ -38,7 +45,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-1 font-bold text-white bg-slate-800 print:hidden">
+    <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
       <div>
         <Button
           className="mr-2 border-none bg-slate-800"
@@ -47,11 +54,33 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Button.Label>Fragepool</Button.Label>
         </Button>
         <Button
-          className="border-none bg-slate-800"
+          className="mr-2 border-none bg-slate-800"
           onClick={() => router.push('/sessions')}
         >
           <Button.Label>Sessions</Button.Label>
         </Button>
+        {(dataCourses?.userCourses || loadingCourses) && (
+          <Dropdown
+            disabled={!dataCourses?.userCourses || loadingCourses}
+            trigger="Kurse"
+            items={
+              dataCourses?.userCourses
+                ? dataCourses.userCourses.map((course) => {
+                    return {
+                      label: course.displayName,
+                      onClick: () => router.push(`courses/${course.id}`),
+                    }
+                  })
+                : []
+            }
+            className={{
+              trigger: 'border-none hover:text-uzh-blue-100',
+              viewport:
+                'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
+              item: 'text-black hover:!text-uzh-blue-100 hover:bg-uzh-blue-20',
+            }}
+          />
+        )}
       </div>
       <div className="flex flex-row gap-4">
         <Dropdown
