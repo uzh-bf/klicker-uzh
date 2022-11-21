@@ -103,7 +103,8 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="micro-session"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  disabled
                 >
                   <H4 className="flex flex-col justify-center h-full">
                     Micro-Session
@@ -112,7 +113,8 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="learning-element"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  disabled
                 >
                   <H4 className="flex flex-col justify-center h-full">
                     Learning Element
