@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
+import TagList from '@components/questions/TagList'
 import { Button, H4 } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -83,6 +84,8 @@ function Index() {
 
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
+
+  console.log(dataQuestions)
 
   return (
     <Layout displayName="Fragepool">
@@ -181,15 +184,17 @@ function Index() {
         </div>
         <div className="flex justify-center mx-auto">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 mx-10 md:mx-20">
-            {/* // TODO Tags */}
-            {/* <TagList
-              activeTags={filters.tags}
-              activeType={filters.type}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              handleToggleArchive={onToggleArchive}
-              isArchiveActive={filters.archive}
-            /> */}
+            {dataQuestions && dataQuestions.userQuestions && (
+              <TagList
+                data={dataQuestions?.userQuestions}
+                activeTags={filters.tags}
+                activeType={filters.type}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                // handleToggleArchive={onToggleArchive}
+                // isArchiveActive={filters.archive}
+              />
+            )}
             <div className="w-full">
               {!dataQuestions || loadingQuestions ? (
                 // TODO: replace by nice loader
