@@ -35,7 +35,7 @@ import {
   CHART_COLORS,
   STATISTICS_ORDER,
 } from 'shared-components/src/constants'
-import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
+import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
@@ -625,7 +625,7 @@ function Evaluation() {
             <div className="max-w-5xl mx-auto text-xl">
               {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
                 <div className="mt-6">
-                  <SessionLeaderboard
+                  <Leaderboard
                     leaderboard={data.sessionLeaderboard}
                     className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
                   />

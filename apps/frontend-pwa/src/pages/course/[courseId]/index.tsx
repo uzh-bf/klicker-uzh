@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import GroupLeaderboard from '@components/GroupLeaderboard'
 import Layout from '@components/Layout'
-import Leaderboard from '@components/Leaderboard'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -16,8 +15,7 @@ import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
-import { ParticipantOther } from '../../../components/Participant'
-import { Podium } from '../../../components/Podium'
+import Leaderboard from 'shared-components/src/Leaderboard'
 import Tabs from '../../../components/Tabs'
 
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
@@ -65,6 +63,10 @@ function CourseOverview({ courseId }: any) {
     groupLeaderboardStatistics,
   } = data.getCourseOverviewData
 
+  const filteredGroupLeaderboard = groupLeaderboard?.filter(
+    (group) => group.score > 0
+  )
+
   return (
     <Layout
       displayName="Leaderboard"
@@ -101,15 +103,14 @@ function CourseOverview({ courseId }: any) {
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
 
-                  <Podium leaderboard={leaderboard} />
                   <Leaderboard
-                    leaderboard={leaderboard}
-                    courseId={courseId}
-                    participant={participant}
-                    participation={participation}
+                    leaderboard={leaderboard || []}
+                    activeParticipation={participation?.isActive}
                     onJoin={joinCourse}
                     onLeave={leaveCourse}
+                    participant={participant}
                   />
+
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
                       Anzahl Teilnehmende:{' '}
@@ -132,12 +133,15 @@ function CourseOverview({ courseId }: any) {
                 <div>
                   <H3 className="mb-4">Gruppenleaderboard</H3>
 
-                  <Podium
-                    leaderboard={groupLeaderboard?.map((entry) => ({
-                      username: entry.name,
-                      score: entry.score,
-                    }))}
+                  <Leaderboard
+                    leaderboard={
+                      filteredGroupLeaderboard?.map((entry) => ({
+                        username: entry.name,
+                        score: entry.score,
+                      })) || []
+                    }
                   />
+
                   {!groupLeaderboard ||
                     (groupLeaderboard.length === 0 && (
                       <div className="mt-6">
@@ -145,18 +149,13 @@ function CourseOverview({ courseId }: any) {
                         geht&apos;s!
                       </div>
                     ))}
-                  <div className="pt-8 space-y-2 overflow-y-scroll max-h-[400px]">
-                    {groupLeaderboard
-                      .filter((entry) => entry.score > 0)
-                      .map((entry) => (
-                        <ParticipantOther
-                          key={entry.id}
-                          pseudonym={entry.name}
-                          points={entry.score}
-                          withAvatar={false}
-                        />
-                      ))}
-                  </div>
+                  {filteredGroupLeaderboard?.length === 0 && (
+                    <div>
+                      Bisher hat noch keine Gruppe Punkte erhalten. Los
+                      geht&apos;s!
+                    </div>
+                  )}
+
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
                       Anzahl Gruppen:{' '}

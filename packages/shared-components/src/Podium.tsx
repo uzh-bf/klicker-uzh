@@ -1,5 +1,5 @@
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from './Participant'
 
