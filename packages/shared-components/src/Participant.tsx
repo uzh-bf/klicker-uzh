@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 interface ParticipantProps {
   avatar?: string | null
   withAvatar?: boolean
-  pseudonym: string
+  pseudonym?: string
   points?: number
   rank?: number | string
   isHighlighted?: boolean
