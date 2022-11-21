@@ -14,8 +14,6 @@ function QuestionTags({ tags }: QuestionTagsProps): React.ReactElement {
     return <></>
   }
 
-  console.log('Tags: ', tags)
-
   return (
     <div className="flex flex-row max-w-2xl overflow-auto">
       {tags.map(

@@ -85,8 +85,6 @@ function Index() {
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
 
-  console.log(dataQuestions)
-
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full">
