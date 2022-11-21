@@ -6,10 +6,10 @@ import {
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import React, { useState } from 'react'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
   user: User
@@ -17,8 +17,6 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
-  const [userDropdown, setUserDropdown] = useState(false)
-  const [runningDropdown, setRunningDropdown] = useState(false)
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   const userDropdownContent = [
@@ -61,7 +59,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
             !data?.runningSessions || data?.runningSessions.length === 0
           }
           trigger={
-            <div className="flex flex-row items-center justify-center p-2 text-green-600 border-none rounded bg-slate-800 hover:text-uzh-blue-100 hover:bg-uzh-blue-40 h-9 w-9">
+            <div
+              className={twMerge(
+                'flex flex-row items-center justify-center p-2 text-green-600 border-none',
+                'rounded bg-slate-800 hover:text-uzh-blue-100 hover:bg-uzh-blue-40 h-9 w-9'
+              )}
+            >
               <FontAwesomeIcon icon={faPlayCircle} className="h-7" />
             </div>
           }
@@ -83,33 +86,27 @@ function Header({ user }: HeaderProps): React.ReactElement {
           }}
         />
 
-        <DropdownMenu.Root open={userDropdown} onOpenChange={setUserDropdown}>
-          <DropdownMenu.Trigger className="h-full">
-            <Button className="my-auto h-9 bg-slate-800">
-              <Button.Icon className="mr-2">
-                <FontAwesomeIcon icon={faUserCircle} size="lg" />
-              </Button.Icon>
-              <Button.Label>{user.shortname}</Button.Label>
-            </Button>
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Content className="flex flex-col p-1 bg-white border border-t-0 border-solid rounded-md border-uzh-grey-80">
-            <DropdownMenu.Item className="[all:_unset]" onClick={() => null}>
-              {userDropdownContent.map((item) => (
-                <div
-                  className="flex flex-col w-full h-8 px-4 text-black rounded-md cursor-pointer hover:bg-uzh-blue-40 hover:text-uzh-blue-100"
-                  key={item.name}
-                >
-                  <a onClick={item.onClick} className="my-auto text-center">
-                    {item.name}
-                  </a>
-                </div>
-              ))}
-            </DropdownMenu.Item>
-
-            <DropdownMenu.Arrow className="fill-white" />
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <Dropdown
+          trigger={
+            <div
+              className={twMerge(
+                'flex flex-row items-center gap-2 px-3 border border-white border-solid',
+                'rounded py-auto h-9 bg-slate-800 hover:bg-uzh-blue-20 hover:text-uzh-blue-100'
+              )}
+            >
+              <FontAwesomeIcon icon={faUserCircle} size="lg" />
+              <div>{user.shortname}</div>
+            </div>
+          }
+          items={userDropdownContent.map((item) => {
+            return { label: item.name, onClick: () => item.onClick() }
+          })}
+          className={{
+            viewport:
+              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
+            item: 'text-black hover:!text-uzh-blue-80 hover:bg-uzh-blue-20 px-3',
+          }}
+        />
       </div>
     </div>
   )
