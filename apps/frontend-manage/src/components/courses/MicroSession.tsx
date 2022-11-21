@@ -14,9 +14,6 @@ interface MicroSessionProps {
 }
 
 function MicroSessionTile({ microSession }: MicroSessionProps) {
-  console.log(microSession.scheduledStartAt)
-  console.log(microSession.scheduledEndAt)
-
   const scheduledStartAt = new Date(microSession.scheduledStartAt)
   const scheduledEndAt = new Date(microSession.scheduledEndAt)
 
