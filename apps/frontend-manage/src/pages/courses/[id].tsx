@@ -1,5 +1,7 @@
 import { useQuery } from '@apollo/client'
 import CourseDescription from '@components/courses/CourseDescription'
+import LearningElementTile from '@components/courses/LearningElementTile'
+import MicroSessionTile from '@components/courses/MicroSession'
 import SessionTile from '@components/courses/SessionTile'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -87,7 +89,10 @@ function CourseOverviewPage() {
             dataCourse.course.learningElements.length > 0 ? (
               <div className="flex flex-row gap-2 overflow-x-scroll">
                 {dataCourse?.course?.learningElements.map((learningElement) => (
-                  <div key={learningElement.id}>{learningElement.name}</div>
+                  <LearningElementTile
+                    learningElement={learningElement}
+                    key={learningElement.id}
+                  />
                 ))}
               </div>
             ) : (
@@ -100,7 +105,10 @@ function CourseOverviewPage() {
             dataCourse.course.microSessions.length > 0 ? (
               <div className="flex flex-row gap-2 overflow-x-scroll">
                 {dataCourse?.course?.microSessions.map((microSession) => (
-                  <div key={microSession.id}>{microSession.name}</div>
+                  <MicroSessionTile
+                    microSession={microSession}
+                    key={microSession.id}
+                  />
                 ))}
               </div>
             ) : (

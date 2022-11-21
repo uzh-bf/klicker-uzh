@@ -1,14 +1,14 @@
 import Ellipsis from '@components/common/Ellipsis'
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowRight,
   faCalculator,
   faCheck,
-  faClock,
   faLock,
   faPlay,
   faTrophy,
+  faUpRightFromSquare,
   faUserGroup,
-  faUpRightFromSquare
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
@@ -66,7 +66,9 @@ function SessionTile({ session }: SessionTileProps) {
           <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
             <FontAwesomeIcon icon={faUpRightFromSquare} />
             <Link href={`/sessions/${session.id}/evaluation`} passHref>
-              <a target="_blank" rel="noopener noreferrer">Evaluation</a>
+              <a target="_blank" rel="noopener noreferrer">
+                Evaluation
+              </a>
             </Link>
           </div>
         )}
