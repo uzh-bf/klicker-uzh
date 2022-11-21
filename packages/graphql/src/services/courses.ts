@@ -348,3 +348,28 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
     (participation) => participation.course.learningElements
   )
 }
+
+export async function getCourseData(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const course = ctx.prisma.course.findUnique({
+    where: { id },
+  })
+
+  return course
+}
+
+export async function changeCourseDescription(
+  { courseId, input }: { courseId: string; input: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: { id: courseId },
+    data: {
+      description: input,
+    },
+  })
+
+  return course
+}

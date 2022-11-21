@@ -15,13 +15,6 @@ function CourseSelectionPage() {
     data: dataCourses,
   } = useQuery(GetUserCoursesDocument)
 
-  const testcourse = [
-    { id: 1, displayName: 'Testcourse', shortname: 'testcourse' },
-    { id: 2, displayName: 'Testcourse2', shortname: 'testcourse2' },
-    { id: 3, displayName: 'Testcourse3', shortname: 'testcourse3' },
-    { id: 4, displayName: 'Testcourse4', shortname: 'testcourse4' },
-  ]
-
   return (
     <Layout>
       <div className="flex items-center justify-center w-full">
@@ -33,7 +26,7 @@ function CourseSelectionPage() {
                 <Button
                   key={course.id}
                   className="p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100"
-                  onClick={() => router.push(`courses/${course.id}`)}
+                  onClick={() => router.push(`/courses/${course.id}`)}
                 >
                   <Button.Icon className="ml-1 mr-3">
                     <FontAwesomeIcon icon={faPeopleGroup} />

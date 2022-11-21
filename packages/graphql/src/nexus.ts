@@ -1060,6 +1060,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('course', {
+      type: Course,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return CourseService.getCourseData(args, ctx)
+      },
+    })
+
     t.field('basicCourseInformation', {
       type: Course,
       args: {
@@ -1214,6 +1224,17 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('changeCourseDescription', {
+      type: Course,
+      args: {
+        courseId: nonNull(idArg()),
+        input: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.changeCourseDescription(args, ctx)
+      },
+    })
+
     t.field('updateParticipantProfile', {
       type: Participant,
       args: {

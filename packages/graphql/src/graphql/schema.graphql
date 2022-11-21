@@ -318,6 +318,7 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
+  changeCourseDescription(courseId: ID!, input: String!): Course
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
@@ -472,6 +473,7 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
+  course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails

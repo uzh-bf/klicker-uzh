@@ -68,7 +68,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 ? dataCourses.userCourses.map((course) => {
                     return {
                       label: course.displayName,
-                      onClick: () => router.push(`courses/${course.id}`),
+                      onClick: () => router.push(`/courses/${course.id}`),
                     }
                   })
                 : []

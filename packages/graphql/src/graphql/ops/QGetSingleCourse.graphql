@@ -1,0 +1,11 @@
+query GetSingleCourse($courseId: ID!) {
+  course(id: $courseId) {
+    id
+    isArchived
+    pinCode
+    name
+    displayName
+    description
+    color
+  }
+}

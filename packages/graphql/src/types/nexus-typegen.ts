@@ -745,6 +745,7 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     addConfusionTimestep: NexusGenRootTypes['ConfusionTimestep'] | null; // ConfusionTimestep
+    changeCourseDescription: NexusGenRootTypes['Course'] | null; // Course
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
@@ -867,6 +868,7 @@ export interface NexusGenFieldTypes {
   Query: { // field return type
     basicCourseInformation: NexusGenRootTypes['Course'] | null; // Course
     cockpitSession: NexusGenRootTypes['Session'] | null; // Session
+    course: NexusGenRootTypes['Course'] | null; // Course
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     groupActivityDetails: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
@@ -1223,6 +1225,7 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
     addConfusionTimestep: 'ConfusionTimestep'
+    changeCourseDescription: 'Course'
     changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
@@ -1345,6 +1348,7 @@ export interface NexusGenFieldTypeNames {
   Query: { // field return type name
     basicCourseInformation: 'Course'
     cockpitSession: 'Session'
+    course: 'Course'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
     groupActivityDetails: 'GroupActivityDetails'
@@ -1492,6 +1496,10 @@ export interface NexusGenArgTypes {
       difficulty: number; // Int!
       sessionId: string; // ID!
       speed: number; // Int!
+    }
+    changeCourseDescription: { // args
+      courseId: string; // ID!
+      input: string; // String!
     }
     changeSessionSettings: { // args
       id: string; // ID!
@@ -1665,6 +1673,9 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
     }
     cockpitSession: { // args
+      id: string; // ID!
+    }
+    course: { // args
       id: string; // ID!
     }
     feedbacks: { // args
