@@ -6,6 +6,8 @@ query GetUserSessions {
     accessMode
     status
     createdAt
+    numOfBlocks
+    numOfQuestions
     blocks {
       id
       instances {

@@ -3,9 +3,11 @@ import {
   GetUserSessionsDocument,
   Session as SessionType,
 } from '@klicker-uzh/graphql/dist/ops'
+import OldSession from '../../components/sessions/OldSession'
 import Session from '../../components/sessions/Session'
 
 import { useMemo } from 'react'
+import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 
 function SessionList() {
@@ -15,30 +17,29 @@ function SessionList() {
     data: dataSessions,
   } = useQuery(GetUserSessionsDocument)
 
-  const {
-    RUNNING: runningSessions,
-    SCHEDULED: scheduledSessions,
-    PREPARED: preparedSessions,
-    COMPLETED: completedSessions,
-  } = useMemo(
-    () =>
-      dataSessions?.userSessions?.reduce(
-        (
-          memo: { [x: string]: SessionType[] },
-          x: { [x: string]: string | number }
-        ) => {
-          memo[x['status']].push(x as SessionType)
-          return memo
-        },
-        {
-          RUNNING: new Array<SessionType>(),
-          SCHEDULED: new Array<SessionType>(),
-          PREPARED: new Array<SessionType>(),
-          COMPLETED: new Array<SessionType>(),
-        }
-      ) || { RUNNING: [], SCHEDULED: [], PREPARED: [], COMPLETED: [] },
-    [dataSessions]
-  )
+  const runningSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session.status === SESSION_STATUS.RUNNING
+    )
+  }, [dataSessions])
+
+  const scheduledSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.SCHEDULED
+    )
+  }, [dataSessions])
+
+  const preparedSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.PREPARED
+    )
+  }, [dataSessions])
+
+  const completedSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.COMPLETED
+    )
+  }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {
     return <div>Loading...</div>
@@ -48,21 +49,45 @@ function SessionList() {
     <Layout displayName="Sessions">
       <div className="">
         {runningSessions && runningSessions.length > 0 && (
+          <OldSession
+            sessionName="Laufende Sessionen"
+            sessionList={runningSessions as SessionType[]}
+          />
+        )}
+        {runningSessions && runningSessions.length > 0 && (
           <Session
             sessionName="Laufende Sessionen"
             sessionList={runningSessions as SessionType[]}
           />
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
-          <Session
+          <OldSession
             sessionName="Geplante Sessionen"
             sessionList={scheduledSessions as SessionType[]}
+          />
+        )}
+        {scheduledSessions && scheduledSessions.length > 0 && (
+          <OldSession
+            sessionName="Geplante Sessionen"
+            sessionList={scheduledSessions as SessionType[]}
+          />
+        )}
+        {preparedSessions && preparedSessions.length > 0 && (
+          <OldSession
+            sessionName="Vorbereitete Sessionen"
+            sessionList={preparedSessions as SessionType[]}
           />
         )}
         {preparedSessions && preparedSessions.length > 0 && (
           <Session
             sessionName="Vorbereitete Sessionen"
             sessionList={preparedSessions as SessionType[]}
+          />
+        )}
+        {completedSessions && completedSessions.length > 0 && (
+          <OldSession
+            sessionName="Abgeschlossene Sessionen"
+            sessionList={completedSessions as SessionType[]}
           />
         )}
         {completedSessions && completedSessions.length > 0 && (
