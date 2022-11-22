@@ -48,7 +48,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   return (
     <div
       key={microSession.id}
-      className="p-2 border border-solid rounded h-36 min-w-[18rem] max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
+      className="p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
     >
       <div>
         <div className="flex flex-row justify-between">

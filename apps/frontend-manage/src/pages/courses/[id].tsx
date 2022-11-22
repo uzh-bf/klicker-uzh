@@ -80,7 +80,7 @@ function CourseOverviewPage() {
             <H3>Sessionen</H3>
             {dataCourse?.course?.sessions &&
             dataCourse.course.sessions.length > 0 ? (
-              <div className="flex flex-row gap-2 overflow-x-scroll">
+              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
                 {dataCourse?.course?.sessions.map((session) => (
                   <SessionTile session={session} key={session.id} />
                 ))}
@@ -93,7 +93,7 @@ function CourseOverviewPage() {
             <H3>Lernelemente</H3>
             {dataCourse?.course?.learningElements &&
             dataCourse.course.learningElements.length > 0 ? (
-              <div className="flex flex-row gap-2 overflow-x-scroll">
+              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
                 {dataCourse?.course?.learningElements.map((learningElement) => (
                   <LearningElementTile
                     learningElement={learningElement}
@@ -109,7 +109,7 @@ function CourseOverviewPage() {
             <H3>Micro-Sessions</H3>
             {dataCourse?.course?.microSessions &&
             dataCourse.course.microSessions.length > 0 ? (
-              <div className="flex flex-row gap-2 overflow-x-scroll">
+              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
                 {dataCourse?.course?.microSessions.map((microSession) => (
                   <MicroSessionTile
                     microSession={microSession}
