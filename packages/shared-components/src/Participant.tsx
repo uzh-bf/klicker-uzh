@@ -81,7 +81,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
       ) : (
         <Button
           className="text-sm"
-          onClick={props.onJoinCourse ? () => props.onJoinCourse() : undefined}
+          onClick={props.onJoinCourse ? () => props.onJoinCourse!() : undefined}
         >
           Beitreten
         </Button>

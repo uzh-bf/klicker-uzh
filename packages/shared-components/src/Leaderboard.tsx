@@ -29,11 +29,29 @@ function Leaderboard({
   hidePodium,
   className,
 }: LeaderboardProps): React.ReactElement {
+  const { top10, inTop10, selfEntry } = leaderboard.slice(0, 10).reduce(
+    (acc, entry) => {
+      if (entry.participantId === participant?.id) {
+        return {
+          top10: [...acc.top10, entry],
+          inTop10: true,
+          selfEntry: entry,
+        }
+      }
+
+      return {
+        top10: [...acc.top10, entry],
+        inTop10: acc.inTop10,
+      }
+    },
+    { top10: [], inTop10: false, selfEntry: undefined }
+  )
+
   return (
     <div className={className?.root}>
       <div className="space-y-4">
         <div>
-          {!hidePodium && leaderboard?.length > 0 && (
+          {!hidePodium && (
             <Podium
               leaderboard={leaderboard?.slice(0, 3)}
               className={{
@@ -44,39 +62,37 @@ function Leaderboard({
           )}
         </div>
         <div className={twMerge('space-y-1', className?.list)}>
-          {leaderboard
-            ?.slice(0, 10)
-            .map((entry) =>
-              entry.isSelf === true && onLeave ? (
-                <ParticipantSelf
-                  key={entry.id}
-                  isActive={activeParticipation || true}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar ?? 'placeholder'}
-                  points={entry.score}
-                  rank={entry.rank}
-                  onJoinCourse={onJoin}
-                  onLeaveCourse={onLeave}
-                />
-              ) : (
-                <ParticipantOther
-                  key={entry.id}
-                  rank={entry.rank}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar ?? 'placeholder'}
-                  points={entry.score}
-                  className={className?.listItem}
-                />
-              )
-            )}
+          {top10.map((entry) =>
+            entry.isSelf === true && onLeave ? (
+              <ParticipantSelf
+                key={entry.id}
+                isActive={activeParticipation ?? true}
+                pseudonym={entry.username}
+                avatar={entry.avatar ?? 'placeholder'}
+                points={entry.score}
+                rank={entry.rank}
+                onJoinCourse={onJoin}
+                onLeaveCourse={onLeave}
+              />
+            ) : (
+              <ParticipantOther
+                key={entry.id}
+                rank={entry.rank}
+                pseudonym={entry.username}
+                avatar={entry.avatar ?? 'placeholder'}
+                points={entry.score}
+                className={className?.listItem}
+              />
+            )
+          )}
         </div>
-        {participant?.id && !activeParticipation && onJoin && onLeave && (
+        {participant?.id && onJoin && onLeave && !inTop10 && (
           <ParticipantSelf
-            isActive={activeParticipation || false}
+            isActive={activeParticipation ?? false}
             pseudonym={participant.username}
             avatar={participant.avatar ?? 'placeholder'}
-            points={participant.score}
-            rank="?"
+            points={selfEntry?.score}
+            rank={selfEntry?.rank ?? '?'}
             onJoinCourse={onJoin}
             onLeaveCourse={onLeave}
           />

@@ -3,7 +3,7 @@ import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { Button, H2, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
@@ -42,10 +42,7 @@ function CourseOverviewPage() {
     <Layout>
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
-          <H2>Kurs: {dataCourse?.course?.name}</H2>
-          <div>
-            Anzahl Teilnehmer: {dataCourse?.course?.numOfParticipants || 0}
-          </div>
+          <H1>Kurs: {dataCourse?.course?.name}</H1>
         </div>
         {dataCourse?.course?.description ? (
           descriptionEditMode ? (

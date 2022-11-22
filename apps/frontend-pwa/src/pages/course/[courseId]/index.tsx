@@ -19,6 +19,7 @@ import Tabs from '../../../components/Tabs'
 
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Markdown from '@klicker-uzh/markdown'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -97,6 +98,12 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global" className="md:px-4">
+            {course.description && (
+              <div className="p-4 mb-4 border rounded bg-slate-100">
+                <Markdown content={course.description} />
+              </div>
+            )}
+
             <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
