@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
 import { Podium } from './Podium'
@@ -29,22 +29,26 @@ function Leaderboard({
   hidePodium,
   className,
 }: LeaderboardProps): React.ReactElement {
-  const { top10, inTop10, selfEntry } = leaderboard.slice(0, 10).reduce(
-    (acc, entry) => {
-      if (entry.participantId === participant?.id) {
-        return {
-          top10: [...acc.top10, entry],
-          inTop10: true,
-          selfEntry: entry,
-        }
-      }
+  const { top10, inTop10, selfEntry } = useMemo(
+    () =>
+      leaderboard.slice(0, 10).reduce(
+        (acc, entry) => {
+          if (entry.participantId === participant?.id) {
+            return {
+              top10: [...acc.top10, entry],
+              inTop10: true,
+              selfEntry: entry,
+            }
+          }
 
-      return {
-        top10: [...acc.top10, entry],
-        inTop10: acc.inTop10,
-      }
-    },
-    { top10: [], inTop10: false, selfEntry: undefined }
+          return {
+            top10: [...acc.top10, entry],
+            inTop10: acc.inTop10,
+          }
+        },
+        { top10: [], inTop10: false, selfEntry: undefined }
+      ),
+    [leaderboard, participant]
   )
 
   return (
