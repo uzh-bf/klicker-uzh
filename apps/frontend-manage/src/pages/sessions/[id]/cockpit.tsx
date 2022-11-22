@@ -6,6 +6,7 @@ import {
   EndSessionDocument,
   Feedback,
   GetCockpitSessionDocument,
+  GetRunningSessionsDocument,
   LecturerSession,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
@@ -21,7 +22,13 @@ function Cockpit() {
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
-  const [endSession] = useMutation(EndSessionDocument)
+  const [endSession] = useMutation(EndSessionDocument, {
+    refetchQueries: [
+      {
+        query: GetRunningSessionsDocument,
+      },
+    ],
+  })
 
   // TODO: add toast notifications - this react library react-toast-notifications is outdated and will not work with react 18
   // const { addToast } = useToasts()

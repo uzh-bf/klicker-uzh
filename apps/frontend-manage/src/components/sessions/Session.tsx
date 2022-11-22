@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faCalendarDays, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  GetRunningSessionsDocument,
   QuestionInstance,
   Session as SessionType,
   SessionBlock,
@@ -73,7 +74,14 @@ function Session({
                 <Button
                   className="px-2 mt-1 text-sm h-9 border-uzh-grey-80"
                   onClick={async () => {
-                    await startSession({ variables: { id: session.id } })
+                    await startSession({
+                      variables: { id: session.id },
+                      refetchQueries: [
+                        {
+                          query: GetRunningSessionsDocument,
+                        },
+                      ],
+                    })
                     router.push(`sessions/${session.id}/cockpit`)
                   }}
                 >

@@ -3,7 +3,6 @@ import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetRunningSessionsDocument,
-  GetUserCoursesDocument,
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -20,12 +19,6 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const [logoutUser] = useMutation(LogoutUserDocument)
-
-  const {
-    loading: loadingCourses,
-    error: errorCourses,
-    data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
 
   const userDropdownContent = [
     { name: 'Settings', onClick: () => router.push('/settings') },
@@ -69,18 +62,20 @@ function Header({ user }: HeaderProps): React.ReactElement {
       </div>
       <div className="flex flex-row gap-4">
         <Dropdown
-          disabled={
-            !data?.runningSessions || data?.runningSessions.length === 0
-          }
           trigger={
-            <div
+            <Button
+              disabled={
+                !data?.runningSessions || data.runningSessions.length === 0
+              }
               className={twMerge(
-                'flex flex-row items-center justify-center p-2 text-green-600 border-none',
-                'rounded bg-slate-800 hover:text-uzh-blue-100 hover:bg-uzh-blue-40 h-9 w-9'
+                'flex flex-row items-center justify-center p-2 border-none',
+                'rounded bg-slate-800 h-9 w-9',
+                data?.runningSessions?.length > 0 &&
+                  'text-green-600 hover:text-uzh-blue-100 hover:bg-uzh-blue-40'
               )}
             >
               <FontAwesomeIcon icon={faPlayCircle} className="h-7" />
-            </div>
+            </Button>
           }
           items={
             data?.runningSessions && data?.runningSessions.length > 0
