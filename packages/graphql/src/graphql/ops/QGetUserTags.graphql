@@ -1,0 +1,6 @@
+query GetUserTags {
+  userTags {
+    id
+    name
+  }
+}

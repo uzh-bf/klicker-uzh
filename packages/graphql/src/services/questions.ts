@@ -217,3 +217,20 @@ export async function deleteQuestion(
 
   return question
 }
+
+export async function getUserTags(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      tags: true,
+    },
+  })
+
+  if (!user) {
+    return []
+  }
+
+  return user.tags
+}

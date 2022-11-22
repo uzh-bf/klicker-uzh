@@ -1030,6 +1030,13 @@ export const Query = objectType({
       },
     })
 
+    t.list.nonNull.field('userTags', {
+      type: Tag,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return QuestionService.getUserTags(ctx)
+      },
+    })
+
     t.field('learningElement', {
       type: LearningElement,
       args: {
