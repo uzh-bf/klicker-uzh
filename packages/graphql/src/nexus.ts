@@ -463,6 +463,7 @@ export const Course = objectType({
     t.string('description')
 
     t.int('pinCode')
+    t.int('numOfParticipants')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -601,6 +602,7 @@ export const Participation = objectType({
       type: PublicSubscriptionData,
     })
     t.list.string('completedMicroSessions')
+    t.field('participant', { type: Participant })
   },
 })
 

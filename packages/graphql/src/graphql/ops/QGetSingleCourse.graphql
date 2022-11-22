@@ -7,6 +7,7 @@ query GetSingleCourse($courseId: ID!) {
     displayName
     description
     color
+    numOfParticipants
     sessions {
       id
       name
@@ -44,9 +45,9 @@ query GetSingleCourse($courseId: ID!) {
     leaderboard {
       id
       score
-      participation {
-        isActive
-      }
+      rank
+      username
+      avatar
     }
   }
 }

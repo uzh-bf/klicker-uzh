@@ -198,6 +198,7 @@ export interface NexusGenObjects {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    numOfParticipants?: number | null; // Int
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     pinCode?: number | null; // Int
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
@@ -407,6 +408,7 @@ export interface NexusGenObjects {
     course?: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
+    participant?: NexusGenRootTypes['Participant'] | null; // Participant
     subscriptions?: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
   }
   PublicSubscriptionData: { // root type
@@ -606,6 +608,7 @@ export interface NexusGenFieldTypes {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    numOfParticipants: number | null; // Int
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     pinCode: number | null; // Int
     sessions: NexusGenRootTypes['Session'][]; // [Session!]!
@@ -857,6 +860,7 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     id: number; // Int!
     isActive: boolean; // Boolean!
+    participant: NexusGenRootTypes['Participant'] | null; // Participant
     subscriptions: NexusGenRootTypes['PublicSubscriptionData'][] | null; // [PublicSubscriptionData!]
   }
   PublicSubscriptionData: { // field return type
@@ -1089,6 +1093,7 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
+    numOfParticipants: 'Int'
     participantGroups: 'ParticipantGroup'
     pinCode: 'Int'
     sessions: 'Session'
@@ -1340,6 +1345,7 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     id: 'Int'
     isActive: 'Boolean'
+    participant: 'Participant'
     subscriptions: 'PublicSubscriptionData'
   }
   PublicSubscriptionData: { // field return type name

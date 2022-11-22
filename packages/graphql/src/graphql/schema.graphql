@@ -135,6 +135,7 @@ type Course {
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  numOfParticipants: Int
   participantGroups: [ParticipantGroup]!
   pinCode: Int
   sessions: [Session!]!
@@ -456,6 +457,7 @@ type Participation {
   course: Course
   id: Int!
   isActive: Boolean!
+  participant: Participant
   subscriptions: [PublicSubscriptionData!]
 }
 

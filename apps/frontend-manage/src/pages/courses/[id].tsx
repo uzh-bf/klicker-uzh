@@ -6,6 +6,7 @@ import Markdown from '@klicker-uzh/markdown'
 import { Button, H2, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import Leaderboard from 'shared-components/src/Leaderboard'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSession'
@@ -24,15 +25,6 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
   })
 
-  const publicLeaderboardEntries = dataCourse?.course?.leaderboard?.filter(
-    (entry) => entry?.participation?.isActive || false
-  )
-
-  // TODO: use these leaderboard entries in the course leaderboard on the lecturer course page
-  console.log(publicLeaderboardEntries)
-
-  console.log(dataCourse)
-
   if (loadingCourse) return <div>Loading...</div>
   if ((!dataCourse && !loadingCourse) || errorCourse) {
     router.push('/404')
@@ -44,7 +36,7 @@ function CourseOverviewPage() {
         <div className="flex flex-row items-center justify-between">
           <H2>Kurs: {dataCourse?.course?.name}</H2>
           <div>
-            Anzahl Teilnehmer: {dataCourse?.course?.leaderboard?.length || 0}
+            Anzahl Teilnehmer: {dataCourse?.course?.numOfParticipants || 0}
           </div>
         </div>
         {dataCourse?.course?.description ? (
@@ -81,7 +73,7 @@ function CourseOverviewPage() {
         )}
       </div>
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-3/4 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
+        <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
           <div className="mb-4">
             <H3>Sessionen</H3>
             {dataCourse?.course?.sessions &&
@@ -128,8 +120,9 @@ function CourseOverviewPage() {
             )}
           </div>
         </div>
-        <div className="w-full md:w-1/4 md:pl-2">
+        <div className="w-full md:w-1/3 md:pl-2">
           <H3>Kurs Leaderboard</H3>
+          <Leaderboard leaderboard={dataCourse?.course?.leaderboard || []} />
         </div>
       </div>
     </Layout>

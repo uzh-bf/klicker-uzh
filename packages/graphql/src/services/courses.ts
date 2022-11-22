@@ -353,7 +353,7 @@ export async function getCourseData(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const course = ctx.prisma.course.findUnique({
+  const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
       sessions: {
@@ -377,16 +377,38 @@ export async function getCourseData(
       },
       leaderboard: {
         include: {
-          participation: true,
+          participation: {
+            include: {
+              participant: true,
+            },
+          },
+        },
+        orderBy: {
+          score: 'desc',
         },
       },
     },
   })
 
+  const leaderboard = course?.leaderboard
+    .filter((entry) => entry.participation?.isActive)
+    .slice(0, 10)
+    .map((entry, ix) => ({
+      id: entry?.id,
+      score: entry?.score,
+      rank: ix + 1,
+      username: entry.participation?.participant.username,
+      avatar: entry.participation?.participant.avatar,
+    }))
+
   // TODO: pick only required data from blocks - e.g. only id if number is the only interesting thing
   // TODO: order sessions, etc. such that not yet executed sessions are first and then ordered by creation date
 
-  return course
+  return {
+    ...course,
+    numOfParticipants: course?.leaderboard.length,
+    leaderboard: leaderboard,
+  }
 }
 
 export async function changeCourseDescription(
