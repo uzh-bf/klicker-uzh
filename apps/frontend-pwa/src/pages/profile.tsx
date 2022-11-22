@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import {
   LogoutParticipantDocument,
   SelfDocument,
@@ -7,6 +6,7 @@ import {
 import { Button, H1 } from '@uzh-bf/design-system'
 import Image from 'next/future/image'
 import Router from 'next/router'
+import Layout from '../components/Layout'
 
 const Profile = () => {
   const { data, loading } = useQuery(SelfDocument)

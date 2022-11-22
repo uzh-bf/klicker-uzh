@@ -131,9 +131,11 @@ type Course {
   displayName: String!
   id: ID!
   isArchived: Boolean
+  leaderboard: [LeaderboardEntry]
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  numOfParticipants: Int
   participantGroups: [ParticipantGroup]!
   pinCode: Int
   sessions: [Session!]!
@@ -285,6 +287,7 @@ type LeaderboardEntry {
   isSelf: Boolean
   lastBlockOrder: Int
   participantId: ID!
+  participation: Participation
   rank: Int!
   score: Float!
   username: String!
@@ -300,8 +303,9 @@ type LearningElement {
   courseId: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
+  numOfInstances: Int
 }
 
 type MicroSession {
@@ -309,8 +313,9 @@ type MicroSession {
   description: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
+  numOfInstances: Int
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
 }
@@ -318,6 +323,7 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
+  changeCourseDescription(courseId: ID!, input: String!): Course
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
@@ -453,6 +459,7 @@ type Participation {
   course: Course
   id: Int!
   isActive: Boolean!
+  participant: Participant
   subscriptions: [PublicSubscriptionData!]
 }
 
@@ -472,6 +479,7 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
+  course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
@@ -563,6 +571,9 @@ type Session {
   linkTo: String
   name: String!
   namespace: String!
+  numOfBlocks: Int
+  numOfQuestions: Int
+  pinCode: Int
   startedAt: DateTime
   status: SessionStatus!
 }

@@ -348,3 +348,146 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
     (participation) => participation.course.learningElements
   )
 }
+
+export async function getCourseData(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      sessions: {
+        include: {
+          blocks: {
+            include: {
+              _count: {
+                select: { instances: true },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      learningElements: {
+        include: {
+          _count: {
+            select: { instances: true },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+      microSessions: {
+        include: {
+          _count: {
+            select: { instances: true },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      leaderboard: {
+        include: {
+          participation: {
+            include: {
+              participant: true,
+            },
+          },
+        },
+        orderBy: {
+          score: 'desc',
+        },
+      },
+    },
+  })
+
+  const leaderboard = course?.leaderboard
+    .filter((entry) => entry.participation?.isActive)
+    .map((entry, ix) => ({
+      id: entry?.id,
+      score: entry?.score,
+      rank: ix + 1,
+      username: entry.participation?.participant.username,
+      avatar: entry.participation?.participant.avatar,
+    }))
+
+  const reducedSessions = course?.sessions
+    .map((session) => {
+      return {
+        ...session,
+        numOfBlocks: session.blocks.length,
+        numOfQuestions: session.blocks.reduce(
+          (acc, block) => acc + block._count.instances,
+          0
+        ),
+      }
+    })
+    .map(
+      R.pick([
+        'id',
+        'name',
+        'displayName',
+        'pinCode',
+        'status',
+        'createdAt',
+        'isGamificationEnabled',
+        'accessMode',
+        'numOfBlocks',
+        'numOfQuestions',
+      ])
+    )
+
+  const reducedLearningElements = course?.learningElements
+    .map((learningElement) => {
+      return {
+        ...learningElement,
+        numOfInstances: learningElement._count.instances,
+      }
+    })
+    .map(R.pick(['id', 'name', 'displayName', 'numOfInstances']))
+
+  const reducedMicroSessions = course?.microSessions
+    .map((microSession) => {
+      return {
+        ...microSession,
+        numOfInstances: microSession._count.instances,
+      }
+    })
+    .map(
+      R.pick([
+        'id',
+        'name',
+        'displayName',
+        'scheduledStartAt',
+        'scheduledEndAt',
+        'numOfInstances',
+      ])
+    )
+
+  return {
+    ...course,
+    sessions: reducedSessions,
+    learningElements: reducedLearningElements,
+    microSessions: reducedMicroSessions,
+    numOfParticipants: course?.leaderboard.length,
+    leaderboard: leaderboard,
+  }
+}
+
+export async function changeCourseDescription(
+  { courseId, input }: { courseId: string; input: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: { id: courseId },
+    data: {
+      description: input,
+    },
+  })
+
+  return course
+}

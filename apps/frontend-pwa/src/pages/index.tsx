@@ -1,7 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import CourseElement from '@components/CourseElement'
-import Layout from '@components/Layout'
-import SurveyPromotion from '@components/SurveyPromotion'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -22,6 +19,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CourseElement from '../components/CourseElement'
+import Layout from '../components/Layout'
+import SurveyPromotion from '../components/SurveyPromotion'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,

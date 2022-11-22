@@ -463,6 +463,7 @@ export const Course = objectType({
     t.string('description')
 
     t.int('pinCode')
+    t.int('numOfParticipants')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,
@@ -482,6 +483,8 @@ export const Course = objectType({
       type: AwardEntry,
     })
 
+    t.list.field('leaderboard', { type: LeaderboardEntry })
+
     t.date('createdAt')
     t.date('updatedAt')
   },
@@ -495,7 +498,7 @@ export const LearningElement = objectType({
     t.nonNull.string('name')
     t.nonNull.string('displayName')
 
-    t.nonNull.list.nonNull.field('instances', {
+    t.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
 
@@ -503,6 +506,8 @@ export const LearningElement = objectType({
     t.field('course', {
       type: Course,
     })
+
+    t.int('numOfInstances')
   },
 })
 
@@ -518,13 +523,15 @@ export const MicroSession = objectType({
     t.nonNull.date('scheduledStartAt')
     t.nonNull.date('scheduledEndAt')
 
-    t.nonNull.list.nonNull.field('instances', {
+    t.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
 
     t.nonNull.field('course', {
       type: Course,
     })
+
+    t.int('numOfInstances')
   },
 })
 
@@ -599,6 +606,7 @@ export const Participation = objectType({
       type: PublicSubscriptionData,
     })
     t.list.string('completedMicroSessions')
+    t.field('participant', { type: Participant })
   },
 })
 
@@ -615,6 +623,10 @@ export const LeaderboardEntry = objectType({
     t.nonNull.int('rank')
 
     t.boolean('isSelf')
+
+    t.field('participation', {
+      type: Participation,
+    })
 
     t.int('lastBlockOrder')
   },
@@ -787,6 +799,10 @@ export const Session = objectType({
     t.nonNull.string('name')
     t.nonNull.string('displayName')
     t.string('linkTo')
+    t.int('pinCode')
+
+    t.int('numOfBlocks')
+    t.int('numOfQuestions')
 
     t.nonNull.field('status', {
       type: SessionStatus,
@@ -1067,6 +1083,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('course', {
+      type: Course,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return CourseService.getCourseData(args, ctx)
+      },
+    })
+
     t.field('basicCourseInformation', {
       type: Course,
       args: {
@@ -1221,6 +1247,17 @@ export const Query = objectType({
 export const Mutation = objectType({
   name: 'Mutation',
   definition(t) {
+    t.field('changeCourseDescription', {
+      type: Course,
+      args: {
+        courseId: nonNull(idArg()),
+        input: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.changeCourseDescription(args, ctx)
+      },
+    })
+
     t.field('updateParticipantProfile', {
       type: Participant,
       args: {

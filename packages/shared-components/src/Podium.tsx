@@ -1,9 +1,19 @@
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from './Participant'
 
-function SinglePodium({ username, avatar, score, className }) {
+function SinglePodium({
+  username,
+  avatar,
+  score,
+  className,
+}: {
+  username?: string
+  avatar?: string
+  score?: number
+  className?: string
+}): React.ReactElement {
   return (
     <div
       className={twMerge(
@@ -33,9 +43,9 @@ export function Podium({ leaderboard, className }: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
     return {
-      rank1: leaderboard.length >= 1 && leaderboard[0],
-      rank2: leaderboard.length >= 2 && leaderboard[1],
-      rank3: leaderboard.length >= 3 && leaderboard[2],
+      rank1: leaderboard.length >= 1 ? leaderboard[0] : undefined,
+      rank2: leaderboard.length >= 2 ? leaderboard[1] : undefined,
+      rank3: leaderboard.length >= 3 ? leaderboard[2] : undefined,
     }
   }, [leaderboard])
 
@@ -44,21 +54,21 @@ export function Podium({ leaderboard, className }: PodiumProps) {
       <SinglePodium
         className={twMerge('order-2 h-[70px] md:order-1', className?.single)}
         username={rank2?.username}
-        avatar={rank2?.avatar}
+        avatar={rank2?.avatar as string}
         score={rank2?.score}
       />
 
       <SinglePodium
         className={twMerge('order-1 h-[80px] md:order-2', className?.single)}
         username={rank1?.username}
-        avatar={rank1?.avatar}
+        avatar={rank1?.avatar as string}
         score={rank1?.score}
       />
 
       <SinglePodium
         className={twMerge('order-3 h-[60px]', className?.single)}
         username={rank3?.username}
-        avatar={rank3?.avatar}
+        avatar={rank3?.avatar as string}
         score={rank3?.score}
       />
     </div>

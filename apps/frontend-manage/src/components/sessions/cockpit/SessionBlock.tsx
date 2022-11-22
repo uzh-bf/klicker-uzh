@@ -1,4 +1,3 @@
-import Ellipsis from '@components/common/Ellipsis'
 import { faCalendar, faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -10,6 +9,7 @@ import { Countdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../../common/Ellipsis'
 
 interface SessionBlockProps {
   className?: string

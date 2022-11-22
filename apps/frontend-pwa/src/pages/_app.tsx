@@ -1,10 +1,10 @@
 import { ApolloProvider } from '@apollo/client'
-import ErrorBoundary from '@components/ErrorBoundary'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { useApollo } from '@lib/apollo'
 import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
+import ErrorBoundary from '../components/ErrorBoundary'
 config.autoAddCss = false
 
 import '../globals.css'

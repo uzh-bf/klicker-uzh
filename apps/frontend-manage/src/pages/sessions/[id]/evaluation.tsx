@@ -1,8 +1,4 @@
 import { useQuery } from '@apollo/client'
-import Ellipsis from '@components/common/Ellipsis'
-import Statistic from '@components/evaluation/Statistic'
-import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
-import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faArrowLeft,
   faArrowRight,
@@ -35,10 +31,14 @@ import {
   CHART_COLORS,
   STATISTICS_ORDER,
 } from 'shared-components/src/constants'
-import SessionLeaderboard from 'shared-components/src/SessionLeaderboard'
+import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../../../components/common/Ellipsis'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
+import Statistic from '../../../components/evaluation/Statistic'
+import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
+import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
@@ -625,7 +625,7 @@ function Evaluation() {
             <div className="max-w-5xl mx-auto text-xl">
               {data.sessionLeaderboard && data.sessionLeaderboard.length > 0 ? (
                 <div className="mt-6">
-                  <SessionLeaderboard
+                  <Leaderboard
                     leaderboard={data.sessionLeaderboard}
                     className={{ podiumSingle: 'text-lg', listItem: 'text-lg' }}
                   />
