@@ -19,9 +19,7 @@ interface SessionTileProps {
 }
 
 function SessionTile({ session }: SessionTileProps) {
-  const numOfQuestions = session.blocks?.reduce((acc, block) => {
-    return acc + block.instances?.length
-  }, 0)
+  
 
   const statusMap = {
     PREPARED: <FontAwesomeIcon icon={faClock} />,
@@ -43,7 +41,7 @@ function SessionTile({ session }: SessionTileProps) {
           <div>{statusMap[session.status || 'PREPARED']}</div>
         </div>
         <div className="mb-1 italic">
-          {session.blocks?.length || '0'} Blöcke, {numOfQuestions || '0'} Fragen
+          {session.numOfBlocks || '0'} Blöcke, {session.numOfQuestions || '0'} Fragen
         </div>
         {/* // TODO: link to session editing for scheduled / prepared sessions */}
         {/* {(session.status === 'SCHEDULED' || session.status === 'PREPARED') && (
@@ -74,10 +72,10 @@ function SessionTile({ session }: SessionTileProps) {
         )}
       </div>
       <div className="flex flex-row gap-2 ">
-        <div className="py-0.5 px-1 text-sm rounded bg-uzh-red-40 flex flex-row items-center gap-1">
+        {session.isGamificationEnabled && <div className="py-0.5 px-1 text-sm rounded bg-uzh-red-40 flex flex-row items-center gap-1">
           <div>Gamified</div>
           <FontAwesomeIcon icon={faTrophy} />
-        </div>
+        </div>}
         {session.accessMode === 'PUBLIC' && (
           <div className="py-0.5 px-1 text-sm rounded bg-green-300 flex flex-row items-center gap-1">
             <div>Access Public</div>

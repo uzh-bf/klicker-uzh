@@ -20,7 +20,7 @@ function LearningElementTile({ learningElement }: LearningElementTileProps) {
           {/* <div>{statusMap[learningElement.status || 'PREPARED']}</div> */}
         </div>
         <div className="mb-1 italic">
-          {learningElement.instances?.length || '0'} Fragen
+          {learningElement.numOfInstances || '0'} Fragen
         </div>
 
         {/* // TODO: learning element editing */}

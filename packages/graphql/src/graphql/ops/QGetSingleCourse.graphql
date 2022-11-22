@@ -8,6 +8,7 @@ query GetSingleCourse($courseId: ID!) {
     description
     color
     numOfParticipants
+    
     sessions {
       id
       name
@@ -17,20 +18,14 @@ query GetSingleCourse($courseId: ID!) {
       accessMode
       status
       createdAt
-      blocks {
-        id
-        instances {
-          id
-        }
-      }
+      numOfBlocks
+      numOfQuestions
     }
     learningElements {
       id
       name
       displayName
-      instances {
-        id
-      }
+      numOfInstances
     }
     microSessions {
       id
@@ -38,9 +33,7 @@ query GetSingleCourse($courseId: ID!) {
       displayName
       scheduledStartAt
       scheduledEndAt
-      instances {
-        id
-      }
+      numOfInstances
     }
     leaderboard {
       id

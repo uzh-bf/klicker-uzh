@@ -30,6 +30,8 @@ function CourseOverviewPage() {
     router.push('/404')
   }
 
+  console.log(dataCourse?.course)
+
   return (
     <Layout>
       <div className="w-full mb-4">

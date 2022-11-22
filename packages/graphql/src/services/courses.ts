@@ -360,19 +360,25 @@ export async function getCourseData(
         include: {
           blocks: {
             include: {
-              instances: true,
+              _count: {
+                select: { instances: true },
+              },
             },
           },
         },
       },
       learningElements: {
         include: {
-          instances: true,
+          _count: {
+            select: { instances: true },
+          },
         },
       },
       microSessions: {
         include: {
-          instances: true,
+          _count: {
+            select: { instances: true },
+          },
         },
       },
       leaderboard: {
@@ -392,7 +398,6 @@ export async function getCourseData(
 
   const leaderboard = course?.leaderboard
     .filter((entry) => entry.participation?.isActive)
-    .slice(0, 10)
     .map((entry, ix) => ({
       id: entry?.id,
       score: entry?.score,
@@ -401,11 +406,66 @@ export async function getCourseData(
       avatar: entry.participation?.participant.avatar,
     }))
 
-  // TODO: pick only required data from blocks - e.g. only id if number is the only interesting thing
+  const reducedSessions = course?.sessions
+    .map((session) => {
+      return {
+        ...session,
+        numOfBlocks: session.blocks.length,
+        numOfQuestions: session.blocks.reduce(
+          (acc, block) => acc + block._count.instances,
+          0
+        ),
+      }
+    })
+    .map(
+      R.pick([
+        'id',
+        'name',
+        'displayName',
+        'pinCode',
+        'status',
+        'createdAt',
+        'isGamificationEnabled',
+        'accessMode',
+        'numOfBlocks',
+        'numOfQuestions',
+      ])
+    )
+
+  const reducedLearningElements = course?.learningElements
+    .map((learningElement) => {
+      return {
+        ...learningElement,
+        numOfInstances: learningElement._count.instances,
+      }
+    })
+    .map(R.pick(['id', 'name', 'displayName', 'numOfInstances']))
+
+  const reducedMicroSessions = course?.microSessions
+    .map((microSession) => {
+      return {
+        ...microSession,
+        numOfInstances: microSession._count.instances,
+      }
+    })
+    .map(
+      R.pick([
+        'id',
+        'name',
+        'displayName',
+        'scheduledStartAt',
+        'scheduledEndAt',
+        'numOfInstances',
+      ])
+    )
+
   // TODO: order sessions, etc. such that not yet executed sessions are first and then ordered by creation date
 
   return {
     ...course,
+    sessions: reducedSessions,
+    learningElements: reducedLearningElements,
+    microSessions: reducedMicroSessions,
     numOfParticipants: course?.leaderboard.length,
     leaderboard: leaderboard,
   }

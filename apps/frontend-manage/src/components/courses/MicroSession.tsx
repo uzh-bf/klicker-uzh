@@ -59,7 +59,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           {statusIcon}
         </div>
         <div className="mb-1 italic">
-          {microSession.instances?.length || '0'} Fragen
+          {microSession.numOfInstances || '0'} Fragen
         </div>
         <div className="flex flex-row items-center gap-2">
           <FontAwesomeIcon icon={faHourglassStart} />

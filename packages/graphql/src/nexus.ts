@@ -498,7 +498,7 @@ export const LearningElement = objectType({
     t.nonNull.string('name')
     t.nonNull.string('displayName')
 
-    t.nonNull.list.nonNull.field('instances', {
+    t.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
 
@@ -506,6 +506,8 @@ export const LearningElement = objectType({
     t.field('course', {
       type: Course,
     })
+
+    t.int('numOfInstances')
   },
 })
 
@@ -521,13 +523,15 @@ export const MicroSession = objectType({
     t.nonNull.date('scheduledStartAt')
     t.nonNull.date('scheduledEndAt')
 
-    t.nonNull.list.nonNull.field('instances', {
+    t.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
 
     t.nonNull.field('course', {
       type: Course,
     })
+
+    t.int('numOfInstances')
   },
 })
 
@@ -796,6 +800,9 @@ export const Session = objectType({
     t.nonNull.string('displayName')
     t.string('linkTo')
     t.int('pinCode')
+
+    t.int('numOfBlocks')
+    t.int('numOfQuestions')
 
     t.nonNull.field('status', {
       type: SessionStatus,

@@ -303,8 +303,9 @@ type LearningElement {
   courseId: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
+  numOfInstances: Int
 }
 
 type MicroSession {
@@ -312,8 +313,9 @@ type MicroSession {
   description: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
+  numOfInstances: Int
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
 }
@@ -568,6 +570,8 @@ type Session {
   linkTo: String
   name: String!
   namespace: String!
+  numOfBlocks: Int
+  numOfQuestions: Int
   pinCode: Int
   startedAt: DateTime
   status: SessionStatus!

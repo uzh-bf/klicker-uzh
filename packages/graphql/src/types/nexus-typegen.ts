@@ -327,16 +327,18 @@ export interface NexusGenObjects {
     courseId?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
-    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    instances?: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
+    numOfInstances?: number | null; // Int
   }
   MicroSession: { // root type
     course: NexusGenRootTypes['Course']; // Course!
     description?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
-    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    instances?: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
+    numOfInstances?: number | null; // Int
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -467,6 +469,8 @@ export interface NexusGenObjects {
     linkTo?: string | null; // String
     name: string; // String!
     namespace: string; // String!
+    numOfBlocks?: number | null; // Int
+    numOfQuestions?: number | null; // Int
     pinCode?: number | null; // Int
     startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -737,16 +741,18 @@ export interface NexusGenFieldTypes {
     courseId: string | null; // String
     displayName: string; // String!
     id: string; // ID!
-    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    instances: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
+    numOfInstances: number | null; // Int
   }
   MicroSession: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
     description: string | null; // String
     displayName: string; // String!
     id: string; // ID!
-    instances: NexusGenRootTypes['QuestionInstance'][]; // [QuestionInstance!]!
+    instances: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
+    numOfInstances: number | null; // Int
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -942,6 +948,8 @@ export interface NexusGenFieldTypes {
     linkTo: string | null; // String
     name: string; // String!
     namespace: string; // String!
+    numOfBlocks: number | null; // Int
+    numOfQuestions: number | null; // Int
     pinCode: number | null; // Int
     startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
@@ -1224,6 +1232,7 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     instances: 'QuestionInstance'
     name: 'String'
+    numOfInstances: 'Int'
   }
   MicroSession: { // field return type name
     course: 'Course'
@@ -1232,6 +1241,7 @@ export interface NexusGenFieldTypeNames {
     id: 'ID'
     instances: 'QuestionInstance'
     name: 'String'
+    numOfInstances: 'Int'
     scheduledEndAt: 'DateTime'
     scheduledStartAt: 'DateTime'
   }
@@ -1427,6 +1437,8 @@ export interface NexusGenFieldTypeNames {
     linkTo: 'String'
     name: 'String'
     namespace: 'String'
+    numOfBlocks: 'Int'
+    numOfQuestions: 'Int'
     pinCode: 'Int'
     startedAt: 'DateTime'
     status: 'SessionStatus'
