@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import {
   faCircleXmark,
   faRectangleList as faListRegular,
@@ -7,46 +8,33 @@ import {
   faTag,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Question } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 import { QUESTION_TYPES } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
-  data: Question[]
-  activeTags: any[]
+  activeTags: string[]
   activeType: string
-  handleReset: any
-  handleTagClick: any
-  // handleToggleArchive: any
-  // isArchiveActive?: boolean
+  handleReset: () => void
+  handleTagClick: (questionType: string, selected?: boolean) => void
 }
 
-const defaultProps = {
-  isArchiveActive: false,
-}
-
+// TODO: re-add archive toggle
 function TagList({
-  data,
   activeTags,
-  // isArchiveActive,
   activeType,
   handleTagClick,
   handleReset,
-}: // handleToggleArchive,
-Props): React.ReactElement {
-  //   const { data, loading, error } = useQuery(TagListQuery)
+}: Props): React.ReactElement {
+  const {
+    data: tagsData,
+    loading: tagsLoading,
+    error: tagsError,
+  } = useQuery(GetUserTagsDocument)
 
-  const tags = Array.from(
-    new Set(
-      data
-        .flatMap((question) => {
-          return question.tags
-        })
-        .map((tag) => tag.name)
-    )
-  )
+  const tags = tagsData?.userTags?.map((tag) => tag.name)
 
   return (
     <div className="h-full pb-2">
@@ -176,29 +164,27 @@ Props): React.ReactElement {
           </div>
 
           {((): React.ReactElement => {
-            // if (loading) {
-            //   return <div>Loading...</div>
-            // }
+            if (tagsLoading) {
+              return <div>Loading...</div>
+            }
 
-            // if (error) {
-            //   return (
-            //     <UserNotification
-            //       notificationType="error"
-            //       message={error.message}
-            //     />
-            //   )
-            // }
+            if (tagsError) {
+              return (
+                <UserNotification
+                  notificationType="error"
+                  message={tagsError.message}
+                />
+              )
+            }
 
-            // const { tags } = data
-
-            if (tags.length === 0) {
+            if (tags?.length === 0) {
               return <div>Keine Tags verfügbar</div>
             }
 
             return (
               <ul className="p-0 m-0 list-none">
-                {tags.map(
-                  (tag, index): React.ReactElement => (
+                {tags?.map(
+                  (tag: string, index: number): React.ReactElement => (
                     <li
                       className={twMerge(
                         '!px-4 !py-1 hover:text-uzh-blue-100 hover:cursor-pointer',
@@ -220,7 +206,5 @@ Props): React.ReactElement {
     </div>
   )
 }
-
-TagList.defaultProps = defaultProps
 
 export default TagList
