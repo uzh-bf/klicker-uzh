@@ -903,6 +903,7 @@ export interface NexusGenFieldTypes {
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
     userSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
+    userTags: NexusGenRootTypes['Tag'][] | null; // [Tag!]
   }
   Question: { // field return type
     attachments: NexusGenRootTypes['Attachment'][] | null; // [Attachment!]
@@ -1392,6 +1393,7 @@ export interface NexusGenFieldTypeNames {
     userProfile: 'User'
     userQuestions: 'Question'
     userSessions: 'Session'
+    userTags: 'Tag'
   }
   Question: { // field return type name
     attachments: 'Attachment'

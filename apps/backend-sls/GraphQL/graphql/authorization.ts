@@ -89,6 +89,7 @@ export const AuthSchema = {
     sessionEvaluation: { __authz: { rules: ['IsUserOrAdmin'] } },
     sessionLeaderboard: { __authz: { rules: ['IsParticipant'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
+    userTags: { __authz: { rules: ['IsUserOrAdmin'] } },
     userCourses: { __authz: { rules: ['IsUserOrAdmin'] } },
     userQuestions: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
