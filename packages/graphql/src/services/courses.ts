@@ -366,6 +366,9 @@ export async function getCourseData(
             },
           },
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       },
       learningElements: {
         include: {
@@ -458,8 +461,6 @@ export async function getCourseData(
         'numOfInstances',
       ])
     )
-
-  // TODO: order sessions, etc. such that not yet executed sessions are first and then ordered by creation date
 
   return {
     ...course,

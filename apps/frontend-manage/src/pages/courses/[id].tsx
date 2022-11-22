@@ -6,6 +6,7 @@ import Markdown from '@klicker-uzh/markdown'
 import { Button, H2, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
@@ -30,7 +31,12 @@ function CourseOverviewPage() {
     router.push('/404')
   }
 
-  console.log(dataCourse?.course)
+  const sortingOrderSessions: Record<string, number> = {
+    [SESSION_STATUS.RUNNING]: 0,
+    [SESSION_STATUS.SCHEDULED]: 1,
+    [SESSION_STATUS.PREPARED]: 2,
+    [SESSION_STATUS.COMPLETED]: 3,
+  }
 
   return (
     <Layout>
@@ -81,9 +87,16 @@ function CourseOverviewPage() {
             {dataCourse?.course?.sessions &&
             dataCourse.course.sessions.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {dataCourse?.course?.sessions.map((session) => (
-                  <SessionTile session={session} key={session.id} />
-                ))}
+                {dataCourse?.course?.sessions
+                  .sort((a, b) => {
+                    return (
+                      sortingOrderSessions[a.status] -
+                      sortingOrderSessions[b.status]
+                    )
+                  })
+                  .map((session) => (
+                    <SessionTile session={session} key={session.id} />
+                  ))}
               </div>
             ) : (
               <div>Keine Sessionen vorhanden</div>
