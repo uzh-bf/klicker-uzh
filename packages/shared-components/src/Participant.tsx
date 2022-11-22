@@ -1,6 +1,6 @@
 import { Button } from '@uzh-bf/design-system'
 import Image from 'next/future/image'
-import { PropsWithChildren } from 'react'
+import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ParticipantProps {

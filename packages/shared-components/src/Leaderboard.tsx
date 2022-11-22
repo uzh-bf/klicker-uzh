@@ -10,6 +10,7 @@ interface LeaderboardProps {
   onJoin?: () => void
   onLeave?: () => void
   participant?: any // TODO: typing
+  hidePodium?: boolean
   className?: {
     root?: string
     podium?: string
@@ -25,13 +26,14 @@ function Leaderboard({
   onJoin,
   onLeave,
   participant,
+  hidePodium,
   className,
 }: LeaderboardProps): React.ReactElement {
   return (
     <div className={className?.root}>
       <div className="space-y-4">
         <div>
-          {leaderboard?.length > 0 && (
+          {!hidePodium && leaderboard?.length > 0 && (
             <Podium
               leaderboard={leaderboard?.slice(0, 3)}
               className={{
@@ -45,11 +47,18 @@ function Leaderboard({
           {leaderboard
             ?.slice(0, 10)
             .map((entry) =>
-              !participant?.id ||
-              !activeParticipation ||
-              !onJoin ||
-              !onLeave ||
-              entry.participantId !== participant?.id ? (
+              entry.isSelf === true && onLeave ? (
+                <ParticipantSelf
+                  key={entry.id}
+                  isActive={activeParticipation || true}
+                  pseudonym={entry.username}
+                  avatar={entry.avatar ?? 'placeholder'}
+                  points={entry.score}
+                  rank={entry.rank}
+                  onJoinCourse={onJoin}
+                  onLeaveCourse={onLeave}
+                />
+              ) : (
                 <ParticipantOther
                   key={entry.id}
                   rank={entry.rank}
@@ -57,17 +66,6 @@ function Leaderboard({
                   avatar={entry.avatar ?? 'placeholder'}
                   points={entry.score}
                   className={className?.listItem}
-                />
-              ) : (
-                <ParticipantSelf
-                  key={entry.id}
-                  isActive={activeParticipation}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar ?? 'placeholder'}
-                  points={entry.score}
-                  rank={entry.rank}
-                  onJoinCourse={onJoin}
-                  onLeaveCourse={onLeave}
                 />
               )
             )}

@@ -92,7 +92,7 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : (
-              <div>Keine Live Sessions vorhanden</div>
+              <div>Keine Sessionen vorhanden</div>
             )}
           </div>
           <div className="mb-4">
@@ -124,7 +124,7 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : (
-              <div>Keine Micro-Learnings vorhanden</div>
+              <div>Keine Micro-Sessions vorhanden</div>
             )}
           </div>
         </div>

@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import GroupLeaderboard from '@components/GroupLeaderboard'
 import Layout from '@components/Layout'
 import {
   CreateParticipantGroupDocument,
@@ -149,12 +148,14 @@ function CourseOverview({ courseId }: any) {
                         geht&apos;s!
                       </div>
                     ))}
-                  {filteredGroupLeaderboard?.length === 0 && (
-                    <div>
-                      Bisher hat noch keine Gruppe Punkte erhalten. Los
-                      geht&apos;s!
-                    </div>
-                  )}
+                  {groupLeaderboard &&
+                    groupLeaderboard.length !== 0 &&
+                    filteredGroupLeaderboard?.length === 0 && (
+                      <div>
+                        Bisher hat noch keine Gruppe Punkte erhalten. Los
+                        geht&apos;s!
+                      </div>
+                    )}
 
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
@@ -240,10 +241,9 @@ function CourseOverview({ courseId }: any) {
 
                 <div className="flex flex-row flex-wrap gap-4">
                   <div className="flex flex-col flex-1">
-                    <GroupLeaderboard
-                      courseId={courseId}
-                      groupId={group.id}
+                    <Leaderboard
                       leaderboard={group.participants}
+                      participant={participant}
                       onLeave={() => {
                         leaveParticipantGroup({
                           variables: {
@@ -255,6 +255,7 @@ function CourseOverview({ courseId }: any) {
 
                         setSelectedTab('global')
                       }}
+                      hidePodium
                     />
 
                     <div className="self-end mt-6 text-sm w-60 text-slate-600">
