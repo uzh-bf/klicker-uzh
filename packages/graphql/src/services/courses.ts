@@ -376,12 +376,18 @@ export async function getCourseData(
             select: { instances: true },
           },
         },
+        orderBy: {
+          createdAt: 'asc',
+        },
       },
       microSessions: {
         include: {
           _count: {
             select: { instances: true },
           },
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
       },
       leaderboard: {
