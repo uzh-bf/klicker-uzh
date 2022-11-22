@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.103](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.102...v2.0.0-alpha.103) (2022-11-21)
+
+
+### Bug Fixes
+
+* quickfix to ensure that login buttons do not influence style on landing page ([d25acf7](https://github.com/uzh-bf/klicker-uzh/commit/d25acf7551f81f9c2aeaac9d1efe2cc3d795ef77))
+
+
+### Enhancements
+
+* finalize evaluation page ([#3057](https://github.com/uzh-bf/klicker-uzh/issues/3057)) ([220c012](https://github.com/uzh-bf/klicker-uzh/commit/220c0125ad93bedaf3bf28e1b6aef1c8791f6a9d))
+
+
+### Other
+
+* **docs:** add updates to development page and link to concept ([b2a96ef](https://github.com/uzh-bf/klicker-uzh/commit/b2a96ef90100180fe7e0c98d583750c5349f7236))
+* **docs:** ensure that sticky login and signup buttons are again shown on the entire landing page ([0f284c2](https://github.com/uzh-bf/klicker-uzh/commit/0f284c2eea3fd7490bbdda69722b3cd941d9f756))
+* prod release upgrade ([5b42d27](https://github.com/uzh-bf/klicker-uzh/commit/5b42d27b8eba335289a69c54fef7949bcc978575))
+* seed update ([bfa8417](https://github.com/uzh-bf/klicker-uzh/commit/bfa8417746b65b60d19305834d10cea348e16a65))
+
 ## [2.0.0-alpha.102](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.101...v2.0.0-alpha.102) (2022-11-11)
 
 
