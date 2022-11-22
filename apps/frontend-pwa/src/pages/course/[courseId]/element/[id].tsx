@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Footer from '@components/common/Footer'
-import EvaluationDisplay from '@components/EvaluationDisplay'
-import Layout from '@components/Layout'
-import OptionsDisplay from '@components/OptionsDisplay'
+import Footer from '../../../../components/common/Footer'
+import EvaluationDisplay from '../../../../components/EvaluationDisplay'
+import Layout from '../../../../components/Layout'
+import OptionsDisplay from '../../../../components/OptionsDisplay'
 import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,

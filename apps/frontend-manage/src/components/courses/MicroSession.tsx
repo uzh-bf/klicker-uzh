@@ -1,4 +1,3 @@
-import Ellipsis from '@components/common/Ellipsis'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
@@ -8,6 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
+import Ellipsis from '../common/Ellipsis'
 
 interface MicroSessionProps {
   microSession: Partial<MicroSession>

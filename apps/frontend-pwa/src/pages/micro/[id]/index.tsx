@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose } from '@uzh-bf/design-system'
@@ -7,6 +6,7 @@ import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
 import { default as NextImage } from 'next/future/image'
 import Link from 'next/link'
+import Layout from '../../../components/Layout'
 
 const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
   ssr: false,

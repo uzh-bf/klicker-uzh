@@ -1,4 +1,3 @@
-import Ellipsis from '@components/common/Ellipsis'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowRight,
@@ -13,6 +12,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
 import Link from 'next/link'
+import Ellipsis from '../common/Ellipsis'
 
 interface SessionTileProps {
   session: Partial<Session>

@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import {
   GetMicroSessionDocument,
   MarkMicroSessionCompletedDocument,
@@ -7,6 +6,7 @@ import {
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
+import Layout from '../../../components/Layout'
 
 function Evaluation() {
   const router = useRouter()

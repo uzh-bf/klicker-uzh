@@ -1,8 +1,4 @@
 import { useQuery } from '@apollo/client'
-import Ellipsis from '@components/common/Ellipsis'
-import Statistic from '@components/evaluation/Statistic'
-import EvaluationConfusion from '@components/sessions/evaluation/EvaluationConfusion'
-import EvaluationFeedbacks from '@components/sessions/evaluation/EvaluationFeedbacks'
 import {
   faArrowLeft,
   faArrowRight,
@@ -37,8 +33,12 @@ import {
 } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../../../components/common/Ellipsis'
 import Footer from '../../../components/common/Footer'
 import Chart from '../../../components/evaluation/Chart'
+import Statistic from '../../../components/evaluation/Statistic'
+import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
+import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,

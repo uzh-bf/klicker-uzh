@@ -1,5 +1,5 @@
-import Ellipsis from '@components/common/Ellipsis'
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
+import Ellipsis from '../common/Ellipsis'
 
 interface LearningElementTileProps {
   learningElement: Partial<LearningElement>

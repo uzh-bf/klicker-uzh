@@ -1,6 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
-import { Options } from '@components/OptionsDisplay'
 import {
   GroupActivityDetailsDocument,
   StartGroupActivityDocument,
@@ -16,6 +14,8 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
+import Layout from '../../../../components/Layout'
+import { Options } from '../../../../components/OptionsDisplay'
 
 function GroupActivityDetails() {
   const router = useRouter()

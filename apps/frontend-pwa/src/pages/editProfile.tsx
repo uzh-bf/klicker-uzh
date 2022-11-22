@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
-import Layout from '@components/Layout'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
@@ -14,6 +13,7 @@ import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
 import { AVATAR_LABELS, AVATAR_OPTIONS } from 'shared-components/src/constants'
 import * as yup from 'yup'
+import Layout from '../components/Layout'
 
 const EditProfile: NextPageWithLayout = () => {
   const { data, loading } = useQuery(SelfDocument)

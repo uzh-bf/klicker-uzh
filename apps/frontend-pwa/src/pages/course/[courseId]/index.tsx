@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -15,6 +14,7 @@ import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'

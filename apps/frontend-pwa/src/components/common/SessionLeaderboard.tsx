@@ -1,6 +1,4 @@
 import { useQuery } from '@apollo/client'
-import { ParticipantOther } from '@components/Participant'
-import { Podium } from '@components/Podium'
 import {
   GetSessionLeaderboardDocument,
   SelfDocument,
@@ -8,6 +6,8 @@ import {
 import localforage from 'localforage'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ParticipantOther } from '../Participant'
+import { Podium } from '../Podium'
 
 interface LocalLeaderboardEntry {
   avatar?: string
