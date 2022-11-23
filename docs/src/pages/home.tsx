@@ -64,7 +64,7 @@ const features = [
   {
     title: 'Multi-Language Support',
     content:
-      'KlickerUZH alreay supports German and English out of the box. Additionally, it was made to be easily extendable to further languages for your own deployment.',
+      'KlickerUZH already supports German and English out of the box. Additionally, it was made to be easily extendable to further languages for your own deployment.',
     link: 'basics/navigation',
     linkText: 'Language Settings',
   },
