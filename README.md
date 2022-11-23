@@ -1,4 +1,4 @@
-![Klicker Logo](https://www.klicker.uzh.ch/img/KlickerUZH_Gray_Transparent.png)
+<img src="https://manage.klicker.uzh.ch/KlickerLogo.png" width="350">
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
