@@ -16,7 +16,7 @@ KlickerUZH v3.0 uses multiple different services that communicate with each othe
 
 In addition to key application components, this repository also includes the codebases for our landing page (www.klicker.uzh.ch) and documentation (www.klicker.uzh.ch/docs), as well as deployment scripts and examples:
 
-- [Legacy Docs and Websites](https://github.com/uzh-bf/klicker-uzh/tree/v2/apps/docs) (subfolder)
+- [Legacy Docs and Websites](https://github.com/uzh-bf/klicker-uzh/tree/v2/docs) (subfolder)
 - [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v2/deploy) (subfolder)
 
 To share code more easily between different services, we added new packages to the [Package Directory](https://github.com/uzh-bf/klicker-uzh/tree/v2/packages) with the following components:
