@@ -67,7 +67,7 @@ function SessionList() {
           />
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
-          <OldSession
+          <Session
             sessionName="Geplante Sessionen"
             sessionList={scheduledSessions as SessionType[]}
           />
