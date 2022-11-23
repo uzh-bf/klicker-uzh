@@ -6,6 +6,7 @@ import {
 import Session from '../../components/sessions/Session'
 
 import { useMemo } from 'react'
+import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 
 function SessionList() {
@@ -15,30 +16,29 @@ function SessionList() {
     data: dataSessions,
   } = useQuery(GetUserSessionsDocument)
 
-  const {
-    RUNNING: runningSessions,
-    SCHEDULED: scheduledSessions,
-    PREPARED: preparedSessions,
-    COMPLETED: completedSessions,
-  } = useMemo(
-    () =>
-      dataSessions?.userSessions?.reduce(
-        (
-          memo: { [x: string]: SessionType[] },
-          x: { [x: string]: string | number }
-        ) => {
-          memo[x['status']].push(x as SessionType)
-          return memo
-        },
-        {
-          RUNNING: new Array<SessionType>(),
-          SCHEDULED: new Array<SessionType>(),
-          PREPARED: new Array<SessionType>(),
-          COMPLETED: new Array<SessionType>(),
-        }
-      ) || { RUNNING: [], SCHEDULED: [], PREPARED: [], COMPLETED: [] },
-    [dataSessions]
-  )
+  const runningSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session.status === SESSION_STATUS.RUNNING
+    )
+  }, [dataSessions])
+
+  const scheduledSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.SCHEDULED
+    )
+  }, [dataSessions])
+
+  const preparedSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.PREPARED
+    )
+  }, [dataSessions])
+
+  const completedSessions = useMemo(() => {
+    return dataSessions?.userSessions?.filter(
+      (session) => session?.status === SESSION_STATUS.COMPLETED
+    )
+  }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {
     return <div>Loading...</div>
@@ -46,7 +46,7 @@ function SessionList() {
 
   return (
     <Layout displayName="Sessions">
-      <div className="">
+      <div className="flex flex-col gap-5">
         {runningSessions && runningSessions.length > 0 && (
           <Session
             sessionName="Laufende Sessionen"
