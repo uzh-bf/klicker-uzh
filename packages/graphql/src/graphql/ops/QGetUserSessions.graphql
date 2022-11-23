@@ -16,6 +16,7 @@ query GetUserSessions {
           id
           name
           type
+          content
         }
       }
     }

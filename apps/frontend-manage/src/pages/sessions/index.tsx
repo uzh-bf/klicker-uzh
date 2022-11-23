@@ -3,7 +3,6 @@ import {
   GetUserSessionsDocument,
   Session as SessionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import OldSession from '../../components/sessions/OldSession'
 import Session from '../../components/sessions/Session'
 
 import { useMemo } from 'react'
@@ -47,23 +46,11 @@ function SessionList() {
 
   return (
     <Layout displayName="Sessions">
-      <div className="">
-        {runningSessions && runningSessions.length > 0 && (
-          <OldSession
-            sessionName="Laufende Sessionen"
-            sessionList={runningSessions as SessionType[]}
-          />
-        )}
+      <div className="flex flex-col gap-5">
         {runningSessions && runningSessions.length > 0 && (
           <Session
             sessionName="Laufende Sessionen"
             sessionList={runningSessions as SessionType[]}
-          />
-        )}
-        {scheduledSessions && scheduledSessions.length > 0 && (
-          <OldSession
-            sessionName="Geplante Sessionen"
-            sessionList={scheduledSessions as SessionType[]}
           />
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
@@ -73,21 +60,9 @@ function SessionList() {
           />
         )}
         {preparedSessions && preparedSessions.length > 0 && (
-          <OldSession
-            sessionName="Vorbereitete Sessionen"
-            sessionList={preparedSessions as SessionType[]}
-          />
-        )}
-        {preparedSessions && preparedSessions.length > 0 && (
           <Session
             sessionName="Vorbereitete Sessionen"
             sessionList={preparedSessions as SessionType[]}
-          />
-        )}
-        {completedSessions && completedSessions.length > 0 && (
-          <OldSession
-            sessionName="Abgeschlossene Sessionen"
-            sessionList={completedSessions as SessionType[]}
           />
         )}
         {completedSessions && completedSessions.length > 0 && (
