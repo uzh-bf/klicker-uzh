@@ -2,7 +2,7 @@
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
-Please note that this is the repository branch for the upcoming KlickerUZH version (v3.0) with a beta launch scheduled before the spring semester 2023 and stable release for the autumn semester 2023. Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the currently stable production code.
+Please note that this is the repository branch for the upcoming KlickerUZH version (v3.0) with a beta launch scheduled before the spring semester 2023 and stable release for the autumn semester 2023. If you would like to have more information on the new concept of v3.0, have a look at our [public discussion](https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79). Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the currently stable production code.
 
 ![Klicker Screenshot Timeline](https://www.klicker.uzh.ch/img/timeline_mac.png)
 
@@ -14,7 +14,7 @@ KlickerUZH v3.0 uses multiple different services that communicate with each othe
 - [Backend Responses](https://github.com/uzh-bf/klicker-uzh/tree/v2/apps/backend-responses) is a service that handles incoming student responses during a live session and puts them into an Azure queue for load handling reasons.
 - [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v2/apps/backend-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores, updating the cache, etc.
 
-In addition to key application components, this repository also includes the codebases for our landing page (www.klicker.uzh.ch) and documentation (www.klicker.uzh.ch/docs), as well as deployment scripts and examples:
+In addition to key application components, this repository also includes the codebases for our landing page and documentation (www.klicker.uzh.ch), as well as deployment scripts and examples:
 
 - [Legacy Docs and Websites](https://github.com/uzh-bf/klicker-uzh/tree/v2/docs) (subfolder)
 - [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v2/deploy) (subfolder)
