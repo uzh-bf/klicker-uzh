@@ -57,7 +57,7 @@ const addFeedback = async ({ sessionId, content }) => {
   }
 
   // push a new feedback into the array
-  session.feedbacks.push({ content: content.slice(500), published: session.settings.isFeedbackChannelPublic })
+  session.feedbacks.push({ content: content.slice(0, 500), published: session.settings.isFeedbackChannelPublic })
 
   // save the updated session
   await session.save()
