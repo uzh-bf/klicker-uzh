@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.8...v1.8.9) (2022-11-26)
+
+
+### Bug Fixes
+
+* ensure that we slice from the beginning ([1dc3985](https://github.com/uzh-bf/klicker-uzh/commit/1dc398553c3ea9e08ecefd18d0630fc49e8414d3))
+
 ### [1.8.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.7...v1.8.8) (2022-11-26)
 
 
