@@ -12,7 +12,7 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus, sessi
   useEffect((): void => {
     const firstActiveIndex = activeInstances.findIndex((instance): boolean => instance.blockStatus === 'ACTIVE')
     setActiveInstanceIndex(firstActiveIndex >= 0 ? firstActiveIndex : 0)
-  }, [activeInstances])
+  }, [])
 
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
   const [bins, setBins] = useState(null)

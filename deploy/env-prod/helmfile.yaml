@@ -46,10 +46,17 @@ releases:
         analytics:
           sentry:
             frontend:
+              enabled: true
               dsn: '{{ requiredEnv "SENTRY_DSN" }}'
               authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
               org: '{{ requiredEnv "SENTRY_ORG" }}'
               project: '{{ requiredEnv "SENTRY_PROJECT" }}'
+            backend:
+              enabled: true
+              dsn: '{{ requiredEnv "SENTRY_DSN_BACKEND" }}'
+              authToken: '{{ requiredEnv "SENTRY_AUTH_TOKEN" }}'
+              org: '{{ requiredEnv "SENTRY_ORG" }}'
+              project: '{{ requiredEnv "SENTRY_PROJECT_BACKEND" }}'
   - name: klicker-community
     namespace: klicker-prod
     createNamespace: true

@@ -29,7 +29,8 @@ redis:
 analytics:
   sentry:
     frontend:
-      enabled: true
+      environment: prod
+    backend:
       environment: prod
   google:
     trackingId:

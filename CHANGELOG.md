@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.8](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.7...v1.8.8) (2022-11-26)
+
+
+### Bug Fixes
+
+* ensure that feedbacks from students cannot be longer than 500 chars ([bc6b7dd](https://github.com/uzh-bf/klicker-uzh/commit/bc6b7dd771648f3b9d4e8d1f593b80d6c242f835))
+
+
+### Other
+
+* **frontend:** update banner to klicker v3 survey ([#3072](https://github.com/uzh-bf/klicker-uzh/issues/3072)) ([0c120d9](https://github.com/uzh-bf/klicker-uzh/commit/0c120d92fb1d373faeb58b4bfabc8977df8ff4a4))
+* lockfile maintenance ([a4d16df](https://github.com/uzh-bf/klicker-uzh/commit/a4d16df41a8cd7ff120a35392c012d6577776052))
+
+### [1.8.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.6...v1.8.7) (2022-11-14)
+
+
+### Bug Fixes
+
+* fix evaluation active question issues ([e69c45f](https://github.com/uzh-bf/klicker-uzh/commit/e69c45f0dc5f44550cd0ade77b2633d9d624e8c3))
+
+
+### Other
+
+* **deploy:** extend chart for backend sentry integration ([2b785ec](https://github.com/uzh-bf/klicker-uzh/commit/2b785ec14108841295eb6acc118e73853b023dfd))
+
+### [1.8.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.5...v1.8.6) (2022-11-13)
+
+
+### Other
+
+* **apps/backend:** update from Raven to Sentry package ([5eb215e](https://github.com/uzh-bf/klicker-uzh/commit/5eb215eddc32f6b45a30cddcb6bb16d2cdc586c4))
+
+### [1.8.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.4...v1.8.5) (2022-11-13)
+
+
+### Bug Fixes
+
+* ensure that deactivation of instances works even if redis results are already gone ([2e8a310](https://github.com/uzh-bf/klicker-uzh/commit/2e8a310b95dd6e1309f6b1d6600015076814760e))
+
+### [1.8.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.3...v1.8.4) (2022-11-02)
+
+
+### Bug Fixes
+
+* responseHashes is not an array anymore ([ab5c3d1](https://github.com/uzh-bf/klicker-uzh/commit/ab5c3d101733ae70fff522bdedc3472ce31430ff))
+
 ### [1.8.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.2...v1.8.3) (2022-11-01)
 
 

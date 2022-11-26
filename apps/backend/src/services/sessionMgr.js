@@ -214,11 +214,8 @@ const mapBlocks = async ({ sessionId, questionBlocks, userId }) => {
  * @param {*} redisResults
  */
 const choicesToResults = (redisResults) => {
-  if (!redisResults) {
-    return {
-      CHOICES: [],
-      totalParticipants: 0,
-    }
+  if (!redisResults || (typeof redisResults === 'object' && Object.keys(redisResults).length === 0)) {
+    return null
   }
 
   // calculate the number of choices available
@@ -237,11 +234,8 @@ const choicesToResults = (redisResults) => {
  * @param {*} responseHashes
  */
 const freeToResults = (redisResults, responseHashes) => {
-  if (!redisResults) {
-    return {
-      FREE: [],
-      totalParticipants: 0,
-    }
+  if (!redisResults || (typeof redisResults === 'object' && Object.keys(redisResults).length === 0)) {
+    return null
   }
 
   const results = redisResults
@@ -351,23 +345,42 @@ const initializeResponseCache = async (
 /**
  * Compute the question instance results based on the redis response cache
  */
-const computeInstanceResults = async ({ id, question }) => {
+const computeInstanceResults = async ({ id, question, results }) => {
   const instanceKey = `instance:${id}`
 
   // setup a transaction for result extraction from redis
   const redisResults = await responseCache.hgetall(`${instanceKey}:results`)
 
   if (QUESTION_GROUPS.CHOICES.includes(question.type)) {
-    const results = choicesToResults(redisResults)
+    const computedResults = choicesToResults(redisResults)
     await responseCache.unlink(`${instanceKey}:info`, `${instanceKey}:results`)
-    return results
+    if (!computedResults) {
+      if (results) {
+        return results
+      }
+      return {
+        CHOICES: [],
+        totalParticipants: 0,
+      }
+    }
+    return computedResults
   }
+
   if (QUESTION_GROUPS.FREE.includes(question.type)) {
     // extract the response hashes from redis
     const responseHashes = await responseCache.hgetall(`${instanceKey}:responseHashes`)
-    const results = freeToResults(redisResults, responseHashes[0][1])
+    const computedResults = freeToResults(redisResults, responseHashes)
     await responseCache.unlink(`${instanceKey}:responseHashes`)
-    return results
+    if (!computedResults) {
+      if (results) {
+        return results
+      }
+      return {
+        FREE: [],
+        totalParticipants: 0,
+      }
+    }
+    return computedResults
   }
 
   return null
@@ -889,7 +902,6 @@ async function deactivateBlockById({ userId, sessionId, blockId, incrementActive
 
       // compute the instance results based on redis cache contents
       const computedResults = await computeInstanceResults(instance)
-      if (instance.results && !computedResults) return instance.save()
       instance.results = computedResults
       instance.blockedParticipants = await getBlockedParticipants(instance)
       if (session.settings.storageMode === SESSION_STORAGE_MODE.COMPLETE) {

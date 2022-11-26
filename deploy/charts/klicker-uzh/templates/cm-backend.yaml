@@ -31,8 +31,6 @@ data:
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
   # SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.backend | quote }}
   SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
-  # SERVICES_SENTRY_ENABLED: {{ .Values.analytics.sentry.enabled | quote }}
-  # SERVICES_SENTRY_DSN: {{ .Values.analytics.sentry.backend | quote }}
 
   {{- if .Values.backend.redis }}
   EXEC_REDIS_HOST: {{ .Values.backend.redis.host | quote }}
@@ -40,7 +38,6 @@ data:
   EXEC_REDIS_TLS: {{ .Values.backend.redis.tls | quote }}
   {{ end }}
 
-  # SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
   {{- if .Values.services.teams.enabled }}
   SERVICES_TEAMS_ENABLED: 'true'
   SERVICES_TEAMS_ENV: {{ .Values.services.teams.env | quote }}
@@ -50,4 +47,13 @@ data:
   {{- if .Values.services.movo.enabled }}
   MOVO_CONNECTION_STRING: {{ .Values.services.movo.connectionString | quote }}
   MOVO_NOTIFICATION_TOKEN: {{ .Values.services.movo.notificationToken | quote }}
+  {{ end }}
+
+  {{- if .Values.analytics.sentry.backend.enabled }}
+  SENTRY_ENABLED: {{ .Values.analytics.sentry.backend.enabled | quote }}
+  SENTRY_DSN: {{ .Values.analytics.sentry.backend.dsn | quote }}
+  SENTRY_ORG: {{ .Values.analytics.sentry.backend.org | quote }}
+  SENTRY_PROJECT: {{ .Values.analytics.sentry.backend.project | quote }}
+  SENTRY_ENV: {{ .Values.analytics.sentry.backend.environment | quote }}
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
   {{ end }}
