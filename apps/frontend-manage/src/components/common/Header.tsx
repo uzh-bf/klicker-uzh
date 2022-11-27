@@ -41,12 +41,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
   return (
     <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
       <div>
-        <Link href="/">
+        <Link href="/" legacyBehavior>
           <Button className="mr-2 border-none bg-slate-800">
             <Button.Label>Fragepool</Button.Label>
           </Button>
         </Link>
-        <Link href="/sessions" prefetch>
+        <Link href="/sessions" prefetch legacyBehavior>
           <Button
             className="mr-2 border-none bg-slate-800"
             onClick={() => router.push('/sessions')}
@@ -54,7 +54,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             <Button.Label>Sessionen</Button.Label>
           </Button>
         </Link>
-        <Link href="/courses" prefetch>
+        <Link href="/courses" prefetch legacyBehavior>
           <Button className="mr-2 border-none bg-slate-800">
             <Button.Label>Kurse</Button.Label>
           </Button>
@@ -118,7 +118,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
         />
       </div>
     </div>
-  )
+  );
 }
 
 export default Header

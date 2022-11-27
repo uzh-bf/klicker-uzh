@@ -63,10 +63,14 @@ function SessionTile({ session }: SessionTileProps) {
         {session.status === 'COMPLETED' && (
           <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
             <FontAwesomeIcon icon={faUpRightFromSquare} />
-            <Link href={`/sessions/${session.id}/evaluation`} passHref>
-              <a target="_blank" rel="noopener noreferrer">
+            <Link
+              href={`/sessions/${session.id}/evaluation`}
+              passHref
+              target="_blank"
+              rel="noopener noreferrer">
+              
                 Evaluation
-              </a>
+              
             </Link>
           </div>
         )}
@@ -90,7 +94,7 @@ function SessionTile({ session }: SessionTileProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export default SessionTile

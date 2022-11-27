@@ -295,7 +295,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                   )}
                 </div>
               </Form>
-            )
+            );
           }}
         </Formik>
 
@@ -303,7 +303,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
         <div>Displayed running window: {runningAvgFactor} times interval</div>
       </div>
     </div>
-  )
+  );
 }
 
 export default EvaluationConfusion
