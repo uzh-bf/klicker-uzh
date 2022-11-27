@@ -65,7 +65,7 @@ export function NUMERICALAnswerOptions({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default NUMERICALAnswerOptions
