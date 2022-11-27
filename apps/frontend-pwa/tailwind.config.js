@@ -12,9 +12,7 @@ module.exports = {
       colors: {
         ...TailwindColorsUZH,
       },
-      fontFamily: {
-        ...TailwindFonts,
-      },
+      fontFamily: {},
     },
   },
   plugins: [
