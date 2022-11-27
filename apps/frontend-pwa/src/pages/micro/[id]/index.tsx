@@ -4,7 +4,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
-import { default as NextImage } from 'next/future/image'
+import { default as NextImage } from "next/image";
 import Link from 'next/link'
 import Layout from '../../../components/Layout'
 

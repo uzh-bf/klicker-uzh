@@ -9,7 +9,7 @@ import { QuestionType } from '@type/app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
-import Image from 'next/future/image'
+import Image from "next/image";
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'

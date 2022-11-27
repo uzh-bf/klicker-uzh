@@ -1,6 +1,6 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
-import Image from 'next/future/image'
+import Image from "next/image";
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
