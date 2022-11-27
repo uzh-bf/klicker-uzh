@@ -23,7 +23,7 @@ const CourseElement = ({
 
   return (
     <div className="flex justify-between w-full mr-4 align-center hover:cursor-pointer">
-      <Link href={`/course/${courseId}`}>
+      <Link href={`/course/${courseId}`} legacyBehavior>
         <span className="w-full p-4 text-lg rounded-l-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
           {courseName}
         </span>
@@ -49,7 +49,7 @@ const CourseElement = ({
         )}
       </button>
     </div>
-  )
+  );
 }
 
 export default CourseElement
