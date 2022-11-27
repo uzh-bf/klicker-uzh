@@ -3,7 +3,7 @@ import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import Image from "next/image";
+import Image from 'next/image'
 import Router from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'

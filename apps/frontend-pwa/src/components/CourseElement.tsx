@@ -49,7 +49,7 @@ const CourseElement = ({
         )}
       </button>
     </div>
-  );
+  )
 }
 
 export default CourseElement

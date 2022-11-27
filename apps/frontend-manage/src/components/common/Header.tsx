@@ -118,7 +118,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
         />
       </div>
     </div>
-  );
+  )
 }
 
 export default Header

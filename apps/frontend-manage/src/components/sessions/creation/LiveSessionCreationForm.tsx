@@ -98,14 +98,14 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   return question
                     .replace(/\s/g, '')
                     .split(',')
-                    .map((questionId) => parseInt(questionId));
+                    .map((questionId) => parseInt(questionId))
                 }),
                 timeLimit:
                   values.timeLimits[idx] !== '' &&
                   Number(values.timeLimits[idx]) > 0
                     ? Number(values.timeLimits[idx])
                     : undefined,
-              };
+              }
             })
 
           try {
@@ -291,11 +291,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 </Button>
               </Form>
             </div>
-          );
+          )
         }}
       </Formik>
     </div>
-  );
+  )
 }
 
 export default LiveSessionCreationForm

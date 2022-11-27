@@ -18,7 +18,8 @@ function Repetition() {
           <Link
             key={element.id}
             href={`/course/${element.courseId}/element/${element.id}`}
-            legacyBehavior>
+            legacyBehavior
+          >
             <Button
               className={twMerge(
                 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
@@ -35,7 +36,7 @@ function Repetition() {
         ))}
       </div>
     </Layout>
-  );
+  )
 }
 
 export default Repetition

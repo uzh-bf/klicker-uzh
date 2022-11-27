@@ -124,5 +124,5 @@ const formatText = (input) => {
     bold: input.bold || false,
     italic: input.italic || false,
     code: input.code || false,
-  })?.replace(/(\r\n|\n|\r)/gm, '');
+  })?.replace(/(\r\n|\n|\r)/gm, '')
 }

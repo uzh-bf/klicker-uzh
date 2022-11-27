@@ -36,7 +36,7 @@ function Join({ isInactive, shortname }: Props) {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {

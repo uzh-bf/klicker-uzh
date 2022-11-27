@@ -34,7 +34,10 @@ function QRPopup({ id }: Props): React.ReactElement {
     >
       <div>
         <div className="font-bold">
-          <Link href={`https://pwa.klicker.uzh.ch/session/${id}`} legacyBehavior>{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
+          <Link
+            href={`https://pwa.klicker.uzh.ch/session/${id}`}
+            legacyBehavior
+          >{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
         </div>
 
         <div>
@@ -42,18 +45,16 @@ function QRPopup({ id }: Props): React.ReactElement {
         </div>
 
         <Link passHref href={`/qr/session/${id}`} target="_blank">
-
           <Button
             fluid
             className="text-lg font-bold text-white bg-uzh-blue-80 h-11"
           >
             <Button.Label>QR-Code präsentieren</Button.Label>
           </Button>
-
         </Link>
       </div>
     </Modal>
-  );
+  )
 }
 
 export default QRPopup

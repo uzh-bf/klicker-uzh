@@ -1,6 +1,6 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
-import Image from "next/image";
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -77,7 +77,11 @@ function Header({
             </Button>
           </Link>
         )}
-        <Link href={participant ? '/profile' : '/login'} className="" legacyBehavior>
+        <Link
+          href={participant ? '/profile' : '/login'}
+          className=""
+          legacyBehavior
+        >
           <Image
             src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
               participant?.avatar ?? 'placeholder'
@@ -90,7 +94,7 @@ function Header({
         </Link>
       </div>
     </div>
-  );
+  )
 }
 
 Header.defaultProps = defaultProps

@@ -196,15 +196,14 @@ function SessionTimeline({
               href={`/sessions/${sessionId}/evaluation`}
               className="flex-1"
               rel="noopener noreferrer"
-              target="_blank">
-
+              target="_blank"
+            >
               <Button fluid className="h-10" disabled={isFeedbackSession}>
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
                 <Button.Label>Auswertung (Resultate)</Button.Label>
               </Button>
-
             </Link>
           </div>
         </div>
@@ -267,7 +266,7 @@ function SessionTimeline({
         </>
       )}
     </div>
-  );
+  )
 }
 
 SessionTimeline.defaultProps = defaultProps

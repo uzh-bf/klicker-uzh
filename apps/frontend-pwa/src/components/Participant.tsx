@@ -1,5 +1,5 @@
 import { Button } from '@uzh-bf/design-system'
-import Image from "next/image";
+import Image from 'next/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 

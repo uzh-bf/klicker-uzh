@@ -18,7 +18,10 @@ function MissingPage() {
     ) : ( */}
         <div>
           Sie können sich{' '}
-          <Link href="/login" className="text-uzh-blue-60 hover:text-uzh-blue-100">
+          <Link
+            href="/login"
+            className="text-uzh-blue-60 hover:text-uzh-blue-100"
+          >
             anmelden
           </Link>
           , um eine Übersicht aller Klicker-Elemente Ihrer Kurse zu sehen.
@@ -26,7 +29,7 @@ function MissingPage() {
         {/* )} */}
       </div>
     </div>
-  );
+  )
 }
 
 export default MissingPage
