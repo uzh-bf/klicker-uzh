@@ -260,7 +260,7 @@ function JoinCourse({
         )}
       </div>
     </Layout>
-  )
+  );
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -308,57 +308,55 @@ export const PinField = ({
   values: Record<string, string>
   setFieldValue: (field: string, value: any) => void
 }) => {
-  return (
-    <>
-      <Label label="Kurs-PIN (Format: ### ### ###)" className="italic" />
-      <Field
-        name="pin"
-        type="text"
-        placeholder="### ### ###"
-        className={twMerge(
-          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
-          errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
-        )}
-        maxLength={11}
-        onPaste={(e: any) => {
-          e.preventDefault()
-          const paste = e.clipboardData?.getData('text')
-          if (
-            typeof paste === 'string' &&
-            paste.length === 9 &&
-            paste.match(/^[0-9]{9}$/g)
-          ) {
-            setFieldValue(
-              'pin',
-              `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
-            )
-          }
-        }}
-        onChange={(e: any) => {
-          // regex magic to only allow numerical pins in the format ### ### ###
-          const regexToMatch =
-            /([0-9]{3}\ [0-9]{3}\ [0-9]{0,3})|([0-9]{3}\ [0-9]{3}[\ ]{0,1})|([0-9]{3}\ [0-9]{0,3})|([0-9]{3}[\ ]{0,1})|([0-9]{0,3})/g
-          const value = e.target.value.match(regexToMatch)[0]
+  return <>
+    <Label label="Kurs-PIN (Format: ### ### ###)" className="italic" />
+    <Field
+      name="pin"
+      type="text"
+      placeholder="### ### ###"
+      className={twMerge(
+        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+        errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
+      )}
+      maxLength={11}
+      onPaste={(e: any) => {
+        e.preventDefault()
+        const paste = e.clipboardData?.getData('text')
+        if (
+          typeof paste === 'string' &&
+          paste.length === 9 &&
+          paste.match(/^[0-9]{9}$/g)
+        ) {
+          setFieldValue(
+            'pin',
+            `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
+          )
+        }
+      }}
+      onChange={(e: any) => {
+        // regex magic to only allow numerical pins in the format ### ### ###
+        const regexToMatch =
+          /([0-9]{3}\ [0-9]{3}\ [0-9]{0,3})|([0-9]{3}\ [0-9]{3}[\ ]{0,1})|([0-9]{3}\ [0-9]{0,3})|([0-9]{3}[\ ]{0,1})|([0-9]{0,3})/g
+        const value = e.target.value.match(regexToMatch)[0]
 
-          // only add a whitespace after a block of 3 numbers if the user is typing - otherwise deletions are not possible
-          if (
-            (value.match(/^[0-9]{3}$/g) && values.pin.match(/^[0-9]{2}$/g)) ||
-            (value.match(/^[0-9]{3}\ [0-9]{3}$/g) &&
-              values.pin.match(/^[0-9]{3}\ [0-9]{2}$/g))
-          ) {
-            setFieldValue('pin', value + ' ')
-          } else {
-            setFieldValue('pin', value)
-          }
-        }}
-      />
-      <ErrorMessage
-        name="pin"
-        component="div"
-        className="text-sm text-red-400"
-      />
-    </>
-  )
+        // only add a whitespace after a block of 3 numbers if the user is typing - otherwise deletions are not possible
+        if (
+          (value.match(/^[0-9]{3}$/g) && values.pin.match(/^[0-9]{2}$/g)) ||
+          (value.match(/^[0-9]{3}\ [0-9]{3}$/g) &&
+            values.pin.match(/^[0-9]{3}\ [0-9]{2}$/g))
+        ) {
+          setFieldValue('pin', value + ' ')
+        } else {
+          setFieldValue('pin', value)
+        }
+      }}
+    />
+    <ErrorMessage
+      name="pin"
+      component="div"
+      className="text-sm text-red-400"
+    />
+  </>;
 }
 
 export default JoinCourse

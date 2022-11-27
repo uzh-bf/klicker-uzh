@@ -59,25 +59,25 @@ function Header({
               Zurück
             </Button>
           ) : (
-            <Link href="/">
+            <Link href="/" legacyBehavior>
               <Button className="hidden text-white bg-slate-800 md:block">
                 Home
               </Button>
             </Link>
           ))
         ) : (
-          <Link href="/login">
+          <Link href="/login" legacyBehavior>
             <Button className="text-white bg-slate-800">Login</Button>
           </Link>
         )}
         {participant && !participant?.avatar && (
-          <Link href="/editProfile">
+          <Link href="/editProfile" legacyBehavior>
             <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
               Profil einrichten
             </Button>
           </Link>
         )}
-        <Link href={participant ? '/profile' : '/login'} className="">
+        <Link href={participant ? '/profile' : '/login'} className="" legacyBehavior>
           <Image
             src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
               participant?.avatar ?? 'placeholder'
@@ -90,7 +90,7 @@ function Header({
         </Link>
       </div>
     </div>
-  )
+  );
 }
 
 Header.defaultProps = defaultProps

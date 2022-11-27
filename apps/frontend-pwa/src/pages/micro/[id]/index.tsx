@@ -55,14 +55,14 @@ function MicroSessionIntroduction({ id }: Props) {
             }}
           />
         </Prose>
-        <Link href={`/micro/${data.microSession.id}/0`}>
+        <Link href={`/micro/${data.microSession.id}/0`} legacyBehavior>
           <Button className="justify-center w-full text-lg md:w-auto md:self-end">
             Beginnen
           </Button>
         </Link>
       </div>
     </Layout>
-  )
+  );
 }
 
 export const getStaticProps: GetStaticProps = async (ctx) => {

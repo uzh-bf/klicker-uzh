@@ -289,13 +289,13 @@ function CourseOverview({ courseId }: any) {
                     <H4>Gruppenaktivitäten</H4>
                     <Link
                       href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
-                    >
-                      <a className="inline-flex items-center gap-2 hover:text-orange-700">
-                        <FontAwesomeIcon icon={faExternalLink} />
-                        <span>
-                          Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
-                        </span>
-                      </a>
+                      className="inline-flex items-center gap-2 hover:text-orange-700">
+
+                      <FontAwesomeIcon icon={faExternalLink} />
+                      <span>
+                        Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
+                      </span>
+
                     </Link>
                   </div>
                 )}
@@ -385,7 +385,7 @@ function CourseOverview({ courseId }: any) {
         </Tabs>
       </div>
     </Layout>
-  )
+  );
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
