@@ -124,7 +124,7 @@ function Question({
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
-              className="justify-center h-10 bg-red-300 w-36"
+              className="justify-center h-10 text-black bg-red-300 shadow-none cursor-not-allowed w-36 opacity-60"
               onClick={() =>
                 deleteQuestion({
                   variables: {
@@ -133,6 +133,7 @@ function Question({
                   refetchQueries: [{ query: GetUserQuestionsDocument }],
                 })
               }
+              disabled
             >
               Löschen
             </Button>
