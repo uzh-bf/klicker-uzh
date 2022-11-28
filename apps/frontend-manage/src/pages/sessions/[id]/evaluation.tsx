@@ -17,6 +17,7 @@ import {
   FreeTextQuestionOptions,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
+  InstanceResult,
   NumericalQuestionOptions,
   SessionBlockStatus,
   Statistics,
@@ -28,11 +29,10 @@ import {
   Prose,
   Select,
   Switch,
-  ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState, useContext } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -52,18 +52,73 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   ACTIVE: faSync,
 }
 
+function Collapsed({
+  selectedInstance,
+  currentInstance,
+}: {
+  selectedInstance: string
+  currentInstance: Partial<InstanceResult>
+}) {
+  const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
+
+  const [questionCollapsed, setQuestionCollapsed] = useState<boolean>(true)
+  const [showExtensibleButton, setShowExtensibleButton] =
+    useState<boolean>(false)
+
+  useEffect(() => {
+    if (!questionElem) return
+
+    // if the element height is larger than what is shown or the question was opened, show the extension button
+    if (
+      questionElem?.scrollHeight > questionElem?.clientHeight ||
+      !questionCollapsed
+    ) {
+      setShowExtensibleButton(true)
+    } else {
+      setShowExtensibleButton(false)
+    }
+  }, [questionCollapsed, questionElem, selectedInstance])
+
+  return (
+    <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
+      <div
+        ref={(ref) => setQuestionElem(ref)}
+        className={twMerge(
+          questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+          !showExtensibleButton && 'border-solid border-b-only border-primary',
+          showExtensibleButton &&
+            questionCollapsed &&
+            'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
+          'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+        )}
+      >
+        <Prose className="flex-initial max-w-full leading-8 prose-lg prose-p:m-0">
+          <Markdown
+            className="flex flex-row content-between hover:text-black"
+            content={currentInstance.questionData?.content}
+          />
+        </Prose>
+        {/* // TODO: <div>ATTACHMENTS</div> */}
+      </div>
+      {showExtensibleButton && (
+        <Button
+          className="hidden w-full h-6 text-xs text-center border-solid rounded-none shadow-none md:block bg-slate-200 hover:bg-slate-300 print:hidden"
+          onClick={() => setQuestionCollapsed(!questionCollapsed)}
+        >
+          {questionCollapsed ? 'ICON DOWN' : 'ICON UP'}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function Evaluation() {
   const router = useRouter()
-  const theme = useContext(ThemeContext)
 
   const [selectedBlock, setSelectedBlock] = useState<number>(0)
   const [leaderboard, setLeaderboard] = useState<boolean>(false)
   const [feedbacks, setFeedbacks] = useState<boolean>(false)
   const [confusion, setConfusion] = useState<boolean>(false)
-  const [questionCollapsed, setQuestionCollapsed] = useState<boolean>(false)
-  const [showExtensibleButton, setShowExtensibleButton] =
-    useState<boolean>(false)
-
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
@@ -233,36 +288,6 @@ function Evaluation() {
     chartType,
     currentInstance.questionData.type,
   ])
-
-  console.log(
-    'questionCollapsed',
-    questionCollapsed,
-    'showExtensibleButton',
-    showExtensibleButton
-  )
-
-  useEffect(() => {
-    setQuestionCollapsed(true)
-  }, [selectedInstance])
-
-  useEffect(() => {
-    const questionElem = document.getElementById('questionContent')
-    // if the element height is larger than what is shown or the question was opened, show the extension button
-    console.log(
-      'size check',
-      questionElem?.scrollHeight > questionElem?.clientHeight,
-      questionElem?.scrollHeight,
-      questionElem?.clientHeight
-    )
-    if (
-      questionElem?.scrollHeight > questionElem?.clientHeight ||
-      questionCollapsed === false
-    ) {
-      setShowExtensibleButton(true)
-    } else {
-      setShowExtensibleButton(false)
-    }
-  }, [questionCollapsed, selectedInstance])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
@@ -498,36 +523,10 @@ function Evaluation() {
         {currentInstance && (
           <RadixTab.Content value={String(currentInstance.blockIx)}>
             <div>
-              <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
-                <div
-                  className={twMerge(
-                    questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
-                    !showExtensibleButton &&
-                      'border-solid border-b-only border-primary',
-                    showExtensibleButton &&
-                      questionCollapsed &&
-                      'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
-                    'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
-                  )}
-                  id="questionContent"
-                >
-                  <Prose className="flex-initial max-w-full leading-8 prose-lg prose-p:m-0">
-                    <Markdown
-                      className="flex flex-row content-between hover:text-black"
-                      content={currentInstance.questionData.content}
-                    />
-                  </Prose>
-                  {/* // TODO: <div>ATTACHMENTS</div> */}
-                </div>
-              </div>
-              {showExtensibleButton && (
-                <Button
-                  className="hidden w-full h-6 text-xs text-center border-solid rounded-none shadow-none md:block bg-slate-200 hover:bg-slate-300 print:hidden"
-                  onClick={() => setQuestionCollapsed(!questionCollapsed)}
-                >
-                  {questionCollapsed ? 'ICON DOWN' : 'ICON UP'}
-                </Button>
-              )}
+              <Collapsed
+                currentInstance={currentInstance}
+                selectedInstance={selectedInstance}
+              />
 
               <div className="flex flex-col flex-1 md:flex-row">
                 <div className="z-10 flex-1 order-2 mx-4 md:order-1">
