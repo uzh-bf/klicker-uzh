@@ -50,7 +50,7 @@ export function SessionProgress({
         value={activeIndex}
         max={numItems}
         formatter={(val) =>
-          val <= 0 ? '0%' : `${((val / numItems) * 100) >> 0}\%`
+          val <= 0 ? '0%' : `${((val / numItems) * 100) >> 0}%`
         }
         isMaxVisible={true}
       />

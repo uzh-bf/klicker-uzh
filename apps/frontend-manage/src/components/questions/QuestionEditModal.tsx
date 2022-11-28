@@ -447,8 +447,8 @@ function QuestionEditModal({
                 />
                 {mode === 'CREATE' ? (
                   <Select
-                    name='question_create_select'
-                    placeholder='Fragetyp auswählen'
+                    name="question_create_select"
+                    placeholder="Fragetyp auswählen"
                     items={dropdownOptions}
                     onChange={(newValue: string) => {
                       resetForm()

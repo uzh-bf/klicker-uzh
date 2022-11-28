@@ -18,6 +18,7 @@ function Repetition() {
           <Link
             key={element.id}
             href={`/course/${element.courseId}/element/${element.id}`}
+            legacyBehavior
           >
             <Button
               className={twMerge(

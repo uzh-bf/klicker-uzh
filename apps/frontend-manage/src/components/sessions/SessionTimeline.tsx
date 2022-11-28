@@ -191,15 +191,19 @@ function SessionTimeline({
             </a>
           </div>
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
-            <Link passHref href={`/sessions/${sessionId}/evaluation`}>
-              <a className="flex-1" rel="noopener noreferrer" target="_blank">
-                <Button fluid className="h-10" disabled={isFeedbackSession}>
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faUpRightFromSquare} />
-                  </Button.Icon>
-                  <Button.Label>Auswertung (Resultate)</Button.Label>
-                </Button>
-              </a>
+            <Link
+              passHref
+              href={`/sessions/${sessionId}/evaluation`}
+              className="flex-1"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button fluid className="h-10" disabled={isFeedbackSession}>
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                </Button.Icon>
+                <Button.Label>Auswertung (Resultate)</Button.Label>
+              </Button>
             </Link>
           </div>
         </div>
