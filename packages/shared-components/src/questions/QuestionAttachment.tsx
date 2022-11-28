@@ -1,6 +1,6 @@
 import { Attachment } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
-import Image from 'next/future/image'
+import Image from 'next/image'
 import React, { useState } from 'react'
 
 export interface QuestionAttachmentProps {

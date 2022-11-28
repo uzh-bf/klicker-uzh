@@ -169,7 +169,7 @@ const Index = function () {
       <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className="text-xl">Fragen aus deinen Kursen</H1>
         <div className="flex flex-col mt-2">
-          <Link href="/repetition">
+          <Link href="/repetition" legacyBehavior>
             <Button
               className={twMerge(
                 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
@@ -192,6 +192,7 @@ const Index = function () {
             <Link
               href={session.linkTo || `/session/${session.id}`}
               key={session.id}
+              legacyBehavior
             >
               <Button className="gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
                 <Button.Icon>
@@ -216,7 +217,7 @@ const Index = function () {
             <div>Kein aktives Microlearning.</div>
           )}
           {activeMicrolearning.map((micro) => (
-            <Link href={`/micro/${micro.id}/`} key={micro.id}>
+            <Link href={`/micro/${micro.id}/`} key={micro.id} legacyBehavior>
               <Button
                 disabled={micro.isCompleted}
                 className={twMerge(

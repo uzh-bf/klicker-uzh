@@ -30,7 +30,7 @@ function Join({ isInactive, shortname }: Props) {
     <div className="max-w-6xl p-4 mx-auto mt-4 border rounded">
       {data.runningSessions.map((session) => (
         <div className="" key={session.id}>
-          <Link href={`/session/${session.id}`}>
+          <Link href={`/session/${session.id}`} legacyBehavior>
             <Button>{session.displayName}</Button>
           </Link>
         </div>

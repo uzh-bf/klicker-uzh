@@ -40,10 +40,12 @@ function Session({
               <H4 className="flex-1">{session.displayName}</H4>
               {(session.status === 'RUNNING' ||
                 session.status === 'COMPLETED') && (
-                <Link href={`/sessions/${session.id}/evaluation`} passHref>
-                  <a className="mr-4 text-sm hover:text-uzh-red-100">
-                    Zur Evaluation
-                  </a>
+                <Link
+                  href={`/sessions/${session.id}/evaluation`}
+                  passHref
+                  className="mr-4 text-sm hover:text-uzh-red-100"
+                >
+                  Zur Evaluation
                 </Link>
               )}
               <div className="text-sm">

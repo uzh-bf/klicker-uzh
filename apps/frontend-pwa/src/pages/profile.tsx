@@ -4,7 +4,7 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
-import Image from 'next/future/image'
+import Image from 'next/image'
 import Router from 'next/router'
 import Layout from '../components/Layout'
 

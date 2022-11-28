@@ -59,7 +59,10 @@ function Session({ sessionName, sessionList }: SessionProps) {
                   <H3 className="mb-0">{session.name}</H3>
                   <div className="flex flex-row gap-5">
                     {SESSION_STATUS.RUNNING === session.status && (
-                      <Link href={`/sessions/${session.id}/cockpit`}>
+                      <Link
+                        href={`/sessions/${session.id}/cockpit`}
+                        legacyBehavior
+                      >
                         <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
                           <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                           <div>Dozierenden Cockpit</div>
@@ -67,7 +70,10 @@ function Session({ sessionName, sessionList }: SessionProps) {
                       </Link>
                     )}
                     {SESSION_STATUS.COMPLETED === session.status && (
-                      <Link href={`/sessions/${session.id}/evaluation`}>
+                      <Link
+                        href={`/sessions/${session.id}/evaluation`}
+                        legacyBehavior
+                      >
                         <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
                           <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                           <div>Session Evaluation</div>

@@ -8,7 +8,7 @@ query GetSingleCourse($courseId: ID!) {
     description
     color
     numOfParticipants
-    
+
     sessions {
       id
       name

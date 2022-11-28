@@ -1,8 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Footer from '../../../../components/common/Footer'
-import EvaluationDisplay from '../../../../components/EvaluationDisplay'
-import Layout from '../../../../components/Layout'
-import OptionsDisplay from '../../../../components/OptionsDisplay'
 import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,
@@ -16,6 +12,10 @@ import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import Footer from '../../../../components/common/Footer'
+import EvaluationDisplay from '../../../../components/EvaluationDisplay'
+import Layout from '../../../../components/Layout'
+import OptionsDisplay from '../../../../components/OptionsDisplay'
 
 interface Props {
   courseId: string
@@ -120,13 +120,19 @@ function LearningElement({ courseId, id }: Props) {
               </div>
               <div>
                 {data.learningElement.instances.map((instance) => (
-                  <div className="flex flex-row justify-between" key={instance.id}>
+                  <div
+                    className="flex flex-row justify-between"
+                    key={instance.id}
+                  >
                     <div>{instance.questionData.name}</div>
-                    {instance.evaluation ? <div>
-                      {instance.evaluation.pointsAwarded} /{' '}
-                      {instance.evaluation.score} / 10
-                    </div>: <div>Not attempted</div>}
-
+                    {instance.evaluation ? (
+                      <div>
+                        {instance.evaluation.pointsAwarded} /{' '}
+                        {instance.evaluation.score} / 10
+                      </div>
+                    ) : (
+                      <div>Not attempted</div>
+                    )}
                   </div>
                 ))}
               </div>
