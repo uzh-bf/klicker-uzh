@@ -248,9 +248,9 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
-              choices: question?.questionData?.options?.choices
-                ? [...question.questionData.options.choices]
-                : [{ ix: 0, value: '<br>', correct: false, feedback: '<br>' }],
+              choices: [
+                { ix: 0, value: '<br>', correct: false, feedback: '<br>' },
+              ],
             },
           }
 
