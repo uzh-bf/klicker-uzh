@@ -130,7 +130,7 @@ function Session({ sessionName, sessionList }: SessionProps) {
                             {instance.questionData.name}
                           </Ellipsis>
 
-                          <div>
+                          <div className='italic'>
                             ({QUESTION_TYPES_SHORT[instance.questionData.type]})
                           </div>
                         </div>
