@@ -12,9 +12,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Field, Form, Formik } from 'formik'
+import { Form, Formik } from 'formik'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -195,21 +195,24 @@ function Feedback({
               {({ isSubmitting }) => (
                 <div className="flex-1">
                   <Form>
-                    <Field
-                      className={twMerge(
-                        'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm',
-                        resolved && 'bg-gray-100 opacity-50'
-                      )}
-                      component="textarea"
+                    <FormikTextareaField
+                      className={{
+                        input: twMerge(
+                          'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
+                          resolved && 'bg-gray-100 opacity-50'
+                        ),
+                        root: 'mb-1',
+                      }}
                       rows="3"
                       name="respondToFeedbackInput"
                       placeholder={
                         resolved
-                          ? 'Reopen the feedback to add a new response...'
-                          : 'Write your response here...'
+                          ? 'Öffnen Sie das Feedback wieder, um zu antworten...'
+                          : 'Formulieren Sie Ihre Antwort hier...'
                       }
                       disabled={resolved}
-                      // value={formik.values.response}
+                      maxLength={1000}
+                      maxLengthLabel="Zeichen"
                     />
                     <Button
                       className="float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
