@@ -26,7 +26,6 @@ interface SessionProps {
   sessionList: SessionType[]
 }
 
-// TODO: move collapsible / collapsible list with to design system
 function Session({ sessionName, sessionList }: SessionProps) {
   const [startSession] = useMutation(StartSessionDocument)
 
@@ -112,7 +111,7 @@ function Session({ sessionName, sessionList }: SessionProps) {
                 </div>
               }
             >
-              <div className="flex flex-row gap-2">
+              <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
                 {session.blocks?.map((block, index) => (
                   <div key={block.id} className="flex flex-col gap-2">
                     <div className="italic">
