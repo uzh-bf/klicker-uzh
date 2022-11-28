@@ -210,6 +210,7 @@ export const StudentQuestion = ({
           <FREETextAnswerOptions
             onChange={onFreeTextValueChange}
             maxLength={currentQuestion.options?.restrictions?.maxLength}
+            value={inputValue as string}
           />
         )}
 
