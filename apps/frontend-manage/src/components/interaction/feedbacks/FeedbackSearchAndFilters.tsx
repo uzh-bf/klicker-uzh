@@ -194,7 +194,7 @@ function FeedbackSearchAndFilters({
 
         {!hidden?.sorting && (
           <Select
-            name='feedback_sorting'
+            name="feedback_sorting"
             disabled={disabled?.sorting}
             value={sortBy}
             items={[

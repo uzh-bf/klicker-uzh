@@ -985,8 +985,7 @@ export async function getUserSessions(
   { userId }: { userId: string },
   ctx: ContextWithOptionalUser
 ) {
-  console.log('starting getUserSession')
-  const userSessions = await ctx.prisma.user.findUnique({
+  const user = await ctx.prisma.user.findUnique({
     where: {
       id: userId,
     },
@@ -1008,14 +1007,20 @@ export async function getUserSessions(
                   questionData: true,
                 },
               },
+              _count: {
+                select: { instances: true },
+              },
             },
+          },
+          _count: {
+            select: { blocks: true },
           },
         },
       },
     },
   })
 
-  return userSessions?.sessions.map((session) => {
+  return user?.sessions.map((session) => {
     return {
       ...pick(
         ['id', 'name', 'displayName', 'accessMode', 'status', 'createdAt'],
@@ -1025,6 +1030,11 @@ export async function getUserSessions(
       course: session.course
         ? pick(['id', 'name', 'displayName'], session.course)
         : undefined,
+      numOfBlocks: session._count?.blocks,
+      numOfQuestions: session.blocks.reduce(
+        (acc, block) => acc + block._count?.instances,
+        0
+      ),
     }
   })
 }
@@ -1160,15 +1170,14 @@ export async function getPinnedFeedbacks(
 }
 
 function checkCorrectnessFreeText(instance) {
-  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match)
+  // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
   if (instance.questionData.type === 'FREE_TEXT') {
     for (const id in instance.results) {
       if (instance.questionData?.options.solutions) {
-        if (
-          instance.questionData.options.solutions.includes(
-            instance.results[id].value
-          )
-        ) {
+        const solutions = instance.questionData.options.solutions.map(
+          (solution: string) => solution.toLowerCase()
+        )
+        if (solutions.includes(instance.results[id].value.toLowerCase())) {
           instance.results[id].correct = true
         } else {
           instance.results[id].correct = false
@@ -1197,7 +1206,13 @@ function computeStatistics(instance) {
     for (const id in instance.results) {
       const value = parseFloat(instance.results[id].value)
       let correct = undefined
-      if (instance.questionData.options.solutionRanges) {
+
+      if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length !==
+          0
+      ) {
         correct = false
         const solutionRanges = instance.questionData.options.solutionRanges
         for (const range of solutionRanges) {
@@ -1206,6 +1221,13 @@ function computeStatistics(instance) {
             break
           }
         }
+      } else if (
+        instance.questionData.options.solutionRanges &&
+        instance.questionData.options.solutionRanges.length > 0 &&
+        Object.keys(instance.questionData.options.solutionRanges[0]).length ===
+          0
+      ) {
+        instance.results[id].correct = true
       }
       instance.results[id].correct = correct
     }

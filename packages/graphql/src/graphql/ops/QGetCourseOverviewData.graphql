@@ -15,6 +15,7 @@ query GetCourseOverviewData($courseId: ID!) {
       name
       displayName
       color
+      description
 
       awards {
         id

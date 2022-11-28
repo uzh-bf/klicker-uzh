@@ -1,7 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import GroupLeaderboard from '@components/GroupLeaderboard'
-import Layout from '@components/Layout'
-import Leaderboard from '@components/Leaderboard'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -16,12 +13,13 @@ import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
-import { ParticipantOther } from '../../../components/Participant'
-import { Podium } from '../../../components/Podium'
+import Leaderboard from 'shared-components/src/Leaderboard'
+import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Markdown from '@klicker-uzh/markdown'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -65,6 +63,10 @@ function CourseOverview({ courseId }: any) {
     groupLeaderboardStatistics,
   } = data.getCourseOverviewData
 
+  const filteredGroupLeaderboard = groupLeaderboard?.filter(
+    (group) => group.score > 0
+  )
+
   return (
     <Layout
       displayName="Leaderboard"
@@ -96,20 +98,25 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global" className="md:px-4">
+            {course.description && (
+              <div className="p-4 mb-4 border rounded bg-slate-100">
+                <Markdown content={course.description} />
+              </div>
+            )}
+
             <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className="mb-4">Individuelles Leaderboard</H3>
 
-                  <Podium leaderboard={leaderboard} />
                   <Leaderboard
-                    leaderboard={leaderboard}
-                    courseId={courseId}
-                    participant={participant}
-                    participation={participation}
+                    leaderboard={leaderboard || []}
+                    activeParticipation={participation?.isActive}
                     onJoin={joinCourse}
                     onLeave={leaveCourse}
+                    participant={participant}
                   />
+
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
                       Anzahl Teilnehmende:{' '}
@@ -132,12 +139,15 @@ function CourseOverview({ courseId }: any) {
                 <div>
                   <H3 className="mb-4">Gruppenleaderboard</H3>
 
-                  <Podium
-                    leaderboard={groupLeaderboard?.map((entry) => ({
-                      username: entry.name,
-                      score: entry.score,
-                    }))}
+                  <Leaderboard
+                    leaderboard={
+                      filteredGroupLeaderboard?.map((entry) => ({
+                        username: entry.name,
+                        score: entry.score,
+                      })) || []
+                    }
                   />
+
                   {!groupLeaderboard ||
                     (groupLeaderboard.length === 0 && (
                       <div className="mt-6">
@@ -145,18 +155,15 @@ function CourseOverview({ courseId }: any) {
                         geht&apos;s!
                       </div>
                     ))}
-                  <div className="pt-8 space-y-2 overflow-y-scroll max-h-[400px]">
-                    {groupLeaderboard
-                      .filter((entry) => entry.score > 0)
-                      .map((entry) => (
-                        <ParticipantOther
-                          key={entry.id}
-                          pseudonym={entry.name}
-                          points={entry.score}
-                          withAvatar={false}
-                        />
-                      ))}
-                  </div>
+                  {groupLeaderboard &&
+                    groupLeaderboard.length !== 0 &&
+                    filteredGroupLeaderboard?.length === 0 && (
+                      <div>
+                        Bisher hat noch keine Gruppe Punkte erhalten. Los
+                        geht&apos;s!
+                      </div>
+                    )}
+
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
                       Anzahl Gruppen:{' '}
@@ -179,7 +186,7 @@ function CourseOverview({ courseId }: any) {
             {course?.awards?.length != 0 && (
               <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
                 <H3 className="mb-2 text-base">BF-Champion Awards</H3>
-                <div className="flex flex-row gap-6 text-sm text-gray-700">
+                <div className="flex flex-col gap-6 text-sm text-gray-700 md:flex-row">
                   <div className="flex-1 space-y-1">
                     {course.awards
                       ?.filter((award) => award.type === 'PARTICIPANT')
@@ -241,10 +248,9 @@ function CourseOverview({ courseId }: any) {
 
                 <div className="flex flex-row flex-wrap gap-4">
                   <div className="flex flex-col flex-1">
-                    <GroupLeaderboard
-                      courseId={courseId}
-                      groupId={group.id}
+                    <Leaderboard
                       leaderboard={group.participants}
+                      participant={participant}
                       onLeave={() => {
                         leaveParticipantGroup({
                           variables: {
@@ -256,6 +262,7 @@ function CourseOverview({ courseId }: any) {
 
                         setSelectedTab('global')
                       }}
+                      hidePodium
                     />
 
                     <div className="self-end mt-6 text-sm w-60 text-slate-600">
@@ -282,13 +289,13 @@ function CourseOverview({ courseId }: any) {
                     <H4>Gruppenaktivitäten</H4>
                     <Link
                       href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
+                      className="inline-flex items-center gap-2 hover:text-orange-700"
+                      legacyBehavior
                     >
-                      <a className="inline-flex items-center gap-2 hover:text-orange-700">
-                        <FontAwesomeIcon icon={faExternalLink} />
-                        <span>
-                          Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
-                        </span>
-                      </a>
+                      <FontAwesomeIcon icon={faExternalLink} />
+                      <span>
+                        Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
+                      </span>
                     </Link>
                   </div>
                 )}

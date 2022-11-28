@@ -1,6 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
-import { Options } from '@components/OptionsDisplay'
 import {
   GroupActivityDetailsDocument,
   StartGroupActivityDocument,
@@ -11,11 +9,13 @@ import { QuestionType } from '@type/app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
-import Image from 'next/future/image'
 import Head from 'next/head'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
+import Layout from '../../../../components/Layout'
+import { Options } from '../../../../components/OptionsDisplay'
 
 function GroupActivityDetails() {
   const router = useRouter()

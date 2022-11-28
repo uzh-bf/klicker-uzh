@@ -1,0 +1,46 @@
+query GetSingleCourse($courseId: ID!) {
+  course(id: $courseId) {
+    id
+    isArchived
+    pinCode
+    name
+    displayName
+    description
+    color
+    numOfParticipants
+
+    sessions {
+      id
+      name
+      displayName
+      isGamificationEnabled
+      pinCode
+      accessMode
+      status
+      createdAt
+      numOfBlocks
+      numOfQuestions
+    }
+    learningElements {
+      id
+      name
+      displayName
+      numOfInstances
+    }
+    microSessions {
+      id
+      name
+      displayName
+      scheduledStartAt
+      scheduledEndAt
+      numOfInstances
+    }
+    leaderboard {
+      id
+      score
+      rank
+      username
+      avatar
+    }
+  }
+}

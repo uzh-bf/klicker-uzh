@@ -1,6 +1,4 @@
 import { useQuery } from '@apollo/client'
-import { ParticipantOther } from '@components/Participant'
-import { Podium } from '@components/Podium'
 import {
   GetSessionLeaderboardDocument,
   SelfDocument,
@@ -8,13 +6,8 @@ import {
 import localforage from 'localforage'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-interface LocalLeaderboardEntry {
-  avatar?: string
-  username: string
-  score: number
-  lastBlockOrder: number
-}
+import { ParticipantOther } from '../Participant'
+import { Podium } from '../Podium'
 
 interface LeaderboardProps {
   sessionId: string
@@ -37,18 +30,6 @@ function Leaderboard({
     fetchPolicy: 'network-only',
   })
 
-  const [currentEntry, setCurrentEntry] = useState({
-    participantId: '',
-    score: 0,
-    rank: 0,
-    lastBlockOrder: 0,
-  })
-  const [previousEntry, setPreviousEntry] = useState({
-    participantId: '',
-    score: 0,
-    rank: 0,
-    lastBlockOrder: 0,
-  })
   const [blockDelta, setBlockDelta] = useState(null)
 
   // save the current leaderboard to local storage
@@ -65,7 +46,6 @@ function Leaderboard({
           `${selfEntry.participantId}-score-block${selfEntry.lastBlockOrder}`,
           selfEntry
         )
-        setCurrentEntry(selfEntry)
 
         if (selfEntry.lastBlockOrder > 0) {
           try {
@@ -75,7 +55,6 @@ function Leaderboard({
               }`
             )
             if (!prevStoredEntry) return
-            setPreviousEntry(prevStoredEntry)
 
             setBlockDelta({
               score: selfEntry.score - prevStoredEntry.score,

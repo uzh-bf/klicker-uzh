@@ -1,4 +1,4 @@
-import Markdown from '@klicker-uzh/markdown';
+import Markdown from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 

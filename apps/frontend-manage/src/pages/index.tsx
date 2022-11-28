@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
+import TagList from '@components/questions/TagList'
 import { Button, H4 } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -87,7 +88,7 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full">
-        <div className="flex justify-center mx-10 print-hidden">
+        <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
           <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
             {/* // TODO: replace by proper session creation component */}
             <TabsPrimitive.Root defaultValue="live-session">
@@ -103,7 +104,8 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="micro-session"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  disabled
                 >
                   <H4 className="flex flex-col justify-center h-full">
                     Micro-Session
@@ -112,7 +114,8 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="learning-element"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  disabled
                 >
                   <H4 className="flex flex-col justify-center h-full">
                     Learning Element
@@ -179,17 +182,18 @@ function Index() {
             )} */}
           </div>
         </div>
-        <div className="flex justify-center mx-auto">
-          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 mx-10 md:mx-20">
-            {/* // TODO Tags */}
-            {/* <TagList
-              activeTags={filters.tags}
-              activeType={filters.type}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              handleToggleArchive={onToggleArchive}
-              isArchiveActive={filters.archive}
-            /> */}
+        <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
+          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 ">
+            {dataQuestions && dataQuestions.userQuestions && (
+              <TagList
+                activeTags={filters.tags}
+                activeType={filters.type}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                // handleToggleArchive={onToggleArchive}
+                // isArchiveActive={filters.archive}
+              />
+            )}
             <div className="w-full">
               {!dataQuestions || loadingQuestions ? (
                 // TODO: replace by nice loader

@@ -1,10 +1,10 @@
-import FeedbackSearchAndFilters from '@components/interaction/feedbacks/FeedbackSearchAndFilters'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
 import dayjs from 'dayjs'
+import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
 
 interface EvaluationFeedbacksProps {
   feedbacks: Feedback[]

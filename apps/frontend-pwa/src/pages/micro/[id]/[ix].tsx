@@ -1,8 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Footer from '@components/common/Footer'
-import EvaluationDisplay from '@components/EvaluationDisplay'
-import Layout from '@components/Layout'
-import OptionsDisplay from '@components/OptionsDisplay'
 import {
   GetMicroSessionDocument,
   ResponseToQuestionInstanceDocument,
@@ -12,6 +8,10 @@ import { QuestionType } from '@type/app'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import Footer from '../../../components/common/Footer'
+import EvaluationDisplay from '../../../components/EvaluationDisplay'
+import Layout from '../../../components/Layout'
+import OptionsDisplay from '../../../components/OptionsDisplay'
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)

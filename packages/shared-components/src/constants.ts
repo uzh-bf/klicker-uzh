@@ -1,10 +1,10 @@
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
 export const SESSION_STATUS: Record<string, string> = {
-  SCHEDULED: 'SCHEDULED',
   PREPARED: 'PREPARED',
-  ACTIVE: 'ACTIVE',
-  EXECUTED: 'EXECUTED',
+  SCHEDULED: 'SCHEDULED',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
 }
 
 export const CHART_TYPES: Record<string, string> = {

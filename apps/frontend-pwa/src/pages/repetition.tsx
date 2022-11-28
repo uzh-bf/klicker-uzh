@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetLearningElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
+import Layout from '../components/Layout'
 
 function Repetition() {
   const { data } = useQuery(GetLearningElementsDocument)
@@ -18,6 +18,7 @@ function Repetition() {
           <Link
             key={element.id}
             href={`/course/${element.courseId}/element/${element.id}`}
+            legacyBehavior
           >
             <Button
               className={twMerge(

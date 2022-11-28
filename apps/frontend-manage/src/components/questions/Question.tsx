@@ -15,6 +15,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionPreviewModal from './QuestionPreviewModal'
+import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
 
 interface Props {
@@ -101,7 +102,7 @@ function Question({
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
-            {/* <QuestionTags tags={tags} /> */}
+            <QuestionTags tags={tags} />
           </div>
         </div>
 

@@ -221,7 +221,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points3).toEqual(28)
 
     const points4 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 11000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -233,7 +233,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points4).toEqual(30)
 
     const points5 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 11000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -245,7 +245,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points5).toEqual(20)
 
     const points6 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 11000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -257,7 +257,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points6).toEqual(30)
 
     const points7 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 11000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -269,7 +269,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points7).toEqual(10)
 
     const points8 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 21000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -281,7 +281,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points8).toEqual(15)
 
     const points9 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 21000,
       maxBonus: 30,
       timeToZeroBonus: 20,
@@ -293,7 +293,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points9).toEqual(10)
 
     const points10 = computeAwardedPoints({
-      firstResponseReceivedAt: "1000",
+      firstResponseReceivedAt: '1000',
       responseTimestamp: 21000,
       maxBonus: 30,
       timeToZeroBonus: 20,

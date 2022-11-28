@@ -1,12 +1,12 @@
 import { useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
-import { default as NextImage } from 'next/future/image'
+import { default as NextImage } from 'next/image'
 import Link from 'next/link'
+import Layout from '../../../components/Layout'
 
 const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
   ssr: false,
@@ -55,7 +55,7 @@ function MicroSessionIntroduction({ id }: Props) {
             }}
           />
         </Prose>
-        <Link href={`/micro/${data.microSession.id}/0`}>
+        <Link href={`/micro/${data.microSession.id}/0`} legacyBehavior>
           <Button className="justify-center w-full text-lg md:w-auto md:self-end">
             Beginnen
           </Button>

@@ -6,10 +6,11 @@ import {
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Dropdown } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState } from 'react'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
   user: User
@@ -17,8 +18,6 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
-  const [userDropdown, setUserDropdown] = useState(false)
-  const [runningDropdown, setRunningDropdown] = useState(false)
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   const userDropdownContent = [
@@ -40,92 +39,83 @@ function Header({ user }: HeaderProps): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 py-1 font-bold text-white bg-slate-800 print:hidden">
+    <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
       <div>
-        <Button
-          className="mr-2 border-none bg-slate-800"
-          onClick={() => router.push('/')}
-        >
-          <Button.Label>Fragepool</Button.Label>
-        </Button>
-        <Button
-          className="border-none bg-slate-800"
-          onClick={() => router.push('/sessions')}
-        >
-          <Button.Label>Sessions</Button.Label>
-        </Button>
+        <Link href="/" legacyBehavior>
+          <Button className="mr-2 border-none bg-slate-800">
+            <Button.Label>Fragepool</Button.Label>
+          </Button>
+        </Link>
+        <Link href="/sessions" prefetch legacyBehavior>
+          <Button
+            className="mr-2 border-none bg-slate-800"
+            onClick={() => router.push('/sessions')}
+          >
+            <Button.Label>Sessionen</Button.Label>
+          </Button>
+        </Link>
+        <Link href="/courses" prefetch legacyBehavior>
+          <Button className="mr-2 border-none bg-slate-800">
+            <Button.Label>Kurse</Button.Label>
+          </Button>
+        </Link>
       </div>
       <div className="flex flex-row gap-4">
-        <DropdownMenu.Root
-          open={runningDropdown}
-          onOpenChange={setRunningDropdown}
-        >
-          <DropdownMenu.Trigger className="h-full">
+        <Dropdown
+          trigger={
             <Button
-              className="text-green-600 border-none bg-slate-800 hover:text-uzh-blue-100"
-              onClick={() => router.push('/profile')}
+              disabled={
+                !data?.runningSessions || data.runningSessions.length === 0
+              }
+              className={twMerge(
+                'flex flex-row items-center justify-center p-2 border-none',
+                'rounded bg-slate-800 h-9 w-9',
+                data?.runningSessions?.length > 0 &&
+                  'text-green-600 hover:text-uzh-blue-100 hover:bg-uzh-blue-40'
+              )}
             >
-              <Button.Icon>
-                <FontAwesomeIcon
-                  icon={faPlayCircle}
-                  className="-mb-1 -ml-2 h-7"
-                />
-              </Button.Icon>
+              <FontAwesomeIcon icon={faPlayCircle} className="h-7" />
             </Button>
-          </DropdownMenu.Trigger>
+          }
+          items={
+            data?.runningSessions && data?.runningSessions.length > 0
+              ? data?.runningSessions.map((session) => {
+                  return {
+                    label: session.name,
+                    onClick: () =>
+                      router.push(`sessions/${session.id}/cockpit`),
+                  }
+                })
+              : []
+          }
+          className={{
+            viewport:
+              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
+            item: 'text-black hover:!text-uzh-blue-100 hover:bg-uzh-blue-20',
+          }}
+        />
 
-          <DropdownMenu.Content className="flex flex-col p-1 bg-white border border-t-0 border-solid rounded-md border-uzh-grey-80">
-            <DropdownMenu.Item className="[all:_unset]" onClick={() => null}>
-              {data?.runningSessions &&
-                data?.runningSessions.length > 0 &&
-                data?.runningSessions.map((session) => (
-                  <div
-                    className="flex flex-col w-full h-8 px-4 text-black rounded-md cursor-pointer hover:bg-uzh-blue-40 hover:text-uzh-blue-100"
-                    key={session.id}
-                  >
-                    <a
-                      onClick={() =>
-                        router.push(`sessions/${session.id}/cockpit`)
-                      }
-                      className="my-auto text-center"
-                    >
-                      {session.name}
-                    </a>
-                  </div>
-                ))}
-            </DropdownMenu.Item>
-
-            <DropdownMenu.Arrow className="fill-white" />
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        <DropdownMenu.Root open={userDropdown} onOpenChange={setUserDropdown}>
-          <DropdownMenu.Trigger className="h-full">
-            <Button className="my-auto h-9 bg-slate-800">
-              <Button.Icon className="mr-2">
-                <FontAwesomeIcon icon={faUserCircle} size="lg" />
-              </Button.Icon>
-              <Button.Label>{user.shortname}</Button.Label>
-            </Button>
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Content className="flex flex-col p-1 bg-white border border-t-0 border-solid rounded-md border-uzh-grey-80">
-            <DropdownMenu.Item className="[all:_unset]" onClick={() => null}>
-              {userDropdownContent.map((item) => (
-                <div
-                  className="flex flex-col w-full h-8 px-4 text-black rounded-md cursor-pointer hover:bg-uzh-blue-40 hover:text-uzh-blue-100"
-                  key={item.name}
-                >
-                  <a onClick={item.onClick} className="my-auto text-center">
-                    {item.name}
-                  </a>
-                </div>
-              ))}
-            </DropdownMenu.Item>
-
-            <DropdownMenu.Arrow className="fill-white" />
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <Dropdown
+          trigger={
+            <div
+              className={twMerge(
+                'flex flex-row items-center gap-2 px-3 border border-white border-solid',
+                'rounded py-auto h-9 bg-slate-800 hover:bg-uzh-blue-20 hover:text-uzh-blue-100'
+              )}
+            >
+              <FontAwesomeIcon icon={faUserCircle} size="lg" />
+              <div>{user.shortname}</div>
+            </div>
+          }
+          items={userDropdownContent.map((item) => {
+            return { label: item.name, onClick: () => item.onClick() }
+          })}
+          className={{
+            viewport:
+              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
+            item: 'text-black hover:!text-uzh-blue-80 hover:bg-uzh-blue-20 px-3',
+          }}
+        />
       </div>
     </div>
   )
