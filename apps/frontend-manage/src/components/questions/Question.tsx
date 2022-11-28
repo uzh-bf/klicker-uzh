@@ -27,6 +27,7 @@ interface Props {
   type: string
   content: string
   onCheck: any // TODO: typing
+  tagfilter?: string[]
 }
 
 const defaultProps = {
@@ -34,6 +35,7 @@ const defaultProps = {
   isArchived: false,
   lastUsed: [],
   tags: [],
+  tagfilter: [],
 }
 
 function Question({
@@ -45,6 +47,7 @@ function Question({
   content,
   onCheck,
   isArchived,
+  tagfilter,
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
@@ -102,7 +105,7 @@ function Question({
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
-            <QuestionTags tags={tags} />
+            <QuestionTags tags={tags} tagfilter={tagfilter} />
           </div>
         </div>
 
