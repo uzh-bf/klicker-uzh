@@ -522,7 +522,7 @@ function Evaluation() {
               )}
 
               <div className="flex flex-col flex-1 md:flex-row">
-                <div className="z-10 flex-1 order-2 md:order-1">
+                <div className="z-10 flex-1 order-2 mx-4 md:order-1">
                   <Chart
                     chartType={chartType}
                     data={currentInstance}
