@@ -4,6 +4,7 @@ query GetLearningElement($id: ID!) {
   learningElement(id: $id) {
     id
     displayName
+    pointsMultiplier
     course {
       id
       displayName

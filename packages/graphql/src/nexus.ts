@@ -154,6 +154,7 @@ export const QuestionData = interfaceType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
+    t.nonNull.int('pointsMultiplier')
 
     t.nonNull.boolean('hasSampleSolution')
     t.nonNull.boolean('hasAnswerFeedbacks')
@@ -367,6 +368,7 @@ export const Question = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('type')
+    t.nonNull.int('pointsMultiplier')
     t.nonNull.string('content')
 
     t.nonNull.boolean('isArchived')
@@ -438,6 +440,8 @@ export const QuestionInstance = objectType({
   definition(t) {
     t.nonNull.int('id')
 
+    t.nonNull.int('pointsMultiplier')
+
     t.nonNull.field('questionData', {
       type: QuestionData,
     })
@@ -497,6 +501,8 @@ export const LearningElement = objectType({
 
     t.nonNull.string('name')
     t.nonNull.string('displayName')
+    t.string('description')
+    t.nonNull.int('pointsMultiplier')
 
     t.list.nonNull.field('instances', {
       type: QuestionInstance,
