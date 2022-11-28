@@ -3,8 +3,10 @@ import {
   faArrowLeft,
   faArrowRight,
   faCheck,
+  faChevronDown,
   faChevronLeft,
   faChevronRight,
+  faChevronUp,
   faComment,
   faFaceSmile,
   faGamepad,
@@ -77,6 +79,8 @@ function Collapsed({
     } else {
       setShowExtensibleButton(false)
     }
+
+    return () => setQuestionElem(null)
   }, [questionCollapsed, questionElem, selectedInstance])
 
   return (
@@ -102,10 +106,17 @@ function Collapsed({
       </div>
       {showExtensibleButton && (
         <Button
-          className="hidden w-full h-6 text-xs text-center border-solid rounded-none shadow-none md:block bg-slate-200 hover:bg-slate-300 print:hidden"
+          className={twMerge(
+            questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
+            'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
+            ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
+          )}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
         >
-          {questionCollapsed ? 'ICON DOWN' : 'ICON UP'}
+          <FontAwesomeIcon
+            icon={questionCollapsed ? faChevronDown : faChevronUp}
+            className={twMerge('h-6 -mt-1.5', questionCollapsed && '-mt-2')}
+          />
         </Button>
       )}
     </div>
