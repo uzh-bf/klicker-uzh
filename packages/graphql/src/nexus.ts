@@ -494,6 +494,11 @@ export const Course = objectType({
   },
 })
 
+export const OrderType = enumType({
+  name: 'OrderType',
+  members: DB.OrderType,
+})
+
 export const LearningElement = objectType({
   name: 'LearningElement',
   definition(t) {
@@ -503,6 +508,10 @@ export const LearningElement = objectType({
     t.nonNull.string('displayName')
     t.string('description')
     t.nonNull.int('pointsMultiplier')
+    t.nonNull.int('resetTimeDays')
+    t.nonNull.field('orderType', {
+      type: OrderType,
+    })
 
     t.list.nonNull.field('instances', {
       type: QuestionInstance,

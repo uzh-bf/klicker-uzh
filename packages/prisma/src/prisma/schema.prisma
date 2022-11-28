@@ -368,14 +368,21 @@ model Session {
 
 // ----- LEARNING ELEMENTS -----
 
+enum OrderType {
+  SEQUENTIAL
+  SHUFFLED
+  LAST_RESPONSE
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
   description      String?
-  pointsMultiplier Int     @default(1)
-  resetTimeDays    Int     @default(6)
+  pointsMultiplier Int       @default(1)
+  resetTimeDays    Int       @default(6)
+  orderType        OrderType @default(SEQUENTIAL)
 
   instances QuestionInstance[]
 

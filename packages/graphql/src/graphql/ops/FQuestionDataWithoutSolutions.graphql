@@ -4,6 +4,7 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     name
     type
     content
+    pointsMultiplier
 
     ... on ChoicesQuestionData {
       options {

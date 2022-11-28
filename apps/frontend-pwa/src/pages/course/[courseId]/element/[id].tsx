@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  faQuestionCircle,
+  faTimesCircle,
+} from '@fortawesome/free-regular-svg-icons'
+import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
   GetLearningElementDocument,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -7,7 +13,7 @@ import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { QuestionType } from '@type/app'
-import { H3, Progress } from '@uzh-bf/design-system'
+import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
@@ -26,7 +32,7 @@ interface Props {
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<number[] | string | null>(null)
-  const [currentIx, setCurrentIx] = useState(0)
+  const [currentIx, setCurrentIx] = useState(-1)
 
   const router = useRouter()
 
@@ -101,7 +107,55 @@ function LearningElement({ courseId, id }: Props) {
       courseColor={data.learningElement.course.color}
     >
       <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-        {!currentInstance && (
+        {currentIx === -1 && (
+          <div className="flex flex-col space-y-2">
+            <div className="border-b">
+              <H3 className="mb-0">{data.learningElement.displayName}</H3>
+            </div>
+
+            {data.learningElement.description && (
+              <Markdown content={data.learningElement.description} />
+            )}
+
+            <div className="space-y-2">
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon icon={faQuestionCircle} />
+                <div>
+                  Anzahl Fragen: {data.learningElement.instances?.length}
+                </div>
+              </div>
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon icon={faTimesCircle} />
+                <div>
+                  Multiplikator: {data.learningElement.pointsMultiplier}x Punkte
+                </div>
+              </div>
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
+                <div>{data.learningElement.orderType}</div>
+              </div>
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
+                <div>
+                  {data.learningElement.resetTimeDays === 1 ? (
+                    <>täglich</>
+                  ) : (
+                    <>alle {data.learningElement.resetTimeDays} Tage</>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <Button
+              className="self-end text-lg"
+              onClick={() => setCurrentIx(0)}
+            >
+              Starten
+            </Button>
+          </div>
+        )}
+
+        {currentIx >= 0 && !currentInstance && (
           <div className="space-y-3">
             <div>
               <H3>Gratulation!</H3>
@@ -128,7 +182,8 @@ function LearningElement({ courseId, id }: Props) {
                     {instance.evaluation ? (
                       <div>
                         {instance.evaluation.pointsAwarded} /{' '}
-                        {instance.evaluation.score} / 10
+                        {instance.evaluation.score} /{' '}
+                        {instance.pointsMultiplier * 10}
                       </div>
                     ) : (
                       <div>Not attempted</div>
@@ -151,7 +206,9 @@ function LearningElement({ courseId, id }: Props) {
                 <div className="flex-1 basis-2/3">
                   <div className="flex flex-row items-end justify-between mb-4 border-b">
                     <H3 className="mb-0">{questionData.name}</H3>
-                    <div className="text-slate-500">{questionData.type}</div>
+                    <div className="text-slate-500">
+                      {questionData.type} {currentInstance.pointsMultiplier}x
+                    </div>
                   </div>
 
                   <div className="pb-2">
@@ -209,7 +266,7 @@ function LearningElement({ courseId, id }: Props) {
           </div>
         )}
 
-        {currentInstance && (
+        {(currentIx === -1 || currentInstance) && (
           <div className="order-1 md:order-2">
             <Progress
               nonLinear
