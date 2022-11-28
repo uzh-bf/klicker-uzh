@@ -23,9 +23,16 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Button, Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Prose,
+  Select,
+  Switch,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useContext } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -47,6 +54,7 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 
 function Evaluation() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const [selectedBlock, setSelectedBlock] = useState<number>(0)
   const [leaderboard, setLeaderboard] = useState<boolean>(false)
@@ -490,7 +498,7 @@ function Evaluation() {
         {currentInstance && (
           <RadixTab.Content value={String(currentInstance.blockIx)}>
             <div>
-              <div className="bg-primary-bg">
+              <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
                 <div
                   className={twMerge(
                     questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
