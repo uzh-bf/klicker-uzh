@@ -434,8 +434,9 @@ body,
 }
 
 .prose
-  :where(blockquote p:first-of-type):not(:where([class~='not-prose']
-      *))::before {
+  :where(blockquote p:first-of-type):not(
+    :where([class~='not-prose'] *)
+  )::before {
   content: open-quote;
 }
 
@@ -769,14 +770,16 @@ body,
 }
 
 .prose
-  :where(tbody td:first-child, tfoot
-    td:first-child):not(:where([class~='not-prose'] *)) {
+  :where(tbody td:first-child, tfoot td:first-child):not(
+    :where([class~='not-prose'] *)
+  ) {
   padding-left: 0;
 }
 
 .prose
-  :where(tbody td:last-child, tfoot
-    td:last-child):not(:where([class~='not-prose'] *)) {
+  :where(tbody td:last-child, tfoot td:last-child):not(
+    :where([class~='not-prose'] *)
+  ) {
   padding-right: 0;
 }
 
@@ -2771,8 +2774,9 @@ select {
 }
 
 .prose
-  :where(blockquote p:first-of-type):not(:where([class~='not-prose']
-      *))::before {
+  :where(blockquote p:first-of-type):not(
+    :where([class~='not-prose'] *)
+  )::before {
   content: open-quote;
 }
 
@@ -3106,14 +3110,16 @@ select {
 }
 
 .prose
-  :where(tbody td:first-child, tfoot
-    td:first-child):not(:where([class~='not-prose'] *)) {
+  :where(tbody td:first-child, tfoot td:first-child):not(
+    :where([class~='not-prose'] *)
+  ) {
   padding-left: 0;
 }
 
 .prose
-  :where(tbody td:last-child, tfoot
-    td:last-child):not(:where([class~='not-prose'] *)) {
+  :where(tbody td:last-child, tfoot td:last-child):not(
+    :where([class~='not-prose'] *)
+  ) {
   padding-right: 0;
 }
 
