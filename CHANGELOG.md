@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.104](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.103...v2.0.0-alpha.104) (2022-11-29)
+
+
+### Features
+
+* add points multiplicator on learning elements and questions ([#3124](https://github.com/uzh-bf/klicker-uzh/issues/3124)) ([56a651f](https://github.com/uzh-bf/klicker-uzh/commit/56a651febabda2b601c148a0d0fb47227cfce042))
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix initialization of choices on question creation ([0e5f713](https://github.com/uzh-bf/klicker-uzh/commit/0e5f713cc7fc305c7a2935800e39f23e66693f28))
+
+
+### Deployment
+
+* update production version ([b908e56](https://github.com/uzh-bf/klicker-uzh/commit/b908e561da7b9891b5211e324d55129ed203d2b0))
+
+
+### Documentation
+
+* update README for v3 ([#3080](https://github.com/uzh-bf/klicker-uzh/issues/3080)) ([6f196ea](https://github.com/uzh-bf/klicker-uzh/commit/6f196ea4642daf85765876300a7ecfb70a306077))
+
+
+### Dependencies
+
+* upgrade to next 13 ([#3100](https://github.com/uzh-bf/klicker-uzh/issues/3100)) ([5c21755](https://github.com/uzh-bf/klicker-uzh/commit/5c21755bf4ada5d9b07055d9fed31bf66f566f9d))
+
+
+### Other
+
+* **packages/graphql:** add .env.template ([e3db957](https://github.com/uzh-bf/klicker-uzh/commit/e3db957d9ca3501badef9d7b8bb3e8f176a0443c))
+* **packages/prisma:** add INITIAL_PASSWORD to .env.template ([0e05cb0](https://github.com/uzh-bf/klicker-uzh/commit/0e05cb07760c826c2bdde63426ab67c91a4988f6))
+* **packages/prisma:** seed update ([7ff53e7](https://github.com/uzh-bf/klicker-uzh/commit/7ff53e76ac972ea970eaacc8f3620265f4a5e000))
+* **packages/prisma:** seed update ([9e09d3c](https://github.com/uzh-bf/klicker-uzh/commit/9e09d3c9589c96d9ae515f899f6f9f00b8db0137))
+* **packages/prisma:** seed update ([5cb7aa8](https://github.com/uzh-bf/klicker-uzh/commit/5cb7aa8051f93553db498f968f9f437840cb0398))
+* **README:** fix docs link and add discussion link ([5703b48](https://github.com/uzh-bf/klicker-uzh/commit/5703b48cfa92b0b29924a5ab4435ef502ba784dd))
+* seed update for week 11 BF1 ([213f608](https://github.com/uzh-bf/klicker-uzh/commit/213f608951408bd45683356c824a4f4dac3aee0e))
+
+
+### Refactors
+
+* **frontend-manage:** move collapsible on session list to design-system ([#3105](https://github.com/uzh-bf/klicker-uzh/issues/3105)) ([5c3377e](https://github.com/uzh-bf/klicker-uzh/commit/5c3377e8a794a8edd9104493d75b5c8677be1460))
+
+
+### Enhancements
+
+* create course overview ([#3074](https://github.com/uzh-bf/klicker-uzh/issues/3074)) ([a2975cb](https://github.com/uzh-bf/klicker-uzh/commit/a2975cbfa350e4c7beda9147138612efadaa0148))
+* **frontend-*:** add maximum length to feedbacks and responses ([#3123](https://github.com/uzh-bf/klicker-uzh/issues/3123)) ([571f7ce](https://github.com/uzh-bf/klicker-uzh/commit/571f7ce3e6311baa2b9336082362adecdd342ab5))
+* **frontend-manage:** add question collapse to evaluation page ([#3063](https://github.com/uzh-bf/klicker-uzh/issues/3063)) ([69d8481](https://github.com/uzh-bf/klicker-uzh/commit/69d84815d3e7fa2f43283753ae561ecccbae5a80))
+* **frontend-manage:** add tag highlighting for filtered tags ([#3125](https://github.com/uzh-bf/klicker-uzh/issues/3125)) ([eb3639d](https://github.com/uzh-bf/klicker-uzh/commit/eb3639de4173498356f835262a1ddcd97f27f2c3))
+* **frontend-manage:** reintroduce tag filtering ([#3073](https://github.com/uzh-bf/klicker-uzh/issues/3073)) ([789e23b](https://github.com/uzh-bf/klicker-uzh/commit/789e23ba7381acb588d1fd176c573e804e37ed68))
+* implement improved session list ([#3077](https://github.com/uzh-bf/klicker-uzh/issues/3077)) ([66310e4](https://github.com/uzh-bf/klicker-uzh/commit/66310e48f44ba19d450c7d67718540816b501def))
+
 ## [2.0.0-alpha.103](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.102...v2.0.0-alpha.103) (2022-11-21)
 
 
