@@ -154,7 +154,7 @@ export const QuestionData = interfaceType({
     t.nonNull.string('name')
     t.nonNull.string('type')
     t.nonNull.string('content')
-    t.nonNull.int('pointsMultiplier')
+    t.int('pointsMultiplier')
 
     t.nonNull.boolean('hasSampleSolution')
     t.nonNull.boolean('hasAnswerFeedbacks')
@@ -514,8 +514,8 @@ export const LearningElement = objectType({
     })
 
     t.int('previouslyAnswered')
-    t.int('previousScore')
-    t.int('previousPointsAwarded')
+    t.float('previousScore')
+    t.float('previousPointsAwarded')
     t.int('totalTrials')
 
     t.list.nonNull.field('instances', {
