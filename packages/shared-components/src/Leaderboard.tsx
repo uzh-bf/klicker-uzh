@@ -4,7 +4,6 @@ import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
 import { Podium } from './Podium'
 
-// TODO: eliminate participantId and replace it by participant.id
 interface LeaderboardProps {
   leaderboard: any[]
   activeParticipation?: boolean
