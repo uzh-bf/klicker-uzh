@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.105](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.104...v2.0.0-alpha.105) (2022-11-29)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that score and pointsawarded can be floats ([33e619e](https://github.com/uzh-bf/klicker-uzh/commit/33e619ee489cfdde477eb3b99140bb9298bb23fe))
+
+
+### Other
+
+* lockfile maintenance ([aa703b2](https://github.com/uzh-bf/klicker-uzh/commit/aa703b2790144c0375bb0c7f25fc7cf6c25e874f))
+
 ## [2.0.0-alpha.104](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.103...v2.0.0-alpha.104) (2022-11-29)
 
 
