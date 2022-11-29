@@ -13,7 +13,8 @@
     "dev": "cross-env NODE_ENV=development npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "cross-env NODE_ENV=development tsup --watch",
     "dev:func": "func start -p 7072",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "func start -p 7072"
   },
   "dependencies": {
     "@azure/service-bus": "7.7.2",

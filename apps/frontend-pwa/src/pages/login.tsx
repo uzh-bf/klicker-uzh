@@ -104,6 +104,7 @@ function LoginForm() {
                   height={90}
                   alt="KlickerUZH Logo"
                   className="mx-auto"
+                  id="login-logo"
                 />
               </div>
               <H1>Login</H1>
@@ -124,6 +125,7 @@ function LoginForm() {
                         touched.username &&
                         'border-red-400 bg-red-50'
                     )}
+                    id="username-field"
                   />
                   <ErrorMessage
                     name="username"
@@ -144,6 +146,7 @@ function LoginForm() {
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
                       touched.password && 'border-red-400 bg-red-50'
                     )}
+                    id="password-field"
                   />
                   <ErrorMessage
                     name="password"
@@ -161,6 +164,7 @@ function LoginForm() {
                       type="submit"
                       disabled={isSubmitting}
                       className="mt-2 border-uzh-grey-80"
+                      id="submit-login"
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>

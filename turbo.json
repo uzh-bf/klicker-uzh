@@ -16,6 +16,10 @@
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
+    },
+    "start": {
+      "dependsOn": ["^build", "build"],
+      "outputs": ["dist/**", ".next/**"]
     }
   }
 }

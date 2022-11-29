@@ -13,7 +13,8 @@
     "dev": "cross-env NODE_ENV=development npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "cross-env NODE_ENV=development tsup --watch",
     "dev:func": "func start -p 7073",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "func start -p 7073"
   },
   "dependencies": {
     "@klicker-uzh/grading": "^2.0.0-alpha.23",
