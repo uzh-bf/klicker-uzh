@@ -11,6 +11,7 @@ interface LeaderboardProps {
   onLeave?: () => void
   participant?: any // TODO: typing
   hidePodium?: boolean
+  hideAvatars?: boolean
   className?: {
     root?: string
     podium?: string
@@ -27,6 +28,7 @@ function Leaderboard({
   onLeave,
   participant,
   hidePodium,
+  hideAvatars,
   className,
 }: LeaderboardProps): React.ReactElement {
   const { top10, inTop10, selfEntry } = useMemo(
@@ -77,6 +79,7 @@ function Leaderboard({
                 isActive={activeParticipation ?? true}
                 pseudonym={entry.username}
                 avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
                 points={entry.score}
                 rank={entry.rank}
                 onJoinCourse={onJoin}
@@ -88,6 +91,7 @@ function Leaderboard({
                 rank={entry.rank}
                 pseudonym={entry.username}
                 avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
                 points={entry.score}
                 className={className?.listItem}
               />
@@ -99,6 +103,7 @@ function Leaderboard({
             isActive={activeParticipation ?? false}
             pseudonym={participant.username}
             avatar={participant.avatar ?? 'placeholder'}
+            withAvatar={!hideAvatars}
             points={selfEntry?.score}
             rank={selfEntry?.rank ?? '?'}
             onJoinCourse={onJoin}
