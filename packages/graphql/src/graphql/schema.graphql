@@ -109,6 +109,7 @@ type ChoicesQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: ChoicesQuestionOptions!
+  pointsMultiplier: Int!
   type: String!
 }
 
@@ -193,6 +194,7 @@ type FreeTextQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
   type: String!
 }
 
@@ -301,11 +303,19 @@ type LeaderboardStatistics {
 type LearningElement {
   course: Course
   courseId: String
+  description: String
   displayName: String!
   id: ID!
   instances: [QuestionInstance!]
   name: String!
   numOfInstances: Int
+  orderType: OrderType!
+  pointsMultiplier: Int!
+  previousPointsAwarded: Int
+  previousScore: Int
+  previouslyAnswered: Int
+  resetTimeDays: Int!
+  totalTrials: Int
 }
 
 type MicroSession {
@@ -382,6 +392,7 @@ type NumericalQuestionData implements QuestionData {
   isDeleted: Boolean!
   name: String!
   options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
   type: String!
 }
 
@@ -416,6 +427,12 @@ input OptionsNumericalInput {
   accuracy: Int
   restrictions: Restrictions
   solutionRanges: [SolutionRange]
+}
+
+enum OrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
 }
 
 enum ParameterType {
@@ -512,6 +529,7 @@ type Question {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
+  pointsMultiplier: Int!
   questionData: QuestionData!
   tags: [Tag!]
   type: String!
@@ -526,6 +544,7 @@ interface QuestionData {
   isArchived: Boolean!
   isDeleted: Boolean!
   name: String!
+  pointsMultiplier: Int!
   type: String!
 }
 
@@ -540,6 +559,7 @@ type QuestionInstance {
   attachments: [Attachment]
   evaluation: InstanceEvaluation
   id: Int!
+  pointsMultiplier: Int!
   questionData: QuestionData!
 }
 
