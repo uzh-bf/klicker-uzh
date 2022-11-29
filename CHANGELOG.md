@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.107](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.106...v2.0.0-alpha.107) (2022-11-29)
+
+
+### Other
+
+* production version ([10b49c8](https://github.com/uzh-bf/klicker-uzh/commit/10b49c86316a3b9b781a2908b891a3c5472014df))
+
+
+### Enhancements
+
+* **packages/graphql:** shuffle instances before ordering by last response ([c99f0f4](https://github.com/uzh-bf/klicker-uzh/commit/c99f0f4d52d071f20f561db5e505b42d9c8addf6))
+
 ## [2.0.0-alpha.106](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.105...v2.0.0-alpha.106) (2022-11-29)
 
 

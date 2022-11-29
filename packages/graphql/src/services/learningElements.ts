@@ -477,7 +477,7 @@ export async function getLearningElementData(
   if (element.orderType === OrderType.LAST_RESPONSE) {
     const orderedInstances = R.sort(
       (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
-      instancesWithoutSolution.instances
+      shuffle(instancesWithoutSolution.instances)
     )
 
     return {
