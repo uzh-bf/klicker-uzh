@@ -336,7 +336,11 @@ export interface NexusGenObjects {
     numOfInstances?: number | null; // Int
     orderType: NexusGenEnums['OrderType']; // OrderType!
     pointsMultiplier: number; // Int!
+    previousPointsAwarded?: number | null; // Int
+    previousScore?: number | null; // Int
+    previouslyAnswered?: number | null; // Int
     resetTimeDays: number; // Int!
+    totalTrials?: number | null; // Int
   }
   MicroSession: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -759,7 +763,11 @@ export interface NexusGenFieldTypes {
     numOfInstances: number | null; // Int
     orderType: NexusGenEnums['OrderType']; // OrderType!
     pointsMultiplier: number; // Int!
+    previousPointsAwarded: number | null; // Int
+    previousScore: number | null; // Int
+    previouslyAnswered: number | null; // Int
     resetTimeDays: number; // Int!
+    totalTrials: number | null; // Int
   }
   MicroSession: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
@@ -1259,7 +1267,11 @@ export interface NexusGenFieldTypeNames {
     numOfInstances: 'Int'
     orderType: 'OrderType'
     pointsMultiplier: 'Int'
+    previousPointsAwarded: 'Int'
+    previousScore: 'Int'
+    previouslyAnswered: 'Int'
     resetTimeDays: 'Int'
+    totalTrials: 'Int'
   }
   MicroSession: { // field return type name
     course: 'Course'

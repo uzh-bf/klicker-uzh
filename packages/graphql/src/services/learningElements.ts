@@ -407,63 +407,96 @@ export async function getLearningElementData(
 
   if (!element) return null
 
-  const instancesWithoutSolution = element.instances.map((instance) => {
-    const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
-    if (
-      !questionData ||
-      typeof questionData !== 'object' ||
-      Array.isArray(questionData)
-    )
-      return instance
-
-    switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM:
+  const instancesWithoutSolution = element.instances.reduce(
+    (acc, instance) => {
+      const questionData =
+        instance.questionData?.valueOf() as AllQuestionTypeData
+      if (
+        !questionData ||
+        typeof questionData !== 'object' ||
+        Array.isArray(questionData)
+      )
         return {
-          ...instance,
-          lastResponse: instance.responses?.[0]?.lastAwardedAt,
-          questionData: {
-            ...questionData,
-            options: {
-              ...questionData.options,
-              choices: questionData.options.choices.map(
-                R.pick(['ix', 'value'])
-              ),
-            },
-          },
+          ...acc,
+          instances: [...acc.instances, instance],
         }
 
-      case QuestionType.FREE_TEXT:
-        return instance
+      switch (questionData.type) {
+        case QuestionType.SC:
+        case QuestionType.MC:
+        case QuestionType.KPRIM:
+          const response = instance.responses?.[0]
+          return {
+            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
+            previousScore: acc.previousScore + (response?.totalScore ?? 0),
+            previousPointsAwarded:
+              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
+            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
+            instances: [
+              ...acc.instances,
+              {
+                ...instance,
+                lastResponse: response?.lastAwardedAt,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    ...questionData.options,
+                    choices: questionData.options.choices.map(
+                      R.pick(['ix', 'value'])
+                    ),
+                  },
+                },
+              },
+            ],
+          }
 
-      case QuestionType.NUMERICAL:
-        return instance
-
-      default:
-        return instance
+        case QuestionType.FREE_TEXT:
+        case QuestionType.NUMERICAL:
+        default: {
+          const response = instance.responses?.[0]
+          return {
+            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
+            previousScore: acc.previousScore + (response?.totalScore ?? 0),
+            previousPointsAwarded:
+              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
+            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
+            instances: [...acc.instances, instance],
+          }
+        }
+      }
+    },
+    {
+      instances: [],
+      previouslyAnswered: 0,
+      previousScore: 0,
+      previousPointsAwarded: 0,
+      totalTrials: 0,
     }
-  })
+  )
 
   if (element.orderType === OrderType.LAST_RESPONSE) {
     const orderedInstances = R.sort(
       (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
-      instancesWithoutSolution
+      instancesWithoutSolution.instances
     )
 
     return {
       ...element,
+      ...instancesWithoutSolution,
       instances: orderedInstances,
     }
-  } else if (element.orderType === OrderType.SHUFFLED) {
+  }
+
+  if (element.orderType === OrderType.SHUFFLED) {
     return {
       ...element,
-      instances: shuffle(instancesWithoutSolution),
+      ...instancesWithoutSolution,
+      instances: shuffle(instancesWithoutSolution.instances),
     }
   }
 
   return {
     ...element,
-    instances: instancesWithoutSolution,
+    ...instancesWithoutSolution,
   }
 }

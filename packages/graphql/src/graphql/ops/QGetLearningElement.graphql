@@ -8,6 +8,10 @@ query GetLearningElement($id: ID!) {
     pointsMultiplier
     resetTimeDays
     orderType
+    previouslyAnswered
+    previousScore
+    previousPointsAwarded
+    totalTrials
     course {
       id
       displayName

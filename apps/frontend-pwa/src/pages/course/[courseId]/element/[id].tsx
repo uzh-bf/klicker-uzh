@@ -3,7 +3,7 @@ import {
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLearningElementDocument,
@@ -22,6 +22,12 @@ import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
 import Layout from '../../../../components/Layout'
 import OptionsDisplay from '../../../../components/OptionsDisplay'
+
+const ORDER_TYPE_LABEL = {
+  LAST_RESPONSE: 'zuletzt beantwortete Fragen am Ende',
+  SHUFFLED: 'zufällige Reihenfolge',
+  SEQUENTIAL: 'geordnet in Sequenz',
+}
 
 interface Props {
   courseId: string
@@ -108,7 +114,7 @@ function LearningElement({ courseId, id }: Props) {
     >
       <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         {currentIx === -1 && (
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-4">
             <div className="border-b">
               <H3 className="mb-0">{data.learningElement.displayName}</H3>
             </div>
@@ -117,31 +123,60 @@ function LearningElement({ courseId, id }: Props) {
               <Markdown content={data.learningElement.description} />
             )}
 
-            <div className="space-y-2">
-              <div className="flex flex-row items-center gap-2">
-                <FontAwesomeIcon icon={faQuestionCircle} />
-                <div>
-                  Anzahl Fragen: {data.learningElement.instances?.length}
+            <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faQuestionCircle} />
+                  <div>
+                    Anzahl Fragen: {data.learningElement.instances?.length}
+                  </div>
+                </div>
+                <div className="flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
+                  <div>{ORDER_TYPE_LABEL[data.learningElement.orderType]}</div>
+                </div>
+                <div className="flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
+                  <div>
+                    {data.learningElement.resetTimeDays === 1 ? (
+                      <>täglich</>
+                    ) : (
+                      <>alle {data.learningElement.resetTimeDays} Tage</>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-row items-center gap-2">
-                <FontAwesomeIcon icon={faTimesCircle} />
-                <div>
-                  Multiplikator: {data.learningElement.pointsMultiplier}x Punkte
+
+              <div className="flex-1 space-y-2">
+                {/* <div className="flex flex-row items-center gap-2">
+                  <div>
+                    Punkte (berechnet): {data.learningElement.previousScore}
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
-                <div>{data.learningElement.orderType}</div>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
-                <div>
-                  {data.learningElement.resetTimeDays === 1 ? (
-                    <>täglich</>
-                  ) : (
-                    <>alle {data.learningElement.resetTimeDays} Tage</>
-                  )}
+                <div className="flex flex-row items-center gap-2">
+                  <div>
+                    Punkte (gesammelt):{' '}
+                    {data.learningElement.previousPointsAwarded}
+                  </div>
+                </div> */}
+                <div className="flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} />
+                  <div>
+                    Min. 1x beantwortet:{' '}
+                    {data.learningElement.previouslyAnswered}/
+                    {data.learningElement.instances.length}
+                  </div>
+                </div>
+                {/* <div className="flex flex-row items-center gap-2">
+                  Anzahl Antworten:{' '}
+                  <div>{data.learningElement.totalTrials}</div>
+                </div> */}
+                <div className="flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faTimesCircle} />
+                  <div>
+                    Multiplikator: {data.learningElement.pointsMultiplier}x
+                    Punkte
+                  </div>
                 </div>
               </div>
             </div>

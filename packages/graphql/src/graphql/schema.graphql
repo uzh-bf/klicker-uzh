@@ -311,7 +311,11 @@ type LearningElement {
   numOfInstances: Int
   orderType: OrderType!
   pointsMultiplier: Int!
+  previousPointsAwarded: Int
+  previousScore: Int
+  previouslyAnswered: Int
   resetTimeDays: Int!
+  totalTrials: Int
 }
 
 type MicroSession {

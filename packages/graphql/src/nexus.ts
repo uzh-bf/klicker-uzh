@@ -513,6 +513,11 @@ export const LearningElement = objectType({
       type: OrderType,
     })
 
+    t.int('previouslyAnswered')
+    t.int('previousScore')
+    t.int('previousPointsAwarded')
+    t.int('totalTrials')
+
     t.list.nonNull.field('instances', {
       type: QuestionInstance,
     })
