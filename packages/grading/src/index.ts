@@ -149,7 +149,6 @@ export function computeAwardedPoints({
   let responseTiming =
     (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
     1000
-  console.log('responseTiming', responseTiming)
 
   // if the student gets the question right, they get the full points or partial points depending on the question type
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
@@ -163,6 +162,5 @@ export function computeAwardedPoints({
       Math.max(maxBonus - slope * responseTiming, 0)
   }
 
-  console.log('awarded points', awardedPoints)
   return Math.round(awardedPoints)
 }

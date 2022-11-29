@@ -27,6 +27,7 @@ interface Props {
   type: string
   content: string
   onCheck: any // TODO: typing
+  tagfilter?: string[]
 }
 
 const defaultProps = {
@@ -34,6 +35,7 @@ const defaultProps = {
   isArchived: false,
   lastUsed: [],
   tags: [],
+  tagfilter: [],
 }
 
 function Question({
@@ -45,6 +47,7 @@ function Question({
   content,
   onCheck,
   isArchived,
+  tagfilter,
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
@@ -102,7 +105,7 @@ function Question({
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
-            <QuestionTags tags={tags} />
+            <QuestionTags tags={tags} tagfilter={tagfilter} />
           </div>
         </div>
 
@@ -124,7 +127,7 @@ function Question({
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
-              className="justify-center h-10 bg-red-300 w-36"
+              className="justify-center h-10 text-black bg-red-300 shadow-none cursor-not-allowed w-36 opacity-60"
               onClick={() =>
                 deleteQuestion({
                   variables: {
@@ -133,6 +136,7 @@ function Question({
                   refetchQueries: [{ query: GetUserQuestionsDocument }],
                 })
               }
+              disabled
             >
               Löschen
             </Button>
