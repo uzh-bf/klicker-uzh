@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.106](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.105...v2.0.0-alpha.106) (2022-11-29)
+
+
+### Bug Fixes
+
+* leaderboard logic ([d4e735a](https://github.com/uzh-bf/klicker-uzh/commit/d4e735aa031d9c5b56d4457233acfc8fb086fd0d))
+
 ## [2.0.0-alpha.105](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.104...v2.0.0-alpha.105) (2022-11-29)
 
 
