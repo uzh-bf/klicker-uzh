@@ -176,7 +176,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   ChoicesQuestionOptions: { // root type
@@ -242,7 +242,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   FreeTextQuestionOptions: { // root type
@@ -336,8 +336,8 @@ export interface NexusGenObjects {
     numOfInstances?: number | null; // Int
     orderType: NexusGenEnums['OrderType']; // OrderType!
     pointsMultiplier: number; // Int!
-    previousPointsAwarded?: number | null; // Int
-    previousScore?: number | null; // Int
+    previousPointsAwarded?: number | null; // Float
+    previousScore?: number | null; // Float
     previouslyAnswered?: number | null; // Int
     resetTimeDays: number; // Int!
     totalTrials?: number | null; // Int
@@ -371,7 +371,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -603,7 +603,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   ChoicesQuestionOptions: { // field return type
@@ -669,7 +669,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   FreeTextQuestionOptions: { // field return type
@@ -763,8 +763,8 @@ export interface NexusGenFieldTypes {
     numOfInstances: number | null; // Int
     orderType: NexusGenEnums['OrderType']; // OrderType!
     pointsMultiplier: number; // Int!
-    previousPointsAwarded: number | null; // Int
-    previousScore: number | null; // Int
+    previousPointsAwarded: number | null; // Float
+    previousScore: number | null; // Float
     previouslyAnswered: number | null; // Int
     resetTimeDays: number; // Int!
     totalTrials: number | null; // Int
@@ -840,7 +840,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
@@ -1048,7 +1048,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
-    pointsMultiplier: number; // Int!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
 }
@@ -1267,8 +1267,8 @@ export interface NexusGenFieldTypeNames {
     numOfInstances: 'Int'
     orderType: 'OrderType'
     pointsMultiplier: 'Int'
-    previousPointsAwarded: 'Int'
-    previousScore: 'Int'
+    previousPointsAwarded: 'Float'
+    previousScore: 'Float'
     previouslyAnswered: 'Int'
     resetTimeDays: 'Int'
     totalTrials: 'Int'
