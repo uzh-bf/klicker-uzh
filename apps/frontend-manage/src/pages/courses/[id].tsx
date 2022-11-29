@@ -1,11 +1,14 @@
 import { useQuery } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSingleCourseDocument,
+  LeaderboardEntry,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import CourseDescription from '../../components/courses/CourseDescription'
@@ -26,6 +29,39 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
   })
 
+  const avgScore = useMemo(() => {
+    if (!dataCourse?.course?.leaderboard) {
+      return 0
+    }
+    return (
+      dataCourse.course.leaderboard
+        .map((entry: LeaderboardEntry) => entry.score)
+        .reduce((a: number, b: number) => a + b, 0) /
+      dataCourse.course.leaderboard.length
+    )
+  }, [dataCourse])
+
+  const avgLBScore = useMemo(() => {
+    const localLeaderboard = dataCourse?.course?.leaderboard.filter(
+      (entry: LeaderboardEntry) => entry.participation?.isActive
+    )
+    if (!localLeaderboard) {
+      return 0
+    }
+
+    return (
+      localLeaderboard
+        .map((entry: LeaderboardEntry) => entry.score)
+        .reduce((a: number, b: number) => a + b, 0) / localLeaderboard.length
+    )
+  }, [dataCourse])
+
+  const leaderboard = useMemo(() => {
+    return dataCourse?.course?.leaderboard.filter(
+      (entry: LeaderboardEntry) => entry.participation?.isActive
+    )
+  }, [dataCourse])
+
   if (loadingCourse) return <div>Loading...</div>
   if ((!dataCourse && !loadingCourse) || errorCourse) {
     router.push('/404')
@@ -43,6 +79,9 @@ function CourseOverviewPage() {
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
           <H1>Kurs: {dataCourse?.course?.name}</H1>
+          <div className="italic">
+            {dataCourse?.course?.numOfParticipants} Teilnehmer
+          </div>
         </div>
         {dataCourse?.course?.description ? (
           descriptionEditMode ? (
@@ -134,7 +173,20 @@ function CourseOverviewPage() {
         </div>
         <div className="w-full md:w-1/3 md:pl-2">
           <H3>Kurs Leaderboard</H3>
-          <Leaderboard leaderboard={dataCourse?.course?.leaderboard || []} />
+          <Leaderboard leaderboard={leaderboard || []} />
+          <div className="mt-2 text-sm italic text-right text-gray-500">
+            <div>
+              Teilnehmer Leaderboard:{' '}
+              {dataCourse?.course?.numOfActiveParticipants}
+            </div>
+            <div>
+              Durchschnittl. Punkte: {Math.round(avgLBScore * 100) / 100}
+            </div>
+            <div className="mt-1">
+              Kursteilnehmer: {dataCourse?.course?.numOfParticipants}
+            </div>
+            <div>Durchschnittl. Punkte: {Math.round(avgScore * 100) / 100}</div>
+          </div>
         </div>
       </div>
     </Layout>

@@ -8,6 +8,7 @@ query GetSingleCourse($courseId: ID!) {
     description
     color
     numOfParticipants
+    numOfActiveParticipants
 
     sessions {
       id
@@ -41,6 +42,9 @@ query GetSingleCourse($courseId: ID!) {
       rank
       username
       avatar
+      participation {
+        isActive
+      }
     }
   }
 }

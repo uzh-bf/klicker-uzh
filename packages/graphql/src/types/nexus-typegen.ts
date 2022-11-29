@@ -200,6 +200,7 @@ export interface NexusGenObjects {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    numOfActiveParticipants?: number | null; // Int
     numOfParticipants?: number | null; // Int
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     pinCode?: number | null; // Int
@@ -627,6 +628,7 @@ export interface NexusGenFieldTypes {
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
     microSessions: NexusGenRootTypes['MicroSession'][]; // [MicroSession!]!
     name: string; // String!
+    numOfActiveParticipants: number | null; // Int
     numOfParticipants: number | null; // Int
     participantGroups: Array<NexusGenRootTypes['ParticipantGroup'] | null>; // [ParticipantGroup]!
     pinCode: number | null; // Int
@@ -1131,6 +1133,7 @@ export interface NexusGenFieldTypeNames {
     learningElements: 'LearningElement'
     microSessions: 'MicroSession'
     name: 'String'
+    numOfActiveParticipants: 'Int'
     numOfParticipants: 'Int'
     participantGroups: 'ParticipantGroup'
     pinCode: 'Int'

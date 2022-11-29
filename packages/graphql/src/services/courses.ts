@@ -160,7 +160,7 @@ export async function getCourseOverviewData(
     })
 
     if (participation) {
-      const allEntries = lbEntries.reduce(
+      const allEntries = lbEntries?.reduce(
         (acc, entry) => {
           return {
             mapped: [
@@ -402,18 +402,18 @@ export async function getCourseData(
           score: 'desc',
         },
       },
+      participations: true,
     },
   })
 
-  const leaderboard = course?.leaderboard
-    .filter((entry) => entry.participation?.isActive)
-    .map((entry, ix) => ({
-      id: entry?.id,
-      score: entry?.score,
-      rank: ix + 1,
-      username: entry.participation?.participant.username,
-      avatar: entry.participation?.participant.avatar,
-    }))
+  const leaderboard = course?.leaderboard.map((entry, ix) => ({
+    id: entry?.id,
+    score: entry?.score,
+    rank: ix + 1,
+    username: entry.participation?.participant.username,
+    avatar: entry.participation?.participant.avatar,
+    participation: entry.participation,
+  }))
 
   const reducedSessions = course?.sessions
     .map((session) => {
@@ -473,7 +473,10 @@ export async function getCourseData(
     sessions: reducedSessions,
     learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
-    numOfParticipants: course?.leaderboard.length,
+    numOfParticipants: course?.participations.length,
+    numOfActiveParticipants: course?.leaderboard.filter(
+      (entry) => entry.participation?.isActive
+    ).length,
     leaderboard: leaderboard,
   }
 }
