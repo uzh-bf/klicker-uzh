@@ -173,7 +173,10 @@ function CourseOverviewPage() {
         </div>
         <div className="w-full md:w-1/3 md:pl-2">
           <H3>Kurs Leaderboard</H3>
-          <Leaderboard leaderboard={leaderboard || []} />
+          <Leaderboard
+            className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
+            leaderboard={leaderboard || []}
+          />
           <div className="mt-2 text-sm italic text-right text-gray-500">
             <div>
               Teilnehmer Leaderboard:{' '}
