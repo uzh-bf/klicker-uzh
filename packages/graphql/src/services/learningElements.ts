@@ -445,15 +445,11 @@ export async function getLearningElementData(
     }
   })
 
-  // TODO: orderType shuffled
-
   if (element.orderType === OrderType.LAST_RESPONSE) {
     const orderedInstances = R.sort(
       (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
       instancesWithoutSolution
     )
-
-    console.log(orderedInstances.map((i) => i.lastResponse))
 
     return {
       ...element,
