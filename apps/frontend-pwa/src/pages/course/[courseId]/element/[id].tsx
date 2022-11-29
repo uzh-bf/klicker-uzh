@@ -239,10 +239,11 @@ function LearningElement({ courseId, id }: Props) {
             {questionData && (
               <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
                 <div className="flex-1 basis-2/3">
-                  <div className="flex flex-row items-end justify-between mb-4 border-b">
+                  <div className="flex flex-row items-center justify-between mb-4 border-b">
                     <H3 className="mb-0">{questionData.name}</H3>
-                    <div className="text-slate-500">
-                      {questionData.type} {currentInstance.pointsMultiplier}x
+                    <div className="text-sm md:text-base text-slate-500">
+                      Frage {currentIx + 1}/
+                      {data.learningElement?.instances?.length}
                     </div>
                   </div>
 
@@ -264,16 +265,20 @@ function LearningElement({ courseId, id }: Props) {
 
                 {currentInstance.evaluation && (
                   <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
+                    <div className="flex flex-row gap-2">
+                      <div className="font-bold">Multiplikator</div>
+                      <div>{currentInstance.pointsMultiplier}x</div>
+                    </div>
                     <div className="flex flex-row gap-8">
                       <div>
-                        <div className="font-bold">Punkte (berechnet)</div>
+                        <div className="font-bold">Berechnet</div>
                         <div className="text-xl">
                           {currentInstance.evaluation.score} Punkte
                         </div>
                       </div>
 
                       <div>
-                        <div className="font-bold">Punkte (gesammelt)</div>
+                        <div className="font-bold">Gesammelt</div>
                         <div className="text-xl">
                           {currentInstance.evaluation.pointsAwarded} Punkte
                         </div>
@@ -306,6 +311,9 @@ function LearningElement({ courseId, id }: Props) {
             <Progress
               nonLinear
               isMaxVisible
+              displayOffset={
+                data.learningElement?.instances?.length > 15 ? 3 : undefined
+              }
               formatter={(v) => v}
               value={currentIx}
               max={data.learningElement?.instances?.length ?? 0}
