@@ -17,10 +17,7 @@ import Leaderboard from 'shared-components/src/Leaderboard'
 import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
-import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Markdown from '@klicker-uzh/markdown'
-import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/GroupVisualization'
@@ -186,7 +183,7 @@ function CourseOverview({ courseId }: any) {
             {course?.awards?.length != 0 && (
               <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
                 <H3 className="mb-2 text-base">BF-Champion Awards</H3>
-                <div className="flex flex-col gap-6 text-sm text-gray-700 md:flex-row">
+                <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                   <div className="flex-1 space-y-1">
                     {course.awards
                       ?.filter((award) => award.type === 'PARTICIPANT')
@@ -287,16 +284,17 @@ function CourseOverview({ courseId }: any) {
                   '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2' && (
                   <div className="mt-8">
                     <H4>Gruppenaktivitäten</H4>
-                    <Link
+                    {/* <Link
                       href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
                       className="inline-flex items-center gap-2 hover:text-orange-700"
-                      legacyBehavior
-                    >
-                      <FontAwesomeIcon icon={faExternalLink} />
-                      <span>
+                    > */}
+                    <div>
+                      {/* <FontAwesomeIcon icon={faExternalLink} /> */}
+                      <span className="text-gray-600">
                         Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
                       </span>
-                    </Link>
+                    </div>
+                    {/* </Link> */}
                   </div>
                 )}
               </div>

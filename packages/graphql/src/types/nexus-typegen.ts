@@ -106,6 +106,7 @@ export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
   AwardType: "GROUP" | "PARTICIPANT"
+  OrderType: "LAST_RESPONSE" | "SEQUENTIAL" | "SHUFFLED"
   ParameterType: "NUMBER" | "STRING"
   SessionBlockStatus: "ACTIVE" | "EXECUTED" | "SCHEDULED"
   SessionStatus: "COMPLETED" | "PREPARED" | "RUNNING" | "SCHEDULED"
@@ -175,6 +176,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   ChoicesQuestionOptions: { // root type
@@ -240,6 +242,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   FreeTextQuestionOptions: { // root type
@@ -325,11 +328,19 @@ export interface NexusGenObjects {
   LearningElement: { // root type
     course?: NexusGenRootTypes['Course'] | null; // Course
     courseId?: string | null; // String
+    description?: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     instances?: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances?: number | null; // Int
+    orderType: NexusGenEnums['OrderType']; // OrderType!
+    pointsMultiplier: number; // Int!
+    previousPointsAwarded?: number | null; // Float
+    previousScore?: number | null; // Float
+    previouslyAnswered?: number | null; // Int
+    resetTimeDays: number; // Int!
+    totalTrials?: number | null; // Int
   }
   MicroSession: { // root type
     course: NexusGenRootTypes['Course']; // Course!
@@ -360,6 +371,7 @@ export interface NexusGenObjects {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    pointsMultiplier?: number | null; // Int
     type: string; // String!
   }
   NumericalQuestionOptions: { // root type
@@ -435,6 +447,7 @@ export interface NexusGenObjects {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
+    pointsMultiplier: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
     tags?: NexusGenRootTypes['Tag'][] | null; // [Tag!]
     type: string; // String!
@@ -450,6 +463,7 @@ export interface NexusGenObjects {
     attachments?: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation?: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
+    pointsMultiplier: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // root type
@@ -589,6 +603,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['ChoicesQuestionOptions']; // ChoicesQuestionOptions!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   ChoicesQuestionOptions: { // field return type
@@ -654,6 +669,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['FreeTextQuestionOptions']; // FreeTextQuestionOptions!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   FreeTextQuestionOptions: { // field return type
@@ -739,11 +755,19 @@ export interface NexusGenFieldTypes {
   LearningElement: { // field return type
     course: NexusGenRootTypes['Course'] | null; // Course
     courseId: string | null; // String
+    description: string | null; // String
     displayName: string; // String!
     id: string; // ID!
     instances: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances: number | null; // Int
+    orderType: NexusGenEnums['OrderType']; // OrderType!
+    pointsMultiplier: number; // Int!
+    previousPointsAwarded: number | null; // Float
+    previousScore: number | null; // Float
+    previouslyAnswered: number | null; // Int
+    resetTimeDays: number; // Int!
+    totalTrials: number | null; // Int
   }
   MicroSession: { // field return type
     course: NexusGenRootTypes['Course']; // Course!
@@ -816,6 +840,7 @@ export interface NexusGenFieldTypes {
     isDeleted: boolean; // Boolean!
     name: string; // String!
     options: NexusGenRootTypes['NumericalQuestionOptions']; // NumericalQuestionOptions!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
   NumericalQuestionOptions: { // field return type
@@ -915,6 +940,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
+    pointsMultiplier: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
     tags: NexusGenRootTypes['Tag'][] | null; // [Tag!]
     type: string; // String!
@@ -930,6 +956,7 @@ export interface NexusGenFieldTypes {
     attachments: Array<NexusGenRootTypes['Attachment'] | null> | null; // [Attachment]
     evaluation: NexusGenRootTypes['InstanceEvaluation'] | null; // InstanceEvaluation
     id: number; // Int!
+    pointsMultiplier: number; // Int!
     questionData: NexusGenRootTypes['QuestionData']; // QuestionData!
   }
   Session: { // field return type
@@ -1021,6 +1048,7 @@ export interface NexusGenFieldTypes {
     isArchived: boolean; // Boolean!
     isDeleted: boolean; // Boolean!
     name: string; // String!
+    pointsMultiplier: number | null; // Int
     type: string; // String!
   }
 }
@@ -1079,6 +1107,7 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     options: 'ChoicesQuestionOptions'
+    pointsMultiplier: 'Int'
     type: 'String'
   }
   ChoicesQuestionOptions: { // field return type name
@@ -1144,6 +1173,7 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     options: 'FreeTextQuestionOptions'
+    pointsMultiplier: 'Int'
     type: 'String'
   }
   FreeTextQuestionOptions: { // field return type name
@@ -1229,11 +1259,19 @@ export interface NexusGenFieldTypeNames {
   LearningElement: { // field return type name
     course: 'Course'
     courseId: 'String'
+    description: 'String'
     displayName: 'String'
     id: 'ID'
     instances: 'QuestionInstance'
     name: 'String'
     numOfInstances: 'Int'
+    orderType: 'OrderType'
+    pointsMultiplier: 'Int'
+    previousPointsAwarded: 'Float'
+    previousScore: 'Float'
+    previouslyAnswered: 'Int'
+    resetTimeDays: 'Int'
+    totalTrials: 'Int'
   }
   MicroSession: { // field return type name
     course: 'Course'
@@ -1306,6 +1344,7 @@ export interface NexusGenFieldTypeNames {
     isDeleted: 'Boolean'
     name: 'String'
     options: 'NumericalQuestionOptions'
+    pointsMultiplier: 'Int'
     type: 'String'
   }
   NumericalQuestionOptions: { // field return type name
@@ -1405,6 +1444,7 @@ export interface NexusGenFieldTypeNames {
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
     name: 'String'
+    pointsMultiplier: 'Int'
     questionData: 'QuestionData'
     tags: 'Tag'
     type: 'String'
@@ -1420,6 +1460,7 @@ export interface NexusGenFieldTypeNames {
     attachments: 'Attachment'
     evaluation: 'InstanceEvaluation'
     id: 'Int'
+    pointsMultiplier: 'Int'
     questionData: 'QuestionData'
   }
   Session: { // field return type name
@@ -1511,6 +1552,7 @@ export interface NexusGenFieldTypeNames {
     isArchived: 'Boolean'
     isDeleted: 'Boolean'
     name: 'String'
+    pointsMultiplier: 'Int'
     type: 'String'
   }
 }

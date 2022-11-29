@@ -31,20 +31,24 @@ function Leaderboard({
 }: LeaderboardProps): React.ReactElement {
   const { top10, inTop10, selfEntry } = useMemo(
     () =>
-      leaderboard.slice(0, 10).reduce(
-        (acc, entry) => {
+      leaderboard.reduce(
+        (acc, entry, ix) => {
           if (entry.participantId === participant?.id) {
             return {
               top10: [...acc.top10, entry],
-              inTop10: true,
+              inTop10: ix <= 9,
               selfEntry: entry,
             }
           }
 
-          return {
-            top10: [...acc.top10, entry],
-            inTop10: acc.inTop10,
+          if (ix <= 9) {
+            return {
+              top10: [...acc.top10, entry],
+              inTop10: acc.inTop10,
+            }
           }
+
+          return acc
         },
         { top10: [], inTop10: false, selfEntry: undefined }
       ),
