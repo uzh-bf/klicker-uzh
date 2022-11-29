@@ -67,8 +67,6 @@ export async function getParticipantToken({
           },
         })
 
-        console.log('result', result)
-
         // if a JWT was received from the API, set a cookie in the participant browser
         if (result.data?.registerParticipantFromLTI?.participantToken) {
           participantToken =

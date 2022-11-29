@@ -255,6 +255,7 @@ function Index() {
                         tempQuestions[index] = !tempQuestions[index]
                         setSelectedQuestions(tempQuestions)
                       }}
+                      tagfilter={filters.tags}
                     />
                   </div>
                 </div>
