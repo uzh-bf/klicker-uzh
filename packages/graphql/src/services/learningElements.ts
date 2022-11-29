@@ -7,6 +7,7 @@ import { OrderType, QuestionInstance, QuestionType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ContextWithOptionalUser } from '../lib/context'
+import { shuffle } from '../util'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 
@@ -421,9 +422,7 @@ export async function getLearningElementData(
       case QuestionType.KPRIM:
         return {
           ...instance,
-          lastResponse: instance.responses
-            ? instance.responses[0].lastAwardedAt
-            : null,
+          lastResponse: instance.responses?.[0]?.lastAwardedAt,
           questionData: {
             ...questionData,
             options: {
@@ -459,6 +458,11 @@ export async function getLearningElementData(
     return {
       ...element,
       instances: orderedInstances,
+    }
+  } else if (element.orderType === OrderType.SHUFFLED) {
+    return {
+      ...element,
+      instances: shuffle(instancesWithoutSolution),
     }
   }
 
