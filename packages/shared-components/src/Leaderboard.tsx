@@ -1,3 +1,4 @@
+import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
@@ -9,7 +10,7 @@ interface LeaderboardProps {
   activeParticipation?: boolean
   onJoin?: () => void
   onLeave?: () => void
-  participant?: any // TODO: typing
+  participant?: Participant
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {
@@ -98,7 +99,7 @@ function Leaderboard({
             )
           )}
         </div>
-        {participant?.id && onJoin && onLeave && !inTop10 && (
+        {participant?.id && onJoin && onLeave && !activeParticipation && (
           <ParticipantSelf
             isActive={activeParticipation ?? false}
             pseudonym={participant.username}
