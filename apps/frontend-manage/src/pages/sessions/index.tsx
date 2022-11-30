@@ -17,27 +17,35 @@ function SessionList() {
   } = useQuery(GetUserSessionsDocument)
 
   const runningSessions = useMemo(() => {
-    return dataSessions?.userSessions?.filter(
-      (session) => session.status === SESSION_STATUS.RUNNING
-    )
+    return dataSessions?.userSessions
+      ?.filter((session) => session.status === SESSION_STATUS.RUNNING)
+      .sort((a, b) => {
+        return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      })
   }, [dataSessions])
 
   const scheduledSessions = useMemo(() => {
-    return dataSessions?.userSessions?.filter(
-      (session) => session?.status === SESSION_STATUS.SCHEDULED
-    )
+    return dataSessions?.userSessions
+      ?.filter((session) => session?.status === SESSION_STATUS.SCHEDULED)
+      .sort((a, b) => {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      })
   }, [dataSessions])
 
   const preparedSessions = useMemo(() => {
-    return dataSessions?.userSessions?.filter(
-      (session) => session?.status === SESSION_STATUS.PREPARED
-    )
+    return dataSessions?.userSessions
+      ?.filter((session) => session?.status === SESSION_STATUS.PREPARED)
+      .sort((a, b) => {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      })
   }, [dataSessions])
 
   const completedSessions = useMemo(() => {
-    return dataSessions?.userSessions?.filter(
-      (session) => session?.status === SESSION_STATUS.COMPLETED
-    )
+    return dataSessions?.userSessions
+      ?.filter((session) => session?.status === SESSION_STATUS.COMPLETED)
+      .sort((a, b) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      })
   }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {

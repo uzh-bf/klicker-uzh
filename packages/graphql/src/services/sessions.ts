@@ -1030,7 +1030,7 @@ export async function getUserSessions(
       course: session.course
         ? pick(['id', 'name', 'displayName'], session.course)
         : undefined,
-      numOfBlocks: session._count?.blocks,
+      // numOfBlocks: session._count?.blocks,
       numOfQuestions: session.blocks.reduce(
         (acc, block) => acc + block._count?.instances,
         0
