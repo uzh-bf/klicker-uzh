@@ -125,6 +125,8 @@ type ConfusionTimestep {
 }
 
 type Course {
+  averageActiveScore: Float
+  averageScore: Float
   awards: [AwardEntry!]
   color: String
   createdAt: DateTime

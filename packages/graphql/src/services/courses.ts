@@ -406,15 +406,6 @@ export async function getCourseData(
     },
   })
 
-  const leaderboard = course?.leaderboard.map((entry, ix) => ({
-    id: entry?.id,
-    score: entry?.score,
-    rank: ix + 1,
-    username: entry.participation?.participant.username,
-    avatar: entry.participation?.participant.avatar,
-    participation: entry.participation,
-  }))
-
   const reducedSessions = course?.sessions
     .map((session) => {
       return {
@@ -468,16 +459,58 @@ export async function getCourseData(
       ])
     )
 
+  const { activeLBEntries, totalSum, totalCount, activeSum, activeCount } =
+    course?.leaderboard.reduce(
+      (acc, entry) => {
+        if (entry.participation?.isActive) {
+          return {
+            ...acc,
+            activeLBEntries: [
+              ...acc.activeLBEntries,
+              {
+                id: entry?.id,
+                score: entry?.score,
+                rank: acc.activeCount + 1,
+                username: entry.participation?.participant.username,
+                avatar: entry.participation?.participant.avatar,
+                participation: entry.participation,
+              },
+            ],
+            activeSum: acc.activeCount + entry.score,
+            activeCount: acc.activeCount + 1,
+            totalSum: acc.totalSum + entry.score,
+            totalCount: acc.totalCount + 1,
+          }
+        }
+
+        return {
+          ...acc,
+          totalSum: acc.totalSum + entry.score,
+          totalCount: acc.totalCount + 1,
+        }
+      },
+      {
+        activeLBEntries: [] as typeof course.leaderboard,
+        totalSum: 0,
+        totalCount: 0,
+        activeSum: 0,
+        activeCount: 0,
+      }
+    )
+
+  const averageScore = totalCount > 0 ? totalSum / totalCount : 0
+  const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
+
   return {
     ...course,
     sessions: reducedSessions,
     learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
-    numOfActiveParticipants: course?.leaderboard.filter(
-      (entry) => entry.participation?.isActive
-    ).length,
-    leaderboard: leaderboard,
+    numOfActiveParticipants: activeLBEntries?.length ?? [],
+    leaderboard: activeLBEntries,
+    averageScore,
+    averageActiveScore,
   }
 }
 

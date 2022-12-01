@@ -9,6 +9,8 @@ query GetSingleCourse($courseId: ID!) {
     color
     numOfParticipants
     numOfActiveParticipants
+    averageScore
+    averageActiveScore
 
     sessions {
       id

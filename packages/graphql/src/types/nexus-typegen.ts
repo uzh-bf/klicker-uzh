@@ -189,6 +189,8 @@ export interface NexusGenObjects {
     speed: number; // Int!
   }
   Course: { // root type
+    averageActiveScore?: number | null; // Float
+    averageScore?: number | null; // Float
     awards?: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color?: string | null; // String
     createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
@@ -618,6 +620,8 @@ export interface NexusGenFieldTypes {
     speed: number; // Int!
   }
   Course: { // field return type
+    averageActiveScore: number | null; // Float
+    averageScore: number | null; // Float
     awards: NexusGenRootTypes['AwardEntry'][] | null; // [AwardEntry!]
     color: string | null; // String
     createdAt: NexusGenScalars['DateTime'] | null; // DateTime
@@ -1124,6 +1128,8 @@ export interface NexusGenFieldTypeNames {
     speed: 'Int'
   }
   Course: { // field return type name
+    averageActiveScore: 'Float'
+    averageScore: 'Float'
     awards: 'AwardEntry'
     color: 'String'
     createdAt: 'DateTime'

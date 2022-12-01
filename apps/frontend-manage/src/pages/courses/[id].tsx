@@ -1,14 +1,11 @@
 import { useQuery } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetSingleCourseDocument,
-  LeaderboardEntry,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import CourseDescription from '../../components/courses/CourseDescription'
@@ -19,53 +16,22 @@ import Layout from '../../components/Layout'
 
 function CourseOverviewPage() {
   const router = useRouter()
+
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
 
-  const {
-    loading: loadingCourse,
-    error: errorCourse,
-    data: dataCourse,
-  } = useQuery(GetSingleCourseDocument, {
+  const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
+    skip: !router.query.id,
   })
 
-  const avgScore = useMemo(() => {
-    if (!dataCourse?.course?.leaderboard) {
-      return 0
-    }
-    return (
-      dataCourse.course.leaderboard
-        .map((entry: LeaderboardEntry) => entry.score)
-        .reduce((a: number, b: number) => a + b, 0) /
-      dataCourse.course.leaderboard.length
-    )
-  }, [dataCourse])
+  if (loading) return <div>Loading...</div>
 
-  const avgLBScore = useMemo(() => {
-    const localLeaderboard = dataCourse?.course?.leaderboard.filter(
-      (entry: LeaderboardEntry) => entry.participation?.isActive
-    )
-    if (!localLeaderboard) {
-      return 0
-    }
-
-    return (
-      localLeaderboard
-        .map((entry: LeaderboardEntry) => entry.score)
-        .reduce((a: number, b: number) => a + b, 0) / localLeaderboard.length
-    )
-  }, [dataCourse])
-
-  const leaderboard = useMemo(() => {
-    return dataCourse?.course?.leaderboard.filter(
-      (entry: LeaderboardEntry) => entry.participation?.isActive
-    )
-  }, [dataCourse])
-
-  if (loadingCourse) return <div>Loading...</div>
-  if ((!dataCourse && !loadingCourse) || errorCourse) {
-    router.push('/404')
+  if (error || !data?.course) {
+    // router.push('/404')
+    return
   }
+
+  const { course } = data
 
   const sortingOrderSessions: Record<string, number> = {
     [SESSION_STATUS.RUNNING]: 0,
@@ -78,15 +44,13 @@ function CourseOverviewPage() {
     <Layout>
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
-          <H1>Kurs: {dataCourse?.course?.name}</H1>
-          <div className="italic">
-            {dataCourse?.course?.numOfParticipants} Teilnehmer
-          </div>
+          <H1>Kurs: {course.name}</H1>
+          <div className="italic">{course.numOfParticipants} Teilnehmende</div>
         </div>
-        {dataCourse?.course?.description ? (
+        {course.description ? (
           descriptionEditMode ? (
             <CourseDescription
-              description={dataCourse?.course?.description}
+              description={course.description}
               courseId={router.query.id as string}
               submitText="Beschreibung speichern"
               setDescriptionEditMode={setDescriptionEditMode}
@@ -94,7 +58,7 @@ function CourseOverviewPage() {
           ) : (
             <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80">
               <Markdown
-                content={dataCourse.course.description}
+                content={course.description}
                 className="w-full p-2 rounded"
               />
               <Button
@@ -109,7 +73,7 @@ function CourseOverviewPage() {
           )
         ) : (
           <CourseDescription
-            description={dataCourse?.course?.description ?? '<br>'}
+            description={course.description ?? '<br>'}
             courseId={router.query.id as string}
             submitText="Beschreibung hinzufügen"
             setDescriptionEditMode={setDescriptionEditMode}
@@ -120,10 +84,9 @@ function CourseOverviewPage() {
         <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
           <div className="mb-4">
             <H3>Sessionen</H3>
-            {dataCourse?.course?.sessions &&
-            dataCourse.course.sessions.length > 0 ? (
+            {course.sessions && course.sessions.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {dataCourse?.course?.sessions
+                {course.sessions
                   .sort((a, b) => {
                     return (
                       sortingOrderSessions[a.status] -
@@ -140,10 +103,9 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3>Lernelemente</H3>
-            {dataCourse?.course?.learningElements &&
-            dataCourse.course.learningElements.length > 0 ? (
+            {course.learningElements && course.learningElements.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {dataCourse?.course?.learningElements.map((learningElement) => (
+                {course.learningElements.map((learningElement) => (
                   <LearningElementTile
                     learningElement={learningElement}
                     key={learningElement.id}
@@ -156,10 +118,9 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3>Micro-Sessions</H3>
-            {dataCourse?.course?.microSessions &&
-            dataCourse.course.microSessions.length > 0 ? (
+            {course.microSessions && course.microSessions.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {dataCourse?.course?.microSessions.map((microSession) => (
+                {course.microSessions.map((microSession) => (
                   <MicroSessionTile
                     microSession={microSession}
                     key={microSession.id}
@@ -175,20 +136,19 @@ function CourseOverviewPage() {
           <H3>Kurs Leaderboard</H3>
           <Leaderboard
             className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
-            leaderboard={leaderboard || []}
+            leaderboard={course.leaderboard ?? []}
           />
           <div className="mt-2 text-sm italic text-right text-gray-500">
             <div>
-              Teilnehmer Leaderboard:{' '}
-              {dataCourse?.course?.numOfActiveParticipants}
+              Teilnehmende Leaderboard: {course.numOfActiveParticipants}
+            </div>
+            <div>Durchschnittl. Punkte: {course.averageScore.toFixed(2)}</div>
+            <div className="mt-1">
+              Kursteilnehmende: {course.numOfParticipants}
             </div>
             <div>
-              Durchschnittl. Punkte: {Math.round(avgLBScore * 100) / 100}
+              Durchschnittl. Punkte: {course.averageActiveScore.toFixed(2)}
             </div>
-            <div className="mt-1">
-              Kursteilnehmer: {dataCourse?.course?.numOfParticipants}
-            </div>
-            <div>Durchschnittl. Punkte: {Math.round(avgScore * 100) / 100}</div>
           </div>
         </div>
       </div>
