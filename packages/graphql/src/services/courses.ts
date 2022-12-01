@@ -476,7 +476,7 @@ export async function getCourseData(
                 participation: entry.participation,
               },
             ],
-            activeSum: acc.activeCount + entry.score,
+            activeSum: acc.activeSum + entry.score,
             activeCount: acc.activeCount + 1,
             totalSum: acc.totalSum + entry.score,
           }
