@@ -150,11 +150,12 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
-    const lbEntries = await course.leaderboard({
+    const lbEntries = await course.participations({
       where: {
-        participation: { isActive: true },
+        isActive: true,
       },
       include: {
+        courseLeaderboard: true,
         participant: true,
       },
     })
@@ -167,14 +168,14 @@ export async function getCourseOverviewData(
               ...acc.mapped,
               {
                 id: entry.id,
-                score: entry.score,
+                score: entry.courseLeaderboard?.score ?? 0,
                 username: entry.participant.username,
                 avatar: entry.participant.avatar,
                 participantId: entry.participant.id,
                 isSelf: ctx.user?.sub === entry.participant.id,
               },
             ],
-            sum: acc.sum + entry.score ?? 0,
+            sum: acc.sum + (entry.courseLeaderboard?.score ?? 0),
             count: acc.count + 1,
           }
         },
