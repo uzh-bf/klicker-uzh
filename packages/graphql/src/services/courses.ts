@@ -459,7 +459,7 @@ export async function getCourseData(
       ])
     )
 
-  const { activeLBEntries, totalSum, totalCount, activeSum, activeCount } =
+  const { activeLBEntries, totalSum, activeSum, activeCount } =
     course?.leaderboard.reduce(
       (acc, entry) => {
         if (entry.participation?.isActive) {
@@ -479,25 +479,23 @@ export async function getCourseData(
             activeSum: acc.activeCount + entry.score,
             activeCount: acc.activeCount + 1,
             totalSum: acc.totalSum + entry.score,
-            totalCount: acc.totalCount + 1,
           }
         }
 
         return {
           ...acc,
           totalSum: acc.totalSum + entry.score,
-          totalCount: acc.totalCount + 1,
         }
       },
       {
         activeLBEntries: [] as typeof course.leaderboard,
         totalSum: 0,
-        totalCount: 0,
         activeSum: 0,
         activeCount: 0,
       }
     )
 
+  const totalCount = course?.participations.length || 0
   const averageScore = totalCount > 0 ? totalSum / totalCount : 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 

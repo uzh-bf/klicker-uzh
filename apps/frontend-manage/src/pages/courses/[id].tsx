@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
@@ -142,12 +142,12 @@ function CourseOverviewPage() {
             <div>
               Teilnehmende Leaderboard: {course.numOfActiveParticipants}
             </div>
-            <div>Durchschnittl. Punkte: {course.averageScore.toFixed(2)}</div>
+            <div>Durchschnittl. Punkte: {course.averageActiveScore.toFixed(2)}</div>
             <div className="mt-1">
               Kursteilnehmende: {course.numOfParticipants}
             </div>
             <div>
-              Durchschnittl. Punkte: {course.averageActiveScore.toFixed(2)}
+              Durchschnittl. Punkte: {course.averageScore.toFixed(2)}
             </div>
           </div>
         </div>
