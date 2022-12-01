@@ -41,6 +41,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
+          registry: ${{ env.REGISTRY }}
           context: apps/backend-docker
           file: apps/backend-docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
@@ -86,11 +87,14 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
+          registry: ${{ env.REGISTRY }}
           context: apps/frontend-manage
           file: apps/frontend-manage/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: cypress
           labels: ${{ steps.meta.outputs.labels }}
+
+  # fill-database:
 
   checkout-and-test:
     needs:
