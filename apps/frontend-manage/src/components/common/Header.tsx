@@ -83,7 +83,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   return {
                     label: session.name,
                     onClick: () =>
-                      router.push(`sessions/${session.id}/cockpit`),
+                      router.push(`/sessions/${session.id}/cockpit`),
                   }
                 })
               : []

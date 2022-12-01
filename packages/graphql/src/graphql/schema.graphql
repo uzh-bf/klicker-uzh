@@ -125,6 +125,8 @@ type ConfusionTimestep {
 }
 
 type Course {
+  averageActiveScore: Float
+  averageScore: Float
   awards: [AwardEntry!]
   color: String
   createdAt: DateTime
@@ -136,6 +138,7 @@ type Course {
   learningElements: [LearningElement!]!
   microSessions: [MicroSession!]!
   name: String!
+  numOfActiveParticipants: Int
   numOfParticipants: Int
   participantGroups: [ParticipantGroup]!
   pinCode: Int
