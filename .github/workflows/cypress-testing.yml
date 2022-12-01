@@ -39,7 +39,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/backend-docker
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           registry: ${{ env.REGISTRY }}
           context: apps/backend-docker
@@ -85,7 +85,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-manage
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           registry: ${{ env.REGISTRY }}
           context: apps/frontend-manage
@@ -94,7 +94,7 @@ jobs:
           tags: cypress
           labels: ${{ steps.meta.outputs.labels }}
 
-  # fill-database:
+  # fill-database: 
 
   checkout-and-test:
     needs:
