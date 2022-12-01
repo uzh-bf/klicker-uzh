@@ -7,16 +7,19 @@ interface QuestionListProps {
   setSelectedQuestions: (questionIndex: number) => void
   selectedQuestions: boolean[]
   questions?: QuestionType[]
+  tagfilter?: string[]
 }
 
 const defaultProps = {
   questions: [],
+  tagfilter: [],
 }
 
 function QuestionList({
   setSelectedQuestions,
   selectedQuestions,
   questions,
+  tagfilter,
 }: QuestionListProps): React.ReactElement {
   if (!questions) {
     return <></>
@@ -39,6 +42,7 @@ function QuestionList({
           type={question.type}
           content={question.content}
           onCheck={() => setSelectedQuestions(index)}
+          tagfilter={tagfilter}
         />
       ))}
     </div>

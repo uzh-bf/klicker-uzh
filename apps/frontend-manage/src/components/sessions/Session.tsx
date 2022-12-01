@@ -3,8 +3,6 @@ import Ellipsis from '@components/common/Ellipsis'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
-  faChevronDown,
-  faChevronUp,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,8 +11,7 @@ import {
   Session as SessionType,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import * as RadixCollapsible from '@radix-ui/react-collapsible'
-import { Button, H2, H3 } from '@uzh-bf/design-system'
+import { Button, Collapsible, H2, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -29,7 +26,6 @@ interface SessionProps {
   sessionList: SessionType[]
 }
 
-// TODO: move collapsible / collapsible list with to design system
 function Session({ sessionName, sessionList }: SessionProps) {
   const [startSession] = useMutation(StartSessionDocument)
 
@@ -43,9 +39,10 @@ function Session({ sessionName, sessionList }: SessionProps) {
       <div className="flex flex-col gap-2">
         {sessionList.map((session) => (
           <div key={session.id}>
-            <RadixCollapsible.Root
+            <Collapsible
+              key={session.id}
               open={showDetails && session.id === selectedSession}
-              onOpenChange={() => {
+              onChange={() => {
                 if (session.id === selectedSession) {
                   setShowDetails(!showDetails)
                 } else {
@@ -53,8 +50,7 @@ function Session({ sessionName, sessionList }: SessionProps) {
                   setSelectedSession(session.id)
                 }
               }}
-            >
-              <div className="w-full p-2 pb-0 border-2 border-solid rounded-md border-uzh-grey-80">
+              staticContent={
                 <div className="flex flex-row justify-between">
                   <H3 className="mb-0">{session.name}</H3>
                   <div className="flex flex-row gap-5">
@@ -108,66 +104,48 @@ function Session({ sessionName, sessionList }: SessionProps) {
                     </div>
                   </div>
                 </div>
-                {!(showDetails && session.id === selectedSession) && (
-                  <div className="italic">
-                    {session.numOfBlocks} Blöcke, {session.numOfQuestions}{' '}
-                    Fragen
-                  </div>
-                )}
-                <RadixCollapsible.Content>
-                  <div className="flex flex-row gap-2">
-                    {session.blocks?.map((block, index) => (
-                      <div key={block.id} className="flex flex-col gap-2">
-                        <div className="italic">
-                          Block {index + 1} ({block.instances.length} Fragen)
-                        </div>
-                        {block.instances.map((instance) => (
-                          <div
-                            key={instance.id}
-                            className="text-sm border border-solid rounded-md w-60 border-uzh-grey-100"
+              }
+              closedContent={
+                <div className="italic">
+                  {session.numOfBlocks} Blöcke, {session.numOfQuestions} Fragen
+                </div>
+              }
+            >
+              <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
+                {session.blocks?.map((block, index) => (
+                  <div key={block.id} className="flex flex-col gap-2">
+                    <div className="italic">
+                      Block {index + 1} ({block.instances.length} Fragen)
+                    </div>
+                    {block.instances.map((instance) => (
+                      <div
+                        key={instance.id}
+                        className="text-sm border border-solid rounded-md w-60 border-uzh-grey-100"
+                      >
+                        <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
+                          <Ellipsis
+                            className={{ markdown: 'font-bold' }}
+                            maxLength={20}
                           >
-                            <div className="flex flex-row justify-between bg-uzh-grey-40 px-1 py-0.5">
-                              <Ellipsis
-                                className={{ markdown: 'font-bold' }}
-                                maxLength={20}
-                              >
-                                {instance.questionData.name}
-                              </Ellipsis>
+                            {instance.questionData.name}
+                          </Ellipsis>
 
-                              <div>
-                                (
-                                {
-                                  QUESTION_TYPES_SHORT[
-                                    instance.questionData.type
-                                  ]
-                                }
-                                )
-                              </div>
-                            </div>
-                            <Ellipsis
-                              maxLength={50}
-                              className={{ markdown: 'px-1' }}
-                            >
-                              {instance.questionData.content}
-                            </Ellipsis>
+                          <div className='italic'>
+                            ({QUESTION_TYPES_SHORT[instance.questionData.type]})
                           </div>
-                        ))}
+                        </div>
+                        <Ellipsis
+                          maxLength={50}
+                          className={{ markdown: 'px-1' }}
+                        >
+                          {instance.questionData.content}
+                        </Ellipsis>
                       </div>
                     ))}
                   </div>
-                </RadixCollapsible.Content>
-                <RadixCollapsible.Trigger className="w-full text-center">
-                  <FontAwesomeIcon
-                    icon={
-                      showDetails && session.id === selectedSession
-                        ? faChevronUp
-                        : faChevronDown
-                    }
-                    size="sm"
-                  />
-                </RadixCollapsible.Trigger>
+                ))}
               </div>
-            </RadixCollapsible.Root>
+            </Collapsible>
           </div>
         ))}
       </div>

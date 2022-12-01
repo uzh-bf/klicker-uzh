@@ -1,15 +1,21 @@
 import { Tag } from '@klicker-uzh/prisma'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface QuestionTagsProps {
   tags: Tag[]
+  tagfilter?: string[]
 }
 
 const defaultProps = {
   tags: [],
+  tagfilter: [],
 }
 
-function QuestionTags({ tags }: QuestionTagsProps): React.ReactElement {
+function QuestionTags({
+  tags,
+  tagfilter,
+}: QuestionTagsProps): React.ReactElement {
   if (!tags || tags.length === 0) {
     return <></>
   }
@@ -19,7 +25,10 @@ function QuestionTags({ tags }: QuestionTagsProps): React.ReactElement {
       {tags.map(
         (tag): React.ReactElement => (
           <div
-            className="p-1 px-2 m-1 mt-0 bg-white border border-solid rounded-md border-blue-40 w-max"
+            className={twMerge(
+              'p-1 px-2 m-1 mt-0 bg-white border border-solid rounded-md border-blue-40 w-max',
+              tagfilter?.includes(tag.name) && 'bg-uzh-blue-20'
+            )}
             key={tag.id}
           >
             {tag.name}

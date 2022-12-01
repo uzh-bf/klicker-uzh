@@ -132,9 +132,10 @@ model Question {
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name    String
-  content String
-  options Json
+  name             String
+  content          String
+  options          Json
+  pointsMultiplier Int    @default(1)
 
   hasSampleSolution  Boolean @default(false)
   hasAnswerFeedbacks Boolean @default(false)
@@ -181,11 +182,13 @@ model QuestionInstance {
   type  QuestionInstanceType?
   order Int?
 
-  questionData    Json
-  participants    Int                      @default(0)
-  results         Json
-  responses       QuestionResponse[]
-  detailResponses QuestionResponseDetail[]
+  questionData     Json
+  participants     Int                      @default(0)
+  pointsMultiplier Int                      @default(1)
+  results          Json
+  responses        QuestionResponse[]
+  detailResponses  QuestionResponseDetail[]
+  resetTimeDays    Int?
 
   sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId    Int?
@@ -365,12 +368,23 @@ model Session {
 
 // ----- LEARNING ELEMENTS -----
 
+enum OrderType {
+  SEQUENTIAL
+  SHUFFLED
+  LAST_RESPONSE
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
-  name        String
-  displayName String
-  instances   QuestionInstance[]
+  name             String
+  displayName      String
+  description      String?
+  pointsMultiplier Int       @default(1)
+  resetTimeDays    Int       @default(6)
+  orderType        OrderType @default(SEQUENTIAL)
+
+  instances QuestionInstance[]
 
   owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String  @db.Uuid

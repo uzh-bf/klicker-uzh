@@ -3,10 +3,11 @@ import {
   gradeQuestionMC,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
-import { QuestionType } from '@klicker-uzh/prisma'
+import { OrderType, QuestionInstance, QuestionType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { pick } from 'ramda'
+import * as R from 'ramda'
 import { ContextWithOptionalUser } from '../lib/context'
+import { shuffle } from '../util'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 
@@ -15,10 +16,15 @@ type QuestionResponse = {
   value?: string
 }
 
+function round(value: number) {
+  return Number(Math.round(Number(value) * 100) / 100)
+}
+
 function evaluateQuestionResponse(
   questionData: AllQuestionTypeData,
   results: any,
-  response: QuestionResponse
+  response: QuestionResponse,
+  multiplier?: number
 ) {
   switch (questionData.type) {
     case QuestionType.SC:
@@ -46,7 +52,10 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score: pointsPercentage !== null ? pointsPercentage * 10 : -1,
+          score:
+            pointsPercentage !== null
+              ? round(pointsPercentage * 10 * (multiplier ?? 1))
+              : -1,
         }
       } else if (data.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
@@ -57,7 +66,10 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score: pointsPercentage !== null ? pointsPercentage * 10 : -1,
+          score:
+            pointsPercentage !== null
+              ? round(pointsPercentage * 10 * (multiplier ?? 1))
+              : -1,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
@@ -68,7 +80,10 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score: pointsPercentage !== null ? pointsPercentage * 10 : -1,
+          score:
+            pointsPercentage !== null
+              ? round(pointsPercentage * 10 * (multiplier ?? 1))
+              : -1,
         }
       }
     }
@@ -88,94 +103,98 @@ export async function respondToQuestionInstance(
   { courseId, id, response }: RespondToQuestionInstanceArgs,
   ctx: ContextWithOptionalUser
 ) {
-  const { instance, updatedInstance } = await ctx.prisma.$transaction(
-    async (prisma) => {
-      const instance = await prisma.questionInstance.findUnique({
-        where: { id },
-        // if the participant is logged in, fetch the last response of the participant
-        // the response will not be counted and will only yield points if not within the past week
-        include: ctx.user?.sub
-          ? {
-              responses: {
-                where: {
-                  participant: {
-                    id: ctx.user.sub,
-                  },
+  const {
+    instance,
+    updatedInstance,
+  }: {
+    instance: QuestionInstance | null
+    updatedInstance: QuestionInstance
+  } | null = await ctx.prisma.$transaction(async (prisma) => {
+    const instance = await prisma.questionInstance.findUnique({
+      where: { id },
+      // if the participant is logged in, fetch the last response of the participant
+      // the response will not be counted and will only yield points if not within the past week
+      include: ctx.user?.sub
+        ? {
+            responses: {
+              where: {
+                participant: {
+                  id: ctx.user.sub,
                 },
-                take: 1,
               },
-            }
-          : {
-              responses: {
-                take: 1,
-              },
+              take: 1,
             },
-      })
-
-      if (!instance) {
-        return null
-      }
-
-      // if the participant had already responded, don't track the new response
-      // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-      const hasPreviousResponse = instance?.responses.length > 0
-      if (ctx.user?.sub && hasPreviousResponse) {
-        return {
-          instance,
-          updatedInstance: instance,
-        }
-      }
-
-      const questionData =
-        instance?.questionData?.valueOf() as AllQuestionTypeData
-      const results = instance?.results?.valueOf() as AllQuestionResults
-
-      if (!questionData) return null
-
-      const updatedResults: {
-        choices?: Record<string, number>
-      } = {}
-
-      switch (questionData.type) {
-        case QuestionType.SC:
-        case QuestionType.MC:
-        case QuestionType.KPRIM: {
-          updatedResults.choices = response.choices!.reduce(
-            (acc, ix) => ({
-              ...acc,
-              [ix]: acc[ix] + 1,
-            }),
-            results.choices as Record<string, number>
-          )
-
-          break
-        }
-
-        case QuestionType.NUMERICAL: {
-          break
-        }
-
-        case QuestionType.FREE_TEXT: {
-          break
-        }
-      }
-
-      const updatedInstance = await prisma.questionInstance.update({
-        where: { id },
-        data: {
-          results: updatedResults,
-          participants: {
-            increment: 1,
+          }
+        : {
+            responses: {
+              take: 1,
+            },
           },
-        },
-      })
+    })
 
+    if (!instance) {
+      return null
+    }
+
+    // if the participant had already responded, don't track the new response
+    // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
+    const hasPreviousResponse = instance?.responses.length > 0
+    if (ctx.user?.sub && hasPreviousResponse) {
       return {
         instance,
-        updatedInstance,
+        updatedInstance: instance,
       }
     }
-  )
+
+    const questionData =
+      instance?.questionData?.valueOf() as AllQuestionTypeData
+    const results = instance?.results?.valueOf() as AllQuestionResults
+
+    if (!questionData) return null
+
+    const updatedResults: {
+      choices?: Record<string, number>
+    } = {}
+
+    switch (questionData.type) {
+      case QuestionType.SC:
+      case QuestionType.MC:
+      case QuestionType.KPRIM: {
+        updatedResults.choices = response.choices!.reduce(
+          (acc, ix) => ({
+            ...acc,
+            [ix]: acc[ix] + 1,
+          }),
+          results.choices as Record<string, number>
+        )
+
+        break
+      }
+
+      case QuestionType.NUMERICAL: {
+        break
+      }
+
+      case QuestionType.FREE_TEXT: {
+        break
+      }
+    }
+
+    const updatedInstance = await prisma.questionInstance.update({
+      where: { id },
+      data: {
+        results: updatedResults,
+        participants: {
+          increment: 1,
+        },
+      },
+    })
+
+    return {
+      instance,
+      updatedInstance,
+    }
+  })
 
   const questionData =
     updatedInstance?.questionData?.valueOf() as AllQuestionTypeData
@@ -183,7 +202,12 @@ export async function respondToQuestionInstance(
 
   if (!questionData) return null
 
-  const evaluation = evaluateQuestionResponse(questionData, results, response)
+  const evaluation = evaluateQuestionResponse(
+    questionData,
+    results,
+    response,
+    updatedInstance.pointsMultiplier
+  )
   const score = evaluation?.score || 0
   let pointsAwarded
   let newPointsFrom
@@ -199,7 +223,10 @@ export async function respondToQuestionInstance(
       const previousResponseOutsideTimeframe =
         !instance.responses[0].lastAwardedAt ||
         dayjs(instance.responses[0].lastAwardedAt).isBefore(
-          dayjs().subtract(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
+          dayjs().subtract(
+            instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
+            'days'
+          )
         )
 
       if (previousResponseOutsideTimeframe) {
@@ -212,14 +239,14 @@ export async function respondToQuestionInstance(
         ? new Date()
         : instance.responses[0].lastAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
-        .add(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
+        .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
     } else {
       pointsAwarded = score
 
       lastAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
-        .add(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
+        .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
     }
 
@@ -361,62 +388,115 @@ export async function getLearningElementData(
         orderBy: {
           questionId: 'asc',
         },
-        // TODO: get previous responses of the participant (last three days)
-        // TODO: ensure that previously answered are marked and shuffled to the end
-        // include: {
-        //   responses: {
-        //     where: {
-        //       updatedAt: {
-        //         gt: dayjs()
-        //           .subtract(POINTS_AWARD_TIMEFRAME_DAYS, 'days')
-        //           .toDate(),
-        //       },
-        //     },
-        //   },
-        // },
+        include: ctx.user?.sub
+          ? {
+              responses: {
+                where: {
+                  participantId: ctx.user.sub,
+                },
+                orderBy: {
+                  lastAwardedAt: 'asc',
+                },
+                take: 1,
+              },
+            }
+          : undefined,
       },
     },
   })
 
   if (!element) return null
 
-  const instancesWithoutSolution = element.instances.map((instance) => {
-    const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
-    if (
-      !questionData ||
-      typeof questionData !== 'object' ||
-      Array.isArray(questionData)
-    )
-      return instance
-
-    switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM:
+  const instancesWithoutSolution = element.instances.reduce(
+    (acc, instance) => {
+      const questionData =
+        instance.questionData?.valueOf() as AllQuestionTypeData
+      if (
+        !questionData ||
+        typeof questionData !== 'object' ||
+        Array.isArray(questionData)
+      )
         return {
-          ...instance,
-          questionData: {
-            ...questionData,
-            options: {
-              ...questionData.options,
-              choices: questionData.options.choices.map(pick(['ix', 'value'])),
-            },
-          },
+          ...acc,
+          instances: [...acc.instances, instance],
         }
 
-      case QuestionType.FREE_TEXT:
-        return instance
+      switch (questionData.type) {
+        case QuestionType.SC:
+        case QuestionType.MC:
+        case QuestionType.KPRIM:
+          const response = instance.responses?.[0]
+          return {
+            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
+            previousScore: acc.previousScore + (response?.totalScore ?? 0),
+            previousPointsAwarded:
+              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
+            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
+            instances: [
+              ...acc.instances,
+              {
+                ...instance,
+                lastResponse: response?.lastAwardedAt,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    ...questionData.options,
+                    choices: questionData.options.choices.map(
+                      R.pick(['ix', 'value'])
+                    ),
+                  },
+                },
+              },
+            ],
+          }
 
-      case QuestionType.NUMERICAL:
-        return instance
-
-      default:
-        return instance
+        case QuestionType.FREE_TEXT:
+        case QuestionType.NUMERICAL:
+        default: {
+          const response = instance.responses?.[0]
+          return {
+            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
+            previousScore: acc.previousScore + (response?.totalScore ?? 0),
+            previousPointsAwarded:
+              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
+            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
+            instances: [...acc.instances, instance],
+          }
+        }
+      }
+    },
+    {
+      instances: [],
+      previouslyAnswered: 0,
+      previousScore: 0,
+      previousPointsAwarded: 0,
+      totalTrials: 0,
     }
-  })
+  )
+
+  if (element.orderType === OrderType.LAST_RESPONSE) {
+    const orderedInstances = R.sort(
+      (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
+      shuffle(instancesWithoutSolution.instances)
+    )
+
+    return {
+      ...element,
+      ...instancesWithoutSolution,
+      instances: orderedInstances,
+    }
+  }
+
+  if (element.orderType === OrderType.SHUFFLED) {
+    return {
+      ...element,
+      ...instancesWithoutSolution,
+      instances: shuffle(instancesWithoutSolution.instances),
+    }
+  }
 
   return {
     ...element,
-    instances: instancesWithoutSolution,
+    ...instancesWithoutSolution,
   }
 }

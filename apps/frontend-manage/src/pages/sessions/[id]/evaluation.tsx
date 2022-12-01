@@ -3,8 +3,10 @@ import {
   faArrowLeft,
   faArrowRight,
   faCheck,
+  faChevronDown,
   faChevronLeft,
   faChevronRight,
+  faChevronUp,
   faComment,
   faFaceSmile,
   faGamepad,
@@ -17,13 +19,20 @@ import {
   FreeTextQuestionOptions,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
+  InstanceResult,
   NumericalQuestionOptions,
   SessionBlockStatus,
   Statistics,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import * as RadixTab from '@radix-ui/react-tabs'
-import { Prose, Select, Switch, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Prose,
+  Select,
+  Switch,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -45,6 +54,75 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   ACTIVE: faSync,
 }
 
+function Collapsed({
+  selectedInstance,
+  currentInstance,
+}: {
+  selectedInstance: string
+  currentInstance: Partial<InstanceResult>
+}) {
+  const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
+
+  const [questionCollapsed, setQuestionCollapsed] = useState<boolean>(true)
+  const [showExtensibleButton, setShowExtensibleButton] =
+    useState<boolean>(false)
+
+  useEffect(() => {
+    if (!questionElem) return
+
+    // if the element height is larger than what is shown or the question was opened, show the extension button
+    if (
+      questionElem?.scrollHeight > questionElem?.clientHeight ||
+      !questionCollapsed
+    ) {
+      setShowExtensibleButton(true)
+    } else {
+      setShowExtensibleButton(false)
+    }
+
+    return () => setQuestionElem(null)
+  }, [questionCollapsed, questionElem, selectedInstance])
+
+  return (
+    <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
+      <div
+        ref={(ref) => setQuestionElem(ref)}
+        className={twMerge(
+          questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+          !showExtensibleButton && 'border-solid border-b-only border-primary',
+          showExtensibleButton &&
+            questionCollapsed &&
+            'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
+          'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+        )}
+      >
+        <Prose className="flex-initial max-w-full leading-8 prose-lg prose-p:m-0">
+          <Markdown
+            className="flex flex-row content-between hover:text-black"
+            content={currentInstance.questionData?.content}
+          />
+        </Prose>
+        {/* // TODO: <div>ATTACHMENTS</div> */}
+      </div>
+      {showExtensibleButton && (
+        <Button
+          className={twMerge(
+            questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
+            'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
+            ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
+          )}
+          onClick={() => setQuestionCollapsed(!questionCollapsed)}
+        >
+          <FontAwesomeIcon
+            icon={questionCollapsed ? faChevronDown : faChevronUp}
+            className={twMerge('h-6 -mt-1.5', questionCollapsed && '-mt-2')}
+          />
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function Evaluation() {
   const router = useRouter()
 
@@ -52,7 +130,6 @@ function Evaluation() {
   const [leaderboard, setLeaderboard] = useState<boolean>(false)
   const [feedbacks, setFeedbacks] = useState<boolean>(false)
   const [confusion, setConfusion] = useState<boolean>(false)
-
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
@@ -457,15 +534,13 @@ function Evaluation() {
         {currentInstance && (
           <RadixTab.Content value={String(currentInstance.blockIx)}>
             <div>
-              <Prose className="flex-initial prose-xl border-b prose-p:m-0 max-w-none">
-                <Markdown
-                  className="flex flex-row content-between p-2 hover:text-black"
-                  content={currentInstance.questionData.content}
-                />
-              </Prose>
+              <Collapsed
+                currentInstance={currentInstance}
+                selectedInstance={selectedInstance}
+              />
 
               <div className="flex flex-col flex-1 md:flex-row">
-                <div className="z-10 flex-1 order-2 md:order-1">
+                <div className="z-10 flex-1 order-2 mx-4 md:order-1">
                   <Chart
                     chartType={chartType}
                     data={currentInstance}

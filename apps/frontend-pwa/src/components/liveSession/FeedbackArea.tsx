@@ -10,9 +10,15 @@ import {
   VoteFeedbackResponseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { Button, H2, H3, Slider } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextareaField,
+  H2,
+  H3,
+  Slider,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Field, Form, Formik } from 'formik'
+import { Form, Formik } from 'formik'
 import localForage from 'localforage'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -296,12 +302,18 @@ function FeedbackArea() {
         >
           {({ isSubmitting }) => (
             <Form>
-              <Field
-                className="w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm"
-                component="textarea"
-                rows="3"
+              <FormikTextareaField
                 name="feedbackInput"
                 placeholder="Feedback / Frage eingeben"
+                className={{
+                  input:
+                    'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
+                  root: 'mb-1',
+                }}
+                component="textarea"
+                rows="3"
+                maxLength={500}
+                maxLengthLabel="Zeichen"
               />
               <Button
                 className="float-right h-10 text-center items-center !w-30"
