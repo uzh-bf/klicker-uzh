@@ -846,6 +846,7 @@ export const Session = objectType({
     t.field('course', { type: Course })
 
     t.nonNull.date('createdAt')
+    t.date('updatedAt')
     t.date('startedAt')
     t.date('finishedAt')
   },

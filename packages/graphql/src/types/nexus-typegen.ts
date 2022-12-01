@@ -489,6 +489,7 @@ export interface NexusGenObjects {
     pinCode?: number | null; // Int
     startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
   }
   SessionBlock: { // root type
     execution: number; // Int!
@@ -983,6 +984,7 @@ export interface NexusGenFieldTypes {
     pinCode: number | null; // Int
     startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
   SessionBlock: { // field return type
     execution: number; // Int!
@@ -1488,6 +1490,7 @@ export interface NexusGenFieldTypeNames {
     pinCode: 'Int'
     startedAt: 'DateTime'
     status: 'SessionStatus'
+    updatedAt: 'DateTime'
   }
   SessionBlock: { // field return type name
     execution: 'Int'
