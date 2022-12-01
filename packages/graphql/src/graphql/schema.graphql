@@ -596,6 +596,7 @@ type Session {
   pinCode: Int
   startedAt: DateTime
   status: SessionStatus!
+  updatedAt: DateTime
 }
 
 type SessionBlock {
