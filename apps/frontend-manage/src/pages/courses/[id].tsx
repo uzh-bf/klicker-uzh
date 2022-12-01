@@ -27,7 +27,7 @@ function CourseOverviewPage() {
   if (loading) return <div>Loading...</div>
 
   if (error || !data?.course) {
-    // router.push('/404')
+    router.push('/404')
     return
   }
 
