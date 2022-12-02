@@ -149,6 +149,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                   className={{ root: 'mb-1' }}
+                  id="session-name"
                 />
                 <FormikTextField
                   required
@@ -156,6 +157,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                   className={{ root: 'mb-1' }}
+                  id="display-name"
                 />
 
                 {/* <EditorField

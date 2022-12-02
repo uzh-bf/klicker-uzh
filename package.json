@@ -47,6 +47,7 @@
     "start": "turbo run start"
   },
   "devDependencies": {
+    "@testing-library/cypress": "^8.0.7",
     "cypress": "^11.2.0",
     "standard-version": "9.5.0",
     "turbo": "1.6.3",
