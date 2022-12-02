@@ -1,8 +1,10 @@
 <img src="https://manage.klicker.uzh.ch/KlickerLogo.png" width="350">
 
-`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
+> Please note that this is the repository branch for the upcoming KlickerUZH v3.0 with a beta launch scheduled before the spring semester 2023 and stable release for the autumn semester 2023. If you would like to have more information on the new concept of v3.0, have a look at our [public discussion](https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79).
+>
+> Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the currently stable production code.
 
-Please note that this is the repository branch for the upcoming KlickerUZH version (v3.0) with a beta launch scheduled before the spring semester 2023 and stable release for the autumn semester 2023. If you would like to have more information on the new concept of v3.0, have a look at our [public discussion](https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79). Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the currently stable production code.
+`klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
 ![Klicker Screenshot Timeline](https://www.klicker.uzh.ch/img/timeline_mac.png)
 
