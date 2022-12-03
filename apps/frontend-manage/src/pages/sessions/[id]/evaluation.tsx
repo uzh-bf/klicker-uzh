@@ -366,7 +366,7 @@ function Evaluation() {
               className={{
                 root: 'h-[2.65rem] z-20',
                 trigger:
-                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20',
+                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20 h-full',
               }}
               value={
                 selectedInstance === ''
