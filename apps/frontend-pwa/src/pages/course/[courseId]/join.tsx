@@ -258,7 +258,7 @@ function JoinCourse({
           <UserNotification
             message="Es gab einen Fehler bei Ihrer Eingabe, bitte überprüfen Sie diese erneut."
             notificationType="error"
-            className="mt-14"
+            className={{ root: 'mt-14' }}
           />
         )}
       </div>
