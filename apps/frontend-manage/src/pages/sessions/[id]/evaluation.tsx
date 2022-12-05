@@ -96,7 +96,11 @@ function Collapsed({
           'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
         )}
       >
-        <Prose className="flex-initial max-w-full leading-8 prose-lg prose-p:m-0">
+        <Prose
+          className={{
+            root: 'flex-initial max-w-full leading-8 prose-lg prose-p:m-0',
+          }}
+        >
           <Markdown
             className="flex flex-row content-between hover:text-black"
             content={currentInstance.questionData?.content}

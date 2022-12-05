@@ -162,7 +162,7 @@ const EditProfile: NextPageWithLayout = () => {
               <Form>
                 <div className="flex flex-col w-full gap-8 mt-8 md:flex-row md:gap-16">
                   <div className="flex flex-col justify-between flex-1 order-2 gap-4 md:order-1">
-                    {!data.self.avatar && (
+                    {!data.self?.avatar && (
                       <Prose>
                         Willkommen beim KlickerUZH! Falls dies dein erstes Mal
                         hier ist, setze bitte ein Passwort und definiere deinen
