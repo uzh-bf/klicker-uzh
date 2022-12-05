@@ -93,9 +93,7 @@ function FeedbackArea() {
   const confusionButtonTimeout = useRef<any>()
   const confusionSubmissionTimeout = useRef<any>()
 
-  const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
   const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
-  const difficultyLabels = { min: 'easy', mid: 'optimal', max: 'hard' }
   const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
   const sessionId = router.query.id as string
   const RANGE_COLOR_MAP: Record<string, string> = {
@@ -343,7 +341,6 @@ function FeedbackArea() {
                 onNewConfusionTS(newValue, 'speed')
               }
               icons={speedIcons}
-              labels={speedLabels}
               value={confusionSpeed}
               rangeColorMap={RANGE_COLOR_MAP}
               borderColorMap={BORDER_COLOR_MAP}
@@ -362,7 +359,6 @@ function FeedbackArea() {
                 onNewConfusionTS(newValue, 'difficulty')
               }
               icons={difficultyIcons}
-              labels={difficultyLabels}
               value={confusionDifficulty}
               rangeColorMap={RANGE_COLOR_MAP}
               borderColorMap={BORDER_COLOR_MAP}
