@@ -13,7 +13,7 @@ function Repetition() {
   return (
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        <H1 className="text-xl">Repetition</H1>
+        <H1 className={{ root: 'text-xl' }}>Repetition</H1>
         {data?.learningElements.map((element) => (
           <Link
             key={element.id}

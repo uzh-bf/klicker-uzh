@@ -167,7 +167,7 @@ const Index = function () {
   return (
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
       <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        <H1 className="text-xl">Fragen aus deinen Kursen</H1>
+        <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
         <div className="flex flex-col mt-2">
           <Link href="/repetition" legacyBehavior>
             <Button
@@ -187,7 +187,7 @@ const Index = function () {
           </Link>
         </div>
 
-        <H1 className="mt-8 text-xl">Aktive Sessions</H1>
+        <H1 className={{ root: 'mt-8 text-xl' }}>Aktive Sessions</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
           {activeSessions.map((session) => (
@@ -217,7 +217,7 @@ const Index = function () {
           ))}
         </div>
 
-        <H1 className="text-xl">Aktives Microlearning</H1>
+        <H1 className={{ root: 'text-xl' }}>Aktives Microlearning</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
           {activeMicrolearning.length === 0 && (
             <div>Kein aktives Microlearning.</div>
@@ -253,7 +253,7 @@ const Index = function () {
           ))}
         </div>
 
-        <H1 className="text-xl">Meine Kurse</H1>
+        <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
         <div className="flex flex-col gap-2 mt-2">
           {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
           {courses.map((course) => (

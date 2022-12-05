@@ -40,12 +40,16 @@ function Header({
     >
       {title && courseName && (
         <div>
-          <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>
-          <H2 className="m-0 text-base">{title}</H2>
+          <H1 className={{ root: 'm-0 text-sm text-uzh-grey-60' }}>
+            {courseName}
+          </H1>
+          <H2 className={{ root: 'm-0 text-base' }}>{title}</H2>
         </div>
       )}
 
-      {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
+      {title && !courseName && (
+        <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
+      )}
 
       <div className="flex flex-row items-center gap-4">
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}

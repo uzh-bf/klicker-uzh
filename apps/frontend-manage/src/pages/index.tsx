@@ -97,7 +97,9 @@ function Index() {
                   value="live-session"
                   className="flex-1 hover:bg-uzh-blue-20"
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Live-Session
                   </H4>
                 </TabsPrimitive.Trigger>
@@ -107,7 +109,9 @@ function Index() {
                   className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
                   disabled
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Micro-Session
                   </H4>
                 </TabsPrimitive.Trigger>
@@ -117,7 +121,9 @@ function Index() {
                   className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
                   disabled
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Learning Element
                   </H4>
                 </TabsPrimitive.Trigger>

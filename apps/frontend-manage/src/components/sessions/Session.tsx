@@ -52,7 +52,7 @@ function Session({ sessionName, sessionList }: SessionProps) {
               }}
               staticContent={
                 <div className="flex flex-row justify-between">
-                  <H3 className="mb-0">{session.name}</H3>
+                  <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
                   <div className="flex flex-row gap-5">
                     {SESSION_STATUS.RUNNING === session.status && (
                       <Link

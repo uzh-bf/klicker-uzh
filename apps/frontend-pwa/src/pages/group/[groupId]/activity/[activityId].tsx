@@ -223,7 +223,7 @@ function GroupActivityDetails() {
 
           {data.groupActivityDetails.activityInstance && (
             <div className="py-4 lg:pt-0">
-              <H1 className="">Eure Aufgaben</H1>
+              <H1>Eure Aufgaben</H1>
               <Formik
                 isInitialValid={false}
                 initialValues={data.groupActivityDetails.instances.reduce(

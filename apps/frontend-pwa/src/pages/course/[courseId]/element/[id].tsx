@@ -116,7 +116,9 @@ function LearningElement({ courseId, id }: Props) {
         {currentIx === -1 && (
           <div className="flex flex-col space-y-4">
             <div className="border-b">
-              <H3 className="mb-0">{data.learningElement.displayName}</H3>
+              <H3 className={{ root: 'mb-0' }}>
+                {data.learningElement.displayName}
+              </H3>
             </div>
 
             {data.learningElement.description && (
@@ -204,7 +206,9 @@ function LearningElement({ courseId, id }: Props) {
             </div>
             <div>
               <div className="flex flex-row items-center justify-between">
-                <H3 className="flex flex-row justify-between">Auswertung</H3>
+                <H3 className={{ root: 'flex flex-row justify-between' }}>
+                  Auswertung
+                </H3>
                 <H3>Punkte (gesammelt/berechnet/möglich)</H3>
               </div>
               <div>
@@ -227,7 +231,7 @@ function LearningElement({ courseId, id }: Props) {
                 ))}
               </div>
 
-              <H3 className="mt-4 text-right">
+              <H3 className={{ root: 'mt-4 text-right' }}>
                 Total Punkte (gesammelt): {totalPointsAwarded}
               </H3>
             </div>
@@ -240,7 +244,7 @@ function LearningElement({ courseId, id }: Props) {
               <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
                 <div className="flex-1 basis-2/3">
                   <div className="flex flex-row items-center justify-between mb-4 border-b">
-                    <H3 className="mb-0">{questionData.name}</H3>
+                    <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
                     <div className="text-sm md:text-base text-slate-500">
                       Frage {currentIx + 1}/
                       {data.learningElement?.instances?.length}

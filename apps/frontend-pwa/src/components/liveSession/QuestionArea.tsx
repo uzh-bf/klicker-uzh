@@ -191,7 +191,7 @@ function QuestionArea({
 
   return (
     <div className="w-full h-full min-h-content">
-      <H2 className="hidden mb-2 md:block">Frage</H2>
+      <H2 className={{ root: 'hidden mb-2 md:block' }}>Frage</H2>
 
       {remainingQuestions.length === 0 ? (
         'Sie haben bereits alle aktiven Fragen beantwortet.'

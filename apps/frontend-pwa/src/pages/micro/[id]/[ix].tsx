@@ -94,7 +94,7 @@ function MicroSessionInstance() {
           <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
             <div className="flex-1 basis-2/3">
               <div className="flex flex-row items-end justify-between mb-4 border-b">
-                <H3 className="mb-0">{questionData.name}</H3>
+                <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
                 <div className="text-slate-500">{questionData.type}</div>
               </div>
 

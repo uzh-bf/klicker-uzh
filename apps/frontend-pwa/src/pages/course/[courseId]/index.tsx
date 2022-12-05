@@ -104,7 +104,9 @@ function CourseOverview({ courseId }: any) {
             <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
-                  <H3 className="mb-4">Individuelles Leaderboard</H3>
+                  <H3 className={{ root: 'mb-4' }}>
+                    Individuelles Leaderboard
+                  </H3>
 
                   <Leaderboard
                     leaderboard={leaderboard || []}
@@ -134,7 +136,7 @@ function CourseOverview({ courseId }: any) {
 
               <div className="flex flex-col justify-between flex-1 gap-8">
                 <div>
-                  <H3 className="mb-4">Gruppenleaderboard</H3>
+                  <H3 className={{ root: 'mb-4' }}>Gruppenleaderboard</H3>
 
                   <Leaderboard
                     leaderboard={
@@ -183,7 +185,9 @@ function CourseOverview({ courseId }: any) {
 
             {course?.awards?.length != 0 && (
               <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
-                <H3 className="mb-2 text-base">BF-Champion Awards</H3>
+                <H3 className={{ root: 'mb-2 text-base' }}>
+                  BF-Champion Awards
+                </H3>
                 <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                   <div className="flex-1 space-y-1">
                     {course.awards
@@ -239,7 +243,7 @@ function CourseOverview({ courseId }: any) {
           {data.participantGroups?.map((group) => (
             <Tabs.TabContent key={group.id} value={group.id}>
               <div className="flex flex-col gap-4">
-                <H3 className="flex flex-row justify-between">
+                <H3 className={{ root: 'flex flex-row justify-between' }}>
                   <div>Gruppe {group.name}</div>
                   <div>{group.code}</div>
                 </H3>
@@ -346,7 +350,7 @@ function CourseOverview({ courseId }: any) {
               </Form>
             </Formik>
 
-            <H3 className="mt-4">Gruppe beitreten</H3>
+            <H3 className={{ root: 'mt-4' }}>Gruppe beitreten</H3>
             <Formik
               initialValues={{ code: '' }}
               onSubmit={async (values, actions) => {

@@ -335,7 +335,7 @@ function FeedbackArea() {
 
       <div className="mb-8 space-y-6 text-sm">
         <div className="">
-          <H3 className="mb-0">Geschwindigkeit</H3>
+          <H3 className={{ root: 'mb-0' }}>Geschwindigkeit</H3>
           <div className="w-full -mt-8">
             <Slider
               disabled={!isConfusionEnabled}
@@ -354,7 +354,7 @@ function FeedbackArea() {
           </div>
         </div>
         <div>
-          <H3 className="mb-0">Schwierigkeit</H3>
+          <H3 className={{ root: 'mb-0' }}>Schwierigkeit</H3>
           <div className="w-full -mt-5">
             <Slider
               disabled={!isConfusionEnabled}
