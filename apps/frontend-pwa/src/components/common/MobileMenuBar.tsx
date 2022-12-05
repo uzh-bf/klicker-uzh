@@ -45,7 +45,7 @@ function MobileMenuBar({
         <NotificationBadgeWrapper
           count={item.unseenItems}
           withoutCount={item.showBadge}
-          className="flex flex-1"
+          className={{ root: 'flex flex-1' }}
           key={item.value}
           size="md"
         >
