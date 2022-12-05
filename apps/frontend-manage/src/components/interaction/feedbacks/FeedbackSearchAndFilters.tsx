@@ -142,7 +142,7 @@ function FeedbackSearchAndFilters({
                       >
                         <Checkbox
                           checked={filter.checked}
-                          onCheck={undefined}
+                          onCheck={() => null}
                         />
                         {filter.label}
                       </span>
