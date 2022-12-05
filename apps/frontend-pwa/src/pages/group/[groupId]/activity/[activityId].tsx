@@ -203,7 +203,7 @@ function GroupActivityDetails() {
                   data.groupActivityDetails.group.participants.length === 1
                 }
                 loading={startLoading}
-                className="self-end mt-4 text-lg font-bold"
+                className={{ root: 'self-end mt-4 text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
               >
                 START
@@ -351,7 +351,9 @@ function GroupActivityDetails() {
                           type="submit"
                           loading={isSubmitting}
                           disabled={!isValid}
-                          className="self-end mt-4 text-lg font-bold"
+                          className={{
+                            root: 'self-end mt-4 text-lg font-bold',
+                          }}
                         >
                           Antworten absenden
                         </Button>

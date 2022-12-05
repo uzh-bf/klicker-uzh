@@ -50,7 +50,9 @@ function MobileMenuBar({
           size="md"
         >
           <Button
-            className="flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none"
+            className={{
+              root: 'flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none',
+            }}
             key={item.value}
             onClick={() => {
               if (item.onClick) {

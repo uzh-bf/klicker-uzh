@@ -160,7 +160,7 @@ function LoginForm() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="mt-2 border-uzh-grey-80"
+                      className={{ root: 'mt-2 border-uzh-grey-80' }}
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>
@@ -172,7 +172,7 @@ function LoginForm() {
                         message="Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind."
                       >
                         <Button
-                          className="mt-2 w-fit border-uzh-grey-80"
+                          className={{ root: 'mt-2 w-fit border-uzh-grey-80' }}
                           onClick={onInstallClick}
                         >
                           <Button.Label>Jetzt installieren</Button.Label>

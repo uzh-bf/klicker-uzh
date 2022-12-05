@@ -419,7 +419,9 @@ function QuestionEditModal({
             onPrimaryAction={
               <Button
                 disabled={isSubmitting || !isValid}
-                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+                className={{
+                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80',
+                }}
                 type="submit"
                 form="question-manipulation-form"
               >
@@ -428,7 +430,7 @@ function QuestionEditModal({
             }
             onSecondaryAction={
               <Button
-                className="mt-2 border-uzh-grey-80"
+                className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
               >
                 <Button.Label>Schliessen</Button.Label>
@@ -702,7 +704,9 @@ function QuestionEditModal({
 
                                 <Button
                                   onClick={() => remove(index)}
-                                  className="items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md"
+                                  className={{
+                                    root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                  }}
                                 >
                                   <Button.Icon>
                                     <FontAwesomeIcon
@@ -768,7 +772,9 @@ function QuestionEditModal({
 
                         <Button
                           fluid
-                          className="font-bold border border-solid border-uzh-grey-100"
+                          className={{
+                            root: 'font-bold border border-solid border-uzh-grey-100',
+                          }}
                           onClick={() =>
                             push({
                               ix: values.options.choices[
@@ -849,7 +855,9 @@ function QuestionEditModal({
                                     />
                                     <Button
                                       onClick={() => remove(index)}
-                                      className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                      className={{
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                      }}
                                     >
                                       Löschen
                                     </Button>
@@ -858,7 +866,9 @@ function QuestionEditModal({
                               )}
                               <Button
                                 fluid
-                                className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                                className={{
+                                  root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                }}
                                 onClick={() =>
                                   push({
                                     min: undefined,
@@ -913,7 +923,9 @@ function QuestionEditModal({
                                   />
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                    }}
                                   >
                                     Löschen
                                   </Button>
@@ -922,7 +934,9 @@ function QuestionEditModal({
                             )}
                             <Button
                               fluid
-                              className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                              className={{
+                                root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                              }}
                               onClick={() => push('')}
                             >
                               Neue Lösung hinzufügen

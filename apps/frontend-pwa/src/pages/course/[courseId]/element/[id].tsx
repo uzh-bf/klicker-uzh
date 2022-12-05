@@ -182,7 +182,7 @@ function LearningElement({ courseId, id }: Props) {
             </div>
 
             <Button
-              className="self-end text-lg"
+              className={{ root: 'self-end text-lg' }}
               onClick={() => setCurrentIx(0)}
             >
               Starten

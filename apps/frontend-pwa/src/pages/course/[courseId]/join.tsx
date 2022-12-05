@@ -136,7 +136,7 @@ function JoinCourse({
                   />
 
                   <Button
-                    className="float-right mt-2 border-uzh-grey-80"
+                    className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
                     disabled={isSubmitting}
                   >
@@ -240,7 +240,7 @@ function JoinCourse({
                   />
 
                   <Button
-                    className="float-right mt-2 border-uzh-grey-80"
+                    className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
                     disabled={isSubmitting}
                   >

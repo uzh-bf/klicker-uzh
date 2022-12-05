@@ -35,7 +35,7 @@ const Profile = () => {
         <Button
           fluid
           onClick={() => Router.replace('/editProfile')}
-          className="mt-7"
+          className={{ root: 'mt-7' }}
         >
           Profil editieren
         </Button>
@@ -47,7 +47,7 @@ const Profile = () => {
               await logoutParticipant()
               Router.replace('/login')
             }}
-            className="mt-2"
+            className={{ root: 'mt-2' }}
           >
             Ausloggen
           </Button>

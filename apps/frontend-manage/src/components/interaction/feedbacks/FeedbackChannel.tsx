@@ -67,7 +67,11 @@ function FeedbackChannel({
   return (
     <div>
       <FeedbackSearchAndFilters
-        disabled={sortedFeedbacks?.length === 0}
+        disabled={{
+          search: sortedFeedbacks?.length === 0,
+          sorting: sortedFeedbacks?.length === 0,
+          print: sortedFeedbacks?.length === 0,
+        }}
         {...filterProps}
       />
       <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
@@ -104,7 +108,7 @@ function FeedbackChannel({
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    className="justify-center mr-2 w-9 h-9"
+                    className={{ root: 'justify-center mr-2 w-9 h-9' }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}

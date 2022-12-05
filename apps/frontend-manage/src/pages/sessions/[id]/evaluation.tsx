@@ -106,11 +106,13 @@ function Collapsed({
       </div>
       {showExtensibleButton && (
         <Button
-          className={twMerge(
-            questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
-            'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
-            ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
-          )}
+          className={{
+            root: twMerge(
+              questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
+              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
+              ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
+            ),
+          }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
         >
           <FontAwesomeIcon

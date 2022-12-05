@@ -171,14 +171,16 @@ const Index = function () {
         <div className="flex flex-col mt-2">
           <Link href="/repetition" legacyBehavior>
             <Button
-              className={twMerge(
-                'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-              )}
+              className={{
+                root: twMerge(
+                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
+                ),
+              }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faGraduationCap} />
               </Button.Icon>
-              <Button.Label className="flex-1 text-left">
+              <Button.Label className={{ root: 'flex-1 text-left' }}>
                 <div>Repetition</div>
               </Button.Label>
             </Button>
@@ -194,13 +196,17 @@ const Index = function () {
               key={session.id}
               legacyBehavior
             >
-              <Button className="gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40">
+              <Button
+                className={{
+                  root: 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
+                }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon
                     icon={session.linkTo ? faLink : faChalkboard}
                   />
                 </Button.Icon>
-                <Button.Label className="flex-1">
+                <Button.Label className={{ root: 'flex-1' }}>
                   <div className="flex flex-row items-end justify-between md:flex-row">
                     <div>{session.displayName}</div>
                     <div className="text-sm">{session.courseName}</div>
@@ -220,17 +226,19 @@ const Index = function () {
             <Link href={`/micro/${micro.id}/`} key={micro.id} legacyBehavior>
               <Button
                 disabled={micro.isCompleted}
-                className={twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                  micro.isCompleted && 'hover:bg-unset'
-                )}
+                className={{
+                  root: twMerge(
+                    'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
+                    micro.isCompleted && 'hover:bg-unset'
+                  ),
+                }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon
                     icon={micro.isCompleted ? faCheck : faBookOpenReader}
                   />
                 </Button.Icon>
-                <Button.Label className="flex-1 text-left">
+                <Button.Label className={{ root: 'flex-1 text-left' }}>
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
                     <div className="text-xs">

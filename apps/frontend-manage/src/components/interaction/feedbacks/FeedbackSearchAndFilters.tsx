@@ -179,10 +179,12 @@ function FeedbackSearchAndFilters({
       <div className="flex flex-row">
         {!hidden?.print && (
           <Button
-            className={twMerge(
-              'justify-center mt-4 w-11 h-11 md:mt-0',
-              !hidden?.sorting && 'mr-2'
-            )}
+            className={{
+              root: twMerge(
+                'justify-center mt-4 w-11 h-11 md:mt-0',
+                !hidden?.sorting && 'mr-2'
+              ),
+            }}
             onClick={() => window.print()}
             disabled={disabled?.print}
           >

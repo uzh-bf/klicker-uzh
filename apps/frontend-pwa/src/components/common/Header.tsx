@@ -53,26 +53,34 @@ function Header({
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
-              className="hidden text-white bg-slate-800 md:block"
+              className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
             >
               Zurück
             </Button>
           ) : (
             <Link href="/" legacyBehavior>
-              <Button className="hidden text-white bg-slate-800 md:block">
+              <Button
+                className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+              >
                 Home
               </Button>
             </Link>
           ))
         ) : (
           <Link href="/login" legacyBehavior>
-            <Button className="text-white bg-slate-800">Login</Button>
+            <Button className={{ root: 'text-white bg-slate-800' }}>
+              Login
+            </Button>
           </Link>
         )}
         {participant && !participant?.avatar && (
           <Link href="/editProfile" legacyBehavior>
-            <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
+            <Button
+              className={{
+                root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
+              }}
+            >
               Profil einrichten
             </Button>
           </Link>

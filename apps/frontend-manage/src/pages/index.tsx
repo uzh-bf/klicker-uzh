@@ -236,7 +236,9 @@ function Index() {
                           !isQuestionCreationModalOpen
                         )
                       }
-                      className="float-right mb-3 font-bold text-white bg-uzh-blue-80"
+                      className={{
+                        root: 'float-right mb-3 font-bold text-white bg-uzh-blue-80',
+                      }}
                     >
                       FRAGE ERSTELLEN
                     </Button>

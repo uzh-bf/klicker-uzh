@@ -21,14 +21,16 @@ function Repetition() {
             legacyBehavior
           >
             <Button
-              className={twMerge(
-                'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-              )}
+              className={{
+                root: twMerge(
+                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
+                ),
+              }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faBookOpenReader} />
               </Button.Icon>
-              <Button.Label className="flex-1 text-left">
+              <Button.Label className={{ root: 'flex-1 text-left' }}>
                 <div>{element.displayName}</div>
               </Button.Label>
             </Button>

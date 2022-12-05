@@ -57,7 +57,9 @@ function Feedback({
   return (
     <div>
       <Button
-        className="w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary"
+        className={{
+          root: 'w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary',
+        }}
         onClick={() => setIsEditingActive((prev) => !prev)}
       >
         <div className="flex-1 no-page-break-inside">
@@ -94,10 +96,12 @@ function Feedback({
               </div>
             )}
             <Button
-              className={twMerge(
-                'mr-1 h-9',
-                isBeingDeleted && 'bg-red-600 text-white'
-              )}
+              className={{
+                root: twMerge(
+                  'mr-1 h-9',
+                  isBeingDeleted && 'bg-red-600 text-white'
+                ),
+              }}
               onClick={(e) => {
                 e?.stopPropagation()
                 if (isBeingDeleted) {
@@ -112,7 +116,7 @@ function Feedback({
               </Button.Icon>
             </Button>
             <Button
-              className="h-9"
+              className={{ root: 'h-9' }}
               icon={isEditingActive ? 'arrow up' : 'arrow down'}
               onClick={(e) => {
                 e?.stopPropagation()
@@ -163,7 +167,7 @@ function Feedback({
                   </div>
                   <div className="ml-2 print:hidden">
                     <Button
-                      className="justify-center mr-1 w-9 h-9"
+                      className={{ root: 'justify-center mr-1 w-9 h-9' }}
                       onClick={() => onDeleteResponse(response.id)}
                     >
                       <Button.Icon>
@@ -215,11 +219,13 @@ function Feedback({
                       maxLengthLabel="Zeichen"
                     />
                     <Button
-                      className="float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
+                      className={{
+                        root: 'float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60',
+                      }}
                       type="submit"
                       disabled={isSubmitting || resolved}
                     >
-                      <Button.Icon className="mr-1">
+                      <Button.Icon className={{ root: 'mr-1' }}>
                         <FontAwesomeIcon icon={faPaperPlane} />
                       </Button.Icon>
                       <Button.Label>Respond</Button.Label>
@@ -231,17 +237,17 @@ function Feedback({
           </div>
           <div className="flex flex-col flex-initial gap-2 pl-4">
             <Button
-              className="px-5"
+              className={{ root: 'px-5' }}
               disabled={resolved}
               onClick={() => onPinFeedback(!pinned)}
             >
-              <Button.Icon className="mr-1">
+              <Button.Icon className={{ root: 'mr-1' }}>
                 <FontAwesomeIcon icon={faThumbTack} />
               </Button.Icon>
               <Button.Label>{pinned ? 'Unpin' : 'Pin'}</Button.Label>
             </Button>
             <Button
-              className="px-5"
+              className={{ root: 'px-5' }}
               icon={resolved ? 'lock open' : 'lock'}
               onClick={() => {
                 onResolveFeedback(!resolved)
@@ -251,11 +257,11 @@ function Feedback({
               }}
             >
               {resolved ? (
-                <Button.Icon className="mr-1">
+                <Button.Icon className={{ root: 'mr-1' }}>
                   <FontAwesomeIcon icon={faLockOpen} />
                 </Button.Icon>
               ) : (
-                <Button.Icon className="mr-1">
+                <Button.Icon className={{ root: 'mr-1' }}>
                   <FontAwesomeIcon icon={faLock} />
                 </Button.Icon>
               )}

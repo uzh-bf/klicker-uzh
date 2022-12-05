@@ -25,10 +25,12 @@ function CourseSelectionPage() {
               {dataCourses.userCourses.map((course) => (
                 <Button
                   key={course.id}
-                  className="p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100"
+                  className={{
+                    root: 'p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
+                  }}
                   onClick={() => router.push(`/courses/${course.id}`)}
                 >
-                  <Button.Icon className="ml-1 mr-3">
+                  <Button.Icon className={{ root: 'ml-1 mr-3' }}>
                     <FontAwesomeIcon icon={faPeopleGroup} />
                   </Button.Icon>
                   <Button.Label>{course.displayName}</Button.Label>

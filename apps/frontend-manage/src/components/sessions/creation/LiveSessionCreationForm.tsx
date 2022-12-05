@@ -200,7 +200,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                   <div>Block {index + 1}</div>
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
+                                    }}
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
                                   </Button>
@@ -235,7 +237,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                           ))}
                           <Button
                             fluid
-                            className="flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100"
+                            className={{
+                              root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
+                            }}
                             onClick={() => push([])}
                           >
                             <FontAwesomeIcon icon={faPlus} />
@@ -283,7 +287,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   />
                 </div>
                 <Button
-                  className="float-right"
+                  className={{ root: 'float-right' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
                 >

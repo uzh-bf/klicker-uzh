@@ -89,8 +89,8 @@ function AudienceInteraction({
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <Button className="h-10 px-4">
-                  <Button.Icon className="mr-1">
+                <Button className={{ root: 'h-10 px-4' }}>
+                  <Button.Icon className={{ root: 'mr-1' }}>
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
                   <Button.Label>Dozierendenansicht</Button.Label>

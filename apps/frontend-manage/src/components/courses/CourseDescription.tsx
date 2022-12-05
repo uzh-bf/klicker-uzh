@@ -71,11 +71,13 @@ function CourseDescription({
                 <div className="text-sm text-red-700">{errors.description}</div>
               )}
               <Button
-                className="float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
+                className={{
+                  root: 'float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60',
+                }}
                 type="submit"
                 disabled={isSubmitting || !isValid}
               >
-                <Button.Icon className="mr-1">
+                <Button.Icon className={{ root: 'mr-1' }}>
                   <FontAwesomeIcon icon={faSave} />
                 </Button.Icon>
                 <Button.Label>{submitText}</Button.Label>

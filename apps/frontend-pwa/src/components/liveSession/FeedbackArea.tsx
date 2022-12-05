@@ -316,7 +316,9 @@ function FeedbackArea() {
                 maxLengthLabel="Zeichen"
               />
               <Button
-                className="float-right h-10 text-center items-center !w-30"
+                className={{
+                  root: 'float-right h-10 text-center items-center !w-30',
+                }}
                 type="submit"
                 disabled={isSubmitting}
               >

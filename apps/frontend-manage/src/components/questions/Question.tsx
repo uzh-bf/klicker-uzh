@@ -112,7 +112,7 @@ function Question({
         <div className="flex flex-col md:w-full w-max md:flex-row">
           <div className="mb-2 md:flex-1 md:mb-0">
             <Button
-              className="justify-center h-10 bg-white w-36"
+              className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsPreviewModalOpen(true)}
             >
               Vorschau
@@ -127,7 +127,9 @@ function Question({
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
-              className="justify-center h-10 text-black bg-red-300 shadow-none cursor-not-allowed w-36 opacity-60"
+              className={{
+                root: 'justify-center h-10 text-black bg-red-300 shadow-none cursor-not-allowed w-36 opacity-60',
+              }}
               onClick={() =>
                 deleteQuestion({
                   variables: {
@@ -143,7 +145,7 @@ function Question({
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
-              className="justify-center h-10 bg-white w-36"
+              className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsModificationModalOpen(true)}
             >
               Bearbeiten
@@ -159,7 +161,7 @@ function Question({
           </div>
           <div className="w-36">
             <Button
-              className="justify-center h-10 bg-white w-36"
+              className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsDuplicationModalOpen(true)}
               // TODO: implement
               disabled
