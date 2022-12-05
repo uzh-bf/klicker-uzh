@@ -408,7 +408,7 @@ function QuestionEditModal({
           <Modal
             fullScreen
             title="Frage erstellen"
-            classNames={{
+            className={{
               overlay: 'top-14',
               content: 'm-auto max-w-7xl',
             }}

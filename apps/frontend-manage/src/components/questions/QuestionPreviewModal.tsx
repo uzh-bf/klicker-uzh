@@ -42,7 +42,7 @@ function QuestionPreviewModal({
 
   return (
     <Modal
-      className="!pb-4"
+      className={{ title: 'pb-4' }}
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       title={dataQuestion?.question?.name}
