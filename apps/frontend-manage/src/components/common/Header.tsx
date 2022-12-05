@@ -6,10 +6,9 @@ import {
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown } from '@uzh-bf/design-system'
-import Link from 'next/link'
+import { Navigation, ThemeContext } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -18,6 +17,7 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   const userDropdownContent = [
@@ -40,83 +40,91 @@ function Header({ user }: HeaderProps): React.ReactElement {
 
   return (
     <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
-      <div>
-        <Link href="/" legacyBehavior>
-          <Button className="mr-2 border-none bg-slate-800">
-            <Button.Label>Fragepool</Button.Label>
-          </Button>
-        </Link>
-        <Link href="/sessions" prefetch legacyBehavior>
-          <Button
-            className="mr-2 border-none bg-slate-800"
-            onClick={() => router.push('/sessions')}
-          >
-            <Button.Label>Sessionen</Button.Label>
-          </Button>
-        </Link>
-        <Link href="/courses" prefetch legacyBehavior>
-          <Button className="mr-2 border-none bg-slate-800">
-            <Button.Label>Kurse</Button.Label>
-          </Button>
-        </Link>
-      </div>
-      <div className="flex flex-row gap-4">
-        <Dropdown
-          trigger={
-            <Button
-              disabled={
-                !data?.runningSessions || data.runningSessions.length === 0
-              }
-              className={twMerge(
-                'flex flex-row items-center justify-center p-2 border-none',
-                'rounded bg-slate-800 h-9 w-9',
-                data?.runningSessions?.length > 0 &&
-                  'text-green-600 hover:text-uzh-blue-100 hover:bg-uzh-blue-40'
-              )}
-            >
-              <FontAwesomeIcon icon={faPlayCircle} className="h-7" />
-            </Button>
-          }
-          items={
-            data?.runningSessions && data?.runningSessions.length > 0
-              ? data?.runningSessions.map((session) => {
-                  return {
-                    label: session.name,
-                    onClick: () =>
-                      router.push(`/sessions/${session.id}/cockpit`),
-                  }
-                })
-              : []
-          }
-          className={{
-            viewport:
-              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
-            item: 'text-black hover:!text-uzh-blue-100 hover:bg-uzh-blue-20',
-          }}
+      <Navigation className={{ root: 'bg-slate-800' }}>
+        <Navigation.ButtonItem
+          href="/"
+          label="Fragepool"
+          className={{ label: 'font-bold text-white text-base' }}
         />
-
-        <Dropdown
-          trigger={
-            <div
-              className={twMerge(
-                'flex flex-row items-center gap-2 px-3 border border-white border-solid',
-                'rounded py-auto h-9 bg-slate-800 hover:bg-uzh-blue-20 hover:text-uzh-blue-100'
-              )}
-            >
-              <FontAwesomeIcon icon={faUserCircle} size="lg" />
-              <div>{user.shortname}</div>
-            </div>
-          }
-          items={userDropdownContent.map((item) => {
-            return { label: item.name, onClick: () => item.onClick() }
-          })}
-          className={{
-            viewport:
-              'bg-white text-black pt-0 border border-solid border-uzh-grey-80',
-            item: 'text-black hover:!text-uzh-blue-80 hover:bg-uzh-blue-20 px-3',
-          }}
+        <Navigation.ButtonItem
+          href="/sessions"
+          label="Sessionen"
+          className={{ label: 'font-bold text-white text-base' }}
         />
-      </div>
+        <Navigation.ButtonItem
+          href="/courses"
+          label="Kurse"
+          className={{ label: 'font-bold text-white text-base' }}
+        />
+      </Navigation>
+      <Navigation className={{ root: '!p-0 bg-slate-800' }}>
+        <Navigation.TriggerItem
+          icon={
+            <FontAwesomeIcon
+              icon={faPlayCircle}
+              className="h-7 group-hover:text-white"
+            />
+          }
+          dropdownWidth="w-[12rem]"
+          className={{
+            root: 'h-10 w-10 group',
+            icon: twMerge(
+              'text-uzh-grey-80',
+              data?.runningSessions?.length !== 0 && 'text-green-600'
+            ),
+            disabled: '!text-gray-400',
+            dropdown: 'p-1.5 gap-0',
+          }}
+          disabled={data?.runningSessions?.length === 0}
+        >
+          {data?.runningSessions && data?.runningSessions.length > 0 ? (
+            data?.runningSessions.map((session) => {
+              return (
+                <Navigation.DropdownItem
+                  key={session.id}
+                  title={session.name}
+                  href={`/sessions/${session.id}/cockpit`}
+                  className={{ title: 'text-base font-bold', root: 'p-2' }}
+                />
+              )
+            })
+          ) : (
+            <div />
+          )}
+        </Navigation.TriggerItem>
+        <Navigation.TriggerItem
+          icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
+          label={user.shortname}
+          dropdownWidth="w-[12rem]"
+          className={{
+            label: 'font-bold text-white text-base my-auto',
+            icon: 'text-white',
+            root: 'flex flex-row items-center gap-1',
+            dropdown: 'p-1.5 gap-0',
+          }}
+        >
+          <Navigation.DropdownItem
+            title="Settings"
+            href="/settings"
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+          />
+          <Navigation.DropdownItem
+            title="Support"
+            href="/support"
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+          />
+          <Navigation.DropdownItem
+            title="Logout"
+            onClick={async () => {
+              const userIdLogout = await logoutUser()
+              userIdLogout.data?.logoutUser
+                ? router.push('https://www.klicker.uzh.ch')
+                : console.log('Logout failed')
+            }}
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+          />
+        </Navigation.TriggerItem>
+      </Navigation>
     </div>
   )
 }

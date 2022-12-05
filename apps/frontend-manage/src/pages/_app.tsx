@@ -19,7 +19,7 @@ function App({ Component, pageProps }: AppProps) {
             primaryBg: 'bg-uzh-blue-20',
             primaryBgDark: 'bg-uzh-blue-60',
             primaryBgHover: 'hover:bg-uzh-blue-20',
-            primaryBgHoverNavbar: 'hover:bg-uzh-blue-40',
+            primaryBgDarkHover: 'hover:bg-uzh-blue-60',
             primaryBorder: 'border-uzh-blue-40',
             primaryBorderHover: 'hover:border-uzh-blue-40',
             primaryText: 'text-uzh-blue-100',
