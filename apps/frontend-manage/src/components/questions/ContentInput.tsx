@@ -107,56 +107,70 @@ function ContentInput({
           >
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
-              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
             >
               <MarkButton format="bold" icon={faBold} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
-              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
             >
               <MarkButton format="italic" icon={faItalic} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
-              tooltipStyle={'text-sm md:text-base max-w-full md:max-w-full'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
+              }}
+              withIndicator={false}
             >
               <MarkButton format="code" icon={faCode} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
-              tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[70%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
             >
               <BlockButton format="block-quote" icon={faQuoteRight} />
             </Tooltip>
 
             <Tooltip
               tooltip="Diese Option erzeug eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-              tooltipStyle={'text-sm md:text-base max-w-[35%] md:max-w-[50%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
+              }}
+              withIndicator={false}
             >
               <BlockButton format="numbered-list" icon={faListOl} />
             </Tooltip>
 
             <Tooltip
               tooltip="Diese Option erzeug eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-              tooltipStyle={'text-sm md:text-base max-w-[40%] md:max-w-[50%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
+              }}
+              withIndicator={false}
             >
               <BlockButton format="bulleted-list" icon={faListUl} />
             </Tooltip>
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
-              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
             >
               <Button
                 active={false}
@@ -175,8 +189,10 @@ function ContentInput({
 
             <Tooltip
               tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
-              tooltipStyle={'text-sm md:text-base max-w-[45%] md:max-w-[70%]'}
-              withArrow={false}
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
             >
               <Button
                 active={false}
