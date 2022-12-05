@@ -179,10 +179,12 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   <div className="flex flex-row items-center flex-1 gap-2">
                     <Label
                       label="Blocks:"
-                      className="font-bold"
+                      className={{
+                        root: 'font-bold',
+                        tooltip: 'font-normal text-sm !w-1/2 opacity-100',
+                      }}
                       tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
                       showTooltipSymbol={true}
-                      tooltipStyle="font-normal text-sm !w-1/2 opacity-100"
                     />
                     <FieldArray name="blocks">
                       {({ push, remove }: FieldArrayRenderProps) => (
@@ -259,8 +261,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 <div className="flex flex-row items-center">
                   <Label
                     label="Optionen"
-                    className="my-auto mr-2 font-bold min-w-max"
-                    tooltipStyle="text-sm font-normal !w-1/2 opacity-100"
+                    className={{
+                      root: 'my-auto mr-2 font-bold min-w-max',
+                      tooltip: 'text-sm font-normal !w-1/2 opacity-100',
+                    }}
                   />
                   {courses && (
                     <>

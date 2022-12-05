@@ -178,7 +178,7 @@ function JoinCourse({
             {({ errors, touched, values, isSubmitting, setFieldValue }) => {
               return (
                 <Form>
-                  <Label label="Nutzername" className="italic" />
+                  <Label label="Nutzername" className={{ root: 'italic' }} />
                   <Field
                     name="username"
                     type="text"
@@ -196,7 +196,7 @@ function JoinCourse({
                     className="text-sm text-red-400"
                   />
 
-                  <Label label="Passwort" className="italic" />
+                  <Label label="Passwort" className={{ root: 'italic' }} />
                   <Field
                     name="password"
                     type="password"
@@ -214,7 +214,10 @@ function JoinCourse({
                     className="text-sm text-red-400"
                   />
 
-                  <Label label="Passwort (Wiederholung)" className="italic" />
+                  <Label
+                    label="Passwort (Wiederholung)"
+                    className={{ root: 'italic' }}
+                  />
                   <Field
                     name="passwordRepetition"
                     type="password"
@@ -310,7 +313,10 @@ export const PinField = ({
 }) => {
   return (
     <>
-      <Label label="Kurs-PIN (Format: ### ### ###)" className="italic" />
+      <Label
+        label="Kurs-PIN (Format: ### ### ###)"
+        className={{ root: 'italic' }}
+      />
       <Field
         name="pin"
         type="text"

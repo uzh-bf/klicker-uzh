@@ -442,8 +442,11 @@ function QuestionEditModal({
               <div className="z-0 flex flex-row">
                 <Label
                   label="Fragetyp:"
-                  className="my-auto mr-2 text-lg font-bold"
-                  tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                  className={{
+                    root: 'my-auto mr-2 text-lg font-bold',
+                    tooltip:
+                      'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                  }}
                   tooltip="// TODO: tooltip content"
                   showTooltipSymbol={mode === 'CREATE'}
                 />
@@ -469,8 +472,11 @@ function QuestionEditModal({
                 <div className="flex flex-row mt-2">
                   <Label
                     label="Fragetitel:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
                     showTooltipSymbol={true}
                   />
@@ -488,8 +494,11 @@ function QuestionEditModal({
                   <div className="flex flex-row">
                     <Label
                       label="Tags:"
-                      className="my-auto mr-2 text-lg font-bold"
-                      tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                      className={{
+                        root: 'my-auto mr-2 text-lg font-bold',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
                       tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
                       showTooltipSymbol={true}
                     />
@@ -514,8 +523,11 @@ function QuestionEditModal({
                 <div className="mt-4">
                   <Label
                     label="Frage:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
                     showTooltipSymbol={true}
                   />
@@ -565,8 +577,10 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Antwortmöglichkeiten:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
@@ -576,8 +590,10 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Einschränkungen:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
