@@ -50,7 +50,7 @@
     "remark-slate": "1.8.6",
     "shared-components": "*",
     "sharp": "0.31.2",
-    "slate": "0.84.0",
+    "slate": "0.87.0",
     "slate-history": "0.66.0",
     "slate-react": "0.83.2",
     "tailwind-merge": "1.8.0",
