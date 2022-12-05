@@ -617,9 +617,11 @@ function QuestionEditModal({
                       }}
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
-                      className={twMerge(
-                        !values.hasSampleSolution && 'opacity-50'
-                      )}
+                      className={{
+                        root: twMerge(
+                          !values.hasSampleSolution && 'opacity-50'
+                        ),
+                      }}
                     />
                   )}
                 </div>
@@ -702,7 +704,7 @@ function QuestionEditModal({
                                           id={`${choice.value}-correct`}
                                           checked={field.value || false}
                                           label=""
-                                          className="gap-0 mr-0.5"
+                                          className={{ root: 'gap-0 mr-0.5' }}
                                           onCheckedChange={(
                                             newValue: boolean
                                           ) => {

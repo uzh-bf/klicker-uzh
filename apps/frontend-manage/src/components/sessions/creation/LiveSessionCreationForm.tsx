@@ -286,7 +286,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('isGamificationEnabled', newValue)
                     }
-                    className="ml-4"
+                    className={{ root: 'ml-4' }}
                   />
                 </div>
                 <Button
