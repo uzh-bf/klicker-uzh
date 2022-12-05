@@ -270,7 +270,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <>
                       <div className="mr-2">Kurs:</div>
                       <Select
-                        name="course_selection"
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
                         onChange={(newValue: string) =>
