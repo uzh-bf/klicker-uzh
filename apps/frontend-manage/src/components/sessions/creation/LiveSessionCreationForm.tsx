@@ -181,7 +181,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       label="Blocks:"
                       className={{
                         root: 'font-bold',
-                        tooltip: 'font-normal text-sm !w-1/2 opacity-100',
+                        tooltip: 'font-normal text-sm !w-1/2',
                       }}
                       tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
                       showTooltipSymbol={true}
@@ -263,7 +263,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     label="Optionen"
                     className={{
                       root: 'my-auto mr-2 font-bold min-w-max',
-                      tooltip: 'text-sm font-normal !w-1/2 opacity-100',
+                      tooltip: 'text-sm font-normal !w-1/2',
                     }}
                   />
                   {courses && (
@@ -281,7 +281,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   )}
                   <Switch
                     label="Gamification"
-                    id="gamification-switch"
                     checked={values.isGamificationEnabled}
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('isGamificationEnabled', newValue)

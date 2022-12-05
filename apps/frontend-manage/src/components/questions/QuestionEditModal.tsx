@@ -599,7 +599,6 @@ function QuestionEditModal({
                     </div>
                   )}
                   <Switch
-                    id="solution switch"
                     checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) => {
                       setFieldValue('hasSampleSolution', newValue)
@@ -609,7 +608,6 @@ function QuestionEditModal({
                   />
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <Switch
-                      id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) => {
                         setFieldValue('hasAnswerFeedbacks', newValue)
@@ -701,7 +699,6 @@ function QuestionEditModal({
                                     >
                                       {({ field, meta }: FieldProps) => (
                                         <Switch
-                                          id={`${choice.value}-correct`}
                                           checked={field.value || false}
                                           label=""
                                           className={{ root: 'gap-0 mr-0.5' }}

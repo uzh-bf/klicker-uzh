@@ -767,7 +767,6 @@ function Evaluation() {
               Total Teilnehmende: {currentInstance.participants}
             </div>
             <Switch
-              id="showSolution"
               checked={showSolution}
               label="Lösung anzeigen"
               onCheckedChange={(newValue) => setShowSolution(newValue)}

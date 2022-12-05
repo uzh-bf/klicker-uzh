@@ -101,9 +101,7 @@ function AudienceInteraction({
 
           <div className="flex items-center order-1 md:order-2">
             <Switch
-              id="audienceInteraction-switch"
               checked={isAudienceInteractionActive}
-              label=""
               onCheckedChange={(): void => {
                 changeSessionSettings({
                   variables: {
@@ -128,9 +126,7 @@ function AudienceInteraction({
 
           <div className="flex items-center order-2 md:order-3">
             <Switch
-              id="moderation-switch"
               checked={isModerationEnabled}
-              label=""
               disabled={!isAudienceInteractionActive}
               onCheckedChange={(): void => {
                 changeSessionSettings({
