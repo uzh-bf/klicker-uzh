@@ -71,7 +71,7 @@ function LearningElement({ courseId, id }: Props) {
 
   const totalPointsAwarded = useMemo(() => {
     if (!data?.learningElement) return 0
-    return data.learningElement.instances.reduce(
+    return data.learningElement.instances?.reduce(
       (acc, instance) => acc + (instance?.evaluation?.pointsAwarded ?? 0),
       0
     )
@@ -212,7 +212,7 @@ function LearningElement({ courseId, id }: Props) {
                 <H3>Punkte (gesammelt/berechnet/möglich)</H3>
               </div>
               <div>
-                {data.learningElement.instances.map((instance) => (
+                {data.learningElement.instances?.map((instance) => (
                   <div
                     className="flex flex-row justify-between"
                     key={instance.id}
@@ -316,7 +316,9 @@ function LearningElement({ courseId, id }: Props) {
               nonLinear
               isMaxVisible
               displayOffset={
-                data.learningElement?.instances?.length > 15 ? 3 : undefined
+                (data.learningElement?.instances?.length ?? 0) > 15
+                  ? 3
+                  : undefined
               }
               formatter={(v) => v}
               value={currentIx}

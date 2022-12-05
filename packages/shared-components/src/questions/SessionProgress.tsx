@@ -45,8 +45,10 @@ export function SessionProgress({
       )}
 
       <Progress
-        className="w-full h-10 my-auto bg-gray-100"
-        indicatorClassName="h-10"
+        className={{
+          root: 'w-full h-10 my-auto bg-gray-100',
+          indicator: 'h-10',
+        }}
         value={activeIndex}
         max={numItems}
         formatter={(val) =>
