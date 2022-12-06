@@ -68,7 +68,6 @@ function FeedbackChannel({
     <div>
       <FeedbackSearchAndFilters
         disabled={{
-          search: sortedFeedbacks?.length === 0,
           sorting: sortedFeedbacks?.length === 0,
           print: sortedFeedbacks?.length === 0,
         }}

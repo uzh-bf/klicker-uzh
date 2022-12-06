@@ -120,8 +120,8 @@ function AudienceInteraction({
                     : 'Feedback Channel Deactivated',
                 ])
               }}
+              label="Publikumsinteraktion aktivieren"
             />
-            Publikumsinteraktion aktivieren
           </div>
 
           <div className="flex items-center order-2 md:order-3">
@@ -142,14 +142,11 @@ function AudienceInteraction({
                   String(!isModerationEnabled),
                 ])
               }}
+              label="Moderation aktivieren"
+              className={{
+                label: twMerge(!isAudienceInteractionActive && 'text-gray-400'),
+              }}
             />
-            <span
-              className={twMerge(
-                !isAudienceInteractionActive && 'text-gray-400'
-              )}
-            >
-              Moderation aktivieren
-            </span>
           </div>
         </div>
       </div>

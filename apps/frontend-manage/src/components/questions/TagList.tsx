@@ -41,11 +41,11 @@ function TagList({
       <div className="p-4 md:min-w-[17rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
         <Button
           className={{
-            root: 'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row justify-center',
+            root: 'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
           }}
           onClick={(): void => handleReset()}
         >
-          <Button.Icon>
+          <Button.Icon className={{ root: 'mr-1' }}>
             <FontAwesomeIcon icon={faCircleXmark} />
           </Button.Icon>
           <Button.Label>Filter zurücksetzen</Button.Label>

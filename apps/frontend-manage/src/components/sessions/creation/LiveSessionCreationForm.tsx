@@ -225,7 +225,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 />
                                 <FormikTextField
                                   id={`timeLimits.${index}`}
-                                  value={values.timeLimits[index]}
+                                  value={values.timeLimits[index] || ''}
                                   onChange={(newValue: string) => {
                                     setFieldValue(
                                       `timeLimits[${index}]`,
