@@ -31,7 +31,7 @@ function Statistic({
             checked={checked}
             onCheck={onCheck}
             size="sm"
-            className="border-black rounded-sm"
+            className={{ root: 'border-black rounded-sm' }}
           />
         )}
         {statisticName}

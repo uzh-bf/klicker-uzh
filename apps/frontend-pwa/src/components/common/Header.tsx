@@ -40,12 +40,16 @@ function Header({
     >
       {title && courseName && (
         <div>
-          <H1 className="m-0 text-sm text-uzh-grey-60">{courseName}</H1>
-          <H2 className="m-0 text-base">{title}</H2>
+          <H1 className={{ root: 'm-0 text-sm text-uzh-grey-60' }}>
+            {courseName}
+          </H1>
+          <H2 className={{ root: 'm-0 text-base' }}>{title}</H2>
         </div>
       )}
 
-      {title && !courseName && <H1 className="mb-0 text-xl">{title}</H1>}
+      {title && !courseName && (
+        <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
+      )}
 
       <div className="flex flex-row items-center gap-4">
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
@@ -53,26 +57,34 @@ function Header({
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
-              className="hidden text-white bg-slate-800 md:block"
+              className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
             >
               Zurück
             </Button>
           ) : (
             <Link href="/" legacyBehavior>
-              <Button className="hidden text-white bg-slate-800 md:block">
+              <Button
+                className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+              >
                 Home
               </Button>
             </Link>
           ))
         ) : (
           <Link href="/login" legacyBehavior>
-            <Button className="text-white bg-slate-800">Login</Button>
+            <Button className={{ root: 'text-white bg-slate-800' }}>
+              Login
+            </Button>
           </Link>
         )}
         {participant && !participant?.avatar && (
           <Link href="/editProfile" legacyBehavior>
-            <Button className="hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block">
+            <Button
+              className={{
+                root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
+              }}
+            >
               Profil einrichten
             </Button>
           </Link>

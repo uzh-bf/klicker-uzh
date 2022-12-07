@@ -104,7 +104,7 @@ function LoginForm() {
                       </Link> */}
                     </div>
                     <Button
-                      className="mt-2 border-uzh-grey-80"
+                      className={{ root: 'mt-2 border-uzh-grey-80' }}
                       type="submit"
                       disabled={isSubmitting}
                     >

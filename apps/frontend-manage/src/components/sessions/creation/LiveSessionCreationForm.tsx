@@ -179,10 +179,12 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   <div className="flex flex-row items-center flex-1 gap-2">
                     <Label
                       label="Blocks:"
-                      className="font-bold"
+                      className={{
+                        root: 'font-bold',
+                        tooltip: 'font-normal text-sm !w-1/2',
+                      }}
                       tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
                       showTooltipSymbol={true}
-                      tooltipStyle="font-normal text-sm !w-1/2 opacity-100"
                     />
                     <FieldArray name="blocks">
                       {({ push, remove }: FieldArrayRenderProps) => (
@@ -200,7 +202,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                   <div>Block {index + 1}</div>
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
+                                    }}
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
                                   </Button>
@@ -221,7 +225,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 />
                                 <FormikTextField
                                   id={`timeLimits.${index}`}
-                                  value={values.timeLimits[index]}
+                                  value={values.timeLimits[index] || ''}
                                   onChange={(newValue: string) => {
                                     setFieldValue(
                                       `timeLimits[${index}]`,
@@ -235,7 +239,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                           ))}
                           <Button
                             fluid
-                            className="flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100"
+                            className={{
+                              root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
+                            }}
                             onClick={() => push([])}
                           >
                             <FontAwesomeIcon icon={faPlus} />
@@ -255,14 +261,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 <div className="flex flex-row items-center">
                   <Label
                     label="Optionen"
-                    className="my-auto mr-2 font-bold min-w-max"
-                    tooltipStyle="text-sm font-normal !w-1/2 opacity-100"
+                    className={{
+                      root: 'my-auto mr-2 font-bold min-w-max',
+                      tooltip: 'text-sm font-normal !w-1/2',
+                    }}
                   />
                   {courses && (
                     <>
                       <div className="mr-2">Kurs:</div>
                       <Select
-                        name="course_selection"
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
                         onChange={(newValue: string) =>
@@ -274,16 +281,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   )}
                   <Switch
                     label="Gamification"
-                    id="gamification-switch"
                     checked={values.isGamificationEnabled}
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('isGamificationEnabled', newValue)
                     }
-                    className="ml-4"
+                    className={{ root: 'ml-4' }}
                   />
                 </div>
                 <Button
-                  className="float-right"
+                  className={{ root: 'float-right' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
                 >

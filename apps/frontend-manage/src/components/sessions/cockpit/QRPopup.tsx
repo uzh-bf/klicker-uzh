@@ -2,11 +2,8 @@ import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
 import { Button, Modal } from '@uzh-bf/design-system'
-import getConfig from 'next/config'
 import Link from 'next/link'
 import React, { useState } from 'react'
-
-const { publicRuntimeConfig } = getConfig()
 
 interface Props {
   id: string
@@ -17,10 +14,9 @@ function QRPopup({ id }: Props): React.ReactElement {
 
   return (
     <Modal
-      className="bottom right"
       trigger={
         <Button
-          className="w-[41%] sm:w-max !mr-0"
+          className={{ root: 'w-[41%] sm:w-max !mr-0' }}
           onClick={() => setModalOpen(true)}
         >
           <Button.Icon>
@@ -47,7 +43,9 @@ function QRPopup({ id }: Props): React.ReactElement {
         <Link passHref href={`/qr/session/${id}`} target="_blank">
           <Button
             fluid
-            className="text-lg font-bold text-white bg-uzh-blue-80 h-11"
+            className={{
+              root: 'text-lg font-bold text-white bg-uzh-blue-80 h-11',
+            }}
           >
             <Button.Label>QR-Code präsentieren</Button.Label>
           </Button>

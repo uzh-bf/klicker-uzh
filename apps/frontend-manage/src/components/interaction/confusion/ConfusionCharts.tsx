@@ -46,7 +46,7 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
       <div className="flex flex-col w-full sm:flex-row lg:flex-col ">
         <div className="w-full">
           <div className="w-full h-10 ">
-            <H3 className="inline-block mr-2">Geschwindigkeit</H3>
+            <H3 className={{ root: 'inline-block mr-2' }}>Geschwindigkeit</H3>
             <div className="inline-block">
               ({confusionValues.numberOfParticipants} Feedbacks)
             </div>
@@ -60,7 +60,7 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
         </div>
         <div className="w-full">
           <div className="w-full h-10">
-            <H3 className="inline-block mr-2">Schwierigkeit</H3>
+            <H3 className={{ root: 'inline-block mr-2' }}>Schwierigkeit</H3>
             <div className="inline-block">
               ({confusionValues.numberOfParticipants} Feedbacks)
             </div>

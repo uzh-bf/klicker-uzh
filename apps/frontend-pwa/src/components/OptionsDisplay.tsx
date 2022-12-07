@@ -34,14 +34,16 @@ function ChoiceOptions({
           <Button
             disabled={disabled || isEvaluation}
             active={response?.includes(choice.ix)}
-            className={twMerge(
-              'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
-              isEvaluation && 'text-gray-700',
-              (disabled || isEvaluation) &&
-                response?.includes(choice.ix) &&
-                'border-gray-400 text-gray-800'
-              // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
-            )}
+            className={{
+              root: twMerge(
+                'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
+                isEvaluation && 'text-gray-700',
+                (disabled || isEvaluation) &&
+                  response?.includes(choice.ix) &&
+                  'border-gray-400 text-gray-800'
+                // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
+              ),
+            }}
             fluid
             onClick={() => onChange(choice.ix)}
           >
@@ -181,13 +183,14 @@ export function Options({
                     </div>
                     <div className="flex flex-row gap-2">
                       <Button
-                        className={
-                          feedbacks &&
-                          response?.includes(choice.ix) &&
-                          (correctAnswer
-                            ? 'bg-green-200 text-green-700'
-                            : 'bg-red-200 text-red-700')
-                        }
+                        className={{
+                          root:
+                            feedbacks &&
+                            response?.includes(choice.ix) &&
+                            (correctAnswer
+                              ? 'bg-green-200 text-green-700'
+                              : 'bg-red-200 text-red-700'),
+                        }}
                         disabled={disabled || isEvaluation}
                         active={response?.includes(choice.ix)}
                         onClick={() =>
@@ -204,13 +207,14 @@ export function Options({
                         </Button.Icon>
                       </Button>
                       <Button
-                        className={
-                          feedbacks &&
-                          !response?.includes(choice.ix) &&
-                          (correctAnswer
-                            ? 'bg-green-200 text-green-700'
-                            : 'bg-red-200 text-red-700')
-                        }
+                        className={{
+                          root:
+                            feedbacks &&
+                            !response?.includes(choice.ix) &&
+                            (correctAnswer
+                              ? 'bg-green-200 text-green-700'
+                              : 'bg-red-200 text-red-700'),
+                        }}
                         disabled={disabled || isEvaluation}
                         active={!response?.includes(choice.ix)}
                         onClick={() =>
@@ -331,7 +335,7 @@ function OptionsDisplay({
       />
       <div className="self-end mt-4">
         <Button
-          className="text-lg"
+          className={{ root: 'text-lg' }}
           disabled={
             !isEvaluation &&
             questionType !== QuestionType.KPRIM &&

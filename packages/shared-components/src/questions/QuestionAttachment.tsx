@@ -25,7 +25,7 @@ export function QuestionAttachment({
           trigger={
             <Button
               onClick={() => setIsOpen(true)}
-              className="w-full h-full border-0"
+              className={{ root: 'w-full h-full border-0' }}
             >
               <Image
                 src={attachment.href}

@@ -96,7 +96,11 @@ function Collapsed({
           'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
         )}
       >
-        <Prose className="flex-initial max-w-full leading-8 prose-lg prose-p:m-0">
+        <Prose
+          className={{
+            root: 'flex-initial max-w-full leading-8 prose-lg prose-p:m-0',
+          }}
+        >
           <Markdown
             className="flex flex-row content-between hover:text-black"
             content={currentInstance.questionData?.content}
@@ -106,11 +110,13 @@ function Collapsed({
       </div>
       {showExtensibleButton && (
         <Button
-          className={twMerge(
-            questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
-            'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
-            ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
-          )}
+          className={{
+            root: twMerge(
+              questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
+              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
+              ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
+            ),
+          }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
         >
           <FontAwesomeIcon
@@ -356,7 +362,6 @@ function Evaluation() {
             <div className="ml-2 font-bold">Frage:</div>
 
             <Select
-              name="instance_selection"
               items={selectData || []}
               onChange={(newValue) => {
                 if (newValue !== '') {
@@ -558,7 +563,6 @@ function Evaluation() {
                   <div className="flex flex-col gap-2">
                     <div className="font-bold">Diagramm Typ:</div>
                     <Select
-                      name="chartType_selection"
                       className={{ root: '-mt-1 mb-1' }}
                       items={
                         ACTIVE_CHART_TYPES[currentInstance.questionData.type]
@@ -707,7 +711,7 @@ function Evaluation() {
                 </div>
               ) : (
                 <UserNotification
-                  className="text-lg"
+                  className={{ message: 'text-lg' }}
                   notificationType="error"
                   message="Bisher waren keine Teilnehmenden während dieser Session
               angemeldet und haben Punkte gesammelt."
@@ -727,7 +731,7 @@ function Evaluation() {
                 />
               ) : (
                 <UserNotification
-                  className="text-lg"
+                  className={{ message: 'text-lg' }}
                   notificationType="error"
                   message="Diese Session enthält bisher keine Feedbacks."
                 />
@@ -746,7 +750,7 @@ function Evaluation() {
                 />
               ) : (
                 <UserNotification
-                  className="text-lg"
+                  className={{ message: 'text-lg' }}
                   notificationType="error"
                   message="Diese Session enthält bisher keine Confusion Feedbacks."
                 />
@@ -763,7 +767,6 @@ function Evaluation() {
               Total Teilnehmende: {currentInstance.participants}
             </div>
             <Switch
-              id="showSolution"
               checked={showSolution}
               label="Lösung anzeigen"
               onCheckedChange={(newValue) => setShowSolution(newValue)}

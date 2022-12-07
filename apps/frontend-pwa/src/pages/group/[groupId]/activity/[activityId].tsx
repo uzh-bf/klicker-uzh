@@ -203,7 +203,7 @@ function GroupActivityDetails() {
                   data.groupActivityDetails.group.participants.length === 1
                 }
                 loading={startLoading}
-                className="self-end mt-4 text-lg font-bold"
+                className={{ root: 'self-end mt-4 text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
               >
                 START
@@ -223,7 +223,7 @@ function GroupActivityDetails() {
 
           {data.groupActivityDetails.activityInstance && (
             <div className="py-4 lg:pt-0">
-              <H1 className="">Eure Aufgaben</H1>
+              <H1>Eure Aufgaben</H1>
               <Formik
                 isInitialValid={false}
                 initialValues={data.groupActivityDetails.instances.reduce(
@@ -351,7 +351,9 @@ function GroupActivityDetails() {
                           type="submit"
                           loading={isSubmitting}
                           disabled={!isValid}
-                          className="self-end mt-4 text-lg font-bold"
+                          className={{
+                            root: 'self-end mt-4 text-lg font-bold',
+                          }}
                         >
                           Antworten absenden
                         </Button>

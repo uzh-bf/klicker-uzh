@@ -182,7 +182,7 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className="h-10">
+              <Button fluid className={{ root: 'h-10' }}>
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -198,7 +198,11 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className="h-10" disabled={isFeedbackSession}>
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                disabled={isFeedbackSession}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -238,12 +242,14 @@ function SessionTimeline({
           </div>
           <div className="flex flex-row justify-end w-full mt-2">
             <Button
-              className={twMerge(
-                (buttonState === 'first block' ||
-                  buttonState === 'next block') &&
-                  'bg-uzh-blue-100 text-white',
-                buttonState === 'end session' && 'bg-uzh-red-100 text-white'
-              )}
+              className={{
+                root: twMerge(
+                  (buttonState === 'first block' ||
+                    buttonState === 'next block') &&
+                    'bg-uzh-blue-100 text-white',
+                  buttonState === 'end session' && 'bg-uzh-red-100 text-white'
+                ),
+              }}
               onClick={() => {
                 if (buttonState === 'first block') {
                   handleOpenBlock(blocks[0].id)

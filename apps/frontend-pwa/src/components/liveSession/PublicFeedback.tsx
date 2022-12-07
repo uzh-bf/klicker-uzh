@@ -143,7 +143,7 @@ function PublicFeedback({
         <Button
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
-          className="w-10 h-10"
+          className={{ root: 'w-10 h-10' }}
           disabled={feedback.resolvedAt}
         >
           <Button.Icon>
@@ -167,7 +167,7 @@ function PublicFeedback({
                       onResponseUpvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === 1}
-                    className="mr-1 w-9 h-9"
+                    className={{ root: 'mr-1 w-9 h-9' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faThumbsUp} size="lg" />
@@ -178,7 +178,7 @@ function PublicFeedback({
                       onResponseDownvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === -1}
-                    className="w-9 h-9"
+                    className={{ root: 'w-9 h-9' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faQuestion} size="lg" />

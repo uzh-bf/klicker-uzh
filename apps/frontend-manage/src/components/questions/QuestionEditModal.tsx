@@ -408,7 +408,7 @@ function QuestionEditModal({
           <Modal
             fullScreen
             title="Frage erstellen"
-            classNames={{
+            className={{
               overlay: 'top-14',
               content: 'm-auto max-w-7xl',
             }}
@@ -419,7 +419,9 @@ function QuestionEditModal({
             onPrimaryAction={
               <Button
                 disabled={isSubmitting || !isValid}
-                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+                className={{
+                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80',
+                }}
                 type="submit"
                 form="question-manipulation-form"
               >
@@ -428,7 +430,7 @@ function QuestionEditModal({
             }
             onSecondaryAction={
               <Button
-                className="mt-2 border-uzh-grey-80"
+                className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
               >
                 <Button.Label>Schliessen</Button.Label>
@@ -440,14 +442,16 @@ function QuestionEditModal({
               <div className="z-0 flex flex-row">
                 <Label
                   label="Fragetyp:"
-                  className="my-auto mr-2 text-lg font-bold"
-                  tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                  className={{
+                    root: 'my-auto mr-2 text-lg font-bold',
+                    tooltip:
+                      'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                  }}
                   tooltip="// TODO: tooltip content"
                   showTooltipSymbol={mode === 'CREATE'}
                 />
                 {mode === 'CREATE' ? (
                   <Select
-                    name="question_create_select"
                     placeholder="Fragetyp auswählen"
                     items={dropdownOptions}
                     onChange={(newValue: string) => {
@@ -467,8 +471,11 @@ function QuestionEditModal({
                 <div className="flex flex-row mt-2">
                   <Label
                     label="Fragetitel:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
                     showTooltipSymbol={true}
                   />
@@ -486,8 +493,11 @@ function QuestionEditModal({
                   <div className="flex flex-row">
                     <Label
                       label="Tags:"
-                      className="my-auto mr-2 text-lg font-bold"
-                      tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                      className={{
+                        root: 'my-auto mr-2 text-lg font-bold',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
                       tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
                       showTooltipSymbol={true}
                     />
@@ -512,8 +522,11 @@ function QuestionEditModal({
                 <div className="mt-4">
                   <Label
                     label="Frage:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
                     showTooltipSymbol={true}
                   />
@@ -563,8 +576,10 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Antwortmöglichkeiten:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
@@ -574,15 +589,16 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Einschränkungen:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
                     </div>
                   )}
                   <Switch
-                    id="solution switch"
                     checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) => {
                       setFieldValue('hasSampleSolution', newValue)
@@ -592,7 +608,6 @@ function QuestionEditModal({
                   />
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <Switch
-                      id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) => {
                         setFieldValue('hasAnswerFeedbacks', newValue)
@@ -600,9 +615,11 @@ function QuestionEditModal({
                       }}
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
-                      className={twMerge(
-                        !values.hasSampleSolution && 'opacity-50'
-                      )}
+                      className={{
+                        root: twMerge(
+                          !values.hasSampleSolution && 'opacity-50'
+                        ),
+                      }}
                     />
                   )}
                 </div>
@@ -682,10 +699,9 @@ function QuestionEditModal({
                                     >
                                       {({ field, meta }: FieldProps) => (
                                         <Switch
-                                          id={`${choice.value}-correct`}
                                           checked={field.value || false}
                                           label=""
-                                          className="gap-0 mr-0.5"
+                                          className={{ root: 'gap-0 mr-0.5' }}
                                           onCheckedChange={(
                                             newValue: boolean
                                           ) => {
@@ -702,7 +718,9 @@ function QuestionEditModal({
 
                                 <Button
                                   onClick={() => remove(index)}
-                                  className="items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md"
+                                  className={{
+                                    root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                  }}
                                 >
                                   <Button.Icon>
                                     <FontAwesomeIcon
@@ -768,7 +786,9 @@ function QuestionEditModal({
 
                         <Button
                           fluid
-                          className="font-bold border border-solid border-uzh-grey-100"
+                          className={{
+                            root: 'font-bold border border-solid border-uzh-grey-100',
+                          }}
                           onClick={() =>
                             push({
                               ix: values.options.choices[
@@ -849,7 +869,9 @@ function QuestionEditModal({
                                     />
                                     <Button
                                       onClick={() => remove(index)}
-                                      className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                      className={{
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                      }}
                                     >
                                       Löschen
                                     </Button>
@@ -858,7 +880,9 @@ function QuestionEditModal({
                               )}
                               <Button
                                 fluid
-                                className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                                className={{
+                                  root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                }}
                                 onClick={() =>
                                   push({
                                     min: undefined,
@@ -913,7 +937,9 @@ function QuestionEditModal({
                                   />
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                    }}
                                   >
                                     Löschen
                                   </Button>
@@ -922,7 +948,9 @@ function QuestionEditModal({
                             )}
                             <Button
                               fluid
-                              className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                              className={{
+                                root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                              }}
                               onClick={() => push('')}
                             >
                               Neue Lösung hinzufügen

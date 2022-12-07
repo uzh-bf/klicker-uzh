@@ -65,7 +65,7 @@ function SessionBlock({
             }
             size={25}
             strokeWidth={3}
-            className="text-xs"
+            className={{ root: 'text-xs' }}
           />
         )}
       </div>
