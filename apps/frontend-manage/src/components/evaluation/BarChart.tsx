@@ -19,7 +19,7 @@ import {
 interface BarChartProps {
   data: InstanceResult
   showSolution: boolean
-  textSize: 'sm' | 'md' | 'lg'
+  textSize: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 function BarChart({
@@ -70,6 +70,8 @@ function BarChart({
                   ? '1.5rem'
                   : textSize === 'lg'
                   ? '2.5rem'
+                  : textSize === 'xl'
+                  ? '3rem'
                   : '2rem',
             },
           }}
@@ -95,6 +97,8 @@ function BarChart({
                   ? '1.1rem'
                   : textSize === 'lg'
                   ? '1.4rem'
+                  : textSize === 'xl'
+                  ? '1.6rem'
                   : '1.25rem',
             },
           }}
@@ -116,10 +120,12 @@ function BarChart({
             style={{
               fontSize:
                 textSize === 'sm'
-                  ? '1.25rem'
-                  : textSize === 'lg'
                   ? '1.75rem'
-                  : '1.5rem',
+                  : textSize === 'lg'
+                  ? '2.75rem'
+                  : textSize === 'xl'
+                  ? '3.25rem'
+                  : '2.25rem',
             }}
           />
           <LabelList
@@ -133,6 +139,8 @@ function BarChart({
                   ? '1.75rem'
                   : textSize === 'lg'
                   ? '2.75rem'
+                  : textSize === 'xl'
+                  ? '3.25rem'
                   : '2.25rem',
             }}
           />

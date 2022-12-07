@@ -6,7 +6,7 @@ import { QUESTION_GROUPS } from 'shared-components/src/constants'
 interface TableChartProps {
   data: InstanceResult
   showSolution: boolean
-  textSize: 'sm' | 'md' | 'lg'
+  textSize: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 function TableChart({
@@ -67,12 +67,16 @@ function TableChart({
             ? 'text-base'
             : textSize === 'lg'
             ? 'text-xl'
+            : textSize === 'xl'
+            ? 'text-2xl'
             : 'text-lg',
         body:
           textSize === 'sm'
             ? 'text-base'
             : textSize === 'lg'
             ? 'text-xl'
+            : textSize === 'xl'
+            ? 'text-2xl'
             : 'text-lg',
       }}
     ></Table>

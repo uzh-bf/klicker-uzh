@@ -108,7 +108,8 @@ function Collapsed({
             root: twMerge(
               'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
               size === 'sm' && '!text-base',
-              size === 'lg' && '!text-xl !leading-9'
+              size === 'lg' && '!text-xl !leading-9',
+              size === 'xl' && '!text-2xl !leading-10'
             ),
           }}
         >
@@ -206,19 +207,21 @@ function Evaluation() {
     statistics: {},
     status: SessionBlockStatus.Executed,
   })
-  const [textSize, setTextSize] = useState<'sm' | 'md' | 'lg'>('md')
+  const [textSize, setTextSize] = useState<'sm' | 'md' | 'lg' | 'xl'>('md')
 
   const increaseTextSize = () => {
-    if (textSize === 'lg') return
+    if (textSize === 'xl') return
     setTextSize((prev) => {
       if (prev === 'sm') return 'md'
-      return 'lg'
+      if (prev === 'md') return 'lg'
+      return 'xl'
     })
   }
   const decreaseTextSize = () => {
     if (textSize === 'sm') return
     setTextSize((prev) => {
       if (prev === 'lg') return 'md'
+      if (prev === 'xl') return 'lg'
       return 'sm'
     })
   }
@@ -807,7 +810,7 @@ function Evaluation() {
                     <FontAwesomeIcon icon={faMinus} />
                   </Button.Icon>
                 </Button>
-                <Button onClick={increaseTextSize} disabled={textSize === 'lg'}>
+                <Button onClick={increaseTextSize} disabled={textSize === 'xl'}>
                   <Button.Icon>
                     <FontAwesomeIcon icon={faPlus} />
                   </Button.Icon>

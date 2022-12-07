@@ -9,7 +9,7 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
-  textSize: 'sm' | 'md' | 'lg'
+  textSize: 'sm' | 'md' | 'lg' | 'xl'
   statisticsShowSolution?: {
     mean?: boolean
     median?: boolean

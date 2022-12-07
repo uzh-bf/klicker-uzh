@@ -24,7 +24,7 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
-  textSize: 'sm' | 'md' | 'lg'
+  textSize: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 const defaultProps = {
@@ -92,7 +92,11 @@ function Histogram({
   }, [data, numBins])
 
   const computedFontSize =
-    textSize === 'sm' ? '1rem' : textSize === 'lg' ? '1.6rem' : '1.25rem'
+    textSize === 'sm'
+      ? '1rem'
+      : textSize === 'lg' || textSize === 'xl'
+      ? '1.6rem'
+      : '1.25rem'
 
   return (
     <div className="mt-1">
