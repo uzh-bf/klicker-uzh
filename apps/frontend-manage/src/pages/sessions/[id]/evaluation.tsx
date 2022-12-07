@@ -9,7 +9,10 @@ import {
   faChevronUp,
   faComment,
   faFaceSmile,
+  faFont,
   faGamepad,
+  faMinus,
+  faPlus,
   faSync,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
@@ -57,9 +60,11 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 function Collapsed({
   selectedInstance,
   currentInstance,
+  size,
 }: {
   selectedInstance: string
   currentInstance: Partial<InstanceResult>
+  size: string
 }) {
   const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
 
@@ -83,22 +88,28 @@ function Collapsed({
     return () => setQuestionElem(null)
   }, [questionCollapsed, questionElem, selectedInstance])
 
+  const computedClassName = twMerge(
+    questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+    !showExtensibleButton && 'border-solid border-b-only border-primary',
+    showExtensibleButton &&
+      questionCollapsed &&
+      'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
+    'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+  )
+
   return (
-    <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
+    <div className="border-b-[0.1rem] border-solid border-uzh-grey-80">
       <div
         ref={(ref) => setQuestionElem(ref)}
-        className={twMerge(
-          questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
-          !showExtensibleButton && 'border-solid border-b-only border-primary',
-          showExtensibleButton &&
-            questionCollapsed &&
-            'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
-          'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
-        )}
+        className={twMerge(computedClassName)}
       >
         <Prose
           className={{
-            root: 'flex-initial max-w-full leading-8 prose-lg prose-p:m-0',
+            root: twMerge(
+              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
+              size === 'sm' && '!text-base',
+              size === 'lg' && '!text-xl !leading-9'
+            ),
           }}
         >
           <Markdown
@@ -195,6 +206,22 @@ function Evaluation() {
     statistics: {},
     status: SessionBlockStatus.Executed,
   })
+  const [textSize, setTextSize] = useState<'sm' | 'md' | 'lg'>('md')
+
+  const increaseTextSize = () => {
+    if (textSize === 'lg') return
+    setTextSize((prev) => {
+      if (prev === 'sm') return 'md'
+      return 'lg'
+    })
+  }
+  const decreaseTextSize = () => {
+    if (textSize === 'sm') return
+    setTextSize((prev) => {
+      if (prev === 'lg') return 'md'
+      return 'sm'
+    })
+  }
 
   const {
     data,
@@ -542,6 +569,7 @@ function Evaluation() {
               <Collapsed
                 currentInstance={currentInstance}
                 selectedInstance={selectedInstance}
+                size={textSize}
               />
 
               <div className="flex flex-col flex-1 md:flex-row">
@@ -550,6 +578,7 @@ function Evaluation() {
                     chartType={chartType}
                     data={currentInstance}
                     showSolution={showSolution}
+                    textSize={textSize}
                     statisticsShowSolution={{
                       mean: statisticStates.mean,
                       median: statisticStates.median,
@@ -760,17 +789,33 @@ function Evaluation() {
         </RadixTab.Content>
       </div>
 
-      <Footer className="relative flex-none h-18">
+      <Footer className="relative flex-none h-14">
         {currentInstance && !feedbacks && !confusion && !leaderboard && (
-          <div className="flex flex-row justify-between p-4 pr-8 m-0">
-            <div className="text-xl">
+          <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
+            <div className="text-lg">
               Total Teilnehmende: {currentInstance.participants}
             </div>
-            <Switch
-              checked={showSolution}
-              label="Lösung anzeigen"
-              onCheckedChange={(newValue) => setShowSolution(newValue)}
-            />
+            <div className="flex flex-row items-center gap-5">
+              <Switch
+                checked={showSolution}
+                label="Lösung anzeigen"
+                onCheckedChange={(newValue) => setShowSolution(newValue)}
+              />
+              <div className="flex flex-row items-center gap-2 ml-2">
+                <Button onClick={decreaseTextSize} disabled={textSize === 'sm'}>
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faMinus} />
+                  </Button.Icon>
+                </Button>
+                <Button onClick={increaseTextSize} disabled={textSize === 'lg'}>
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faPlus} />
+                  </Button.Icon>
+                </Button>
+                <FontAwesomeIcon icon={faFont} size="lg" />
+                Schriftgrösse
+              </div>
+            </div>
           </div>
         )}
       </Footer>

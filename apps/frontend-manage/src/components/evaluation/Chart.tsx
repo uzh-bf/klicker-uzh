@@ -9,6 +9,7 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
+  textSize: 'sm' | 'md' | 'lg'
   statisticsShowSolution?: {
     mean?: boolean
     median?: boolean
@@ -22,22 +23,24 @@ function Chart({
   chartType,
   data,
   showSolution,
+  textSize,
   statisticsShowSolution,
 }: ChartProps): React.ReactElement {
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
-    return <TableChart data={data} showSolution={showSolution} />
+    return <TableChart data={data} showSolution={showSolution} textSize={textSize} />
   } else if (chartType === 'histogram') {
     return (
       <Histogram
         data={data}
         showSolution={{ general: showSolution, ...statisticsShowSolution }}
+        textSize={textSize}
       />
     )
   } else if (chartType === 'wordCloud') {
-    return <Wordcloud data={data} showSolution={showSolution} />
+    return <Wordcloud data={data} showSolution={showSolution} textSize={textSize} />
   } else if (chartType === 'barChart') {
-    return <BarChart data={data} showSolution={showSolution} />
+    return <BarChart data={data} showSolution={showSolution} textSize={textSize} />
   } else {
     return <div>There exists no chart for this question type yet</div>
   }

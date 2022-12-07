@@ -19,9 +19,14 @@ import {
 interface BarChartProps {
   data: InstanceResult
   showSolution: boolean
+  textSize: 'sm' | 'md' | 'lg'
 }
 
-function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
+function BarChart({
+  data,
+  showSolution,
+  textSize,
+}: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
   const dataWithLabels = Object.values(data.results).map((result, idx) => {
     const labelIn =
@@ -59,7 +64,14 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
             fill: 'black',
             offset: 30,
             stroke: 'black',
-            style: { fontSize: '2rem' },
+            style: {
+              fontSize:
+                textSize === 'sm'
+                  ? '1.5rem'
+                  : textSize === 'lg'
+                  ? '2.5rem'
+                  : '2rem',
+            },
           }}
         />
         <YAxis
@@ -73,7 +85,19 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
               return rounded + 1
             },
           ]}
-          label={{ angle: -90, position: 'insideLeft', value: 'Antworten' }}
+          label={{
+            angle: -90,
+            position: 'insideLeft',
+            value: 'Antworten',
+            style: {
+              fontSize:
+                textSize === 'sm'
+                  ? '1.1rem'
+                  : textSize === 'lg'
+                  ? '1.4rem'
+                  : '1.25rem',
+            },
+          }}
         />
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <Bar
@@ -89,14 +113,28 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
             position="top"
             stroke="black"
             strokeWidth={1}
-            style={{ fontSize: '1.5rem' }}
+            style={{
+              fontSize:
+                textSize === 'sm'
+                  ? '1.25rem'
+                  : textSize === 'lg'
+                  ? '1.75rem'
+                  : '1.5rem',
+            }}
           />
           <LabelList
             dataKey="labelIn"
             fill="white"
             position="inside"
             stroke="white"
-            style={{ fontSize: '2rem' }}
+            style={{
+              fontSize:
+                textSize === 'sm'
+                  ? '1.75rem'
+                  : textSize === 'lg'
+                  ? '2.75rem'
+                  : '2.25rem',
+            }}
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
             data.questionData.options.choices.map(

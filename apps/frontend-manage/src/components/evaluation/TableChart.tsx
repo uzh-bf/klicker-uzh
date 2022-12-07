@@ -6,11 +6,13 @@ import { QUESTION_GROUPS } from 'shared-components/src/constants'
 interface TableChartProps {
   data: InstanceResult
   showSolution: boolean
+  textSize: 'sm' | 'md' | 'lg'
 }
 
 function TableChart({
   data,
   showSolution,
+  textSize,
 }: TableChartProps): React.ReactElement {
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
@@ -55,7 +57,26 @@ function TableChart({
   if (showSolution)
     // Don't show True/False for numerical questions right now, as it is not implemented in current klicker either
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
-  return <Table data={tableData} columns={columns}></Table>
+  return (
+    <Table
+      data={tableData}
+      columns={columns}
+      className={{
+        tableHeader:
+          textSize === 'sm'
+            ? 'text-base'
+            : textSize === 'lg'
+            ? 'text-xl'
+            : 'text-lg',
+        body:
+          textSize === 'sm'
+            ? 'text-base'
+            : textSize === 'lg'
+            ? 'text-xl'
+            : 'text-lg',
+      }}
+    ></Table>
+  )
 }
 
 export default TableChart

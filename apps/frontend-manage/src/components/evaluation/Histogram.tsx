@@ -24,6 +24,7 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
+  textSize: 'sm' | 'md' | 'lg'
 }
 
 const defaultProps = {
@@ -37,7 +38,11 @@ const defaultProps = {
   },
 }
 
-function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
+function Histogram({
+  data,
+  showSolution,
+  textSize,
+}: HistogramProps): React.ReactElement {
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
@@ -86,8 +91,11 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
     return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
+  const computedFontSize =
+    textSize === 'sm' ? '1rem' : textSize === 'lg' ? '1.6rem' : '1.25rem'
+
   return (
-    <div>
+    <div className="mt-1">
       <ResponsiveContainer width="99%" height={500}>
         <BarChart
           data={processedData.data}
@@ -137,7 +145,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'blue',
-                fontSize: '1rem',
+                fontSize: computedFontSize,
                 position: 'top',
                 value: 'MEAN',
               }}
@@ -151,7 +159,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'red',
-                fontSize: '1rem',
+                fontSize: computedFontSize,
                 position: 'top',
                 value: 'MEDIAN',
               }}
@@ -165,7 +173,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'black',
-                fontSize: '1rem',
+                fontSize: computedFontSize,
                 position: 'top',
                 value: 'Q1',
               }}
@@ -179,7 +187,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'black',
-                fontSize: '1rem',
+                fontSize: computedFontSize,
                 position: 'top',
                 value: 'Q3',
               }}
@@ -203,7 +211,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               enableBackground="#FFFFFF"
               label={{
                 fill: 'red',
-                fontSize: '1rem',
+                fontSize: computedFontSize,
                 position: 'insideTopRight',
                 value: '+- 1 SD',
               }}
@@ -226,7 +234,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
                   enableBackground="#FFFFFF"
                   label={{
                     fill: 'green',
-                    fontSize: '1rem',
+                    fontSize: computedFontSize,
                     position: 'top',
                     value: 'Korrekt',
                   }}
