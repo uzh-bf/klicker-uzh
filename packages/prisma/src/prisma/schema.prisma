@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex", "interactiveTransactions", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
   output          = "../client"
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
@@ -229,12 +229,14 @@ model Course {
   description String?
   color       String?
 
-  sessions         Session[]
-  learningElements LearningElement[]
-  microSessions    MicroSession[]
-  leaderboard      LeaderboardEntry[]
-  groupActivities  GroupActivity[]
-  awards           AwardEntry[]
+  sessions          Session[]
+  learningElements  LearningElement[]
+  microSessions     MicroSession[]
+  leaderboard       LeaderboardEntry[]
+  groupActivities   GroupActivity[]
+  awards            AwardEntry[]
+  classAchievements ClassAchievementInstance[]
+  achievements      Achievement[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -621,6 +623,7 @@ model Participant {
   subscriptions           PushSubscription[]
   clueAssignments         GroupActivityClueAssignment[]
   awards                  AwardEntry[]
+  achievements            ParticipantAchievementInstance[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -638,6 +641,7 @@ model ParticipantGroup {
   participants    Participant[]
   groupActivities GroupActivityInstance[]
   awards          AwardEntry[]
+  achievements    GroupAchievementInstance[]
 
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseId String? @db.Uuid
@@ -675,6 +679,87 @@ model Participation {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+}
+
+// ----- ACHIEVEMENTS -----
+enum AchievementType {
+  PARTICIPANT
+  GROUP
+  CLASS
+}
+
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String
+  icon        String
+
+  rewardedPoints Int?
+  rewardedXP     Int?
+  rewardedTitles String[]
+  type           AchievementType
+
+  course Course @relation(fields: [courseId], references: [id])
+
+  participantInstances ParticipantAchievementInstance[]
+  groupInstances       GroupAchievementInstance[]
+  classInstances       ClassAchievementInstance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courseId  String   @db.Uuid
+}
+
+model ParticipantAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt DateTime
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, achievementId])
+}
+
+model GroupAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt DateTime
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, achievementId])
+}
+
+model ClassAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt DateTime
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, achievementId])
 }
 
 // ----- RESPONSE TRACKING -----
