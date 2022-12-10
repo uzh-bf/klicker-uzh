@@ -247,6 +247,7 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Title     Title[]
 }
 
 enum LeaderboardType {
@@ -626,6 +627,7 @@ model Participant {
   clueAssignments         GroupActivityClueAssignment[]
   awards                  AwardEntry[]
   achievements            ParticipantAchievementInstance[]
+  titles                  Title[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -690,6 +692,21 @@ enum AchievementType {
   CLASS
 }
 
+model Title {
+  id Int @id @default(autoincrement())
+
+  name      String
+  awardedBy Achievement[]
+  awardedTo Participant[]
+  course    Course        @relation(fields: [courseId], references: [id])
+  courseId  String        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, name])
+}
+
 model Achievement {
   id Int @id @default(autoincrement())
 
@@ -699,7 +716,7 @@ model Achievement {
 
   rewardedPoints Int?
   rewardedXP     Int?
-  rewardedTitles String[]
+  rewardedTitles Title[]
   type           AchievementType
 
   course Course @relation(fields: [courseId], references: [id])
