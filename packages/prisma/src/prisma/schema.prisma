@@ -610,6 +610,8 @@ model Participant {
   password       String
   avatar         String?
   avatarSettings Json?
+  level          Int     @default(1)
+  xp             Int     @default(0)
 
   lastLoginAt DateTime?
 
