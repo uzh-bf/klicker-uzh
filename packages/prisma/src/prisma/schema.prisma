@@ -250,6 +250,8 @@ model Course {
   Title     Title[]
 }
 
+// TODO: CourseInstance -> holds participants, leaderboards, instances, etc. (parallel courses, same course in repetition across years)
+
 enum LeaderboardType {
   SESSION_BLOCK
   SESSION
@@ -687,11 +689,13 @@ model Participation {
 
 // ----- ACHIEVEMENTS -----
 enum AchievementType {
-  PARTICIPANT
-  GROUP
-  CLASS
+  PARTICIPANT // achievement awarded to individual participants
+  GROUP // achievement awarded to a group of participants
+  CLASS // achievement awarded on a global level (e.g., when reaching a class goal)
 }
 
+// Titles can be awarded to participants upon receipt of an achievement
+// They are managed on a course-level
 model Title {
   id Int @id @default(autoincrement())
 
@@ -707,6 +711,9 @@ model Title {
   @@unique([courseId, name])
 }
 
+// Achievements are awarded to participants, groups, or classes
+// They are managed on a course-level and can yield points for the leaderboard, individual XP, or titles
+// TODO: add mechanisms to automate the awarding of achievements
 model Achievement {
   id Int @id @default(autoincrement())
 
