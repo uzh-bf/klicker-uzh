@@ -10,6 +10,7 @@ interface ParticipantProps {
   points?: number
   rank?: number | string
   isHighlighted?: boolean
+  onClick?: () => void
   className?: string
 }
 
@@ -18,6 +19,7 @@ function Participant({
   withAvatar,
   pseudonym,
   isHighlighted,
+  onClick,
   children,
   className,
   points,
@@ -28,8 +30,10 @@ function Participant({
       className={twMerge(
         'flex flex-row items-center gap-1 border border-slate-200 rounded',
         isHighlighted && 'bg-uzh-grey-20',
+        onClick && 'hover:cursor-pointer',
         className
       )}
+      onClick={onClick}
     >
       <div className="flex flex-row items-center flex-1 gap-2">
         {rank && <div className="w-3 ml-1 text-lg font-bold">{rank}</div>}
