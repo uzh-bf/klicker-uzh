@@ -9,7 +9,10 @@ import {
   faChevronUp,
   faComment,
   faFaceSmile,
+  faFont,
   faGamepad,
+  faMinus,
+  faPlus,
   faSync,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
@@ -34,7 +37,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useReducer, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -57,9 +60,11 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 function Collapsed({
   selectedInstance,
   currentInstance,
+  proseSize,
 }: {
   selectedInstance: string
   currentInstance: Partial<InstanceResult>
+  proseSize: string
 }) {
   const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
 
@@ -83,22 +88,24 @@ function Collapsed({
     return () => setQuestionElem(null)
   }, [questionCollapsed, questionElem, selectedInstance])
 
+  const computedClassName = twMerge(
+    questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+    !showExtensibleButton && 'border-solid border-b-only border-primary',
+    showExtensibleButton &&
+      questionCollapsed &&
+      'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
+    'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+  )
+
   return (
-    <div className={`border-b-[0.1rem] border-solid border-uzh-grey-80`}>
-      <div
-        ref={(ref) => setQuestionElem(ref)}
-        className={twMerge(
-          questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
-          !showExtensibleButton && 'border-solid border-b-only border-primary',
-          showExtensibleButton &&
-            questionCollapsed &&
-            'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
-          'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
-        )}
-      >
+    <div className="border-b-[0.1rem] border-solid border-uzh-grey-80">
+      <div ref={(ref) => setQuestionElem(ref)} className={computedClassName}>
         <Prose
           className={{
-            root: 'flex-initial max-w-full leading-8 prose-lg prose-p:m-0',
+            root: twMerge(
+              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
+              proseSize
+            ),
           }}
         >
           <Markdown
@@ -194,6 +201,106 @@ function Evaluation() {
     results: {},
     statistics: {},
     status: SessionBlockStatus.Executed,
+  })
+
+  const TextSizes = {
+    xl: {
+      size: 'xl',
+      text: 'text-xl',
+      prose: 'prose-2xl',
+      textLg: 'text-2xl',
+      textXl: 'text-3xl',
+      text2Xl: 'text-4xl',
+      text3Xl: 'text-5xl',
+      legend: '3rem',
+      min: 60,
+      max: 80,
+    },
+    lg: {
+      size: 'lg',
+      text: 'text-lg',
+      prose: 'prose-xl',
+      textLg: 'text-xl',
+      textXl: 'text-2xl',
+      text2Xl: 'text-3xl',
+      text3Xl: 'text-4xl',
+      legend: '2.5rem',
+      min: 50,
+      max: 70,
+    },
+    md: {
+      size: 'md',
+      text: 'text-base',
+      prose: 'prose-lg',
+      textLg: 'text-lg',
+      textXl: 'text-xl',
+      text2Xl: 'text-2xl',
+      text3Xl: 'text-3xl',
+      legend: '2rem',
+      min: 40,
+      max: 60,
+    },
+    sm: {
+      size: 'sm',
+      text: 'text-sm',
+      prose: 'prose-base',
+      textLg: 'text-base',
+      textXl: 'text-lg',
+      text2Xl: 'text-xl',
+      text3Xl: 'text-2xl',
+      legend: '1.5rem',
+      min: 30,
+      max: 40,
+    },
+  }
+
+  const sizeReducer = (
+    state: { size: string; text: string },
+    action: { type: string }
+  ) => {
+    switch (action.type) {
+      case 'increase':
+        switch (state.size) {
+          case 'xl':
+            return TextSizes.xl
+          case 'lg':
+            return TextSizes.xl
+          case 'md':
+            return TextSizes.lg
+          case 'sm':
+            return TextSizes.md
+          default:
+            return TextSizes.md
+        }
+      case 'decrease':
+        switch (state.size) {
+          case 'xl':
+            return TextSizes.lg
+          case 'lg':
+            return TextSizes.md
+          case 'md':
+            return TextSizes.sm
+          case 'sm':
+            return TextSizes.sm
+          default:
+            return TextSizes.md
+        }
+      default:
+        throw new Error()
+    }
+  }
+
+  const [textSize, settextSize] = useReducer(sizeReducer, {
+    size: 'md',
+    text: 'text-base',
+    prose: 'prose-lg',
+    textLg: 'text-lg',
+    textXl: 'text-xl',
+    text2Xl: 'text-2xl',
+    text3Xl: 'text-3xl',
+    legend: '2rem',
+    min: 40,
+    max: 60,
   })
 
   const {
@@ -542,6 +649,7 @@ function Evaluation() {
               <Collapsed
                 currentInstance={currentInstance}
                 selectedInstance={selectedInstance}
+                proseSize={textSize.prose}
               />
 
               <div className="flex flex-col flex-1 md:flex-row">
@@ -550,6 +658,7 @@ function Evaluation() {
                     chartType={chartType}
                     data={currentInstance}
                     showSolution={showSolution}
+                    textSize={textSize}
                     statisticsShowSolution={{
                       mean: statisticStates.mean,
                       median: statisticStates.median,
@@ -560,7 +669,9 @@ function Evaluation() {
                   />
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-                  <div className="flex flex-col gap-2">
+                  <div
+                    className={twMerge('flex flex-col gap-2', textSize.text)}
+                  >
                     <div className="font-bold">Diagramm Typ:</div>
                     <Select
                       className={{ root: '-mt-1 mb-1' }}
@@ -760,17 +871,48 @@ function Evaluation() {
         </RadixTab.Content>
       </div>
 
-      <Footer className="relative flex-none h-18">
+      <Footer
+        className={twMerge(
+          'relative flex-none h-14',
+          (feedbacks || confusion || leaderboard) && 'h-18'
+        )}
+      >
         {currentInstance && !feedbacks && !confusion && !leaderboard && (
-          <div className="flex flex-row justify-between p-4 pr-8 m-0">
-            <div className="text-xl">
+          <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
+            <div className="text-lg">
               Total Teilnehmende: {currentInstance.participants}
             </div>
-            <Switch
-              checked={showSolution}
-              label="Lösung anzeigen"
-              onCheckedChange={(newValue) => setShowSolution(newValue)}
-            />
+            <div className="flex flex-row items-center gap-5">
+              <Switch
+                checked={showSolution}
+                label="Lösung anzeigen"
+                onCheckedChange={(newValue) => setShowSolution(newValue)}
+              />
+              <div className="flex flex-row items-center gap-2 ml-2">
+                <Button
+                  onClick={() => {
+                    settextSize({ type: 'decrease' })
+                  }}
+                  disabled={textSize.size === 'sm'}
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faMinus} />
+                  </Button.Icon>
+                </Button>
+                <Button
+                  onClick={() => {
+                    settextSize({ type: 'increase' })
+                  }}
+                  disabled={textSize.size === 'xl'}
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faPlus} />
+                  </Button.Icon>
+                </Button>
+                <FontAwesomeIcon icon={faFont} size="lg" />
+                Schriftgrösse
+              </div>
+            </div>
           </div>
         )}
       </Footer>

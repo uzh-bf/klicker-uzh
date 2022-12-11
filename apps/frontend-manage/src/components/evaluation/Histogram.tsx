@@ -24,6 +24,7 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
+  textSize: string
 }
 
 const defaultProps = {
@@ -37,7 +38,11 @@ const defaultProps = {
   },
 }
 
-function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
+function Histogram({
+  data,
+  showSolution,
+  textSize,
+}: HistogramProps): React.ReactElement {
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
@@ -87,7 +92,7 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
   }, [data, numBins])
 
   return (
-    <div>
+    <div className="mt-1">
       <ResponsiveContainer width="99%" height={500}>
         <BarChart
           data={processedData.data}
@@ -137,10 +142,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'blue',
-                fontSize: '1rem',
                 position: 'top',
                 value: 'MEAN',
               }}
+              className={textSize}
               key={`mean-` + data.statistics.mean}
               stroke="blue"
               x={Math.round(data.statistics.mean || 0)}
@@ -151,10 +156,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'red',
-                fontSize: '1rem',
                 position: 'top',
                 value: 'MEDIAN',
               }}
+              className={textSize}
               key={`median-` + data.statistics.median}
               stroke="red"
               x={Math.round(data.statistics.median || 0)}
@@ -165,10 +170,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'black',
-                fontSize: '1rem',
                 position: 'top',
                 value: 'Q1',
               }}
+              className={textSize}
               key={`q1-` + data.statistics.q1}
               stroke="black"
               x={Math.round(data.statistics.q1 || 0)}
@@ -179,10 +184,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               isFront
               label={{
                 fill: 'black',
-                fontSize: '1rem',
                 position: 'top',
                 value: 'Q3',
               }}
+              className={textSize}
               key={`q3-` + data.statistics.q3}
               stroke="black"
               x={Math.round(data.statistics.q3 || 0)}
@@ -203,10 +208,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
               enableBackground="#FFFFFF"
               label={{
                 fill: 'red',
-                fontSize: '1rem',
                 position: 'insideTopRight',
                 value: '+- 1 SD',
               }}
+              className={textSize}
             />
           )}
 
@@ -226,10 +231,10 @@ function Histogram({ data, showSolution }: HistogramProps): React.ReactElement {
                   enableBackground="#FFFFFF"
                   label={{
                     fill: 'green',
-                    fontSize: '1rem',
                     position: 'top',
                     value: 'Korrekt',
                   }}
+                  className={textSize}
                 />
               )
             )}
