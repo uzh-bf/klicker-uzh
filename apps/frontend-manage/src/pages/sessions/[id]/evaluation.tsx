@@ -37,7 +37,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useReducer, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -60,11 +60,11 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 function Collapsed({
   selectedInstance,
   currentInstance,
-  size,
+  proseSize,
 }: {
   selectedInstance: string
   currentInstance: Partial<InstanceResult>
-  size: string
+  proseSize: string
 }) {
   const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
 
@@ -99,17 +99,12 @@ function Collapsed({
 
   return (
     <div className="border-b-[0.1rem] border-solid border-uzh-grey-80">
-      <div
-        ref={(ref) => setQuestionElem(ref)}
-        className={twMerge(computedClassName)}
-      >
+      <div ref={(ref) => setQuestionElem(ref)} className={computedClassName}>
         <Prose
           className={{
             root: twMerge(
               'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
-              size === 'sm' && '!text-base',
-              size === 'lg' && '!text-xl !leading-9',
-              size === 'xl' && '!text-2xl !leading-10'
+              proseSize
             ),
           }}
         >
@@ -207,24 +202,165 @@ function Evaluation() {
     statistics: {},
     status: SessionBlockStatus.Executed,
   })
-  const [textSize, setTextSize] = useState<'sm' | 'md' | 'lg' | 'xl'>('md')
 
-  const increaseTextSize = () => {
-    if (textSize === 'xl') return
-    setTextSize((prev) => {
-      if (prev === 'sm') return 'md'
-      if (prev === 'md') return 'lg'
-      return 'xl'
-    })
+  const sizeReducer = (
+    state: { size: string; text: string },
+    action: { type: string }
+  ) => {
+    switch (action.type) {
+      case 'increase':
+        switch (state.size) {
+          case 'xl':
+            return {
+              size: 'xl',
+              text: 'text-xl',
+              prose: 'prose-2xl',
+              textLg: 'text-2xl',
+              textXl: 'text-3xl',
+              text2Xl: 'text-4xl',
+              text3Xl: 'text-5xl',
+              legend: '3rem',
+              min: 60,
+              max: 80,
+            }
+          case 'lg':
+            return {
+              size: 'xl',
+              text: 'text-xl',
+              prose: 'prose-2xl',
+              textLg: 'text-2xl',
+              textXl: 'text-3xl',
+              text2Xl: 'text-4xl',
+              text3Xl: 'text-5xl',
+              legend: '3rem',
+              min: 60,
+              max: 80,
+            }
+          case 'md':
+            return {
+              size: 'lg',
+              text: 'text-lg',
+              prose: 'prose-xl',
+              textLg: 'text-xl',
+              textXl: 'text-2xl',
+              text2Xl: 'text-3xl',
+              text3Xl: 'text-4xl',
+              legend: '2.5rem',
+              min: 50,
+              max: 70,
+            }
+          case 'sm':
+            return {
+              size: 'md',
+              text: 'text-base',
+              prose: 'prose-lg',
+              textLg: 'text-lg',
+              textXl: 'text-xl',
+              text2Xl: 'text-2xl',
+              text3Xl: 'text-3xl',
+              legend: '2rem',
+              min: 40,
+              max: 60,
+            }
+          default:
+            return {
+              size: 'md',
+              text: 'text-base',
+              prose: 'prose-lg',
+              textLg: 'text-lg',
+              textXl: 'text-xl',
+              text2Xl: 'text-2xl',
+              text3Xl: 'text-3xl',
+              legend: '2rem',
+              min: 40,
+              max: 60,
+            }
+        }
+      case 'decrease':
+        switch (state.size) {
+          case 'xl':
+            return {
+              size: 'lg',
+              text: 'text-lg',
+              prose: 'prose-xl',
+              textLg: 'text-xl',
+              textXl: 'text-2xl',
+              text2Xl: 'text-3xl',
+              text3Xl: 'text-4xl',
+              legend: '2.5rem',
+              min: 50,
+              max: 70,
+            }
+          case 'lg':
+            return {
+              size: 'md',
+              text: 'text-base',
+              prose: 'prose-lg',
+              textLg: 'text-lg',
+              textXl: 'text-xl',
+              text2Xl: 'text-2xl',
+              text3Xl: 'text-3xl',
+              legend: '2rem',
+              min: 40,
+              max: 60,
+            }
+          case 'md':
+            return {
+              size: 'sm',
+              text: 'text-sm',
+              prose: 'prose-base',
+              textLg: 'text-base',
+              textXl: 'text-lg',
+              text2Xl: 'text-xl',
+              text3Xl: 'text-2xl',
+              legend: '1.5rem',
+              min: 30,
+              max: 40,
+            }
+          case 'sm':
+            return {
+              size: 'sm',
+              text: 'text-sm',
+              prose: 'prose-base',
+              textLg: 'text-base',
+              textXl: 'text-lg',
+              text2Xl: 'text-xl',
+              text3Xl: 'text-2xl',
+              legend: '1.5rem',
+              min: 30,
+              max: 40,
+            }
+          default:
+            return {
+              size: 'md',
+              text: 'text-base',
+              prose: 'prose-lg',
+              textLg: 'text-lg',
+              textXl: 'text-xl',
+              text2Xl: 'text-2xl',
+              text3Xl: 'text-3xl',
+              legend: '2rem',
+              min: 40,
+              max: 60,
+            }
+        }
+      default:
+        throw new Error()
+    }
   }
-  const decreaseTextSize = () => {
-    if (textSize === 'sm') return
-    setTextSize((prev) => {
-      if (prev === 'lg') return 'md'
-      if (prev === 'xl') return 'lg'
-      return 'sm'
-    })
-  }
+
+  const [textSize, settextSize] = useReducer(sizeReducer, {
+    size: 'md',
+    text: 'text-base',
+    prose: 'prose-lg',
+    textLg: 'text-lg',
+    textXl: 'text-xl',
+    text2Xl: 'text-2xl',
+    text3Xl: 'text-3xl',
+    legend: '2rem',
+    min: 40,
+    max: 60,
+  })
 
   const {
     data,
@@ -572,7 +708,7 @@ function Evaluation() {
               <Collapsed
                 currentInstance={currentInstance}
                 selectedInstance={selectedInstance}
-                size={textSize}
+                proseSize={textSize.prose}
               />
 
               <div className="flex flex-col flex-1 md:flex-row">
@@ -593,12 +729,7 @@ function Evaluation() {
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
                   <div
-                    className={twMerge(
-                      'flex flex-col gap-2',
-                      textSize === 'sm' && 'text-sm',
-                      textSize === 'lg' && 'text-lg',
-                      textSize === 'xl' && 'text-xl'
-                    )}
+                    className={twMerge('flex flex-col gap-2', textSize.text)}
                   >
                     <div className="font-bold">Diagramm Typ:</div>
                     <Select
@@ -812,12 +943,22 @@ function Evaluation() {
                 onCheckedChange={(newValue) => setShowSolution(newValue)}
               />
               <div className="flex flex-row items-center gap-2 ml-2">
-                <Button onClick={decreaseTextSize} disabled={textSize === 'sm'}>
+                <Button
+                  onClick={() => {
+                    settextSize({ type: 'decrease' })
+                  }}
+                  disabled={textSize.size === 'sm'}
+                >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faMinus} />
                   </Button.Icon>
                 </Button>
-                <Button onClick={increaseTextSize} disabled={textSize === 'xl'}>
+                <Button
+                  onClick={() => {
+                    settextSize({ type: 'increase' })
+                  }}
+                  disabled={textSize.size === 'xl'}
+                >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faPlus} />
                   </Button.Icon>

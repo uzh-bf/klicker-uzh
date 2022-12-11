@@ -19,7 +19,7 @@ import {
 interface BarChartProps {
   data: InstanceResult
   showSolution: boolean
-  textSize: 'sm' | 'md' | 'lg' | 'xl'
+  textSize: Record<string, string>
 }
 
 function BarChart({
@@ -44,8 +44,6 @@ function BarChart({
     return { count: result.count, labelIn, labelOut, xLabel }
   })
 
-  // debugger
-
   // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
     <ResponsiveContainer className="mb-4" height={600} width="99%">
@@ -64,16 +62,7 @@ function BarChart({
             fill: 'black',
             offset: 30,
             stroke: 'black',
-            style: {
-              fontSize:
-                textSize === 'sm'
-                  ? '1.5rem'
-                  : textSize === 'lg'
-                  ? '2.5rem'
-                  : textSize === 'xl'
-                  ? '3rem'
-                  : '2rem',
-            },
+            style: { fontSize: textSize.legend },
           }}
         />
         <YAxis
@@ -91,16 +80,7 @@ function BarChart({
             angle: -90,
             position: 'insideLeft',
             value: 'Antworten',
-            style: {
-              fontSize:
-                textSize === 'sm'
-                  ? '1.1rem'
-                  : textSize === 'lg'
-                  ? '1.4rem'
-                  : textSize === 'xl'
-                  ? '1.6rem'
-                  : '1.25rem',
-            },
+            className: textSize.textXl,
           }}
         />
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -117,32 +97,14 @@ function BarChart({
             position="top"
             stroke="black"
             strokeWidth={1}
-            style={{
-              fontSize:
-                textSize === 'sm'
-                  ? '1.75rem'
-                  : textSize === 'lg'
-                  ? '2.75rem'
-                  : textSize === 'xl'
-                  ? '3.25rem'
-                  : '2.25rem',
-            }}
+            className={textSize.text3Xl}
           />
           <LabelList
             dataKey="labelIn"
             fill="white"
             position="inside"
             stroke="white"
-            style={{
-              fontSize:
-                textSize === 'sm'
-                  ? '1.75rem'
-                  : textSize === 'lg'
-                  ? '2.75rem'
-                  : textSize === 'xl'
-                  ? '3.25rem'
-                  : '2.25rem',
-            }}
+            className={textSize.text3Xl}
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
             data.questionData.options.choices.map(

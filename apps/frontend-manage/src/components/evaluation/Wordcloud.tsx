@@ -5,7 +5,7 @@ import { TagCloud } from 'react-tagcloud'
 interface WordcloudProps {
   data: InstanceResult
   showSolution: boolean // TODO: not implemented yet
-  textSize: 'sm' | 'md' | 'lg' | 'xl'
+  textSize: Record<string, number>
 }
 
 function Wordcloud({
@@ -25,24 +25,8 @@ function Wordcloud({
     <div className="flex w-full h-full p-4">
       <TagCloud
         colorOptions={{ luminosity: 'dark' }}
-        maxSize={
-          textSize === 'sm'
-            ? 40
-            : textSize === 'lg'
-            ? 70
-            : textSize === 'xl'
-            ? 80
-            : 60
-        }
-        minSize={
-          textSize === 'sm'
-            ? 30
-            : textSize === 'lg'
-            ? 50
-            : textSize === 'xl'
-            ? 60
-            : 40
-        }
+        maxSize={textSize.max}
+        minSize={textSize.min}
         shuffle={false}
         tags={tags}
       />

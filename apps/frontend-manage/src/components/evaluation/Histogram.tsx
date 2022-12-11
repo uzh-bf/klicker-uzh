@@ -24,7 +24,7 @@ interface HistogramProps {
     q3?: boolean
     sd?: boolean
   }
-  textSize: 'sm' | 'md' | 'lg' | 'xl'
+  textSize: string
 }
 
 const defaultProps = {
@@ -91,13 +91,6 @@ function Histogram({
     return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
-  const computedFontSize =
-    textSize === 'sm'
-      ? '1rem'
-      : textSize === 'lg' || textSize === 'xl'
-      ? '1.6rem'
-      : '1.25rem'
-
   return (
     <div className="mt-1">
       <ResponsiveContainer width="99%" height={500}>
@@ -149,10 +142,10 @@ function Histogram({
               isFront
               label={{
                 fill: 'blue',
-                fontSize: computedFontSize,
                 position: 'top',
                 value: 'MEAN',
               }}
+              className={textSize}
               key={`mean-` + data.statistics.mean}
               stroke="blue"
               x={Math.round(data.statistics.mean || 0)}
@@ -163,10 +156,10 @@ function Histogram({
               isFront
               label={{
                 fill: 'red',
-                fontSize: computedFontSize,
                 position: 'top',
                 value: 'MEDIAN',
               }}
+              className={textSize}
               key={`median-` + data.statistics.median}
               stroke="red"
               x={Math.round(data.statistics.median || 0)}
@@ -177,10 +170,10 @@ function Histogram({
               isFront
               label={{
                 fill: 'black',
-                fontSize: computedFontSize,
                 position: 'top',
                 value: 'Q1',
               }}
+              className={textSize}
               key={`q1-` + data.statistics.q1}
               stroke="black"
               x={Math.round(data.statistics.q1 || 0)}
@@ -191,10 +184,10 @@ function Histogram({
               isFront
               label={{
                 fill: 'black',
-                fontSize: computedFontSize,
                 position: 'top',
                 value: 'Q3',
               }}
+              className={textSize}
               key={`q3-` + data.statistics.q3}
               stroke="black"
               x={Math.round(data.statistics.q3 || 0)}
@@ -215,10 +208,10 @@ function Histogram({
               enableBackground="#FFFFFF"
               label={{
                 fill: 'red',
-                fontSize: computedFontSize,
                 position: 'insideTopRight',
                 value: '+- 1 SD',
               }}
+              className={textSize}
             />
           )}
 
@@ -238,10 +231,10 @@ function Histogram({
                   enableBackground="#FFFFFF"
                   label={{
                     fill: 'green',
-                    fontSize: computedFontSize,
                     position: 'top',
                     value: 'Korrekt',
                   }}
+                  className={textSize}
                 />
               )
             )}
