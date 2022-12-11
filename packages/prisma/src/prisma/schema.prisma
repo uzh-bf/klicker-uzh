@@ -695,6 +695,11 @@ enum AchievementType {
   CLASS // achievement awarded on a global level (e.g., when reaching a class goal)
 }
 
+enum AchievementScope {
+  GLOBAL // achievements defined at the application level
+  COURSE // achievement defined at the course level
+}
+
 // Titles can be awarded to participants upon receipt of an achievement
 // They are managed on a course-level
 model Title {
@@ -721,13 +726,16 @@ model Achievement {
   name        String
   description String
   icon        String
+  iconColor   String?
 
   rewardedPoints Int?
   rewardedXP     Int?
   rewardedTitles Title[]
   type           AchievementType
+  scope          AchievementScope @default(GLOBAL)
 
-  course Course @relation(fields: [courseId], references: [id])
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
 
   participantInstances ParticipantAchievementInstance[]
   groupInstances       GroupAchievementInstance[]
@@ -735,13 +743,13 @@ model Achievement {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  courseId  String   @db.Uuid
 }
 
 model ParticipantAchievementInstance {
   id Int @id @default(autoincrement())
 
-  achievedAt DateTime
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
 
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   achievementId Int
@@ -758,7 +766,8 @@ model ParticipantAchievementInstance {
 model GroupAchievementInstance {
   id Int @id @default(autoincrement())
 
-  achievedAt DateTime
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
 
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   achievementId Int
@@ -775,7 +784,8 @@ model GroupAchievementInstance {
 model ClassAchievementInstance {
   id Int @id @default(autoincrement())
 
-  achievedAt DateTime
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
 
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   achievementId Int

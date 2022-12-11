@@ -4,5 +4,17 @@ query Self {
     username
     avatar
     avatarSettings
+    achievements {
+      id
+      achievedAt
+      achievedCount
+      achievement {
+        id
+        name
+        description
+        icon
+        iconColor
+      }
+    }
   }
 }

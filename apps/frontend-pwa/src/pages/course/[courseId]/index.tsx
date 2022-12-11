@@ -5,13 +5,12 @@ import {
   GetParticipantGroupsDocument,
   JoinCourseDocument,
   JoinParticipantGroupDocument,
-  LeaderboardEntry,
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4, Modal } from '@uzh-bf/design-system'
+import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import Leaderboard from 'shared-components/src/Leaderboard'
@@ -19,7 +18,6 @@ import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import Markdown from '@klicker-uzh/markdown'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -27,11 +25,11 @@ import GroupVisualization from '../../../components/GroupVisualization'
 
 function CourseOverview({ courseId }: any) {
   const [selectedTab, setSelectedTab] = useState('global')
-  const [participantModalOpen, setParticipantModalOpen] =
-    useState<boolean>(false)
-  const [selectedParticipant, setSelectedParticipant] = useState<
-    LeaderboardEntry | undefined
-  >(undefined)
+  // const [participantModalOpen, setParticipantModalOpen] =
+  //   useState<boolean>(false)
+  // const [selectedParticipant, setSelectedParticipant] = useState<
+  //   LeaderboardEntry | undefined
+  // >(undefined)
 
   const router = useRouter()
 
@@ -124,21 +122,21 @@ function CourseOverview({ courseId }: any) {
                     onJoin={joinCourse}
                     onLeave={leaveCourse}
                     participant={participant}
-                    onParitcipantClick={(participantId, isSelf) => {
-                      if (!isSelf) {
-                        setSelectedParticipant(
-                          leaderboard?.find(
-                            (entry) => entry.participantId === participantId
-                          )
-                        )
-                        setParticipantModalOpen(true)
-                      } else {
-                        router.push('/profile')
-                      }
-                    }}
+                    // onParitcipantClick={(participantId, isSelf) => {
+                    //   if (!isSelf) {
+                    //     setSelectedParticipant(
+                    //       leaderboard?.find(
+                    //         (entry) => entry.participantId === participantId
+                    //       )
+                    //     )
+                    //     setParticipantModalOpen(true)
+                    //   } else {
+                    //     router.push('/profile')
+                    //   }
+                    // }}
                   />
 
-                  <Modal
+                  {/* <Modal
                     open={participantModalOpen}
                     onClose={() => setParticipantModalOpen(false)}
                   >
@@ -158,15 +156,17 @@ function CourseOverview({ courseId }: any) {
                           {selectedParticipant.username}
                         </div>
                         <div className="mt-3">
-                          Current Rank: {selectedParticipant.rank}
+                          Aktueller Rang: {selectedParticipant.rank}
                         </div>
-                        <div>Current Score: {selectedParticipant.score}</div>
-                        <div>Achievements: TODO</div>
+                        <div>
+                          Aktuelle Punktzahl: {selectedParticipant.score}
+                        </div>
+                        <div>Errungenschaften: TODO</div>
                       </div>
                     ) : (
                       <div>Dieser Teilnehmer hat kein öffentliches Profil</div>
                     )}
-                  </Modal>
+                  </Modal> */}
 
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
