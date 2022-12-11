@@ -592,7 +592,14 @@ function Evaluation() {
                   />
                 </div>
                 <div className="flex-initial order-1 w-64 p-4 border-l md:order-2">
-                  <div className="flex flex-col gap-2">
+                  <div
+                    className={twMerge(
+                      'flex flex-col gap-2',
+                      textSize === 'sm' && 'text-sm',
+                      textSize === 'lg' && 'text-lg',
+                      textSize === 'xl' && 'text-xl'
+                    )}
+                  >
                     <div className="font-bold">Diagramm Typ:</div>
                     <Select
                       className={{ root: '-mt-1 mb-1' }}
