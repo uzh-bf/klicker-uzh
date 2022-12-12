@@ -1,4 +1,4 @@
-import { Button, Checkbox } from '@uzh-bf/design-system'
+import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -52,6 +52,7 @@ function Question({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [deleteQuestion] = useMutation(DeleteQuestionDocument)
 
   const [collectedProps, drag] = useDrag({
@@ -128,20 +129,57 @@ function Question({
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
               className={{
-                root: 'justify-center h-10 text-black bg-red-300 shadow-none cursor-not-allowed w-36 opacity-60',
+                root: 'justify-center h-10 text-black w-36 bg-red-400',
               }}
-              onClick={() =>
-                deleteQuestion({
-                  variables: {
-                    id,
-                  },
-                  refetchQueries: [{ query: GetUserQuestionsDocument }],
-                })
-              }
-              disabled
+              onClick={() => setIsDeletionModalOpen(true)}
             >
               Löschen
             </Button>
+            <Modal
+              onPrimaryAction={
+                <Button
+                  onClick={async () => {
+                    await deleteQuestion({
+                      variables: {
+                        id,
+                      },
+                      refetchQueries: [{ query: GetUserQuestionsDocument }],
+                    })
+                    setIsDeletionModalOpen(false)
+                  }}
+                  className={{ root: 'bg-red-600 font-bold text-white' }}
+                >
+                  Löschen
+                </Button>
+              }
+              onSecondaryAction={
+                <Button onClick={(): void => setIsDeletionModalOpen(false)}>
+                  Abbrechen
+                </Button>
+              }
+              onClose={(): void => setIsDeletionModalOpen(false)}
+              open={isDeletionModalOpen}
+              hideCloseButton={true}
+              className={{ content: 'w-[40rem] h-max self-center pt-0' }}
+            >
+              <div>
+                <H2>Frage löschen</H2>
+                <div>
+                  Sind Sie sich sicher, dass Sie die folgende(n) Frage(n)
+                  löschen möchten?
+                </div>
+                <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
+                  <H3>
+                    {title} ({QUESTION_TYPES_SHORT[type]})
+                  </H3>
+                  <div>{content}</div>
+                </div>
+                <div className="mt-6 mb-2 text-sm italic">
+                  Gelöschte Fragen können nicht wieder hergestellt werden. Aus
+                  bestehenden Sessionen werden gelöschte Fragen nicht entfernt.
+                </div>
+              </div>
+            </Modal>
           </div>
           <div className="mb-2 md:mr-3 w-36 md:mb-0">
             <Button
