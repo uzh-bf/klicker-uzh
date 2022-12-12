@@ -29,7 +29,7 @@
     "prisma:studio:qa": "dotenv -e .env.qa -- npm run prisma:studio",
     "prisma:studio:prod": "dotenv -e .env.production -- npm run prisma:studio",
     "preseed": "npm run build",
-    "seed": "npm-run-all seed:bf1 seed:ami seed:test seed:achievements",
+    "seed": "npm-run-all seed:bf1 seed:ami seed:test",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedTEST.ts",
     "seed:bf1": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
     "seed:ami": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
@@ -40,6 +40,7 @@
     "seed:prod": "ENV=production npm-run-all seed:prod:bf1 seed:prod:ami",
     "seed:prod:bf1": "npm run seed:qa:bf1 -- dotenv_config_path=.env.production",
     "seed:prod:ami": "npm run seed:qa:ami -- dotenv_config_path=.env.production",
+    "seed:prod:achievements": "ENV=production ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAchievements.ts dotenv_config_path=.env.production",
     "size": "size-limit"
   },
   "prisma": {
