@@ -198,11 +198,12 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 key={index}
                                 className="flex flex-col p-2 border border-solid rounded-md w-52"
                               >
-                                <div className="flex flex-row items-center justify-between">
+                                <div className="flex flex-row items-center justify-between" id="block-container-header">
                                   <div>Block {index + 1}</div>
                                   <Button
                                     onClick={() => remove(index)}
                                     className="ml-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                    id="delete-block"
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
                                   </Button>
@@ -239,6 +240,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                             fluid
                             className="flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100"
                             onClick={() => push([])}
+                            id="add-block"
                           >
                             <FontAwesomeIcon icon={faPlus} />
                             <div>Neuer Block</div>
@@ -288,6 +290,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className="float-right"
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  id="create-new-session"
                 >
                   Erstellen
                 </Button>

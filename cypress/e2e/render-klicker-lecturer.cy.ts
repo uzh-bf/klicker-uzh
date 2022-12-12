@@ -14,12 +14,25 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#homepage').should('exist');
   })
 
-  it('Adding a second question block', () => {
+  it('Create a session with one block', () => {
+    const randomTestSessionNumber = Math.round(Math.random() * 1000);
+    cy.get('#email-field').type('lecturer@bf.uzh.ch');
+    cy.get('#password-field').type('abcd');
+    cy.get('#submit-login').click();
+    cy.get('#session-name').type('Test Session ' + randomTestSessionNumber);
+    cy.get('#display-name').type('Displayed Name');
+    cy.get('#block-container-header').next().type('200, 201, 202');
+    cy.get('#create-new-session').click();
+    cy.wait(300);
+    cy.findByText('Test Session '  + randomTestSessionNumber).should('exist');
+  })
+
+  it('Adding and deleting second question block', () => {
     cy.get('#email-field').type('lecturer@bf.uzh.ch');
     cy.get('#password-field').type('abcd');
     cy.get('#submit-login').click();
     cy.get('#add-block').click();
-    //cy.get('#live-session-form').should('exist');
-    //cy.get('#display-name').should('exist');
+    cy.findByText('Block 2').siblings().click();
+    cy.findByText('Block 2').should('not.exist');
   })
 })
