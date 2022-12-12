@@ -422,6 +422,7 @@ function QuestionEditModal({
                 className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
                 type="submit"
                 form="question-manipulation-form"
+                id="save-new-question"
               >
                 <Button.Label>Speichern</Button.Label>
               </Button>
@@ -478,6 +479,7 @@ function QuestionEditModal({
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
                     )}
+                    id="question-title"
                   />
                 </div>
 
@@ -783,6 +785,7 @@ function QuestionEditModal({
                               feedback: '<br>',
                             })
                           }
+                          id="add-new-answer"
                         >
                           Neue Antwort hinzufügen
                         </Button>

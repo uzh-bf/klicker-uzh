@@ -237,6 +237,7 @@ function Index() {
                         )
                       }
                       className="float-right mb-3 font-bold text-white bg-uzh-blue-80"
+                      id="create-question"
                     >
                       FRAGE ERSTELLEN
                     </Button>
