@@ -19,7 +19,7 @@ const Profile = () => {
 
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
-      <div className="flex flex-col gap-8 md:max-w-md md:border md:rounded md:p-4 md:mx-auto md:w-full">
+      <div className="flex flex-col gap-8 md:max-w-3xl md:border md:rounded md:p-4 md:mx-auto md:w-full">
         <div className="flex flex-row gap-4">
           <div className="relative flex-none border-b-4 w-36 h-36 ">
             <Image
@@ -62,13 +62,13 @@ const Profile = () => {
           {data.self.achievements?.length == 0 && (
             <div>Bisher keine Errungenschaften</div>
           )}
-          <div className="grid grid-cols-2 mt-2">
+          <div className="grid gap-4 mt-2 md:grid-cols-2">
             {data.self.achievements.map((achievement) => (
               <div
                 key={achievement.id}
-                className="flex flex-row gap-4 p-2 pl-4 border rounded"
+                className="flex flex-row gap-6 p-2 pl-4 border rounded"
               >
-                <div className="relative flex-initial w-6">
+                <div className="relative flex-initial w-10">
                   <Image
                     src={achievement.achievement.icon}
                     fill
