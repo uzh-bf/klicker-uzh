@@ -50,7 +50,7 @@
     "@graphql-codegen/typescript": "2.8.0",
     "@graphql-codegen/typescript-operations": "2.5.5",
     "@graphql-codegen/typescript-react-apollo": "3.3.5",
-    "@graphql-codegen/typescript-resolvers": "2.7.5",
+    "@graphql-codegen/typescript-resolvers": "2.7.10",
     "@size-limit/preset-small-lib": "8.1.0",
     "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
