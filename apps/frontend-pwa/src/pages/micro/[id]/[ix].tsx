@@ -89,65 +89,66 @@ function MicroSessionInstance() {
       courseName={data.microSession.course.displayName}
       courseColor={data.microSession.course.color}
     >
-      <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-        {questionData && (
-          <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
-            <div className="flex-1 basis-2/3">
-              <div className="flex flex-row items-end justify-between mb-4 border-b">
-                <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                <div className="text-slate-500">{questionData.type}</div>
-              </div>
-
-              <div className="pb-2">
-                <Markdown content={questionData.content} />
-              </div>
-
-              <OptionsDisplay
-                isEvaluation={isEvaluation}
-                evaluation={currentInstance.evaluation}
-                response={response}
-                onChangeResponse={setResponse}
-                onSubmitResponse={
-                  isEvaluation ? handleNextQuestion : handleSubmitResponse
-                }
-                questionType={questionData.type as QuestionType}
-                options={questionData.options}
-              />
-            </div>
-
-            {currentInstance.evaluation && (
-              <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
-                <div className="flex flex-row gap-8">
-                  <div>
-                    <div className="font-bold">Punkte (gesammelt)</div>
-                    <div className="text-xl">
-                      {currentInstance.evaluation.pointsAwarded} Punkte
-                    </div>
-                  </div>
+      <div className="flex-1">
+        <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+          {questionData && (
+            <div className="flex flex-col order-2 gap-4 md:gap-8 md:flex-row md:order-1">
+              <div className="flex-1 basis-2/3">
+                <div className="flex flex-row items-end justify-between mb-4 border-b">
+                  <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
+                  <div className="text-slate-500">{questionData.type}</div>
                 </div>
 
-                <EvaluationDisplay
-                  options={questionData.options}
-                  questionType={questionData.type}
+                <div className="pb-2">
+                  <Markdown content={questionData.content} />
+                </div>
+
+                <OptionsDisplay
+                  isEvaluation={isEvaluation}
                   evaluation={currentInstance.evaluation}
+                  response={response}
+                  onChangeResponse={setResponse}
+                  onSubmitResponse={
+                    isEvaluation ? handleNextQuestion : handleSubmitResponse
+                  }
+                  questionType={questionData.type as QuestionType}
+                  options={questionData.options}
                 />
               </div>
-            )}
-          </div>
-        )}
 
-        {currentInstance && (
-          <div className="order-1 md:order-2">
-            <Progress
-              isMaxVisible
-              formatter={(v) => v}
-              value={ix}
-              max={data.microSession?.instances?.length ?? 0}
-            />
-          </div>
-        )}
+              {currentInstance.evaluation && (
+                <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
+                  <div className="flex flex-row gap-8">
+                    <div>
+                      <div className="font-bold">Punkte (gesammelt)</div>
+                      <div className="text-xl">
+                        {currentInstance.evaluation.pointsAwarded} Punkte
+                      </div>
+                    </div>
+                  </div>
+
+                  <EvaluationDisplay
+                    options={questionData.options}
+                    questionType={questionData.type}
+                    evaluation={currentInstance.evaluation}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentInstance && (
+            <div className="order-1 md:order-2">
+              <Progress
+                isMaxVisible
+                formatter={(v) => v}
+                value={ix}
+                max={data.microSession?.instances?.length ?? 0}
+              />
+            </div>
+          )}
+        </div>
       </div>
-
       <Footer />
     </Layout>
   )
