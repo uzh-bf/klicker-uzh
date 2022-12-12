@@ -104,6 +104,7 @@ export interface NexusGenInputs {
 
 export interface NexusGenEnums {
   AccessMode: "PUBLIC" | "RESTRICTED"
+  AchievementType: "CLASS" | "GROUP" | "PARTICIPANT"
   AttachmentType: "GIF" | "JPEG" | "LINK" | "PNG" | "SVG" | "WEBP"
   AwardType: "GROUP" | "PARTICIPANT"
   OrderType: "LAST_RESPONSE" | "SEQUENTIAL" | "SHUFFLED"
@@ -123,6 +124,17 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
+  Achievement: { // root type
+    description: string; // String!
+    icon: string; // String!
+    iconColor?: string | null; // String
+    id: number; // Int!
+    name: string; // String!
+    rewardedPoints?: number | null; // Int
+    rewardedTitles?: string[] | null; // [String!]
+    rewardedXP?: number | null; // Int
+    type: NexusGenEnums['AchievementType']; // AchievementType!
+  }
   AggregatedConfusionFeedbacks: { // root type
     difficulty: number; // Float!
     numberOfParticipants: number; // Int!
@@ -181,6 +193,12 @@ export interface NexusGenObjects {
   }
   ChoicesQuestionOptions: { // root type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
+  }
+  ClassAchievementInstance: { // root type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   ConfusionTimestep: { // root type
     createdAt: NexusGenScalars['DateTime']; // DateTime!
@@ -254,6 +272,12 @@ export interface NexusGenObjects {
   }
   FreeTextRestrictions: { // root type
     maxLength?: number | null; // Int
+  }
+  GroupAchievementInstance: { // root type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   GroupActivityClue: { // root type
     displayName: string; // String!
@@ -393,12 +417,19 @@ export interface NexusGenObjects {
     min?: number | null; // Float
   }
   Participant: { // root type
+    achievements: NexusGenRootTypes['ParticipantAchievementInstance'][]; // [ParticipantAchievementInstance!]!
     avatar?: string | null; // String
     avatarSettings?: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     isSelf?: boolean | null; // Boolean
     participantGroups?: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     username: string; // String!
+  }
+  ParticipantAchievementInstance: { // root type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   ParticipantGroup: { // root type
     averageMemberScore: number; // Float!
@@ -554,6 +585,17 @@ export type NexusGenRootTypes = NexusGenInterfaces & NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars & NexusGenEnums
 
 export interface NexusGenFieldTypes {
+  Achievement: { // field return type
+    description: string; // String!
+    icon: string; // String!
+    iconColor: string | null; // String
+    id: number; // Int!
+    name: string; // String!
+    rewardedPoints: number | null; // Int
+    rewardedTitles: string[] | null; // [String!]
+    rewardedXP: number | null; // Int
+    type: NexusGenEnums['AchievementType']; // AchievementType!
+  }
   AggregatedConfusionFeedbacks: { // field return type
     difficulty: number; // Float!
     numberOfParticipants: number; // Int!
@@ -612,6 +654,12 @@ export interface NexusGenFieldTypes {
   }
   ChoicesQuestionOptions: { // field return type
     choices: NexusGenRootTypes['Choice'][]; // [Choice!]!
+  }
+  ClassAchievementInstance: { // field return type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   ConfusionTimestep: { // field return type
     createdAt: NexusGenScalars['DateTime']; // DateTime!
@@ -685,6 +733,12 @@ export interface NexusGenFieldTypes {
   }
   FreeTextRestrictions: { // field return type
     maxLength: number | null; // Int
+  }
+  GroupAchievementInstance: { // field return type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   GroupActivityClue: { // field return type
     displayName: string; // String!
@@ -866,12 +920,19 @@ export interface NexusGenFieldTypes {
     min: number | null; // Float
   }
   Participant: { // field return type
+    achievements: NexusGenRootTypes['ParticipantAchievementInstance'][]; // [ParticipantAchievementInstance!]!
     avatar: string | null; // String
     avatarSettings: NexusGenScalars['JSONObject'] | null; // JSONObject
     id: string; // ID!
     isSelf: boolean | null; // Boolean
     participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     username: string; // String!
+  }
+  ParticipantAchievementInstance: { // field return type
+    achievedAt: NexusGenScalars['DateTime']; // DateTime!
+    achievedCount: number; // Int!
+    achievement: NexusGenRootTypes['Achievement']; // Achievement!
+    id: number; // Int!
   }
   ParticipantGroup: { // field return type
     averageMemberScore: number; // Float!
@@ -1062,6 +1123,17 @@ export interface NexusGenFieldTypes {
 }
 
 export interface NexusGenFieldTypeNames {
+  Achievement: { // field return type name
+    description: 'String'
+    icon: 'String'
+    iconColor: 'String'
+    id: 'Int'
+    name: 'String'
+    rewardedPoints: 'Int'
+    rewardedTitles: 'String'
+    rewardedXP: 'Int'
+    type: 'AchievementType'
+  }
   AggregatedConfusionFeedbacks: { // field return type name
     difficulty: 'Float'
     numberOfParticipants: 'Int'
@@ -1120,6 +1192,12 @@ export interface NexusGenFieldTypeNames {
   }
   ChoicesQuestionOptions: { // field return type name
     choices: 'Choice'
+  }
+  ClassAchievementInstance: { // field return type name
+    achievedAt: 'DateTime'
+    achievedCount: 'Int'
+    achievement: 'Achievement'
+    id: 'Int'
   }
   ConfusionTimestep: { // field return type name
     createdAt: 'DateTime'
@@ -1193,6 +1271,12 @@ export interface NexusGenFieldTypeNames {
   }
   FreeTextRestrictions: { // field return type name
     maxLength: 'Int'
+  }
+  GroupAchievementInstance: { // field return type name
+    achievedAt: 'DateTime'
+    achievedCount: 'Int'
+    achievement: 'Achievement'
+    id: 'Int'
   }
   GroupActivityClue: { // field return type name
     displayName: 'String'
@@ -1374,12 +1458,19 @@ export interface NexusGenFieldTypeNames {
     min: 'Float'
   }
   Participant: { // field return type name
+    achievements: 'ParticipantAchievementInstance'
     avatar: 'String'
     avatarSettings: 'JSONObject'
     id: 'ID'
     isSelf: 'Boolean'
     participantGroups: 'ParticipantGroup'
     username: 'String'
+  }
+  ParticipantAchievementInstance: { // field return type name
+    achievedAt: 'DateTime'
+    achievedCount: 'Int'
+    achievement: 'Achievement'
+    id: 'Int'
   }
   ParticipantGroup: { // field return type name
     averageMemberScore: 'Float'

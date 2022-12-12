@@ -7,6 +7,24 @@ enum AccessMode {
   RESTRICTED
 }
 
+type Achievement {
+  description: String!
+  icon: String!
+  iconColor: String
+  id: Int!
+  name: String!
+  rewardedPoints: Int
+  rewardedTitles: [String!]
+  rewardedXP: Int
+  type: AchievementType!
+}
+
+enum AchievementType {
+  CLASS
+  GROUP
+  PARTICIPANT
+}
+
 type AggregatedConfusionFeedbacks {
   difficulty: Float!
   numberOfParticipants: Int!
@@ -117,6 +135,13 @@ type ChoicesQuestionOptions {
   choices: [Choice!]!
 }
 
+type ClassAchievementInstance {
+  achievedAt: DateTime!
+  achievedCount: Int!
+  achievement: Achievement!
+  id: Int!
+}
+
 type ConfusionTimestep {
   createdAt: DateTime!
   difficulty: Int!
@@ -208,6 +233,13 @@ type FreeTextQuestionOptions {
 
 type FreeTextRestrictions {
   maxLength: Int
+}
+
+type GroupAchievementInstance {
+  achievedAt: DateTime!
+  achievedCount: Int!
+  achievement: Achievement!
+  id: Int!
 }
 
 type GroupActivityClue {
@@ -444,12 +476,20 @@ enum ParameterType {
 }
 
 type Participant {
+  achievements: [ParticipantAchievementInstance!]!
   avatar: String
   avatarSettings: JSONObject
   id: ID!
   isSelf: Boolean
   participantGroups: [ParticipantGroup!]
   username: String!
+}
+
+type ParticipantAchievementInstance {
+  achievedAt: DateTime!
+  achievedCount: Int!
+  achievement: Achievement!
+  id: Int!
 }
 
 type ParticipantGroup {

@@ -572,6 +572,72 @@ export const User = objectType({
   },
 })
 
+export const AchievementType = enumType({
+  name: 'AchievementType',
+  members: DB.AchievementType,
+})
+
+export const Achievement = objectType({
+  name: 'Achievement',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.string('name')
+    t.nonNull.string('description')
+    t.nonNull.string('icon')
+    t.string('iconColor')
+
+    t.int('rewardedPoints')
+    t.int('rewardedXP')
+    t.list.nonNull.string('rewardedTitles')
+    t.nonNull.field('type', {
+      type: AchievementType,
+    })
+  },
+})
+
+export const ParticipantAchievementInstance = objectType({
+  name: 'ParticipantAchievementInstance',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.date('achievedAt')
+    t.nonNull.int('achievedCount')
+
+    t.nonNull.field('achievement', {
+      type: Achievement,
+    })
+  },
+})
+
+export const GroupAchievementInstance = objectType({
+  name: 'GroupAchievementInstance',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.date('achievedAt')
+    t.nonNull.int('achievedCount')
+
+    t.nonNull.field('achievement', {
+      type: Achievement,
+    })
+  },
+})
+
+export const ClassAchievementInstance = objectType({
+  name: 'ClassAchievementInstance',
+  definition(t) {
+    t.nonNull.int('id')
+
+    t.nonNull.date('achievedAt')
+    t.nonNull.int('achievedCount')
+
+    t.nonNull.field('achievement', {
+      type: Achievement,
+    })
+  },
+})
+
 export const Participant = objectType({
   name: 'Participant',
   definition(t) {
@@ -585,6 +651,9 @@ export const Participant = objectType({
     t.boolean('isSelf')
 
     t.list.nonNull.field('participantGroups', { type: ParticipantGroup })
+    t.nonNull.list.nonNull.field('achievements', {
+      type: ParticipantAchievementInstance,
+    })
   },
 })
 

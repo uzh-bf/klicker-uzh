@@ -22,7 +22,8 @@
     "prisma:deploy:prod": "dotenv -e .env.production -- npm run prisma:deploy",
     "prisma:push": "prisma db push --schema=src/prisma/schema.prisma",
     "prisma:push:qa": "dotenv -e .env.qa -- npm run prisma:push",
-    "prisma:reset": "prisma migrate reset --schema=src/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema=src/prisma/schema.prisma --skip-seed",
+    "prisma:reset:seed": "prisma migrate reset --schema=src/prisma/schema.prisma",
     "prisma:reset:qa": "dotenv -e .env.qa -- npm run prisma:reset",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:studio:qa": "dotenv -e .env.qa -- npm run prisma:studio",
@@ -63,7 +64,7 @@
     "dotenv": "16.0.3",
     "dotenv-cli": "6.0.0",
     "npm-run-all": "4.1.5",
-    "prisma": "4.7.0",
+    "prisma": "4.7.1",
     "prisma-erd-generator": "1.2.0",
     "ramda": "0.28.0",
     "size-limit": "8.1.0",
@@ -72,7 +73,7 @@
     "typescript": "4.9.3"
   },
   "dependencies": {
-    "@prisma/client": "4.7.0"
+    "@prisma/client": "4.7.1"
   },
   "volta": {
     "extends": "../../package.json"

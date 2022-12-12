@@ -135,6 +135,7 @@ interface ComputeAwardedPointsArgs {
   defaultPoints?: number
   defaultCorrectPoints?: number
   pointsPercentage?: number | null
+  pointsMultiplier?: number | string | null
 }
 export function computeAwardedPoints({
   firstResponseReceivedAt,
@@ -145,6 +146,7 @@ export function computeAwardedPoints({
   defaultPoints,
   defaultCorrectPoints,
   pointsPercentage,
+  pointsMultiplier,
 }: ComputeAwardedPointsArgs): number {
   const slope = maxBonus / (timeToZeroBonus ?? 20)
 
@@ -159,13 +161,19 @@ export function computeAwardedPoints({
   // if the student gets the question right, they get the full points or partial points depending on the question type
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    awardedPoints +=
+    const additionalPoints =
       pointsPercentage * (defaultCorrectPoints || 0) +
       Math.max(pointsPercentage * (maxBonus - slope * responseTiming), 0)
+    awardedPoints += additionalPoints
   } else if (getsMaxPoints) {
-    awardedPoints +=
+    const additionalPoints =
       (defaultCorrectPoints || 0) +
       Math.max(maxBonus - slope * responseTiming, 0)
+    awardedPoints += additionalPoints
+  }
+
+  if (typeof pointsMultiplier !== 'undefined') {
+    awardedPoints *= Number(pointsMultiplier)
   }
 
   return Math.round(awardedPoints)
