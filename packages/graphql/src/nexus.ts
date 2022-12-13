@@ -468,6 +468,9 @@ export const Course = objectType({
 
     t.int('pinCode')
     t.int('numOfParticipants')
+    t.int('numOfActiveParticipants')
+    t.float('averageScore')
+    t.float('averageActiveScore')
 
     t.nonNull.list.nonNull.field('learningElements', {
       type: LearningElement,

@@ -143,6 +143,7 @@ function CourseOverview({ courseId }: any) {
                         score: entry.score,
                       })) || []
                     }
+                    hideAvatars={true}
                   />
 
                   {!groupLeaderboard ||

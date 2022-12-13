@@ -1,16 +1,17 @@
+import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
 import { Podium } from './Podium'
 
-// TODO: eliminate participantId and replace it by participant.id
 interface LeaderboardProps {
   leaderboard: any[]
   activeParticipation?: boolean
   onJoin?: () => void
   onLeave?: () => void
-  participant?: any // TODO: typing
+  participant?: Participant
   hidePodium?: boolean
+  hideAvatars?: boolean
   className?: {
     root?: string
     podium?: string
@@ -27,6 +28,7 @@ function Leaderboard({
   onLeave,
   participant,
   hidePodium,
+  hideAvatars,
   className,
 }: LeaderboardProps): React.ReactElement {
   const { top10, inTop10, selfEntry } = useMemo(
@@ -77,6 +79,7 @@ function Leaderboard({
                 isActive={activeParticipation ?? true}
                 pseudonym={entry.username}
                 avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
                 points={entry.score}
                 rank={entry.rank}
                 onJoinCourse={onJoin}
@@ -88,17 +91,19 @@ function Leaderboard({
                 rank={entry.rank}
                 pseudonym={entry.username}
                 avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
                 points={entry.score}
                 className={className?.listItem}
               />
             )
           )}
         </div>
-        {participant?.id && onJoin && onLeave && !inTop10 && (
+        {participant?.id && onJoin && onLeave && !activeParticipation && (
           <ParticipantSelf
             isActive={activeParticipation ?? false}
             pseudonym={participant.username}
             avatar={participant.avatar ?? 'placeholder'}
+            withAvatar={!hideAvatars}
             points={selfEntry?.score}
             rank={selfEntry?.rank ?? '?'}
             onJoinCourse={onJoin}

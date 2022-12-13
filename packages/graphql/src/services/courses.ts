@@ -150,31 +150,32 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
-    const lbEntries = await course.leaderboard({
+    const lbEntries = await course.participations({
       where: {
-        participation: { isActive: true },
+        isActive: true,
       },
       include: {
+        courseLeaderboard: true,
         participant: true,
       },
     })
 
     if (participation) {
-      const allEntries = lbEntries.reduce(
+      const allEntries = lbEntries?.reduce(
         (acc, entry) => {
           return {
             mapped: [
               ...acc.mapped,
               {
                 id: entry.id,
-                score: entry.score,
+                score: entry.courseLeaderboard?.score ?? 0,
                 username: entry.participant.username,
                 avatar: entry.participant.avatar,
                 participantId: entry.participant.id,
                 isSelf: ctx.user?.sub === entry.participant.id,
               },
             ],
-            sum: acc.sum + entry.score ?? 0,
+            sum: acc.sum + (entry.courseLeaderboard?.score ?? 0),
             count: acc.count + 1,
           }
         },
@@ -402,18 +403,9 @@ export async function getCourseData(
           score: 'desc',
         },
       },
+      participations: true,
     },
   })
-
-  const leaderboard = course?.leaderboard
-    .filter((entry) => entry.participation?.isActive)
-    .map((entry, ix) => ({
-      id: entry?.id,
-      score: entry?.score,
-      rank: ix + 1,
-      username: entry.participation?.participant.username,
-      avatar: entry.participation?.participant.avatar,
-    }))
 
   const reducedSessions = course?.sessions
     .map((session) => {
@@ -468,13 +460,56 @@ export async function getCourseData(
       ])
     )
 
+  const { activeLBEntries, totalSum, activeSum, activeCount } =
+    course?.leaderboard.reduce(
+      (acc, entry) => {
+        if (entry.participation?.isActive) {
+          return {
+            ...acc,
+            activeLBEntries: [
+              ...acc.activeLBEntries,
+              {
+                id: entry?.id,
+                score: entry?.score,
+                rank: acc.activeCount + 1,
+                username: entry.participation?.participant.username,
+                avatar: entry.participation?.participant.avatar,
+                participation: entry.participation,
+              },
+            ],
+            activeSum: acc.activeSum + entry.score,
+            activeCount: acc.activeCount + 1,
+            totalSum: acc.totalSum + entry.score,
+          }
+        }
+
+        return {
+          ...acc,
+          totalSum: acc.totalSum + entry.score,
+        }
+      },
+      {
+        activeLBEntries: [] as typeof course.leaderboard,
+        totalSum: 0,
+        activeSum: 0,
+        activeCount: 0,
+      }
+    )
+
+  const totalCount = course?.participations.length || 0
+  const averageScore = totalCount > 0 ? totalSum / totalCount : 0
+  const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
+
   return {
     ...course,
     sessions: reducedSessions,
     learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
-    numOfParticipants: course?.leaderboard.length,
-    leaderboard: leaderboard,
+    numOfParticipants: course?.participations.length,
+    numOfActiveParticipants: activeLBEntries?.length ?? [],
+    leaderboard: activeLBEntries,
+    averageScore,
+    averageActiveScore,
   }
 }
 

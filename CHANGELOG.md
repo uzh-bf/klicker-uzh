@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.108](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.107...v2.0.0-alpha.108) (2022-12-01)
+
+
+### Enhancements
+
+* **frontend-manage:** add course leaderboard statistics ([#3127](https://github.com/uzh-bf/klicker-uzh/issues/3127)) ([b1c76be](https://github.com/uzh-bf/klicker-uzh/commit/b1c76bed990793c4a5336e131f9118e891d06d74))
+* implement basic sorting for sessions depending on status ([#3128](https://github.com/uzh-bf/klicker-uzh/issues/3128)) ([88a7f61](https://github.com/uzh-bf/klicker-uzh/commit/88a7f61d5f013c5e1bfded3363760aec7df2c79c))
+
+
+### Other
+
+* lockfile maintenance ([2e9fc48](https://github.com/uzh-bf/klicker-uzh/commit/2e9fc483d12fd968293673cad732c06bf18bb25a))
+* lockfile maintenance ([b4738bd](https://github.com/uzh-bf/klicker-uzh/commit/b4738bd7aca8727d3a0f8e99cdc2053853172931))
+* seed update ([4ccbda1](https://github.com/uzh-bf/klicker-uzh/commit/4ccbda115cfb638603d943c561bc164c1905d8f8))
+* seed update for BF1 week 12 ([9cce7a8](https://github.com/uzh-bf/klicker-uzh/commit/9cce7a85674a6aa4a68231234380256854a1c6bb))
+* submodule update ([8a1fe93](https://github.com/uzh-bf/klicker-uzh/commit/8a1fe938900c634b193a3bbb0e8fbf7d809e7941))
+
 ## [2.0.0-alpha.107](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.106...v2.0.0-alpha.107) (2022-11-29)
 
 
