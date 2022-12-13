@@ -2,13 +2,13 @@ import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useColorMode } from '@docusaurus/theme-common'
-import { faMessage } from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight, faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Image from '@theme/IdealImage'
 import Layout from '@theme/Layout'
+import { Button } from '@uzh-bf/design-system'
 import ImageTextBlock from '../components/common/ImageTextBlock'
 import TitleTextBlock from '../components/common/TitleTextBlock'
-import DocsButton from '../components/DocsButton'
 import ImageTile from '../components/landing/ImageTile'
 
 const features = [
@@ -151,7 +151,7 @@ function Home() {
 
   return (
     <Layout title="Welcome">
-      <div className="flex flex-row items-center gap-6 p-4 bg-uzh-red-20">
+      <div className="flex flex-row items-center gap-6 p-4 text-black bg-uzh-red-20">
         <div>
           <FontAwesomeIcon icon={faMessage} />
         </div>
@@ -260,10 +260,19 @@ function Home() {
               KlickerUZH user community through the following link. To log in,
               simply use your KlickerUZH credentials.
             </p>
-            <DocsButton
-              text="User Community"
-              url="https://www.klicker.uzh.ch/community"
-            />
+            <Button
+              onClick={() =>
+                window.open('https://www.klicker.uzh.ch/community', '_blank')
+              }
+              className={{
+                root: 'flex h-12 flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+              }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button.Icon>
+              <Button.Label>User Community</Button.Label>
+            </Button>
           </div>
         </div>
       </div>
@@ -284,16 +293,25 @@ const TitleImage = ({ imgSrc }) => {
     <>
       <div className="sticky z-10 top-[3.75rem]">
         <div className="flex flex-row-reverse justify-center w-full gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start sm:bg-transparent-400">
-          <DocsButton
-            text="Login"
-            url="https://app.klicker.uzh.ch/user/login"
-            className="bg-white w-36"
-          />
-          <DocsButton
-            text="Sign Up"
-            url="https://app.klicker.uzh.ch/user/registration"
-            className="bg-white w-36"
-          />
+          {[
+            { text: 'Login', url: 'https://app.klicker.uzh.ch/user/login' },
+            {
+              text: 'Register',
+              url: 'https://app.klicker.uzh.ch/user/registration',
+            },
+          ].map((entry) => (
+            <Button
+              onClick={() => window.open(entry.url, '_blank')}
+              className={{
+                root: 'flex h-12 w-36 bg-white text-black flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+              }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button.Icon>
+              <Button.Label>{entry.text}</Button.Label>
+            </Button>
+          ))}
         </div>
       </div>
       <div className="mb-10 text-center ">
@@ -312,30 +330,38 @@ const TitleImage = ({ imgSrc }) => {
         </h1>
 
         <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
-          <DocsButton
-            text="Sign Up"
-            className={twMerge(
-              'w-64 md:w-52 md:text-lg',
-              !isDarkTheme && 'bg-gray-50'
-            )}
-            url="https://app.klicker.uzh.ch/user/registration"
-          />
-          <DocsButton
-            text="Getting Started"
-            className={twMerge(
-              'w-64 md:w-52 md:text-lg',
-              !isDarkTheme && 'bg-gray-50'
-            )}
-            url="introduction/getting_started"
-          />
-          <DocsButton
-            text="Get Involved"
-            className={twMerge(
-              'w-64 md:w-52 md:text-lg',
-              !isDarkTheme && 'bg-gray-50'
-            )}
-            url="development"
-          />
+          {[
+            {
+              text: 'Sign Up',
+              url: 'https://app.klicker.uzh.ch/user/registration',
+              local: false,
+            },
+            {
+              text: 'Getting Started',
+              url: '/introduction/getting_started',
+              local: true,
+            },
+            { text: 'Get Involved', url: '/development', local: true },
+          ].map((entry) => (
+            <Button
+              onClick={() =>
+                entry.local === false
+                  ? window.open(entry.url, '_blank')
+                  : (window.location.href = entry.url)
+              }
+              className={{
+                root: twMerge(
+                  'flex h-12 w-64 md:w-52 md:text-lg bg-white text-black flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+                  !isDarkTheme && 'bg-gray-50'
+                ),
+              }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button.Icon>
+              <Button.Label>{entry.text}</Button.Label>
+            </Button>
+          ))}
         </div>
       </div>
     </>
