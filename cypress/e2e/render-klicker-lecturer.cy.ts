@@ -26,7 +26,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#add-block').click();
     cy.findByText('Block 2').siblings().click();
     cy.findByText('Block 2').should('not.exist');
-  }), 
+  }), */
 
   it('Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
@@ -35,8 +35,8 @@ describe('Render the homepage for lecturer', () => {
 
     cy.get('#create-question').click();
     cy.get('#question-title').type(questionTitle);
-    cy.findByText('Fragetext hier eingeben…').parent().type(question);
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
+    cy.get('#question-text').type(question);
+    /* cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
     cy.get('#add-new-answer').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().type('100%');
     cy.get('#save-new-question').click();
@@ -45,20 +45,20 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC');
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
-    cy.get('#sc-answer-options').nextAll().should('have.length', 1);
-  })*/
+    cy.get('#sc-answer-options').nextAll().should('have.length', 1); */
+  })
 
   it('Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
-    const questionTitle = 'A Multiple Choice ' + randomQuestionNumber
+    const questionTitle = 'A Multiple Choice ' + randomQuestionNumber;
     const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf dies Frage richtig ist?';
 
     cy.get('#create-question').click();
     cy.get('#question_create_select').click();
-    cy.findByText('KPRIM (KP)');
-    /* cy.get('#question-title').type(questionTitle);
-    cy.findByText('Fragetext hier eingeben…').parent().type(question);
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
+    cy.findAllByText('Multiple Choice (MC)').eq(1).click();
+    cy.get('#question-title').type(questionTitle);
+    cy.get('#question-text').type(question);
+    /* cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
     cy.get('#add-new-answer').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().type('100%');
     cy.get('#add-new-answer').click();

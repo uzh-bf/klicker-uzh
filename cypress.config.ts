@@ -7,6 +7,7 @@ export default defineConfig({
   },
 
   e2e: {
+    // includeShadowDom: true,
     setupNodeEvents(on, config) {
       /* on("task", {
         async "db:seed"() {

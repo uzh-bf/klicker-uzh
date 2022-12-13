@@ -301,7 +301,7 @@ function QuestionEditModal({
       isInitialValid={mode === 'EDIT'}
       enableReinitialize={true}
       initialValues={question}
-      validationSchema={questionManipulationSchema}
+      //validationSchema={questionManipulationSchema}
       onSubmit={async (values) => {
         const common = {
           id: questionId,
@@ -542,6 +542,7 @@ function QuestionEditModal({
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                           key={`${questionType}-content`}
+                          id="question-text"
                         />
                       )}
                     </FastField>
