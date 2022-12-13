@@ -214,7 +214,7 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full p-4 mt-2 border border-solid rounded-lg border-uzh-grey-80">
+          <div className="flex flex-row w-full p-4 mt-2 overflow-scroll border border-solid rounded-lg border-uzh-grey-80">
             <FontAwesomeIcon
               icon={faPlay}
               size="lg"
