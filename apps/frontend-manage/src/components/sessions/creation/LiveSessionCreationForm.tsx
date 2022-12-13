@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowRight,
+  faPlus,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
@@ -12,6 +16,7 @@ import {
   Label,
   Select,
   Switch,
+  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -20,8 +25,10 @@ import {
   Form,
   Formik,
 } from 'formik'
-import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface LiveSessionCreationFormProps {
@@ -33,7 +40,7 @@ interface LiveSessionCreationFormProps {
 
 function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
-  const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -75,7 +82,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
 
   return (
     <div>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        toastOptions={{ duration: 6000 }}
+      />
       <H3>Live-Session erstellen</H3>
       <Formik
         initialValues={{
@@ -120,10 +131,22 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               refetchQueries: [GetUserSessionsDocument],
             })
             if (session.data?.createSession) {
-              toast.success('Session erfolgreich erstellt!')
+              toast.success(
+                <div>
+                  <div>Session erfolgreich erstellt!</div>
+                  <div className="flex flex-row items-center">
+                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+                    Zur
+                    <Link
+                      href="/sessions"
+                      className={twMerge(theme.primaryText, 'ml-1')}
+                    >
+                      Session-Liste
+                    </Link>
+                  </div>
+                </div>
+              )
               resetForm()
-              // TODO: fix that invalidation seems not to work with some larger sessions
-              router.push('/sessions')
             }
           } catch (error) {
             alert('Bitte geben Sie nur gültige Frage-IDs ein.')
