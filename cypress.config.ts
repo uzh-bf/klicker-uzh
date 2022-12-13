@@ -8,7 +8,13 @@ export default defineConfig({
 
   e2e: {
     setupNodeEvents(on, config) {
-      // implement node event listeners here
+      /* on("task", {
+        async "db:seed"() {
+          // seed database with test data
+          const { data } = await axios.post(`${testDataApiEndpoint}/seed`);
+          return data;
+        },
+      }); */
     },
   },
 });
