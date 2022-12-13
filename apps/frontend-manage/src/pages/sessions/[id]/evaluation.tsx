@@ -767,6 +767,7 @@ function Evaluation() {
                                       !statisticStates[statisticName],
                                   })
                                 }}
+                                size={textSize.size}
                               />
                             )
                           })}
