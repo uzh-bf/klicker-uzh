@@ -90,8 +90,6 @@ function Histogram({
       }
     })
 
-    console.log('data histogram', mappedData)
-
     return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
 
