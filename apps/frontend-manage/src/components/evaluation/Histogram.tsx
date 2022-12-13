@@ -51,12 +51,12 @@ function Histogram({
       count: result.count,
     }))
 
-    const min =
+    const min: number =
       data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['min'] === 'number'
         ? data.questionData.options.restrictions['min']
         : (minBy(mappedData, 'value')?.value || 0) - 10
-    const max =
+    const max: number =
       data.questionData.options.restrictions &&
       typeof data.questionData.options.restrictions['max'] === 'number'
         ? data.questionData.options.restrictions['max']
@@ -73,7 +73,9 @@ function Histogram({
         mappedData.filter((result) => {
           return (
             result.value >= bin.value - binWidth / 2 &&
-            result.value < bin.value + binWidth / 2
+            (bin.value + binWidth / 2 === max
+              ? result.value <= max
+              : result.value < bin.value + binWidth / 2)
           )
         }),
         'count'
@@ -87,6 +89,8 @@ function Histogram({
         )}`,
       }
     })
+
+    console.log('data histogram', mappedData)
 
     return { data: dataArray, domain: { min: min, max: max } }
   }, [data, numBins])
