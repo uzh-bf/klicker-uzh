@@ -673,6 +673,7 @@ function QuestionEditModal({
                                         root: 'bg-white',
                                       }}
                                       key={`${questionType}-choice-${index}`}
+                                      id="add-answer-field"
                                     />
                                   )}
                                 </FastField>

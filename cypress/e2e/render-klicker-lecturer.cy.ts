@@ -8,47 +8,49 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#submit-login').click();
   }),
 
-  /* it('Login into student account', () => {
+  it('1. Login into student account', () => {
     cy.get('#homepage').should('exist');
   }),
 
-  it('Create a session with one block', () => {
+  it('2. Create a session with one block', () => {
     const randomTestSessionNumber = Math.round(Math.random() * 1000);
     cy.get('#session-name').type('Test Session ' + randomTestSessionNumber);
     cy.get('#display-name').type('Displayed Name');
     cy.get('#block-container-header').next().type('200, 201, 202');
     cy.get('#create-new-session').click();
-    cy.wait(300);
+    cy.wait(500);
     cy.findByText('Test Session '  + randomTestSessionNumber).should('exist');
   }),
 
-  it('Adding and deleting second question block', () => {
+  it('3. Adding and deleting second question block', () => {
     cy.get('#add-block').click();
     cy.findByText('Block 2').siblings().click();
     cy.findByText('Block 2').should('not.exist');
-  }), */
+  }),
 
-  it('Adding a single choice question to pool', () => {
+  it('4. Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
-    const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf dies Frage richtig ist?';
+    const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf diese Frage richtig ist?';
 
     cy.get('#create-question').click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
-    /* cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
+    cy.get('#add-answer-field').type('50%');
     cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('100%');
+    // TODO: Find a better solution. This is really ugly. 
+    // But get('#add-answer-field') only yields the first one and not the seconde on as well
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
     cy.get('#save-new-question').click();
     cy.wait(300);
     cy.findByText(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC');
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
-    cy.get('#sc-answer-options').nextAll().should('have.length', 1); */
+    cy.get('#sc-answer-options').nextAll().should('have.length', 1);
   })
 
-  it('Adding a multiple choice question to pool', () => {
+  it('5. Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber;
     const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf dies Frage richtig ist?';
@@ -58,20 +60,22 @@ describe('Render the homepage for lecturer', () => {
     cy.findAllByText('Multiple Choice (MC)').eq(1).click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
-    /* cy.findByText('Antwortmöglichkeit eingeben…').parent().type('50%');
+    cy.get('#add-answer-field').type('50%');
     cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('100%');
+    // TODO: Find a better solution. This is really ugly. 
+    // But get('#add-answer-field') only yields the first one and not the seconde on as well
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
     cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('25%');
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('25%');
     cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().type('25%');
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('25%');
     cy.get('#save-new-question').click();
     cy.wait(300);
     cy.findByText(questionTitle).should('exist');
-    cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC');
+    cy.findByText(questionTitle).parent().parent().children().eq(1).contains('MC');
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
-    cy.get('#sc-answer-options').nextAll().should('have.length', 3); */
+    cy.get('#sc-answer-options').nextAll().should('have.length', 3);
   })
 
 })
