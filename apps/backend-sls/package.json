@@ -21,7 +21,7 @@
     "test": "dts test"
   },
   "dependencies": {
-    "@envelop/parser-cache": "4.7.0",
+    "@envelop/parser-cache": "5.0.4",
     "@envelop/response-cache": "3.2.0",
     "@envelop/response-cache-redis": "1.2.0",
     "@envelop/validation-cache": "4.7.0",
