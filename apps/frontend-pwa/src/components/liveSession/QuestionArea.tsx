@@ -6,7 +6,10 @@ import localForage from 'localforage'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 
-import { QUESTION_GROUPS } from 'shared-components/src/constants'
+import {
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+} from 'shared-components/src/constants'
 import StudentQuestion from 'shared-components/src/StudentQuestion'
 
 // TODO: notifications
@@ -116,7 +119,7 @@ function QuestionArea({
     const { instanceId, type } = questions[activeQuestion]
 
     // save the response, if one was given before the time expired
-    if (typeof inputValue !== 'undefined') {
+    if (typeof inputValue !== 'undefined' && inputValid) {
       answerQuestion(inputValue, type, instanceId)
     }
 
@@ -143,8 +146,10 @@ function QuestionArea({
   ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse(type, instanceId, value)
-    } else if (QUESTION_GROUPS.FREE.includes(type)) {
+    } else if (QUESTION_TYPES.FREE_TEXT === type) {
       handleNewResponse(type, instanceId, value)
+    } else if (QUESTION_TYPES.NUMERICAL === type) {
+      handleNewResponse(type, instanceId, String(parseFloat(value)))
     }
   }
 

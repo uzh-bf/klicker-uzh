@@ -39,7 +39,7 @@ function BarChart({
         : undefined
     const xLabel =
       data.questionData.type === 'NUMERICAL'
-        ? result.value
+        ? Math.round(parseFloat(result.value) * 100) / 100
         : String.fromCharCode(Number(idx) + 65)
     return { count: result.count, labelIn, labelOut, xLabel }
   })
