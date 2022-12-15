@@ -2,6 +2,8 @@
 
 ## Tests for commit "Tests 1 to 5 work now"
 
+All run in npm run dev and cypress v11
+
 ### With cypress desktop app
 
 - Run 1: 5 of 5
@@ -45,6 +47,8 @@ It only doesn't work on Firefox because of a pointer issue regarding the dropdow
 
 ## Tests for commit "Tests 1 to 8 work now"
 
+All run in npm run dev and cypress v11
+
 ### With cypress desktop app
 
 I did not even bother to test this extensively, since every second or third run during the writing
@@ -77,7 +81,7 @@ immense.
 - Run 3: 7 of 8 (1 min 29 sec, Test 5 failed)
 
 At this point I was not happy about Test 5 (Multiple Choice), because it worked the day before.
-Headless mode provides you with a video of the tests that failed which helped me to fix the issue
+Headless mode provides you with a video of the tests that have been run which helped me to fix the issue
 with the test (I had removed some answer options to make the test smaller but forgot to delete one
 line). So props to the video feature! Now here we go again:
 
@@ -89,5 +93,14 @@ line). So props to the video feature! Now here we go again:
 #### Conclusion
 
 All tests run consistently in headless mode, with Electron running the tests much faster than Chrome.
-Firefox still doesn't work, problem for later. Videos provided by Cypress for every failed test are 
+Firefox still doesn't work, problem for later. Videos provided by Cypress for every test suite are
 very useful and a huge plus.
+
+## Update to Cypress version 12
+
+Originally this broke the tests, but in order to be able to visit multiple websites in one test
+version 12 is necessary (cy.origin() command). After updating and running all tests multiple times
+the issue with this version could not be recreated. Everything runs smoothly (not a single test failed in all runs)
+in headless mode on Chrome and Electron as well as in the Desktop app.
+
+## TODO:Test 9 needs to be validated and extensively checked. Also all tests should be run with npm start for speed comparison.

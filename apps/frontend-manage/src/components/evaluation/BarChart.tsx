@@ -97,6 +97,7 @@ function BarChart({ data, showSolution }: BarChartProps): React.ReactElement {
             position="inside"
             stroke="white"
             style={{ fontSize: '2rem' }}
+            id="bar-chart-block"
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
             data.questionData.options.choices.map(

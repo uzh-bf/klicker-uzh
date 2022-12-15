@@ -50,6 +50,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Button
             className="mr-2 border-none bg-slate-800"
             onClick={() => router.push('/sessions')}
+            id="header-sessions-button"
           >
             <Button.Label>Sessionen</Button.Label>
           </Button>

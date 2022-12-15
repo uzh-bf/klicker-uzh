@@ -8,7 +8,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#submit-login').click();
   }),
 
-  it('1. Login into student account', () => {
+  /* it('1. Login into student account', () => {
     cy.get('#homepage').should('exist');
   }),
 
@@ -18,8 +18,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#display-name').type('Displayed Name');
     cy.get('#block-container-header').next().type('200, 201, 202');
     cy.get('#create-new-session').click();
-    cy.wait(500);
-    cy.findByText('Test Session '  + randomTestSessionNumber).should('exist');
+    cy.findByText('Test Session '  + randomTestSessionNumber, {timeout: 5000}).should('exist');
   }),
 
   it('3. Adding and deleting second question block', () => {
@@ -138,6 +137,41 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
     cy.get('#responseInput').should('exist');
+  }), */
+
+  it('9. Workflow of running a session and answering questions', () => {
+    const randomTestSessionNumber = Math.round(Math.random() * 1000);
+    const sessionTitle = 'Test Session ' + randomTestSessionNumber;
+
+    cy.get('#session-name').type(sessionTitle);
+    cy.get('#display-name').type('Displayed Name');
+    cy.get('#block-container-header').next().type('202');
+    cy.get('#create-new-session').click();
+
+    cy.findByText(sessionTitle).siblings().get('#start-session-button').click();
+    cy.get('#interaction-first-block').click();
+    
+    cy.url().then(url => {
+      const sessionId = url.split('/')[4];
+      cy.visit(Cypress.env('URL_STUDENT') + '/session/' + sessionId);
+    });
+
+    // TODO This is dependent on the question 202 being a single or multiple choice question. Maybe something more independent is also possible.
+    cy.findByText('... über 1.0.').click();
+    cy.findByText('Absenden').click();
+
+    cy.visit(Cypress.env('URL_LECTURER'));
+    cy.get('#header-sessions-button').click();
+    
+    cy.findByText(sessionTitle).siblings().findByText('Dozierenden Cockpit').click();
+    cy.get('#interaction-first-block').click();
+    cy.url().then(url => {
+      const sessionIdEvaluation = url.split('/')[4];
+      cy.visit(Cypress.env('URL_LECTURER') + '/sessions/' + sessionIdEvaluation + '/evaluation');
+    });
+
+    /* cy.get('#bar-chart-block-3').children().should('eq', 1);
+    cy.get('#session-total-participants').should('eq', 'Total Teilnehmende: 1'); */
   })
 
 })
