@@ -808,6 +808,7 @@ function QuestionEditModal({
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
                           placeholder="Minimum"
+                          id="set-numerical-minimum"
                         />
                         <div className="font-bold">Max: </div>
                         <FastField
@@ -817,6 +818,7 @@ function QuestionEditModal({
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
                           )}
                           placeholder="Maximum"
+                          id="set-numerical-maximum"
                         />
                       </div>
                     </div>
@@ -893,6 +895,7 @@ function QuestionEditModal({
                         )}
                         placeholder="Antwort Länge"
                         min={0}
+                        id="set-free-text-length"
                       />
                     </div>
                     {values.hasSampleSolution && (

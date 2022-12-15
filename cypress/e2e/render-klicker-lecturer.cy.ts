@@ -48,7 +48,7 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
     cy.get('#sc-answer-options').nextAll().should('have.length', 1);
-  })
+  }),
 
   it('5. Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
@@ -65,17 +65,79 @@ describe('Render the homepage for lecturer', () => {
     // TODO: Find a better solution. This is really ugly. 
     // But get('#add-answer-field') only yields the first one and not the seconde on as well
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
-    cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('25%');
-    cy.get('#add-new-answer').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('25%');
     cy.get('#save-new-question').click();
     cy.wait(300);
     cy.findByText(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('MC');
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
-    cy.get('#sc-answer-options').nextAll().should('have.length', 3);
+    cy.get('#sc-answer-options').nextAll().should('have.length', 1);
+  }),
+
+  it('6. Adding a KPRIM question to pool', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A KPRIM ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf diese Frage richtig ist?';
+
+    cy.get('#create-question').click();
+    cy.get('#question_create_select').click();
+    cy.findAllByText('KPRIM (KP)').eq(1).click();
+    cy.get('#question-title').type(questionTitle);
+    cy.get('#question-text').type(question);
+    cy.get('#add-answer-field').type('50%');
+    cy.get('#add-new-answer').click();
+    // TODO: Find a better solution. This is really ugly. 
+    // But get('#add-answer-field') only yields the first one and not the seconde on as well
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
+    cy.get('#save-new-question').click();
+    cy.wait(300);
+    cy.findByText(questionTitle).should('exist');
+    cy.findByText(questionTitle).parent().parent().children().eq(1).contains('KP');
+    cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
+    cy.get('#question-preview').first().click();
+    cy.get('#sc-answer-options').nextAll().should('have.length', 1);
+  }),
+
+  it('7. Adding a Numeric question to pool', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A Numeric ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf diese Frage richtig ist?';
+
+    cy.get('#create-question').click();
+    cy.get('#question_create_select').click();
+    cy.findAllByText('Numerisch (NR)').click();
+    cy.get('#question-title').type(questionTitle);
+    cy.get('#question-text').type(question);
+    cy.get('#set-numerical-minimum').type('0');
+    cy.get('#set-numerical-maximum').type('100');
+    cy.get('#save-new-question').click();
+    cy.wait(300);
+    cy.findByText(questionTitle).should('exist');
+    cy.findByText(questionTitle).parent().parent().children().eq(1).contains('NR');
+    cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
+    cy.get('#question-preview').first().click();
+    cy.get('#input-numerical-minimum').contains('Min: 0');
+    cy.get('#input-numerical-maximum').contains('Max: 100');
+  }),
+
+  it('8. Adding a Free Text question to pool', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A Free Text ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit, dass die Antwort auf diese Frage richtig ist?';
+
+    cy.get('#create-question').click();
+    cy.get('#question_create_select').click();
+    cy.findAllByText('Freitext (FT)').click();
+    cy.get('#question-title').type(questionTitle);
+    cy.get('#question-text').type(question);
+    cy.get('#set-free-text-length').type('100');
+    cy.get('#save-new-question').click();
+    cy.wait(300);
+    cy.findByText(questionTitle).should('exist');
+    cy.findByText(questionTitle).parent().parent().children().eq(1).contains('FT');
+    cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
+    cy.get('#question-preview').first().click();
+    cy.get('#responseInput').should('exist');
   })
 
 })
