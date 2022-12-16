@@ -92,7 +92,7 @@ function Session({ sessionName, sessionList }: SessionProps) {
                           router.push(`sessions/${session.id}/cockpit`)
                         }}
                       >
-                        <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100" id="start-session-button">
+                        <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
                           <FontAwesomeIcon icon={faPlay} size="sm" />
                           <div>Start Session</div>
                         </div>

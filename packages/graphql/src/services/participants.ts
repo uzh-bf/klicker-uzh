@@ -329,8 +329,14 @@ export async function createParticipantAndJoinCourse(
       path: '/',
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 13,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+      secure:
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1',
+      sameSite:
+        process.env.NODE_ENV === 'development' ||
+        process.env.COOKIE_DOMAIN === '127.0.0.1'
+          ? 'lax'
+          : 'none',
     })
 
     return existingParticipant
@@ -364,8 +370,14 @@ export async function createParticipantAndJoinCourse(
       path: '/',
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 13,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+      secure:
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1',
+      sameSite:
+        process.env.NODE_ENV === 'development' ||
+        process.env.COOKIE_DOMAIN === '127.0.0.1'
+          ? 'lax'
+          : 'none',
     })
 
     return participant

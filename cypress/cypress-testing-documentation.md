@@ -103,4 +103,37 @@ version 12 is necessary (cy.origin() command). After updating and running all te
 the issue with this version could not be recreated. Everything runs smoothly (not a single test failed in all runs)
 in headless mode on Chrome and Electron as well as in the Desktop app.
 
-## TODO:Test 9 needs to be validated and extensively checked. Also all tests should be run with npm start for speed comparison.
+## Test 9 is finished
+
+Only headless mode will be tested from now on, since the tests are already extensively run in the desktop app
+during development. Tested with npm run dev and Cypress V12. First 8 runs are on Chrome, last two on Electron
+just out of interest for speed.
+
+- Run 1: Passed (56 sec)
+- Run 2: Passed (54 sec)
+- Run 3: Passed (58 sec)
+- Run 4: Passed (56 sec)
+- Run 5: Passed (59 sec)
+- Run 6: Passed (57 sec)
+- Run 7: Failed (1 min 1 sec) -> Failed because student answers didn't get push and hence were not visible in the evaluation
+- Run 8: Failed (58 sec) -> Failed because student answers didn't get push and hence were not visible in the evaluation
+- Run 9: Passed (30 sec, Electron)
+- Run 10: Passed (30 sec, Electron)
+
+## All tests with npm start
+
+For performance testing we want to see if the tests run faster using npm start instead of npm run dev
+
+- Run 1: 
+- Run 2: 
+- Run 3: 
+- Run 4: 
+- Run 5: 
+- Run 6: 
+- Run 7: 
+- Run 8: 
+- Run 9:
+- Run 10: 
+
+- Also all tests should be run with npm start for speed comparison
+- Test 10 should target de feedback section of a session

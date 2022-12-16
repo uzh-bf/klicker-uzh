@@ -349,6 +349,7 @@ function Evaluation() {
                 selectedInstanceIndex === instanceResults.length - 1 &&
                   'text-uzh-grey-80 cursor-not-allowed'
               )}
+              id="evaluate-next-question"
             >
               <FontAwesomeIcon icon={faArrowRight} />
             </RadixTab.Trigger>
