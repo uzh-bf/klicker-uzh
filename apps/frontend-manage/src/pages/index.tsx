@@ -94,7 +94,7 @@ function Index() {
               <TabsPrimitive.List className="flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60">
                 <TabsPrimitive.Trigger
                   value="live-session"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className={twMerge('flex-1', theme.primaryBgHover)}
                 >
                   <H4
                     className={{ root: 'flex flex-col justify-center h-full' }}
@@ -105,7 +105,10 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="micro-session"
-                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  className={twMerge(
+                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                    theme.primaryBgHover
+                  )}
                   disabled
                 >
                   <H4
@@ -117,7 +120,10 @@ function Index() {
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="learning-element"
-                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  className={twMerge(
+                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                    theme.primaryBgHover
+                  )}
                   disabled
                 >
                   <H4
