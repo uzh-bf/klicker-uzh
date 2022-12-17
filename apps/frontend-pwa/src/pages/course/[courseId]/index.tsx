@@ -18,7 +18,6 @@ import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import Markdown from '@klicker-uzh/markdown'
-import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/GroupVisualization'

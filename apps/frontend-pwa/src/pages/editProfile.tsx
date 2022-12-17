@@ -5,7 +5,12 @@ import {
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { NextPageWithLayout } from '@pages/_app'
-import { Button, Prose, ThemeContext, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Prose,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Router from 'next/router'
 import hash from 'object-hash'
@@ -142,7 +147,10 @@ const EditProfile: NextPageWithLayout = () => {
             <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
                 // @ts-ignore
-                className={twMerge("border-b-4 h-36 md:h-48", theme.primaryBorderDark)}
+                className={twMerge(
+                  'border-b-4 h-36 md:h-48',
+                  theme.primaryBorderDark
+                )}
                 eyebrows="raised"
                 faceMask={false}
                 lashes={false}
