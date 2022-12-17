@@ -10,7 +10,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import Leaderboard from 'shared-components/src/Leaderboard'
@@ -18,12 +18,11 @@ import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import Markdown from '@klicker-uzh/markdown'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/GroupVisualization'
 
 function CourseOverview({ courseId }: any) {
-  const theme = useContext(ThemeContext)
   const [selectedTab, setSelectedTab] = useState('global')
   // const [participantModalOpen, setParticipantModalOpen] =
   //   useState<boolean>(false)
