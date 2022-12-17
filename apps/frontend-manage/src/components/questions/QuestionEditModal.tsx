@@ -487,7 +487,7 @@ function QuestionEditModal({
                     type="text"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                      `focus:${theme.primaryBorder}`
+                      theme.primaryBorderFocus
                     )}
                   />
                 </div>
@@ -510,7 +510,7 @@ function QuestionEditModal({
                       type="text"
                       className={twMerge(
                         'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                        `focus:${theme.primaryBorder}`
+                        theme.primaryBorderFocus
                       )}
                       value={values.tags?.join(', ')}
                       onChange={(e: any) => {
@@ -659,7 +659,7 @@ function QuestionEditModal({
                               <div
                                 className={twMerge(
                                   'flex flex-row w-full',
-                                  `focus:${theme.primaryBorder}`
+                                  theme.primaryBorderFocus
                                 )}
                               >
                                 {/* // TODO: define maximum height of editor if possible */}
@@ -776,7 +776,7 @@ function QuestionEditModal({
                                             root: 'bg-white',
                                             content: twMerge(
                                               'w-full rounded border border-uzh-grey-100',
-                                              `focus:${theme.primaryBorder}`
+                                              theme.primaryBorderFocus
                                             ),
                                           }}
                                           showToolbarOnFocus={true}
@@ -828,7 +828,7 @@ function QuestionEditModal({
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                            `focus:${theme.primaryBorder}`
+                            theme.primaryBorderFocus
                           )}
                           placeholder="Minimum"
                         />
@@ -838,7 +838,7 @@ function QuestionEditModal({
                           type="number"
                           className={twMerge(
                             'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                            `focus:${theme.primaryBorder}`
+                            theme.primaryBorderFocus
                           )}
                           placeholder="Maximum"
                         />
@@ -864,7 +864,7 @@ function QuestionEditModal({
                                       type="number"
                                       className={twMerge(
                                         'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                        `focus:${theme.primaryBorder}`
+                                        theme.primaryBorderFocus
                                       )}
                                       placeholder="Minimum"
                                     />
@@ -874,7 +874,7 @@ function QuestionEditModal({
                                       type="number"
                                       className={twMerge(
                                         'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9',
-                                        `focus:${theme.primaryBorder}`
+                                        theme.primaryBorderFocus
                                       )}
                                       placeholder="Maximum"
                                     />
@@ -920,7 +920,7 @@ function QuestionEditModal({
                         type="number"
                         className={twMerge(
                           'w-44 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                          `focus:${theme.primaryBorder}`
+                          theme.primaryBorderFocus
                         )}
                         placeholder="Antwort Länge"
                         min={0}
@@ -944,7 +944,7 @@ function QuestionEditModal({
                                     type="text"
                                     className={twMerge(
                                       'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                      `focus:${theme.primaryBorder}`
+                                      theme.primaryBorderFocus
                                     )}
                                     placeholder="Lösung"
                                   />

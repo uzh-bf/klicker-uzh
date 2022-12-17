@@ -191,7 +191,7 @@ function JoinCourse({
                     type="text"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      `focus:${theme.primaryBorder}`,
+                      theme.primaryBorderFocus,
                       errors.username &&
                         touched.username &&
                         'border-red-400 bg-red-50 mb-0'
@@ -210,7 +210,7 @@ function JoinCourse({
                     type="password"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      `focus:${theme.primaryBorder}`,
+                      theme.primaryBorderFocus,
                       errors.password &&
                         touched.password &&
                         'border-red-400 bg-red-50 mb-0'
@@ -232,7 +232,7 @@ function JoinCourse({
                     type="password"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      `focus:${theme.primaryBorder}`,
+                      theme.primaryBorderFocus,
                       errors.passwordRepetition &&
                         touched.passwordRepetition &&
                         'border-red-400 bg-red-50 mb-0'
@@ -335,7 +335,7 @@ export const PinField = ({
         placeholder="### ### ###"
         className={twMerge(
           'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-          `focus:${theme.primaryBorder}`,
+          theme.primaryBorderFocus,
           errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
         )}
         maxLength={11}

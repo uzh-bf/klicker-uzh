@@ -535,7 +535,7 @@ function Evaluation() {
                   !feedbacks &&
                   !confusion &&
                   tab.value === selectedBlock &&
-                  `border-solid border-uzh-blue-80`
+                  `border-solid ${theme.primaryBorderDark}`
               )}
             >
               <div className="flex flex-row items-center justify-center w-full gap-2">
@@ -584,7 +584,7 @@ function Evaluation() {
               className={twMerge(
                 'px-3 py-2 border-b-2 border-transparent',
                 theme.primaryBgHover,
-                leaderboard && 'border-solid border-uzh-blue-80'
+                leaderboard && `border-solid ${theme.primaryBorderDark}`
               )}
               onClick={() => {
                 setLeaderboard(true)
@@ -608,7 +608,7 @@ function Evaluation() {
                 className={twMerge(
                   'px-3 py-2 border-b-2 border-transparent',
                   theme.primaryBgHover,
-                  feedbacks && 'border-solid border-uzh-blue-80'
+                  feedbacks && `border-solid ${theme.primaryBorderDark}`
                 )}
                 onClick={() => {
                   setFeedbacks(true)
@@ -631,7 +631,7 @@ function Evaluation() {
                 className={twMerge(
                   'px-3 py-2 border-b-2 border-transparent',
                   theme.primaryBgHover,
-                  confusion && 'border-solid border-uzh-blue-80'
+                  confusion && `border-solid ${theme.primaryBorderDark}`
                 )}
                 onClick={() => {
                   setConfusion(true)

@@ -5,8 +5,9 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React from 'react'
+import React, { useContext } from 'react'
 
+import { ThemeContext } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS, QUESTION_TYPES } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
@@ -58,6 +59,7 @@ export const StudentQuestion = ({
   inputEmpty,
   setInputState,
 }: StudentQuestionProps) => {
+  const theme = useContext(ThemeContext)
   const onActiveChoicesChange =
     (type: string): any =>
     (choice: any): any =>
@@ -173,7 +175,12 @@ export const StudentQuestion = ({
         onExpire={onExpire}
       />
 
-      <div className="flex-initial min-h-[6rem] px-3 bg-primary-10 border-uzh-blue-80 border border-solid rounded prose leading-6 max-w-none">
+      <div
+        className={twMerge(
+          'flex-initial min-h-[6rem] px-3 bg-primary-10 border border-solid rounded prose leading-6 max-w-none',
+          theme.primaryBorderDark
+        )}
+      >
         <Markdown content={currentQuestion.content} />
       </div>
 

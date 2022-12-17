@@ -58,7 +58,7 @@ function LoginForm() {
                     type="text"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      `focus:${theme.primaryBorder}`,
+                      theme.primaryBorderFocus,
                       errors.email &&
                         touched.email &&
                         'border-red-400 bg-red-50'
@@ -81,7 +81,7 @@ function LoginForm() {
                     type="password"
                     className={twMerge(
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      `focus:${theme.primaryBorder}`,
+                      theme.primaryBorderFocus,
                       errors.password &&
                         touched.password &&
                         'border-red-400 bg-red-50'
