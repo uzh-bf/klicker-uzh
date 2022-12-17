@@ -486,7 +486,8 @@ function QuestionEditModal({
                     name="name"
                     type="text"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
+                      `focus:${theme.primaryBorder}`
                     )}
                   />
                 </div>
@@ -508,7 +509,8 @@ function QuestionEditModal({
                       name="tags"
                       type="text"
                       className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
+                        `focus:${theme.primaryBorder}`
                       )}
                       value={values.tags?.join(', ')}
                       onChange={(e: any) => {
@@ -656,7 +658,8 @@ function QuestionEditModal({
                             >
                               <div
                                 className={twMerge(
-                                  'flex flex-row w-full focus:border-uzh-blue-50'
+                                  'flex flex-row w-full',
+                                  `focus:${theme.primaryBorder}`
                                 )}
                               >
                                 {/* // TODO: define maximum height of editor if possible */}
@@ -772,7 +775,8 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                             content: twMerge(
-                                              'w-full rounded border border-uzh-grey-100 focus:border-uzh-blue-50'
+                                              'w-full rounded border border-uzh-grey-100',
+                                              `focus:${theme.primaryBorder}`
                                             ),
                                           }}
                                           showToolbarOnFocus={true}
@@ -823,7 +827,8 @@ function QuestionEditModal({
                           name="options.restrictions.min"
                           type="number"
                           className={twMerge(
-                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                            `focus:${theme.primaryBorder}`
                           )}
                           placeholder="Minimum"
                         />
@@ -832,7 +837,8 @@ function QuestionEditModal({
                           name="options.restrictions.max"
                           type="number"
                           className={twMerge(
-                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                            `focus:${theme.primaryBorder}`
                           )}
                           placeholder="Maximum"
                         />
@@ -857,7 +863,8 @@ function QuestionEditModal({
                                       name={`options.solutionRanges.${index}.min`}
                                       type="number"
                                       className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                                        `focus:${theme.primaryBorder}`
                                       )}
                                       placeholder="Minimum"
                                     />
@@ -866,7 +873,8 @@ function QuestionEditModal({
                                       name={`options.solutionRanges.${index}.max`}
                                       type="number"
                                       className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9',
+                                        `focus:${theme.primaryBorder}`
                                       )}
                                       placeholder="Maximum"
                                     />
@@ -911,7 +919,8 @@ function QuestionEditModal({
                         name="options.restrictions.maxLength"
                         type="number"
                         className={twMerge(
-                          'w-44 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                          'w-44 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                          `focus:${theme.primaryBorder}`
                         )}
                         placeholder="Antwort Länge"
                         min={0}
@@ -934,7 +943,8 @@ function QuestionEditModal({
                                     name={`options.solutions.${index}`}
                                     type="text"
                                     className={twMerge(
-                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                                      `focus:${theme.primaryBorder}`
                                     )}
                                     placeholder="Lösung"
                                   />

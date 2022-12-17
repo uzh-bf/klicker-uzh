@@ -535,7 +535,7 @@ function Evaluation() {
                   !feedbacks &&
                   !confusion &&
                   tab.value === selectedBlock &&
-                  'border-solid border-uzh-blue-80'
+                  `border-solid border-uzh-blue-80`
               )}
             >
               <div className="flex flex-row items-center justify-center w-full gap-2">

@@ -113,45 +113,47 @@ function LearningElement({ courseId, id }: Props) {
       courseColor={data.learningElement.course.color}
     >
       <div className="flex-1">
-        <div className='flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded'>
-        {currentIx === -1 && (
-          <div className="flex flex-col space-y-4">
-            <div className="border-b">
-              <H3 className={{ root: 'mb-0' }}>
-                {data.learningElement.displayName}
-              </H3>
-            </div>
-
-            {data.learningElement.description && (
-              <Markdown content={data.learningElement.description} />
-            )}
-
-            <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
-              <div className="flex-1 space-y-2">
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faQuestionCircle} />
-                  <div>
-                    Anzahl Fragen: {data.learningElement.instances?.length}
-                  </div>
-                </div>
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
-                  <div>{ORDER_TYPE_LABEL[data.learningElement.orderType]}</div>
-                </div>
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
-                  <div>
-                    {data.learningElement.resetTimeDays === 1 ? (
-                      <>täglich</>
-                    ) : (
-                      <>alle {data.learningElement.resetTimeDays} Tage</>
-                    )}
-                  </div>
-                </div>
+        <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+          {currentIx === -1 && (
+            <div className="flex flex-col space-y-4">
+              <div className="border-b">
+                <H3 className={{ root: 'mb-0' }}>
+                  {data.learningElement.displayName}
+                </H3>
               </div>
 
-              <div className="flex-1 space-y-2">
-                {/* <div className="flex flex-row items-center gap-2">
+              {data.learningElement.description && (
+                <Markdown content={data.learningElement.description} />
+              )}
+
+              <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faQuestionCircle} />
+                    <div>
+                      Anzahl Fragen: {data.learningElement.instances?.length}
+                    </div>
+                  </div>
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
+                    <div>
+                      {ORDER_TYPE_LABEL[data.learningElement.orderType]}
+                    </div>
+                  </div>
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
+                    <div>
+                      {data.learningElement.resetTimeDays === 1 ? (
+                        <>täglich</>
+                      ) : (
+                        <>alle {data.learningElement.resetTimeDays} Tage</>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  {/* <div className="flex flex-row items-center gap-2">
                   <div>
                     Punkte (berechnet): {data.learningElement.previousScore}
                   </div>
@@ -162,172 +164,172 @@ function LearningElement({ courseId, id }: Props) {
                     {data.learningElement.previousPointsAwarded}
                   </div>
                 </div> */}
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faCheck} />
-                  <div>
-                    Min. 1x beantwortet:{' '}
-                    {data.learningElement.previouslyAnswered}/
-                    {data.learningElement.instances.length}
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faCheck} />
+                    <div>
+                      Min. 1x beantwortet:{' '}
+                      {data.learningElement.previouslyAnswered}/
+                      {data.learningElement.instances.length}
+                    </div>
                   </div>
-                </div>
-                {/* <div className="flex flex-row items-center gap-2">
+                  {/* <div className="flex flex-row items-center gap-2">
                   Anzahl Antworten:{' '}
                   <div>{data.learningElement.totalTrials}</div>
                 </div> */}
-                <div className="flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faTimesCircle} />
-                  <div>
-                    Multiplikator: {data.learningElement.pointsMultiplier}x
-                    Punkte
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faTimesCircle} />
+                    <div>
+                      Multiplikator: {data.learningElement.pointsMultiplier}x
+                      Punkte
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <Button
-              className={{ root: 'self-end text-lg' }}
-              onClick={() => setCurrentIx(0)}
-            >
-              Starten
-            </Button>
-          </div>
-        )}
-
-        {currentIx >= 0 && !currentInstance && (
-          <div className="space-y-3">
-            <div>
-              <H3>Gratulation!</H3>
-              <p>
-                Du hast das Lernelement{' '}
-                <span className="italic">
-                  {data.learningElement.displayName}
-                </span>{' '}
-                erfolgreich absolviert.
-              </p>
+              <Button
+                className={{ root: 'self-end text-lg' }}
+                onClick={() => setCurrentIx(0)}
+              >
+                Starten
+              </Button>
             </div>
-            <div>
-              <div className="flex flex-row items-center justify-between">
-                <H3 className={{ root: 'flex flex-row justify-between' }}>
-                  Auswertung
-                </H3>
-                <H3>Punkte (gesammelt/berechnet/möglich)</H3>
+          )}
+
+          {currentIx >= 0 && !currentInstance && (
+            <div className="space-y-3">
+              <div>
+                <H3>Gratulation!</H3>
+                <p>
+                  Du hast das Lernelement{' '}
+                  <span className="italic">
+                    {data.learningElement.displayName}
+                  </span>{' '}
+                  erfolgreich absolviert.
+                </p>
               </div>
               <div>
-                {data.learningElement.instances?.map((instance) => (
-                  <div
-                    className="flex flex-row justify-between"
-                    key={instance.id}
-                  >
-                    <div>{instance.questionData.name}</div>
-                    {instance.evaluation ? (
-                      <div>
-                        {instance.evaluation.pointsAwarded} /{' '}
-                        {instance.evaluation.score} /{' '}
-                        {instance.pointsMultiplier * 10}
-                      </div>
-                    ) : (
-                      <div>Not attempted</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <H3 className={{ root: 'mt-4 text-right' }}>
-                Total Punkte (gesammelt): {totalPointsAwarded}
-              </H3>
-            </div>
-          </div>
-        )}
-
-        {currentInstance && (
-          <div className="order-2 md:order-1">
-            {questionData && (
-              <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
-                <div className="flex-1 basis-2/3">
-                  <div className="flex flex-row items-center justify-between mb-4 border-b">
-                    <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                    <div className="text-sm md:text-base text-slate-500">
-                      Frage {currentIx + 1}/
-                      {data.learningElement?.instances?.length}
+                <div className="flex flex-row items-center justify-between">
+                  <H3 className={{ root: 'flex flex-row justify-between' }}>
+                    Auswertung
+                  </H3>
+                  <H3>Punkte (gesammelt/berechnet/möglich)</H3>
+                </div>
+                <div>
+                  {data.learningElement.instances?.map((instance) => (
+                    <div
+                      className="flex flex-row justify-between"
+                      key={instance.id}
+                    >
+                      <div>{instance.questionData.name}</div>
+                      {instance.evaluation ? (
+                        <div>
+                          {instance.evaluation.pointsAwarded} /{' '}
+                          {instance.evaluation.score} /{' '}
+                          {instance.pointsMultiplier * 10}
+                        </div>
+                      ) : (
+                        <div>Not attempted</div>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="pb-2">
-                    <Markdown content={questionData.content} />
-                  </div>
-                  <OptionsDisplay
-                    isEvaluation={isEvaluation}
-                    evaluation={currentInstance.evaluation}
-                    response={response}
-                    onChangeResponse={setResponse}
-                    onSubmitResponse={
-                      isEvaluation ? handleNextQuestion : handleSubmitResponse
-                    }
-                    questionType={questionData.type}
-                    options={questionData.options}
-                  />
+                  ))}
                 </div>
 
-                {currentInstance.evaluation && (
-                  <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
-                    <div className="flex flex-row gap-2">
-                      <div className="font-bold">Multiplikator</div>
-                      <div>{currentInstance.pointsMultiplier}x</div>
-                    </div>
-                    <div className="flex flex-row gap-8">
-                      <div>
-                        <div className="font-bold">Berechnet</div>
-                        <div className="text-xl">
-                          {currentInstance.evaluation.score} Punkte
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="font-bold">Gesammelt</div>
-                        <div className="text-xl">
-                          {currentInstance.evaluation.pointsAwarded} Punkte
-                        </div>
-                      </div>
-                    </div>
-
-                    <EvaluationDisplay
-                      options={questionData.options}
-                      questionType={questionData.type}
-                      evaluation={currentInstance.evaluation}
-                    />
-
-                    <div>
-                      <div className="font-bold">Erneute Punkte ab:</div>
-                      <div>
-                        {dayjs(currentInstance.evaluation.newPointsFrom).format(
-                          'DD.MM.YYYY HH:mm'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <H3 className={{ root: 'mt-4 text-right' }}>
+                  Total Punkte (gesammelt): {totalPointsAwarded}
+                </H3>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {(currentIx === -1 || currentInstance) && (
-          <div className="order-1 md:order-2">
-            <Progress
-              nonLinear
-              isMaxVisible
-              displayOffset={
-                (data.learningElement?.instances?.length ?? 0) > 15
-                  ? 3
-                  : undefined
-              }
-              formatter={(v) => v}
-              value={currentIx}
-              max={data.learningElement?.instances?.length ?? 0}
-              onItemClick={(ix: number) => setCurrentIx(ix)}
-            />
-          </div>
-        )}
+          {currentInstance && (
+            <div className="order-2 md:order-1">
+              {questionData && (
+                <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
+                  <div className="flex-1 basis-2/3">
+                    <div className="flex flex-row items-center justify-between mb-4 border-b">
+                      <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
+                      <div className="text-sm md:text-base text-slate-500">
+                        Frage {currentIx + 1}/
+                        {data.learningElement?.instances?.length}
+                      </div>
+                    </div>
+
+                    <div className="pb-2">
+                      <Markdown content={questionData.content} />
+                    </div>
+                    <OptionsDisplay
+                      isEvaluation={isEvaluation}
+                      evaluation={currentInstance.evaluation}
+                      response={response}
+                      onChangeResponse={setResponse}
+                      onSubmitResponse={
+                        isEvaluation ? handleNextQuestion : handleSubmitResponse
+                      }
+                      questionType={questionData.type}
+                      options={questionData.options}
+                    />
+                  </div>
+
+                  {currentInstance.evaluation && (
+                    <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
+                      <div className="flex flex-row gap-2">
+                        <div className="font-bold">Multiplikator</div>
+                        <div>{currentInstance.pointsMultiplier}x</div>
+                      </div>
+                      <div className="flex flex-row gap-8">
+                        <div>
+                          <div className="font-bold">Berechnet</div>
+                          <div className="text-xl">
+                            {currentInstance.evaluation.score} Punkte
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-bold">Gesammelt</div>
+                          <div className="text-xl">
+                            {currentInstance.evaluation.pointsAwarded} Punkte
+                          </div>
+                        </div>
+                      </div>
+
+                      <EvaluationDisplay
+                        options={questionData.options}
+                        questionType={questionData.type}
+                        evaluation={currentInstance.evaluation}
+                      />
+
+                      <div>
+                        <div className="font-bold">Erneute Punkte ab:</div>
+                        <div>
+                          {dayjs(
+                            currentInstance.evaluation.newPointsFrom
+                          ).format('DD.MM.YYYY HH:mm')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(currentIx === -1 || currentInstance) && (
+            <div className="order-1 md:order-2">
+              <Progress
+                nonLinear
+                isMaxVisible
+                displayOffset={
+                  (data.learningElement?.instances?.length ?? 0) > 15
+                    ? 3
+                    : undefined
+                }
+                formatter={(v) => v}
+                value={currentIx}
+                max={data.learningElement?.instances?.length ?? 0}
+                onItemClick={(ix: number) => setCurrentIx(ix)}
+              />
+            </div>
+          )}
         </div>
       </div>
 

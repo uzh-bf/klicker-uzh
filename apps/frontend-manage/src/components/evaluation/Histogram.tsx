@@ -1,6 +1,7 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import { ThemeContext } from '@uzh-bf/design-system'
 import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useMemo, useState } from 'react'
+import React, { useContext, useMemo, useState } from 'react'
 // TODO: replace lodash with ramda
 import {
   Bar,
@@ -13,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 
 interface HistogramProps {
   data: InstanceResult
@@ -43,6 +45,7 @@ function Histogram({
   showSolution,
   textSize,
 }: HistogramProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
   const [numBins, setNumBins] = useState(20)
 
   const processedData = useMemo(() => {
@@ -129,7 +132,7 @@ function Histogram({
                 return (
                   <div className="p-2 bg-white border border-solid rounded-md border-uzh-grey-100">
                     <div>Bereich: {payload[0].payload.label}</div>
-                    <div className="font-bold text-uzh-blue-80">
+                    <div className={twMerge('font-bold', theme.primaryText)}>
                       Count: {payload[0].payload.count}
                     </div>
                   </div>
