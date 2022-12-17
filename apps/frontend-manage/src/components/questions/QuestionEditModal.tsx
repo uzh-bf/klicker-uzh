@@ -420,7 +420,10 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80',
+                  root: twMerge(
+                    'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80',
+                    theme.primaryBgDark
+                  ),
                 }}
                 type="submit"
                 form="question-manipulation-form"

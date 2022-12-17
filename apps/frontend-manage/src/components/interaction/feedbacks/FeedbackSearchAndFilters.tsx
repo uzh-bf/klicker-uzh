@@ -137,7 +137,7 @@ function FeedbackSearchAndFilters({
                       <span
                         className={twMerge(
                           'flex items-center hover:cursor-pointer px-2 py-0.5',
-                          `hover:${theme.primaryBgDark}`
+                          theme.primaryBgMediumHover,
                         )}
                       >
                         <Checkbox
