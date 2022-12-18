@@ -3,9 +3,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Choice } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
-import { Button } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
-import { useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
@@ -27,6 +27,8 @@ function ChoiceOptions({
   response,
   isCompact,
 }: ChoiceOptionsProps) {
+  const theme = useContext(ThemeContext)
+
   return (
     <div className={twMerge(isCompact ? 'flex flex-row gap-2' : 'space-y-2')}>
       {choices.map((choice) => (
@@ -36,7 +38,8 @@ function ChoiceOptions({
             active={response?.includes(choice.ix)}
             className={{
               root: twMerge(
-                'px-4 py-3 text-sm border-uzh-blue-20 shadow-md',
+                'px-4 py-3 text-sm shadow-md',
+                theme.primaryBorder,
                 isEvaluation && 'text-gray-700',
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&

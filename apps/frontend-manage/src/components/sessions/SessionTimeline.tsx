@@ -5,11 +5,11 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 // import getConfig from 'next/config'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -92,6 +92,7 @@ function SessionTimeline({
   handleOpenBlock,
   handleCloseBlock,
 }: Props): React.ReactElement {
+  const theme = useContext(ThemeContext)
   const isFeedbackSession = blocks?.length === 0
 
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
@@ -246,7 +247,7 @@ function SessionTimeline({
                 root: twMerge(
                   (buttonState === 'first block' ||
                     buttonState === 'next block') &&
-                    'bg-uzh-blue-100 text-white',
+                    `text-white ${theme.primaryBgDark}`,
                   buttonState === 'end session' && 'bg-uzh-red-100 text-white'
                 ),
               }}

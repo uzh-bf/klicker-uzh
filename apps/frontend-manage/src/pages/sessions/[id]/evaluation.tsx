@@ -34,10 +34,11 @@ import {
   Prose,
   Select,
   Switch,
+  ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useReducer, useState } from 'react'
+import { useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
   CHART_COLORS,
@@ -66,8 +67,9 @@ function Collapsed({
   currentInstance: Partial<InstanceResult>
   proseSize: string
 }) {
-  const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
+  const theme = useContext(ThemeContext)
 
+  const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
   const [questionCollapsed, setQuestionCollapsed] = useState<boolean>(true)
   const [showExtensibleButton, setShowExtensibleButton] =
     useState<boolean>(false)
@@ -120,8 +122,8 @@ function Collapsed({
           className={{
             root: twMerge(
               questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
-              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block',
-              ' print:hidden hover:bg-uzh-blue-20 hover:bg-none'
+              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block print:hidden hover:bg-none',
+              theme.primaryBgHover
             ),
           }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
@@ -138,6 +140,7 @@ function Collapsed({
 
 function Evaluation() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const [selectedBlock, setSelectedBlock] = useState<number>(0)
   const [leaderboard, setLeaderboard] = useState<boolean>(false)
@@ -477,8 +480,7 @@ function Evaluation() {
               }}
               className={{
                 root: 'h-[2.65rem] z-20',
-                trigger:
-                  'shadow-none rounded-none m-0 border-none hover:bg-uzh-blue-20 h-full',
+                trigger: 'shadow-none rounded-none m-0 border-none h-full',
               }}
               value={
                 selectedInstance === ''
@@ -504,7 +506,8 @@ function Evaluation() {
           >
             <div
               className={twMerge(
-                'flex flex-row items-center h-full px-2 hover:bg-uzh-blue-20',
+                'flex flex-row items-center h-full px-2',
+                theme.primaryBgHover,
                 (blocks.length <= 2 * width + 1 ||
                   selectedBlock - width <= 0) &&
                   'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
@@ -526,12 +529,13 @@ function Evaluation() {
                 setSelectedInstance(blocks[tab.value].tabData[0].id)
               }}
               className={twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20 w-[7rem] text-center',
+                'px-3 py-2 border-b-2 border-transparent w-[7rem] text-center',
+                theme.primaryBgHover,
                 !leaderboard &&
                   !feedbacks &&
                   !confusion &&
                   tab.value === selectedBlock &&
-                  'border-solid border-uzh-blue-80'
+                  `border-solid ${theme.primaryBorderDark}`
               )}
             >
               <div className="flex flex-row items-center justify-center w-full gap-2">
@@ -564,7 +568,8 @@ function Evaluation() {
           >
             <div
               className={twMerge(
-                'flex flex-row items-center h-full px-2 hover:bg-uzh-blue-20',
+                'flex flex-row items-center h-full px-2',
+                theme.primaryBgHover,
                 (blocks.length <= 2 * width + 1 ||
                   selectedBlock + width >= blocks.length - 1) &&
                   'text-uzh-grey-80 hover:bg-white cursor-not-allowed'
@@ -577,8 +582,9 @@ function Evaluation() {
             <RadixTab.Trigger
               value="leaderboard"
               className={twMerge(
-                'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                leaderboard && 'border-solid border-uzh-blue-80'
+                'px-3 py-2 border-b-2 border-transparent',
+                theme.primaryBgHover,
+                leaderboard && `border-solid ${theme.primaryBorderDark}`
               )}
               onClick={() => {
                 setLeaderboard(true)
@@ -600,8 +606,9 @@ function Evaluation() {
               <RadixTab.Trigger
                 value="feedbacks"
                 className={twMerge(
-                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                  feedbacks && 'border-solid border-uzh-blue-80'
+                  'px-3 py-2 border-b-2 border-transparent',
+                  theme.primaryBgHover,
+                  feedbacks && `border-solid ${theme.primaryBorderDark}`
                 )}
                 onClick={() => {
                   setFeedbacks(true)
@@ -622,8 +629,9 @@ function Evaluation() {
               <RadixTab.Trigger
                 value="confusion"
                 className={twMerge(
-                  'px-3 py-2 border-b-2 border-transparent hover:bg-uzh-blue-20',
-                  confusion && 'border-solid border-uzh-blue-80'
+                  'px-3 py-2 border-b-2 border-transparent',
+                  theme.primaryBgHover,
+                  confusion && `border-solid ${theme.primaryBorderDark}`
                 )}
                 onClick={() => {
                   setConfusion(true)

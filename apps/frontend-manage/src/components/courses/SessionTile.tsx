@@ -11,7 +11,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
+import { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Ellipsis from '../common/Ellipsis'
 
 interface SessionTileProps {
@@ -19,6 +22,7 @@ interface SessionTileProps {
 }
 
 function SessionTile({ session }: SessionTileProps) {
+  const theme = useContext(ThemeContext)
   const statusMap = {
     PREPARED: <FontAwesomeIcon icon={faClock} />,
     SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
@@ -44,7 +48,7 @@ function SessionTile({ session }: SessionTileProps) {
         </div>
         {/* // TODO: link to session editing for scheduled / prepared sessions */}
         {/* {(session.status === 'SCHEDULED' || session.status === 'PREPARED') && (
-          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+          <div className={twMerge("flex flex-row items-center gap-2", theme.primaryText)}>
             <FontAwesomeIcon icon={faArrowRight} />
             <Link href={`/sessions`}>
               Session editieren
@@ -52,7 +56,12 @@ function SessionTile({ session }: SessionTileProps) {
           </div>
         )} */}
         {session.status === 'RUNNING' && (
-          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+          <div
+            className={twMerge(
+              'flex flex-row items-center gap-2',
+              theme.primaryText
+            )}
+          >
             <FontAwesomeIcon icon={faArrowRight} />
             <Link href={`/sessions/${session.id}/cockpit`}>
               Laufende Session
@@ -60,7 +69,12 @@ function SessionTile({ session }: SessionTileProps) {
           </div>
         )}
         {session.status === 'COMPLETED' && (
-          <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+          <div
+            className={twMerge(
+              'flex flex-row items-center gap-2',
+              theme.primaryText
+            )}
+          >
             <FontAwesomeIcon icon={faUpRightFromSquare} />
             <Link
               href={`/sessions/${session.id}/evaluation`}

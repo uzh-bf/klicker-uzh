@@ -1,10 +1,11 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/image'
 import Router from 'next/router'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -16,6 +17,7 @@ const loginSchema = Yup.object().shape({
 })
 
 function LoginForm() {
+  const theme = useContext(ThemeContext)
   const [loginUser] = useMutation(LoginUserDocument)
 
   return (
@@ -55,7 +57,8 @@ function LoginForm() {
                     name="email"
                     type="text"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.email &&
                         touched.email &&
                         'border-red-400 bg-red-50'
@@ -77,7 +80,8 @@ function LoginForm() {
                     name="password"
                     type="password"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.password &&
                         touched.password &&
                         'border-red-400 bg-red-50'
@@ -93,12 +97,12 @@ function LoginForm() {
                     <div className="flex flex-col text-sm">
                       {/* // TODO: Implement password reset and registration
                       <Link href="/requestPassword">
-                        <div className="text-uzh-blue-60 hover:text-uzh-blue-80">
+                        <div className="">
                           Passwort vergessen?
                         </div>
                       </Link>
                       <Link href="/registration">
-                        <div className="text-uzh-blue-60 hover:text-uzh-blue-80">
+                        <div className="">
                           Neu registrieren
                         </div>
                       </Link> */}

@@ -1,4 +1,6 @@
-import React from 'react'
+import { ThemeContext } from '@uzh-bf/design-system'
+import React, { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export interface FREETextAnswerOptionsProps {
   placeholder?: string
@@ -13,10 +15,15 @@ export function FREETextAnswerOptions({
   onChange,
   value,
 }: FREETextAnswerOptionsProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
+
   return (
     <div className="flex flex-col gap-2">
       <textarea
-        className="rounded focus:border focus:border-solid focus:border-uzh-blue-80"
+        className={twMerge(
+          'rounded focus:border focus:border-solid',
+          theme.primaryBorderDarkFocus
+        )}
         defaultValue=""
         id="responseInput"
         value={value}

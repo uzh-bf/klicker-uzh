@@ -11,15 +11,22 @@ import {
   Session as SessionType,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Collapsible, H2, H3 } from '@uzh-bf/design-system'
+import {
+  Button,
+  Collapsible,
+  H2,
+  H3,
+  ThemeContext,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import {
   QUESTION_TYPES_SHORT,
   SESSION_STATUS,
 } from 'shared-components/src/constants'
+import { twMerge } from 'tailwind-merge'
 
 interface SessionProps {
   sessionName: string
@@ -27,6 +34,7 @@ interface SessionProps {
 }
 
 function Session({ sessionName, sessionList }: SessionProps) {
+  const theme = useContext(ThemeContext)
   const [startSession] = useMutation(StartSessionDocument)
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
@@ -59,7 +67,12 @@ function Session({ sessionName, sessionList }: SessionProps) {
                         href={`/sessions/${session.id}/cockpit`}
                         legacyBehavior
                       >
-                        <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
+                        <div
+                          className={twMerge(
+                            'flex flex-row items-center gap-2 text-sm cursor-pointer',
+                            theme.primaryTextHover
+                          )}
+                        >
                           <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                           <div>Dozierenden Cockpit</div>
                         </div>
@@ -70,7 +83,12 @@ function Session({ sessionName, sessionList }: SessionProps) {
                         href={`/sessions/${session.id}/evaluation`}
                         legacyBehavior
                       >
-                        <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
+                        <div
+                          className={twMerge(
+                            'flex flex-row items-center gap-2 text-sm cursor-pointer',
+                            theme.primaryTextHover
+                          )}
+                        >
                           <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                           <div>Session Evaluation</div>
                         </div>
@@ -92,7 +110,12 @@ function Session({ sessionName, sessionList }: SessionProps) {
                           router.push(`sessions/${session.id}/cockpit`)
                         }}
                       >
-                        <div className="flex flex-row items-center gap-2 text-sm cursor-pointer hover:text-uzh-blue-100">
+                        <div
+                          className={twMerge(
+                            'flex flex-row items-center gap-2 text-sm cursor-pointer',
+                            theme.primaryTextHover
+                          )}
+                        >
                           <FontAwesomeIcon icon={faPlay} size="sm" />
                           <div>Start Session</div>
                         </div>

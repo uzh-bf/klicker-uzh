@@ -1,6 +1,12 @@
-import { Button, Countdown, Progress } from '@uzh-bf/design-system'
+import {
+  Button,
+  Countdown,
+  Progress,
+  ThemeContext,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import React from 'react'
+import React, { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export interface SessionProgressProps {
   activeIndex: number
@@ -27,6 +33,7 @@ export function SessionProgress({
   onSubmit,
   onExpire,
 }: SessionProgressProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
   const untilExpiration = expiresAt
     ? dayjs(expiresAt).diff(dayjs(), 'second')
     : 1000
@@ -61,7 +68,10 @@ export function SessionProgress({
         <Button
           fluid
           className={{
-            root: '!mr-0 h-10 w-32 disabled:opacity-50 bg-uzh-blue-80 text-white font-bold',
+            root: twMerge(
+              '!mr-0 h-10 w-32 disabled:opacity-50 text-white font-bold',
+              theme.primaryBgDark
+            ),
           }}
           disabled={isSubmitDisabled}
           onClick={onSubmit}

@@ -18,7 +18,6 @@ import Layout from '../../../components/Layout'
 import Tabs from '../../../components/Tabs'
 
 import Markdown from '@klicker-uzh/markdown'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/GroupVisualization'
@@ -30,8 +29,6 @@ function CourseOverview({ courseId }: any) {
   // const [selectedParticipant, setSelectedParticipant] = useState<
   //   LeaderboardEntry | undefined
   // >(undefined)
-
-  const router = useRouter()
 
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
@@ -142,7 +139,7 @@ function CourseOverview({ courseId }: any) {
                   >
                     {selectedParticipant ? (
                       <div className="flex flex-col items-center">
-                        <div className="relative border-b-4 w-36 h-36 md:w-48 md:h-48 border-uzh-blue-100">
+                        <div className={twMerge("relative border-b-4 w-36 h-36 md:w-48 md:h-48", theme.primaryBorderDark)}>
                           <Image
                             className="bg-white"
                             src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${

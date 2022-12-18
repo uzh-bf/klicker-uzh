@@ -7,11 +7,17 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { initializeApollo } from '@lib/apollo'
-import { Button, H2, Label, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H2,
+  Label,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -30,6 +36,7 @@ function JoinCourse({
   description: string
   courseLoading: boolean
 }) {
+  const theme = useContext(ThemeContext)
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
 
@@ -183,7 +190,8 @@ function JoinCourse({
                     name="username"
                     type="text"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.username &&
                         touched.username &&
                         'border-red-400 bg-red-50 mb-0'
@@ -201,7 +209,8 @@ function JoinCourse({
                     name="password"
                     type="password"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.password &&
                         touched.password &&
                         'border-red-400 bg-red-50 mb-0'
@@ -222,7 +231,8 @@ function JoinCourse({
                     name="passwordRepetition"
                     type="password"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.passwordRepetition &&
                         touched.passwordRepetition &&
                         'border-red-400 bg-red-50 mb-0'
@@ -311,6 +321,8 @@ export const PinField = ({
   values: Record<string, string>
   setFieldValue: (field: string, value: any) => void
 }) => {
+  const theme = useContext(ThemeContext)
+
   return (
     <>
       <Label
@@ -322,7 +334,8 @@ export const PinField = ({
         type="text"
         placeholder="### ### ###"
         className={twMerge(
-          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+          theme.primaryBorderFocus,
           errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
         )}
         maxLength={11}

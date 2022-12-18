@@ -145,7 +145,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
               icon={faQuestion}
               className={twMerge(
                 'w-3 h-3 p-1 mt-1 text-white rounded-full border border-solid border-white',
-                theme.primaryBgDark
+                theme.primaryBgMedium
               )}
             />
           </Tooltip>

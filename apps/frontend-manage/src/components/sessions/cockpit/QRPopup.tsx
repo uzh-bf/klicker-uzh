@@ -1,15 +1,17 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   id: string
 }
 
 function QRPopup({ id }: Props): React.ReactElement {
+  const theme = useContext(ThemeContext)
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -44,7 +46,10 @@ function QRPopup({ id }: Props): React.ReactElement {
           <Button
             fluid
             className={{
-              root: 'text-lg font-bold text-white bg-uzh-blue-80 h-11',
+              root: twMerge(
+                'text-lg font-bold text-white h-11',
+                theme.primaryBgDark
+              ),
             }}
           >
             <Button.Label>QR-Code präsentieren</Button.Label>

@@ -1,6 +1,7 @@
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import React from 'react'
+import { ThemeContext } from '@uzh-bf/design-system'
+import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface NUMERICALAnswerOptionsProps {
@@ -26,6 +27,8 @@ export function NUMERICALAnswerOptions({
   max,
   onChange,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row">
@@ -39,7 +42,8 @@ export function NUMERICALAnswerOptions({
           value={value}
           placeholder={placeholder}
           className={twMerge(
-            'rounded-l focus:border focus:border-solid focus:border-uzh-blue-80 flex-1',
+            'rounded-l focus:border focus:border-solid flex-1',
+            theme.primaryBorderDarkFocus,
             !valid && 'border-red-600',
             !unit && 'rounded-r',
             disabled && 'bg-gray-200 text-gray-500'

@@ -24,7 +24,7 @@ function LearningElementTile({ learningElement }: LearningElementTileProps) {
         </div>
 
         {/* // TODO: learning element editing */}
-        {/* <div className="flex flex-row items-center gap-2 text-uzh-blue-80">
+        {/* <div className="flex flex-row items-center gap-2">
           <FontAwesomeIcon icon={faUpRightFromSquare} />
           <Link href={`/${learningElement.id}/edit`} passHref>
             <a target="_blank" rel="noopener noreferrer">

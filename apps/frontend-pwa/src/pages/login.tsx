@@ -1,11 +1,16 @@
 import { FetchResult, useMutation } from '@apollo/client'
 import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H1,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -25,6 +30,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 function LoginForm() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
@@ -119,7 +125,8 @@ function LoginForm() {
                     name="username"
                     type="text"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       errors.username &&
                         touched.username &&
                         'border-red-400 bg-red-50'
@@ -141,7 +148,8 @@ function LoginForm() {
                     name="password"
                     type="password"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 mb-2',
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                      theme.primaryBorderFocus,
                       touched.password && 'border-red-400 bg-red-50'
                     )}
                   />
