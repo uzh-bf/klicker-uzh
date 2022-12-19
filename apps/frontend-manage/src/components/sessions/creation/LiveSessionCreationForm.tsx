@@ -140,6 +140,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <Link
                       href="/sessions"
                       className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-session-list"
                     >
                       Session-Liste
                     </Link>
@@ -295,7 +296,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   />
                   {courses && (
                     <>
-                      <div className="mr-2">Kurs:</div>
+                      <div className="mr-2" id="course-selection-div">Kurs:</div>
                       <Select
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}

@@ -443,7 +443,7 @@ function QuestionEditModal({
           >
             <div>
               {JSON.stringify(errors)}
-              <div className="z-0 flex flex-row">
+              <div className="z-0 flex flex-row" id="select-question-type-div">
                 <Label
                   label="Fragetyp:"
                   className={{

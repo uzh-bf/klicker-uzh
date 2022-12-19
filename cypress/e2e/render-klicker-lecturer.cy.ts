@@ -8,26 +8,17 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#submit-login').click();
   }),
 
-  it('1. Login into lecturer account', () => {
+  /* it('1. Login into lecturer account', () => {
     cy.get('#homepage').should('exist');
   }),
-
-  it('2. Create a session with one block', () => {
-    const randomTestSessionNumber = Math.round(Math.random() * 1000);
-    cy.get('#session-name').type('Test Session ' + randomTestSessionNumber);
-    cy.get('#display-name').type('Displayed Name');
-    cy.get('#block-container-header').next().type('200, 201, 202');
-    cy.get('#create-new-session').click();
-    cy.findByText('Test Session '  + randomTestSessionNumber, {timeout: 5000}).should('exist');
-  }),
-
-  it('3. Adding and deleting second question block', () => {
+  
+  it('2. Adding and deleting second question block', () => {
     cy.get('#add-block').click();
     cy.findByText('Block 2').siblings().click();
     cy.findByText('Block 2').should('not.exist');
   }),
-
-  it('4. Adding a single choice question to pool', () => {
+  
+  it('3. Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit?';
@@ -47,6 +38,34 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#question-preview').first().click();
     cy.get('#sc-answer-options').nextAll().should('have.length', 1);
   }),
+  
+  it('4. Create a session with one block', () => {
+    const randomNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A Single Choice ' + randomNumber;
+    const question = 'Was ist die Wahrscheinlichkeit?';
+    const sessionTitle = 'Test Session ' + randomNumber;
+
+    cy.get('#create-question').click();
+    cy.get('#question-title').type(questionTitle);
+    cy.get('#question-text').type(question);
+    cy.get('#add-answer-field').type('50%');
+    cy.get('#add-new-answer').click();
+    // TODO Find a better solution. This is really ugly. get('#add-answer-field') only yields the first one and not the seconde on as well
+    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
+    cy.get('#save-new-question').click();
+    cy.wait(300);
+
+    cy.findByText(questionTitle).siblings().invoke('text').then(text => {
+      const onlyId = text.split(' ')[1];
+      cy.get('#session-name').type(sessionTitle);
+      cy.get('#display-name').type('Displayed Name');
+      cy.get('#block-container-header').next().type(onlyId);
+    });
+
+    cy.get('#create-new-session').click();
+    cy.get('#load-session-list').click();
+    cy.findByText(sessionTitle, {timeout: 5000}).should('exist');
+  }), 
 
   it('5. Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
@@ -54,7 +73,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit?';
 
     cy.get('#create-question').click();
-    cy.get('#question_create_select').click();
+    cy.get('#select-question-type-div').children().eq(1).click();
     cy.findAllByText('Multiple Choice (MC)').eq(1).click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
@@ -77,7 +96,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit?';
 
     cy.get('#create-question').click();
-    cy.get('#question_create_select').click();
+    cy.get('#select-question-type-div').children().eq(1).click();
     cy.findAllByText('KPRIM (KP)').eq(1).click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
@@ -100,8 +119,8 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit?';
 
     cy.get('#create-question').click();
-    cy.get('#question_create_select').click();
-    cy.findAllByText('Numerisch (NR)').click();
+    cy.get('#select-question-type-div').children().eq(1).click();
+    cy.findAllByText('Numerisch (NR)').eq(1).click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
     cy.get('#set-numerical-minimum').type('0');
@@ -122,8 +141,8 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit?';
 
     cy.get('#create-question').click();
-    cy.get('#question_create_select').click();
-    cy.findAllByText('Freitext (FT)').click();
+    cy.get('#select-question-type-div').children().eq(1).click();
+    cy.findAllByText('Freitext (FT)').eq(1).click();
     cy.get('#question-title').type(questionTitle);
     cy.get('#question-text').type(question);
     cy.get('#set-free-text-length').type('100');
@@ -134,7 +153,7 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText(questionTitle).parent().parent().children().eq(2).contains(question);
     cy.get('#question-preview').first().click();
     cy.get('#responseInput').should('exist');
-  }),
+  }), */
 
   it('9. Workflow of running a session and answering questions', () => {
     const randomNumber = Math.round(Math.random() * 1000);
@@ -152,18 +171,18 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%');
     cy.get('#save-new-question').click();
     cy.findByText(questionTitle).siblings().invoke('text').then(text => {
-      console.log(text)
       const onlyId = text.split(' ')[1];
       cy.get('#session-name').type(sessionTitle);
       cy.get('#display-name').type(session);
       cy.get('#block-container-header').next().type(onlyId + ', ' +  onlyId);
       cy.get('#add-block').click();
       cy.findByText('Block 2').parent().siblings().eq(0).type(onlyId);
-      cy.get('#course_selection').click();
-      cy.findAllByText('Testkurs').eq(0).click();
+      cy.get('#course-selection-div').siblings().eq(1).click();
+      cy.findAllByText('Testkurs').eq(1).click();
       cy.get('#create-new-session').click();
     });
 
+    cy.get('#load-session-list').click();
     cy.findByText(sessionTitle).siblings().children().eq(0).click();
     cy.get('#interaction-first-block').click();
      
@@ -183,7 +202,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#email-field').type('lecturer@bf.uzh.ch');
     cy.get('#password-field').type('abcd');
     cy.get('#submit-login').click();
-    cy.get('#header-sessions-button').click();
+    cy.get("#navigation").contains("Sessionen").click();
     cy.findByText(sessionTitle).siblings().children().eq(0).click();
     cy.wait(1000);
     cy.findByText('Block schliessen').click();
@@ -191,8 +210,8 @@ describe('Render the homepage for lecturer', () => {
 
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'));
-    cy.get('#password-field').type('testing');
     cy.get('#username-field').type('testuser1');
+    cy.get('#password-field').type('testing');
     cy.get('#submit-login').click();
     cy.findByText(session).click();
     cy.findByText('25%').click();
@@ -203,7 +222,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('#email-field').type('lecturer@bf.uzh.ch');
     cy.get('#password-field').type('abcd');
     cy.get('#submit-login').click();
-    cy.get('#header-sessions-button').click();
+    cy.get("#navigation").contains("Sessionen").click();
     cy.findByText(sessionTitle).siblings().children().eq(0).click();
     cy.wait(1000);
     cy.findByText('Block schliessen').click();

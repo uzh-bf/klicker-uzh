@@ -39,7 +39,10 @@ function Header({ user }: HeaderProps): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
+    <div
+      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800"
+      id="navigation"
+    >
       <Navigation className={{ root: 'bg-slate-800' }}>
         <Navigation.ButtonItem
           href="/"
@@ -50,7 +53,6 @@ function Header({ user }: HeaderProps): React.ReactElement {
           href="/sessions"
           label="Sessionen"
           className={{ label: 'font-bold text-white text-base' }}
-          id="header-sessions-button"
         />
         <Navigation.ButtonItem
           href="/courses"

@@ -15,9 +15,7 @@ secrets*.yaml
 *.pem
 
 cypress/videos/*
-!cypress/videos/.gitkeep
 cypress/screenshots/*
-!cypress/screenshots/.gitkeep
 
 /apps/functions/local.settings.json
 
