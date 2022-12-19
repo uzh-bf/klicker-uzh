@@ -7,10 +7,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
+  FormikSelectField,
   FormikTextField,
   H3,
   Label,
-  Select,
   Switch,
   ThemeContext,
 } from '@uzh-bf/design-system'
@@ -239,13 +239,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   {courses && (
                     <>
                       <div className="mr-2">Kurs:</div>
-                      <Select
+                      <FormikSelectField
+                        name="courseId"
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
-                        onChange={(newValue: string) =>
-                          setFieldValue('courseId', newValue)
-                        }
-                        value={values.courseId}
                       />
                     </>
                   )}
