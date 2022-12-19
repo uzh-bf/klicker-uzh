@@ -28,7 +28,8 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
+    "Jonas Gebel <jonas.gebel@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -42,9 +43,14 @@
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
-    "release:rc:dry": "standard-version --dry-run --prerelease rc"
+    "release:rc:dry": "standard-version --dry-run --prerelease rc",
+    "test": "cypress open",
+    "start": "turbo run start",
+    "start:test": "turbo run start:test"
   },
   "devDependencies": {
+    "@testing-library/cypress": "9.0.0",
+    "cypress": "12.1.0",
     "standard-version": "9.5.0",
     "turbo": "1.6.3",
     "yaml": "2.1.3"

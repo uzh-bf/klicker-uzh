@@ -140,6 +140,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <Link
                       href="/sessions"
                       className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-session-list"
                     >
                       Session-Liste
                     </Link>
@@ -172,6 +173,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                   className={{ root: 'mb-1' }}
+                  id="session-name"
                 />
                 <FormikTextField
                   required
@@ -179,6 +181,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                   className={{ root: 'mb-1' }}
+                  id="display-name"
                 />
 
                 {/* <EditorField
@@ -221,13 +224,14 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 key={index}
                                 className="flex flex-col p-2 border border-solid rounded-md w-52"
                               >
-                                <div className="flex flex-row items-center justify-between">
+                                <div className="flex flex-row items-center justify-between" id="block-container-header">
                                   <div>Block {index + 1}</div>
                                   <Button
                                     onClick={() => remove(index)}
                                     className={{
                                       root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
                                     }}
+                                    id="delete-block"
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
                                   </Button>
@@ -266,6 +270,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                               root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
                             }}
                             onClick={() => push([])}
+                            id="add-block"
                           >
                             <FontAwesomeIcon icon={faPlus} />
                             <div>Neuer Block</div>
@@ -291,7 +296,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   />
                   {courses && (
                     <>
-                      <div className="mr-2">Kurs:</div>
+                      <div className="mr-2" id="course-selection-div">Kurs:</div>
                       <Select
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
@@ -315,6 +320,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className={{ root: 'float-right' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  id="create-new-session"
                 >
                   Erstellen
                 </Button>
