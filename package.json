@@ -44,7 +44,8 @@
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "test": "cypress open",
-    "start": "turbo run start"
+    "start": "turbo run start",
+    "start:test": "turbo run start:test"
   },
   "devDependencies": {
     "@testing-library/cypress": "^9.0.0",

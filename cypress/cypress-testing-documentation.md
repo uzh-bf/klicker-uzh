@@ -122,6 +122,6 @@ just out of interest for speed.
 
 ## TODO
 
-- Also all tests should be run with npm start for speed comparison
+- Also all tests should be run with npm start:test for speed comparison
 - Test 10 should target de feedback section of a session
 - Factor out certain parts of code to decrease repeating code

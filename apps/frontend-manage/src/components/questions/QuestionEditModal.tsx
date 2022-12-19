@@ -301,7 +301,7 @@ function QuestionEditModal({
       isInitialValid={mode === 'EDIT'}
       enableReinitialize={true}
       initialValues={question}
-      //validationSchema={questionManipulationSchema}
+      validationSchema={questionManipulationSchema}
       onSubmit={async (values) => {
         const common = {
           id: questionId,

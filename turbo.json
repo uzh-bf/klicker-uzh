@@ -8,6 +8,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"]
     },
+    "build:test": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
     "dev": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
@@ -19,6 +23,10 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "start:test": {
+      "dependsOn": ["^build", "build:test"],
       "outputs": ["dist/**", ".next/**"]
     }
   }
