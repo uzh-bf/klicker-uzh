@@ -19,7 +19,7 @@
     "start:test": "npm start"
   },
   "dependencies": {
-    "@azure/service-bus": "7.7.2",
+    "@azure/service-bus": "7.7.3",
     "@sentry/node": "7.16.0",
     "jsonwebtoken": "8.5.1"
   },
