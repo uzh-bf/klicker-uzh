@@ -2871,12 +2871,37 @@ select {
   }
 }
 
+.m-10 {
+  margin: 2.5rem;
+}
+
+.my-12 {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.mr-auto {
+  margin-right: auto;
+}
+
 .mr-8 {
   margin-right: 2rem;
 }
 
 .flex {
   display: flex;
+}
+
+.h-72 {
+  height: 18rem;
+}
+
+.w-72 {
+  width: 18rem;
 }
 
 .w-full {
