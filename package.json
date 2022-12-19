@@ -28,7 +28,8 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
+    "Jonas Gebel <jonas.gebel@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -48,8 +49,8 @@
     "start:test": "turbo run start:test"
   },
   "devDependencies": {
-    "@testing-library/cypress": "^9.0.0",
-    "cypress": "^12.1.0",
+    "@testing-library/cypress": "9.0.0",
+    "cypress": "12.1.0",
     "standard-version": "9.5.0",
     "turbo": "1.6.3",
     "yaml": "2.1.3"
