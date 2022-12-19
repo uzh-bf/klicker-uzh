@@ -120,20 +120,8 @@ just out of interest for speed.
 - Run 9: Passed (30 sec, Electron)
 - Run 10: Passed (30 sec, Electron)
 
-## All tests with npm start
-
-For performance testing we want to see if the tests run faster using npm start instead of npm run dev
-
-- Run 1: 
-- Run 2: 
-- Run 3: 
-- Run 4: 
-- Run 5: 
-- Run 6: 
-- Run 7: 
-- Run 8: 
-- Run 9:
-- Run 10: 
+## TODO
 
 - Also all tests should be run with npm start for speed comparison
 - Test 10 should target de feedback section of a session
+- Factor out certain parts of code to decrease repeating code
