@@ -12,7 +12,10 @@
     "dev:build": "NODE_ENV=development tsup --watch",
     "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'NODE_ENV=development node -r dotenv/config dist/index.js'",
     "build": "NODE_ENV=production tsup",
-    "format": "prettier --write ."
+    "build:test": "npm run build",
+    "format": "prettier --write .",
+    "start": "node -r dotenv/config dist/index.js",
+    "start:test": "npm start"
   },
   "engines": {
     "node": "=18"

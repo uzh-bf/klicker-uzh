@@ -123,6 +123,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <Link
                       href="/sessions"
                       className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-session-list"
                     >
                       Session-Liste
                     </Link>
@@ -155,6 +156,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Session-Name"
                   tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                   className={{ root: 'mb-1' }}
+                  id="session-name"
                 />
                 <FormikTextField
                   required
@@ -162,6 +164,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   label="Anzeigenamen"
                   tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                   className={{ root: 'mb-1' }}
+                  id="display-name"
                 />
 
                 <EditorField
@@ -218,6 +221,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 timeLimit: undefined,
                               })
                             }
+                            id="add-block"
                           >
                             <FontAwesomeIcon icon={faPlus} />
                             <div>Neuer Block</div>
@@ -275,6 +279,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className={{ root: 'float-right' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  id="create-new-session"
                 >
                   Erstellen
                 </Button>

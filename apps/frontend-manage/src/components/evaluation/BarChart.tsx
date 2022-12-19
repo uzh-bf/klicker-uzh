@@ -105,6 +105,7 @@ function BarChart({
             position="inside"
             stroke="white"
             className={textSize.text3Xl}
+            id="bar-chart-block"
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
             data.questionData.options.choices.map(

@@ -86,7 +86,7 @@ function Index() {
 
   return (
     <Layout displayName="Fragepool">
-      <div className="w-full h-full">
+      <div className="w-full h-full" id="homepage">
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
           <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
             {/* // TODO: replace by proper session creation component */}
@@ -133,7 +133,7 @@ function Index() {
                   </H4>
                 </TabsPrimitive.Trigger>
               </TabsPrimitive.List>
-              <div className="p-3">
+              <div className="p-3" id="live-session-form">
                 <TabsPrimitive.Content
                   value="live-session"
                   className="overflow-y-scroll md:h-72"
@@ -253,6 +253,7 @@ function Index() {
                           theme.primaryBgDark
                         ),
                       }}
+                      id="create-question"
                     >
                       FRAGE ERSTELLEN
                     </Button>

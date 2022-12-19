@@ -427,6 +427,7 @@ function QuestionEditModal({
                 }}
                 type="submit"
                 form="question-manipulation-form"
+                id="save-new-question"
               >
                 <Button.Label>Speichern</Button.Label>
               </Button>
@@ -442,7 +443,7 @@ function QuestionEditModal({
           >
             <div>
               {JSON.stringify(errors)}
-              <div className="z-0 flex flex-row">
+              <div className="z-0 flex flex-row" id="select-question-type-div">
                 <Label
                   label="Fragetyp:"
                   className={{
@@ -489,6 +490,7 @@ function QuestionEditModal({
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
                       theme.primaryBorderFocus
                     )}
+                    id="question-title"
                   />
                 </div>
 
@@ -558,6 +560,7 @@ function QuestionEditModal({
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                           key={`${questionType}-content`}
+                          id="question-text"
                         />
                       )}
                     </FastField>
@@ -693,6 +696,7 @@ function QuestionEditModal({
                                         root: 'bg-white',
                                       }}
                                       key={`${questionType}-choice-${index}`}
+                                      id="add-answer-field"
                                     />
                                   )}
                                 </FastField>
@@ -810,6 +814,7 @@ function QuestionEditModal({
                               feedback: '<br>',
                             })
                           }
+                          id="add-new-answer"
                         >
                           Neue Antwort hinzufügen
                         </Button>
@@ -831,6 +836,7 @@ function QuestionEditModal({
                             theme.primaryBorderFocus
                           )}
                           placeholder="Minimum"
+                          id="set-numerical-minimum"
                         />
                         <div className="font-bold">Max: </div>
                         <FastField
@@ -841,6 +847,7 @@ function QuestionEditModal({
                             theme.primaryBorderFocus
                           )}
                           placeholder="Maximum"
+                          id="set-numerical-maximum"
                         />
                       </div>
                     </div>
@@ -924,6 +931,7 @@ function QuestionEditModal({
                         )}
                         placeholder="Antwort Länge"
                         min={0}
+                        id="set-free-text-length"
                       />
                     </div>
                     {values.hasSampleSolution && (

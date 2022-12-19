@@ -56,8 +56,14 @@ export async function loginUser(
     path: '/',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 13,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite:
+      process.env.NODE_ENV === 'development' ||
+      process.env.COOKIE_DOMAIN === '127.0.0.1'
+        ? 'lax'
+        : 'none',
   })
 
   return user.id
@@ -69,8 +75,14 @@ export async function logoutUser(_, ctx: ContextWithUser) {
     path: '/',
     httpOnly: true,
     maxAge: 0,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite:
+      process.env.NODE_ENV === 'development' ||
+      process.env.COOKIE_DOMAIN === '127.0.0.1'
+        ? 'lax'
+        : 'none',
   })
 
   return ctx.user.sub
@@ -134,8 +146,14 @@ export async function loginParticipant(
     path: '/',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 13,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite:
+      process.env.NODE_ENV === 'development' ||
+      process.env.COOKIE_DOMAIN === '127.0.0.1'
+        ? 'lax'
+        : 'none',
   })
 
   // TODO: return more data (e.g. Avatar etc.)
@@ -148,8 +166,14 @@ export async function logoutParticipant(_, ctx: ContextWithUser) {
     path: '/',
     httpOnly: true,
     maxAge: 0,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite:
+      process.env.NODE_ENV === 'development' ||
+      process.env.COOKIE_DOMAIN === '127.0.0.1'
+        ? 'lax'
+        : 'none',
   })
 
   return ctx.user.sub
