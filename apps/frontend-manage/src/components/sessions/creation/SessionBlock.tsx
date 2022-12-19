@@ -36,8 +36,6 @@ function SessionBlock({
         title: string
         content: string
       }) => {
-        console.log('block questions before update', block.questionIds)
-        console.log('drop on test field registered', item)
         setFieldValue(`blocks[${index}][questionIds]`, [
           ...block.questionIds,
           item.id,

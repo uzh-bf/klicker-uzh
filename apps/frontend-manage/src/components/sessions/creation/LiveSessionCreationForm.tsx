@@ -1,5 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
@@ -26,6 +26,7 @@ import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
 
@@ -209,23 +210,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                               remove={remove}
                             />
                           ))}
-                          <Button
-                            fluid
-                            className={{
-                              root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
-                            }}
-                            onClick={() =>
-                              push({
-                                questionIds: [],
-                                titles: [],
-                                timeLimit: undefined,
-                              })
-                            }
-                            id="add-block"
-                          >
-                            <FontAwesomeIcon icon={faPlus} />
-                            <div>Neuer Block</div>
-                          </Button>
+                          <AddBlockButton push={push} />
                         </div>
                       )}
                     </FieldArray>
