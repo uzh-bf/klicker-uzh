@@ -64,6 +64,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         .matches(/^[0-9]+$/, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
         .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
     ),
+    multiplier: yup
+      .string()
+      .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
     courseId: yup.string(),
     isGamificationEnabled: yup
       .boolean()
