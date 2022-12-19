@@ -1600,6 +1600,7 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
+        description: stringArg(),
         blocks: nonNull(
           list(
             arg({

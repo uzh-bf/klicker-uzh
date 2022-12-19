@@ -344,6 +344,7 @@ model Session {
   pinCode          Int?
   name             String
   displayName      String
+  description      String?
   startedAt        DateTime?
   finishedAt       DateTime?
   linkTo           String?

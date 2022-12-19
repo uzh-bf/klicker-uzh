@@ -77,6 +77,7 @@ interface BlockArgs {
 interface CreateSessionArgs {
   name: string
   displayName?: string | null
+  description?: string | null
   blocks: BlockArgs[]
   courseId?: string
   isGamificationEnabled?: boolean
@@ -86,6 +87,7 @@ export async function createSession(
   {
     name,
     displayName,
+    description,
     blocks,
     courseId,
     isGamificationEnabled,
@@ -118,6 +120,7 @@ export async function createSession(
     data: {
       name,
       displayName: displayName ?? name,
+      description,
       isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
         create: blocks.map(

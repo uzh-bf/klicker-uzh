@@ -1703,6 +1703,7 @@ export interface NexusGenArgTypes {
     createSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
       courseId?: string | null; // String
+      description?: string | null; // String
       displayName?: string | null; // String
       isGamificationEnabled?: boolean | null; // Boolean
       name: string; // String!

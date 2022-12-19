@@ -374,7 +374,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: ID!): Feedback
   createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
-  createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, isGamificationEnabled: Boolean, name: String!): Session
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, isGamificationEnabled: Boolean, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback

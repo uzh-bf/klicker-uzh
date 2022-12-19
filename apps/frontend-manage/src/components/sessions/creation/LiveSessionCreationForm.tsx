@@ -26,6 +26,7 @@ import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
 
 interface LiveSessionCreationFormProps {
@@ -46,7 +47,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
     displayName: yup
       .string()
       .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
-    // description: yup.string(),
+    description: yup.string(),
     blocks: yup.array().of(
       yup.object().shape({
         ids: yup.array().of(yup.number()),
@@ -56,7 +57,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
       })
     ),
-    // timeLimits is an array with the same length as blocks and contains the time limit for each block which is a string that contains an integer that is at least zero
     timeLimits: yup.array().of(
       yup
         .string()
@@ -81,7 +81,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         initialValues={{
           name: '',
           displayName: '',
-          // description: '',
+          description: '',
           blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
           timeLimits: [],
           courseId: '',
@@ -104,6 +104,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               variables: {
                 name: values.name,
                 displayName: values.displayName,
+                description: values.description,
                 blocks: blockQuestions,
                 courseId: values.courseId,
                 isGamificationEnabled: values.isGamificationEnabled,
@@ -161,8 +162,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className={{ root: 'mb-1' }}
                 />
 
-                {/* <EditorField
+                <EditorField
+                  key={values.name}
                   label="Beschreibung"
+                  tooltip="// TODO CONTENT TOOLTIP"
                   field={values.description}
                   fieldName="description"
                   setFieldValue={setFieldValue}
@@ -175,7 +178,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                </div> */}
+                </div>
 
                 {/* // TODO: add possibility to add and remove blocks */}
                 <div className="mt-2 mb-2">
