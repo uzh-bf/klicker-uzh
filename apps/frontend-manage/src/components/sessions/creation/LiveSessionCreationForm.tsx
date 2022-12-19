@@ -1,9 +1,5 @@
 import { useMutation } from '@apollo/client'
-import {
-  faArrowRight,
-  faPlus,
-  faTrash,
-} from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
@@ -30,6 +26,7 @@ import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import SessionBlock from './SessionBlock'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -93,8 +90,8 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           name: '',
           displayName: '',
           // description: '',
-          blocks: [['']],
-          timeLimits: [''],
+          blocks: [[]],
+          timeLimits: [],
           courseId: '',
           isGamificationEnabled: false,
         }}
@@ -102,15 +99,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
-            .filter((block) => block.length > 0)
-            .map((block, idx) => {
+            .filter((questions) => questions.length > 0)
+            .map((questions, idx) => {
               return {
-                questionIds: block.flatMap((question) => {
-                  return question
-                    .replace(/\s/g, '')
-                    .split(',')
-                    .map((questionId) => parseInt(questionId))
-                }),
+                questionIds: questions,
                 timeLimit:
                   values.timeLimits[idx] !== '' &&
                   Number(values.timeLimits[idx]) > 0
@@ -212,54 +204,18 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <FieldArray name="blocks">
                       {({ push, remove }: FieldArrayRenderProps) => (
                         <div className="flex flex-row gap-1 overflow-scroll">
-                          {values.blocks.map((block: any, index: number) => (
-                            <div
-                              className="flex flex-row items-center gap-2"
-                              key={index}
-                            >
-                              <div
-                                key={index}
-                                className="flex flex-col p-2 border border-solid rounded-md w-52"
-                              >
-                                <div className="flex flex-row items-center justify-between">
-                                  <div>Block {index + 1}</div>
-                                  <Button
-                                    onClick={() => remove(index)}
-                                    className={{
-                                      root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </Button>
-                                </div>
-                                <FormikTextField
-                                  id={`blocks.${index}`}
-                                  value={block.join(', ')}
-                                  className={{ root: 'mb-1' }}
-                                  onChange={(newValue: string) => {
-                                    setFieldValue(
-                                      `blocks[${index}]`,
-                                      newValue
-                                        .replace(/[^0-9\s,]/g, '')
-                                        .split(', ')
-                                    )
-                                  }}
-                                  placeholder="Frage-Ids"
-                                />
-                                <FormikTextField
-                                  id={`timeLimits.${index}`}
-                                  value={values.timeLimits[index] || ''}
-                                  onChange={(newValue: string) => {
-                                    setFieldValue(
-                                      `timeLimits[${index}]`,
-                                      newValue.replace(/[^0-9]/g, '')
-                                    )
-                                  }}
-                                  placeholder="Zeit-Limit [s]"
-                                />
-                              </div>
-                            </div>
-                          ))}
+                          {values.blocks.map(
+                            (questions: number[], index: number) => (
+                              <SessionBlock
+                                key={questions.join(',')}
+                                index={index}
+                                blockQuestions={questions}
+                                timeLimit={values.timeLimits[index]}
+                                setFieldValue={setFieldValue}
+                                remove={remove}
+                              />
+                            )
+                          )}
                           <Button
                             fluid
                             className={{
