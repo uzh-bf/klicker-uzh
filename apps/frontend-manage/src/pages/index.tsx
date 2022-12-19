@@ -6,12 +6,13 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/TagList'
-import { Button, H4 } from '@uzh-bf/design-system'
+import { Button, H4, ThemeContext } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
@@ -20,13 +21,11 @@ import LiveSessionCreationForm from '../components/sessions/creation/LiveSession
 import MicroSessionCreationForm from '../components/sessions/creation/MicroSessionCreationForm'
 
 function Index() {
-  // TODO: add toasts
-  // const { addToast } = useToasts()
-
   const router = useRouter()
   const [selectedQuestions, setSelectedQuestions] = useState(
     new Array<boolean>()
   )
+  const theme = useContext(ThemeContext)
 
   const {
     loading: loadingQuestions,
@@ -95,29 +94,41 @@ function Index() {
               <TabsPrimitive.List className="flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60">
                 <TabsPrimitive.Trigger
                   value="live-session"
-                  className="flex-1 hover:bg-uzh-blue-20"
+                  className={twMerge('flex-1', theme.primaryBgHover)}
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Live-Session
                   </H4>
                 </TabsPrimitive.Trigger>
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="micro-session"
-                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  className={twMerge(
+                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                    theme.primaryBgHover
+                  )}
                   disabled
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Micro-Session
                   </H4>
                 </TabsPrimitive.Trigger>
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
                 <TabsPrimitive.Trigger
                   value="learning-element"
-                  className="flex-1 hover:bg-uzh-blue-20 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed"
+                  className={twMerge(
+                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                    theme.primaryBgHover
+                  )}
                   disabled
                 >
-                  <H4 className="flex flex-col justify-center h-full">
+                  <H4
+                    className={{ root: 'flex flex-col justify-center h-full' }}
+                  >
                     Learning Element
                   </H4>
                 </TabsPrimitive.Trigger>
@@ -236,7 +247,12 @@ function Index() {
                           !isQuestionCreationModalOpen
                         )
                       }
-                      className="float-right mb-3 font-bold text-white bg-uzh-blue-80"
+                      className={{
+                        root: twMerge(
+                          'float-right mb-3 font-bold text-white',
+                          theme.primaryBgDark
+                        ),
+                      }}
                       id="create-question"
                     >
                       FRAGE ERSTELLEN

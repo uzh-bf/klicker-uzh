@@ -431,6 +431,8 @@ export async function activateSessionBlock(
       namespace: session.namespace,
       startedAt: Number(new Date()),
       sessionBlockId,
+      type: questionData.type,
+      pointsMultiplier: instance.pointsMultiplier,
     }
 
     switch (questionData.type) {
@@ -439,7 +441,6 @@ export async function activateSessionBlock(
       case QuestionType.KPRIM: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          type: questionData.type,
           choiceCount: questionData.options.choices.length,
           solutions: JSON.stringify(
             questionData.options.choices
@@ -458,7 +459,6 @@ export async function activateSessionBlock(
       case QuestionType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          type: questionData.type,
           solutions: JSON.stringify(questionData.options.solutionRanges),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
@@ -470,7 +470,6 @@ export async function activateSessionBlock(
       case QuestionType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          type: questionData.type,
           solutions: JSON.stringify(questionData.options.solutions),
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {

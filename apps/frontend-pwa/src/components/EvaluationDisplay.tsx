@@ -27,14 +27,16 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
             ([ix, value]) => (
               <Progress
                 isMaxVisible={false}
-                className={twMerge(
-                  'h-8',
-                  ix == correctIx && 'font-bold text-green-600'
-                )}
-                indicatorClassName={twMerge(
-                  'h-8',
-                  ix == correctIx ? 'bg-green-600' : 'bg-gray-400'
-                )}
+                className={{
+                  root: twMerge(
+                    'h-8',
+                    ix == correctIx && 'font-bold text-green-600'
+                  ),
+                  indicator: twMerge(
+                    'h-8',
+                    ix == correctIx ? 'bg-green-600' : 'bg-gray-400'
+                  ),
+                }}
                 key={ix}
                 value={(value / sum) * 100}
                 max={100}
@@ -65,14 +67,16 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
               <div key={ix}>
                 <Progress
                   isMaxVisible={false}
-                  className={twMerge(
-                    'h-8',
-                    correctIx.includes(+ix) && 'font-bold'
-                  )}
-                  indicatorClassName={twMerge(
-                    'h-8',
-                    correctIx.includes(+ix) ? 'bg-green-600' : 'bg-gray-400'
-                  )}
+                  className={{
+                    root: twMerge(
+                      'h-8',
+                      correctIx.includes(+ix) && 'font-bold'
+                    ),
+                    indicator: twMerge(
+                      'h-8',
+                      correctIx.includes(+ix) ? 'bg-green-600' : 'bg-gray-400'
+                    ),
+                  }}
                   value={(value / sum) * 100}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}

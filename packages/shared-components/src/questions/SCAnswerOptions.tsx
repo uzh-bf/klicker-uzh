@@ -1,6 +1,7 @@
 import Markdown from '@klicker-uzh/markdown'
-import { Button } from '@uzh-bf/design-system'
-import React from 'react'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
+import React, { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export interface SCAnswerOptionsProps {
   choices: { value: string; correct: boolean; feedback: string }[]
@@ -14,13 +15,20 @@ export function SCAnswerOptions({
   value,
   onChange,
 }: SCAnswerOptionsProps): React.ReactElement {
+  const theme = useContext(ThemeContext)
+
   return (
     <div className="flex flex-col gap-2">
       {choices.map((choice, index) => {
         return (
           <Button
             fluid
-            className="border border-solid min-h-[2.5rem] border-uzh-blue-80"
+            className={{
+              root: twMerge(
+                'border border-solid min-h-[2.5rem]',
+                theme.primaryBorderDark
+              ),
+            }}
             onClick={onChange(index)}
             key={choice.value}
             active={value?.includes(index)}

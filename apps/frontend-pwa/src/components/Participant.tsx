@@ -77,12 +77,15 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
   return (
     <Participant isHighlighted {...props}>
       {props.isActive ? (
-        <Button className="text-sm" onClick={() => props.onLeaveCourse()}>
+        <Button
+          className={{ root: 'text-sm' }}
+          onClick={() => props.onLeaveCourse()}
+        >
           Austreten
         </Button>
       ) : (
         <Button
-          className="text-sm"
+          className={{ root: 'text-sm' }}
           onClick={props.onJoinCourse ? () => props.onJoinCourse() : undefined}
         >
           Beitreten

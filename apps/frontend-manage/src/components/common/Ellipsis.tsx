@@ -85,11 +85,13 @@ function Ellipsis({
       ) : (
         <Tooltip
           tooltip={parsedContent}
-          tooltipStyle={twMerge(
-            '!opacity-100 text-sm max-w-[50%] md:max-w-[60%]',
-            className?.tooltip
-          )}
-          withArrow={false}
+          className={{
+            tooltip: twMerge(
+              'text-sm max-w-[50%] md:max-w-[60%]',
+              className?.tooltip
+            ),
+          }}
+          withIndicator={false}
         >
           {shortenedParsedContent}
         </Tooltip>

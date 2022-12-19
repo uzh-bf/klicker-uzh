@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowRight,
+  faPlus,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
@@ -12,6 +16,7 @@ import {
   Label,
   Select,
   Switch,
+  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -20,8 +25,10 @@ import {
   Form,
   Formik,
 } from 'formik'
-import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface LiveSessionCreationFormProps {
@@ -33,7 +40,7 @@ interface LiveSessionCreationFormProps {
 
 function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
-  const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -75,7 +82,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
 
   return (
     <div>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        toastOptions={{ duration: 6000 }}
+      />
       <H3>Live-Session erstellen</H3>
       <Formik
         initialValues={{
@@ -120,10 +131,22 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               refetchQueries: [GetUserSessionsDocument],
             })
             if (session.data?.createSession) {
-              toast.success('Session erfolgreich erstellt!')
+              toast.success(
+                <div>
+                  <div>Session erfolgreich erstellt!</div>
+                  <div className="flex flex-row items-center">
+                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+                    Zur
+                    <Link
+                      href="/sessions"
+                      className={twMerge(theme.primaryText, 'ml-1')}
+                    >
+                      Session-Liste
+                    </Link>
+                  </div>
+                </div>
+              )
               resetForm()
-              // TODO: fix that invalidation seems not to work with some larger sessions
-              router.push('/sessions')
             }
           } catch (error) {
             alert('Bitte geben Sie nur gültige Frage-IDs ein.')
@@ -181,10 +204,12 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   <div className="flex flex-row items-center flex-1 gap-2">
                     <Label
                       label="Blocks:"
-                      className="font-bold"
+                      className={{
+                        root: 'font-bold',
+                        tooltip: 'font-normal text-sm !w-1/2',
+                      }}
                       tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
                       showTooltipSymbol={true}
-                      tooltipStyle="font-normal text-sm !w-1/2 opacity-100"
                     />
                     <FieldArray name="blocks">
                       {({ push, remove }: FieldArrayRenderProps) => (
@@ -202,7 +227,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                   <div>Block {index + 1}</div>
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
+                                    }}
                                     id="delete-block"
                                   >
                                     <FontAwesomeIcon icon={faTrash} />
@@ -224,7 +251,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                                 />
                                 <FormikTextField
                                   id={`timeLimits.${index}`}
-                                  value={values.timeLimits[index]}
+                                  value={values.timeLimits[index] || ''}
                                   onChange={(newValue: string) => {
                                     setFieldValue(
                                       `timeLimits[${index}]`,
@@ -238,7 +265,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                           ))}
                           <Button
                             fluid
-                            className="flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100"
+                            className={{
+                              root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
+                            }}
                             onClick={() => push([])}
                             id="add-block"
                           >
@@ -259,14 +288,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 <div className="flex flex-row items-center">
                   <Label
                     label="Optionen"
-                    className="my-auto mr-2 font-bold min-w-max"
-                    tooltipStyle="text-sm font-normal !w-1/2 opacity-100"
+                    className={{
+                      root: 'my-auto mr-2 font-bold min-w-max',
+                      tooltip: 'text-sm font-normal !w-1/2',
+                    }}
                   />
                   {courses && (
                     <>
                       <div className="mr-2">Kurs:</div>
                       <Select
-                        name="course_selection"
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
                         onChange={(newValue: string) =>
@@ -278,16 +308,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   )}
                   <Switch
                     label="Gamification"
-                    id="gamification-switch"
                     checked={values.isGamificationEnabled}
                     onCheckedChange={(newValue: boolean) =>
                       setFieldValue('isGamificationEnabled', newValue)
                     }
-                    className="ml-4"
+                    className={{ root: 'ml-4' }}
                   />
                 </div>
                 <Button
-                  className="float-right"
+                  className={{ root: 'float-right' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
                   id="create-new-session"

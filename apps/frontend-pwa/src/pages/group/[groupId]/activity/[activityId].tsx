@@ -6,18 +6,20 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
 import Layout from '../../../../components/Layout'
 import { Options } from '../../../../components/OptionsDisplay'
 
 function GroupActivityDetails() {
+  const theme = useContext(ThemeContext)
   const router = useRouter()
 
   const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
@@ -117,7 +119,7 @@ function GroupActivityDetails() {
                     <div
                       className={twMerge(
                         'flex flex-row items-center gap-2 py-2 border rounded shadow',
-                        clue.participant.isSelf && 'border-uzh-blue-60'
+                        clue.participant.isSelf && theme.primaryBorder
                       )}
                       key={clue.participant.id}
                     >
@@ -203,7 +205,7 @@ function GroupActivityDetails() {
                   data.groupActivityDetails.group.participants.length === 1
                 }
                 loading={startLoading}
-                className="self-end mt-4 text-lg font-bold"
+                className={{ root: 'self-end mt-4 text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
               >
                 START
@@ -223,7 +225,7 @@ function GroupActivityDetails() {
 
           {data.groupActivityDetails.activityInstance && (
             <div className="py-4 lg:pt-0">
-              <H1 className="">Eure Aufgaben</H1>
+              <H1>Eure Aufgaben</H1>
               <Formik
                 isInitialValid={false}
                 initialValues={data.groupActivityDetails.instances.reduce(
@@ -351,7 +353,9 @@ function GroupActivityDetails() {
                           type="submit"
                           loading={isSubmitting}
                           disabled={!isValid}
-                          className="self-end mt-4 text-lg font-bold"
+                          className={{
+                            root: 'self-end mt-4 text-lg font-bold',
+                          }}
                         >
                           Antworten absenden
                         </Button>

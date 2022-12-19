@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex", "interactiveTransactions", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
   output          = "../client"
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl"]
 }
@@ -229,12 +229,15 @@ model Course {
   description String?
   color       String?
 
-  sessions         Session[]
-  learningElements LearningElement[]
-  microSessions    MicroSession[]
-  leaderboard      LeaderboardEntry[]
-  groupActivities  GroupActivity[]
-  awards           AwardEntry[]
+  sessions          Session[]
+  learningElements  LearningElement[]
+  microSessions     MicroSession[]
+  leaderboard       LeaderboardEntry[]
+  groupActivities   GroupActivity[]
+  awards            AwardEntry[]
+  classAchievements ClassAchievementInstance[]
+  achievements      Achievement[]
+  titles            Title[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -246,6 +249,8 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// TODO: CourseInstance -> holds participants, leaderboards, instances, etc. (parallel courses, same course in repetition across years)
 
 enum LeaderboardType {
   SESSION_BLOCK
@@ -335,13 +340,14 @@ model Session {
   isModerationEnabled         Boolean @default(true)
   isGamificationEnabled       Boolean @default(false)
 
-  namespace   String    @default(uuid()) @db.Uuid
-  pinCode     Int?
-  name        String
-  displayName String
-  startedAt   DateTime?
-  finishedAt  DateTime?
-  linkTo      String?
+  namespace        String    @default(uuid()) @db.Uuid
+  pinCode          Int?
+  name             String
+  displayName      String
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  linkTo           String?
+  pointsMultiplier Int       @default(1)
 
   accessMode AccessMode    @default(PUBLIC)
   status     SessionStatus @default(PREPARED)
@@ -400,10 +406,10 @@ model LearningElement {
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
-  name        String
-  displayName String
-
-  description String?
+  name             String
+  displayName      String
+  pointsMultiplier Int     @default(1)
+  description      String?
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
@@ -608,6 +614,8 @@ model Participant {
   password       String
   avatar         String?
   avatarSettings Json?
+  level          Int     @default(1)
+  xp             Int     @default(0)
 
   lastLoginAt DateTime?
 
@@ -621,6 +629,8 @@ model Participant {
   subscriptions           PushSubscription[]
   clueAssignments         GroupActivityClueAssignment[]
   awards                  AwardEntry[]
+  achievements            ParticipantAchievementInstance[]
+  titles                  Title[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -638,6 +648,7 @@ model ParticipantGroup {
   participants    Participant[]
   groupActivities GroupActivityInstance[]
   awards          AwardEntry[]
+  achievements    GroupAchievementInstance[]
 
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseId String? @db.Uuid
@@ -675,6 +686,117 @@ model Participation {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+}
+
+// ----- ACHIEVEMENTS -----
+enum AchievementType {
+  PARTICIPANT // achievement awarded to individual participants
+  GROUP // achievement awarded to a group of participants
+  CLASS // achievement awarded on a global level (e.g., when reaching a class goal)
+}
+
+enum AchievementScope {
+  GLOBAL // achievements defined at the application level
+  COURSE // achievement defined at the course level
+}
+
+// Titles can be awarded to participants upon receipt of an achievement
+// They are managed on a course-level
+model Title {
+  id Int @id @default(autoincrement())
+
+  name      String
+  awardedBy Achievement[]
+  awardedTo Participant[]
+  course    Course        @relation(fields: [courseId], references: [id])
+  courseId  String        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, name])
+}
+
+// Achievements are awarded to participants, groups, or classes
+// They are managed on a course-level and can yield points for the leaderboard, individual XP, or titles
+// TODO: add mechanisms to automate the awarding of achievements
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  name        String
+  description String
+  icon        String
+  iconColor   String?
+
+  rewardedPoints Int?
+  rewardedXP     Int?
+  rewardedTitles Title[]
+  type           AchievementType
+  scope          AchievementScope @default(GLOBAL)
+
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
+  participantInstances ParticipantAchievementInstance[]
+  groupInstances       GroupAchievementInstance[]
+  classInstances       ClassAchievementInstance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ParticipantAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, achievementId])
+}
+
+model GroupAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, achievementId])
+}
+
+model ClassAchievementInstance {
+  id Int @id @default(autoincrement())
+
+  achievedAt    DateTime
+  achievedCount Int      @default(1)
+
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  achievementId Int
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, achievementId])
 }
 
 // ----- RESPONSE TRACKING -----

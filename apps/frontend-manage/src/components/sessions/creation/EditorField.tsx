@@ -31,9 +31,11 @@ function EditorField({
     <div className={twMerge('flex flex-row w-full', className)}>
       <Label
         label={label}
-        className="my-auto mr-2 font-bold min-w-max"
+        className={{
+          root: 'my-auto mr-2 font-bold min-w-max',
+          tooltip: 'text-sm font-normal !w-1/2',
+        }}
         tooltip={tooltip}
-        tooltipStyle="text-sm font-normal !w-1/2 opacity-100"
         showTooltipSymbol={typeof tooltip !== 'undefined'}
       />
       <ContentInput

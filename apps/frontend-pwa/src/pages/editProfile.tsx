@@ -5,17 +5,24 @@ import {
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { NextPageWithLayout } from '@pages/_app'
-import { Button, Prose, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Prose,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Router from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { AVATAR_LABELS, AVATAR_OPTIONS } from 'shared-components/src/constants'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
 const EditProfile: NextPageWithLayout = () => {
+  const theme = useContext(ThemeContext)
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile, { error }] = useMutation(
     UpdateParticipantProfileDocument
@@ -140,7 +147,10 @@ const EditProfile: NextPageWithLayout = () => {
             <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
                 // @ts-ignore
-                className="border-b-4 border-uzh-blue-100 h-36 md:h-48 "
+                className={twMerge(
+                  'border-b-4 h-36 md:h-48',
+                  theme.primaryBorderDark
+                )}
                 eyebrows="raised"
                 faceMask={false}
                 lashes={false}
@@ -162,7 +172,7 @@ const EditProfile: NextPageWithLayout = () => {
               <Form>
                 <div className="flex flex-col w-full gap-8 mt-8 md:flex-row md:gap-16">
                   <div className="flex flex-col justify-between flex-1 order-2 gap-4 md:order-1">
-                    {!data.self.avatar && (
+                    {!data.self?.avatar && (
                       <Prose>
                         Willkommen beim KlickerUZH! Falls dies dein erstes Mal
                         hier ist, setze bitte ein Passwort und definiere deinen

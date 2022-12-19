@@ -8,6 +8,7 @@ interface StatisticProps {
   checked: boolean
   onCheck: () => void
   chartType: string
+  size: string
 }
 
 function Statistic({
@@ -17,6 +18,7 @@ function Statistic({
   checked,
   onCheck,
   chartType,
+  size,
 }: StatisticProps): React.ReactElement {
   return (
     <div className="flex justify-between mb-2 border-b-2">
@@ -30,8 +32,12 @@ function Statistic({
           <Checkbox
             checked={checked}
             onCheck={onCheck}
-            size="sm"
-            className="border-black rounded-sm"
+            size={
+              size === 'sm' || size === 'md' || size === 'lg' || size === 'xl'
+                ? size
+                : 'md'
+            }
+            className={{ root: 'border-black rounded-sm' }}
           />
         )}
         {statisticName}

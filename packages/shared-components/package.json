@@ -15,7 +15,7 @@
     "@tailwindcss/typography": "^0.5.7",
     "@fortawesome/free-solid-svg-icons": "^6.2.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
-    "@uzh-bf/design-system": "^0.0.88",
+    "@uzh-bf/design-system": "0.1.5",
     "dayjs": "^1.11.6",
     "ramda": "^0.28.0",
     "react": "^18.2.0",

@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.109](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.108...v2.0.0-alpha.109) (2022-12-12)
+
+
+### Features
+
+* foundations of customizable achievements and rewards ([#3150](https://github.com/uzh-bf/klicker-uzh/issues/3150)) ([b469693](https://github.com/uzh-bf/klicker-uzh/commit/b4696939ce44700ce3ad8ab5763a7d7496660ad4))
+
+
+### Bug Fixes
+
+* **packages/grading:** ensure that solution ranges contain at least one of the borders ([c8883bc](https://github.com/uzh-bf/klicker-uzh/commit/c8883bc7d05db06bc70883a25bf3dfc990cd92bb))
+
+
+### Refactors
+
+* **frontend-manage:** update and adapt select component ([#3129](https://github.com/uzh-bf/klicker-uzh/issues/3129)) ([6778ac3](https://github.com/uzh-bf/klicker-uzh/commit/6778ac38c981b3b2c38ef231c43a866b39b4d4f2))
+* restructure className attributes across all components after design-system update ([#3148](https://github.com/uzh-bf/klicker-uzh/issues/3148)) ([a4e72fd](https://github.com/uzh-bf/klicker-uzh/commit/a4e72fd5708fffce89e03cf67cff93c4bd93b541))
+
+
+### Other
+
+* **deploy:** update production version ([58c8c36](https://github.com/uzh-bf/klicker-uzh/commit/58c8c36bfb5afa77bc748d39718ac7be2b4c3614))
+* seed update ([31c837b](https://github.com/uzh-bf/klicker-uzh/commit/31c837bf1827676b311ab80c6da828d64c6d865d))
+* seed update ([cb0afe1](https://github.com/uzh-bf/klicker-uzh/commit/cb0afe1318738476403a1d81f431321df1b07ba3))
+* submodule update ([fe8b36d](https://github.com/uzh-bf/klicker-uzh/commit/fe8b36d5292eda1803b4b88e1aced2b8641b59c3))
+
+
+### Enhancements
+
+* **frontend-manage:** add possibility to change text size on evaluation ([#3149](https://github.com/uzh-bf/klicker-uzh/issues/3149)) ([e7a0671](https://github.com/uzh-bf/klicker-uzh/commit/e7a06712a956120105e192b789a6923332c64aba))
+* **frontend-manage:** replace custom header with navbar component from design-system ([#3132](https://github.com/uzh-bf/klicker-uzh/issues/3132)) ([3af70e2](https://github.com/uzh-bf/klicker-uzh/commit/3af70e293bf979e1c20988a31a31e3f28c940212))
+
 ## [2.0.0-alpha.108](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.107...v2.0.0-alpha.108) (2022-12-01)
 
 

@@ -68,7 +68,7 @@ function CourseOverviewPage() {
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}
-                className="h-10"
+                className={{ root: 'h-10' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faPencil} />

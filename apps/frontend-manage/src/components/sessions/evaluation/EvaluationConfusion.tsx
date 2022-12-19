@@ -136,14 +136,16 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
         <div className="ml-2">
           <Tooltip
             tooltip="Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende der Klicker-Session. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden."
-            tooltipStyle="max-w-[20%] md:max-w-[30%] text-sm opacity-100 z-10"
-            withArrow={false}
+            className={{
+              tooltip: 'max-w-[20%] md:max-w-[30%] text-sm z-10',
+            }}
+            withIndicator={false}
           >
             <FontAwesomeIcon
               icon={faQuestion}
               className={twMerge(
                 'w-3 h-3 p-1 mt-1 text-white rounded-full border border-solid border-white',
-                theme.primaryBgDark
+                theme.primaryBgMedium
               )}
             />
           </Tooltip>

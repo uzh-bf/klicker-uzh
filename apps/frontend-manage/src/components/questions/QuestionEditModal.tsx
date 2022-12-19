@@ -408,7 +408,7 @@ function QuestionEditModal({
           <Modal
             fullScreen
             title="Frage erstellen"
-            classNames={{
+            className={{
               overlay: 'top-14',
               content: 'm-auto max-w-7xl',
             }}
@@ -419,7 +419,12 @@ function QuestionEditModal({
             onPrimaryAction={
               <Button
                 disabled={isSubmitting || !isValid}
-                className="mt-2 font-bold text-white border-uzh-grey-80 bg-uzh-blue-80 disabled:bg-uzh-grey-80"
+                className={{
+                  root: twMerge(
+                    'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80',
+                    theme.primaryBgDark
+                  ),
+                }}
                 type="submit"
                 form="question-manipulation-form"
                 id="save-new-question"
@@ -429,7 +434,7 @@ function QuestionEditModal({
             }
             onSecondaryAction={
               <Button
-                className="mt-2 border-uzh-grey-80"
+                className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
               >
                 <Button.Label>Schliessen</Button.Label>
@@ -441,14 +446,16 @@ function QuestionEditModal({
               <div className="z-0 flex flex-row">
                 <Label
                   label="Fragetyp:"
-                  className="my-auto mr-2 text-lg font-bold"
-                  tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                  className={{
+                    root: 'my-auto mr-2 text-lg font-bold',
+                    tooltip:
+                      'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                  }}
                   tooltip="// TODO: tooltip content"
                   showTooltipSymbol={mode === 'CREATE'}
                 />
                 {mode === 'CREATE' ? (
                   <Select
-                    name="question_create_select"
                     placeholder="Fragetyp auswählen"
                     items={dropdownOptions}
                     onChange={(newValue: string) => {
@@ -468,8 +475,11 @@ function QuestionEditModal({
                 <div className="flex flex-row mt-2">
                   <Label
                     label="Fragetitel:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
                     showTooltipSymbol={true}
                   />
@@ -477,7 +487,8 @@ function QuestionEditModal({
                     name="name"
                     type="text"
                     className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
+                      theme.primaryBorderFocus
                     )}
                     id="question-title"
                   />
@@ -488,8 +499,11 @@ function QuestionEditModal({
                   <div className="flex flex-row">
                     <Label
                       label="Tags:"
-                      className="my-auto mr-2 text-lg font-bold"
-                      tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                      className={{
+                        root: 'my-auto mr-2 text-lg font-bold',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
                       tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
                       showTooltipSymbol={true}
                     />
@@ -497,7 +511,8 @@ function QuestionEditModal({
                       name="tags"
                       type="text"
                       className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 focus:border-uzh-blue-50 h-9'
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
+                        theme.primaryBorderFocus
                       )}
                       value={values.tags?.join(', ')}
                       onChange={(e: any) => {
@@ -514,8 +529,11 @@ function QuestionEditModal({
                 <div className="mt-4">
                   <Label
                     label="Frage:"
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
                     tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
                     showTooltipSymbol={true}
                   />
@@ -566,8 +584,10 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Antwortmöglichkeiten:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
@@ -577,15 +597,16 @@ function QuestionEditModal({
                     <div className="flex-1">
                       <Label
                         label="Einschränkungen:"
-                        className="my-auto mr-2 text-lg font-bold"
-                        tooltipStyle="text-base font-normal"
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip: 'text-base font-normal',
+                        }}
                         tooltip="// TODO Tooltip Content"
                         showTooltipSymbol={true}
                       />
                     </div>
                   )}
                   <Switch
-                    id="solution switch"
                     checked={values.hasSampleSolution || false}
                     onCheckedChange={(newValue: boolean) => {
                       setFieldValue('hasSampleSolution', newValue)
@@ -595,7 +616,6 @@ function QuestionEditModal({
                   />
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <Switch
-                      id="feedback switch"
                       checked={values.hasAnswerFeedbacks || false}
                       onCheckedChange={(newValue: boolean) => {
                         setFieldValue('hasAnswerFeedbacks', newValue)
@@ -603,9 +623,11 @@ function QuestionEditModal({
                       }}
                       label="Antwort-Feedbacks"
                       disabled={!values.hasSampleSolution}
-                      className={twMerge(
-                        !values.hasSampleSolution && 'opacity-50'
-                      )}
+                      className={{
+                        root: twMerge(
+                          !values.hasSampleSolution && 'opacity-50'
+                        ),
+                      }}
                     />
                   )}
                 </div>
@@ -639,7 +661,8 @@ function QuestionEditModal({
                             >
                               <div
                                 className={twMerge(
-                                  'flex flex-row w-full focus:border-uzh-blue-50'
+                                  'flex flex-row w-full',
+                                  theme.primaryBorderFocus
                                 )}
                               >
                                 {/* // TODO: define maximum height of editor if possible */}
@@ -686,10 +709,9 @@ function QuestionEditModal({
                                     >
                                       {({ field, meta }: FieldProps) => (
                                         <Switch
-                                          id={`${choice.value}-correct`}
                                           checked={field.value || false}
                                           label=""
-                                          className="gap-0 mr-0.5"
+                                          className={{ root: 'gap-0 mr-0.5' }}
                                           onCheckedChange={(
                                             newValue: boolean
                                           ) => {
@@ -706,7 +728,9 @@ function QuestionEditModal({
 
                                 <Button
                                   onClick={() => remove(index)}
-                                  className="items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md"
+                                  className={{
+                                    root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                  }}
                                 >
                                   <Button.Icon>
                                     <FontAwesomeIcon
@@ -755,7 +779,8 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                             content: twMerge(
-                                              'w-full rounded border border-uzh-grey-100 focus:border-uzh-blue-50'
+                                              'w-full rounded border border-uzh-grey-100',
+                                              theme.primaryBorderFocus
                                             ),
                                           }}
                                           showToolbarOnFocus={true}
@@ -772,7 +797,9 @@ function QuestionEditModal({
 
                         <Button
                           fluid
-                          className="font-bold border border-solid border-uzh-grey-100"
+                          className={{
+                            root: 'font-bold border border-solid border-uzh-grey-100',
+                          }}
                           onClick={() =>
                             push({
                               ix: values.options.choices[
@@ -805,7 +832,8 @@ function QuestionEditModal({
                           name="options.restrictions.min"
                           type="number"
                           className={twMerge(
-                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                            theme.primaryBorderFocus
                           )}
                           placeholder="Minimum"
                           id="set-numerical-minimum"
@@ -815,7 +843,8 @@ function QuestionEditModal({
                           name="options.restrictions.max"
                           type="number"
                           className={twMerge(
-                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                            'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                            theme.primaryBorderFocus
                           )}
                           placeholder="Maximum"
                           id="set-numerical-maximum"
@@ -841,7 +870,8 @@ function QuestionEditModal({
                                       name={`options.solutionRanges.${index}.min`}
                                       type="number"
                                       className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                                        theme.primaryBorderFocus
                                       )}
                                       placeholder="Minimum"
                                     />
@@ -850,13 +880,16 @@ function QuestionEditModal({
                                       name={`options.solutionRanges.${index}.max`}
                                       type="number"
                                       className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9'
+                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9',
+                                        theme.primaryBorderFocus
                                       )}
                                       placeholder="Maximum"
                                     />
                                     <Button
                                       onClick={() => remove(index)}
-                                      className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                      className={{
+                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                      }}
                                     >
                                       Löschen
                                     </Button>
@@ -865,7 +898,9 @@ function QuestionEditModal({
                               )}
                               <Button
                                 fluid
-                                className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                                className={{
+                                  root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                                }}
                                 onClick={() =>
                                   push({
                                     min: undefined,
@@ -891,7 +926,8 @@ function QuestionEditModal({
                         name="options.restrictions.maxLength"
                         type="number"
                         className={twMerge(
-                          'w-44 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                          'w-44 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                          theme.primaryBorderFocus
                         )}
                         placeholder="Antwort Länge"
                         min={0}
@@ -915,13 +951,16 @@ function QuestionEditModal({
                                     name={`options.solutions.${index}`}
                                     type="text"
                                     className={twMerge(
-                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 focus:border-uzh-blue-50 h-9 mr-2'
+                                      'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                                      theme.primaryBorderFocus
                                     )}
                                     placeholder="Lösung"
                                   />
                                   <Button
                                     onClick={() => remove(index)}
-                                    className="ml-2 text-white bg-red-500 hover:bg-red-600"
+                                    className={{
+                                      root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                    }}
                                   >
                                     Löschen
                                   </Button>
@@ -930,7 +969,9 @@ function QuestionEditModal({
                             )}
                             <Button
                               fluid
-                              className="flex-1 font-bold border border-solid border-uzh-grey-100"
+                              className={{
+                                root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
+                              }}
                               onClick={() => push('')}
                             >
                               Neue Lösung hinzufügen

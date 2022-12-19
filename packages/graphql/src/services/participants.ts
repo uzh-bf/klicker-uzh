@@ -21,10 +21,17 @@ export async function getParticipantProfile(
 
   const participant = await ctx.prisma.participant.findUnique({
     where: { id },
-    select: { id: true, avatar: true, avatarSettings: true, username: true },
+    include: {
+      achievements: {
+        include: { achievement: true },
+      },
+    },
   })
 
-  return participant
+  return R.pick(
+    ['id', 'avatar', 'avatarSettings', 'username', 'achievements'],
+    participant
+  )
 }
 
 interface UpdateParticipantProfileArgs {

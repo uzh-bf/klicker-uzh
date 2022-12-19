@@ -42,7 +42,7 @@ function QuestionPreviewModal({
 
   return (
     <Modal
-      className="!pb-4"
+      className={{ title: 'pb-4' }}
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       title={dataQuestion?.question?.name}
@@ -83,7 +83,9 @@ function QuestionPreviewModal({
             (choice: any, index: number) => {
               return (
                 <div key={index}>
-                  <H3 className="mt-4">Feedback for Choice {index + 1}</H3>
+                  <H3 className={{ root: 'mt-4' }}>
+                    Feedback for Choice {index + 1}
+                  </H3>
                   <Markdown className="mt-2" content={choice.feedback} />
                 </div>
               )

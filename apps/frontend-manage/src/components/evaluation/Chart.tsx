@@ -9,6 +9,18 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
+  textSize: {
+    size: string
+    text: string
+    prose: string
+    textLg: string
+    textXl: string
+    text2Xl: string
+    text3Xl: string
+    legend: string
+    min: number
+    max: number
+  }
   statisticsShowSolution?: {
     mean?: boolean
     median?: boolean
@@ -22,22 +34,48 @@ function Chart({
   chartType,
   data,
   showSolution,
+  textSize,
   statisticsShowSolution,
 }: ChartProps): React.ReactElement {
+  console.log('chart', textSize)
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
-    return <TableChart data={data} showSolution={showSolution} />
+    return (
+      <TableChart
+        data={data}
+        showSolution={showSolution}
+        textSize={textSize.textLg}
+      />
+    )
   } else if (chartType === 'histogram') {
     return (
       <Histogram
         data={data}
         showSolution={{ general: showSolution, ...statisticsShowSolution }}
+        textSize={textSize.text}
       />
     )
   } else if (chartType === 'wordCloud') {
-    return <Wordcloud data={data} showSolution={showSolution} />
+    return (
+      <Wordcloud
+        data={data}
+        showSolution={showSolution}
+        textSize={{ min: textSize.min, max: textSize.max }}
+      />
+    )
   } else if (chartType === 'barChart') {
-    return <BarChart data={data} showSolution={showSolution} />
+    return (
+      <BarChart
+        data={data}
+        showSolution={showSolution}
+        textSize={{
+          textXl: textSize.textXl,
+          text2Xl: textSize.text2Xl,
+          text3Xl: textSize.text3Xl,
+          legend: textSize.legend,
+        }}
+      />
+    )
   } else {
     return <div>There exists no chart for this question type yet</div>
   }

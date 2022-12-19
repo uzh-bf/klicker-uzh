@@ -2,8 +2,10 @@ import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ChangeCourseDescriptionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../questions/ContentInput'
 
@@ -20,6 +22,7 @@ function CourseDescription({
   submitText,
   setDescriptionEditMode,
 }: CourseDescriptionProps) {
+  const theme = useContext(ThemeContext)
   const [changeCourseDescription] = useMutation(ChangeCourseDescriptionDocument)
 
   const descriptionSchema = Yup.object().shape({
@@ -71,11 +74,16 @@ function CourseDescription({
                 <div className="text-sm text-red-700">{errors.description}</div>
               )}
               <Button
-                className="float-right px-5 text-white bg-uzh-blue-80 disabled:opacity-60"
+                className={{
+                  root: twMerge(
+                    'float-right px-5 text-white disabled:opacity-60',
+                    theme.primaryBgDark
+                  ),
+                }}
                 type="submit"
                 disabled={isSubmitting || !isValid}
               >
-                <Button.Icon className="mr-1">
+                <Button.Icon className={{ root: 'mr-1' }}>
                   <FontAwesomeIcon icon={faSave} />
                 </Button.Icon>
                 <Button.Label>{submitText}</Button.Label>

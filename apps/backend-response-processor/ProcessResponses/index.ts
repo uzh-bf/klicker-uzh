@@ -113,6 +113,7 @@ const serviceBusTrigger: AzureFunction = async function (
       firstResponseReceivedAt,
       sessionBlockId,
       choiceCount,
+      pointsMultiplier,
     } = instanceInfo
     let parsedSolutions
     try {
@@ -163,6 +164,7 @@ const serviceBusTrigger: AzureFunction = async function (
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsPercentage,
+            pointsMultiplier,
           })
 
           if (
@@ -221,6 +223,7 @@ const serviceBusTrigger: AzureFunction = async function (
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            pointsMultiplier,
           })
 
           if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
@@ -275,6 +278,7 @@ const serviceBusTrigger: AzureFunction = async function (
             timeToZeroBonus: TIME_TO_ZERO_BONUS,
             defaultPoints: DEFAULT_POINTS,
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            pointsMultiplier,
           })
 
           if (answerCorrect && !firstResponseReceivedAt) {

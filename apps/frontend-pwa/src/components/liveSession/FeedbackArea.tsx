@@ -93,9 +93,7 @@ function FeedbackArea() {
   const confusionButtonTimeout = useRef<any>()
   const confusionSubmissionTimeout = useRef<any>()
 
-  const speedLabels = { min: 'slow', mid: 'optimal', max: 'fast' }
   const speedIcons = { min: '🐌', mid: '😀', max: '🦘' }
-  const difficultyLabels = { min: 'easy', mid: 'optimal', max: 'hard' }
   const difficultyIcons = { min: '😴', mid: '😀', max: '🤯' }
   const sessionId = router.query.id as string
   const RANGE_COLOR_MAP: Record<string, string> = {
@@ -316,7 +314,9 @@ function FeedbackArea() {
                 maxLengthLabel="Zeichen"
               />
               <Button
-                className="float-right h-10 text-center items-center !w-30"
+                className={{
+                  root: 'float-right h-10 text-center items-center !w-30',
+                }}
                 type="submit"
                 disabled={isSubmitting}
               >
@@ -333,7 +333,7 @@ function FeedbackArea() {
 
       <div className="mb-8 space-y-6 text-sm">
         <div className="">
-          <H3 className="mb-0">Geschwindigkeit</H3>
+          <H3 className={{ root: 'mb-0' }}>Geschwindigkeit</H3>
           <div className="w-full -mt-8">
             <Slider
               disabled={!isConfusionEnabled}
@@ -341,7 +341,6 @@ function FeedbackArea() {
                 onNewConfusionTS(newValue, 'speed')
               }
               icons={speedIcons}
-              labels={speedLabels}
               value={confusionSpeed}
               rangeColorMap={RANGE_COLOR_MAP}
               borderColorMap={BORDER_COLOR_MAP}
@@ -352,7 +351,7 @@ function FeedbackArea() {
           </div>
         </div>
         <div>
-          <H3 className="mb-0">Schwierigkeit</H3>
+          <H3 className={{ root: 'mb-0' }}>Schwierigkeit</H3>
           <div className="w-full -mt-5">
             <Slider
               disabled={!isConfusionEnabled}
@@ -360,7 +359,6 @@ function FeedbackArea() {
                 onNewConfusionTS(newValue, 'difficulty')
               }
               icons={difficultyIcons}
-              labels={difficultyLabels}
               value={confusionDifficulty}
               rangeColorMap={RANGE_COLOR_MAP}
               borderColorMap={BORDER_COLOR_MAP}

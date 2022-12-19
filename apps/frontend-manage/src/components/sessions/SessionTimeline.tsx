@@ -5,11 +5,11 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 // import getConfig from 'next/config'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
@@ -92,6 +92,7 @@ function SessionTimeline({
   handleOpenBlock,
   handleCloseBlock,
 }: Props): React.ReactElement {
+  const theme = useContext(ThemeContext)
   const isFeedbackSession = blocks?.length === 0
 
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
@@ -182,7 +183,7 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className="h-10">
+              <Button fluid className={{ root: 'h-10' }}>
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -198,7 +199,11 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className="h-10" disabled={isFeedbackSession}>
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                disabled={isFeedbackSession}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -210,7 +215,7 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full p-4 mt-2 border border-solid rounded-lg border-uzh-grey-80">
+          <div className="flex flex-row w-full p-4 mt-2 overflow-scroll border border-solid rounded-lg border-uzh-grey-80">
             <FontAwesomeIcon
               icon={faPlay}
               size="lg"
@@ -238,12 +243,14 @@ function SessionTimeline({
           </div>
           <div className="flex flex-row justify-end w-full mt-2">
             <Button
-              className={twMerge(
-                (buttonState === 'first block' ||
-                  buttonState === 'next block') &&
-                  'bg-uzh-blue-100 text-white',
-                buttonState === 'end session' && 'bg-uzh-red-100 text-white'
-              )}
+              className={{
+                root: twMerge(
+                  (buttonState === 'first block' ||
+                    buttonState === 'next block') &&
+                    `text-white ${theme.primaryBgDark}`,
+                  buttonState === 'end session' && 'bg-uzh-red-100 text-white'
+                ),
+              }}
               onClick={() => {
                 if (buttonState === 'first block') {
                   handleOpenBlock(blocks[0].id)

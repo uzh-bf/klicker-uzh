@@ -51,7 +51,9 @@ function Evaluation() {
         </div>
         <div>
           <div className="flex flex-row items-center justify-between">
-            <H3 className="flex flex-row justify-between">Auswertung</H3>
+            <H3 className={{ root: 'flex flex-row justify-between' }}>
+              Auswertung
+            </H3>
             <H3>Punkte (gesammelt/berechnet/möglich)</H3>
           </div>
           <div>
@@ -66,7 +68,7 @@ function Evaluation() {
             ))}
           </div>
 
-          <H3 className="mt-4 text-right">
+          <H3 className={{ root: 'mt-4 text-right' }}>
             Total Punkte (gesammelt): {totalPointsAwarded}
           </H3>
         </div>

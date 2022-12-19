@@ -2,10 +2,11 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface FeedbackProps {
   feedback: Feedback
@@ -23,6 +24,7 @@ function PublicFeedback({
   onReactToFeedbackResponse,
 }: FeedbackProps): React.ReactElement {
   const feedbackId = feedback.id
+  const theme = useContext(ThemeContext)
 
   // structure for upvotes element: { upvote: true/false, responseId1: 1, 0 or -1, responseId2: 1, 0 or -1, ...}
   // upvote true meaning feadback is upvoted, responseId value for upvote, no vote or downvote
@@ -127,7 +129,13 @@ function PublicFeedback({
 
   return (
     <div className="w-full mb-3">
-      <div className="flex flex-row w-full p-1.5 text-sm border border-solid rounded-md border-uzh-blue-40 bg-uzh-blue-20 bg-opacity-30 mb-1">
+      <div
+        className={twMerge(
+          'flex flex-row w-full p-1.5 text-sm border border-solid rounded-md bg-opacity-30 mb-1',
+          theme.primaryBg,
+          theme.primaryBorder
+        )}
+      >
         <div className="flex flex-col flex-1">
           <div className="mb-0.5">{feedback.content}</div>
           <div className="text-xs italic text-gray-600">
@@ -143,7 +151,7 @@ function PublicFeedback({
         <Button
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
-          className="w-10 h-10"
+          className={{ root: 'w-10 h-10' }}
           disabled={feedback.resolvedAt}
         >
           <Button.Icon>
@@ -167,7 +175,7 @@ function PublicFeedback({
                       onResponseUpvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === 1}
-                    className="mr-1 w-9 h-9"
+                    className={{ root: 'mr-1 w-9 h-9' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faThumbsUp} size="lg" />
@@ -178,7 +186,7 @@ function PublicFeedback({
                       onResponseDownvote(upvotes[response.id], response.id)
                     }
                     active={upvotes[response.id] === -1}
-                    className="w-9 h-9"
+                    className={{ root: 'w-9 h-9' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faQuestion} size="lg" />

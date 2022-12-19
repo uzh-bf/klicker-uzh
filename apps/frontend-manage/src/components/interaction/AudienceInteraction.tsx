@@ -89,8 +89,8 @@ function AudienceInteraction({
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <Button className="h-10 px-4">
-                  <Button.Icon className="mr-1">
+                <Button className={{ root: 'h-10 px-4' }}>
+                  <Button.Icon className={{ root: 'mr-1' }}>
                     <FontAwesomeIcon icon={faUpRightFromSquare} />
                   </Button.Icon>
                   <Button.Label>Dozierendenansicht</Button.Label>
@@ -101,9 +101,7 @@ function AudienceInteraction({
 
           <div className="flex items-center order-1 md:order-2">
             <Switch
-              id="audienceInteraction-switch"
               checked={isAudienceInteractionActive}
-              label=""
               onCheckedChange={(): void => {
                 changeSessionSettings({
                   variables: {
@@ -122,15 +120,13 @@ function AudienceInteraction({
                     : 'Feedback Channel Deactivated',
                 ])
               }}
+              label="Publikumsinteraktion aktivieren"
             />
-            Publikumsinteraktion aktivieren
           </div>
 
           <div className="flex items-center order-2 md:order-3">
             <Switch
-              id="moderation-switch"
               checked={isModerationEnabled}
-              label=""
               disabled={!isAudienceInteractionActive}
               onCheckedChange={(): void => {
                 changeSessionSettings({
@@ -146,14 +142,11 @@ function AudienceInteraction({
                   String(!isModerationEnabled),
                 ])
               }}
+              label="Moderation aktivieren"
+              className={{
+                label: twMerge(!isAudienceInteractionActive && 'text-gray-400'),
+              }}
             />
-            <span
-              className={twMerge(
-                !isAudienceInteractionActive && 'text-gray-400'
-              )}
-            >
-              Moderation aktivieren
-            </span>
           </div>
         </div>
       </div>
