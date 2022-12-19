@@ -12,16 +12,14 @@ import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
   index: number
-  blockQuestions: number[]
-  timeLimit: string
+  block: { questionIds: number[]; timeLimit: string }
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
   remove: (index: number) => void
 }
 
 function SessionBlock({
   index,
-  blockQuestions,
-  timeLimit,
+  block,
   setFieldValue,
   remove,
 }: SessionBlockProps): React.ReactElement {
@@ -38,9 +36,12 @@ function SessionBlock({
         title: string
         content: string
       }) => {
-        console.log('block questions before update', blockQuestions)
+        console.log('block questions before update', block.questionIds)
         console.log('drop on test field registered', item)
-        setFieldValue(`blocks[${index}]`, [...blockQuestions, item.id])
+        setFieldValue(`blocks[${index}][questionIds]`, [
+          ...block.questionIds,
+          item.id,
+        ])
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
@@ -75,7 +76,7 @@ function SessionBlock({
           </Button>
         </div>
       </div>
-      {blockQuestions.map((questionId) => (
+      {block.questionIds.map((questionId) => (
         <div key={questionId}>{questionId}</div>
       ))}
       <div
@@ -92,11 +93,11 @@ function SessionBlock({
           label="Zeit-Limit"
           tooltip={`Zeit-Limit für Block ${index + 1} in Sekunden`}
           id={`timeLimits.${index}`}
-          value={timeLimit || ''}
+          value={block.timeLimit || ''}
           onChange={(newValue: string) => {
             setFieldValue(
-              `timeLimits[${index}]`,
-              newValue.replace(/[^0-9]/g, '')
+              `blocks[${index}][timeLimit]`,
+              parseInt(newValue.replace(/[^0-9]/g, ''))
             )
           }}
           placeholder={`optionales Zeit-Limit`}

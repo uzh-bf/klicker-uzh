@@ -47,23 +47,14 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
       .string()
       .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
     // description: yup.string(),
-    blocks: yup
-      .array()
-      .of(
-        yup
-          .array()
-          .of(
-            yup
-              .string()
-              .required(
-                'Bitte überprüfen Sie Ihre eingabe und geben sie durch Kommas getrennte Frage-IDs ein.'
-              )
-          )
-          .min(
-            1,
-            'Bitte beachten das Eingabteformat beachten und sicherstellen, dass jeder Block mind. eine Frage enthält. Für Sessions ohne Fragen bitten den Default-Block löschen.'
-          )
-      ),
+    blocks: yup.array().of(
+      yup.object().shape({
+        ids: yup.array().of(yup.number()),
+        timeLimit: yup
+          .number()
+          .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
+      })
+    ),
     // timeLimits is an array with the same length as blocks and contains the time limit for each block which is a string that contains an integer that is at least zero
     timeLimits: yup.array().of(
       yup
@@ -90,7 +81,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           name: '',
           displayName: '',
           // description: '',
-          blocks: [[]],
+          blocks: [{ questionIds: [], timeLimit: '' }],
           timeLimits: [],
           courseId: '',
           isGamificationEnabled: false,
@@ -99,15 +90,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
-            .filter((questions) => questions.length > 0)
-            .map((questions, idx) => {
+            .filter((block) => block.questionIds.length > 0)
+            .map((block) => {
               return {
-                questionIds: questions,
-                timeLimit:
-                  values.timeLimits[idx] !== '' &&
-                  Number(values.timeLimits[idx]) > 0
-                    ? Number(values.timeLimits[idx])
-                    : undefined,
+                questionIds: block.questionIds,
+                timeLimit: block.timeLimit,
               }
             })
 
@@ -204,18 +191,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <FieldArray name="blocks">
                       {({ push, remove }: FieldArrayRenderProps) => (
                         <div className="flex flex-row gap-1 overflow-scroll">
-                          {values.blocks.map(
-                            (questions: number[], index: number) => (
-                              <SessionBlock
-                                key={questions.join(',')}
-                                index={index}
-                                blockQuestions={questions}
-                                timeLimit={values.timeLimits[index]}
-                                setFieldValue={setFieldValue}
-                                remove={remove}
-                              />
-                            )
-                          )}
+                          {values.blocks.map((block: any, index: number) => (
+                            <SessionBlock
+                              key={block.questionIds.join(',')}
+                              index={index}
+                              block={block}
+                              setFieldValue={setFieldValue}
+                              remove={remove}
+                            />
+                          ))}
                           <Button
                             fluid
                             className={{
