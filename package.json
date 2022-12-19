@@ -28,7 +28,8 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
+    "Jonas Gebel <jonas.gebel@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
