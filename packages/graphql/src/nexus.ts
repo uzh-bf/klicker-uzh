@@ -1609,6 +1609,7 @@ export const Mutation = objectType({
           )
         ),
         courseId: stringArg(),
+        multiplier: nonNull(intArg()),
         isGamificationEnabled: booleanArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {

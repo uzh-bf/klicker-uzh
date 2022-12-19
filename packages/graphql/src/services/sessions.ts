@@ -80,6 +80,7 @@ interface CreateSessionArgs {
   description?: string | null
   blocks: BlockArgs[]
   courseId?: string
+  multiplier: number
   isGamificationEnabled?: boolean
 }
 
@@ -90,6 +91,7 @@ export async function createSession(
     description,
     blocks,
     courseId,
+    multiplier,
     isGamificationEnabled,
   }: CreateSessionArgs,
   ctx: ContextWithUser
@@ -121,6 +123,7 @@ export async function createSession(
       name,
       displayName: displayName ?? name,
       description,
+      pointsMultiplier: multiplier,
       isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
         create: blocks.map(

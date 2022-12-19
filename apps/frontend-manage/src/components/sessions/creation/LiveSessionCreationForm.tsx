@@ -85,6 +85,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
           timeLimits: [],
           courseId: '',
+          multiplier: '1',
           isGamificationEnabled: false,
         }}
         isInitialValid={false}
@@ -107,6 +108,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 description: values.description,
                 blocks: blockQuestions,
                 courseId: values.courseId,
+                multiplier: parseInt(values.multiplier),
                 isGamificationEnabled: values.isGamificationEnabled,
               },
               refetchQueries: [GetUserSessionsDocument],
@@ -249,6 +251,17 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       />
                     </>
                   )}
+                  <div className="ml-4 mr-2">Multiplier:</div>
+                  <FormikSelectField
+                    name="multiplier"
+                    placeholder="Default: 1x"
+                    items={[
+                      { label: 'Einfach (1x)', value: '1' },
+                      { label: 'Doppelt (2x)', value: '2' },
+                      { label: 'Dreifach (3x)', value: '3' },
+                      { label: 'Vierfach (4x)', value: '4' },
+                    ]}
+                  />
                   <Switch
                     label="Gamification"
                     checked={values.isGamificationEnabled}

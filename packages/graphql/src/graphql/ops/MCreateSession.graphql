@@ -4,6 +4,7 @@ mutation CreateSession(
   $description: String
   $blocks: [BlockInput!]!
   $courseId: String
+  $multiplier: Int!
   $isGamificationEnabled: Boolean
 ) {
   createSession(
@@ -12,6 +13,7 @@ mutation CreateSession(
     description: $description
     blocks: $blocks
     courseId: $courseId
+    multiplier: $multiplier
     isGamificationEnabled: $isGamificationEnabled
   ) {
     id

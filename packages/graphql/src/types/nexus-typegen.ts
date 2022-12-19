@@ -1706,6 +1706,7 @@ export interface NexusGenArgTypes {
       description?: string | null; // String
       displayName?: string | null; // String
       isGamificationEnabled?: boolean | null; // Boolean
+      multiplier: number; // Int!
       name: string; // String!
     }
     deactivateSessionBlock: { // args
