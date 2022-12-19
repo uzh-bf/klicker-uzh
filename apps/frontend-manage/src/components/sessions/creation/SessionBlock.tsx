@@ -12,7 +12,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
   index: number
-  block: { questionIds: number[]; timeLimit: string }
+  block: { questionIds: number[]; titles: string[]; timeLimit: string }
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
   remove: (index: number) => void
 }
@@ -42,6 +42,7 @@ function SessionBlock({
           ...block.questionIds,
           item.id,
         ])
+        setFieldValue(`blocks[${index}][titles]`, [...block.titles, item.title])
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
@@ -57,11 +58,11 @@ function SessionBlock({
     >
       <div className="flex flex-row items-center justify-between">
         <div className="font-bold">Block {index + 1}</div>
-        <div>
+        <div className="flex flex-row gap-1 ml-2">
           <Button
             onClick={() => remove(index)}
             className={{
-              root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
+              root: 'w-6 flex justify-center text-white bg-red-500 rounded hover:bg-red-600',
             }}
           >
             <FontAwesomeIcon icon={faTrash} />
@@ -69,16 +70,41 @@ function SessionBlock({
           <Button
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'ml-2 rounded',
+              root: 'rounded w-6 flex justify-center',
             }}
           >
             <FontAwesomeIcon icon={faGears} />
           </Button>
         </div>
       </div>
-      {block.questionIds.map((questionId) => (
-        <div key={questionId}>{questionId}</div>
-      ))}
+      <div className="flex flex-col flex-1 gap-1 my-2">
+        {block.titles.map((title, questionIdx) => (
+          <div
+            key={title}
+            className="flex flex-row border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
+          >
+            <div className="p-0.5 flex-1">{title}</div>
+            <div
+              className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 hover:bg-red-600 rounded-r`}
+              onClick={() => {
+                setFieldValue(`blocks[${index}][questionIds]`, [
+                  block.questionIds
+                    .slice(0, questionIdx)
+                    .concat(block.questionIds.slice(questionIdx + 1)),
+                ])
+                setFieldValue(
+                  `blocks[${index}][titles]`,
+                  block.titles
+                    .slice(0, questionIdx)
+                    .concat(block.titles.slice(questionIdx + 1))
+                )
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </div>
+          </div>
+        ))}
+      </div>
       <div
         ref={drop}
         className={twMerge(

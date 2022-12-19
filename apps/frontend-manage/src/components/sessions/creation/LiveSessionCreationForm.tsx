@@ -50,6 +50,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
     blocks: yup.array().of(
       yup.object().shape({
         ids: yup.array().of(yup.number()),
+        titles: yup.array().of(yup.string()),
         timeLimit: yup
           .number()
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
@@ -81,7 +82,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           name: '',
           displayName: '',
           // description: '',
-          blocks: [{ questionIds: [], timeLimit: '' }],
+          blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
           timeLimits: [],
           courseId: '',
           isGamificationEnabled: false,
@@ -193,7 +194,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                         <div className="flex flex-row gap-1 overflow-scroll">
                           {values.blocks.map((block: any, index: number) => (
                             <SessionBlock
-                              key={block.questionIds.join(',')}
+                              key={`${index}-${block.questionIds.join('')}`}
                               index={index}
                               block={block}
                               setFieldValue={setFieldValue}
@@ -205,7 +206,13 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                             className={{
                               root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
                             }}
-                            onClick={() => push([])}
+                            onClick={() =>
+                              push({
+                                questionIds: [],
+                                titles: [],
+                                timeLimit: undefined,
+                              })
+                            }
                           >
                             <FontAwesomeIcon icon={faPlus} />
                             <div>Neuer Block</div>
