@@ -37,7 +37,6 @@ function Chart({
   textSize,
   statisticsShowSolution,
 }: ChartProps): React.ReactElement {
-  console.log('chart', textSize)
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (

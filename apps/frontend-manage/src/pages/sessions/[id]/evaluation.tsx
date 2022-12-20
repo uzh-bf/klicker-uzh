@@ -416,6 +416,19 @@ function Evaluation() {
     currentInstance.questionData.type,
   ])
 
+  // if a question index is provided through the url, directly switch to this question
+  useEffect(() => {
+    if (
+      typeof router.query.questionIx !== 'string' ||
+      !instanceResults[router.query.questionIx]
+    ) {
+      return
+    }
+
+    setSelectedInstance(instanceResults[router.query.questionIx].id)
+    setSelectedBlock(instanceResults[router.query.questionIx].blockIx)
+  }, [router.query.questionIx, instanceResults])
+
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
