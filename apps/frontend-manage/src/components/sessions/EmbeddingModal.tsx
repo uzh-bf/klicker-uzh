@@ -7,7 +7,7 @@ interface EmbeddingModalProps {
   open: boolean
   onClose: () => void
   sessionId: string
-  questions: QuestionInstance[]
+  questions?: QuestionInstance[]
 }
 
 function EmbeddingModal({
@@ -29,7 +29,7 @@ function EmbeddingModal({
         Evaluations-Links für die Einbettung in PowerPoint
       </H2>
       <div className="flex flex-col gap-2">
-        {questions.map((question: QuestionInstance, ix: number) => {
+        {questions?.map((question: QuestionInstance, ix: number) => {
           return (
             <div key={question.id} className="flex flex-row items-center gap-2">
               <div className="w-20 font-bold">Frage {ix + 1}:</div>
