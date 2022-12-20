@@ -3,12 +3,14 @@ import Ellipsis from '@components/common/Ellipsis'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
+  faCode,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetRunningSessionsDocument,
   Session as SessionType,
+  SessionBlock,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -27,6 +29,7 @@ import {
   SESSION_STATUS,
 } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {
   sessionName: string
@@ -39,6 +42,8 @@ function Session({ sessionName, sessionList }: SessionProps) {
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [selectedSession, setSelectedSession] = useState<string>('')
+  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
+
   const router = useRouter()
 
   return (
@@ -62,6 +67,35 @@ function Session({ sessionName, sessionList }: SessionProps) {
                 <div className="flex flex-row justify-between">
                   <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
                   <div className="flex flex-row gap-5">
+                    {session.blocks.length !== 0 && (
+                      <>
+                        <Button
+                          basic
+                          onClick={() => setEmbedModalOpen(true)}
+                          className={{
+                            root: twMerge(
+                              'flex flex-row items-center gap-2 text-sm cursor-pointer',
+                              theme.primaryTextHover
+                            ),
+                          }}
+                        >
+                          <Button.Icon>
+                            <FontAwesomeIcon icon={faCode} size="sm" />
+                          </Button.Icon>
+                          <Button.Label>Einbettung Evaluation</Button.Label>
+                        </Button>
+                        <EmbeddingModal
+                          key={session.id}
+                          open={embedModalOpen}
+                          onClose={() => setEmbedModalOpen(false)}
+                          sessionId={session.id}
+                          questions={session.blocks.flatMap(
+                            (block: SessionBlock) => block.instances
+                          )}
+                        />
+                      </>
+                    )}
+
                     {SESSION_STATUS.RUNNING === session.status && (
                       <Link
                         href={`/sessions/${session.id}/cockpit`}
