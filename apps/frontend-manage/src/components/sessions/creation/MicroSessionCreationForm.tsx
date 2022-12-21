@@ -27,7 +27,33 @@ interface MicroSessionCreationFormProps {
 function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
   // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
   const microSessionCreationSchema = yup.object().shape({
-    // TODO: implement schema for session creation mutation
+    name: yup
+      .string()
+      .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
+    displayName: yup
+      .string()
+      .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
+    description: yup.string(),
+    questions: yup.array().of(
+      yup.object().shape({
+        id: yup.string(),
+        title: yup.string(),
+      })
+    ),
+    startDate: yup
+      .date()
+      .required('Bitte geben Sie ein Startdatum für Ihre Session ein.'),
+    endDate: yup
+      .date()
+      .min(
+        yup.ref('startDate'),
+        'Das Enddatum muss nach dem Startdatum liegen.'
+      )
+      .required('Bitte geben Sie ein Enddatum für Ihre Session ein.'),
+    multiplier: yup
+      .string()
+      .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
+    courseId: yup.string(),
   })
 
   return (
@@ -42,10 +68,16 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
           startDate: '',
           endDate: '',
           multiplier: '1',
+          courseId: '',
         }}
         validationSchema={microSessionCreationSchema}
         onSubmit={async (values) => {
           console.log(values)
+          console.log(
+            'dates:',
+            new Date(values.startDate),
+            new Date(values.endDate)
+          )
           // TODO: creation session with corresponding mutation
           // TODO: parse values using console.log(new Date(datetime))
         }}
@@ -60,6 +92,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
         }) => {
           return (
             <Form>
+              {String(isValid)}
               <FormikTextField
                 required
                 name="name"
@@ -184,6 +217,28 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                     { label: 'Dreifach (3x)', value: '3' },
                     { label: 'Vierfach (4x)', value: '4' },
                   ]}
+                />
+              </div>
+              <div>
+                <ErrorMessage
+                  name="courseId"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+                <ErrorMessage
+                  name="startDate"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+                <ErrorMessage
+                  name="endDate"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+                <ErrorMessage
+                  name="multiplier"
+                  component="div"
+                  className="text-sm text-red-400"
                 />
               </div>
               <Button

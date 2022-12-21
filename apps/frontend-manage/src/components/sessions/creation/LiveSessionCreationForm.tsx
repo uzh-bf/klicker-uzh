@@ -262,6 +262,23 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className={{ root: 'ml-4' }}
                 />
               </div>
+              <div>
+                <ErrorMessage
+                  name="courseId"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+                <ErrorMessage
+                  name="multiplier"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+                <ErrorMessage
+                  name="isGamificationEnabled"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+              </div>
               <Button
                 className={{ root: 'float-right' }}
                 type="submit"

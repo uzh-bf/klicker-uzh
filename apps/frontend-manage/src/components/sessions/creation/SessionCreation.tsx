@@ -91,7 +91,7 @@ function SessionCreation() {
             value="micro-session"
             className={{ root: 'overflow-y-scroll md:h-72' }}
           >
-            <MicroSessionCreationForm />
+            <MicroSessionCreationForm courses={courseSelection} />
           </TabContent>
           <TabContent
             key="learning-element"
