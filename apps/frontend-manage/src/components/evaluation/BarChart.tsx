@@ -1,3 +1,4 @@
+import { TextSizeType } from '@components/sessions/evaluation/constants'
 import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
@@ -19,7 +20,7 @@ import {
 interface BarChartProps {
   data: InstanceResult
   showSolution: boolean
-  textSize: Record<string, string>
+  textSize: Partial<TextSizeType>
 }
 
 function BarChart({

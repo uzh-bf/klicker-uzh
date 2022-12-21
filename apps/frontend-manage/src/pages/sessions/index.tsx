@@ -1,10 +1,8 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetUserSessionsDocument,
-  Session as SessionType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
+import { H2 } from '@uzh-bf/design-system'
 import { useMemo } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
@@ -48,28 +46,44 @@ function SessionList() {
     <Layout displayName="Sessions">
       <div className="flex flex-col gap-5">
         {runningSessions && runningSessions.length > 0 && (
-          <Session
-            sessionName="Laufende Sessionen"
-            sessionList={runningSessions as SessionType[]}
-          />
+          <div>
+            <H2>Laufende Sessionen</H2>
+            <div className="flex flex-col gap-2">
+              {runningSessions.map((session) => (
+                <Session key={session.id} session={session} />
+              ))}
+            </div>
+          </div>
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
-          <Session
-            sessionName="Geplante Sessionen"
-            sessionList={scheduledSessions as SessionType[]}
-          />
+          <div>
+            <H2>Geplante Sessionen</H2>
+            <div className="flex flex-col gap-2">
+              {scheduledSessions.map((session) => (
+                <Session key={session.id} session={session} />
+              ))}
+            </div>
+          </div>
         )}
         {preparedSessions && preparedSessions.length > 0 && (
-          <Session
-            sessionName="Vorbereitete Sessionen"
-            sessionList={preparedSessions as SessionType[]}
-          />
+          <div>
+            <H2>Vorbereitete Sessionen</H2>
+            <div className="flex flex-col gap-2">
+              {preparedSessions.map((session) => (
+                <Session key={session.id} session={session} />
+              ))}
+            </div>
+          </div>
         )}
         {completedSessions && completedSessions.length > 0 && (
-          <Session
-            sessionName="Abgeschlossene Sessionen"
-            sessionList={completedSessions as SessionType[]}
-          />
+          <div>
+            <H2>Abgeschlossene Sessionen</H2>
+            <div className="flex flex-col gap-2">
+              {completedSessions.map((session) => (
+                <Session key={session.id} session={session} />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </Layout>
