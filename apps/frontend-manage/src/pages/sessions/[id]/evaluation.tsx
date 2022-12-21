@@ -76,13 +76,18 @@ function Evaluation() {
     skip: !router.query.id,
   })
 
-  const { blocks, feedbacks, confusionFeedbacks, isGamificationEnabled } =
-    data?.sessionEvaluation || {
-      blocks: [],
-      feedbacks: [],
-      confusionFeedbacks: [],
-      isGamificationEnabled: false,
-    }
+  const {
+    blocks,
+    feedbacks,
+    confusionFeedbacks,
+    isGamificationEnabled,
+    status,
+  } = data?.sessionEvaluation || {
+    blocks: [],
+    feedbacks: [],
+    confusionFeedbacks: [],
+    isGamificationEnabled: false,
+  }
 
   const instanceResults = useMemo(() => {
     return data?.sessionEvaluation?.instanceResults ?? []

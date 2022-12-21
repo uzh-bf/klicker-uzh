@@ -93,6 +93,7 @@ function EvaluationControlBar({
       {blocks && blocks[selectedBlock] && (
         <div className="flex flex-row items-center gap-2">
           <Button
+            basic
             onClick={() => {
               setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
               setSelectedBlock(
@@ -110,6 +111,7 @@ function EvaluationControlBar({
             <FontAwesomeIcon icon={faArrowLeft} />
           </Button>
           <Button
+            basic
             onClick={() => {
               setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
               setSelectedBlock(
@@ -151,6 +153,7 @@ function EvaluationControlBar({
       )}
       <div className="flex flex-row ml-auto">
         <Button
+          basic
           onClick={() => {
             setSelectedInstance(blocks[selectedBlock - 1].tabData[0].id)
             setLeaderboard(false)
@@ -176,6 +179,7 @@ function EvaluationControlBar({
 
         {tabs.map((tab) => (
           <Button
+            basic
             key={tab.value}
             onClick={() => {
               setSelectedBlock(tab.value)
@@ -207,6 +211,7 @@ function EvaluationControlBar({
         ))}
 
         <Button
+          basic
           onClick={() => {
             setSelectedInstance(blocks[selectedBlock + 1].tabData[0].id)
             setLeaderboard(false)
@@ -235,6 +240,7 @@ function EvaluationControlBar({
         </Button>
         {isGamificationEnabled && (
           <Button
+            basic
             className={{
               root: twMerge(
                 'px-3 py-2 border-b-2 border-transparent',
@@ -259,6 +265,7 @@ function EvaluationControlBar({
 
         {status === 'COMPLETED' && feedbacks?.length !== 0 && (
           <Button
+            basic
             className={{
               root: twMerge(
                 'px-3 py-2 border-b-2 border-transparent',
@@ -282,6 +289,7 @@ function EvaluationControlBar({
         )}
         {status === 'COMPLETED' && confusionFeedbacks?.length !== 0 && (
           <Button
+            basic
             className={{
               root: twMerge(
                 'px-3 py-2 border-b-2 border-transparent',
