@@ -1,30 +1,17 @@
 import { useQuery } from '@apollo/client'
-import {
-  Course,
-  GetUserCoursesDocument,
-  GetUserQuestionsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/TagList'
-import {
-  Button,
-  Tab,
-  TabContent,
-  TabList,
-  Tabs,
-  ThemeContext,
-} from '@uzh-bf/design-system'
+import SessionCreation from '@components/sessions/creation/SessionCreation'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
-import LearningElementCreationForm from '../components/sessions/creation/LearningElementCreationForm'
-import LiveSessionCreationForm from '../components/sessions/creation/LiveSessionCreationForm'
-import MicroSessionCreationForm from '../components/sessions/creation/MicroSessionCreationForm'
 
 function Index() {
   const router = useRouter()
@@ -38,21 +25,6 @@ function Index() {
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
-
-  const {
-    loading: loadingCourses,
-    error: errorCourses,
-    data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
-
-  const courseSelection = useMemo(
-    () =>
-      dataCourses?.userCourses?.map((course: Course) => ({
-        label: course.displayName,
-        value: course.id,
-      })),
-    [dataCourses]
-  )
 
   const {
     filters,
@@ -95,113 +67,7 @@ function Index() {
       <div className="w-full h-full" id="homepage">
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
           <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
-            {/* // TODO: replace by proper session creation component */}
-            <Tabs defaultValue="live-session">
-              <TabList
-                className={{
-                  root: 'flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60',
-                }}
-              >
-                <Tab
-                  key="live-session"
-                  value="live-session"
-                  label="Live-Session"
-                  className={{
-                    root: twMerge('flex-1', theme.primaryBgHover),
-                    label:
-                      'font-bold text-base flex flex-col justify-center h-full',
-                  }}
-                />
-                <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <Tab
-                  key="micro-session"
-                  value="micro-session"
-                  label="Micro-Session"
-                  className={{
-                    root: twMerge(
-                      'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                      theme.primaryBgHover
-                    ),
-                    label:
-                      'font-bold text-base flex flex-col justify-center h-full',
-                  }}
-                />
-                <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <Tab
-                  key="learning-element"
-                  value="learning-element"
-                  label="Lernelement"
-                  className={{
-                    root: twMerge(
-                      'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                      theme.primaryBgHover
-                    ),
-                    label:
-                      'font-bold text-base flex flex-col justify-center h-full',
-                  }}
-                />
-              </TabList>
-              <div className="p-3" id="live-session-form">
-                <TabContent
-                  key="live-session"
-                  value="live-session"
-                  className={{ root: 'overflow-y-scroll md:h-72' }}
-                >
-                  <LiveSessionCreationForm courses={courseSelection} />
-                </TabContent>
-                <TabContent
-                  key="micro-session"
-                  value="micro-session"
-                  className={{ root: 'overflow-y-scroll md:h-64' }}
-                >
-                  <MicroSessionCreationForm />
-                </TabContent>
-                <TabContent
-                  key="learning-element"
-                  value="learning-element"
-                  className={{ root: 'overflow-y-scroll md:h-64' }}
-                >
-                  <LearningElementCreationForm />
-                </TabContent>
-              </div>
-            </Tabs>
-            {/* {editSessionId ? (
-              <SessionEditForm
-                handleCreateSession={onCreateSession}
-                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-                handleSetSessionAuthenticationMode={
-                  setSessionAuthenticationMode
-                }
-                handleSetSessionBlocks={setSessionBlocks}
-                handleSetSessionName={setSessionName}
-                handleSetSessionParticipants={setSessionParticipants}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                runningSessionId={runningSessionId}
-                sessionAuthenticationMode={sessionAuthenticationMode}
-                sessionBlocks={sessionBlocks}
-                sessionName={sessionName}
-                sessionParticipants={sessionParticipants}
-                setSessionName={setSessionName}
-              />
-            ) : (
-              <SessionCreationForm
-                handleCreateSession={onCreateSession}
-                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-                handleSetSessionAuthenticationMode={
-                  setSessionAuthenticationMode
-                }
-                handleSetSessionBlocks={setSessionBlocks}
-                handleSetSessionName={setSessionName}
-                handleSetSessionParticipants={setSessionParticipants}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                runningSessionId={runningSessionId}
-                sessionAuthenticationMode={sessionAuthenticationMode}
-                sessionBlocks={sessionBlocks}
-                sessionName={sessionName}
-                sessionParticipants={sessionParticipants}
-                setSessionName={setSessionName}
-              />
-            )} */}
+            <SessionCreation />
           </div>
         </div>
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
