@@ -63,6 +63,7 @@ function SessionCreation() {
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
+              // disabled={courseSelection?.length === 0}
             />
             <div className="border-r-2 border-solid border-uzh-grey-60" />
             <Tab
@@ -77,6 +78,7 @@ function SessionCreation() {
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
+              // disabled={courseSelection?.length === 0}
             />
           </TabList>
           <TabContent

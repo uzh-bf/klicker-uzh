@@ -137,10 +137,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               resetForm()
             }
           } catch (error) {
-            alert('Bitte geben Sie nur gültige Frage-IDs ein.')
+            // TODO: add error handling - e.g. corresponding toast
+            console.log('error')
           }
-
-          // TODO: add possibilities to add time limits to questions
         }}
       >
         {({

@@ -1,9 +1,14 @@
+import { useMutation } from '@apollo/client'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CreateMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
   FormikTextField,
   H3,
   Label,
+  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -12,19 +17,26 @@ import {
   Form,
   Formik,
 } from 'formik'
+import Link from 'next/link'
+import { useContext } from 'react'
+import toast from 'react-hot-toast'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
 
 interface MicroSessionCreationFormProps {
-  courses?: {
+  courses: {
     label: string
     value: string
   }[]
 }
 
 function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
+  const theme = useContext(ThemeContext)
+  const [createMicroSession] = useMutation(CreateMicroSessionDocument)
+
   // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
   const microSessionCreationSchema = yup.object().shape({
     name: yup
@@ -56,6 +68,8 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
     courseId: yup.string(),
   })
 
+  // TODO: ensure that a course is selected - "no course" should not be an option for micro-sessions
+
   return (
     <div>
       <H3>Micro-Session erstellen</H3>
@@ -71,13 +85,49 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
           courseId: '',
         }}
         validationSchema={microSessionCreationSchema}
-        onSubmit={async (values) => {
+        onSubmit={async (values, { resetForm }) => {
           console.log(values)
           console.log(
-            'dates:',
-            new Date(values.startDate),
-            new Date(values.endDate)
+            'questions',
+            values.questions.map((q: any) => q.id)
           )
+
+          try {
+            const result = await createMicroSession({
+              variables: {
+                name: values.name,
+                displayName: values.displayName,
+                description: values.description,
+                questions: values.questions.map((q: any) => q.id),
+                startDate: values.startDate,
+                endDate: values.endDate,
+                multiplier: parseInt(values.multiplier),
+                courseId: values.courseId,
+              },
+            })
+            if (result.data?.createMicroSession) {
+              toast.success(
+                <div>
+                  <div>Micro-Session erfolgreich erstellt!</div>
+                  <div className="flex flex-row items-center">
+                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+                    Zur
+                    <Link
+                      href={`/courses/${values.courseId}`}
+                      className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-course-link"
+                    >
+                      Kursübersicht
+                    </Link>
+                  </div>
+                </div>
+              )
+              resetForm()
+            }
+          } catch (error) {
+            // TODO: add error handling
+            console.log(error)
+          }
           // TODO: creation session with corresponding mutation
           // TODO: parse values using console.log(new Date(datetime))
         }}
@@ -92,7 +142,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
         }) => {
           return (
             <Form>
-              {String(isValid)}
               <FormikTextField
                 required
                 name="name"
