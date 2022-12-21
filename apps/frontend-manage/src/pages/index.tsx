@@ -4,14 +4,20 @@ import {
   GetUserCoursesDocument,
   GetUserQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/TagList'
-import { Button, H4, ThemeContext } from '@uzh-bf/design-system'
+import {
+  Button,
+  Tab,
+  TabContent,
+  TabList,
+  Tabs,
+  ThemeContext,
+} from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -90,70 +96,75 @@ function Index() {
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
           <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
             {/* // TODO: replace by proper session creation component */}
-            <TabsPrimitive.Root defaultValue="live-session">
-              <TabsPrimitive.List className="flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60">
-                <TabsPrimitive.Trigger
+            <Tabs defaultValue="live-session">
+              <TabList
+                className={{
+                  root: 'flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60',
+                }}
+              >
+                <Tab
+                  key="live-session"
                   value="live-session"
-                  className={twMerge('flex-1', theme.primaryBgHover)}
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Live-Session
-                  </H4>
-                </TabsPrimitive.Trigger>
+                  label="Live-Session"
+                  className={{
+                    root: twMerge('flex-1', theme.primaryBgHover),
+                    label:
+                      'font-bold text-base flex flex-col justify-center h-full',
+                  }}
+                />
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <TabsPrimitive.Trigger
+                <Tab
+                  key="micro-session"
                   value="micro-session"
-                  className={twMerge(
-                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                    theme.primaryBgHover
-                  )}
-                  disabled
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Micro-Session
-                  </H4>
-                </TabsPrimitive.Trigger>
+                  label="Micro-Session"
+                  className={{
+                    root: twMerge(
+                      'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                      theme.primaryBgHover
+                    ),
+                    label:
+                      'font-bold text-base flex flex-col justify-center h-full',
+                  }}
+                />
                 <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <TabsPrimitive.Trigger
+                <Tab
+                  key="learning-element"
                   value="learning-element"
-                  className={twMerge(
-                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                    theme.primaryBgHover
-                  )}
-                  disabled
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Learning Element
-                  </H4>
-                </TabsPrimitive.Trigger>
-              </TabsPrimitive.List>
+                  label="Lernelement"
+                  className={{
+                    root: twMerge(
+                      'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                      theme.primaryBgHover
+                    ),
+                    label:
+                      'font-bold text-base flex flex-col justify-center h-full',
+                  }}
+                />
+              </TabList>
               <div className="p-3" id="live-session-form">
-                <TabsPrimitive.Content
+                <TabContent
+                  key="live-session"
                   value="live-session"
-                  className="overflow-y-scroll md:h-72"
+                  className={{ root: 'overflow-y-scroll md:h-72' }}
                 >
                   <LiveSessionCreationForm courses={courseSelection} />
-                </TabsPrimitive.Content>
-                <TabsPrimitive.Content
+                </TabContent>
+                <TabContent
+                  key="micro-session"
                   value="micro-session"
-                  className="overflow-y-scroll md:h-64"
+                  className={{ root: 'overflow-y-scroll md:h-64' }}
                 >
                   <MicroSessionCreationForm />
-                </TabsPrimitive.Content>
-                <TabsPrimitive.Content
+                </TabContent>
+                <TabContent
+                  key="learning-element"
                   value="learning-element"
-                  className="overflow-y-scroll md:h-64"
+                  className={{ root: 'overflow-y-scroll md:h-64' }}
                 >
                   <LearningElementCreationForm />
-                </TabsPrimitive.Content>
+                </TabContent>
               </div>
-            </TabsPrimitive.Root>
+            </Tabs>
             {/* {editSessionId ? (
               <SessionEditForm
                 handleCreateSession={onCreateSession}
