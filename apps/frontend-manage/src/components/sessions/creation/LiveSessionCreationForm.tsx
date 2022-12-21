@@ -152,127 +152,125 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           isValid,
         }) => {
           return (
-            <div>
-              <Form className="">
-                <FormikTextField
-                  required
-                  name="name"
-                  label="Session-Name"
-                  tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-                  className={{ root: 'mb-1' }}
-                  id="session-name"
-                />
-                <FormikTextField
-                  required
-                  name="displayName"
-                  label="Anzeigenamen"
-                  tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
-                  className={{ root: 'mb-1' }}
-                  id="display-name"
-                />
+            <Form className="">
+              <FormikTextField
+                required
+                name="name"
+                label="Session-Name"
+                tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+                className={{ root: 'mb-1' }}
+                id="session-name"
+              />
+              <FormikTextField
+                required
+                name="displayName"
+                label="Anzeigenamen"
+                tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
+                className={{ root: 'mb-1' }}
+                id="display-name"
+              />
 
-                <EditorField
-                  key={values.name}
-                  label="Beschreibung"
-                  tooltip="// TODO CONTENT TOOLTIP"
-                  field={values.description}
-                  fieldName="description"
-                  setFieldValue={setFieldValue}
-                  error={errors.description}
-                  touched={touched.description}
+              <EditorField
+                key={values.name}
+                label="Beschreibung"
+                tooltip="// TODO CONTENT TOOLTIP"
+                field={values.description}
+                fieldName="description"
+                setFieldValue={setFieldValue}
+                error={errors.description}
+                touched={touched.description}
+              />
+              <div className="w-full text-right">
+                <ErrorMessage
+                  name="description"
+                  component="div"
+                  className="text-sm text-red-400"
                 />
-                <div className="w-full text-right">
-                  <ErrorMessage
-                    name="description"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
-                </div>
+              </div>
 
-                {/* // TODO: add possibility to add and remove blocks */}
-                <div className="mt-2 mb-2">
-                  <div className="flex flex-row items-center flex-1 gap-2">
-                    <Label
-                      label="Blocks:"
-                      className={{
-                        root: 'font-bold',
-                        tooltip: 'font-normal text-sm !w-1/2',
-                      }}
-                      tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
-                      showTooltipSymbol={true}
-                    />
-                    <FieldArray name="blocks">
-                      {({ push, remove }: FieldArrayRenderProps) => (
-                        <div className="flex flex-row gap-1 overflow-scroll">
-                          {values.blocks.map((block: any, index: number) => (
-                            <SessionBlock
-                              key={`${index}-${block.questionIds.join('')}`}
-                              index={index}
-                              block={block}
-                              setFieldValue={setFieldValue}
-                              remove={remove}
-                            />
-                          ))}
-                          <AddBlockButton push={push} />
-                        </div>
-                      )}
-                    </FieldArray>
-                  </div>
-                  <ErrorMessage
-                    name="blocks"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
-                </div>
-
-                <div className="flex flex-row items-center">
+              {/* // TODO: add possibility to add and remove blocks */}
+              <div className="mt-2 mb-2">
+                <div className="flex flex-row items-center flex-1 gap-2">
                   <Label
-                    label="Optionen"
+                    label="Frageblöcke:"
                     className={{
-                      root: 'my-auto mr-2 font-bold min-w-max',
-                      tooltip: 'text-sm font-normal !w-1/2',
+                      root: 'font-bold',
+                      tooltip: 'font-normal text-sm !w-1/2',
                     }}
+                    tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
+                    showTooltipSymbol={true}
                   />
-                  {courses && (
-                    <>
-                      <div className="mr-2">Kurs:</div>
-                      <FormikSelectField
-                        name="courseId"
-                        placeholder="Kurs auswählen"
-                        items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
-                      />
-                    </>
-                  )}
-                  <div className="ml-4 mr-2">Multiplier:</div>
-                  <FormikSelectField
-                    name="multiplier"
-                    placeholder="Default: 1x"
-                    items={[
-                      { label: 'Einfach (1x)', value: '1' },
-                      { label: 'Doppelt (2x)', value: '2' },
-                      { label: 'Dreifach (3x)', value: '3' },
-                      { label: 'Vierfach (4x)', value: '4' },
-                    ]}
-                  />
-                  <Switch
-                    label="Gamification"
-                    checked={values.isGamificationEnabled}
-                    onCheckedChange={(newValue: boolean) =>
-                      setFieldValue('isGamificationEnabled', newValue)
-                    }
-                    className={{ root: 'ml-4' }}
-                  />
+                  <FieldArray name="blocks">
+                    {({ push, remove }: FieldArrayRenderProps) => (
+                      <div className="flex flex-row gap-1 overflow-scroll">
+                        {values.blocks.map((block: any, index: number) => (
+                          <SessionBlock
+                            key={`${index}-${block.questionIds.join('')}`}
+                            index={index}
+                            block={block}
+                            setFieldValue={setFieldValue}
+                            remove={remove}
+                          />
+                        ))}
+                        <AddBlockButton push={push} />
+                      </div>
+                    )}
+                  </FieldArray>
                 </div>
-                <Button
-                  className={{ root: 'float-right' }}
-                  type="submit"
-                  disabled={isSubmitting || !isValid}
-                  id="create-new-session"
-                >
-                  Erstellen
-                </Button>
-              </Form>
-            </div>
+                <ErrorMessage
+                  name="blocks"
+                  component="div"
+                  className="text-sm text-red-400"
+                />
+              </div>
+
+              <div className="flex flex-row items-center">
+                <Label
+                  label="Optionen"
+                  className={{
+                    root: 'my-auto mr-2 font-bold min-w-max',
+                    tooltip: 'text-sm font-normal !w-1/2',
+                  }}
+                />
+                {courses && (
+                  <>
+                    <div className="mr-2">Kurs:</div>
+                    <FormikSelectField
+                      name="courseId"
+                      placeholder="Kurs auswählen"
+                      items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
+                    />
+                  </>
+                )}
+                <div className="ml-4 mr-2">Multiplier:</div>
+                <FormikSelectField
+                  name="multiplier"
+                  placeholder="Default: 1x"
+                  items={[
+                    { label: 'Einfach (1x)', value: '1' },
+                    { label: 'Doppelt (2x)', value: '2' },
+                    { label: 'Dreifach (3x)', value: '3' },
+                    { label: 'Vierfach (4x)', value: '4' },
+                  ]}
+                />
+                <Switch
+                  label="Gamification"
+                  checked={values.isGamificationEnabled}
+                  onCheckedChange={(newValue: boolean) =>
+                    setFieldValue('isGamificationEnabled', newValue)
+                  }
+                  className={{ root: 'ml-4' }}
+                />
+              </div>
+              <Button
+                className={{ root: 'float-right' }}
+                type="submit"
+                disabled={isSubmitting || !isValid}
+                id="create-new-session"
+              >
+                Erstellen
+              </Button>
+            </Form>
           )
         }}
       </Formik>

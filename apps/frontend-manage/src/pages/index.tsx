@@ -65,11 +65,8 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full" id="homepage">
-        <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
-          <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
-            <SessionCreation />
-          </div>
-        </div>
+        <SessionCreation />
+
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 ">
             {dataQuestions && dataQuestions.userQuestions && (

@@ -32,70 +32,77 @@ function SessionCreation() {
   )
 
   return (
-    <Tabs defaultValue="live-session">
-      <TabList
-        className={{
-          root: 'flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60',
-        }}
-      >
-        <Tab
-          key="live-session"
-          value="live-session"
-          label="Live-Session"
-          className={{
-            root: twMerge('flex-1', theme.primaryBgHover),
-            label: 'font-bold text-base flex flex-col justify-center h-full',
-          }}
-        />
-        <div className="border-r-2 border-solid border-uzh-grey-60" />
-        <Tab
-          key="micro-session"
-          value="micro-session"
-          label="Micro-Session"
-          className={{
-            root: twMerge(
-              'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-              theme.primaryBgHover
-            ),
-            label: 'font-bold text-base flex flex-col justify-center h-full',
-          }}
-        />
-        <div className="border-r-2 border-solid border-uzh-grey-60" />
-        <Tab
-          key="learning-element"
-          value="learning-element"
-          label="Lernelement"
-          className={{
-            root: twMerge(
-              'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-              theme.primaryBgHover
-            ),
-            label: 'font-bold text-base flex flex-col justify-center h-full',
-          }}
-        />
-      </TabList>
-      <TabContent
-        key="live-session"
-        value="live-session"
-        className={{ root: 'overflow-y-scroll md:h-72' }}
-      >
-        <LiveSessionCreationForm courses={courseSelection} />
-      </TabContent>
-      <TabContent
-        key="micro-session"
-        value="micro-session"
-        className={{ root: 'overflow-y-scroll md:h-72' }}
-      >
-        <MicroSessionCreationForm />
-      </TabContent>
-      <TabContent
-        key="learning-element"
-        value="learning-element"
-        className={{ root: 'overflow-y-scroll md:h-72' }}
-      >
-        <LearningElementCreationForm />
-      </TabContent>
-    </Tabs>
+    <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
+      <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
+        <Tabs defaultValue="live-session">
+          <TabList
+            className={{
+              root: 'flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60',
+            }}
+          >
+            <Tab
+              key="live-session"
+              value="live-session"
+              label="Live-Session"
+              className={{
+                root: twMerge('flex-1', theme.primaryBgHover),
+                label:
+                  'font-bold text-base flex flex-col justify-center h-full',
+              }}
+            />
+            <div className="border-r-2 border-solid border-uzh-grey-60" />
+            <Tab
+              key="micro-session"
+              value="micro-session"
+              label="Micro-Session"
+              className={{
+                root: twMerge(
+                  'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                  theme.primaryBgHover
+                ),
+                label:
+                  'font-bold text-base flex flex-col justify-center h-full',
+              }}
+            />
+            <div className="border-r-2 border-solid border-uzh-grey-60" />
+            <Tab
+              key="learning-element"
+              value="learning-element"
+              label="Lernelement"
+              className={{
+                root: twMerge(
+                  'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
+                  theme.primaryBgHover
+                ),
+                label:
+                  'font-bold text-base flex flex-col justify-center h-full',
+              }}
+            />
+          </TabList>
+          <TabContent
+            key="live-session"
+            value="live-session"
+            className={{ root: 'overflow-y-scroll md:h-72' }}
+          >
+            <LiveSessionCreationForm courses={courseSelection} />
+          </TabContent>
+          <TabContent
+            key="micro-session"
+            value="micro-session"
+            className={{ root: 'overflow-y-scroll md:h-72' }}
+          >
+            <MicroSessionCreationForm />
+          </TabContent>
+          <TabContent
+            key="learning-element"
+            value="learning-element"
+            className={{ root: 'overflow-y-scroll md:h-72' }}
+          >
+            <LearningElementCreationForm />
+          </TabContent>
+        </Tabs>
+      </div>
+    </div>
   )
 }
 
