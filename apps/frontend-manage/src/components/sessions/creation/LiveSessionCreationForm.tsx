@@ -1,9 +1,5 @@
 import { useMutation } from '@apollo/client'
-import {
-  faArrowRight,
-  faPlus,
-  faTrash,
-} from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
@@ -11,10 +7,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
+  FormikSelectField,
   FormikTextField,
   H3,
   Label,
-  Select,
   Switch,
   ThemeContext,
 } from '@uzh-bf/design-system'
@@ -30,6 +26,9 @@ import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import AddBlockButton from './AddBlockButton'
+import EditorField from './EditorField'
+import SessionBlock from './SessionBlock'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -49,31 +48,25 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
     displayName: yup
       .string()
       .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
-    // description: yup.string(),
-    blocks: yup
-      .array()
-      .of(
-        yup
-          .array()
-          .of(
-            yup
-              .string()
-              .required(
-                'Bitte überprüfen Sie Ihre eingabe und geben sie durch Kommas getrennte Frage-IDs ein.'
-              )
-          )
-          .min(
-            1,
-            'Bitte beachten das Eingabteformat beachten und sicherstellen, dass jeder Block mind. eine Frage enthält. Für Sessions ohne Fragen bitten den Default-Block löschen.'
-          )
-      ),
-    // timeLimits is an array with the same length as blocks and contains the time limit for each block which is a string that contains an integer that is at least zero
+    description: yup.string(),
+    blocks: yup.array().of(
+      yup.object().shape({
+        ids: yup.array().of(yup.number()),
+        titles: yup.array().of(yup.string()),
+        timeLimit: yup
+          .number()
+          .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
+      })
+    ),
     timeLimits: yup.array().of(
       yup
         .string()
         .matches(/^[0-9]+$/, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
         .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
     ),
+    multiplier: yup
+      .string()
+      .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
     courseId: yup.string(),
     isGamificationEnabled: yup
       .boolean()
@@ -92,30 +85,22 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         initialValues={{
           name: '',
           displayName: '',
-          // description: '',
-          blocks: [['']],
-          timeLimits: [''],
+          description: '',
+          blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
+          timeLimits: [],
           courseId: '',
+          multiplier: '1',
           isGamificationEnabled: false,
         }}
         isInitialValid={false}
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
-            .filter((block) => block.length > 0)
-            .map((block, idx) => {
+            .filter((block) => block.questionIds.length > 0)
+            .map((block) => {
               return {
-                questionIds: block.flatMap((question) => {
-                  return question
-                    .replace(/\s/g, '')
-                    .split(',')
-                    .map((questionId) => parseInt(questionId))
-                }),
-                timeLimit:
-                  values.timeLimits[idx] !== '' &&
-                  Number(values.timeLimits[idx]) > 0
-                    ? Number(values.timeLimits[idx])
-                    : undefined,
+                questionIds: block.questionIds,
+                timeLimit: block.timeLimit,
               }
             })
 
@@ -124,8 +109,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
               variables: {
                 name: values.name,
                 displayName: values.displayName,
+                description: values.description,
                 blocks: blockQuestions,
                 courseId: values.courseId,
+                multiplier: parseInt(values.multiplier),
                 isGamificationEnabled: values.isGamificationEnabled,
               },
               refetchQueries: [GetUserSessionsDocument],
@@ -184,8 +171,10 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   id="display-name"
                 />
 
-                {/* <EditorField
+                <EditorField
+                  key={values.name}
                   label="Beschreibung"
+                  tooltip="// TODO CONTENT TOOLTIP"
                   field={values.description}
                   fieldName="description"
                   setFieldValue={setFieldValue}
@@ -198,7 +187,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                </div> */}
+                </div>
 
                 {/* // TODO: add possibility to add and remove blocks */}
                 <div className="mt-2 mb-2">
@@ -216,65 +205,15 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       {({ push, remove }: FieldArrayRenderProps) => (
                         <div className="flex flex-row gap-1 overflow-scroll">
                           {values.blocks.map((block: any, index: number) => (
-                            <div
-                              className="flex flex-row items-center gap-2"
-                              key={index}
-                            >
-                              <div
-                                key={index}
-                                className="flex flex-col p-2 border border-solid rounded-md w-52"
-                              >
-                                <div className="flex flex-row items-center justify-between" id="block-container-header">
-                                  <div>Block {index + 1}</div>
-                                  <Button
-                                    onClick={() => remove(index)}
-                                    className={{
-                                      root: 'ml-2 text-white bg-red-500 rounded hover:bg-red-600',
-                                    }}
-                                    id="delete-block"
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </Button>
-                                </div>
-                                <FormikTextField
-                                  id={`blocks.${index}`}
-                                  value={block.join(', ')}
-                                  className={{ root: 'mb-1' }}
-                                  onChange={(newValue: string) => {
-                                    setFieldValue(
-                                      `blocks[${index}]`,
-                                      newValue
-                                        .replace(/[^0-9\s,]/g, '')
-                                        .split(', ')
-                                    )
-                                  }}
-                                  placeholder="Frage-Ids"
-                                />
-                                <FormikTextField
-                                  id={`timeLimits.${index}`}
-                                  value={values.timeLimits[index] || ''}
-                                  onChange={(newValue: string) => {
-                                    setFieldValue(
-                                      `timeLimits[${index}]`,
-                                      newValue.replace(/[^0-9]/g, '')
-                                    )
-                                  }}
-                                  placeholder="Zeit-Limit [s]"
-                                />
-                              </div>
-                            </div>
+                            <SessionBlock
+                              key={`${index}-${block.questionIds.join('')}`}
+                              index={index}
+                              block={block}
+                              setFieldValue={setFieldValue}
+                              remove={remove}
+                            />
                           ))}
-                          <Button
-                            fluid
-                            className={{
-                              root: 'flex flex-row items-center justify-center font-bold border border-solid w-36 border-uzh-grey-100',
-                            }}
-                            onClick={() => push([])}
-                            id="add-block"
-                          >
-                            <FontAwesomeIcon icon={faPlus} />
-                            <div>Neuer Block</div>
-                          </Button>
+                          <AddBlockButton push={push} />
                         </div>
                       )}
                     </FieldArray>
@@ -296,17 +235,25 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   />
                   {courses && (
                     <>
-                      <div className="mr-2" id="course-selection-div">Kurs:</div>
-                      <Select
+                      <div className="mr-2">Kurs:</div>
+                      <FormikSelectField
+                        name="courseId"
                         placeholder="Kurs auswählen"
                         items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
-                        onChange={(newValue: string) =>
-                          setFieldValue('courseId', newValue)
-                        }
-                        value={values.courseId}
                       />
                     </>
                   )}
+                  <div className="ml-4 mr-2">Multiplier:</div>
+                  <FormikSelectField
+                    name="multiplier"
+                    placeholder="Default: 1x"
+                    items={[
+                      { label: 'Einfach (1x)', value: '1' },
+                      { label: 'Doppelt (2x)', value: '2' },
+                      { label: 'Dreifach (3x)', value: '3' },
+                      { label: 'Vierfach (4x)', value: '4' },
+                    ]}
+                  />
                   <Switch
                     label="Gamification"
                     checked={values.isGamificationEnabled}

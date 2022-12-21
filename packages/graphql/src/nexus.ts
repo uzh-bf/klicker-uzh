@@ -1600,6 +1600,7 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
+        description: stringArg(),
         blocks: nonNull(
           list(
             arg({
@@ -1608,6 +1609,7 @@ export const Mutation = objectType({
           )
         ),
         courseId: stringArg(),
+        multiplier: nonNull(intArg()),
         isGamificationEnabled: booleanArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
