@@ -1,3 +1,4 @@
+import { TextSizeType } from '@components/sessions/evaluation/constants'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import BarChart from './BarChart'
@@ -9,18 +10,7 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
-  textSize: {
-    size: string
-    text: string
-    prose: string
-    textLg: string
-    textXl: string
-    text2Xl: string
-    text3Xl: string
-    legend: string
-    min: number
-    max: number
-  }
+  textSize: TextSizeType
   statisticsShowSolution?: {
     mean?: boolean
     median?: boolean

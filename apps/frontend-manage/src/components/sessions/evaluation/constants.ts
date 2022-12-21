@@ -1,3 +1,16 @@
+export interface TextSizeType {
+  size: string
+  text: string
+  prose: string
+  textLg: string
+  textXl: string
+  text2Xl: string
+  text3Xl: string
+  legend: string
+  min: number
+  max: number
+}
+
 export const TextSizes = {
   xl: {
     size: 'xl',
