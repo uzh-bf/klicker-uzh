@@ -187,7 +187,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 />
               </div>
 
-              {/* // TODO: add possibility to add and remove blocks */}
               <div className="mt-2 mb-2">
                 <div className="flex flex-row items-center flex-1 gap-2">
                   <Label
@@ -196,7 +195,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                       root: 'font-bold',
                       tooltip: 'font-normal text-sm !w-1/2',
                     }}
-                    tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
+                    tooltip="Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcken können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden."
                     showTooltipSymbol={true}
                   />
                   <FieldArray name="blocks">

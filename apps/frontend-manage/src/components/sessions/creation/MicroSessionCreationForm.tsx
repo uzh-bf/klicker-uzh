@@ -82,7 +82,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
           startDate: '',
           endDate: '',
           multiplier: '1',
-          courseId: '',
+          courseId: courses[0].value,
         }}
         validationSchema={microSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
@@ -185,7 +185,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                       root: 'font-bold',
                       tooltip: 'font-normal text-sm !w-1/2',
                     }}
-                    tooltip="Fügen Sie hier die Fragen Ihrer Session hinzu - Format Frage-Ids: ##, ##, ###. Jeder Block kann beliebig viele Fragen enthalten. Die Blöcke werden den Teilnehmenden in der eingegebenen Reihenfolge angezeigt."
+                    tooltip="Fügen Sie mittels Drag&Drop Fragen zu Ihrer Micro-Session hinzu."
                     showTooltipSymbol={true}
                   />
                   <FieldArray name="questions">
@@ -221,18 +221,21 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                     tooltip: 'text-sm font-normal !w-1/2',
                   }}
                 />
-                {courses && (
-                  <>
-                    <div className="mr-2">Kurs:</div>
-                    <FormikSelectField
-                      name="courseId"
-                      placeholder="Kurs auswählen"
-                      items={[{ label: 'Kein Kurs', value: '' }, ...courses]}
-                    />
-                  </>
-                )}
 
-                <div className="ml-4 mr-2">Startdatum:</div>
+                <FormikSelectField
+                  name="courseId"
+                  items={courses}
+                  required
+                  tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
+                  label="Kurs"
+                  className={{ label: 'font-normal' }}
+                />
+
+                <Label
+                  label="Startdatum"
+                  required
+                  className={{ root: 'ml-4' }}
+                />
                 <input
                   key={'startDate'}
                   type="datetime-local"
@@ -244,7 +247,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                   }
                 />
 
-                <div className="ml-4 mr-2">Enddatum:</div>
+                <Label label="Enddatum" required className={{ root: 'ml-4' }} />
                 <input
                   key={'endDate'}
                   type="datetime-local"
@@ -256,7 +259,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                   }
                 />
 
-                <div className="ml-4 mr-2">Multiplier:</div>
+                <Label label="Multiplier:" className={{ root: 'ml-4 mr-2' }} />
                 <FormikSelectField
                   name="multiplier"
                   placeholder="Default: 1x"
