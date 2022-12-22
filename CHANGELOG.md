@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.113](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.112...v2.0.0-alpha.113) (2022-12-22)
+
+
+### Bug Fixes
+
+* **packages/prisma:** build openssl musl lib ([2469232](https://github.com/uzh-bf/klicker-uzh/commit/2469232e7cf91e266f9070d0c7d1edec2c0399a3))
+
 ## [2.0.0-alpha.112](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.111...v2.0.0-alpha.112) (2022-12-22)
 
 
