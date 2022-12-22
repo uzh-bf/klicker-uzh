@@ -1,9 +1,9 @@
-import * as React from "react";
-import { Progress } from "./Progress";
-import { getSlideID } from "../office-utils/powerPointAPI";
-import { useEffect, useState } from "react";
-import { URLForm } from "./URLForm";
 import { H1 } from "@uzh-bf/design-system";
+import * as React from "react";
+import { useEffect, useState } from "react";
+import { getSlideID } from "../office-utils/powerPointAPI";
+import { Progress } from "./Progress";
+import { URLForm } from "./URLForm";
 
 /* global window*/
 

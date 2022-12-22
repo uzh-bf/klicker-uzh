@@ -20,7 +20,8 @@ module.exports = async (env, options) => {
     entry: {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       vendor: ["react", "react-dom", "core-js", "@fluentui/react"],
-      content: ["react-hot-loader/patch", "./src/index.tsx"],
+      content: ["react-hot-loader/patch", "./src/content/index.tsx"],
+      taskpane: ["react-hot-loader/patch", "./src/taskpane/index.tsx"],
     },
     output: {
       clean: true,
@@ -83,6 +84,11 @@ module.exports = async (env, options) => {
         filename: "content.html",
         template: "./src/content.html",
         chunks: ["content", "vendor", "polyfills"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "taskpane.html",
+        template: "./src/taskpane/taskpane.html",
+        chunks: ["taskpane", "vendor", "polyfills"],
       }),
       new webpack.ProvidePlugin({
         Promise: ["es6-promise", "Promise"],
