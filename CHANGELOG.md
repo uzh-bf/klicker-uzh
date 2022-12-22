@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.112](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.111...v2.0.0-alpha.112) (2022-12-22)
+
+
+### Dependencies
+
+* upgrade prisma ([9b186bf](https://github.com/uzh-bf/klicker-uzh/commit/9b186bff0d23c5c36ccfc151db6a24c1246d1eb6))
+
 ## [2.0.0-alpha.111](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.110...v2.0.0-alpha.111) (2022-12-22)
 
 
