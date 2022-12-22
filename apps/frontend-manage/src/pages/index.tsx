@@ -134,22 +134,13 @@ function Index() {
                 </TabsPrimitive.Trigger>
               </TabsPrimitive.List>
               <div className="p-3" id="live-session-form">
-                <TabsPrimitive.Content
-                  value="live-session"
-                  className="overflow-y-scroll md:h-72"
-                >
+                <TabsPrimitive.Content value="live-session" className="">
                   <LiveSessionCreationForm courses={courseSelection} />
                 </TabsPrimitive.Content>
-                <TabsPrimitive.Content
-                  value="micro-session"
-                  className="overflow-y-scroll md:h-64"
-                >
+                <TabsPrimitive.Content value="micro-session" className="">
                   <MicroSessionCreationForm />
                 </TabsPrimitive.Content>
-                <TabsPrimitive.Content
-                  value="learning-element"
-                  className="overflow-y-scroll md:h-64"
-                >
+                <TabsPrimitive.Content value="learning-element" className="">
                   <LearningElementCreationForm />
                 </TabsPrimitive.Content>
               </div>
