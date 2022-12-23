@@ -31,6 +31,8 @@ function SessionCreation() {
     [dataCourses]
   )
 
+  if (!errorCourses && loadingCourses) return <div>Loading...</div>
+
   return (
     <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
       <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
@@ -63,7 +65,7 @@ function SessionCreation() {
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
-              // disabled={courseSelection?.length === 0}
+              disabled={courseSelection?.length === 0}
             />
             <div className="border-r-2 border-solid border-uzh-grey-60" />
             <Tab
@@ -78,29 +80,21 @@ function SessionCreation() {
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
-              // disabled={courseSelection?.length === 0}
+              disabled={courseSelection?.length === 0}
             />
           </TabList>
-          <TabContent
-            key="live-session"
-            value="live-session"
-            className={{ root: 'overflow-y-scroll md:h-72' }}
-          >
+          <TabContent key="live-session" value="live-session">
             <LiveSessionCreationForm courses={courseSelection} />
           </TabContent>
-          <TabContent
-            key="micro-session"
-            value="micro-session"
-            className={{ root: 'overflow-y-scroll md:h-72' }}
-          >
-            <MicroSessionCreationForm courses={courseSelection} />
+          <TabContent key="micro-session" value="micro-session">
+            <MicroSessionCreationForm
+              courses={courseSelection || [{ label: '', value: '' }]}
+            />
           </TabContent>
-          <TabContent
-            key="learning-element"
-            value="learning-element"
-            className={{ root: 'overflow-y-scroll md:h-72' }}
-          >
-            <LearningElementCreationForm />
+          <TabContent key="learning-element" value="learning-element">
+            <LearningElementCreationForm
+              courses={courseSelection || [{ label: '', value: '' }]}
+            />
           </TabContent>
         </Tabs>
       </div>

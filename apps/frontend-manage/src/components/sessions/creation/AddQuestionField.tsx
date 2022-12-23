@@ -36,7 +36,7 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-col items-center justify-center rounded text-center border border-solid w-16',
+        'flex flex-col items-center justify-center rounded text-center border border-solid w-16 p-2',
         isOver && theme.primaryBg
       )}
       id="add-question"

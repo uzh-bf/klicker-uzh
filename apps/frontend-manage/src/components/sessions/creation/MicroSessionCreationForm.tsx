@@ -38,6 +38,7 @@ interface MicroSessionCreationFormProps {
 function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
   const theme = useContext(ThemeContext)
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
+  dayjs.extend(utc)
 
   // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
   const microSessionCreationSchema = yup.object().shape({
@@ -48,12 +49,15 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
       .string()
       .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
     description: yup.string(),
-    questions: yup.array().of(
-      yup.object().shape({
-        id: yup.string(),
-        title: yup.string(),
-      })
-    ),
+    questions: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string(),
+          title: yup.string(),
+        })
+      )
+      .min(1),
     startDate: yup
       .date()
       .required('Bitte geben Sie ein Startdatum für Ihre Session ein.'),
@@ -69,10 +73,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
       .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
     courseId: yup.string(),
   })
-
-  dayjs.extend(utc)
-
-  // TODO: ensure that a course is selected - "no course" should not be an option for micro-sessions
 
   return (
     <div>
@@ -160,7 +160,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
               <EditorField
                 key={values.name}
                 label="Beschreibung"
-                tooltip="// TODO CONTENT TOOLTIP"
+                tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
                 field={values.description}
                 fieldName="description"
                 setFieldValue={setFieldValue}
