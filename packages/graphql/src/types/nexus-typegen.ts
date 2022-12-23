@@ -848,6 +848,8 @@ export interface NexusGenFieldTypes {
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
+    createLearningElement: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    createMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     createParticipantAndJoinCourse: NexusGenRootTypes['Participant'] | null; // Participant
     createParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     createSession: NexusGenRootTypes['Session'] | null; // Session
@@ -1386,6 +1388,8 @@ export interface NexusGenFieldTypeNames {
     changeSessionSettings: 'Session'
     createCourse: 'Course'
     createFeedback: 'Feedback'
+    createLearningElement: 'MicroSession'
+    createMicroSession: 'MicroSession'
     createParticipantAndJoinCourse: 'Participant'
     createParticipantGroup: 'ParticipantGroup'
     createSession: 'Session'
@@ -1689,6 +1693,26 @@ export interface NexusGenArgTypes {
     createFeedback: { // args
       content: string; // String!
       sessionId: string; // ID!
+    }
+    createLearningElement: { // args
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName: string; // String!
+      multiplier: number; // Int!
+      name: string; // String!
+      order: NexusGenEnums['OrderType']; // OrderType!
+      questions: Array<number | null>; // [Int]!
+      resetTimeDays: number; // Int!
+    }
+    createMicroSession: { // args
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName: string; // String!
+      endDate: string; // String!
+      multiplier: number; // Int!
+      name: string; // String!
+      questions: Array<number | null>; // [Int]!
+      startDate: string; // String!
     }
     createParticipantAndJoinCourse: { // args
       courseId: string; // ID!

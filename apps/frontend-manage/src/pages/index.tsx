@@ -1,24 +1,17 @@
 import { useQuery } from '@apollo/client'
-import {
-  Course,
-  GetUserCoursesDocument,
-  GetUserQuestionsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/TagList'
-import { Button, H4, ThemeContext } from '@uzh-bf/design-system'
+import SessionCreation from '@components/sessions/creation/SessionCreation'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
-import LearningElementCreationForm from '../components/sessions/creation/LearningElementCreationForm'
-import LiveSessionCreationForm from '../components/sessions/creation/LiveSessionCreationForm'
-import MicroSessionCreationForm from '../components/sessions/creation/MicroSessionCreationForm'
 
 function Index() {
   const router = useRouter()
@@ -32,21 +25,6 @@ function Index() {
     error: errorQuestions,
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
-
-  const {
-    loading: loadingCourses,
-    error: errorCourses,
-    data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
-
-  const courseSelection = useMemo(
-    () =>
-      dataCourses?.userCourses?.map((course: Course) => ({
-        label: course.displayName,
-        value: course.id,
-      })),
-    [dataCourses]
-  )
 
   const {
     filters,
@@ -87,103 +65,8 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full" id="homepage">
-        <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
-          <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
-            {/* // TODO: replace by proper session creation component */}
-            <TabsPrimitive.Root defaultValue="live-session">
-              <TabsPrimitive.List className="flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60">
-                <TabsPrimitive.Trigger
-                  value="live-session"
-                  className={twMerge('flex-1', theme.primaryBgHover)}
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Live-Session
-                  </H4>
-                </TabsPrimitive.Trigger>
-                <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <TabsPrimitive.Trigger
-                  value="micro-session"
-                  className={twMerge(
-                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                    theme.primaryBgHover
-                  )}
-                  disabled
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Micro-Session
-                  </H4>
-                </TabsPrimitive.Trigger>
-                <div className="border-r-2 border-solid border-uzh-grey-60" />
-                <TabsPrimitive.Trigger
-                  value="learning-element"
-                  className={twMerge(
-                    'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                    theme.primaryBgHover
-                  )}
-                  disabled
-                >
-                  <H4
-                    className={{ root: 'flex flex-col justify-center h-full' }}
-                  >
-                    Learning Element
-                  </H4>
-                </TabsPrimitive.Trigger>
-              </TabsPrimitive.List>
-              <div className="p-3" id="live-session-form">
-                <TabsPrimitive.Content value="live-session" className="">
-                  <LiveSessionCreationForm courses={courseSelection} />
-                </TabsPrimitive.Content>
-                <TabsPrimitive.Content value="micro-session" className="">
-                  <MicroSessionCreationForm />
-                </TabsPrimitive.Content>
-                <TabsPrimitive.Content value="learning-element" className="">
-                  <LearningElementCreationForm />
-                </TabsPrimitive.Content>
-              </div>
-            </TabsPrimitive.Root>
-            {/* {editSessionId ? (
-              <SessionEditForm
-                handleCreateSession={onCreateSession}
-                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-                handleSetSessionAuthenticationMode={
-                  setSessionAuthenticationMode
-                }
-                handleSetSessionBlocks={setSessionBlocks}
-                handleSetSessionName={setSessionName}
-                handleSetSessionParticipants={setSessionParticipants}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                runningSessionId={runningSessionId}
-                sessionAuthenticationMode={sessionAuthenticationMode}
-                sessionBlocks={sessionBlocks}
-                sessionName={sessionName}
-                sessionParticipants={sessionParticipants}
-                setSessionName={setSessionName}
-              />
-            ) : (
-              <SessionCreationForm
-                handleCreateSession={onCreateSession}
-                handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
-                handleSetSessionAuthenticationMode={
-                  setSessionAuthenticationMode
-                }
-                handleSetSessionBlocks={setSessionBlocks}
-                handleSetSessionName={setSessionName}
-                handleSetSessionParticipants={setSessionParticipants}
-                isAuthenticationEnabled={isAuthenticationEnabled}
-                runningSessionId={runningSessionId}
-                sessionAuthenticationMode={sessionAuthenticationMode}
-                sessionBlocks={sessionBlocks}
-                sessionName={sessionName}
-                sessionParticipants={sessionParticipants}
-                setSessionName={setSessionName}
-              />
-            )} */}
-          </div>
-        </div>
+        <SessionCreation />
+
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 ">
             {dataQuestions && dataQuestions.userQuestions && (
