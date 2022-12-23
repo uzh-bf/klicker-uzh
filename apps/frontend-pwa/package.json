@@ -48,7 +48,7 @@
     "sharp": "0.31.2",
     "tailwind-merge": "1.8.0",
     "ts-pattern": "4.0.6",
-    "yup": "1.0.0-beta.7"
+    "yup": "1.0.0-beta.8"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
