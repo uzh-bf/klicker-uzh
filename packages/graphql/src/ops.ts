@@ -1048,7 +1048,6 @@ export type Session = {
   blocks?: Maybe<Array<SessionBlock>>;
   confusionFeedbacks?: Maybe<Array<Maybe<AggregatedConfusionFeedbacks>>>;
   course?: Maybe<Course>;
-  courseId?: Maybe<Scalars['String']>;
   createdAt: Scalars['DateTime'];
   description?: Maybe<Scalars['String']>;
   displayName: Scalars['String'];
@@ -2555,7 +2554,6 @@ export type SessionResolvers<ContextType = any, ParentType extends ResolversPare
   blocks?: Resolver<Maybe<Array<ResolversTypes['SessionBlock']>>, ParentType, ContextType>;
   confusionFeedbacks?: Resolver<Maybe<Array<Maybe<ResolversTypes['AggregatedConfusionFeedbacks']>>>, ParentType, ContextType>;
   course?: Resolver<Maybe<ResolversTypes['Course']>, ParentType, ContextType>;
-  courseId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

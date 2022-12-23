@@ -506,7 +506,6 @@ export interface NexusGenObjects {
     blocks?: NexusGenRootTypes['SessionBlock'][] | null; // [SessionBlock!]
     confusionFeedbacks?: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
     course?: NexusGenRootTypes['Course'] | null; // Course
-    courseId?: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     description?: string | null; // String
     displayName: string; // String!
@@ -1039,7 +1038,6 @@ export interface NexusGenFieldTypes {
     blocks: NexusGenRootTypes['SessionBlock'][] | null; // [SessionBlock!]
     confusionFeedbacks: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
     course: NexusGenRootTypes['Course'] | null; // Course
-    courseId: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     description: string | null; // String
     displayName: string; // String!
@@ -1583,7 +1581,6 @@ export interface NexusGenFieldTypeNames {
     blocks: 'SessionBlock'
     confusionFeedbacks: 'AggregatedConfusionFeedbacks'
     course: 'Course'
-    courseId: 'String'
     createdAt: 'DateTime'
     description: 'String'
     displayName: 'String'

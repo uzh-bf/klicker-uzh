@@ -626,7 +626,6 @@ type Session {
   blocks: [SessionBlock!]
   confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
-  courseId: String
   createdAt: DateTime!
   description: String
   displayName: String!
