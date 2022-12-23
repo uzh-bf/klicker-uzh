@@ -181,6 +181,34 @@ export async function createSession(
   return session
 }
 
+interface GetLiveSessionDataArgs {
+  id: string
+}
+
+export async function getLiveSessionData(
+  { id }: GetLiveSessionDataArgs,
+  ctx: ContextWithUser
+) {
+  if (!id) {
+    return null
+  }
+
+  // TODO: only return data that is required for the live session update
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+      course: true,
+    },
+  })
+
+  return session
+}
+
 interface CreateMicroSessionArgs {
   name: string
   displayName: string

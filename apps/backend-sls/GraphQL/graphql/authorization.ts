@@ -79,6 +79,7 @@ export const AuthSchema = {
     cockpitSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     course: { __authz: { rules: ['IsUserOrAdmin'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
+    liveSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     participations: { __authz: { rules: ['IsParticipant'] } },

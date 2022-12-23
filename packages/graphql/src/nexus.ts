@@ -889,6 +889,7 @@ export const Session = objectType({
 
     t.nonNull.string('namespace')
     t.nonNull.string('name')
+    t.string('description')
     t.nonNull.string('displayName')
     t.string('linkTo')
     t.int('pinCode')
@@ -915,6 +916,8 @@ export const Session = objectType({
     t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
+
+    t.nonNull.int('pointsMultiplier')
 
     t.nonNull.date('createdAt')
     t.date('updatedAt')
@@ -1143,6 +1146,16 @@ export const Query = objectType({
       type: Tag,
       resolve(_, _args, ctx: ContextWithUser) {
         return QuestionService.getUserTags(ctx)
+      },
+    })
+
+    t.field('liveSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.getLiveSessionData(args, ctx)
       },
     })
 

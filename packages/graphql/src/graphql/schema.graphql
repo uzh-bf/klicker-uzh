@@ -547,6 +547,7 @@ type Query {
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
   learningElements: [LearningElement!]!
+  liveSession(id: ID!): Session
   microSession(id: ID!): MicroSession
   participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
@@ -625,7 +626,9 @@ type Session {
   blocks: [SessionBlock!]
   confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
+  courseId: String
   createdAt: DateTime!
+  description: String
   displayName: String!
   feedbacks: [Feedback]
   finishedAt: DateTime
@@ -639,6 +642,7 @@ type Session {
   numOfBlocks: Int
   numOfQuestions: Int
   pinCode: Int
+  pointsMultiplier: Int!
   startedAt: DateTime
   status: SessionStatus!
   updatedAt: DateTime

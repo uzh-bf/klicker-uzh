@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   GetUserSessionsDocument,
+  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -35,9 +36,13 @@ interface LiveSessionCreationFormProps {
     label: string
     value: string
   }[]
+  initialValues?: Partial<Session>
 }
 
-function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
+function LiveSessionCreationForm({
+  courses,
+  initialValues,
+}: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
   const theme = useContext(ThemeContext)
 
@@ -74,18 +79,33 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
         reverseOrder={false}
         toastOptions={{ duration: 6000 }}
       />
-      <H3>Live-Session erstellen</H3>
+      {initialValues ? (
+        <H3>Live-Session bearbeiten</H3>
+      ) : (
+        <H3>Live-Session erstellen</H3>
+      )}
       <Formik
+        key={initialValues?.id}
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
-          courseId: '',
-          multiplier: '1',
-          isGamificationEnabled: false,
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          blocks: initialValues?.blocks?.map((block) => {
+            return {
+              questionIds: block.instances.map((instance) => instance.id),
+              titles: block.instances.map(
+                (instance) => instance.questionData.name
+              ),
+              timeLimit: block.timeLimit ?? undefined,
+            }
+          }) || [{ questionIds: [], titles: [], timeLimit: undefined }],
+          courseId: initialValues?.course?.id || '',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
+          isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
-        isInitialValid={false}
+        isInitialValid={initialValues ? true : false}
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
@@ -98,6 +118,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             })
 
           try {
+            // TODO: call different function, if session is edited
             const session = await createSession({
               variables: {
                 name: values.name,
@@ -113,7 +134,11 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             if (session.data?.createSession) {
               toast.success(
                 <div>
-                  <div>Session erfolgreich erstellt!</div>
+                  {initialValues ? (
+                    <div>Session erfolgreich angepasst!</div>
+                  ) : (
+                    <div>Session erfolgreich erstellt!</div>
+                  )}
                   <div className="flex flex-row items-center">
                     <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
                     Zur

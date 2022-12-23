@@ -65,7 +65,10 @@ function Index() {
   return (
     <Layout displayName="Fragepool">
       <div className="w-full h-full" id="homepage">
-        <SessionCreation />
+        <SessionCreation
+          sessionId={router.query.sessionId as string}
+          editMode={router.query.editMode as string}
+        />
 
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
           <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 ">
