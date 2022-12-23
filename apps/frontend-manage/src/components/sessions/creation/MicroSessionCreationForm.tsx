@@ -10,6 +10,8 @@ import {
   Label,
   ThemeContext,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import {
   ErrorMessage,
   FieldArray,
@@ -68,6 +70,8 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
     courseId: yup.string(),
   })
 
+  dayjs.extend(utc)
+
   // TODO: ensure that a course is selected - "no course" should not be an option for micro-sessions
 
   return (
@@ -86,12 +90,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
         }}
         validationSchema={microSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
-          console.log(values)
-          console.log(
-            'questions',
-            values.questions.map((q: any) => q.id)
-          )
-
           try {
             const result = await createMicroSession({
               variables: {
@@ -105,7 +103,9 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 courseId: values.courseId,
               },
             })
+
             if (result.data?.createMicroSession) {
+              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
               toast.success(
                 <div>
                   <div>Micro-Session erfolgreich erstellt!</div>
@@ -128,8 +128,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
             // TODO: add error handling
             console.log(error)
           }
-          // TODO: creation session with corresponding mutation
-          // TODO: parse values using console.log(new Date(datetime))
         }}
       >
         {({
@@ -180,6 +178,7 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
               <div className="mt-2 mb-2">
                 <div className="flex flex-row items-center flex-1 gap-2">
                   <Label
+                    required
                     label="Fragen:"
                     className={{
                       root: 'font-bold',
@@ -239,24 +238,34 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 <input
                   key={'startDate'}
                   type="datetime-local"
-                  value={(values.startDate || '').toString().substring(0, 16)}
-                  onChange={(e) =>
-                    e.target['validity'].valid
-                      ? setFieldValue('startDate', e.target['value'] + ':00Z')
-                      : null
-                  }
+                  value={(dayjs(values.startDate).local().format() || '')
+                    .toString()
+                    .substring(0, 16)}
+                  onChange={(e) => {
+                    if (e.target['validity'].valid) {
+                      setFieldValue(
+                        'startDate',
+                        dayjs(e.target['value']).utc().format()
+                      )
+                    }
+                  }}
                 />
 
                 <Label label="Enddatum" required className={{ root: 'ml-4' }} />
                 <input
                   key={'endDate'}
                   type="datetime-local"
-                  value={(values.endDate || '').toString().substring(0, 16)}
-                  onChange={(e) =>
-                    e.target['validity'].valid
-                      ? setFieldValue('endDate', e.target['value'] + ':00Z')
-                      : null
-                  }
+                  value={(dayjs(values.endDate).local().format() || '')
+                    .toString()
+                    .substring(0, 16)}
+                  onChange={(e) => {
+                    if (e.target['validity'].valid) {
+                      setFieldValue(
+                        'endDate',
+                        dayjs(e.target['value']).utc().format()
+                      )
+                    }
+                  }}
                 />
 
                 <Label label="Multiplier:" className={{ root: 'ml-4 mr-2' }} />
