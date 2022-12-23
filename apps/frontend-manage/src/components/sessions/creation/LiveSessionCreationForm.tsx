@@ -58,12 +58,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
       })
     ),
-    timeLimits: yup.array().of(
-      yup
-        .string()
-        .matches(/^[0-9]+$/, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
-        .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.')
-    ),
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
@@ -87,7 +81,6 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           displayName: '',
           description: '',
           blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
-          timeLimits: [],
           courseId: '',
           multiplier: '1',
           isGamificationEnabled: false,
