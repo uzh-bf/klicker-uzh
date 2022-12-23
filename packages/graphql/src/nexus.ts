@@ -1634,6 +1634,23 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('createLearningElement', {
+      type: MicroSession,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        order: nonNull(arg({ type: 'OrderType' })),
+        resetTimeDays: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.createLearningElement(args, ctx)
+      },
+    })
+
     t.field('startSession', {
       type: Session,
       args: {

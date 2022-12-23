@@ -1,3 +1,10 @@
+import { useMutation } from '@apollo/client'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  CreateLearningElementDocument,
+  OrderType,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikNumberField,
@@ -5,6 +12,7 @@ import {
   FormikTextField,
   H3,
   Label,
+  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -13,7 +21,11 @@ import {
   Form,
   Formik,
 } from 'formik'
+import Link from 'next/link'
+import { useContext } from 'react'
+import toast from 'react-hot-toast'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
@@ -29,6 +41,9 @@ interface LearningElementCreationFormProps {
 function LearningElementCreationForm({
   courses,
 }: LearningElementCreationFormProps) {
+  const theme = useContext(ThemeContext)
+  const [createLearningElement] = useMutation(CreateLearningElementDocument)
+
   // TODO: keep in mind that only questions with solutions and feedbacks should be used for learning elements
   const learningElementCreationSchema = yup.object().shape({
     name: yup
@@ -52,7 +67,7 @@ function LearningElementCreationForm({
       .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
     courseId: yup.string(),
     order: yup.string(),
-    daysToRetry: yup
+    resetTimeDays: yup
       .string()
       .required(
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
@@ -62,8 +77,6 @@ function LearningElementCreationForm({
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
       ),
   })
-
-  console.log(Object.keys(LEARNING_ELEMENT_ORDERS))
 
   return (
     <div>
@@ -77,11 +90,48 @@ function LearningElementCreationForm({
           multiplier: '1',
           courseId: courses[0].value,
           order: Object.keys(LEARNING_ELEMENT_ORDERS)[0],
-          daysToRetry: '6',
+          resetTimeDays: '6',
         }}
         validationSchema={learningElementCreationSchema}
-        onSubmit={async (values) => {
-          // TODO: creation session with corresponding mutation
+        onSubmit={async (values, { resetForm }) => {
+          try {
+            const result = await createLearningElement({
+              variables: {
+                name: values.name,
+                displayName: values.displayName,
+                description: values.description,
+                questions: values.questions.map((q: any) => q.id),
+                multiplier: parseInt(values.multiplier),
+                courseId: values.courseId,
+                order: values.order as OrderType,
+                resetTimeDays: parseInt(values.resetTimeDays),
+              },
+            })
+
+            if (result.data?.createLearningElement) {
+              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
+              toast.success(
+                <div>
+                  <div>Lernelement erfolgreich erstellt!</div>
+                  <div className="flex flex-row items-center">
+                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+                    Zur
+                    <Link
+                      href={`/courses/${values.courseId}`}
+                      className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-course-link"
+                    >
+                      Kursübersicht
+                    </Link>
+                  </div>
+                </div>
+              )
+              resetForm()
+            }
+          } catch (error) {
+            // TODO: add error handling
+            console.log(error)
+          }
         }}
       >
         {({
@@ -95,7 +145,6 @@ function LearningElementCreationForm({
           return (
             <div className="">
               <Form>
-                {console.log(values)}
                 <FormikTextField
                   required
                   name="name"
@@ -202,7 +251,7 @@ function LearningElementCreationForm({
                   />
 
                   <FormikNumberField
-                    name="daysToRetry"
+                    name="resetTimeDays"
                     label="Wiederholungszeitraum:"
                     tooltip="Wählen Sie einen Zeitraum nach welchem die Studierenden die Micro-Session wiederholen können."
                     className={{
@@ -238,7 +287,7 @@ function LearningElementCreationForm({
                     className="text-sm text-red-400"
                   />
                   <ErrorMessage
-                    name="daysToRetry"
+                    name="resetTimeDays"
                     component="div"
                     className="text-sm text-red-400"
                   />

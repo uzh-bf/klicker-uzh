@@ -372,6 +372,7 @@ type Mutation {
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
+  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: OrderType!, questions: [Int]!, resetTimeDays: Int!): MicroSession
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
   createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup

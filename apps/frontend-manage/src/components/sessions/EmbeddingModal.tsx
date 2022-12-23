@@ -16,7 +16,6 @@ function EmbeddingModal({
   sessionId,
   questions,
 }: EmbeddingModalProps) {
-  console.log(questions)
   return (
     <Modal
       open={open}
