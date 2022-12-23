@@ -250,7 +250,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'leading-7 prose prose-blockquote:text-gray-500 max-w-none',
+              'leading-7 prose prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
               className?.editor
             )}
             autoFocus={autoFocus}
