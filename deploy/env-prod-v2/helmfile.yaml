@@ -15,9 +15,9 @@ releases:
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
         frontendPWA:
-          replicaCount: 3
+          replicaCount: 1
           image:
-            tag: v2.0.0-alpha.109
+            tag: v2.0.0-alpha.113
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
@@ -25,15 +25,15 @@ releases:
         frontendManage:
           replicaCount: 1
           image:
-            tag: v2.0.0-alpha.109
+            tag: v2.0.0-alpha.113
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
 
         backendGraphql:
-          replicaCount: 3
+          replicaCount: 1
           image:
-            tag: v2.0.0-alpha.109
+            tag: v2.0.0-alpha.113
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
