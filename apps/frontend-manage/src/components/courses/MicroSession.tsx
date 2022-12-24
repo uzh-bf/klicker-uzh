@@ -76,21 +76,23 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <FontAwesomeIcon icon={faHourglassEnd} />
           <div>Ende: {scheduledEndAtString}</div>
         </div>
-        <Button
-          basic
-          className={{ root: theme.primaryTextHover }}
-          onClick={() =>
-            router.push({
-              pathname: '/',
-              query: { sessionId: microSession.id, editMode: 'microSession' },
-            })
-          }
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faArrowRight} />
-          </Button.Icon>
-          <Button.Label>Micro-Session bearbeiten</Button.Label>
-        </Button>
+        {isFuture && (
+          <Button
+            basic
+            className={{ root: theme.primaryTextHover }}
+            onClick={() =>
+              router.push({
+                pathname: '/',
+                query: { sessionId: microSession.id, editMode: 'microSession' },
+              })
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button.Icon>
+            <Button.Label>Micro-Session bearbeiten</Button.Label>
+          </Button>
+        )}
       </div>
     </div>
   )
