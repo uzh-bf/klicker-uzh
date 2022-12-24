@@ -322,14 +322,28 @@ function LiveSessionCreationForm({
                   className="text-sm text-red-400"
                 />
               </div>
-              <Button
-                className={{ root: 'float-right' }}
-                type="submit"
-                disabled={isSubmitting || !isValid}
-                id="create-new-session"
-              >
-                Erstellen
-              </Button>
+
+              <div className="flex flex-row float-right gap-3">
+                {initialValues && (
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="button"
+                    disabled={isSubmitting}
+                    id="abort-session-edit"
+                    onClick={() => router.push('/')}
+                  >
+                    Editieren abbrechen
+                  </Button>
+                )}
+                <Button
+                  className={{ root: 'float-right mb-4' }}
+                  type="submit"
+                  disabled={isSubmitting || !isValid}
+                  id="create-new-session"
+                >
+                  Erstellen
+                </Button>
+              </div>
             </Form>
           )
         }}
