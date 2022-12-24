@@ -550,6 +550,8 @@ export const MicroSession = objectType({
       type: QuestionInstance,
     })
 
+    t.nonNull.int('pointsMultiplier')
+
     t.nonNull.field('course', {
       type: Course,
     })
@@ -1176,6 +1178,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.getMicroSessionData(args, ctx)
+      },
+    })
+
+    t.field('singleMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.getSingleMicroSession(args, ctx)
       },
     })
 

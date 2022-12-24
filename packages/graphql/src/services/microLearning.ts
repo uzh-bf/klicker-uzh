@@ -67,6 +67,23 @@ export async function getMicroSessionData(
   }
 }
 
+export async function getSingleMicroSession(
+  { id }: GetMicroSessionDataArgs,
+  ctx: ContextWithUser
+) {
+  const microSession = await ctx.prisma.microSession.findUnique({
+    where: { id },
+    include: {
+      course: true,
+      instances: true,
+    },
+  })
+
+  if (!microSession) return null
+
+  return microSession
+}
+
 interface MarkMicroSessionCompletedArgs {
   courseId: string
   id: string

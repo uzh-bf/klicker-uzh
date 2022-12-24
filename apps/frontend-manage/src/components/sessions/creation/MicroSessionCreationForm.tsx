@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CreateMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateMicroSessionDocument,
+  MicroSession,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -20,6 +23,7 @@ import {
   Formik,
 } from 'formik'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import toast from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
@@ -33,10 +37,16 @@ interface MicroSessionCreationFormProps {
     label: string
     value: string
   }[]
+  initialValues?: Partial<MicroSession>
 }
 
-function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
+function MicroSessionCreationForm({
+  courses,
+  initialValues,
+}: MicroSessionCreationFormProps) {
   const theme = useContext(ThemeContext)
+  const router = useRouter()
+
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
   dayjs.extend(utc)
 
@@ -78,33 +88,62 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
     <div>
       <H3>Micro-Session erstellen</H3>
       <Formik
+        key={initialValues?.id}
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          questions: [],
-          startDate: '',
-          endDate: '',
-          multiplier: '1',
-          courseId: courses[0].value,
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          questions:
+            initialValues?.instances?.map((instance) => {
+              return {
+                id: instance.questionData.id,
+                title: instance.questionData.name,
+              }
+            }) || [],
+          startDate: initialValues?.scheduledStartAt || '',
+          endDate: initialValues?.scheduledEndAt || '',
+          multiplier: String(initialValues?.pointsMultiplier) || '1',
+          courseId: initialValues?.course?.id || courses[0].value,
         }}
+        isInitialValid={initialValues ? true : false}
         validationSchema={microSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           try {
-            const result = await createMicroSession({
-              variables: {
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                questions: values.questions.map((q: any) => q.id),
-                startDate: values.startDate,
-                endDate: values.endDate,
-                multiplier: parseInt(values.multiplier),
-                courseId: values.courseId,
-              },
-            })
+            let success = false
 
-            if (result.data?.createMicroSession) {
+            if (initialValues) {
+              // const result = await editMicroSession({
+              //   variables: {
+              //     id: initialValues?.id,
+              //     name: values.name,
+              //     displayName: values.displayName,
+              //     description: values.description,
+              //     questions: values.questions.map((q: any) => q.id),
+              //     startDate: values.startDate,
+              //     endDate: values.endDate,
+              //     multiplier: parseInt(values.multiplier),
+              //     courseId: values.courseId,
+              //   },
+              // })
+              // success = Boolean(result.data?.editMicroSession)
+            } else {
+              const result = await createMicroSession({
+                variables: {
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  questions: values.questions.map((q: any) => q.id),
+                  startDate: values.startDate,
+                  endDate: values.endDate,
+                  multiplier: parseInt(values.multiplier),
+                  courseId: values.courseId,
+                },
+              })
+              success = Boolean(result.data?.createMicroSession)
+            }
+
+            if (success) {
+              router.push('/')
               // TODO: seems like toast is only shown when switching back to live session creation -> fix this
               toast.success(
                 <div>

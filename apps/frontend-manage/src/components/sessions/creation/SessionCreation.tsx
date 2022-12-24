@@ -2,7 +2,9 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   GetSingleLiveSessionDocument,
+  GetSingleMicroSessionDocument,
   GetUserCoursesDocument,
+  MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -30,6 +32,10 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId || editMode !== 'liveSession',
+  })
+  const { data: dataMicroSession } = useQuery(GetSingleMicroSessionDocument, {
+    variables: { id: sessionId || '' },
+    skip: !sessionId || editMode !== 'microSession',
   })
 
   const {
@@ -114,6 +120,10 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
           <TabContent key="microSession" value="microSession">
             <MicroSessionCreationForm
               courses={courseSelection || [{ label: '', value: '' }]}
+              initialValues={
+                (dataMicroSession?.singleMicroSession as MicroSession) ??
+                undefined
+              }
             />
           </TabContent>
           <TabContent key="learningElement" value="learningElement">

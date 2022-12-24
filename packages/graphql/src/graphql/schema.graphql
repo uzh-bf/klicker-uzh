@@ -361,6 +361,7 @@ type MicroSession {
   instances: [QuestionInstance!]
   name: String!
   numOfInstances: Int
+  pointsMultiplier: Int!
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
 }
@@ -559,6 +560,7 @@ type Query {
   session(id: ID!): Session
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  singleMicroSession(id: ID!): MicroSession
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]

@@ -323,8 +323,8 @@ function LiveSessionCreationForm({
                 />
               </div>
 
-              <div className="flex flex-row float-right gap-3">
-                {initialValues && (
+              {initialValues && (
+                <div className="flex flex-row float-right gap-3">
                   <Button
                     className={{ root: 'float-right mb-4' }}
                     type="button"
@@ -334,7 +334,17 @@ function LiveSessionCreationForm({
                   >
                     Editieren abbrechen
                   </Button>
-                )}
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                    id="create-new-session"
+                  >
+                    Änderungen speichern
+                  </Button>
+                </div>
+              )}
+              {!initialValues && (
                 <Button
                   className={{ root: 'float-right mb-4' }}
                   type="submit"
@@ -343,7 +353,7 @@ function LiveSessionCreationForm({
                 >
                   Erstellen
                 </Button>
-              </div>
+              )}
             </Form>
           )
         }}

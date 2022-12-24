@@ -98,6 +98,7 @@ export const AuthSchema = {
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
     groupActivityDetails: { __authz: { rules: ['IsParticipant'] } },
+    singleMicroSession: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
   Subscription: {
     '*': { __authz: { rules: ['Allow'] } },

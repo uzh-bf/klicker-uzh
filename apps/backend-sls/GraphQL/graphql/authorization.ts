@@ -98,5 +98,6 @@ export const AuthSchema = {
     userQuestions: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
+    singleMicroSession: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
 }

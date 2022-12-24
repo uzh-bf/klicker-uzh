@@ -377,6 +377,7 @@ export interface NexusGenObjects {
     instances?: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances?: number | null; // Int
+    pointsMultiplier: number; // Int!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -840,6 +841,7 @@ export interface NexusGenFieldTypes {
     instances: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances: number | null; // Int
+    pointsMultiplier: number; // Int!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -998,6 +1000,7 @@ export interface NexusGenFieldTypes {
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    singleMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     userCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
@@ -1384,6 +1387,7 @@ export interface NexusGenFieldTypeNames {
     instances: 'QuestionInstance'
     name: 'String'
     numOfInstances: 'Int'
+    pointsMultiplier: 'Int'
     scheduledEndAt: 'DateTime'
     scheduledStartAt: 'DateTime'
   }
@@ -1542,6 +1546,7 @@ export interface NexusGenFieldTypeNames {
     session: 'Session'
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
+    singleMicroSession: 'MicroSession'
     userCourses: 'Course'
     userProfile: 'User'
     userQuestions: 'Question'
@@ -1940,6 +1945,9 @@ export interface NexusGenArgTypes {
     }
     sessionLeaderboard: { // args
       sessionId: string; // ID!
+    }
+    singleMicroSession: { // args
+      id: string; // ID!
     }
   }
   Subscription: {
