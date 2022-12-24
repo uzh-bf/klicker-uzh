@@ -29,7 +29,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
 
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
-    skip: !sessionId,
+    skip: !sessionId || editMode !== 'liveSession',
   })
 
   const {
