@@ -8,6 +8,7 @@ import {
   OrderType,
   Question,
   QuestionInstance,
+  QuestionInstanceType,
   QuestionType,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
@@ -570,6 +571,7 @@ export async function createLearningElement(
           )
           return {
             order: ix,
+            type: QuestionInstanceType.LEARNING_ELEMENT,
             questionData: processedQuestionData,
             results: prepareInitialInstanceResults(processedQuestionData),
             question: {

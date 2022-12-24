@@ -3,6 +3,7 @@ import {
   ConfusionTimestep,
   Question,
   QuestionInstance,
+  QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
   SessionStatus,
@@ -142,6 +143,7 @@ export async function createSession(
               )
               return {
                 order: ix,
+                type: QuestionInstanceType.SESSION,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -268,6 +270,7 @@ export async function editSession(
               )
               return {
                 order: ix,
+                type: QuestionInstanceType.SESSION,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {

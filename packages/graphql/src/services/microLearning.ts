@@ -1,4 +1,9 @@
-import { Attachment, Question, QuestionType } from '@klicker-uzh/prisma'
+import {
+  Attachment,
+  Question,
+  QuestionInstanceType,
+  QuestionType,
+} from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
 import { ContextWithUser } from '../lib/context'
@@ -168,6 +173,7 @@ export async function createMicroSession(
           )
           return {
             order: ix,
+            type: QuestionInstanceType.MICRO_SESSION,
             questionData: processedQuestionData,
             results: prepareInitialInstanceResults(processedQuestionData),
             question: {
