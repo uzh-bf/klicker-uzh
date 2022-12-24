@@ -9,6 +9,30 @@ import { pick } from 'ramda'
 import { ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
+export async function getQuestionMap(
+  questions: number[],
+  ctx: ContextWithUser
+) {
+  const dbQuestions = await ctx.prisma.question.findMany({
+    where: {
+      id: { in: questions },
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      attachments: true,
+    },
+  })
+
+  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
+  if (dbQuestions.length !== uniqueQuestions.size) {
+    throw new GraphQLError('Not all questions could be found')
+  }
+
+  return dbQuestions.reduce<
+    Record<number, Question & { attachments: Attachment[] }>
+  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+}
+
 interface GetMicroSessionDataArgs {
   id: string
 }
@@ -137,26 +161,116 @@ export async function createMicroSession(
   }: CreateMicroSessionArgs,
   ctx: ContextWithUser
 ) {
-  const dbQuestions = await ctx.prisma.question.findMany({
-    where: {
-      id: { in: questions },
-      ownerId: ctx.user.sub,
+  const questionMap = await getQuestionMap(questions, ctx)
+
+  const session = await ctx.prisma.microSession.create({
+    data: {
+      name,
+      displayName: displayName ?? name,
+      description,
+      pointsMultiplier: multiplier,
+      scheduledStartAt: new Date(startDate),
+      scheduledEndAt: new Date(endDate),
+      instances: {
+        create: questions.map((questionId, ix) => {
+          const question = questionMap[questionId]
+          const processedQuestionData = processQuestionData(question)
+          const questionAttachmentInstances = question.attachments.map(
+            pick(['type', 'href', 'name', 'description', 'originalName'])
+          )
+          return {
+            order: ix,
+            type: QuestionInstanceType.MICRO_SESSION,
+            questionData: processedQuestionData,
+            results: prepareInitialInstanceResults(processedQuestionData),
+            question: {
+              connect: { id: questionId },
+            },
+            owner: {
+              connect: { id: ctx.user.sub },
+            },
+            attachments: {
+              create: questionAttachmentInstances,
+            },
+          }
+        }),
+      },
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+      course: {
+        connect: { id: courseId },
+      },
     },
     include: {
-      attachments: true,
+      instances: true,
     },
   })
 
-  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
-  if (dbQuestions.length !== uniqueQuestions.size) {
-    throw new GraphQLError('Not all questions could be found')
+  ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
+
+  return session
+}
+
+interface EditMicroSessionArgs {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  questions: number[]
+  courseId?: string
+  multiplier: number
+  startDate: Date
+  endDate: Date
+}
+
+export async function editMicroSession(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    questions,
+    courseId,
+    multiplier,
+    startDate,
+    endDate,
+  }: EditMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
+  const oldSession = await ctx.prisma.microSession.findUnique({
+    where: { id },
+    include: {
+      instances: true,
+    },
+  })
+
+  if (!oldSession) {
+    throw new GraphQLError('Micro-Session not found')
   }
 
-  const questionMap = dbQuestions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+  await ctx.prisma.questionInstance.deleteMany({
+    where: {
+      id: { in: oldSession.instances.map(({ id }) => id) },
+    },
+  })
+  await ctx.prisma.microSession.update({
+    where: { id },
+    data: {
+      instances: {
+        deleteMany: {},
+      },
+      course: {
+        disconnect: true,
+      },
+    },
+  })
 
-  const session = await ctx.prisma.microSession.create({
+  const questionMap = await getQuestionMap(questions, ctx)
+
+  const session = await ctx.prisma.microSession.update({
+    where: { id },
     data: {
       name,
       displayName: displayName ?? name,

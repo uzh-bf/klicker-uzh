@@ -1699,6 +1699,24 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('editMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        startDate: nonNull(stringArg()),
+        endDate: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.editMicroSession(args, ctx)
+      },
+    })
+
     t.field('startSession', {
       type: Session,
       args: {

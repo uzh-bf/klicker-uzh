@@ -3,6 +3,7 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateMicroSessionDocument,
+  EditMicroSessionDocument,
   MicroSession,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -48,6 +49,7 @@ function MicroSessionCreationForm({
   const router = useRouter()
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
+  const [editMicroSession] = useMutation(EditMicroSessionDocument)
   dayjs.extend(utc)
 
   // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
@@ -114,20 +116,20 @@ function MicroSessionCreationForm({
             let success = false
 
             if (initialValues) {
-              // const result = await editMicroSession({
-              //   variables: {
-              //     id: initialValues?.id,
-              //     name: values.name,
-              //     displayName: values.displayName,
-              //     description: values.description,
-              //     questions: values.questions.map((q: any) => q.id),
-              //     startDate: values.startDate,
-              //     endDate: values.endDate,
-              //     multiplier: parseInt(values.multiplier),
-              //     courseId: values.courseId,
-              //   },
-              // })
-              // success = Boolean(result.data?.editMicroSession)
+              const result = await editMicroSession({
+                variables: {
+                  id: initialValues?.id || '',
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  questions: values.questions.map((q: any) => q.id),
+                  startDate: values.startDate,
+                  endDate: values.endDate,
+                  multiplier: parseInt(values.multiplier),
+                  courseId: values.courseId,
+                },
+              })
+              success = Boolean(result.data?.editMicroSession)
             } else {
               const result = await createMicroSession({
                 variables: {
@@ -343,14 +345,38 @@ function MicroSessionCreationForm({
                   className="text-sm text-red-400"
                 />
               </div>
-              <Button
-                className={{ root: 'float-right' }}
-                type="submit"
-                disabled={isSubmitting || !isValid}
-                id="create-new-session"
-              >
-                Erstellen
-              </Button>
+
+              {initialValues && (
+                <div className="flex flex-row float-right gap-3">
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="button"
+                    disabled={isSubmitting}
+                    id="abort-microsession-edit"
+                    onClick={() => router.push('/')}
+                  >
+                    Editieren abbrechen
+                  </Button>
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                    id="save-microsession-changes"
+                  >
+                    Änderungen speichern
+                  </Button>
+                </div>
+              )}
+              {!initialValues && (
+                <Button
+                  className={{ root: 'float-right mb-4' }}
+                  type="submit"
+                  disabled={isSubmitting || !isValid}
+                  id="create-new-microsession"
+                >
+                  Erstellen
+                </Button>
+              )}
             </Form>
           )
         }}

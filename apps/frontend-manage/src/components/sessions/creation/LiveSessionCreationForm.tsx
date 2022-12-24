@@ -338,7 +338,7 @@ function LiveSessionCreationForm({
                     className={{ root: 'float-right mb-4' }}
                     type="submit"
                     disabled={isSubmitting || !isValid}
-                    id="create-new-session"
+                    id="save-session-changes"
                   >
                     Änderungen speichern
                   </Button>

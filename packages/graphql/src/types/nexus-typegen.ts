@@ -861,6 +861,7 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
+    editMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     editSession: NexusGenRootTypes['Session'] | null; // Session
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -1407,6 +1408,7 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
     deleteQuestion: 'Question'
+    editMicroSession: 'MicroSession'
     editSession: 'Session'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
@@ -1760,6 +1762,17 @@ export interface NexusGenArgTypes {
     }
     deleteQuestion: { // args
       id?: number | null; // Int
+    }
+    editMicroSession: { // args
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName: string; // String!
+      endDate: string; // String!
+      id: string; // ID!
+      multiplier: number; // Int!
+      name: string; // String!
+      questions: Array<number | null>; // [Int]!
+      startDate: string; // String!
     }
     editSession: { // args
       blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!

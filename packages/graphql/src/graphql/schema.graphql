@@ -382,6 +382,7 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int): Question
+  editMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, id: ID!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData

@@ -212,7 +212,7 @@ export async function editSession(
   }: EditSessionArgs,
   ctx: ContextWithUser
 ) {
-  // find all instances belongig to the old session and delete them as the content of the questions might have changed
+  // find all instances belonging to the old session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.session.findUnique({
     where: { id },
     include: {
