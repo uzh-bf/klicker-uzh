@@ -79,7 +79,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         {isFuture && (
           <Button
             basic
-            className={{ root: theme.primaryTextHover }}
+            className={{ root: theme.primaryText }}
             onClick={() =>
               router.push({
                 pathname: '/',
