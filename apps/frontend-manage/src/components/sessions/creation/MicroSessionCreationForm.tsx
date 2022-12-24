@@ -102,7 +102,9 @@ function MicroSessionCreationForm({
             }) || [],
           startDate: initialValues?.scheduledStartAt || '',
           endDate: initialValues?.scheduledEndAt || '',
-          multiplier: String(initialValues?.pointsMultiplier) || '1',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
           courseId: initialValues?.course?.id || courses[0].value,
         }}
         isInitialValid={initialValues ? true : false}

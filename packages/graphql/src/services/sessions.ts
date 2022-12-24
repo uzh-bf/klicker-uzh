@@ -62,11 +62,11 @@ export function prepareInitialInstanceResults(
     }
 
     case QuestionType.NUMERICAL: {
-      return {} as NumericalQuestionResults
+      return { answers: [] }
     }
 
     case QuestionType.FREE_TEXT: {
-      return {} as FreeTextQuestionResults
+      return { answers: [] }
     }
   }
 }
