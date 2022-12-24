@@ -1643,7 +1643,7 @@ export const Mutation = objectType({
         endDate: nonNull(stringArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createMicroSession(args, ctx)
+        return MicroLearningService.createMicroSession(args, ctx)
       },
     })
 
@@ -1660,7 +1660,7 @@ export const Mutation = objectType({
         resetTimeDays: nonNull(intArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createLearningElement(args, ctx)
+        return LearningElementService.createLearningElement(args, ctx)
       },
     })
 

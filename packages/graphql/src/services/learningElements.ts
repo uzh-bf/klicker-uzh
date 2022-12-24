@@ -3,11 +3,20 @@ import {
   gradeQuestionMC,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
-import { OrderType, QuestionInstance, QuestionType } from '@klicker-uzh/prisma'
+import {
+  Attachment,
+  OrderType,
+  Question,
+  QuestionInstance,
+  QuestionType,
+} from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import { ContextWithOptionalUser } from '../lib/context'
+import { pick } from 'ramda'
+import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
 import { shuffle } from '../util'
+import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 
@@ -499,4 +508,98 @@ export async function getLearningElementData(
     ...element,
     ...instancesWithoutSolution,
   }
+}
+
+interface CreateLearningElementArgs {
+  name: string
+  displayName: string
+  description?: string
+  questions: number[]
+  courseId?: string
+  multiplier: number
+  order: OrderType
+  resetTimeDays: number
+}
+
+export async function createLearningElement(
+  {
+    name,
+    displayName,
+    description,
+    questions,
+    courseId,
+    multiplier,
+    order,
+    resetTimeDays,
+  }: CreateLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  const dbQuestions = await ctx.prisma.question.findMany({
+    where: {
+      id: { in: questions },
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      attachments: true,
+    },
+  })
+
+  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
+  if (dbQuestions.length !== uniqueQuestions.size) {
+    throw new GraphQLError('Not all questions could be found')
+  }
+
+  const questionMap = dbQuestions.reduce<
+    Record<number, Question & { attachments: Attachment[] }>
+  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+
+  const element = await ctx.prisma.learningElement.create({
+    data: {
+      name,
+      displayName: displayName ?? name,
+      description,
+      pointsMultiplier: multiplier,
+      orderType: order,
+      resetTimeDays: resetTimeDays,
+      instances: {
+        create: questions.map((questionId, ix) => {
+          const question = questionMap[questionId]
+          const processedQuestionData = processQuestionData(question)
+          const questionAttachmentInstances = question.attachments.map(
+            pick(['type', 'href', 'name', 'description', 'originalName'])
+          )
+          return {
+            order: ix,
+            questionData: processedQuestionData,
+            results: prepareInitialInstanceResults(processedQuestionData),
+            question: {
+              connect: { id: questionId },
+            },
+            owner: {
+              connect: { id: ctx.user.sub },
+            },
+            attachments: {
+              create: questionAttachmentInstances,
+            },
+          }
+        }),
+      },
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+      course: {
+        connect: { id: courseId },
+      },
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LearningElement',
+    id: element.id,
+  })
+
+  return element
 }
