@@ -381,6 +381,7 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int): Question
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant

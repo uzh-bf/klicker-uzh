@@ -69,6 +69,30 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
   }
 }
 
+async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
+  const allQuestionsIds = new Set(
+    blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
+  )
+
+  const questions = await ctx.prisma.question.findMany({
+    where: {
+      id: { in: Array.from(allQuestionsIds) },
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      attachments: true,
+    },
+  })
+
+  if (questions.length !== allQuestionsIds.size) {
+    throw new GraphQLError('Not all questions could be found')
+  }
+
+  return questions.reduce<
+    Record<number, Question & { attachments: Attachment[] }>
+  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+}
+
 interface BlockArgs {
   questionIds: number[]
   randomSelection?: number
@@ -97,29 +121,135 @@ export async function createSession(
   }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
-  const allQuestionsIds = new Set(
-    blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
-  )
+  const questionMap = await getQuestionMap(blocks, ctx)
 
-  const questions = await ctx.prisma.question.findMany({
-    where: {
-      id: { in: Array.from(allQuestionsIds) },
-      ownerId: ctx.user.sub,
+  const session = await ctx.prisma.session.create({
+    data: {
+      name,
+      displayName: displayName ?? name,
+      description,
+      pointsMultiplier: multiplier,
+      isGamificationEnabled: isGamificationEnabled ?? false,
+      blocks: {
+        create: blocks.map(
+          ({ questionIds, randomSelection, timeLimit }, blockIx) => {
+            const newInstances = questionIds.map((questionId, ix) => {
+              const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
+              const questionAttachmentInstances = question.attachments.map(
+                pick(['type', 'href', 'name', 'description', 'originalName'])
+              )
+              return {
+                order: ix,
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: { id: questionId },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+                attachments: {
+                  create: questionAttachmentInstances,
+                },
+              }
+            })
+
+            return {
+              order: blockIx,
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
+              },
+            }
+          }
+        ),
+      },
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
-      attachments: true,
+      blocks: true,
     },
   })
 
-  if (questions.length !== allQuestionsIds.size) {
-    throw new GraphQLError('Not all questions could be found')
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: session.id })
+
+  return session
+}
+
+interface EditSessionArgs {
+  id: string
+  name: string
+  displayName: string
+  description?: string | null
+  blocks: BlockArgs[]
+  courseId?: string
+  multiplier: number
+  isGamificationEnabled?: boolean
+}
+
+export async function editSession(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    blocks,
+    courseId,
+    multiplier,
+    isGamificationEnabled,
+  }: EditSessionArgs,
+  ctx: ContextWithUser
+) {
+  // find all instances belongig to the old session and delete them as the content of the questions might have changed
+  const oldSession = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!oldSession) {
+    throw new GraphQLError('Session not found')
   }
+  const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
+    (acc, block) => [...acc, ...block.instances],
+    []
+  )
 
-  const questionMap = questions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+  await ctx.prisma.questionInstance.deleteMany({
+    where: {
+      id: { in: oldQuestionInstances.map(({ id }) => id) },
+    },
+  })
+  await ctx.prisma.session.update({
+    where: { id },
+    data: {
+      blocks: {
+        deleteMany: {},
+      },
+      course: {
+        disconnect: true,
+      },
+    },
+  })
 
-  const session = await ctx.prisma.session.create({
+  const questionMap = await getQuestionMap(blocks, ctx)
+
+  const session = await ctx.prisma.session.update({
+    where: { id },
     data: {
       name,
       displayName: displayName ?? name,

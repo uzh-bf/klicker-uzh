@@ -1664,6 +1664,29 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('editSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+        description: stringArg(),
+        blocks: nonNull(
+          list(
+            arg({
+              type: nonNull(BlockInput),
+            })
+          )
+        ),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        isGamificationEnabled: booleanArg(),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.editSession(args, ctx)
+      },
+    })
+
     t.field('startSession', {
       type: Session,
       args: {

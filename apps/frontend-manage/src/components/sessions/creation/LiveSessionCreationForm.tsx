@@ -3,6 +3,7 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
+  EditSessionDocument,
   GetUserSessionsDocument,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -23,6 +24,7 @@ import {
   Formik,
 } from 'formik'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
@@ -44,7 +46,9 @@ function LiveSessionCreationForm({
   initialValues,
 }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
+  const [editSession] = useMutation(EditSessionDocument)
   const theme = useContext(ThemeContext)
+  const router = useRouter()
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -92,7 +96,9 @@ function LiveSessionCreationForm({
           description: initialValues?.description || '',
           blocks: initialValues?.blocks?.map((block) => {
             return {
-              questionIds: block.instances.map((instance) => instance.id),
+              questionIds: block.instances.map(
+                (instance) => instance.questionData.id
+              ),
               titles: block.instances.map(
                 (instance) => instance.questionData.name
               ),
@@ -118,20 +124,41 @@ function LiveSessionCreationForm({
             })
 
           try {
-            // TODO: call different function, if session is edited
-            const session = await createSession({
-              variables: {
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                blocks: blockQuestions,
-                courseId: values.courseId,
-                multiplier: parseInt(values.multiplier),
-                isGamificationEnabled: values.isGamificationEnabled,
-              },
-              refetchQueries: [GetUserSessionsDocument],
-            })
-            if (session.data?.createSession) {
+            let success = false
+
+            if (initialValues) {
+              const session = await editSession({
+                variables: {
+                  id: initialValues.id || '',
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  blocks: blockQuestions,
+                  courseId: values.courseId,
+                  multiplier: parseInt(values.multiplier),
+                  isGamificationEnabled: values.isGamificationEnabled,
+                },
+                refetchQueries: [GetUserSessionsDocument],
+              })
+              success = Boolean(session.data?.editSession)
+            } else {
+              const session = await createSession({
+                variables: {
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  blocks: blockQuestions,
+                  courseId: values.courseId,
+                  multiplier: parseInt(values.multiplier),
+                  isGamificationEnabled: values.isGamificationEnabled,
+                },
+                refetchQueries: [GetUserSessionsDocument],
+              })
+              success = Boolean(session.data?.createSession)
+            }
+
+            if (success) {
+              router.push('/')
               toast.success(
                 <div>
                   {initialValues ? (
@@ -169,7 +196,7 @@ function LiveSessionCreationForm({
           isValid,
         }) => {
           return (
-            <Form className="">
+            <Form>
               <FormikTextField
                 required
                 name="name"

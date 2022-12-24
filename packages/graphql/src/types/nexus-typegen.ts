@@ -859,6 +859,7 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
+    editSession: NexusGenRootTypes['Session'] | null; // Session
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinCourseWithPin: NexusGenRootTypes['Participant'] | null; // Participant
@@ -1402,6 +1403,7 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
     deleteQuestion: 'Question'
+    editSession: 'Session'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     joinCourseWithPin: 'Participant'
@@ -1753,6 +1755,16 @@ export interface NexusGenArgTypes {
     }
     deleteQuestion: { // args
       id?: number | null; // Int
+    }
+    editSession: { // args
+      blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName?: string | null; // String
+      id: string; // ID!
+      isGamificationEnabled?: boolean | null; // Boolean
+      multiplier: number; // Int!
+      name: string; // String!
     }
     endSession: { // args
       id: string; // ID!
