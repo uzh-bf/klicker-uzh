@@ -11,6 +11,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="login-logo"]').should('exist');
     cy.get('[data-cy="email-field"]').type('lecturer@bf.uzh.ch');
     cy.get('[data-cy="password-field"]').type('abcd');
+    // TODO Doesn't find button. Not able to test further.
     cy.get('[data-cy="submit-login"]').click();
   }),
 
@@ -21,6 +22,7 @@ describe('Render the homepage for lecturer', () => {
   it('2. Adding and deleting second question block', () => {
     cy.get('[data-cy="add-block"]').click();
     cy.get('[data-cy="delete-block"]').eq(1).click();
+    // TODO block-container needs to newly added as data-cy on the correct element
     cy.get('[data-cy="block-container-header"]').should('have.length', 1);
   }),
   
@@ -36,9 +38,11 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="save-new-question"]').click();
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
+    // TODO question-preview-button needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky, since we just click on the first preview button, not necessarily related to our question
     cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
   }),
@@ -58,15 +62,18 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="save-new-question"]').click();
 
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).siblings().invoke('text').then(text => { // TODO Maybe a way without sibling()
       const onlyId = text.split(' ')[1];
       cy.get('[data-cy="insert-session-name"]').type(sessionTitle);
       cy.get('[data-cy="insert-display-name"]').type(session);
+      // TODO insert-question-ids needs to newly added as data-cy on the correct element
       cy.get('[data-cy="insert-question-ids"]').type(onlyId);
     });
     cy.get('[data-cy="create-new-session"]').click();
     
     cy.get('[data-cy="load-session-list"]').click();
+    // TODO session-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="session-block"]').contains(sessionTitle).should('exist');
   }),
 
@@ -85,9 +92,12 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="save-new-question"]').click();
 
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('MC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
+    // TODO question-preview-button needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
   }), 
@@ -107,9 +117,12 @@ describe('Render the homepage for lecturer', () => {
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="save-new-question"]').click();
     
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('KP'); // TODO Not yet linkable to question title, thats why we have to go with parent()
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
+    // TODO question-preview-button needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
   }),
@@ -128,9 +141,12 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="set-numerical-maximum"]').type('100');
     cy.get('[data-cy="save-new-question"]').click();
 
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('NR'); // TODO Not yet linkable to question title, thats why we have to go with parent()
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
+    // TODO question-preview-button needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0');
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100');
@@ -149,10 +165,14 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="set-free-text-length"]').type('100');
     cy.get('[data-cy="save-new-question"]').click();
 
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('FT'); // TODO Not yet linkable to question title, thats why we have to go with parent()
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
+    // TODO question-preview-button needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    // TODO free-text-response-input needs to newly added as data-cy on the correct element
     cy.get('[data-cy="free-text-response-input"]').should('exist');
   }),
 
@@ -172,13 +192,17 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="save-new-question"]').click();
 
 
+    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).siblings().invoke('text').then(text => { // TODO Maybe a way without sibling()
       const onlyId = text.split(' ')[1];
       cy.get('[data-cy="insert-session-name"]').type(sessionTitle);
       cy.get('[data-cy="insert-display-name"]').type(session);
+      // TODO insert-question-ids needs to newly added as data-cy on the correct element
       cy.get('[data-cy="insert-question-ids"]').type(onlyId + ', ' +  onlyId);
       cy.get('[data-cy="add-block"]').click();
+      // TODO insert-question-ids needs to newly added as data-cy on the correct element
       cy.get('[data-cy="insert-question-ids"]').eq(1).type(onlyId);
+      // TODO course-selection-div needs to newly added as data-cy on the correct element
       cy.get('[data-cy="course-selection-div"]').siblings().eq(1).click(); // TODO Not possible without siblings() until Select() is changed
       cy.findAllByText('Testkurs').eq(1).click(); // TODO Don't know how this could work with data-cy
       cy.get('[data-cy="create-new-session"]').click();
@@ -195,8 +219,10 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="submit-login"]').click();
     cy.findByText(session).click();
     cy.findByText('25%').click();
+    // TODO student-submit-answer needs to newly added as data-cy on the correct element
     cy.get('[data-cy="student-submit-answer"]').click();
     cy.findByText('25%').click();
+    // TODO student-submit-answer needs to newly added as data-cy on the correct element
     cy.get('[data-cy="student-submit-answer"]').click();
 
     cy.clearAllCookies();
@@ -217,6 +243,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="submit-login"]').click();
     cy.findByText(session).click();
     cy.findByText('25%').click();
+    // TODO student-submit-answer needs to newly added as data-cy on the correct element
     cy.get('[data-cy="student-submit-answer"]').click();
 
     cy.clearAllCookies();

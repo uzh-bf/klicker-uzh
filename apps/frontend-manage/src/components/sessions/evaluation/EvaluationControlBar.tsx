@@ -125,7 +125,7 @@ function EvaluationControlBar({
                   'text-uzh-grey-80 cursor-not-allowed'
               ),
             }}
-            id="evaluate-next-question"
+            data-cy="evaluate-next-question"
           >
             <FontAwesomeIcon icon={faArrowRight} />
           </Button>

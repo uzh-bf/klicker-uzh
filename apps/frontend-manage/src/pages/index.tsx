@@ -64,7 +64,7 @@ function Index() {
 
   return (
     <Layout displayName="Fragepool">
-      <div className="w-full h-full" id="homepage">
+      <div className="w-full h-full" data-cy="homepage">
         <SessionCreation />
 
         <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
@@ -127,7 +127,7 @@ function Index() {
                           theme.primaryBgDark
                         ),
                       }}
-                      id="create-question"
+                      data-cy="create-question"
                     >
                       FRAGE ERSTELLEN
                     </Button>
