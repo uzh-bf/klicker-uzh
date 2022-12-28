@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.117](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.116...v2.0.0-alpha.117) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** add prettier and imports plugin as explicit deps ([d1e3e21](https://github.com/uzh-bf/klicker-uzh/commit/d1e3e21dd6dbf5ab3022134b889e6ab73fc0dbae))
+
 ## [2.0.0-alpha.116](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.115...v2.0.0-alpha.116) (2022-12-28)
 
 
