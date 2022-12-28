@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.115](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.114...v2.0.0-alpha.115) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** update override for new next version ([8f89cba](https://github.com/uzh-bf/klicker-uzh/commit/8f89cba6eed93218337458c68f08f0c7f83fe0b0))
+
 ## [2.0.0-alpha.114](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.113...v2.0.0-alpha.114) (2022-12-28)
 
 
