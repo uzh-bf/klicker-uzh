@@ -2,8 +2,6 @@
 
 // const { withSentryConfig } = require('@sentry/nextjs')
 
-const withTM = require('next-transpile-modules')(['shared-components'])
-
 const withPWA = require('next-pwa')({
   dest: 'public',
   skipWaiting: true,
@@ -12,11 +10,13 @@ const withPWA = require('next-pwa')({
 })
 
 const nextConfig = withPWA({
-  experimental: {
-    modularizeImports: {
-      ramda: {
-        transform: 'ramda/es/{{member}}',
-      },
+  transpilePackages: ['shared-components'],
+  modularizeImports: {
+    ramda: {
+      transform: 'ramda/es/{{member}}',
+    },
+    lodash: {
+      transform: 'lodash/{{member}}',
     },
   },
   // TODO: disable compression if it is done on the ingress
@@ -76,4 +76,4 @@ const nextConfig = withPWA({
 // Make sure adding Sentry options is the last code to run before exporting, to
 // ensure that your source maps include changes from all other Webpack plugins
 // module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-module.exports = withTM(nextConfig)
+module.exports = nextConfig

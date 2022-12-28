@@ -1,4 +1,4 @@
-import { filter, pipe } from '@graphql-yoga/node'
+import { filter, pipe } from 'graphql-yoga'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
 import {
