@@ -122,6 +122,9 @@ just out of interest for speed.
 
 ## TODO
 
+- Reset database before all tests are run (per file or in general?) -> <https://docs.cypress.io/guides/references/best-practices>
+  under "Is resetting the state necessary?"
+- Build pipeline via workflow (Only build of database is missing?)
 - Also all tests should be run with npm start:test for speed comparison
-- Test 10 should target de feedback section of a session
 - Factor out certain parts of code to decrease repeating code
+- Test 10 should target de feedback section of a session
