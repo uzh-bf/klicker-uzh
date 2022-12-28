@@ -1,5 +1,5 @@
 {
-  "name": "Devbox Remote Container",
+  "name": "KlickerUZH Dev",
   "build": {
     "dockerfile": "./Dockerfile",
     "context": ".."
@@ -8,7 +8,34 @@
     "vscode": {
       "settings": {},
       "extensions": [
-        "jetpack-io.devbox"
+        "aaron-bond.better-comments",
+        "austenc.tailwind-docs",
+        "bradlc.vscode-tailwindcss",
+        "christian-kohler.npm-intellisense",
+        "christian-kohler.path-intellisense",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        "github.vscode-pull-request-github",
+        "graphql.vscode-graphql-syntax",
+        "graphql.vscode-graphql",
+        "heybourn.headwind",
+        "jakewilson.vscode-placeholder-images",
+        "jetpack-io.devbox",
+        "mikestead.dotenv",
+        "mjmlio.vscode-mjml",
+        "mjmlio.vscode-mjml",
+        "ms-azuretools.vscode-azurefunctions",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "ms-vsliveshare.vsliveshare",
+        "netcorext.uuid-generator",
+        "prisma.prisma",
+        "wix.glean",
+        "wix.vscode-import-cost",
+        "yzhang.markdown-all-in-one"
       ]
     }
   },

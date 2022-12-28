@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@testing-library/cypress": "9.0.0",
+    "azure-functions-core-tools": "4.0.4915",
     "cypress": "12.1.0",
     "standard-version": "9.5.0",
     "turbo": "1.6.3",

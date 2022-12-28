@@ -1,7 +1,5 @@
 {
-  "packages": [
-    "nodejs-18_x"
-  ],
+  "packages": ["nodejs"],
   "shell": {
     "init_hook": null
   },
