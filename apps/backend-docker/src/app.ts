@@ -1,18 +1,15 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { useParserCache } from '@envelop/parser-cache'
-import { useResponseCache } from '@envelop/response-cache'
 import { useSentry } from '@envelop/sentry'
-import { useValidationCache } from '@envelop/validation-cache'
 // import { EnvelopArmor } from '@escape.tech/graphql-armor'
-import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
-import { createServer, Plugin } from '@graphql-yoga/node'
+// import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
+import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
-import { AuthSchema, Rules } from './authorization'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   // const armor = new EnvelopArmor()
@@ -62,13 +59,13 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     })(req, res, next)
   )
 
-  const graphQLServer = createServer({
+  const yogaApp = createYoga({
     schema,
     plugins: [
-      authZEnvelopPlugin({
-        rules: Rules,
-        authSchema: AuthSchema,
-      }),
+      // authZEnvelopPlugin({
+      //   rules: Rules,
+      //   authSchema: AuthSchema,
+      // }),
       useResponseCache({
         // set the TTL to 0 to disable response caching by default
         ttl: 0,
@@ -87,8 +84,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           return ctx.user ? ctx.user.sub : null
         },
       }),
-      useValidationCache(),
-      useParserCache(),
       process.env.SENTRY_DSN &&
         useSentry({
           includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
@@ -109,17 +104,18 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
     logging: true,
-    cors: false,
+    // cors: false,
     maskedErrors: !process.env.DEBUG,
+    graphqlEndpoint: '/api/graphql',
   })
 
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
 
-  app.use('/api/graphql', graphQLServer)
+  app.use('/api/graphql', yogaApp)
 
-  return app
+  return { app, yogaApp }
 }
 
 export default prepareApp
