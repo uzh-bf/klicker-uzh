@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.116](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.115...v2.0.0-alpha.116) (2022-12-28)
+
+
+### Dependencies
+
+* upgrade design system with relaxed peer deps ([5cd9fdb](https://github.com/uzh-bf/klicker-uzh/commit/5cd9fdb1581cc4979665f3862e6b960815fc2a44))
+
 ## [2.0.0-alpha.115](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.114...v2.0.0-alpha.115) (2022-12-28)
 
 
