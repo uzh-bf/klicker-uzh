@@ -5,7 +5,6 @@ import { useSentry } from '@envelop/sentry'
 import { useValidationCache } from '@envelop/validation-cache'
 // import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
-import { useHive } from '@graphql-hive/client'
 import { createServer, Plugin } from '@graphql-yoga/node'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
@@ -106,13 +105,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           // },
         }),
       // useGraphQlJit(),
-      process.env.HIVE_TOKEN &&
-        useHive({
-          enabled: true,
-          debug: !!process.env.DEBUG,
-          token: process.env.HIVE_TOKEN,
-          usage: true,
-        }),
       // ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
