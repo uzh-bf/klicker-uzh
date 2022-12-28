@@ -104,7 +104,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
     logging: true,
-    // cors: false,
+    cors: false,
     maskedErrors: !process.env.DEBUG,
     graphqlEndpoint: '/api/graphql',
   })
