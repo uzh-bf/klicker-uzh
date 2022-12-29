@@ -80,7 +80,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
     cy.get('[data-cy="create-question"]').click();
-    cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
+    cy.get('[data-cy="select-question-type"]').click();
     cy.findAllByText('Multiple Choice (MC)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('[data-cy="insert-question-text"]').type(question);
@@ -102,7 +102,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
     cy.get('[data-cy="create-question"]').click();
-    cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
+    cy.get('[data-cy="select-question-type"]').click();
     cy.findAllByText('KPRIM (KP)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
@@ -124,7 +124,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
     cy.get('[data-cy="create-question"]').click();
-    cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
+    cy.get('[data-cy="select-question-type"]').click();
     cy.findAllByText('Numerisch (NR)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
@@ -146,7 +146,7 @@ describe('Render the homepage for lecturer', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
     cy.get('[data_cy="create-question"]').click();
-    cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
+    cy.get('[data-cy="select-question-type"]').click();
     cy.findAllByText('Freitext (FT)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
@@ -187,7 +187,7 @@ describe('Render the homepage for lecturer', () => {
       // TODO insert-question-ids needs to newly added as data-cy on the correct element
       cy.get('[data-cy="insert-question-ids"]').eq(1).type(onlyId);
       // TODO course-selection-div needs to newly added as data-cy on the correct element
-      cy.get('[data-cy="course-selection-div"]').siblings().eq(1).click(); // TODO Not possible without siblings() until Select() is changed
+      cy.get('[data-cy="select-question-type"]').click();
       cy.findAllByText('Testkurs').eq(1).click(); // TODO Don't know how this could work with data-cy
       cy.get('[data-cy="create-new-session"]').click();
     });

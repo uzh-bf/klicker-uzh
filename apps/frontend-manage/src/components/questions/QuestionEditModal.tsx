@@ -443,10 +443,7 @@ function QuestionEditModal({
           >
             <div>
               {JSON.stringify(errors)}
-              <div
-                className="z-0 flex flex-row"
-                data-cy="select-question-type-div"
-              >
+              <div className="z-0 flex flex-row">
                 <Label
                   label="Fragetyp:"
                   className={{
@@ -466,6 +463,7 @@ function QuestionEditModal({
                       setNewQuestionType(newValue)
                     }}
                     value={newQuestionType}
+                    data={{ cy: 'select-question-type' }}
                   />
                 ) : (
                   <div className="my-auto">
