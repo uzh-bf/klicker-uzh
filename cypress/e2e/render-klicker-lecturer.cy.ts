@@ -14,16 +14,15 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data_cy="submit-login"]').click();
   }),
 
-  it('1. Login into lecturer account', () => {
+  /* it('1. Login into lecturer account', () => {
     cy.get('[data-cy="homepage"]').should('exist');
-  })/* ,
+  }), */
   
   it('2. Adding and deleting second question block', () => {
     cy.get('[data-cy="add-block"]').click();
-    cy.get('[data-cy="delete-block"]').eq(1).click();
-    // TODO block-container needs to newly added as data-cy on the correct element
+    cy.get('[data_cy="delete-block"]').eq(1).click();
     cy.get('[data-cy="block-container-header"]').should('have.length', 1);
-  }),
+  })/* ,
   
   it('3. Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
