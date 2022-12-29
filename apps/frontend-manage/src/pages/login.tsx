@@ -114,7 +114,7 @@ function LoginForm() {
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       type="submit"
                       disabled={isSubmitting}
-                      data-cy="submit-login"
+                      data_cy="submit-login"
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>

@@ -10,7 +10,7 @@ describe('Render the homepage for student', () => {
   it('login into student account', () => {
     cy.get('[data-cy="username-field"]').type('testuser1');
     cy.get('[data-cy="password-field"]').type('testing');
-    cy.get('[data-cy="submit-login"]').click();
+    cy.get('[data_cy="submit-login"]').click();
     cy.get('[data-cy="homepage"]').should('exist');
   })
 })
