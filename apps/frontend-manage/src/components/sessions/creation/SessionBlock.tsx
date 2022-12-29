@@ -110,6 +110,7 @@ function SessionBlock({
           'w-full text-center p-0.5 border border-solid rounded',
           isOver && theme.primaryBg
         )}
+        data-cy="drop-questions-here"
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>

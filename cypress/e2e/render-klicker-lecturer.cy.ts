@@ -22,7 +22,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="add-block"]').click();
     cy.get('[data-cy="delete-block"]').eq(1).click();
     cy.get('[data-cy="block-container-header"]').should('have.length', 1);
-  }), */
+  }), 
   
   it('3. Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
@@ -41,7 +41,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky, since we just click on the first preview button, not necessarily related to our question
     cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
-  })/* ,
+  }), */
   
   it('4. Create a session with one block', () => {
     const randomNumber = Math.round(Math.random() * 1000);
@@ -52,25 +52,26 @@ describe('Render the homepage for lecturer', () => {
 
     cy.get('[data-cy="create-question"]').click();
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
-    cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data_cy="add-new-answer"]').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data_cy="save-new-question"]').click();
+    cy.get('[data-cy="insert-question-text"]').type(question);
+    cy.get('[data-cy="insert-answer-field"]').type('50%');
+    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data-cy="insert-answer-field"]').eq(1).type('100%');
+    cy.get('[data-cy="save-new-question"]').click();
 
-    cy.get('[data-cy="question-block"]').contains(questionTitle).siblings().invoke('text').then(text => { // TODO Maybe a way without sibling()
-      const onlyId = text.split(' ')[1];
-      cy.get('[data-cy="insert-session-name"]').type(sessionTitle);
-      cy.get('[data-cy="insert-display-name"]').type(session);
-      // TODO insert-question-ids needs to newly added as data-cy on the correct element
-      cy.get('[data-cy="insert-question-ids"]').type(onlyId);
+    cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
+    cy.get('[data-cy="insert-live-display-name"]').type(session);
+    const dataTransfer = new DataTransfer();
+    cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+      dataTransfer
+    });
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer
     });
     cy.get('[data-cy="create-new-session"]').click();
     
     cy.get('[data-cy="load-session-list"]').click();
-    // TODO session-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="session-block"]').contains(sessionTitle).should('exist');
-  }),
+  })/*, 
 
   it('5. Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);

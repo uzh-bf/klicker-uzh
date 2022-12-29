@@ -146,7 +146,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 label="Session-Name"
                 tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                 className={{ root: 'mb-1' }}
-                data-cy="insert-session-name"
               />
               <FormikTextField
                 required
@@ -154,7 +153,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 label="Anzeigenamen"
                 tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                 className={{ root: 'mb-1' }}
-                data-cy="insert-display-name"
               />
 
               <EditorField
@@ -306,7 +304,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 className={{ root: 'float-right' }}
                 type="submit"
                 disabled={isSubmitting || !isValid}
-                data-cy="create-new-session"
               >
                 Erstellen
               </Button>

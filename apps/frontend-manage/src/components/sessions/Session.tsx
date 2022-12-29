@@ -53,7 +53,10 @@ function Session({ session }: SessionProps) {
           }
         }}
         staticContent={
-          <div className="flex flex-row justify-between">
+          <div
+            className="flex flex-row justify-between"
+            data-cy="session-block"
+          >
             <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
             <div className="flex flex-row gap-5">
               {session.blocks?.length !== 0 && (
