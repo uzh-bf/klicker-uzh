@@ -172,7 +172,7 @@ function LoginForm() {
                       type="submit"
                       disabled={isSubmitting}
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
-                      data_cy="submit-login"
+                      data={{ cy: 'submit-login' }}
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>

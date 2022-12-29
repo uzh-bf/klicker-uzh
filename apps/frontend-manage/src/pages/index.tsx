@@ -127,7 +127,7 @@ function Index() {
                           theme.primaryBgDark
                         ),
                       }}
-                      data_cy="create-question"
+                      data={{ cy: 'create-question' }}
                     >
                       FRAGE ERSTELLEN
                     </Button>

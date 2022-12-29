@@ -115,7 +115,7 @@ function Question({
             <Button
               className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsPreviewModalOpen(true)}
-              data_cy="question-preview-button"
+              data={{ cy: 'question-preview-button' }}
             >
               Vorschau
             </Button>

@@ -62,7 +62,7 @@ function SessionBlock({
             className={{
               root: 'w-6 flex justify-center text-white bg-red-500 rounded hover:bg-red-600',
             }}
-            data_cy="delete-block"
+            data={{ cy: 'delete-block' }}
           >
             <FontAwesomeIcon icon={faTrash} />
           </Button>

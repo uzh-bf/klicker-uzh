@@ -427,7 +427,7 @@ function QuestionEditModal({
                 }}
                 type="submit"
                 form="question-manipulation-form"
-                data_cy="save-new-question"
+                data={{ cy: 'save-new-question' }}
               >
                 <Button.Label>Speichern</Button.Label>
               </Button>
@@ -443,7 +443,10 @@ function QuestionEditModal({
           >
             <div>
               {JSON.stringify(errors)}
-              <div className="z-0 flex flex-row" data-cy="select-question-type-div">
+              <div
+                className="z-0 flex flex-row"
+                data-cy="select-question-type-div"
+              >
                 <Label
                   label="Fragetyp:"
                   className={{
@@ -560,7 +563,7 @@ function QuestionEditModal({
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                           key={`${questionType}-content`}
-                          id="insert-question-text"
+                          data_cy="insert-question-text"
                         />
                       )}
                     </FastField>
@@ -696,7 +699,7 @@ function QuestionEditModal({
                                         root: 'bg-white',
                                       }}
                                       key={`${questionType}-choice-${index}`}
-                                      id="add-answer-field"
+                                      data_cy="insert-answer-field"
                                     />
                                   )}
                                 </FastField>
@@ -814,7 +817,7 @@ function QuestionEditModal({
                               feedback: '<br>',
                             })
                           }
-                          data_cy="add-new-answer"
+                          data={{ cy: 'add-new-answer' }}
                         >
                           Neue Antwort hinzufügen
                         </Button>
