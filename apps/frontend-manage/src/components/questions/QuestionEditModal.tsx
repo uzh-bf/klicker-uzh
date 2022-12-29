@@ -427,7 +427,7 @@ function QuestionEditModal({
                 }}
                 type="submit"
                 form="question-manipulation-form"
-                data-cy="save-new-question"
+                data_cy="save-new-question"
               >
                 <Button.Label>Speichern</Button.Label>
               </Button>
@@ -560,7 +560,7 @@ function QuestionEditModal({
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                           key={`${questionType}-content`}
-                          data-cy="insert-question-text"
+                          id="insert-question-text"
                         />
                       )}
                     </FastField>
@@ -814,7 +814,7 @@ function QuestionEditModal({
                               feedback: '<br>',
                             })
                           }
-                          data-cy="add-new-answer"
+                          data_cy="add-new-answer"
                         >
                           Neue Antwort hinzufügen
                         </Button>

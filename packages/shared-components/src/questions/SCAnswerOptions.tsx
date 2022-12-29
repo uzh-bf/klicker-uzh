@@ -32,7 +32,7 @@ export function SCAnswerOptions({
             onClick={onChange(index)}
             key={choice.value}
             active={value?.includes(index)}
-            data-cy="sc-answer-options"
+            data_cy="sc-answer-options"
           >
             <Button.Label>
               <Markdown content={choice.value} />

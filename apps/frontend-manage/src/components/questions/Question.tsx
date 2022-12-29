@@ -82,7 +82,7 @@ function Question({
         ref={drag}
       >
         <div className="flex flex-row flex-1">
-          <div className="flex-1">
+          <div className="flex-1" data-cy="question-block">
             {isArchived && <div>ARCHIVED // TODO styling</div>}
             <div className="flex flex-row">
               <a
@@ -115,7 +115,7 @@ function Question({
             <Button
               className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsPreviewModalOpen(true)}
-              id="question-preview"
+              data_cy="question-preview-button"
             >
               Vorschau
             </Button>

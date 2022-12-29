@@ -16,34 +16,32 @@ describe('Render the homepage for lecturer', () => {
 
   /* it('1. Login into lecturer account', () => {
     cy.get('[data-cy="homepage"]').should('exist');
-  }), */
+  }), 
   
   it('2. Adding and deleting second question block', () => {
     cy.get('[data-cy="add-block"]').click();
     cy.get('[data_cy="delete-block"]').eq(1).click();
     cy.get('[data-cy="block-container-header"]').should('have.length', 1);
-  })/* ,
+  }),*/
   
   it('3. Adding a single choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data_cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="save-new-question"]').click();
-    // TODO question-block needs to newly added as data-cy on the correct element
+    cy.get('[data_cy="save-new-question"]').click();
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    // TODO question-preview-button needs to newly added as data-cy on the correct element
-    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky, since we just click on the first preview button, not necessarily related to our question
-    cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
-  }),
+    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky, since we just click on the first preview button, not necessarily related to our question
+    cy.get('[data_cy="sc-answer-options"]').nextAll().should('have.length', 1);
+  })/* ,
   
   it('4. Create a session with one block', () => {
     const randomNumber = Math.round(Math.random() * 1000);
@@ -52,15 +50,14 @@ describe('Render the homepage for lecturer', () => {
     const sessionTitle = 'Test Session ' + randomNumber;
     const session = 'Displayed Name ' + randomNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data_cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
 
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).siblings().invoke('text').then(text => { // TODO Maybe a way without sibling()
       const onlyId = text.split(' ')[1];
       cy.get('[data-cy="insert-session-name"]').type(sessionTitle);
@@ -80,24 +77,21 @@ describe('Render the homepage for lecturer', () => {
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber;
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
     cy.findAllByText('Multiple Choice (MC)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data_cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
 
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('MC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    // TODO question-preview-button needs to newly added as data-cy on the correct element
-    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
-    cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
+    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    cy.get('[data_cy="sc-answer-options"]').nextAll().should('have.length', 1);
   }), 
 
   it('6. Adding a KPRIM question to pool', () => {
@@ -105,24 +99,21 @@ describe('Render the homepage for lecturer', () => {
     const questionTitle = 'A KPRIM ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
     cy.findAllByText('KPRIM (KP)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data_cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
     
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('KP'); // TODO Not yet linkable to question title, thats why we have to go with parent()
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    // TODO question-preview-button needs to newly added as data-cy on the correct element
-    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
-    cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
+    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    cy.get('[data_cy="sc-answer-options"]').nextAll().should('have.length', 1);
   }),
 
   it('7. Adding a Numeric question to pool', () => {
@@ -130,22 +121,19 @@ describe('Render the homepage for lecturer', () => {
     const questionTitle = 'A Numeric ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
     cy.findAllByText('Numerisch (NR)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="set-numerical-minimum"]').type('0');
     cy.get('[data-cy="set-numerical-maximum"]').type('100');
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
 
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('NR'); // TODO Not yet linkable to question title, thats why we have to go with parent()
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    // TODO question-preview-button needs to newly added as data-cy on the correct element
-    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0');
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100');
   }),
@@ -155,21 +143,18 @@ describe('Render the homepage for lecturer', () => {
     const questionTitle = 'A Free Text ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
     cy.findAllByText('Freitext (FT)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('[data-cy="set-free-text-length"]').type('100');
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
 
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('FT'); // TODO Not yet linkable to question title, thats why we have to go with parent()
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    // TODO question-preview-button needs to newly added as data-cy on the correct element
-    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     // TODO free-text-response-input needs to newly added as data-cy on the correct element
     cy.get('[data-cy="free-text-response-input"]').should('exist');
   }),
@@ -181,16 +166,15 @@ describe('Render the homepage for lecturer', () => {
     const questionTitle = 'A Single Choice ' + randomNumber;
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
 
-    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data_cy="create-question"]').click();
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
     cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
     cy.get('#add-answer-field').type('25%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data_cy="add-new-answer"]').click();
     cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data-cy="save-new-question"]').click();
+    cy.get('[data_cy="save-new-question"]').click();
 
 
-    // TODO question-block needs to newly added as data-cy on the correct element
     cy.get('[data-cy="question-block"]').contains(questionTitle).siblings().invoke('text').then(text => { // TODO Maybe a way without sibling()
       const onlyId = text.split(' ')[1];
       cy.get('[data-cy="insert-session-name"]').type(sessionTitle);
