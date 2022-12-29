@@ -36,12 +36,13 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="add-new-answer"]').click();
     cy.get('[data-cy="insert-answer-field"]').eq(1).type('100%');
     cy.get('[data-cy="save-new-question"]').click();
+    
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('SC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
     cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky, since we just click on the first preview button, not necessarily related to our question
     cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
-  }), */
+  }),
   
   it('4. Create a session with one block', () => {
     const randomNumber = Math.round(Math.random() * 1000);
@@ -71,7 +72,7 @@ describe('Render the homepage for lecturer', () => {
     
     cy.get('[data-cy="load-session-list"]').click();
     cy.get('[data-cy="session-block"]').contains(sessionTitle).should('exist');
-  })/*, 
+  }),  */
 
   it('5. Adding a multiple choice question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
@@ -82,18 +83,18 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="select-question-type-div"]').children().eq(1).click(); // TODO Could work without children() if data-cy added to Select()
     cy.findAllByText('Multiple Choice (MC)').eq(1).click(); // TODO Don't know how this could work with data-cy
     cy.get('[data-cy="insert-question-title"]').type(questionTitle);
-    cy.get('#insert-question-text').type(question); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('#add-answer-field').type('50%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data_cy="add-new-answer"]').click();
-    cy.findByText('Antwortmöglichkeit eingeben…').parent().parent().parent().type('100%'); // TODO Didn't work with data-cy yet -> ContentInput
-    cy.get('[data_cy="save-new-question"]').click();
+    cy.get('[data-cy="insert-question-text"]').type(question);
+    cy.get('[data-cy="insert-answer-field"]').type('50%');
+    cy.get('[data-cy="add-new-answer"]').click();
+    cy.get('[data-cy="insert-answer-field"]').eq(1).type('100%');
+    cy.get('[data-cy="save-new-question"]').click();
 
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
     cy.findByText(questionTitle).parent().parent().children().eq(1).contains('MC'); // TODO Not yet linkable to question title, thats why we have to go with parent()
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
-    cy.get('[data_cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
-    cy.get('[data_cy="sc-answer-options"]').nextAll().should('have.length', 1);
-  }), 
+    cy.get('[data-cy="question-preview-button"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
+    cy.get('[data-cy="sc-answer-options"]').nextAll().should('have.length', 1);
+  })/*, 
 
   it('6. Adding a KPRIM question to pool', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000);
