@@ -8,12 +8,12 @@ export const Course = builder.prismaObject('Course', {
 
 export const LeaderboardEntry = builder.prismaObject('LeaderboardEntry', {
   fields: (t) => ({
-    id: t.exposeID('id'),
+    id: t.exposeInt('id'),
   }),
 })
 
 export const AwardEntry = builder.prismaObject('AwardEntry', {
   fields: (t) => ({
-    id: t.exposeID('id'),
+    id: t.exposeInt('id'),
   }),
 })
