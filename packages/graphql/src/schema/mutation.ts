@@ -10,6 +10,13 @@ export const Mutation = builder.mutationType({
         email: t.arg.string({ required: true, validate: { email: true } }),
         password: t.arg.string({ required: true }),
       },
+      // just for illustration, use $any (could leave authScopes out completely)
+      // authScopes: {
+      //   $any: {
+      //     anonymous: true,
+      //     authenticated: true,
+      //   },
+      // },
       resolve(_, args, ctx) {
         return AccountService.loginUser(args, ctx)
       },

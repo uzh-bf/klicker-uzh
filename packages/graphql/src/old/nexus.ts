@@ -20,17 +20,17 @@ import {
   Context,
   ContextWithOptionalUser,
   ContextWithUser,
-} from './lib/context'
-import * as AccountService from './services/accounts'
-import * as CourseService from './services/courses'
-import * as FeedbackService from './services/feedbacks'
-import * as ParticipantGroupService from './services/groups'
-import * as LearningElementService from './services/learningElements'
-import * as MicroLearningService from './services/microLearning'
-import * as NotificationService from './services/notifications'
-import * as ParticipantService from './services/participants'
-import * as QuestionService from './services/questions'
-import * as SessionService from './services/sessions'
+} from '../lib/context'
+import * as AccountService from '../services/accounts'
+import * as CourseService from '../services/courses'
+import * as FeedbackService from '../services/feedbacks'
+import * as ParticipantGroupService from '../services/groups'
+import * as LearningElementService from '../services/learningElements'
+import * as MicroLearningService from '../services/microLearning'
+import * as NotificationService from '../services/notifications'
+import * as ParticipantService from '../services/participants'
+import * as QuestionService from '../services/questions'
+import * as SessionService from '../services/sessions'
 
 export const jsonScalar = asNexusMethod(JSONObjectResolver, 'json')
 export const dateTimeScalar = asNexusMethod(DateTimeResolver, 'date')
