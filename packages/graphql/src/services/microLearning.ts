@@ -47,7 +47,7 @@ export async function getMicroSessionData(
       course: true,
       instances: {
         orderBy: {
-          questionId: 'asc',
+          order: 'asc',
         },
       },
     },
@@ -104,7 +104,11 @@ export async function getSingleMicroSession(
     where: { id },
     include: {
       course: true,
-      instances: true,
+      instances: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
     },
   })
 

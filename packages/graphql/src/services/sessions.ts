@@ -333,7 +333,11 @@ export async function getLiveSessionData(
     include: {
       blocks: {
         include: {
-          instances: true,
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
       course: true,
