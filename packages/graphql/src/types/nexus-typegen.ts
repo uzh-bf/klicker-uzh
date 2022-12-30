@@ -377,6 +377,7 @@ export interface NexusGenObjects {
     instances?: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances?: number | null; // Int
+    pointsMultiplier: number; // Int!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -507,6 +508,7 @@ export interface NexusGenObjects {
     confusionFeedbacks?: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
     course?: NexusGenRootTypes['Course'] | null; // Course
     createdAt: NexusGenScalars['DateTime']; // DateTime!
+    description?: string | null; // String
     displayName: string; // String!
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     finishedAt?: NexusGenScalars['DateTime'] | null; // DateTime
@@ -520,6 +522,7 @@ export interface NexusGenObjects {
     numOfBlocks?: number | null; // Int
     numOfQuestions?: number | null; // Int
     pinCode?: number | null; // Int
+    pointsMultiplier: number; // Int!
     startedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
     updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
@@ -838,6 +841,7 @@ export interface NexusGenFieldTypes {
     instances: NexusGenRootTypes['QuestionInstance'][] | null; // [QuestionInstance!]
     name: string; // String!
     numOfInstances: number | null; // Int
+    pointsMultiplier: number; // Int!
     scheduledEndAt: NexusGenScalars['DateTime']; // DateTime!
     scheduledStartAt: NexusGenScalars['DateTime']; // DateTime!
   }
@@ -857,6 +861,8 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
+    editMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    editSession: NexusGenRootTypes['Session'] | null; // Session
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinCourseWithPin: NexusGenRootTypes['Participant'] | null; // Participant
@@ -984,6 +990,7 @@ export interface NexusGenFieldTypes {
     groupActivityDetails: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
+    liveSession: NexusGenRootTypes['Session'] | null; // Session
     microSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     participantGroups: NexusGenRootTypes['ParticipantGroup'][] | null; // [ParticipantGroup!]
     participations: NexusGenRootTypes['Participation'][] | null; // [Participation!]
@@ -994,6 +1001,7 @@ export interface NexusGenFieldTypes {
     session: NexusGenRootTypes['Session'] | null; // Session
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
+    singleMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     userCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
@@ -1036,6 +1044,7 @@ export interface NexusGenFieldTypes {
     confusionFeedbacks: Array<NexusGenRootTypes['AggregatedConfusionFeedbacks'] | null> | null; // [AggregatedConfusionFeedbacks]
     course: NexusGenRootTypes['Course'] | null; // Course
     createdAt: NexusGenScalars['DateTime']; // DateTime!
+    description: string | null; // String
     displayName: string; // String!
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     finishedAt: NexusGenScalars['DateTime'] | null; // DateTime
@@ -1049,6 +1058,7 @@ export interface NexusGenFieldTypes {
     numOfBlocks: number | null; // Int
     numOfQuestions: number | null; // Int
     pinCode: number | null; // Int
+    pointsMultiplier: number; // Int!
     startedAt: NexusGenScalars['DateTime'] | null; // DateTime
     status: NexusGenEnums['SessionStatus']; // SessionStatus!
     updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
@@ -1378,6 +1388,7 @@ export interface NexusGenFieldTypeNames {
     instances: 'QuestionInstance'
     name: 'String'
     numOfInstances: 'Int'
+    pointsMultiplier: 'Int'
     scheduledEndAt: 'DateTime'
     scheduledStartAt: 'DateTime'
   }
@@ -1397,6 +1408,8 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
     deleteQuestion: 'Question'
+    editMicroSession: 'MicroSession'
+    editSession: 'Session'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     joinCourseWithPin: 'Participant'
@@ -1524,6 +1537,7 @@ export interface NexusGenFieldTypeNames {
     groupActivityDetails: 'GroupActivityDetails'
     learningElement: 'LearningElement'
     learningElements: 'LearningElement'
+    liveSession: 'Session'
     microSession: 'MicroSession'
     participantGroups: 'ParticipantGroup'
     participations: 'Participation'
@@ -1534,6 +1548,7 @@ export interface NexusGenFieldTypeNames {
     session: 'Session'
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
+    singleMicroSession: 'MicroSession'
     userCourses: 'Course'
     userProfile: 'User'
     userQuestions: 'Question'
@@ -1576,6 +1591,7 @@ export interface NexusGenFieldTypeNames {
     confusionFeedbacks: 'AggregatedConfusionFeedbacks'
     course: 'Course'
     createdAt: 'DateTime'
+    description: 'String'
     displayName: 'String'
     feedbacks: 'Feedback'
     finishedAt: 'DateTime'
@@ -1589,6 +1605,7 @@ export interface NexusGenFieldTypeNames {
     numOfBlocks: 'Int'
     numOfQuestions: 'Int'
     pinCode: 'Int'
+    pointsMultiplier: 'Int'
     startedAt: 'DateTime'
     status: 'SessionStatus'
     updatedAt: 'DateTime'
@@ -1746,6 +1763,27 @@ export interface NexusGenArgTypes {
     deleteQuestion: { // args
       id?: number | null; // Int
     }
+    editMicroSession: { // args
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName: string; // String!
+      endDate: string; // String!
+      id: string; // ID!
+      multiplier: number; // Int!
+      name: string; // String!
+      questions: Array<number | null>; // [Int]!
+      startDate: string; // String!
+    }
+    editSession: { // args
+      blocks: NexusGenInputs['BlockInput'][]; // [BlockInput!]!
+      courseId?: string | null; // String
+      description?: string | null; // String
+      displayName?: string | null; // String
+      id: string; // ID!
+      isGamificationEnabled?: boolean | null; // Boolean
+      multiplier: number; // Int!
+      name: string; // String!
+    }
     endSession: { // args
       id: string; // ID!
     }
@@ -1891,6 +1929,9 @@ export interface NexusGenArgTypes {
     learningElement: { // args
       id: string; // ID!
     }
+    liveSession: { // args
+      id: string; // ID!
+    }
     microSession: { // args
       id: string; // ID!
     }
@@ -1917,6 +1958,9 @@ export interface NexusGenArgTypes {
     }
     sessionLeaderboard: { // args
       sessionId: string; // ID!
+    }
+    singleMicroSession: { // args
+      id: string; // ID!
     }
   }
   Subscription: {

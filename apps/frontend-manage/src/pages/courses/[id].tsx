@@ -148,12 +148,12 @@ function CourseOverviewPage() {
               Teilnehmende Leaderboard: {course.numOfActiveParticipants}
             </div>
             <div>
-              Durchschnittl. Punkte: {course.averageActiveScore.toFixed(2)}
+              Durchschnittl. Punkte: {course.averageActiveScore?.toFixed(2)}
             </div>
             <div className="mt-1">
               Kursteilnehmende: {course.numOfParticipants}
             </div>
-            <div>Durchschnittl. Punkte: {course.averageScore.toFixed(2)}</div>
+            <div>Durchschnittl. Punkte: {course.averageScore?.toFixed(2)}</div>
           </div>
         </div>
       </div>

@@ -361,6 +361,7 @@ type MicroSession {
   instances: [QuestionInstance!]
   name: String!
   numOfInstances: Int
+  pointsMultiplier: Int!
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
 }
@@ -381,6 +382,8 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int): Question
+  editMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, id: ID!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant
@@ -547,6 +550,7 @@ type Query {
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
   learningElements: [LearningElement!]!
+  liveSession(id: ID!): Session
   microSession(id: ID!): MicroSession
   participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
@@ -557,6 +561,7 @@ type Query {
   session(id: ID!): Session
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  singleMicroSession(id: ID!): MicroSession
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
@@ -626,6 +631,7 @@ type Session {
   confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
   createdAt: DateTime!
+  description: String
   displayName: String!
   feedbacks: [Feedback]
   finishedAt: DateTime
@@ -639,6 +645,7 @@ type Session {
   numOfBlocks: Int
   numOfQuestions: Int
   pinCode: Int
+  pointsMultiplier: Int!
   startedAt: DateTime
   status: SessionStatus!
   updatedAt: DateTime

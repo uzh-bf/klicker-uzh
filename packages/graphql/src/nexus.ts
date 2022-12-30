@@ -550,6 +550,8 @@ export const MicroSession = objectType({
       type: QuestionInstance,
     })
 
+    t.nonNull.int('pointsMultiplier')
+
     t.nonNull.field('course', {
       type: Course,
     })
@@ -889,6 +891,7 @@ export const Session = objectType({
 
     t.nonNull.string('namespace')
     t.nonNull.string('name')
+    t.string('description')
     t.nonNull.string('displayName')
     t.string('linkTo')
     t.int('pinCode')
@@ -915,6 +918,8 @@ export const Session = objectType({
     t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
+
+    t.nonNull.int('pointsMultiplier')
 
     t.nonNull.date('createdAt')
     t.date('updatedAt')
@@ -1146,6 +1151,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('liveSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.getLiveSessionData(args, ctx)
+      },
+    })
+
     t.field('learningElement', {
       type: LearningElement,
       args: {
@@ -1163,6 +1178,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.getMicroSessionData(args, ctx)
+      },
+    })
+
+    t.field('singleMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.getSingleMicroSession(args, ctx)
       },
     })
 
@@ -1630,7 +1655,7 @@ export const Mutation = objectType({
         endDate: nonNull(stringArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createMicroSession(args, ctx)
+        return MicroLearningService.createMicroSession(args, ctx)
       },
     })
 
@@ -1647,7 +1672,48 @@ export const Mutation = objectType({
         resetTimeDays: nonNull(intArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
-        return SessionService.createLearningElement(args, ctx)
+        return LearningElementService.createLearningElement(args, ctx)
+      },
+    })
+
+    t.field('editSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+        description: stringArg(),
+        blocks: nonNull(
+          list(
+            arg({
+              type: nonNull(BlockInput),
+            })
+          )
+        ),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        isGamificationEnabled: booleanArg(),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.editSession(args, ctx)
+      },
+    })
+
+    t.field('editMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        startDate: nonNull(stringArg()),
+        endDate: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.editMicroSession(args, ctx)
       },
     })
 

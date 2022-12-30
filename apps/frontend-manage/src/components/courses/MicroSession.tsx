@@ -1,5 +1,6 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArrowRight,
   faCheck,
   faHourglassEnd,
   faHourglassStart,
@@ -7,6 +8,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { useRouter } from 'next/router'
+import { useContext } from 'react'
 import Ellipsis from '../common/Ellipsis'
 
 interface MicroSessionProps {
@@ -14,6 +18,9 @@ interface MicroSessionProps {
 }
 
 function MicroSessionTile({ microSession }: MicroSessionProps) {
+  const theme = useContext(ThemeContext)
+  const router = useRouter()
+
   const scheduledStartAt = new Date(microSession.scheduledStartAt)
   const scheduledEndAt = new Date(microSession.scheduledEndAt)
 
@@ -69,6 +76,23 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <FontAwesomeIcon icon={faHourglassEnd} />
           <div>Ende: {scheduledEndAtString}</div>
         </div>
+        {isFuture && (
+          <Button
+            basic
+            className={{ root: theme.primaryText }}
+            onClick={() =>
+              router.push({
+                pathname: '/',
+                query: { sessionId: microSession.id, editMode: 'microSession' },
+              })
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button.Icon>
+            <Button.Label>Micro-Session bearbeiten</Button.Label>
+          </Button>
+        )}
       </div>
     </div>
   )

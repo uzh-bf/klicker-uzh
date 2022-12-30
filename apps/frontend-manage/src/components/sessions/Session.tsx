@@ -188,6 +188,22 @@ function Session({ session }: SessionProps) {
             </div>
           ))}
         </div>
+        {(SESSION_STATUS.PREPARED === session.status ||
+          SESSION_STATUS.SCHEDULED === session.status) && (
+          <div>
+            <Button
+              className={{ root: 'float-right' }}
+              onClick={() =>
+                router.push({
+                  pathname: '/',
+                  query: { sessionId: session.id, editMode: 'liveSession' },
+                })
+              }
+            >
+              Session bearbeiten
+            </Button>
+          </div>
+        )}
       </Collapsible>
     </div>
   )
