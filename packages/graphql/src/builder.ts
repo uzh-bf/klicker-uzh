@@ -39,6 +39,9 @@ const builder = new SchemaBuilder<{
     client: prisma,
     filterConnectionTotalCount: true,
   },
+  scopeAuthOptions: {
+    unauthorizedError: () => new GraphQLError('Unauthorized'),
+  },
   validationOptions: {
     validationError: (zodError, args, context, info) => {
       return new GraphQLError(
