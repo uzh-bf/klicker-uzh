@@ -33,6 +33,6 @@ fs.copyFileSync(
   )
 )
 fs.copyFileSync(
-  path.resolve(__dirname, './client/pothos.ts'),
-  path.resolve(__dirname, '../dist/pothos.ts')
+  path.resolve(__dirname, './client/pothos.d.ts'),
+  path.resolve(__dirname, '../dist/pothos.d.ts')
 )

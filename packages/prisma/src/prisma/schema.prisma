@@ -10,8 +10,9 @@ generator erd {
 }
 
 generator pothos {
-  provider = "prisma-pothos-types"
-  output   = "../client/pothos.ts"
+  provider     = "prisma-pothos-types"
+  clientOutput = "@klicker-uzh/prisma"
+  output       = "../client/pothos.d.ts"
 }
 
 datasource db {
