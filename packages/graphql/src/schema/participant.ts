@@ -16,6 +16,8 @@ export const Participant = builder.prismaObject('Participant', {
 export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    participants: t.relation('participants'),
   }),
 })
 
