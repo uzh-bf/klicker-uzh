@@ -9,6 +9,11 @@ generator erd {
   provider = "prisma-erd-generator"
 }
 
+generator pothos {
+  provider = "prisma-pothos-types"
+  output   = "../client/pothos.ts"
+}
+
 datasource db {
   provider          = "postgres"
   url               = env("DATABASE_URL")

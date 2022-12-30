@@ -9,31 +9,6 @@ import {
 } from '../lib/context'
 import { createParticipantToken } from './accounts'
 
-interface GetParticipantProfileArgs {
-  id: string
-}
-
-export async function getParticipantProfile(
-  { id }: GetParticipantProfileArgs,
-  ctx: ContextWithOptionalUser
-) {
-  if (!ctx.user?.sub) return null
-
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id },
-    include: {
-      achievements: {
-        include: { achievement: true },
-      },
-    },
-  })
-
-  return R.pick(
-    ['id', 'avatar', 'avatarSettings', 'username', 'achievements'],
-    participant
-  )
-}
-
 interface UpdateParticipantProfileArgs {
   password?: string
   username?: string

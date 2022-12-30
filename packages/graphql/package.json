@@ -11,14 +11,13 @@
     "analyze": "size-limit --why",
     "prebuild": "npm run generate",
     "build": "NODE_ENV=production tsup --dts",
-    "hive": "hive schema:publish src/graphql/schema.graphql",
     "dev": "npm-run-all --parallel dev:nexus dev:graphql dev:ts",
     "dev:ts": "NODE_ENV=development tsup --watch --dts",
-    "dev:graphql": "graphql-codegen --config codegen.yml --watch",
+    "dev:graphql": "graphql-codegen --config codegen.ts --watch",
     "dev:nexus": "ts-node-dev --transpile-only --no-notify -P tsconfig.nexus.json src/index.ts",
     "format": "prettier --write .",
     "generate": "npm-run-all generate:nexus generate:graphql",
-    "generate:graphql": "graphql-codegen --config codegen.yml",
+    "generate:graphql": "graphql-codegen --config codegen.ts",
     "generate:nexus": "ts-node --transpile-only -P tsconfig.nexus.json src/index.ts",
     "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit"
@@ -37,19 +36,20 @@
     }
   ],
   "peerDependencies": {
-    "graphql-yoga": "^3.0.0",
     "@klicker-uzh/grading": "^2.0.0-alpha.0",
-    "@klicker-uzh/prisma": "^2.0.0-alpha.0"
+    "@klicker-uzh/prisma": "^2.0.0-alpha.0",
+    "graphql-yoga": "^3.0.0"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "2.13.7",
-    "@graphql-codegen/fragment-matcher": "3.3.1",
-    "@graphql-codegen/introspection": "2.2.1",
-    "@graphql-codegen/typed-document-node": "2.3.5",
-    "@graphql-codegen/typescript": "2.8.0",
-    "@graphql-codegen/typescript-operations": "2.5.5",
-    "@graphql-codegen/typescript-react-apollo": "3.3.5",
-    "@graphql-codegen/typescript-resolvers": "2.7.5",
+    "@graphql-codegen/cli": "2.16.2",
+    "@graphql-codegen/fragment-matcher": "3.3.3",
+    "@graphql-codegen/introspection": "2.2.3",
+    "@graphql-codegen/schema-ast": "2.6.1",
+    "@graphql-codegen/typed-document-node": "2.3.11",
+    "@graphql-codegen/typescript": "2.8.6",
+    "@graphql-codegen/typescript-operations": "2.5.11",
+    "@graphql-codegen/typescript-react-apollo": "3.3.7",
+    "@graphql-codegen/typescript-resolvers": "2.7.11",
     "@size-limit/preset-small-lib": "8.1.0",
     "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
@@ -73,6 +73,8 @@
     "web-push": "3.5.0"
   },
   "dependencies": {
+    "@pothos/core": "3.24.0",
+    "@pothos/plugin-prisma": "3.39.0",
     "@types/mathjs": "9.4.2",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.6",

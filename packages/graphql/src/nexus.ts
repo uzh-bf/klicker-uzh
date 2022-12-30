@@ -1,6 +1,6 @@
-import { filter, pipe } from 'graphql-yoga'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
+import { filter, pipe } from 'graphql-yoga'
 import {
   arg,
   asNexusMethod,
@@ -1122,16 +1122,6 @@ export const AwardEntry = objectType({
 export const Query = objectType({
   name: 'Query',
   definition(t) {
-    t.field('self', {
-      type: Participant,
-      resolve(_, _args, ctx: ContextWithUser) {
-        return ParticipantService.getParticipantProfile(
-          { id: ctx.user.sub },
-          ctx
-        )
-      },
-    })
-
     t.field('userProfile', {
       type: User,
       resolve(_, _args, ctx: ContextWithUser) {
@@ -1334,6 +1324,17 @@ export const Query = objectType({
         return CourseService.getUserLearningElements(ctx)
       },
     })
+
+    // MAPPED to Pothos
+    t.field('self', {
+      type: Participant,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return ParticipantService.getParticipantProfile(
+          { id: ctx.user.sub },
+          ctx
+        )
+      },
+    })
   },
 })
 
@@ -1363,17 +1364,6 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantService.updateParticipantProfile(args, ctx)
-      },
-    })
-
-    t.field('loginUser', {
-      type: 'ID',
-      args: {
-        email: nonNull(stringArg()),
-        password: nonNull(stringArg()),
-      },
-      resolve(_, args, ctx: Context) {
-        return AccountService.loginUser(args, ctx)
       },
     })
 
@@ -1852,6 +1842,18 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
+      },
+    })
+
+    // MAPPED to Pothos
+    t.field('loginUser', {
+      type: 'ID',
+      args: {
+        email: nonNull(stringArg()),
+        password: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.loginUser(args, ctx)
       },
     })
   },

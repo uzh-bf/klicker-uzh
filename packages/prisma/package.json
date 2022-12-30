@@ -57,6 +57,7 @@
   ],
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "9.1.6",
+    "@pothos/plugin-prisma": "3.39.0",
     "@size-limit/preset-small-lib": "8.1.0",
     "@tsconfig/node18": "1.0.1",
     "@tsconfig/recommended": "1.0.1",
