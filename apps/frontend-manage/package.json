@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "2.0.0-alpha.113",
+  "version": "2.0.0-alpha.117",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3002",
@@ -23,7 +23,7 @@
     "@klicker-uzh/prisma": "^2.0.0-alpha.8",
     "@sentry/nextjs": "7.21.1",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.1.11",
+    "@uzh-bf/design-system": "0.1.12",
     "d3": "7.6.1",
     "dayjs": "1.11.6",
     "deepmerge": "4.2.2",
@@ -34,8 +34,7 @@
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
-    "next": "13.0.5",
-    "next-transpile-modules": "10.0.0",
+    "next": "13.1.1",
     "nookies": "2.5.2",
     "ramda": "0.28.0",
     "react": "18.2.0",
@@ -54,8 +53,8 @@
     "slate": "0.87.0",
     "slate-history": "0.86.0",
     "slate-react": "0.88.0",
-    "tailwind-merge": "1.8.0",
-    "yup": "v1.0.0-beta.7"
+    "tailwind-merge": "1.8.1",
+    "yup": "v1.0.0-beta.8"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
@@ -72,13 +71,13 @@
     "@types/react-tagcloud": "^1.1.7",
     "@types/sharp": "^0.31.0",
     "autoprefixer": "10.4.13",
-    "eslint-config-next": "13.0.5",
+    "eslint-config-next": "13.1.1",
     "postcss": "8.4.18",
     "prettier": "2.8.0",
     "prettier-plugin-organize-imports": "3.2.1",
     "tailwindcss": "3.2.4",
     "tailwindcss-radix": "2.6.1",
-    "typescript": "4.9.3"
+    "typescript": "4.9.4"
   },
   "volta": {
     "extends": "../../package.json"
@@ -87,6 +86,6 @@
     "node": ">=16"
   },
   "overrides": {
-    "next": "13.0.5"
+    "next": "13.1.1"
   }
 }

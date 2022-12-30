@@ -266,7 +266,7 @@ function SessionTimeline({
                   handleEndSession()
                 }
               }}
-              id="interaction-first-block"
+              data={{ cy: 'interaction-first-block' }}
             >
               <Button.Label>{buttonNames[buttonState]}</Button.Label>
             </Button>

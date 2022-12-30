@@ -1,4 +1,4 @@
-import type { PubSub } from '@graphql-yoga/node'
+import type { PubSub } from 'graphql-yoga'
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 import type Redis from 'ioredis'

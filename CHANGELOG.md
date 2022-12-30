@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0-alpha.117](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.116...v2.0.0-alpha.117) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** add prettier and imports plugin as explicit deps ([d1e3e21](https://github.com/uzh-bf/klicker-uzh/commit/d1e3e21dd6dbf5ab3022134b889e6ab73fc0dbae))
+
+## [2.0.0-alpha.116](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.115...v2.0.0-alpha.116) (2022-12-28)
+
+
+### Dependencies
+
+* upgrade design system with relaxed peer deps ([5cd9fdb](https://github.com/uzh-bf/klicker-uzh/commit/5cd9fdb1581cc4979665f3862e6b960815fc2a44))
+
+## [2.0.0-alpha.115](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.114...v2.0.0-alpha.115) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** update override for new next version ([8f89cba](https://github.com/uzh-bf/klicker-uzh/commit/8f89cba6eed93218337458c68f08f0c7f83fe0b0))
+
+## [2.0.0-alpha.114](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.113...v2.0.0-alpha.114) (2022-12-28)
+
+
+### Features
+
+* **frontend-manage:** add session creation forms for micro-sessions and learning elements ([#3176](https://github.com/uzh-bf/klicker-uzh/issues/3176)) ([481a48c](https://github.com/uzh-bf/klicker-uzh/commit/481a48cd4f7c1af60d3c4af6ab69797e0279e9b1))
+
+
+### Deployment
+
+* prod upgrade ([dbf009c](https://github.com/uzh-bf/klicker-uzh/commit/dbf009c7559864c608d61f83b432cb292f261a33))
+
+
+### Other
+
+* add devbox.json for initial testing ([747f737](https://github.com/uzh-bf/klicker-uzh/commit/747f737c9e118d380b8de75aefd417007d8fb811))
+* cleanup of deps files for devcontainer ([ae31f60](https://github.com/uzh-bf/klicker-uzh/commit/ae31f6099e21808ca07048cdb982323824051c50))
+* generate initial devcontainer with devbox ([a42c9dc](https://github.com/uzh-bf/klicker-uzh/commit/a42c9dc520635366aeb17532348a0681014198fb))
+* lockfile maintenance ([318f0ac](https://github.com/uzh-bf/klicker-uzh/commit/318f0ac1857cf1c65e567da02a7be47a8265931f))
+* remove devbox.json from .dockerignore to allow devcontainer build ([e83e633](https://github.com/uzh-bf/klicker-uzh/commit/e83e6334a9600e1f731f593fb611acdeb36dfa7c))
+* remove experimental devcontainer ([0c7c2c9](https://github.com/uzh-bf/klicker-uzh/commit/0c7c2c9568c49e5f3b5bd36b58ba9066f9a1cf57))
+* update recommended vscode extensions ([d59c54f](https://github.com/uzh-bf/klicker-uzh/commit/d59c54ff3b8a64f9bd897a81381293bd26a13475))
+
+
+### Dependencies
+
+* upgrade graphql-yoga to v3 and minor upgrades for other packages ([#3186](https://github.com/uzh-bf/klicker-uzh/issues/3186)) ([84e312a](https://github.com/uzh-bf/klicker-uzh/commit/84e312a99ba34b06a784a9c6987c1bad456414a2))
+
 ## [2.0.0-alpha.113](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.112...v2.0.0-alpha.113) (2022-12-22)
 
 

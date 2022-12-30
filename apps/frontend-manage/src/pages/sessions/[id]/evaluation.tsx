@@ -229,7 +229,7 @@ function Evaluation() {
           !showConfusion &&
           !showLeaderboard && (
             <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
-              <div className="text-lg" id="session-total-participants">
+              <div className="text-lg" data-cy="session-total-participants">
                 Total Teilnehmende: {currentInstance.participants}
               </div>
               <div className="flex flex-row items-center gap-5">

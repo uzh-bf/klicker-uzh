@@ -80,6 +80,7 @@ function Question({
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
+        data-cy="question-block"
       >
         <div className="flex flex-row flex-1">
           <div className="flex-1">
@@ -115,7 +116,7 @@ function Question({
             <Button
               className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsPreviewModalOpen(true)}
-              id="question-preview"
+              data={{ cy: 'question-preview-button' }}
             >
               Vorschau
             </Button>

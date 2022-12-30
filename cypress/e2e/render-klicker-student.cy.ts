@@ -4,13 +4,13 @@ describe('Render the homepage for student', () => {
   }),
 
   it('Render login for student', () => {
-    cy.get('#login-logo').should('exist');
+    cy.get('[data-cy="login-logo"]').should('exist');
   }),
 
   it('login into student account', () => {
-    cy.get('#password-field').type('testing');
-    cy.get('#username-field').type('testuser1');
-    cy.get('#submit-login').click();
-    cy.get('#homepage').should('exist');
+    cy.get('[data-cy="username-field"]').type('testuser1');
+    cy.get('[data-cy="password-field"]').type('testing');
+    cy.get('[data-cy="submit-login"]').click();
+    cy.get('[data-cy="homepage"]').should('exist');
   })
 })

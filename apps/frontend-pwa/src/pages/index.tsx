@@ -168,7 +168,7 @@ const Index = function () {
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
       <div
         className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
-        id="homepage"
+        data-cy="homepage"
       >
         <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
         <div className="flex flex-col mt-2">
