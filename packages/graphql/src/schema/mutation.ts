@@ -7,7 +7,7 @@ export const Mutation = builder.mutationType({
       nullable: true,
       type: 'String',
       args: {
-        email: t.arg.string({ required: true }),
+        email: t.arg.string({ required: true, validate: { email: true } }),
         password: t.arg.string({ required: true }),
       },
       resolve(_, args, ctx) {
