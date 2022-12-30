@@ -88,11 +88,12 @@ function SessionBlock({
             <div
               className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 hover:bg-red-600 rounded-r`}
               onClick={() => {
-                setFieldValue(`blocks[${index}][questionIds]`, [
-                  ...block.questionIds
+                setFieldValue(
+                  `blocks[${index}][questionIds]`,
+                  block.questionIds
                     .slice(0, questionIdx)
-                    .concat(block.questionIds.slice(questionIdx + 1)),
-                ])
+                    .concat(block.questionIds.slice(questionIdx + 1))
+                )
                 setFieldValue(
                   `blocks[${index}][titles]`,
                   block.titles
