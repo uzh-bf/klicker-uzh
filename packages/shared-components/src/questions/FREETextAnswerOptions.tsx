@@ -31,6 +31,7 @@ export function FREETextAnswerOptions({
         rows={3}
         maxLength={maxLength ?? 1500}
         placeholder={placeholder || 'Bitte geben Sie hier Ihre Antwort ein'}
+        data-cy="free-text-response-input"
       />
 
       <div className="text-sm italic text-right">

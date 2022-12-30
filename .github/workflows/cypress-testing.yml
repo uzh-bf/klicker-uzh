@@ -2,7 +2,7 @@ name: Klicker automated testing with cypress
 on:
   push:
     branches:
-      - 'Klicker-Testing-v2'
+      - 'Klicker-Testing-v3'
   workflow_dispatch:
 
 env:

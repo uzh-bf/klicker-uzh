@@ -80,9 +80,10 @@ function Question({
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
+        data-cy="question-block"
       >
         <div className="flex flex-row flex-1">
-          <div className="flex-1" data-cy="question-block">
+          <div className="flex-1">
             {isArchived && <div>ARCHIVED // TODO styling</div>}
             <div className="flex flex-row">
               <a

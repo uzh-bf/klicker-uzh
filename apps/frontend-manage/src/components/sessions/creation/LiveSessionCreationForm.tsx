@@ -225,7 +225,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 />
                 {courses && (
                   <>
-                    <div className="mr-2">Kurs:</div>
+                    <div className="mr-2" data-cy="select-course-div">
+                      Kurs:
+                    </div>
                     <FormikSelectField
                       name="courseId"
                       placeholder="Kurs auswählen"
