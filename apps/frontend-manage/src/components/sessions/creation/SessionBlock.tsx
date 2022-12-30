@@ -2,7 +2,7 @@ import { faGears, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
-  FormikTextField,
+  FormikNumberField,
   Modal,
   ThemeContext,
 } from '@uzh-bf/design-system'
@@ -55,7 +55,9 @@ function SessionBlock({
       className="flex flex-col p-2 border border-solid rounded-md w-52"
     >
       <div className="flex flex-row items-center justify-between">
-        <div className="font-bold" data-cy="block-container-header">Block {index + 1}</div>
+        <div className="font-bold" data-cy="block-container-header">
+          Block {index + 1}
+        </div>
         <div className="flex flex-row gap-1 ml-2">
           <Button
             onClick={() => remove(index)}
@@ -115,7 +117,7 @@ function SessionBlock({
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
       <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
-        <FormikTextField
+        <FormikNumberField
           label="Zeit-Limit"
           tooltip={`Zeit-Limit für Block ${index + 1} in Sekunden`}
           id={`timeLimits.${index}`}
@@ -123,7 +125,7 @@ function SessionBlock({
           onChange={(newValue: string) => {
             setFieldValue(
               `blocks[${index}][timeLimit]`,
-              parseInt(newValue.replace(/[^0-9]/g, ''))
+              newValue === '' ? undefined : parseInt(newValue)
             )
           }}
           placeholder={`optionales Zeit-Limit`}

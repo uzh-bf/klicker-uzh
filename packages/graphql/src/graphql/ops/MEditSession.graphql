@@ -1,0 +1,23 @@
+mutation EditSession(
+  $id: ID!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $blocks: [BlockInput!]!
+  $courseId: String
+  $multiplier: Int!
+  $isGamificationEnabled: Boolean
+) {
+  editSession(
+    id: $id
+    name: $name
+    displayName: $displayName
+    description: $description
+    blocks: $blocks
+    courseId: $courseId
+    multiplier: $multiplier
+    isGamificationEnabled: $isGamificationEnabled
+  ) {
+    id
+  }
+}

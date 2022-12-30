@@ -46,6 +46,8 @@ export const AuthSchema = {
     deleteFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedbackResponse: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteQuestion: { __authz: { rules: ['IsUserOrAdmin'] } },
+    editSession: { __authz: { rules: ['IsUserOrAdmin'] } },
+    editMicroSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     endSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
@@ -79,6 +81,7 @@ export const AuthSchema = {
     cockpitSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     course: { __authz: { rules: ['IsUserOrAdmin'] } },
     learningElement: { __authz: { rules: ['Allow'] } },
+    liveSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     participations: { __authz: { rules: ['IsParticipant'] } },
@@ -96,5 +99,6 @@ export const AuthSchema = {
     userQuestions: { __authz: { rules: ['IsUserOrAdmin'] } },
     userSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     microSession: { __authz: { rules: ['Allow'] } },
+    singleMicroSession: { __authz: { rules: ['IsUserOrAdmin'] } },
   },
 }
