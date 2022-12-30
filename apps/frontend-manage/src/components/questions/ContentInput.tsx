@@ -42,7 +42,7 @@ interface Props {
     editor?: string
   }
   key?: string
-  id?: string
+  data_cy?: string
 }
 
 const defaultProps = {
@@ -69,7 +69,7 @@ function ContentInput({
   touched,
   className,
   key,
-  id,
+  data_cy,
 }: Props): React.ReactElement {
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -268,7 +268,7 @@ function ContentInput({
                 }
               }
             }}
-            id={id}
+            data-cy={data_cy}
           />
         </div>
       </Slate>

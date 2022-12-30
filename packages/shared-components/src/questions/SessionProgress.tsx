@@ -75,6 +75,7 @@ export function SessionProgress({
           }}
           disabled={isSubmitDisabled}
           onClick={onSubmit}
+          data={{ cy: 'student-submit-answer' }}
         >
           <Button.Label>Absenden</Button.Label>
         </Button>

@@ -55,13 +55,14 @@ function SessionBlock({
       className="flex flex-col p-2 border border-solid rounded-md w-52"
     >
       <div className="flex flex-row items-center justify-between">
-        <div className="font-bold">Block {index + 1}</div>
+        <div className="font-bold" data-cy="block-container-header">Block {index + 1}</div>
         <div className="flex flex-row gap-1 ml-2">
           <Button
             onClick={() => remove(index)}
             className={{
               root: 'w-6 flex justify-center text-white bg-red-500 rounded hover:bg-red-600',
             }}
+            data={{ cy: 'delete-block' }}
           >
             <FontAwesomeIcon icon={faTrash} />
           </Button>
@@ -109,6 +110,7 @@ function SessionBlock({
           'w-full text-center p-0.5 border border-solid rounded',
           isOver && theme.primaryBg
         )}
+        data-cy="drop-questions-here"
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>

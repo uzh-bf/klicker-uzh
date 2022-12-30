@@ -120,7 +120,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     <Link
                       href="/sessions"
                       className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-session-list"
+                      data-cy="load-session-list"
                     >
                       Session-Liste
                     </Link>
@@ -151,7 +151,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 label="Session-Name"
                 tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                 className={{ root: 'mb-1' }}
-                id="session-name"
+                data-cy="insert-live-session-name"
               />
               <FormikTextField
                 required
@@ -159,7 +159,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 label="Anzeigenamen"
                 tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                 className={{ root: 'mb-1' }}
-                id="display-name"
+                data-cy="insert-live-display-name"
               />
 
               <EditorField
@@ -225,7 +225,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 />
                 {courses && (
                   <>
-                    <div className="mr-2">Kurs:</div>
+                    <div className="mr-2" data-cy="select-course-div">
+                      Kurs:
+                    </div>
                     <FormikSelectField
                       name="courseId"
                       placeholder="Kurs auswählen"
@@ -274,7 +276,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 className={{ root: 'float-right' }}
                 type="submit"
                 disabled={isSubmitting || !isValid}
-                id="create-new-session"
+                data={{ cy: 'create-new-session' }}
               >
                 Erstellen
               </Button>
