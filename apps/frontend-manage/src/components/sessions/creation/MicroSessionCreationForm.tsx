@@ -234,7 +234,7 @@ function MicroSessionCreationForm({
                         {values.questions.map(
                           (question: any, index: number) => (
                             <QuestionBlock
-                              key={`${question.id}`}
+                              key={`${question.id}-${index}`}
                               index={index}
                               question={question}
                               remove={remove}
