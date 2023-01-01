@@ -7,10 +7,23 @@ import React, { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
-  id: string
+  link: string
+  relativeLink: string
+  triggerText?: string
+  className?: {
+    button?: string
+    modal?: string
+  }
+  children?: React.ReactNode
 }
 
-function QRPopup({ id }: Props): React.ReactElement {
+function QRPopup({
+  link,
+  relativeLink,
+  triggerText,
+  className,
+  children,
+}: Props): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -24,38 +37,42 @@ function QRPopup({ id }: Props): React.ReactElement {
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
           </Button.Icon>
-          QR Code
+          {triggerText || 'QR Code'}
         </Button>
       }
       open={modalOpen}
       onClose={() => setModalOpen(false)}
+      className={{
+        content: className?.modal,
+      }}
     >
+      {children || (
+        <div className="flex flex-row gap-1 font-bold">
+          <div>Link:</div>
+          <Link href={link} className={theme.primaryText} target="_blank">
+            {link}
+          </Link>
+        </div>
+      )}
+
       <div>
-        <div className="font-bold">
-          <Link
-            href={`https://pwa.klicker.uzh.ch/session/${id}`}
-            legacyBehavior
-          >{`https://pwa.klicker.uzh.ch/session/${id}`}</Link>
-        </div>
-
-        <div>
-          <QR path={`/session/${id}`} width={200} />
-        </div>
-
-        <Link passHref href={`/qr/session/${id}`} target="_blank">
-          <Button
-            fluid
-            className={{
-              root: twMerge(
-                'text-lg font-bold text-white h-11',
-                theme.primaryBgDark
-              ),
-            }}
-          >
-            <Button.Label>QR-Code präsentieren</Button.Label>
-          </Button>
-        </Link>
+        <QR path={relativeLink} width={200} />
       </div>
+
+      <Link passHref href={`/qr/${relativeLink}`} target="_blank">
+        <Button
+          fluid
+          className={{
+            root: twMerge(
+              'text-lg font-bold text-white h-11',
+              theme.primaryBgDark,
+              className?.button
+            ),
+          }}
+        >
+          <Button.Label>QR-Code präsentieren</Button.Label>
+        </Button>
+      </Link>
     </Modal>
   )
 }

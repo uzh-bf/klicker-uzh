@@ -1,11 +1,13 @@
 import { useQuery } from '@apollo/client'
+import QRPopup from '@components/sessions/cockpit/QRPopup'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import CourseDescription from '../../components/courses/CourseDescription'
@@ -16,6 +18,7 @@ import Layout from '../../components/Layout'
 
 function CourseOverviewPage() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
 
@@ -49,8 +52,40 @@ function CourseOverviewPage() {
     <Layout>
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
-          <H1>Kurs: {course.name}</H1>
-          <div className="italic">{course.numOfParticipants} Teilnehmende</div>
+          <H1>
+            Kurs: {course.name} (PIN:{' '}
+            {String(course.pinCode)
+              .match(/.{1,3}/g)
+              ?.join(' ')}
+            )
+          </H1>
+          <div className="flex flex-row items-center gap-4 mb-2">
+            <QRPopup
+              link={`https://pwa.klicker.uzh.ch/course/${course.id}/join`}
+              relativeLink={`/course/${course.id}/join`}
+              triggerText="Kurs beitreten"
+              className={{ modal: 'w-[40rem]' }}
+            >
+              <H2>Kurs beitreten</H2>
+              <Link
+                href={`https://pwa.klicker.uzh.ch/course/${course.id}/join`}
+                target="_blank"
+                className={theme.primaryText}
+              >{`https://pwa.klicker.uzh.ch/course/${course.id}/join`}</Link>
+
+              <div className="mt-4">
+                Der für den Beitritt benötigte PIN lautet:{' '}
+                <span className="font-bold">
+                  {String(course.pinCode)
+                    .match(/.{1,3}/g)
+                    ?.join(' ')}
+                </span>
+              </div>
+            </QRPopup>
+            <div className="italic">
+              {course.numOfParticipants} Teilnehmende
+            </div>
+          </div>
         </div>
         {course.description ? (
           descriptionEditMode ? (
