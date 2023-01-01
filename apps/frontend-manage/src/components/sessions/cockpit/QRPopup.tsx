@@ -6,8 +6,8 @@ import Link from 'next/link'
 import React, { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface Props {
-  link: string
+interface QRPopupProps {
+  link?: string
   relativeLink: string
   triggerText?: string
   className?: {
@@ -17,13 +17,22 @@ interface Props {
   children?: React.ReactNode
 }
 
+interface QRPopupPropsWithLink extends QRPopupProps {
+  link: string
+  children?: never
+}
+interface QRPopupPropsWithChildren extends QRPopupProps {
+  link?: never
+  children: React.ReactNode
+}
+
 function QRPopup({
   link,
   relativeLink,
   triggerText,
   className,
   children,
-}: Props): React.ReactElement {
+}: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -49,7 +58,7 @@ function QRPopup({
       {children || (
         <div className="flex flex-row gap-1 font-bold">
           <div>Link:</div>
-          <Link href={link} className={theme.primaryText} target="_blank">
+          <Link href={link || ''} className={theme.primaryText} target="_blank">
             {link}
           </Link>
         </div>

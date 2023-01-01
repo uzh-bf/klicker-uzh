@@ -61,17 +61,16 @@ function CourseOverviewPage() {
           </H1>
           <div className="flex flex-row items-center gap-4 mb-2">
             <QRPopup
-              link={`https://pwa.klicker.uzh.ch/course/${course.id}/join`}
-              relativeLink={`/course/${course.id}/join`}
+              relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
               triggerText="Kurs beitreten"
               className={{ modal: 'w-[40rem]' }}
             >
               <H2>Kurs beitreten</H2>
               <Link
-                href={`https://pwa.klicker.uzh.ch/course/${course.id}/join`}
+                href={`https://pwa.klicker.uzh.ch/course/${course.id}/join?pin=${course.pinCode}`}
                 target="_blank"
                 className={theme.primaryText}
-              >{`https://pwa.klicker.uzh.ch/course/${course.id}/join`}</Link>
+              >{`https://pwa.klicker.uzh.ch/course/${course.id}/join?pin=${course.pinCode}`}</Link>
 
               <div className="mt-4">
                 Der für den Beitritt benötigte PIN lautet:{' '}
