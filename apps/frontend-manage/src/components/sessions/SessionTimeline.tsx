@@ -98,15 +98,15 @@ function SessionTimeline({
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
-  const [buttonState, setButtonState] = useState('first block')
+  const [buttonState, setButtonState] = useState('firstBlock')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
 
-  const buttonNames = {
-    'first block': 'Ersten Block starten',
-    'block active': 'Block schliessen',
-    'next block': 'Nächsten Block starten',
-    'end session': 'Session beenden',
+  const buttonNames: Record<string, string> = {
+    firstBlock: 'Ersten Block starten',
+    blockActive: 'Block schliessen',
+    nextBlock: 'Nächsten Block starten',
+    endSession: 'Session beenden',
   }
 
   const startingTime = runtime.includes('d')
@@ -142,22 +142,22 @@ function SessionTimeline({
 
       if (activeBlockId !== -1) {
         // a block is active
-        setButtonState('block active')
+        setButtonState('blockActive')
       } else if (
         // no block is active and last block has been executed
         lastActiveBlockId === blocks[blocks.length - 1].id &&
         activeBlockId === -1
       ) {
-        setButtonState('end session')
+        setButtonState('endSession')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
         activeBlockId === -1
       ) {
-        setButtonState('first block')
+        setButtonState('firstBlock')
       } else {
         // no block is active and the last block of the session has not yet been executed
-        setButtonState('next block')
+        setButtonState('nextBlock')
       }
     }
   }, [activeBlockId, blocks, lastActiveBlockId])
@@ -176,10 +176,13 @@ function SessionTimeline({
 
         <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
-            <QRPopup id={sessionId} />
+            <QRPopup
+              link={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
+              relativeLink={`/session/${sessionId}`}
+            />
             <a
               className="flex-1"
-              href={`https://pwa.klicker.uzh.ch/session/${sessionId}`}
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -221,7 +224,7 @@ function SessionTimeline({
               size="lg"
               className={twMerge(
                 'my-auto p-2 rounded-md',
-                buttonState === 'first block' && 'bg-green-300'
+                buttonState === 'firstBlock' && 'bg-green-300'
               )}
             />
             {blocks.map((block) => (
@@ -237,7 +240,7 @@ function SessionTimeline({
               size="lg"
               className={twMerge(
                 'my-auto p-2 rounded-md',
-                buttonState === 'end session' && 'bg-uzh-red-100'
+                buttonState === 'endSession' && 'bg-uzh-red-100'
               )}
             />
           </div>
@@ -245,22 +248,22 @@ function SessionTimeline({
             <Button
               className={{
                 root: twMerge(
-                  (buttonState === 'first block' ||
-                    buttonState === 'next block') &&
+                  (buttonState === 'firstBlock' ||
+                    buttonState === 'nextBlock') &&
                     `text-white ${theme.primaryBgDark}`,
-                  buttonState === 'end session' && 'bg-uzh-red-100 text-white'
+                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white'
                 ),
               }}
               onClick={() => {
-                if (buttonState === 'first block') {
+                if (buttonState === 'firstBlock') {
                   handleOpenBlock(blocks[0].id)
-                } else if (buttonState === 'next block') {
+                } else if (buttonState === 'nextBlock') {
                   const openBlockIndex =
                     blocks.findIndex(
                       (block) => block.id === lastActiveBlockId
                     ) + 1
                   handleOpenBlock(blocks[openBlockIndex].id)
-                } else if (buttonState === 'block active') {
+                } else if (buttonState === 'blockActive') {
                   handleCloseBlock(activeBlockId)
                 } else {
                   handleEndSession()

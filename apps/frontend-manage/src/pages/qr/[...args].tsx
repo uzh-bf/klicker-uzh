@@ -18,7 +18,7 @@ export function QR({ path, width }: Props): React.ReactElement {
       logoImage="https://www.klicker.uzh.ch/klicker_logo_v2.png"
       logoWidth={width}
       size={width * 2}
-      value={`https://pwa.klicker.uzh.ch/${path}`}
+      value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
     />
   )
 }
@@ -26,6 +26,7 @@ export function QR({ path, width }: Props): React.ReactElement {
 QR.defaultProps = defaultProps
 
 export const getStaticProps: GetStaticProps = function ({ params }) {
+  // TODO: adapt this function (possibly to getServerSideProps in order to also forward the query parameters to the QR component)
   const args = params!.args as string[]
 
   return {

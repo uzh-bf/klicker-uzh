@@ -17,7 +17,7 @@ import {
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -36,7 +36,20 @@ function JoinCourse({
   description: string
   courseLoading: boolean
 }) {
+  const router = useRouter()
   const theme = useContext(ThemeContext)
+  const [showError, setError] = useState(false)
+  const [initialPin, setInitialPin] = useState<string>('')
+
+  useEffect(() => {
+    const pin = router.query.pin
+      ? String(router.query.pin)
+          .match(/.{1,3}/g)
+          ?.join(' ')
+      : undefined
+    setInitialPin(pin || '')
+  }, [router.query.pin])
+
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
 
@@ -47,9 +60,6 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument, {
     refetchQueries: [GetCourseOverviewDataDocument],
   })
-
-  const router = useRouter()
-  const [showError, setError] = useState(false)
 
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
@@ -86,13 +96,9 @@ function JoinCourse({
 
   const joinCourseWithPinSchema = yup.object({
     pin: yup
-      .mixed()
-      .required('PIN-Code ist erforderlich.')
-      .test(
-        'validPIN',
-        'PIN muss dem vorgeschriebenen Format entsprechen.',
-        (value) => /^\d{3}\ \d{3}\ \d{3}$/.test(value)
-      ),
+      .number()
+      .typeError('Bitte geben Sie einen numerischen PIN ein.')
+      .required('Bitte geben Sie den Kurs-PIN ein.'),
   })
 
   return (
@@ -112,7 +118,7 @@ function JoinCourse({
         {dataParticipant?.self ? (
           <Formik
             initialValues={{
-              pin: '',
+              pin: initialPin,
             }}
             validationSchema={joinCourseWithPinSchema}
             onSubmit={async (values, { setSubmitting }) => {
@@ -132,7 +138,14 @@ function JoinCourse({
               setSubmitting(false)
             }}
           >
-            {({ errors, touched, values, isSubmitting, setFieldValue }) => {
+            {({
+              errors,
+              touched,
+              values,
+              isSubmitting,
+              isValid,
+              setFieldValue,
+            }) => {
               return (
                 <Form>
                   <PinField
@@ -145,7 +158,7 @@ function JoinCourse({
                   <Button
                     className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isValid}
                   >
                     <Button.Label>Kurs beitreten</Button.Label>
                   </Button>
@@ -160,7 +173,7 @@ function JoinCourse({
               username: '',
               password: '',
               passwordRepetition: '',
-              pin: '',
+              pin: initialPin,
             }}
             validationSchema={joinAndRegisterSchema}
             onSubmit={async (values, { setSubmitting }) => {
@@ -182,7 +195,14 @@ function JoinCourse({
               setSubmitting(false)
             }}
           >
-            {({ errors, touched, values, isSubmitting, setFieldValue }) => {
+            {({
+              errors,
+              touched,
+              values,
+              isSubmitting,
+              isValid,
+              setFieldValue,
+            }) => {
               return (
                 <Form>
                   <Label label="Nutzername" className={{ root: 'italic' }} />
@@ -255,7 +275,7 @@ function JoinCourse({
                   <Button
                     className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isValid}
                   >
                     <Button.Label>Kurs beitreten</Button.Label>
                   </Button>

@@ -38,11 +38,11 @@ function EmbeddingModal({
                   className="hover:cursor-pointer"
                   onClick={() =>
                     navigator.clipboard.writeText(
-                      `https://manage.klicker.uzh.ch/sessions/${sessionId}/evaluation?questionIx=${ix}`
+                      `${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?questionIx=${ix}`
                     )
                   }
                 />
-                <div className="text-sm">{`https://manage.klicker.uzh.ch/sessions/${sessionId}/evaluation?questionIx=${ix}`}</div>
+                <div className="text-sm">{`${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?questionIx=${ix}`}</div>
               </div>
               <p>
                 {question.questionData.name.length > 25
