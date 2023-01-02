@@ -177,12 +177,12 @@ function SessionTimeline({
         <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
             <QRPopup
-              link={`https://pwa.klicker.uzh.ch/session/${sessionId}`}
+              link={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
               relativeLink={`/session/${sessionId}`}
             />
             <a
               className="flex-1"
-              href={`https://pwa.klicker.uzh.ch/session/${sessionId}`}
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
               rel="noopener noreferrer"
               target="_blank"
             >

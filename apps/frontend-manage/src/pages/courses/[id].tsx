@@ -67,10 +67,10 @@ function CourseOverviewPage() {
             >
               <H2>Kurs beitreten</H2>
               <Link
-                href={`https://pwa.klicker.uzh.ch/course/${course.id}/join?pin=${course.pinCode}`}
+                href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
                 target="_blank"
                 className={theme.primaryText}
-              >{`https://pwa.klicker.uzh.ch/course/${course.id}/join?pin=${course.pinCode}`}</Link>
+              >{`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}</Link>
 
               <div className="mt-4">
                 Der für den Beitritt benötigte PIN lautet:{' '}
