@@ -3,17 +3,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useContext } from 'react'
 
-interface SessionBlockProps {
+interface QuestionBlockProps {
   index: number
   question: { id: number; title: string }
   remove: (index: number) => void
 }
 
-function SessionBlock({
+function QuestionBlock({
   index,
   question,
   remove,
-}: SessionBlockProps): React.ReactElement {
+}: QuestionBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
   return (
@@ -39,4 +39,4 @@ function SessionBlock({
   )
 }
 
-export default SessionBlock
+export default QuestionBlock

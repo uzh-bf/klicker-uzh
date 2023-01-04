@@ -1,4 +1,10 @@
-import { faGears, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowLeft,
+  faArrowRight,
+  faGears,
+  faPlus,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
@@ -10,19 +16,23 @@ import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
-interface SessionBlockProps {
+interface SessionCreationBlockProps {
   index: number
   block: { questionIds: number[]; titles: string[]; timeLimit: string }
+  numOfBlocks: number
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
   remove: (index: number) => void
+  move: (from: number, to: number) => void
 }
 
-function SessionBlock({
+function SessionCreationBlock({
   index,
   block,
+  numOfBlocks,
   setFieldValue,
   remove,
-}: SessionBlockProps): React.ReactElement {
+  move,
+}: SessionCreationBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [openSettings, setOpenSettings] = useState(false)
 
@@ -59,6 +69,26 @@ function SessionBlock({
           Block {index + 1}
         </div>
         <div className="flex flex-row gap-1 ml-2">
+          <Button
+            basic
+            className={{ root: 'mx-1' }}
+            onClick={() => move(index, index !== 0 ? index - 1 : index)}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </Button.Icon>
+          </Button>
+          <Button
+            basic
+            className={{ root: 'ml-1 mr-2' }}
+            onClick={() =>
+              move(index, index !== numOfBlocks ? index + 1 : index)
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button.Icon>
+          </Button>
           <Button
             onClick={() => remove(index)}
             className={{
@@ -136,4 +166,4 @@ function SessionBlock({
   )
 }
 
-export default SessionBlock
+export default SessionCreationBlock
