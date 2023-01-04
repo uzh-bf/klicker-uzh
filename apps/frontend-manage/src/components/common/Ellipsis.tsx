@@ -3,9 +3,10 @@ import { Tooltip } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface Props {
+interface EllipsisProps {
   children: string
-  maxLength: number
+  maxLength?: number
+  maxLines?: number
   withoutPopup?: boolean
   className?: {
     root?: string
@@ -14,22 +15,58 @@ interface Props {
   }
 }
 
+interface EllipsisPropsMaxLength extends EllipsisProps {
+  maxLength: number
+  maxLines?: never
+}
+interface EllipsisPropsMaxLines extends EllipsisProps {
+  maxLength?: never
+  maxLines: number
+}
+
 function Ellipsis({
   children,
   maxLength,
+  maxLines,
   withoutPopup,
   className,
-}: Props): React.ReactElement {
+}: EllipsisPropsMaxLength | EllipsisPropsMaxLines): React.ReactElement {
   const parsedContent = (
     <Markdown
-      content={
-        children
-          ? children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')
-          : 'no content'
-      }
+      content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
       className={className?.markdown}
     />
   )
+
+  if (maxLines) {
+    return (
+      <Tooltip
+        tooltip={parsedContent}
+        className={{
+          tooltip: twMerge(
+            'text-sm max-w-[50%] md:max-w-[60%]',
+            className?.tooltip
+          ),
+        }}
+        withIndicator={false}
+      >
+        <div className={twMerge(`line-clamp-${maxLines}`, className?.root)}>
+          <Markdown
+            content={
+              children
+                ? children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')
+                : 'No content'
+            }
+            className={className?.markdown}
+          />
+        </div>
+      </Tooltip>
+    )
+  }
+
+  if (!maxLength) {
+    return <div>No content</div>
+  }
 
   const formulaRegex = RegExp(/(\${2})[^]*?[^\\]\1/gm)
   let endIndex = null
