@@ -15,6 +15,7 @@ import {
   Label,
   Switch,
   ThemeContext,
+  Toast,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -31,7 +32,6 @@ import * as yup from 'yup'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
-import Toast from './Toast'
 
 interface LiveSessionCreationFormProps {
   courses?: {

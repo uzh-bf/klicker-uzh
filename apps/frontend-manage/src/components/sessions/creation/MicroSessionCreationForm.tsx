@@ -13,6 +13,7 @@ import {
   H3,
   Label,
   ThemeContext,
+  Toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -31,7 +32,6 @@ import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
-import Toast from './Toast'
 
 interface MicroSessionCreationFormProps {
   courses: {

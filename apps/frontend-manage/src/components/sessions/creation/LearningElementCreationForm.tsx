@@ -13,6 +13,7 @@ import {
   H3,
   Label,
   ThemeContext,
+  Toast,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -29,7 +30,6 @@ import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
-import Toast from './Toast'
 
 interface LearningElementCreationFormProps {
   courses: {
