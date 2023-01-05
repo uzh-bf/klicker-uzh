@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import LearningElementCreationToast from '@components/toasts/LearningElementCreationToast'
 import {
   CreateLearningElementDocument,
   OrderType,
@@ -11,7 +10,6 @@ import {
   FormikTextField,
   H3,
   Label,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -20,9 +18,11 @@ import {
   Form,
   Formik,
 } from 'formik'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
+import LearningElementCreationToast from '../../toasts/LearningElementCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -37,9 +37,9 @@ interface LearningElementCreationFormProps {
 function LearningElementCreationForm({
   courses,
 }: LearningElementCreationFormProps) {
-  const theme = useContext(ThemeContext)
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
 
   // TODO: keep in mind that only questions with solutions and feedbacks should be used for learning elements
   const learningElementCreationSchema = yup.object().shape({
@@ -110,8 +110,8 @@ function LearningElementCreationForm({
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling and corresponding toast
             console.log(error)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -284,9 +284,21 @@ function LearningElementCreationForm({
                   Erstellen
                 </Button>
                 <LearningElementCreationToast
-                  successToastOpen={successToastOpen}
-                  setSuccessToastOpen={setSuccessToastOpen}
+                  open={successToastOpen}
+                  setOpen={setSuccessToastOpen}
                   courseId={values.courseId}
+                  // TODO: adapt this once editing learning elements is possible
+                  editMode={false}
+                />
+                <SessionCreationErrorToast
+                  open={errorToastOpen}
+                  setOpen={setErrorToastOpen}
+                  // TODO: adapt this once editing learning elements is possible
+                  error={
+                    false
+                      ? 'Anpassen des Lernelements fehlgeschlagen...'
+                      : 'Erstellen des Lernelements fehlgeschlagen...'
+                  }
                 />
               </Form>
             </div>

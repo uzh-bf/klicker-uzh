@@ -7,22 +7,22 @@ import { twMerge } from 'tailwind-merge'
 
 interface LiveSessionCreationToastProps {
   editMode: boolean
-  successToastOpen: boolean
-  setSuccessToastOpen: (open: boolean) => void
+  open: boolean
+  setOpen: (open: boolean) => void
 }
 
 function LiveSessionCreationToast({
   editMode,
-  successToastOpen,
-  setSuccessToastOpen,
+  open,
+  setOpen,
 }: LiveSessionCreationToastProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
   return (
     <Toast
       duration={6000}
-      openExternal={successToastOpen}
-      setOpenExternal={setSuccessToastOpen}
+      openExternal={open}
+      setOpenExternal={setOpen}
       type="success"
     >
       <div>

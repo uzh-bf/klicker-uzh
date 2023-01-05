@@ -10,7 +10,6 @@ import {
   FormikTextField,
   H3,
   Label,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -22,9 +21,10 @@ import {
   Formik,
 } from 'formik'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import * as yup from 'yup'
 import MicroSessionCreationToast from '../../toasts/MicroSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -41,8 +41,8 @@ function MicroSessionCreationForm({
   courses,
   initialValues,
 }: MicroSessionCreationFormProps) {
-  const theme = useContext(ThemeContext)
   const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
   const router = useRouter()
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
@@ -149,8 +149,8 @@ function MicroSessionCreationForm({
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling and corresponding toast
             console.log(error)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -357,9 +357,19 @@ function MicroSessionCreationForm({
                 </Button>
               )}
               <MicroSessionCreationToast
-                successToastOpen={successToastOpen}
-                setSuccessToastOpen={setSuccessToastOpen}
+                editMode={!!initialValues}
+                open={successToastOpen}
+                setOpen={setSuccessToastOpen}
                 courseId={values.courseId}
+              />
+              <SessionCreationErrorToast
+                open={errorToastOpen}
+                setOpen={setErrorToastOpen}
+                error={
+                  !!initialValues
+                    ? 'Anpassen der Micro-Session fehlgeschlagen...'
+                    : 'Erstellen der Micro-Session fehlgeschlagen...'
+                }
               />
             </Form>
           )

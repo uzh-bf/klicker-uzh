@@ -6,27 +6,33 @@ import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface MicroSessionCreationToastProps {
+  editMode: boolean
   courseId: string
-  successToastOpen: boolean
-  setSuccessToastOpen: (open: boolean) => void
+  open: boolean
+  setOpen: (open: boolean) => void
 }
 
 function MicroSessionCreationToast({
+  editMode,
   courseId,
-  successToastOpen,
-  setSuccessToastOpen,
+  open,
+  setOpen,
 }: MicroSessionCreationToastProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
   return (
     <Toast
       duration={6000}
-      openExternal={successToastOpen}
-      setOpenExternal={setSuccessToastOpen}
+      openExternal={open}
+      setOpenExternal={setOpen}
       type="success"
     >
       <div>
-        <div>Micro-Session erfolgreich erstellt!</div>
+        {editMode ? (
+          <div>Micro-Session erfolgreich angepasst!</div>
+        ) : (
+          <div>Micro-Session erfolgreich erstellt!</div>
+        )}
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
           Zur

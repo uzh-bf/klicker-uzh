@@ -12,7 +12,6 @@ import {
   H3,
   Label,
   Switch,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -22,9 +21,10 @@ import {
   Formik,
 } from 'formik'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import * as yup from 'yup'
 import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
@@ -43,9 +43,9 @@ function LiveSessionCreationForm({
 }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
   const [editSession] = useMutation(EditSessionDocument)
-  const theme = useContext(ThemeContext)
   const router = useRouter()
   const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -155,8 +155,8 @@ function LiveSessionCreationForm({
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling - e.g. corresponding toast
             console.log('error')
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -334,9 +334,18 @@ function LiveSessionCreationForm({
         }}
       </Formik>
       <LiveSessionCreationToast
-        successToastOpen={successToastOpen}
-        setSuccessToastOpen={setSuccessToastOpen}
+        open={successToastOpen}
+        setOpen={setSuccessToastOpen}
         editMode={!!initialValues}
+      />
+      <SessionCreationErrorToast
+        open={errorToastOpen}
+        setOpen={setErrorToastOpen}
+        error={
+          !!initialValues
+            ? 'Anpassen der Live-Session fehlgeschlagen...'
+            : 'Erstellen der Live-Session fehlgeschlagen...'
+        }
       />
     </div>
   )
