@@ -25,13 +25,13 @@ import {
 } from 'formik'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import toast from 'react-hot-toast'
+import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
+import Toast from './Toast'
 
 interface MicroSessionCreationFormProps {
   courses: {
@@ -46,6 +46,7 @@ function MicroSessionCreationForm({
   initialValues,
 }: MicroSessionCreationFormProps) {
   const theme = useContext(ThemeContext)
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
   const router = useRouter()
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
@@ -148,27 +149,11 @@ function MicroSessionCreationForm({
 
             if (success) {
               router.push('/')
-              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
-              toast.success(
-                <div>
-                  <div>Micro-Session erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href={`/courses/${values.courseId}`}
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-course-link"
-                    >
-                      Kursübersicht
-                    </Link>
-                  </div>
-                </div>
-              )
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling
+            // TODO: add error handling and corresponding toast
             console.log(error)
           }
         }}
@@ -375,6 +360,26 @@ function MicroSessionCreationForm({
                   Erstellen
                 </Button>
               )}
+              <Toast
+                duration={6000}
+                openExternal={successToastOpen}
+                setOpenExternal={setSuccessToastOpen}
+              >
+                <div>
+                  <div>Micro-Session erfolgreich erstellt!</div>
+                  <div className="flex flex-row items-center">
+                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+                    Zur
+                    <Link
+                      href={`/courses/${values.courseId}`}
+                      className={twMerge(theme.primaryText, 'ml-1')}
+                      id="load-course-link"
+                    >
+                      Kursübersicht
+                    </Link>
+                  </div>
+                </div>
+              </Toast>
             </Form>
           )
         }}

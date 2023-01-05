@@ -25,13 +25,13 @@ import {
 } from 'formik'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import toast, { Toaster } from 'react-hot-toast'
+import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
+import Toast from './Toast'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -49,6 +49,7 @@ function LiveSessionCreationForm({
   const [editSession] = useMutation(EditSessionDocument)
   const theme = useContext(ThemeContext)
   const router = useRouter()
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -78,11 +79,6 @@ function LiveSessionCreationForm({
 
   return (
     <div>
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-        toastOptions={{ duration: 6000 }}
-      />
       {initialValues ? (
         <H3>Live-Session bearbeiten</H3>
       ) : (
@@ -159,26 +155,7 @@ function LiveSessionCreationForm({
 
             if (success) {
               router.push('/')
-              toast.success(
-                <div>
-                  {initialValues ? (
-                    <div>Session erfolgreich angepasst!</div>
-                  ) : (
-                    <div>Session erfolgreich erstellt!</div>
-                  )}
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href="/sessions"
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      data-cy="load-session-list"
-                    >
-                      Session-Liste
-                    </Link>
-                  </div>
-                </div>
-              )
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
@@ -360,6 +337,30 @@ function LiveSessionCreationForm({
           )
         }}
       </Formik>
+      <Toast
+        duration={6000}
+        openExternal={successToastOpen}
+        setOpenExternal={setSuccessToastOpen}
+      >
+        <div>
+          {initialValues ? (
+            <div>Session erfolgreich angepasst!</div>
+          ) : (
+            <div>Session erfolgreich erstellt!</div>
+          )}
+          <div className="flex flex-row items-center">
+            <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
+            Zur
+            <Link
+              href="/sessions"
+              className={twMerge(theme.primaryText, 'ml-1')}
+              data-cy="load-session-list"
+            >
+              Session-Liste
+            </Link>
+          </div>
+        </div>
+      </Toast>
     </div>
   )
 }
