@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
@@ -13,7 +11,6 @@ import {
   H3,
   Label,
   ThemeContext,
-  Toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -24,11 +21,10 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import MicroSessionCreationToast from '../../toasts/MicroSessionCreationToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -360,27 +356,11 @@ function MicroSessionCreationForm({
                   Erstellen
                 </Button>
               )}
-              <Toast
-                duration={6000}
-                openExternal={successToastOpen}
-                setOpenExternal={setSuccessToastOpen}
-                type="success"
-              >
-                <div>
-                  <div>Micro-Session erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href={`/courses/${values.courseId}`}
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-course-link"
-                    >
-                      Kursübersicht
-                    </Link>
-                  </div>
-                </div>
-              </Toast>
+              <MicroSessionCreationToast
+                successToastOpen={successToastOpen}
+                setSuccessToastOpen={setSuccessToastOpen}
+                courseId={values.courseId}
+              />
             </Form>
           )
         }}

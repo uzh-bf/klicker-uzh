@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import LearningElementCreationToast from '@components/toasts/LearningElementCreationToast'
 import {
   CreateLearningElementDocument,
   OrderType,
@@ -13,7 +12,6 @@ import {
   H3,
   Label,
   ThemeContext,
-  Toast,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -22,10 +20,8 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
 import { useContext, useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
@@ -287,27 +283,11 @@ function LearningElementCreationForm({
                 >
                   Erstellen
                 </Button>
-                <Toast
-                  duration={6000}
-                  openExternal={successToastOpen}
-                  setOpenExternal={setSuccessToastOpen}
-                  type="success"
-                >
-                  <div>
-                    <div>Lernelement erfolgreich erstellt!</div>
-                    <div className="flex flex-row items-center">
-                      <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                      Zur
-                      <Link
-                        href={`/courses/${values.courseId}`}
-                        className={twMerge(theme.primaryText, 'ml-1')}
-                        id="load-course-link"
-                      >
-                        Kursübersicht
-                      </Link>
-                    </div>
-                  </div>
-                </Toast>
+                <LearningElementCreationToast
+                  successToastOpen={successToastOpen}
+                  setSuccessToastOpen={setSuccessToastOpen}
+                  courseId={values.courseId}
+                />
               </Form>
             </div>
           )

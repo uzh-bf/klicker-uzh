@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
@@ -15,7 +13,6 @@ import {
   Label,
   Switch,
   ThemeContext,
-  Toast,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -24,11 +21,10 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionBlock from './SessionBlock'
@@ -337,31 +333,11 @@ function LiveSessionCreationForm({
           )
         }}
       </Formik>
-      <Toast
-        duration={6000}
-        openExternal={successToastOpen}
-        setOpenExternal={setSuccessToastOpen}
-        type="success"
-      >
-        <div>
-          {initialValues ? (
-            <div>Session erfolgreich angepasst!</div>
-          ) : (
-            <div>Session erfolgreich erstellt!</div>
-          )}
-          <div className="flex flex-row items-center">
-            <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-            Zur
-            <Link
-              href="/sessions"
-              className={twMerge(theme.primaryText, 'ml-1')}
-              data-cy="load-session-list"
-            >
-              Session-Liste
-            </Link>
-          </div>
-        </div>
-      </Toast>
+      <LiveSessionCreationToast
+        successToastOpen={successToastOpen}
+        setSuccessToastOpen={setSuccessToastOpen}
+        editMode={!!initialValues}
+      />
     </div>
   )
 }
