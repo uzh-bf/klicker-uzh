@@ -1,6 +1,8 @@
 import {
+  faArrowDown,
   faArrowLeft,
   faArrowRight,
+  faArrowUp,
   faGears,
   faPlus,
   faTrash,
@@ -115,6 +117,81 @@ function SessionCreationBlock({
             className="flex flex-row border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
           >
             <div className="p-0.5 flex-1">{title}</div>
+            <div className="h-full">
+              <Button
+                basic
+                className={{
+                  root: twMerge(
+                    'flex flex-col justify-center h-1/2 px-2',
+                    theme.primaryBgHover
+                  ),
+                }}
+                onClick={() => {
+                  if (!(questionIdx === 0 || block.questionIds.length === 1)) {
+                    const tempId = block.questionIds[questionIdx]
+                    const tempTitle = block.titles[questionIdx]
+
+                    setFieldValue(
+                      `blocks[${index}][questionIds][${questionIdx}]`,
+                      block.questionIds[questionIdx - 1]
+                    )
+                    setFieldValue(
+                      `blocks[${index}][titles][${questionIdx}]`,
+                      block.titles[questionIdx - 1]
+                    )
+                    setFieldValue(
+                      `blocks[${index}][questionIds][${questionIdx - 1}]`,
+                      tempId
+                    )
+                    setFieldValue(
+                      `blocks[${index}][titles][${questionIdx - 1}]`,
+                      tempTitle
+                    )
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={faArrowUp} />
+              </Button>
+              <Button
+                basic
+                className={{
+                  root: twMerge(
+                    'flex flex-col justify-center h-1/2 px-2',
+                    theme.primaryBgHover
+                  ),
+                }}
+                onClick={() => {
+                  if (
+                    !(
+                      block.questionIds.length === questionIdx - 1 ||
+                      block.questionIds.length === 1
+                    )
+                  ) {
+                    const tempId = block.questionIds[questionIdx]
+                    const tempTitle = block.titles[questionIdx]
+
+                    setFieldValue(
+                      `blocks[${index}][questionIds][${questionIdx}]`,
+                      block.questionIds[questionIdx + 1]
+                    )
+                    setFieldValue(
+                      `blocks[${index}][titles][${questionIdx}]`,
+                      block.titles[questionIdx + 1]
+                    )
+                    setFieldValue(
+                      `blocks[${index}][questionIds][${questionIdx + 1}]`,
+                      tempId
+                    )
+                    setFieldValue(
+                      `blocks[${index}][titles][${questionIdx + 1}]`,
+                      tempTitle
+                    )
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={faArrowDown} />
+              </Button>
+            </div>
             <div
               className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 hover:bg-red-600 rounded-r`}
               onClick={() => {
