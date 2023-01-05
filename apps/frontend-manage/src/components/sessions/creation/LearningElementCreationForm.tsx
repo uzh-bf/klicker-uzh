@@ -196,7 +196,7 @@ function LearningElementCreationForm({
                           {values.questions.map(
                             (question: any, index: number) => (
                               <QuestionBlock
-                                key={`${question.id}`}
+                                key={`${question.id}-${index}`}
                                 index={index}
                                 question={question}
                                 numOfBlocks={values.questions.length}
