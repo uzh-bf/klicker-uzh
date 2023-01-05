@@ -1,4 +1,8 @@
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowLeft,
+  faArrowRight,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useContext } from 'react'
@@ -6,13 +10,17 @@ import { useContext } from 'react'
 interface QuestionBlockProps {
   index: number
   question: { id: number; title: string }
+  numOfBlocks: number
   remove: (index: number) => void
+  move: (from: number, to: number) => void
 }
 
 function QuestionBlock({
   index,
   question,
+  numOfBlocks,
   remove,
+  move,
 }: QuestionBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
@@ -24,6 +32,26 @@ function QuestionBlock({
       <div className="flex flex-row items-center justify-between">
         <div className="font-bold">Frage {index + 1}</div>
         <div className="flex flex-row gap-1 ml-2">
+          <Button
+            basic
+            className={{ root: 'mx-1' }}
+            onClick={() => move(index, index !== 0 ? index - 1 : index)}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </Button.Icon>
+          </Button>
+          <Button
+            basic
+            className={{ root: 'ml-1 mr-2' }}
+            onClick={() =>
+              move(index, index !== numOfBlocks ? index + 1 : index)
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button.Icon>
+          </Button>
           <Button
             onClick={() => remove(index)}
             className={{
