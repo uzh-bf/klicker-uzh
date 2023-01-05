@@ -341,6 +341,7 @@ function LiveSessionCreationForm({
         duration={6000}
         openExternal={successToastOpen}
         setOpenExternal={setSuccessToastOpen}
+        type="success"
       >
         <div>
           {initialValues ? (

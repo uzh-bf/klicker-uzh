@@ -364,6 +364,7 @@ function MicroSessionCreationForm({
                 duration={6000}
                 openExternal={successToastOpen}
                 setOpenExternal={setSuccessToastOpen}
+                type="success"
               >
                 <div>
                   <div>Micro-Session erfolgreich erstellt!</div>

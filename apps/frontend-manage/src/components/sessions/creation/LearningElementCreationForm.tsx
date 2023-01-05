@@ -291,6 +291,7 @@ function LearningElementCreationForm({
                   duration={6000}
                   openExternal={successToastOpen}
                   setOpenExternal={setSuccessToastOpen}
+                  type="success"
                 >
                   <div>
                     <div>Lernelement erfolgreich erstellt!</div>
