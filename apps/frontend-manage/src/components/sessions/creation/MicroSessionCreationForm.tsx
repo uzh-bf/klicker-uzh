@@ -43,6 +43,7 @@ function MicroSessionCreationForm({
 }: MicroSessionCreationFormProps) {
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const router = useRouter()
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
@@ -145,11 +146,13 @@ function MicroSessionCreationForm({
 
             if (success) {
               router.push('/')
+              setEditMode(!!initialValues)
               setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
             console.log(error)
+            setEditMode(!!initialValues)
             setErrorToastOpen(true)
           }
         }}
@@ -357,7 +360,7 @@ function MicroSessionCreationForm({
                 </Button>
               )}
               <MicroSessionCreationToast
-                editMode={!!initialValues}
+                editMode={editMode}
                 open={successToastOpen}
                 setOpen={setSuccessToastOpen}
                 courseId={values.courseId}
@@ -366,7 +369,7 @@ function MicroSessionCreationForm({
                 open={errorToastOpen}
                 setOpen={setErrorToastOpen}
                 error={
-                  !!initialValues
+                  editMode
                     ? 'Anpassen der Micro-Session fehlgeschlagen...'
                     : 'Erstellen der Micro-Session fehlgeschlagen...'
                 }

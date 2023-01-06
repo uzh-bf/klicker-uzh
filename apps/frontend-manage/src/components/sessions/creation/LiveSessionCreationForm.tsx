@@ -46,6 +46,7 @@ function LiveSessionCreationForm({
   const router = useRouter()
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -151,11 +152,13 @@ function LiveSessionCreationForm({
 
             if (success) {
               router.push('/')
+              setEditMode(!!initialValues)
               setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
             console.log('error')
+            setEditMode(!!initialValues)
             setErrorToastOpen(true)
           }
         }}
@@ -336,13 +339,13 @@ function LiveSessionCreationForm({
       <LiveSessionCreationToast
         open={successToastOpen}
         setOpen={setSuccessToastOpen}
-        editMode={!!initialValues}
+        editMode={editMode}
       />
       <SessionCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
         error={
-          !!initialValues
+          editMode
             ? 'Anpassen der Live-Session fehlgeschlagen...'
             : 'Erstellen der Live-Session fehlgeschlagen...'
         }

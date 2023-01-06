@@ -40,6 +40,7 @@ function LearningElementCreationForm({
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   // TODO: keep in mind that only questions with solutions and feedbacks should be used for learning elements
   const learningElementCreationSchema = yup.object().shape({
@@ -106,11 +107,15 @@ function LearningElementCreationForm({
             })
 
             if (result.data?.createLearningElement) {
+              // TODO: set edit mode value correctly once editing is implemented
+              setEditMode(false)
               setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
             console.log(error)
+            // TODO: set edit mode value correctly once editing is implemented
+            setEditMode(false)
             setErrorToastOpen(true)
           }
         }}
@@ -287,15 +292,13 @@ function LearningElementCreationForm({
                   open={successToastOpen}
                   setOpen={setSuccessToastOpen}
                   courseId={values.courseId}
-                  // TODO: adapt this once editing learning elements is possible
-                  editMode={false}
+                  editMode={editMode}
                 />
                 <SessionCreationErrorToast
                   open={errorToastOpen}
                   setOpen={setErrorToastOpen}
-                  // TODO: adapt this once editing learning elements is possible
                   error={
-                    false
+                    editMode
                       ? 'Anpassen des Lernelements fehlgeschlagen...'
                       : 'Erstellen des Lernelements fehlgeschlagen...'
                   }
