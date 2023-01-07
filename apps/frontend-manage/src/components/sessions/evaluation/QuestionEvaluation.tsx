@@ -102,10 +102,13 @@ function QuestionEvaluation({
                           {String.fromCharCode(65 + innerIndex)}
                         </div>
 
-                        <div className="w-[calc(100%-3rem)]">
+                        <div className="w-[calc(100%-3rem)] line-clamp-3">
                           <Ellipsis
-                            maxLength={60}
-                            className={{ tooltip: 'z-20 float-right' }}
+                            maxLines={3}
+                            className={{
+                              tooltip:
+                                'z-20 float-right !text-white min-w-[25rem]',
+                            }}
                           >
                             {choice.value}
                           </Ellipsis>

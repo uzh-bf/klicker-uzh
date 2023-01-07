@@ -177,15 +177,17 @@ function LearningElementCreationForm({
                       showTooltipSymbol={true}
                     />
                     <FieldArray name="questions">
-                      {({ push, remove }: FieldArrayRenderProps) => (
+                      {({ push, remove, move }: FieldArrayRenderProps) => (
                         <div className="flex flex-row gap-1 overflow-scroll">
                           {values.questions.map(
                             (question: any, index: number) => (
                               <QuestionBlock
-                                key={`${question.id}`}
+                                key={`${question.id}-${index}`}
                                 index={index}
                                 question={question}
+                                numOfBlocks={values.questions.length}
                                 remove={remove}
+                                move={move}
                               />
                             )
                           )}
