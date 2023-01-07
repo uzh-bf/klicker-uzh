@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateLearningElementDocument,
   OrderType,
@@ -12,7 +10,6 @@ import {
   FormikTextField,
   H3,
   Label,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -21,12 +18,11 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
-import { useContext } from 'react'
-import toast from 'react-hot-toast'
+import { useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import LearningElementCreationToast from '../../toasts/LearningElementCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -41,8 +37,10 @@ interface LearningElementCreationFormProps {
 function LearningElementCreationForm({
   courses,
 }: LearningElementCreationFormProps) {
-  const theme = useContext(ThemeContext)
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   // TODO: keep in mind that only questions with solutions and feedbacks should be used for learning elements
   const learningElementCreationSchema = yup.object().shape({
@@ -109,28 +107,16 @@ function LearningElementCreationForm({
             })
 
             if (result.data?.createLearningElement) {
-              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
-              toast.success(
-                <div>
-                  <div>Lernelement erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href={`/courses/${values.courseId}`}
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-course-link"
-                    >
-                      Kursübersicht
-                    </Link>
-                  </div>
-                </div>
-              )
+              // TODO: set edit mode value correctly once editing is implemented
+              setEditMode(false)
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling
             console.log(error)
+            // TODO: set edit mode value correctly once editing is implemented
+            setEditMode(false)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -304,6 +290,21 @@ function LearningElementCreationForm({
                 >
                   Erstellen
                 </Button>
+                <LearningElementCreationToast
+                  open={successToastOpen}
+                  setOpen={setSuccessToastOpen}
+                  courseId={values.courseId}
+                  editMode={editMode}
+                />
+                <SessionCreationErrorToast
+                  open={errorToastOpen}
+                  setOpen={setErrorToastOpen}
+                  error={
+                    editMode
+                      ? 'Anpassen des Lernelements fehlgeschlagen...'
+                      : 'Erstellen des Lernelements fehlgeschlagen...'
+                  }
+                />
               </Form>
             </div>
           )

@@ -38,7 +38,7 @@
     "@types/node": "^18.0.0",
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
-    "@uzh-bf/design-system": "0.1.12",
+    "@uzh-bf/design-system": "0.1.16",
     "axios": "1.1.3",
     "dotenv": "16.0.3",
     "husky": "8.0.1",

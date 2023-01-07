@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
@@ -12,7 +10,6 @@ import {
   FormikTextField,
   H3,
   Label,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -23,12 +20,11 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import toast from 'react-hot-toast'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import * as yup from 'yup'
+import MicroSessionCreationToast from '../../toasts/MicroSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -45,7 +41,9 @@ function MicroSessionCreationForm({
   courses,
   initialValues,
 }: MicroSessionCreationFormProps) {
-  const theme = useContext(ThemeContext)
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const router = useRouter()
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
@@ -148,28 +146,14 @@ function MicroSessionCreationForm({
 
             if (success) {
               router.push('/')
-              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
-              toast.success(
-                <div>
-                  <div>Micro-Session erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href={`/courses/${values.courseId}`}
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-course-link"
-                    >
-                      Kursübersicht
-                    </Link>
-                  </div>
-                </div>
-              )
+              setEditMode(!!initialValues)
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling
             console.log(error)
+            setEditMode(!!initialValues)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -377,6 +361,21 @@ function MicroSessionCreationForm({
                   Erstellen
                 </Button>
               )}
+              <MicroSessionCreationToast
+                editMode={editMode}
+                open={successToastOpen}
+                setOpen={setSuccessToastOpen}
+                courseId={values.courseId}
+              />
+              <SessionCreationErrorToast
+                open={errorToastOpen}
+                setOpen={setErrorToastOpen}
+                error={
+                  editMode
+                    ? 'Anpassen der Micro-Session fehlgeschlagen...'
+                    : 'Erstellen der Micro-Session fehlgeschlagen...'
+                }
+              />
             </Form>
           )
         }}

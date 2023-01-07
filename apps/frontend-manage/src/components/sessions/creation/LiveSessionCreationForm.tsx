@@ -1,6 +1,4 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
@@ -14,7 +12,6 @@ import {
   H3,
   Label,
   Switch,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -23,12 +20,11 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import toast, { Toaster } from 'react-hot-toast'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import * as yup from 'yup'
+import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
 import SessionCreationBlock from './SessionCreationBlock'
@@ -47,8 +43,10 @@ function LiveSessionCreationForm({
 }: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
   const [editSession] = useMutation(EditSessionDocument)
-  const theme = useContext(ThemeContext)
   const router = useRouter()
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -78,11 +76,6 @@ function LiveSessionCreationForm({
 
   return (
     <div>
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-        toastOptions={{ duration: 6000 }}
-      />
       {initialValues ? (
         <H3>Live-Session bearbeiten</H3>
       ) : (
@@ -159,31 +152,14 @@ function LiveSessionCreationForm({
 
             if (success) {
               router.push('/')
-              toast.success(
-                <div>
-                  {initialValues ? (
-                    <div>Session erfolgreich angepasst!</div>
-                  ) : (
-                    <div>Session erfolgreich erstellt!</div>
-                  )}
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href="/sessions"
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      data-cy="load-session-list"
-                    >
-                      Session-Liste
-                    </Link>
-                  </div>
-                </div>
-              )
+              setEditMode(!!initialValues)
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling - e.g. corresponding toast
             console.log('error')
+            setEditMode(!!initialValues)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -362,6 +338,20 @@ function LiveSessionCreationForm({
           )
         }}
       </Formik>
+      <LiveSessionCreationToast
+        open={successToastOpen}
+        setOpen={setSuccessToastOpen}
+        editMode={editMode}
+      />
+      <SessionCreationErrorToast
+        open={errorToastOpen}
+        setOpen={setErrorToastOpen}
+        error={
+          editMode
+            ? 'Anpassen der Live-Session fehlgeschlagen...'
+            : 'Erstellen der Live-Session fehlgeschlagen...'
+        }
+      />
     </div>
   )
 }
