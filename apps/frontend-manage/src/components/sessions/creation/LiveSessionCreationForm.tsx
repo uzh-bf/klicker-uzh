@@ -31,7 +31,7 @@ import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
-import SessionBlock from './SessionBlock'
+import SessionCreationBlock from './SessionCreationBlock'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -244,15 +244,17 @@ function LiveSessionCreationForm({
                     showTooltipSymbol={true}
                   />
                   <FieldArray name="blocks">
-                    {({ push, remove }: FieldArrayRenderProps) => (
+                    {({ push, remove, move }: FieldArrayRenderProps) => (
                       <div className="flex flex-row gap-1 overflow-scroll">
                         {values.blocks.map((block: any, index: number) => (
-                          <SessionBlock
+                          <SessionCreationBlock
                             key={`${index}-${block.questionIds.join('')}`}
                             index={index}
                             block={block}
+                            numOfBlocks={values.blocks.length}
                             setFieldValue={setFieldValue}
                             remove={remove}
+                            move={move}
                           />
                         ))}
                         <AddBlockButton push={push} />
