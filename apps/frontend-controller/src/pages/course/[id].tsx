@@ -1,13 +1,12 @@
 import { useQuery } from '@apollo/client'
-import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
   GetSingleCourseDocument,
   SessionStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H4, UserNotification } from '@uzh-bf/design-system'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import ListButton from '../../components/common/ListButton'
+import SessionLists from '../../components/common/SessionLists'
 import Layout from '../../components/Layout'
 
 function Course() {
@@ -53,39 +52,10 @@ function Course() {
 
   return (
     <Layout title={course.displayName}>
-      <H4>Laufende Sessionen</H4>
-      {runningSessions.length > 0 ? (
-        <div className="flex flex-col gap-1.5">
-          {runningSessions.map((session) => (
-            <ListButton
-              key={session.id}
-              link={`/session/${session.id}`}
-              icon={faPlay}
-              label={session.displayName}
-              className={{ icon: 'mr-1' }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div>Keine laufenden Sessionen</div>
-      )}
-
-      <H4 className={{ root: 'mt-4' }}>Geplante Sessionen</H4>
-      {plannedSessions.length > 0 ? (
-        <div className="flex flex-col gap-1.5">
-          {plannedSessions.map((session) => (
-            <ListButton
-              key={session.id}
-              link={`/session/${session.id}`}
-              icon={faPlay}
-              label={session.displayName}
-              className={{ icon: 'mr-1' }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div>Keine geplanten Sessionen</div>
-      )}
+      <SessionLists
+        runningSessions={runningSessions}
+        plannedSessions={plannedSessions}
+      />
 
       <div className="mt-4 text-base italic">
         Abgeschlossene Sessionen können auf der entsprechenden Seite in der

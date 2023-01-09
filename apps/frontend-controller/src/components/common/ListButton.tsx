@@ -5,7 +5,8 @@ import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 
 interface ListButtonProps {
-  link: string
+  link?: string
+  onClick?: () => void
   icon: IconProp
   label: string
   className?: {
@@ -15,7 +16,22 @@ interface ListButtonProps {
   }
 }
 
-function ListButton({ link, icon, label, className }: ListButtonProps) {
+interface ListButtonLinkProps extends ListButtonProps {
+  link: string
+  onClick?: never
+}
+interface ListButtonOnClickProps extends ListButtonProps {
+  link?: never
+  onClick: () => void
+}
+
+function ListButton({
+  link,
+  onClick,
+  icon,
+  label,
+  className,
+}: ListButtonLinkProps | ListButtonOnClickProps) {
   const router = useRouter()
 
   return (
@@ -26,7 +42,7 @@ function ListButton({ link, icon, label, className }: ListButtonProps) {
           className?.root
         ),
       }}
-      onClick={() => router.push(link)}
+      onClick={onClick ? onClick : () => router.push(link)}
     >
       <Button.Icon className={{ root: twMerge('ml-1 mr-3', className?.icon) }}>
         <FontAwesomeIcon icon={icon} />
