@@ -113,6 +113,15 @@ function Evaluation() {
     }
   }, [router.query.questionIx, instanceResults])
 
+  useEffect(() => {
+    if (router.query.leaderboard === 'true') {
+      setLeaderboard(true)
+      setConfusion(false)
+      setFeedbacks(false)
+      setSelectedBlock(-1)
+    }
+  }, [router.query.leaderboard])
+
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>

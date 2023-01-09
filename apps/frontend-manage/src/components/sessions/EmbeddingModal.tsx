@@ -52,6 +52,21 @@ function EmbeddingModal({
             </div>
           )
         })}
+        <div className="flex flex-row items-center gap-2">
+          <div className="font-bold w-30">Leaderboard:</div>
+          <div className="flex flex-row items-center gap-3 px-1.5 py-0.5 mr-2 border border-solid rounded bg-uzh-grey-40">
+            <FontAwesomeIcon
+              icon={faClipboard}
+              className="hover:cursor-pointer"
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  `${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?leaderboard=true`
+                )
+              }
+            />
+            <div className="text-sm">{`${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?leaderboard=true`}</div>
+          </div>
+        </div>
       </div>
     </Modal>
   )
