@@ -37,7 +37,7 @@ function Statistic({
                 ? size
                 : 'md'
             }
-            className={{ root: 'border-black rounded-sm' }}
+            className={{ root: 'border-black rounded-sm mr-1' }}
           />
         )}
         {statisticName}

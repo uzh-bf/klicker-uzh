@@ -17,6 +17,7 @@ import {
 import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../../common/Ellipsis'
 
 interface SessionCreationBlockProps {
   index: number
@@ -116,7 +117,9 @@ function SessionCreationBlock({
             key={title}
             className="flex flex-row border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
           >
-            <div className="p-0.5 flex-1">{title}</div>
+            <div className="p-0.5 flex-1">
+              <Ellipsis maxLines={3}>{title}</Ellipsis>
+            </div>
             <div className="h-full">
               <Button
                 basic

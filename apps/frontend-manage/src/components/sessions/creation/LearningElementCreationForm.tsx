@@ -91,6 +91,8 @@ function LearningElementCreationForm({
           resetTimeDays: '6',
         }}
         validationSchema={learningElementCreationSchema}
+        // TODO: set initial valid during editing
+        isInitialValid={false}
         onSubmit={async (values, { resetForm }) => {
           try {
             const result = await createLearningElement({
@@ -261,7 +263,7 @@ function LearningElementCreationForm({
                     required
                   />
                 </div>
-                <div>
+                <div className="mb-2">
                   <ErrorMessage
                     name="courseId"
                     component="div"
@@ -284,7 +286,7 @@ function LearningElementCreationForm({
                   />
                 </div>
                 <Button
-                  className={{ root: 'float-right' }}
+                  className={{ root: 'float-right mb-4' }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
                 >
