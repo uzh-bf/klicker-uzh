@@ -16,7 +16,7 @@ function Layout({ title, children }: LayoutProps) {
     data: dataUser,
   } = useQuery(UserProfileDocument)
 
-  if (!dataUser && !loadingUser) {
+  if ((!dataUser && !loadingUser) || errorUser) {
     router.push('/login')
   }
   if (!dataUser) {
@@ -24,9 +24,9 @@ function Layout({ title, children }: LayoutProps) {
   }
 
   return (
-    <div className="w-full h-full mx-auto bg-red-100">
+    <div className="w-full h-full mx-auto">
       <Header title={title} />
-      <div className="max-w-2xl p-2 mx-auto bg-green-100">{children}</div>
+      <div className="max-w-2xl p-2 mx-auto">{children}</div>
     </div>
   )
 }

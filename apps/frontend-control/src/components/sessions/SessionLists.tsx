@@ -42,7 +42,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
             <ListButton
               key={session.id}
               icon={faCalendar}
-              label={`Starten: ${session.name}`}
+              label={session.name}
               className={{ icon: 'mr-1' }}
               onClick={() => {
                 setStartModalOpen(true)

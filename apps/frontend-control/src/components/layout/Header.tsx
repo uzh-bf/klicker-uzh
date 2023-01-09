@@ -15,7 +15,7 @@ function Header({ title }: HeaderProps) {
 
   return (
     <div className="flex flex-row items-center justify-between px-2 text-white h-11 md:px-4 bg-slate-800">
-      <div className="text-lg font-bold">{title}</div>
+      <div className="text-lg font-bold line-clamp-1">{title}</div>
       <Button
         basic
         onClick={async () => {
