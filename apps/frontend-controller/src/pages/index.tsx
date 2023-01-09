@@ -1,5 +1,7 @@
+import Layout from '../components/Layout'
+
 function Index() {
-  return <div>EMPTY INDEX PAGE</div>
+  return <Layout>CONTROLLER LANDING PAGE WHEN LOGGED IN</Layout>
 }
 
 export default Index
