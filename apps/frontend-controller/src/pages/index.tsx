@@ -1,7 +1,11 @@
 import Layout from '../components/Layout'
 
 function Index() {
-  return <Layout>CONTROLLER LANDING PAGE WHEN LOGGED IN</Layout>
+  return (
+    <Layout title="Kursübersicht">
+      CONTROLLER LANDING PAGE WHEN LOGGED IN
+    </Layout>
+  )
 }
 
 export default Index

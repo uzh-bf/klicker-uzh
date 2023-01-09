@@ -1,12 +1,14 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
+import Header from './layout/Header'
 
 interface LayoutProps {
+  title: string
   children: React.ReactNode
 }
 
-function Layout({ children }: LayoutProps) {
+function Layout({ title, children }: LayoutProps) {
   const router = useRouter()
   const {
     loading: loadingUser,
@@ -22,9 +24,9 @@ function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="h-full max-w-2xl mx-auto bg-red-100">
-      <div>Logged in as: {dataUser.userProfile?.email}</div>
-      {children}
+    <div className="w-full h-full mx-auto bg-red-100">
+      <Header title={title} />
+      <div className="max-w-2xl p-2 mx-auto bg-green-100">{children}</div>
     </div>
   )
 }

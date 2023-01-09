@@ -9,8 +9,6 @@ import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
-// import Footer from '../components/common/Footer'
-
 const loginSchema = Yup.object().shape({
   email: Yup.string().required('Geben Sie eine gültige E-Mail Adresse ein'),
   password: Yup.string().required('Geben Sie Ihr Passwort ein'),
@@ -21,7 +19,7 @@ function LoginForm() {
   const [loginUser] = useMutation(LoginUserDocument)
 
   return (
-    <div className="relative flex flex-col items-center justify-center h-full max-w-2xl pb-20 mx-auto">
+    <div className="relative flex flex-col items-center justify-center w-full h-full pb-20 mx-auto">
       <Formik
         initialValues={{ email: '', password: '' }}
         validationSchema={loginSchema}
@@ -113,7 +111,19 @@ function LoginForm() {
           )
         }}
       </Formik>
-      {/* <Footer /> */}
+      <footer
+        className={'absolute bottom-0 w-full bg-slate-100 print:hidden px-4'}
+      >
+        <hr className="h-[1px] border-0 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+        <p className="py-4 m-0 text-xs leading-5 text-center text-gray-400">
+          &copy;
+          {new Date().getFullYear()} IBF Teaching Center, Department of Banking
+          and Finance, University of Zurich. All rights reserved.
+          <br />
+          Products and Services displayed herein are trademarks or registered
+          trademarks of their respective owners.
+        </p>
+      </footer>
     </div>
   )
 }
