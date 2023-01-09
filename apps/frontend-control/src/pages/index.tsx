@@ -12,6 +12,8 @@ function Index() {
     data: dataCourses,
   } = useQuery(GetUserCoursesDocument)
 
+  console.log(dataCourses)
+
   if (loadingCourses) {
     return <Layout title="Kursübersicht">Loading...</Layout>
   }

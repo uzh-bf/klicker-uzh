@@ -24,6 +24,9 @@ function RunningSession() {
   const router = useRouter()
   const theme = useContext(ThemeContext)
   const [nextBlock, setNextBlock] = useState(-1)
+  const [currentBlock, setCurrentBlock] = useState<number | undefined>(
+    undefined
+  )
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
@@ -57,6 +60,11 @@ function RunningSession() {
     setNextBlock(typeof scheduledNext === 'undefined' ? -1 : scheduledNext)
   }, [cockpitData?.cockpitSession?.blocks])
 
+  useEffect(() => {
+    if (!cockpitData?.cockpitSession?.activeBlock) return
+    setCurrentBlock(cockpitData?.cockpitSession?.activeBlock.id)
+  }, [cockpitData?.cockpitSession?.activeBlock])
+
   if (cockpitLoading) {
     return <Layout title="Session-Steuerung">Loading...</Layout>
   }
@@ -86,24 +94,24 @@ function RunningSession() {
   }
 
   // TODO: think about case with time limited questions!! show timer also on this view and close blocks accordingly...
-  // ! identified a state issue whenever the first block is activated and the activeBlock is not yet set
   return (
     <Layout title={`Session: ${name}`}>
-      {activeBlock ? (
+      {currentBlock ? (
         <div>
-          <H3>Aktueller Block:</H3>
+          <H3>Aktiver Block:</H3>
           <SessionBlock
-            block={blocks.find((block) => block.id === activeBlock.id)}
+            block={blocks.find((block) => block.id === currentBlock)}
           />
           <Button
-            onClick={async () =>
+            onClick={async () => {
               await deactivateSessionBlock({
                 variables: {
                   sessionId: id,
-                  sessionBlockId: activeBlock.id,
+                  sessionBlockId: currentBlock,
                 },
               })
-            }
+              setCurrentBlock(undefined)
+            }}
             className={{
               root: 'float-right',
             }}
@@ -116,14 +124,17 @@ function RunningSession() {
           <H3>Nächster Block:</H3>
           <SessionBlock block={blocks[nextBlock]} />
           <Button
-            onClick={async () =>
-              await activateSessionBlock({
-                variables: {
-                  sessionId: id,
-                  sessionBlockId: blocks[nextBlock].id,
-                },
-              })
-            }
+            onClick={async () => {
+              {
+                await activateSessionBlock({
+                  variables: {
+                    sessionId: id,
+                    sessionBlockId: blocks[nextBlock].id,
+                  },
+                })
+                setCurrentBlock(blocks[nextBlock].id)
+              }
+            }}
             className={{
               root: twMerge('float-right text-white', theme.primaryBgDark),
             }}
