@@ -1,13 +1,11 @@
 import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
 import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H4, ThemeContext, UserNotification } from '@uzh-bf/design-system'
-import { useContext } from 'react'
+import { H4, UserNotification } from '@uzh-bf/design-system'
 import ListButton from '../components/common/ListButton'
 import Layout from '../components/Layout'
 
 function Index() {
-  const theme = useContext(ThemeContext)
   const {
     loading: loadingCourses,
     error: errorCourses,
@@ -46,8 +44,8 @@ function Index() {
                     icon={faPeopleGroup}
                     label={
                       !course.isArchived
-                        ? course.displayName
-                        : `${course.displayName} (Archiviert)`
+                        ? course.name
+                        : `${course.name} (Archiviert)`
                     }
                   />
                 ))}

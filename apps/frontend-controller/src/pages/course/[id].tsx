@@ -6,7 +6,7 @@ import {
 import { UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import SessionLists from '../../components/common/SessionLists'
+import SessionLists from '../../components/sessions/SessionLists'
 import Layout from '../../components/Layout'
 
 function Course() {
@@ -51,7 +51,7 @@ function Course() {
   )
 
   return (
-    <Layout title={course.displayName}>
+    <Layout title={course.name}>
       <SessionLists
         runningSessions={runningSessions}
         plannedSessions={plannedSessions}

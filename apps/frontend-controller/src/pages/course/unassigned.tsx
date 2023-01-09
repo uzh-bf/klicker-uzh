@@ -1,9 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useMemo } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
-import SessionLists from '../../components/common/SessionLists'
 import Layout from '../../components/Layout'
+import SessionLists from '../../components/sessions/SessionLists'
 
 function UnassignedSessions() {
   const {
@@ -29,6 +30,21 @@ function UnassignedSessions() {
       )
       .sort((a, b) => b.createdAt - a.createdAt)
   }, [dataSessions])
+
+  if (loadingSessions) {
+    return <Layout title="Sessionen ohne Kurs">Loading...</Layout>
+  }
+  if (errorSessions || !dataSessions) {
+    return (
+      <Layout title="Sessionen ohne Kurs">
+        <UserNotification
+          notificationType="error"
+          className={{ root: 'text-base' }}
+          message="Beim Laden Ihrer Sessionen ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
+        />
+      </Layout>
+    )
+  }
 
   return (
     <Layout title="Sessionen ohne Kurs">

@@ -1,15 +1,20 @@
+import SessionStartToast from '@components/toasts/SessionStartToast'
 import { faCalendar, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { H4 } from '@uzh-bf/design-system'
-import { useRouter } from 'next/router'
-import ListButton from '../../components/common/ListButton'
+import { useState } from 'react'
+import ListButton from '../common/ListButton'
+import StartModal from './StartModal'
 
 interface SessionListsProps {
-  runningSessions: { id: string; displayName: string }[]
-  plannedSessions: { id: string; displayName: string }[]
+  runningSessions: { id: string; name: string }[]
+  plannedSessions: { id: string; name: string }[]
 }
 
 function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
-  const router = useRouter()
+  const [startModalOpen, setStartModalOpen] = useState(false)
+  const [errorToast, setErrorToast] = useState(false)
+  const [startId, setStartId] = useState('')
+  const [startName, setStartName] = useState('')
 
   return (
     <>
@@ -21,7 +26,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
               key={session.id}
               link={`/session/${session.id}`}
               icon={faPlay}
-              label={session.displayName}
+              label={session.name}
               className={{ icon: 'mr-1' }}
             />
           ))}
@@ -37,13 +42,12 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
             <ListButton
               key={session.id}
               icon={faCalendar}
-              label={`Starten: ${session.displayName}`}
+              label={`Starten: ${session.name}`}
               className={{ icon: 'mr-1' }}
               onClick={() => {
-                // TODO: start session after possibly asking for confirmation
-
-                // TODO: if successful, rerouter to session page
-                router.push(`/session/${session.id}`)
+                setStartModalOpen(true)
+                setStartId(session.id)
+                setStartName(session.name)
               }}
             />
           ))}
@@ -51,6 +55,15 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
       ) : (
         <div>Keine geplanten Sessionen</div>
       )}
+
+      <StartModal
+        startId={startId}
+        startName={startName}
+        startModalOpen={startModalOpen}
+        setStartModalOpen={setStartModalOpen}
+        setErrorToast={setErrorToast}
+      />
+      <SessionStartToast open={errorToast} setOpen={setErrorToast} />
     </>
   )
 }
