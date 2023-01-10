@@ -26,6 +26,11 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "npm"
+    directory: "/apps/frontend-control"
+    target-branch: v2
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
     directory: "/apps/frontend-pwa"
     target-branch: v2
     schedule:

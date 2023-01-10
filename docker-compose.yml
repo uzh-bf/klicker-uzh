@@ -32,6 +32,21 @@ services:
     networks:
       - klicker-dev
 
+  frontend-control:
+    profiles:
+      - full
+    build:
+      context: apps/frontend-control
+      args:
+        NODE_ENV: development
+        COOKIE_DOMAIN: 127.0.0.1
+        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+    ports:
+      - 3003:3000
+    networks:
+      - klicker-dev
+
   backend:
     profiles:
       - full
