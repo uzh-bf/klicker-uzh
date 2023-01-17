@@ -42,8 +42,12 @@ function TagList({
       <div className="p-4 md:min-w-[17rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
         <Button
           className={{
-            root: 'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+            root: twMerge(
+              'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+              (activeTags.length > 0 || activeType) && theme.primaryText
+            ),
           }}
+          disabled={!(activeTags.length > 0 || activeType)}
           onClick={(): void => handleReset()}
         >
           <Button.Icon className={{ root: 'mr-1' }}>
@@ -76,7 +80,7 @@ function TagList({
                 className={twMerge(
                   'px-4 py-1 hover:cursor-pointer',
                   theme.primaryTextHover,
-                  activeType === type && 'text-red-500'
+                  activeType === type && theme.primaryText
                 )}
                 onClick={(): void => handleTagClick(type, true)}
               >
@@ -119,7 +123,7 @@ function TagList({
                       className={twMerge(
                         'px-4 py-1 hover:cursor-pointer',
                         theme.primaryTextHover,
-                        activeTags.includes(tag) && 'text-red-500'
+                        activeTags.includes(tag) && theme.primaryText
                       )}
                       key={index}
                       onClick={(): void => handleTagClick(tag)}
