@@ -57,7 +57,7 @@
     "@types/body-parser": "^1.19.2",
     "@types/jsonwebtoken": "^8.5.9",
     "@types/node": "^18.0.0",
-    "@types/object-hash": "^2.2.1",
+    "@types/object-hash": "^3.0.2",
     "@types/ramda": "^0.28.15",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
