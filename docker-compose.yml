@@ -70,7 +70,7 @@ services:
 
   # main database
   postgres:
-    image: postgres:14.3
+    image: docker.io/library/postgres:14.3
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
@@ -82,7 +82,7 @@ services:
 
     # redis instance to support session execution
   redis_exec:
-    image: redis:6
+    image: docker.io/library/redis:6
     ports:
       - 6379:6379
     networks:
@@ -92,7 +92,7 @@ services:
 
   # redis instance for page caching and rate limiting
   redis_cache:
-    image: redis:6
+    image: docker.io/library/redis:6
     ports:
       - 6380:6379
     networks:
