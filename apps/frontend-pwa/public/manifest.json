@@ -1,11 +1,11 @@
 {
-  "theme_color": "#3353b7",
+  "theme_color": "#0028a5",
   "background_color": "#ffffff",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Klicker UZH PWA",
-  "short_name": "Klicker UZH",
+  "name": "KlickerUZH",
+  "short_name": "KlickerUZH",
   "description": "Open Source Audience Interaction",
   "orientation": "portrait",
   "icons": [
