@@ -14,7 +14,7 @@ function Header({ title }: HeaderProps) {
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   return (
-    <div className="flex flex-row items-center justify-between px-2 text-white h-11 md:px-4 bg-slate-800">
+    <div className="fixed top-0 flex flex-row items-center justify-between w-full px-2 text-white h-11 md:px-4 bg-slate-800">
       <div className="text-lg font-bold line-clamp-1">{title}</div>
       <Button
         basic
