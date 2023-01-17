@@ -9,6 +9,7 @@ import { QUESTION_TYPES_SHORT } from 'shared-components/src/constants'
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
+import Ellipsis from '@components/common/Ellipsis'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
@@ -101,9 +102,7 @@ function Question({
             </div>
             <div className="mb-2 italic">{QUESTION_TYPES_SHORT[type]}</div>
             <div className="flex-1 mb-2">
-              {content.length > 120
-                ? `${content.substring(0, 120)}...`
-                : content}
+              <Ellipsis maxLines={1}>{content}</Ellipsis>
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
