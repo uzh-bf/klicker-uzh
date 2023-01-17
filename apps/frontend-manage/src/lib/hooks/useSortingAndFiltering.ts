@@ -10,6 +10,8 @@ const INITIAL_STATE = {
     tags: [],
     title: null,
     type: null,
+    sampleSolution: null,
+    answerFeedbacks: null,
   },
   sort: {
     asc: false,
@@ -91,6 +93,30 @@ function reducer(state, action): any {
         },
       }
 
+    case 'SAMPLE_SOLUTION':
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          sampleSolution:
+            typeof action.newValue !== 'undefined'
+              ? action.newValue
+              : !state.filters.sampleSolution,
+        },
+      }
+
+    case 'ANSWER_FEEDBACKS':
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          answerFeedbacks:
+            typeof action.newValue !== 'undefined'
+              ? action.newValue
+              : !state.filters.answerFeedbacks,
+        },
+      }
+
     case 'RESET':
       return { ...state, filters: INITIAL_STATE.filters }
 
@@ -105,13 +131,17 @@ function useSortingAndFiltering(): any {
   return {
     ...state,
     handleReset: (): void => dispatch({ type: 'RESET' }),
-    handleSearch: (title): void => dispatch({ type: 'SEARCH', title }),
+    handleSearch: (title: string): void => dispatch({ type: 'SEARCH', title }),
     handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
     handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
-    handleToggleArchive: (newValue): void =>
+    handleToggleArchive: (newValue: boolean): void =>
       dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName, questionType): void =>
+    handleTagClick: (tagName: string, questionType): void =>
       dispatch({ type: 'TAG_CLICK', tagName, questionType }),
+    handleSampleSolutionClick: (newValue: boolean): void =>
+      dispatch({ type: 'SAMPLE_SOLUTION', newValue }),
+    handleAnswerFeedbacksClick: (newValue: boolean): void =>
+      dispatch({ type: 'ANSWER_FEEDBACKS', newValue }),
   }
 }
 
