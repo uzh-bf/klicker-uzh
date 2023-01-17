@@ -27,7 +27,6 @@
     "types/app.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "src/utils/generateAvatars.js"
   ],
   "exclude": ["node_modules"],
   "ts-node": {
