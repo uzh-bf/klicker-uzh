@@ -54,10 +54,21 @@ function TagList({
           className={{
             root: twMerge(
               'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
-              (activeTags.length > 0 || activeType) && theme.primaryText
+              (activeTags.length > 0 ||
+                activeType ||
+                sampleSolution ||
+                answerFeedbacks) &&
+                theme.primaryText
             ),
           }}
-          disabled={!(activeTags.length > 0 || activeType || sampleSolution || answerFeedbacks)}
+          disabled={
+            !(
+              activeTags.length > 0 ||
+              activeType ||
+              sampleSolution ||
+              answerFeedbacks
+            )
+          }
           onClick={(): void => handleReset()}
         >
           <Button.Icon className={{ root: 'mr-1' }}>
