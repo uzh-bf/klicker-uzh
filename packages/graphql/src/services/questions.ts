@@ -34,6 +34,8 @@ export async function getUserQuestions(
           'content',
           'isArchived',
           'isDeleted',
+          'hasSampleSolution',
+          'hasAnswerFeedbacks',
           'createdAt',
           'updatedAt',
         ],

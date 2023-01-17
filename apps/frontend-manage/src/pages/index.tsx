@@ -35,6 +35,8 @@ function Index() {
     handleTagClick,
     handleReset,
     handleToggleArchive,
+    handleSampleSolutionClick,
+    handleAnswerFeedbacksClick,
   } = useSortingAndFiltering()
 
   useEffect((): void => {
@@ -76,8 +78,12 @@ function Index() {
               <TagList
                 activeTags={filters.tags}
                 activeType={filters.type}
+                sampleSolution={filters.sampleSolution}
+                answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
+                handleSampleSolutionClick={handleSampleSolutionClick}
+                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
                 // handleToggleArchive={onToggleArchive}
                 // isArchiveActive={filters.archive}
               />

@@ -83,6 +83,20 @@ export function filterQuestions(
     )
   }
 
+  // if a sample solution filter was selected, only show questions with a sample solution
+  if (filters.sampleSolution) {
+    results = results.filter(
+      ({ hasSampleSolution }): boolean => hasSampleSolution === true
+    )
+  }
+
+  // if an answer feedback filter was selected, only show questions with answer feedbacks
+  if (filters.answerFeedbacks) {
+    results = results.filter(
+      ({ hasAnswerFeedbacks }): boolean => hasAnswerFeedbacks === true
+    )
+  }
+
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
     results = results.filter(({ type, tags }): boolean => {

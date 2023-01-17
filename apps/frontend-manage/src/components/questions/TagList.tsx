@@ -1,9 +1,11 @@
 import { useQuery } from '@apollo/client'
 import {
+  faCheckCircle,
   faCircleXmark,
   faRectangleList as faListRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faCommentDots,
   faRectangleList as faListSolid,
   faTag,
 } from '@fortawesome/free-solid-svg-icons'
@@ -17,16 +19,24 @@ import { twMerge } from 'tailwind-merge'
 interface Props {
   activeTags: string[]
   activeType: string
+  sampleSolution: boolean
+  answerFeedbacks: boolean
   handleReset: () => void
   handleTagClick: (questionType: string, selected?: boolean) => void
+  handleSampleSolutionClick: (selected?: boolean) => void
+  handleAnswerFeedbacksClick: (selected?: boolean) => void
 }
 
 // TODO: re-add archive toggle
 function TagList({
   activeTags,
   activeType,
+  sampleSolution,
+  answerFeedbacks,
   handleTagClick,
   handleReset,
+  handleSampleSolutionClick,
+  handleAnswerFeedbacksClick,
 }: Props): React.ReactElement {
   const theme = useContext(ThemeContext)
   const {
@@ -42,8 +52,23 @@ function TagList({
       <div className="p-4 md:min-w-[17rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
         <Button
           className={{
-            root: 'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+            root: twMerge(
+              'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+              (activeTags.length > 0 ||
+                activeType ||
+                sampleSolution ||
+                answerFeedbacks) &&
+                theme.primaryText
+            ),
           }}
+          disabled={
+            !(
+              activeTags.length > 0 ||
+              activeType ||
+              sampleSolution ||
+              answerFeedbacks
+            )
+          }
           onClick={(): void => handleReset()}
         >
           <Button.Icon className={{ root: 'mr-1' }}>
@@ -76,7 +101,7 @@ function TagList({
                 className={twMerge(
                   'px-4 py-1 hover:cursor-pointer',
                   theme.primaryTextHover,
-                  activeType === type && 'text-red-500'
+                  activeType === type && theme.primaryText
                 )}
                 onClick={(): void => handleTagClick(type, true)}
               >
@@ -119,7 +144,7 @@ function TagList({
                       className={twMerge(
                         'px-4 py-1 hover:cursor-pointer',
                         theme.primaryTextHover,
-                        activeTags.includes(tag) && 'text-red-500'
+                        activeTags.includes(tag) && theme.primaryText
                       )}
                       key={index}
                       onClick={(): void => handleTagClick(tag)}
@@ -132,6 +157,35 @@ function TagList({
               </ul>
             )
           })()}
+
+          <div className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
+            Gamification
+          </div>
+
+          <ul className="p-0 m-0 list-none">
+            <li
+              className={twMerge(
+                'px-4 py-1 hover:cursor-pointer',
+                theme.primaryTextHover,
+                sampleSolution && theme.primaryText
+              )}
+              onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
+            >
+              <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />
+              Musterlösung
+            </li>
+            <li
+              className={twMerge(
+                'px-4 py-1 hover:cursor-pointer',
+                theme.primaryTextHover,
+                answerFeedbacks && theme.primaryText
+              )}
+              onClick={(): void => handleAnswerFeedbacksClick(!answerFeedbacks)}
+            >
+              <FontAwesomeIcon icon={faCommentDots} className="mr-2" />
+              Antwort-Feedbacks
+            </li>
+          </ul>
         </div>
       </div>
     </div>
