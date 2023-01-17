@@ -585,6 +585,10 @@ export async function activateSessionBlock(
           ctx,
           true
         )
+        ctx.emitter.emit('invalidate', {
+          typename: 'Session',
+          id: session.id,
+        })
       }
     )
   }

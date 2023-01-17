@@ -131,6 +131,9 @@ jobs:
   #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-pwa:cypress
   #         labels: ${{ steps.meta.outputs.labels }}
 
+  # TODO:
+  # build-frontend-control
+
   # fill-database:
 
   cypress-run:
