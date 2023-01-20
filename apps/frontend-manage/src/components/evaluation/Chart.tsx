@@ -1,6 +1,6 @@
-import { TextSizeType } from '@components/sessions/evaluation/constants'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import { TextSizeType } from '../sessions/evaluation/constants'
 import BarChart from './BarChart'
 import Histogram from './Histogram'
 import TableChart from './TableChart'

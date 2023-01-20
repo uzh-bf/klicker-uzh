@@ -1,8 +1,8 @@
-import SessionStartToast from '@components/toasts/SessionStartToast'
 import { faCalendar, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { H4 } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import ListButton from '../common/ListButton'
+import SessionStartToast from '../toasts/SessionStartToast'
 import StartModal from './StartModal'
 
 interface SessionListsProps {

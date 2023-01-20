@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import Ellipsis from '@components/common/Ellipsis'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -23,6 +22,7 @@ import {
   SESSION_STATUS,
 } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../common/Ellipsis'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {

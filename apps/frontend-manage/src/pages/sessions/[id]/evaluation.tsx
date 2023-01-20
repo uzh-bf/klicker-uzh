@@ -18,6 +18,7 @@ import { useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
+import useEvalKeyNavigation from '../../../components/hooks/useEvalKeyNavigation'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import {
   sizeReducer,
@@ -102,6 +103,13 @@ function Evaluation() {
     setCurrentInstance,
     setSelectedInstanceIndex,
     setChartType,
+  })
+
+  useEvalKeyNavigation({
+    selectedInstanceIndex,
+    instanceResults,
+    setSelectedInstance,
+    setSelectedBlock,
   })
 
   // if a question index is provided through the url, directly switch to this question

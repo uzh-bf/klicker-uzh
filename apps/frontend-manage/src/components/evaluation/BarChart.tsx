@@ -1,4 +1,3 @@
-import { TextSizeType } from '@components/sessions/evaluation/constants'
 import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
@@ -16,6 +15,7 @@ import {
   QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
+import { TextSizeType } from '../sessions/evaluation/constants'
 
 interface BarChartProps {
   data: InstanceResult
