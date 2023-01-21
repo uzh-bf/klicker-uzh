@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import QRPopup from '@components/sessions/cockpit/QRPopup'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -15,6 +14,7 @@ import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSession'
 import SessionTile from '../../components/courses/SessionTile'
 import Layout from '../../components/Layout'
+import QRPopup from '../../components/sessions/cockpit/QRPopup'
 
 function CourseOverviewPage() {
   const router = useRouter()
