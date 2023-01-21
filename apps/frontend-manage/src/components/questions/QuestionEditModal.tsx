@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
+  GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateFreetextQuestionDocument,
   ManipulateNumericalQuestionDocument,
@@ -332,7 +333,10 @@ function QuestionEditModal({
                   }),
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
@@ -363,7 +367,10 @@ function QuestionEditModal({
                   ),
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
@@ -378,7 +385,10 @@ function QuestionEditModal({
                   solutions: values.options?.solutions,
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
