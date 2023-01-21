@@ -9,11 +9,11 @@ import { QUESTION_TYPES_SHORT } from 'shared-components/src/constants'
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
-import Ellipsis from '@components/common/Ellipsis'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Ellipsis from '../common/Ellipsis'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionTags from './QuestionTags'

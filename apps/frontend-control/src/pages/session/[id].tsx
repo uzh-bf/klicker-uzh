@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import SessionBlock from '@components/sessions/SessionBlock'
 import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
@@ -19,6 +18,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
+import SessionBlock from '../../components/sessions/SessionBlock'
 
 function RunningSession() {
   const router = useRouter()

@@ -5,13 +5,13 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
-import TagList from '@components/questions/TagList'
-import SessionCreation from '@components/sessions/creation/SessionCreation'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
+import TagList from '../components/questions/TagList'
+import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const router = useRouter()

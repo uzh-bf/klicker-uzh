@@ -1,4 +1,3 @@
-import useEvaluationTabs from '@components/hooks/useEvaluationTabs'
 import {
   faArrowLeft,
   faArrowRight,
@@ -21,6 +20,7 @@ import {
 import { Button, Select, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useEvaluationTabs from '../../hooks/useEvaluationTabs'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
