@@ -35,21 +35,19 @@ function Layout({ displayName, children, className }: LayoutProps) {
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="flex flex-col w-full h-full">
       <Head>
         <title>{displayName}</title>
         <meta name="description" content={displayName} charSet="utf-8"></meta>
       </Head>
 
-      <div className={twMerge('pt-16 h-screen relative', className)}>
-        <div className="fixed top-0 z-10 w-full h-14">
+      <div className={twMerge('h-full overflow-y-none', className)}>
+        <div className="fixed top-0 z-10 w-full">
           <Header user={dataUser.userProfile as User} />
         </div>
-        <div className="relative min-h-full py-2">
-          <div className="h-full px-4 pb-20 mx-auto max-w-screen-2xl">
-            {children}
-          </div>
-          <Footer />
+        <div className="flex justify-between flex-col mt-14 overflow-y-auto [height:_calc(100%-3.5rem)]">
+          <div className="p-4">{children}</div>
+          <Footer className="relative" />
         </div>
       </div>
     </div>
