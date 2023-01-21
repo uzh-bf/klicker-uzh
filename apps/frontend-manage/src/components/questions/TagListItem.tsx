@@ -39,16 +39,25 @@ function TagListItem({ tag, handleTagClick, active }: TagListItemProps) {
             <div className="flex-row hidden text-black group-hover:flex">
               <Button
                 basic
+                disabled={active}
                 onClick={() => setEditMode(true)}
-                className={{ root: theme.primaryTextHover }}
+                className={{
+                  root: twMerge(
+                    theme.primaryTextHover,
+                    'disabled:text-uzh-grey-60'
+                  ),
+                }}
               >
                 <FontAwesomeIcon icon={faPencil} className="mr-2" />
               </Button>
               <Button
                 basic
+                disabled={active}
                 // TODO
                 onClick={() => null}
-                className={{ root: 'hover:text-red-600' }}
+                className={{
+                  root: 'hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
+                }}
               >
                 <FontAwesomeIcon icon={faTrash} className="mr-2" />
               </Button>
