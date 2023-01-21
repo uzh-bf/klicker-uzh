@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import useArrowNavigation from '@components/hooks/useArrowNavigation'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -18,7 +19,6 @@ import { useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
-import useEvalKeyNavigation from '../../../components/hooks/useEvalKeyNavigation'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import {
   sizeReducer,
@@ -105,11 +105,19 @@ function Evaluation() {
     setChartType,
   })
 
-  useEvalKeyNavigation({
-    selectedInstanceIndex,
-    instanceResults,
-    setSelectedInstance,
-    setSelectedBlock,
+  useArrowNavigation({
+    onArrowLeft: () => {
+      if (selectedInstanceIndex > 0) {
+        setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
+        setSelectedBlock(instanceResults[selectedInstanceIndex - 1].blockIx)
+      }
+    },
+    onArrowRight: () => {
+      if (selectedInstanceIndex < instanceResults.length - 1) {
+        setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
+        setSelectedBlock(instanceResults[selectedInstanceIndex + 1].blockIx)
+      }
+    },
   })
 
   // if a question index is provided through the url, directly switch to this question
