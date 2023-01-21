@@ -252,3 +252,16 @@ export async function editTag(
 
   return tag
 }
+
+export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
+  const tag = await ctx.prisma.tag.delete({
+    where: {
+      id: id,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Tag',
+    id: tag.id,
+  })
+}

@@ -1687,6 +1687,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('deleteTag', {
+      type: Tag,
+      args: {
+        id: nonNull(intArg())
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.deleteTag(args, ctx)
+      },
+    })
+
     t.field('editSession', {
       type: Session,
       args: {

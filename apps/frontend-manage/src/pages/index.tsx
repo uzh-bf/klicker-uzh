@@ -10,7 +10,7 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
-import TagList from '../components/questions/TagList'
+import TagList from '../components/questions/tags/TagList'
 import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {

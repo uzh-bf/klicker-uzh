@@ -861,6 +861,7 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
+    deleteTag: NexusGenRootTypes['Tag'] | null; // Tag
     editMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     editSession: NexusGenRootTypes['Session'] | null; // Session
     editTag: NexusGenRootTypes['Tag'] | null; // Tag
@@ -1409,6 +1410,7 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
     deleteQuestion: 'Question'
+    deleteTag: 'Tag'
     editMicroSession: 'MicroSession'
     editSession: 'Session'
     editTag: 'Tag'
@@ -1764,6 +1766,9 @@ export interface NexusGenArgTypes {
     }
     deleteQuestion: { // args
       id?: number | null; // Int
+    }
+    deleteTag: { // args
+      id: number; // Int!
     }
     editMicroSession: { // args
       courseId?: string | null; // String

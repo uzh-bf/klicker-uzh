@@ -45,6 +45,7 @@ export const AuthSchema = {
     changeCourseDescription: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedbackResponse: { __authz: { rules: ['IsUserOrAdmin'] } },
+    deleteTag: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteQuestion: { __authz: { rules: ['IsUserOrAdmin'] } },
     editSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     editTag: { __authz: { rules: ['IsUserOrAdmin'] } },
