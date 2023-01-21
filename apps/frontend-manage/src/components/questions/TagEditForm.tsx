@@ -1,4 +1,5 @@
-import { Tag } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { useContext } from 'react'
@@ -12,6 +13,7 @@ interface TagEditFormProps {
 
 function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
   const theme = useContext(ThemeContext)
+  const [editTag] = useMutation(EditTagDocument)
 
   const TagModifierSchema = Yup.object().shape({
     tag: Yup.string().required(
@@ -25,9 +27,14 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
         initialValues={{ tag: tag.name }}
         validationSchema={TagModifierSchema}
         onSubmit={async (values) => {
-          // TODO: mutation if not the same as before and if success onConfirm(), if tag is the same as before just confirm
-          console.log(values)
-          onConfirm()
+          if (values.tag !== tag.name) {
+            await editTag({
+              variables: { id: tag.id, name: values.tag },
+            })
+            onConfirm()
+          } else {
+            onConfirm()
+          }
         }}
       >
         {({ errors, touched, isSubmitting, isValid }) => {
@@ -38,7 +45,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                   name="tag"
                   type="tag"
                   className={twMerge(
-                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 py-1',
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 py-1 px-1',
                     theme.primaryBorderFocus,
                     errors.tag && touched.tag && 'border-red-400 bg-red-50'
                   )}
@@ -53,7 +60,8 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                     root: twMerge(
                       isValid && theme.primaryTextHover,
                       isValid && theme.primaryBgHover,
-                      'px-2 rounded border border-solid'
+                      'px-2 rounded border border-solid',
+                      !isValid && 'text-uzh-grey-60 cursor-not-allowed'
                     ),
                   }}
                 >

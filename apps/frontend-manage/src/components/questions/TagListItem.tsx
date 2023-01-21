@@ -1,12 +1,13 @@
 import { faPencil, faTag, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TagEditForm from './TagEditForm'
 
 interface TagListItemProps {
-  tag: { name: string; id: string }
+  tag: Tag
   handleTagClick: (tag: string) => void
   active: boolean
 }
