@@ -7,14 +7,14 @@ import {
 import {
   faCommentDots,
   faRectangleList as faListSolid,
-  faTag,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetUserTagsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext, UserNotification } from '@uzh-bf/design-system'
 import React, { useContext } from 'react'
 import { QUESTION_TYPES, TYPES_LABELS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import TagListItem from './TagListItem'
 
 interface Props {
   activeTags: string[]
@@ -45,11 +45,13 @@ function TagList({
     error: tagsError,
   } = useQuery(GetUserTagsDocument)
 
-  const tags = tagsData?.userTags?.map((tag) => tag.name)
+  const tags = tagsData?.userTags?.map((tag) => {
+    return { name: tag.name, id: tag.id }
+  })
 
   return (
     <div className="h-full pb-2">
-      <div className="p-4 md:min-w-[17rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
+      <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
         <Button
           className={{
             root: twMerge(
@@ -139,19 +141,13 @@ function TagList({
             return (
               <ul className="p-0 m-0 list-none">
                 {tags?.map(
-                  (tag: string, index: number): React.ReactElement => (
-                    <li
-                      className={twMerge(
-                        'px-4 py-1 hover:cursor-pointer',
-                        theme.primaryTextHover,
-                        activeTags.includes(tag) && theme.primaryText
-                      )}
+                  (tag: Tag, index: number): React.ReactElement => (
+                    <TagListItem
                       key={index}
-                      onClick={(): void => handleTagClick(tag)}
-                    >
-                      <FontAwesomeIcon icon={faTag} className="mr-2" />
-                      {tag}
-                    </li>
+                      tag={tag}
+                      handleTagClick={handleTagClick}
+                      active={activeTags.includes(tag.name)}
+                    />
                   )
                 )}
               </ul>
