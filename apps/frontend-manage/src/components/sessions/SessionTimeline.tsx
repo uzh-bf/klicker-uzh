@@ -13,7 +13,12 @@ import React, { useContext, useEffect, useState } from 'react'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
-import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import {
+  CancelSessionDocument,
+  SessionBlock as SessionBlockType,
+} from '@klicker-uzh/graphql/dist/ops'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import QRPopup from './cockpit/QRPopup'
 import SessionBlock from './cockpit/SessionBlock'
@@ -93,7 +98,12 @@ function SessionTimeline({
   handleCloseBlock,
 }: Props): React.ReactElement {
   const theme = useContext(ThemeContext)
+  const router = useRouter()
   const isFeedbackSession = blocks?.length === 0
+
+  const [cancelSession] = useMutation(CancelSessionDocument, {
+    variables: { id: sessionId },
+  })
 
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
@@ -244,7 +254,16 @@ function SessionTimeline({
               )}
             />
           </div>
-          <div className="flex flex-row justify-end w-full mt-2">
+          <div className="flex flex-row justify-end w-full gap-2 mt-2">
+            <Button
+              onClick={async () => {
+                await cancelSession()
+                router.push('/sessions')
+              }}
+              className={{ root: 'bg-red-800 text-white' }}
+            >
+              Session abbrechen
+            </Button>
             <Button
               className={{
                 root: twMerge(

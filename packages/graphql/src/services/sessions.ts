@@ -1583,3 +1583,99 @@ export async function getSessionEvaluation(
     confusionFeedbacks: session.confusionFeedbacks,
   }
 }
+
+export async function cancelSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          instances: true,
+          leaderboard: true,
+          activeInSession: true,
+        },
+      },
+    },
+  })
+
+  if (!session) return null
+
+  if (session.status !== SessionStatus.RUNNING) {
+    throw new Error('Session is not running')
+  }
+
+  const leaderboardEntries = session.blocks
+    .map((block) => block.leaderboard)
+    .flat()
+  const instances = session.blocks.map((block) => block.instances).flat()
+
+  await ctx.prisma.session.update({
+    where: { id },
+    data: {
+      status: SessionStatus.SCHEDULED,
+      startedAt: null,
+      pinCode: null,
+      activeBlock: {
+        disconnect: true,
+      },
+      leaderboard: {
+        deleteMany: {},
+      },
+      feedbacks: {
+        deleteMany: {},
+      },
+      confusionFeedbacks: {
+        deleteMany: {},
+      },
+      blocks: {
+        updateMany: {
+          where: {
+            status: {
+              in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+            },
+          },
+          data: {
+            status: SessionBlockStatus.SCHEDULED,
+            expiresAt: null,
+            execution: 0,
+          },
+        },
+      },
+    },
+  })
+
+  await ctx.prisma.leaderboardEntry.deleteMany({
+    where: {
+      id: {
+        in: leaderboardEntries.map((entry) => entry.id),
+      },
+    },
+  })
+
+  await Promise.all(
+    instances.map(async (instance) => {
+      await ctx.prisma.questionInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          participants: 0,
+          // TODO: figure out how to reset the results properly to initialValue stuff
+          results: {},
+          responses: {
+            deleteMany: {},
+          },
+          detailResponses: {
+            deleteMany: {},
+          },
+        },
+      })
+    })
+  )
+
+  return session
+}

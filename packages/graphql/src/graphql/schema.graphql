@@ -369,6 +369,7 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
+  cancelSession(id: ID!): Session
   changeCourseDescription(courseId: ID!, input: String!): Course
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course

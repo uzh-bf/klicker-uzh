@@ -1,6 +1,6 @@
-import { filter, pipe } from 'graphql-yoga'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
+import { filter, pipe } from 'graphql-yoga'
 import {
   arg,
   asNexusMethod,
@@ -1605,6 +1605,16 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return FeedbackService.pinFeedback(args, ctx)
+      },
+    })
+
+    t.field('cancelSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.cancelSession(args, ctx)
       },
     })
 

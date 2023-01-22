@@ -41,6 +41,7 @@ export const AuthSchema = {
   Mutation: {
     '*': { __authz: { rules: ['Allow'] } },
     addConfusionTimestep: { __authz: { rules: ['Allow'] } },
+    cancelSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     changeCourseDescription: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },

@@ -848,6 +848,7 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     addConfusionTimestep: NexusGenRootTypes['ConfusionTimestep'] | null; // ConfusionTimestep
+    cancelSession: NexusGenRootTypes['Session'] | null; // Session
     changeCourseDescription: NexusGenRootTypes['Course'] | null; // Course
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
@@ -1395,6 +1396,7 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     activateSessionBlock: 'Session'
     addConfusionTimestep: 'ConfusionTimestep'
+    cancelSession: 'Session'
     changeCourseDescription: 'Course'
     changeSessionSettings: 'Session'
     createCourse: 'Course'
@@ -1691,6 +1693,9 @@ export interface NexusGenArgTypes {
       difficulty: number; // Int!
       sessionId: string; // ID!
       speed: number; // Int!
+    }
+    cancelSession: { // args
+      id: string; // ID!
     }
     changeCourseDescription: { // args
       courseId: string; // ID!
