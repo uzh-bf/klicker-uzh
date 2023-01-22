@@ -13,47 +13,15 @@ import React, { useContext, useEffect, useState } from 'react'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
-import { useMutation } from '@apollo/client'
-import {
-  CancelSessionDocument,
-  SessionBlock as SessionBlockType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { useRouter } from 'next/router'
+import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
 import { twMerge } from 'tailwind-merge'
-import QRPopup from './cockpit/QRPopup'
-import SessionBlock from './cockpit/SessionBlock'
+import CancelSessionModal from './CancelSessionModal'
+import QRPopup from './QRPopup'
+import SessionBlock from './SessionBlock'
 
 dayjs.extend(durationPlugin)
 
 // const { publicRuntimeConfig } = getConfig()
-
-// function getMessage(num: number, max: number): any {
-//   if (num === 0) {
-//     return {
-//       icon: faPlay,
-//       label: 'Ersten Frageblock aktivieren',
-//     }
-//   }
-
-//   if (num % 2 === 1) {
-//     return {
-//       icon: faArrowRight,
-//       label: 'Aktiven Frageblock schliessen',
-//     }
-//   }
-
-//   if (num === max) {
-//     return {
-//       icon: faStop,
-//       label: 'Session beenden',
-//     }
-//   }
-
-//   return {
-//     icon: faArrowRight,
-//     label: 'Nächsten Frageblock aktivieren',
-//   }
-// }
 
 const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   const start = dayjs(startedAt)
@@ -72,6 +40,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 
 interface Props {
   blocks?: SessionBlockType[]
+  sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
   handleOpenBlock: (blockId: number) => void
@@ -90,6 +59,7 @@ const defaultProps = {
 function SessionTimeline({
   sessionId,
   blocks,
+  sessionName,
   startedAt,
   isEvaluationPublic,
   handleEndSession,
@@ -98,13 +68,9 @@ function SessionTimeline({
   handleCloseBlock,
 }: Props): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const router = useRouter()
   const isFeedbackSession = blocks?.length === 0
 
-  const [cancelSession] = useMutation(CancelSessionDocument, {
-    variables: { id: sessionId },
-  })
-
+  const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
@@ -256,10 +222,7 @@ function SessionTimeline({
           </div>
           <div className="flex flex-row justify-end w-full gap-2 mt-2">
             <Button
-              onClick={async () => {
-                await cancelSession()
-                router.push('/sessions')
-              }}
+              onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
             >
               Session abbrechen
@@ -293,6 +256,12 @@ function SessionTimeline({
               <Button.Label>{buttonNames[buttonState]}</Button.Label>
             </Button>
           </div>
+          <CancelSessionModal
+            isDeletionModalOpen={cancelSessionModal}
+            setIsDeletionModalOpen={setCancelSessionModal}
+            sessionId={sessionId}
+            title={sessionName}
+          />
         </>
       )}
     </div>

@@ -1557,19 +1557,6 @@ export async function getSessionEvaluation(
     }
   }
 
-  const temp = {
-    id: `${id}-eval`,
-    status: session.status,
-    isGamificationEnabled: session.isGamificationEnabled,
-    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
-    instanceResults: [
-      ...completeQuestionData(executedInstanceResults),
-      ...completeQuestionData(activeInstanceResults),
-    ],
-    feedbacks: session.feedbacks,
-    confusionFeedbacks: session.confusionFeedbacks,
-  }
-
   return {
     id: `${id}-eval`,
     status: session.status,
@@ -1664,8 +1651,8 @@ export async function cancelSession(
         },
         data: {
           participants: 0,
-          // TODO: figure out how to reset the results properly to initialValue stuff
-          results: {},
+          // TODO: ensure that this typescript error does not point to a real potential issue
+          results: prepareInitialInstanceResults(instance.questionData),
           responses: {
             deleteMany: {},
           },

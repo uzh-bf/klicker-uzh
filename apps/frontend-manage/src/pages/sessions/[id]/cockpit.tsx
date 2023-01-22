@@ -14,7 +14,7 @@ import { useState } from 'react'
 
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
-import SessionTimeline from '../../../components/sessions/SessionTimeline'
+import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
@@ -112,6 +112,7 @@ function Cockpit() {
         {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         <SessionTimeline
           blocks={blocks}
+          sessionName={name}
           handleEndSession={() => {
             endSession({ variables: { id: id } })
             router.push('/sessions')
