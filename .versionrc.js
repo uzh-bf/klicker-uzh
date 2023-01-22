@@ -35,7 +35,7 @@ module.exports = {
         type: 'json',
       },
       {
-        filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+        filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
         updater: 'util/yaml-updater.js',
       },
     ]
