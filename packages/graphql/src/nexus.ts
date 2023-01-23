@@ -1608,6 +1608,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('cancelSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.cancelSession(args, ctx)
+      },
+    })
+
     t.field('createCourse', {
       type: Course,
       args: {

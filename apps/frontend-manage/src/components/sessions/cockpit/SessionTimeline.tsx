@@ -15,40 +15,13 @@ import durationPlugin from 'dayjs/plugin/duration'
 
 import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
 import { twMerge } from 'tailwind-merge'
-import QRPopup from './cockpit/QRPopup'
-import SessionBlock from './cockpit/SessionBlock'
+import CancelSessionModal from './CancelSessionModal'
+import QRPopup from './QRPopup'
+import SessionBlock from './SessionBlock'
 
 dayjs.extend(durationPlugin)
 
 // const { publicRuntimeConfig } = getConfig()
-
-// function getMessage(num: number, max: number): any {
-//   if (num === 0) {
-//     return {
-//       icon: faPlay,
-//       label: 'Ersten Frageblock aktivieren',
-//     }
-//   }
-
-//   if (num % 2 === 1) {
-//     return {
-//       icon: faArrowRight,
-//       label: 'Aktiven Frageblock schliessen',
-//     }
-//   }
-
-//   if (num === max) {
-//     return {
-//       icon: faStop,
-//       label: 'Session beenden',
-//     }
-//   }
-
-//   return {
-//     icon: faArrowRight,
-//     label: 'Nächsten Frageblock aktivieren',
-//   }
-// }
 
 const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   const start = dayjs(startedAt)
@@ -67,6 +40,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 
 interface Props {
   blocks?: SessionBlockType[]
+  sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void
   handleOpenBlock: (blockId: number) => void
@@ -85,6 +59,7 @@ const defaultProps = {
 function SessionTimeline({
   sessionId,
   blocks,
+  sessionName,
   startedAt,
   isEvaluationPublic,
   handleEndSession,
@@ -95,6 +70,7 @@ function SessionTimeline({
   const theme = useContext(ThemeContext)
   const isFeedbackSession = blocks?.length === 0
 
+  const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
@@ -244,7 +220,13 @@ function SessionTimeline({
               )}
             />
           </div>
-          <div className="flex flex-row justify-end w-full mt-2">
+          <div className="flex flex-row justify-end w-full gap-2 mt-2">
+            <Button
+              onClick={() => setCancelSessionModal(true)}
+              className={{ root: 'bg-red-800 text-white' }}
+            >
+              Session abbrechen
+            </Button>
             <Button
               className={{
                 root: twMerge(
@@ -274,6 +256,12 @@ function SessionTimeline({
               <Button.Label>{buttonNames[buttonState]}</Button.Label>
             </Button>
           </div>
+          <CancelSessionModal
+            isDeletionModalOpen={cancelSessionModal}
+            setIsDeletionModalOpen={setCancelSessionModal}
+            sessionId={sessionId}
+            title={sessionName}
+          />
         </>
       )}
     </div>

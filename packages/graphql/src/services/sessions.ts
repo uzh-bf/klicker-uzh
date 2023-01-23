@@ -1557,19 +1557,6 @@ export async function getSessionEvaluation(
     }
   }
 
-  const temp = {
-    id: `${id}-eval`,
-    status: session.status,
-    isGamificationEnabled: session.isGamificationEnabled,
-    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
-    instanceResults: [
-      ...completeQuestionData(executedInstanceResults),
-      ...completeQuestionData(activeInstanceResults),
-    ],
-    feedbacks: session.feedbacks,
-    confusionFeedbacks: session.confusionFeedbacks,
-  }
-
   return {
     id: `${id}-eval`,
     status: session.status,
@@ -1582,4 +1569,107 @@ export async function getSessionEvaluation(
     feedbacks: session.feedbacks,
     confusionFeedbacks: session.confusionFeedbacks,
   }
+}
+
+export async function cancelSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          instances: true,
+          leaderboard: true,
+          activeInSession: true,
+        },
+      },
+    },
+  })
+
+  if (!session) return null
+
+  if (session.status !== SessionStatus.RUNNING) {
+    throw new Error('Session is not running')
+  }
+
+  const leaderboardEntries = session.blocks
+    .map((block) => block.leaderboard)
+    .flat()
+  const instances = session.blocks.map((block) => block.instances).flat()
+
+  const [updatedSession] = await ctx.prisma.$transaction([
+    ctx.prisma.session.update({
+      where: { id },
+      data: {
+        status: SessionStatus.SCHEDULED,
+        startedAt: null,
+        pinCode: null,
+        activeBlock: {
+          disconnect: true,
+        },
+        leaderboard: {
+          deleteMany: {},
+        },
+        feedbacks: {
+          deleteMany: {},
+        },
+        confusionFeedbacks: {
+          deleteMany: {},
+        },
+        blocks: {
+          updateMany: {
+            where: {
+              status: {
+                in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+              },
+            },
+            data: {
+              status: SessionBlockStatus.SCHEDULED,
+              expiresAt: null,
+              execution: 0,
+            },
+          },
+        },
+      },
+      include: {
+        activeBlock: true,
+        blocks: {
+          include: {
+            instances: true,
+            leaderboard: true,
+            activeInSession: true,
+          },
+        },
+      },
+    }),
+
+    ctx.prisma.leaderboardEntry.deleteMany({
+      where: {
+        id: {
+          in: leaderboardEntries.map((entry) => entry.id),
+        },
+      },
+    }),
+
+    ...instances.map((instance) =>
+      ctx.prisma.questionInstance.updateMany({
+        where: {
+          id: {
+            in: instance.id,
+          },
+        },
+        data: {
+          participants: 0,
+          results: prepareInitialInstanceResults(
+            instance.questionData!.valueOf() as AllQuestionTypeData
+          ),
+        },
+      })
+    ),
+  ])
+
+  return updatedSession
 }
