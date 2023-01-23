@@ -382,8 +382,10 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int): Question
+  deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, id: ID!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  editTag(id: Int!, name: String!): Tag
   endSession(id: ID!): Session
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant
@@ -727,7 +729,7 @@ type TabData {
 }
 
 type Tag {
-  id: ID!
+  id: Int!
   name: String!
 }
 

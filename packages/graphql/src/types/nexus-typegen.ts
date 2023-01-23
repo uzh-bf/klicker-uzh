@@ -563,7 +563,7 @@ export interface NexusGenObjects {
     status: string; // String!
   }
   Tag: { // root type
-    id: string; // ID!
+    id: number; // Int!
     name: string; // String!
   }
   User: { // root type
@@ -861,8 +861,10 @@ export interface NexusGenFieldTypes {
     deleteFeedback: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteFeedbackResponse: NexusGenRootTypes['Feedback'] | null; // Feedback
     deleteQuestion: NexusGenRootTypes['Question'] | null; // Question
+    deleteTag: NexusGenRootTypes['Tag'] | null; // Tag
     editMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
     editSession: NexusGenRootTypes['Session'] | null; // Session
+    editTag: NexusGenRootTypes['Tag'] | null; // Tag
     endSession: NexusGenRootTypes['Session'] | null; // Session
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinCourseWithPin: NexusGenRootTypes['Participant'] | null; // Participant
@@ -1105,7 +1107,7 @@ export interface NexusGenFieldTypes {
     status: string; // String!
   }
   Tag: { // field return type
-    id: string; // ID!
+    id: number; // Int!
     name: string; // String!
   }
   User: { // field return type
@@ -1408,8 +1410,10 @@ export interface NexusGenFieldTypeNames {
     deleteFeedback: 'Feedback'
     deleteFeedbackResponse: 'Feedback'
     deleteQuestion: 'Question'
+    deleteTag: 'Tag'
     editMicroSession: 'MicroSession'
     editSession: 'Session'
+    editTag: 'Tag'
     endSession: 'Session'
     joinCourse: 'ParticipantLearningData'
     joinCourseWithPin: 'Participant'
@@ -1652,7 +1656,7 @@ export interface NexusGenFieldTypeNames {
     status: 'String'
   }
   Tag: { // field return type name
-    id: 'ID'
+    id: 'Int'
     name: 'String'
   }
   User: { // field return type name
@@ -1763,6 +1767,9 @@ export interface NexusGenArgTypes {
     deleteQuestion: { // args
       id?: number | null; // Int
     }
+    deleteTag: { // args
+      id: number; // Int!
+    }
     editMicroSession: { // args
       courseId?: string | null; // String
       description?: string | null; // String
@@ -1782,6 +1789,10 @@ export interface NexusGenArgTypes {
       id: string; // ID!
       isGamificationEnabled?: boolean | null; // Boolean
       multiplier: number; // Int!
+      name: string; // String!
+    }
+    editTag: { // args
+      id: number; // Int!
       name: string; // String!
     }
     endSession: { // args

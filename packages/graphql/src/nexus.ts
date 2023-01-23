@@ -1,6 +1,6 @@
-import { filter, pipe } from 'graphql-yoga'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
+import { filter, pipe } from 'graphql-yoga'
 import {
   arg,
   asNexusMethod,
@@ -206,7 +206,7 @@ export const EvaluationData = interfaceType({
 export const Tag = objectType({
   name: 'Tag',
   definition(t) {
-    t.nonNull.id('id')
+    t.nonNull.int('id')
     t.nonNull.string('name')
   },
 })
@@ -1673,6 +1673,27 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return LearningElementService.createLearningElement(args, ctx)
+      },
+    })
+
+    t.field('editTag', {
+      type: Tag,
+      args: {
+        id: nonNull(intArg()),
+        name: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.editTag(args, ctx)
+      },
+    })
+
+    t.field('deleteTag', {
+      type: Tag,
+      args: {
+        id: nonNull(intArg())
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.deleteTag(args, ctx)
       },
     })
 
