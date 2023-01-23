@@ -1600,71 +1600,76 @@ export async function cancelSession(
     .flat()
   const instances = session.blocks.map((block) => block.instances).flat()
 
-  await ctx.prisma.session.update({
-    where: { id },
-    data: {
-      status: SessionStatus.SCHEDULED,
-      startedAt: null,
-      pinCode: null,
-      activeBlock: {
-        disconnect: true,
-      },
-      leaderboard: {
-        deleteMany: {},
-      },
-      feedbacks: {
-        deleteMany: {},
-      },
-      confusionFeedbacks: {
-        deleteMany: {},
-      },
-      blocks: {
-        updateMany: {
-          where: {
-            status: {
-              in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+  const [updatedSession] = await ctx.prisma.$transaction([
+    ctx.prisma.session.update({
+      where: { id },
+      data: {
+        status: SessionStatus.SCHEDULED,
+        startedAt: null,
+        pinCode: null,
+        activeBlock: {
+          disconnect: true,
+        },
+        leaderboard: {
+          deleteMany: {},
+        },
+        feedbacks: {
+          deleteMany: {},
+        },
+        confusionFeedbacks: {
+          deleteMany: {},
+        },
+        blocks: {
+          updateMany: {
+            where: {
+              status: {
+                in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+              },
             },
-          },
-          data: {
-            status: SessionBlockStatus.SCHEDULED,
-            expiresAt: null,
-            execution: 0,
+            data: {
+              status: SessionBlockStatus.SCHEDULED,
+              expiresAt: null,
+              execution: 0,
+            },
           },
         },
       },
-    },
-  })
-
-  await ctx.prisma.leaderboardEntry.deleteMany({
-    where: {
-      id: {
-        in: leaderboardEntries.map((entry) => entry.id),
+      include: {
+        activeBlock: true,
+        blocks: {
+          include: {
+            instances: true,
+            leaderboard: true,
+            activeInSession: true,
+          },
+        },
       },
-    },
-  })
+    }),
 
-  await Promise.all(
-    instances.map(async (instance) => {
-      await ctx.prisma.questionInstance.update({
+    ctx.prisma.leaderboardEntry.deleteMany({
+      where: {
+        id: {
+          in: leaderboardEntries.map((entry) => entry.id),
+        },
+      },
+    }),
+
+    ...instances.map((instance) =>
+      ctx.prisma.questionInstance.updateMany({
         where: {
-          id: instance.id,
+          id: {
+            in: instance.id,
+          },
         },
         data: {
           participants: 0,
-          // TODO: ensure that this typescript error does not point to a real potential issue
-          // TODO: implement everything into prisma transaction
-          // TODO: return session to update cache directly without the use for refetch queries
-          results: prepareInitialInstanceResults(instance.questionData!.valueOf() as AllQuestionTypeData),
-          responses: {
-            deleteMany: {},
-          },
-          detailResponses: {
-            deleteMany: {},
-          },
+          results: prepareInitialInstanceResults(
+            instance.questionData!.valueOf() as AllQuestionTypeData
+          ),
         },
       })
-    })
-  )
+    ),
+  ])
 
-  return session
+  return updatedSession
 }
