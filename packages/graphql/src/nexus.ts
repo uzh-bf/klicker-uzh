@@ -1412,6 +1412,17 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('loginUserToken', {
+      type: 'ID',
+      args: {
+        email: nonNull(stringArg()),
+        token: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.loginUserToken(args, ctx)
+      },
+    })
+
     t.field('generateLoginToken', {
       type: User,
       resolve(_, args, ctx: ContextWithUser) {

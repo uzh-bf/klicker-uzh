@@ -70,6 +70,66 @@ export async function loginUser(
   return user.id
 }
 
+interface LoginUserTokenArgs {
+  email: string
+  token: string
+}
+
+export async function loginUserToken(
+  { email, token }: LoginUserTokenArgs,
+  ctx: Context
+) {
+  if (!isEmail(email)) return null
+
+  const normalizedEmail = normalizeEmail(email) as string
+
+  const user = await ctx.prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  })
+
+  if (!user) return null
+  if (!user.isActive) return null
+
+  const isLoginValid = token === user.loginToken
+
+  if (!isLoginValid) return null
+
+  ctx.prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  })
+
+  const jwt = JWT.sign(
+    {
+      sub: user.id,
+      role: user.role,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '2w',
+    }
+  )
+
+  ctx.res.cookie('user_token', jwt, {
+    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite:
+      process.env.NODE_ENV === 'development' ||
+      process.env.COOKIE_DOMAIN === '127.0.0.1'
+        ? 'lax'
+        : 'none',
+  })
+
+  return user.id
+}
+
 export async function logoutUser(_, ctx: ContextWithUser) {
   ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
@@ -201,7 +261,10 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
 
   if (!user) return null
 
-  if (!user.loginTokenExpiresAt || dayjs(user.loginTokenExpiresAt).isBefore(dayjs()))
+  if (
+    !user.loginTokenExpiresAt ||
+    dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
+  )
     return null
 
   return user

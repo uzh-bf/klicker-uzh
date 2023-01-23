@@ -18,6 +18,7 @@ import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
+import PinField from 'shared-components/src/PinField'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -149,9 +150,11 @@ function JoinCourse({
               return (
                 <Form>
                   <PinField
-                    errors={errors}
-                    touched={touched}
-                    values={values}
+                    name="pin"
+                    label="Kurs-PIN (Format: ### ### ###)"
+                    error={errors.pin}
+                    touched={touched.pin}
+                    value={values.pin}
                     setFieldValue={setFieldValue}
                   />
 
@@ -266,9 +269,10 @@ function JoinCourse({
                   />
 
                   <PinField
-                    errors={errors}
-                    touched={touched}
-                    values={values}
+                    name="pin"
+                    error={errors.pin}
+                    touched={touched.pin}
+                    value={values.pin}
                     setFieldValue={setFieldValue}
                   />
 
@@ -328,76 +332,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   } catch {
     return { redirect: { destination: '/404', statusCode: 302 } }
   }
-}
-
-export const PinField = ({
-  errors,
-  touched,
-  values,
-  setFieldValue,
-}: {
-  errors: Record<string, string>
-  touched: Record<string, boolean>
-  values: Record<string, string>
-  setFieldValue: (field: string, value: any) => void
-}) => {
-  const theme = useContext(ThemeContext)
-
-  return (
-    <>
-      <Label
-        label="Kurs-PIN (Format: ### ### ###)"
-        className={{ root: 'italic' }}
-      />
-      <Field
-        name="pin"
-        type="text"
-        placeholder="### ### ###"
-        className={twMerge(
-          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-          theme.primaryBorderFocus,
-          errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
-        )}
-        maxLength={11}
-        onPaste={(e: any) => {
-          e.preventDefault()
-          const paste = e.clipboardData?.getData('text')
-          if (
-            typeof paste === 'string' &&
-            paste.length === 9 &&
-            paste.match(/^[0-9]{9}$/g)
-          ) {
-            setFieldValue(
-              'pin',
-              `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
-            )
-          }
-        }}
-        onChange={(e: any) => {
-          // regex magic to only allow numerical pins in the format ### ### ###
-          const regexToMatch =
-            /([0-9]{3}\ [0-9]{3}\ [0-9]{0,3})|([0-9]{3}\ [0-9]{3}[\ ]{0,1})|([0-9]{3}\ [0-9]{0,3})|([0-9]{3}[\ ]{0,1})|([0-9]{0,3})/g
-          const value = e.target.value.match(regexToMatch)[0]
-
-          // only add a whitespace after a block of 3 numbers if the user is typing - otherwise deletions are not possible
-          if (
-            (value.match(/^[0-9]{3}$/g) && values.pin.match(/^[0-9]{2}$/g)) ||
-            (value.match(/^[0-9]{3}\ [0-9]{3}$/g) &&
-              values.pin.match(/^[0-9]{3}\ [0-9]{2}$/g))
-          ) {
-            setFieldValue('pin', value + ' ')
-          } else {
-            setFieldValue('pin', value)
-          }
-        }}
-      />
-      <ErrorMessage
-        name="pin"
-        component="div"
-        className="text-sm text-red-400"
-      />
-    </>
-  )
 }
 
 export default JoinCourse

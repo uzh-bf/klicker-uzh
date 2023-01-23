@@ -32,7 +32,7 @@ function TokenGeneration() {
       tokenData?.getLoginToken &&
       dayjs(tokenData?.getLoginToken.loginTokenExpiresAt).isAfter(dayjs())
     ) {
-      setToken(tokenData.getLoginToken?.loginToken)
+      setToken(tokenData.getLoginToken?.loginToken || '')
       setEndTime(dayjs(tokenData.getLoginToken?.loginTokenExpiresAt))
       setTokenValid(true)
       setHadToken(true)

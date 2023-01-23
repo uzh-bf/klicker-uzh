@@ -396,6 +396,7 @@ type Mutation {
   leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
+  loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question

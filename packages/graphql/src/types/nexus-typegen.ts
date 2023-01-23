@@ -877,6 +877,7 @@ export interface NexusGenFieldTypes {
     leaveParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
     loginParticipant: string | null; // ID
     loginUser: string | null; // ID
+    loginUserToken: string | null; // ID
     logoutParticipant: string | null; // ID
     logoutUser: string | null; // ID
     manipulateChoicesQuestion: NexusGenRootTypes['Question'] | null; // Question
@@ -1431,6 +1432,7 @@ export interface NexusGenFieldTypeNames {
     leaveParticipantGroup: 'ParticipantGroup'
     loginParticipant: 'ID'
     loginUser: 'ID'
+    loginUserToken: 'ID'
     logoutParticipant: 'ID'
     logoutUser: 'ID'
     manipulateChoicesQuestion: 'Question'
@@ -1838,6 +1840,10 @@ export interface NexusGenArgTypes {
     loginUser: { // args
       email: string; // String!
       password: string; // String!
+    }
+    loginUserToken: { // args
+      email: string; // String!
+      token: string; // String!
     }
     manipulateChoicesQuestion: { // args
       attachments?: Array<NexusGenInputs['AttachmentInput'] | null> | null; // [AttachmentInput]
