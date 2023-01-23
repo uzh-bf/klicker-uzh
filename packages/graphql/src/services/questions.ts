@@ -236,3 +236,32 @@ export async function getUserTags(ctx: ContextWithUser) {
 
   return user.tags
 }
+
+export async function editTag(
+  { id, name }: { id: number; name: string },
+  ctx: ContextWithUser
+) {
+  const tag = await ctx.prisma.tag.update({
+    where: {
+      id: id,
+    },
+    data: {
+      name: name,
+    },
+  })
+
+  return tag
+}
+
+export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
+  const tag = await ctx.prisma.tag.delete({
+    where: {
+      id: id,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Tag',
+    id: tag.id,
+  })
+}

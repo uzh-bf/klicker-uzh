@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "2.0.0-alpha.117",
+  "version": "3.0.0-alpha.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -19,7 +19,7 @@
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
-    "Florina Vogel <florina.vogel@bf.uzh.ch>"
+    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -29,7 +29,8 @@
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
-    "Jonas Gebel <jonas.gebel@bf.uzh.ch>"
+    "Jonas Gebel <jonas.gebel@bf.uzh.ch>",
+    "Florina Vogel <florina.vogel@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
