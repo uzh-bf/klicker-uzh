@@ -177,7 +177,7 @@ export const LEARNING_ELEMENTS = [
     name: 'Test Lernelement',
     displayName: 'Test Lernelement',
     orderType: 'SHUFFLED',
-    questions: [0, 1, 2, 3, 202],
+    questions: [0, 1, 2, 3, 4],
   },
   {
     id: '011b1f9e-1b45-4447-8b88-b76fce089389',
@@ -191,7 +191,7 @@ And it can be done everyday!
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: 'LAST_RESPONSE',
-    questions: [0, 1, 2, 3, 202],
+    questions: [0, 1, 2, 3, 4],
   },
 ]
 
@@ -204,10 +204,10 @@ export const SESSIONS = [
     pointsMultiplier: 2,
     blocks: [
       {
-        questions: [2, 202],
+        questions: [2, 4],
       },
       {
-        questions: [202, 2],
+        questions: [4, 2],
       },
     ],
   },
@@ -221,10 +221,10 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [0, 1, 2, 3, 202],
+        questions: [0, 1, 2, 3, 4],
       },
       {
-        questions: [0, 1, 2, 3, 202],
+        questions: [0, 1, 2, 3, 4],
       },
     ],
   },
@@ -283,7 +283,7 @@ export const MICRO_SESSIONS = [
     id: '943b5a26-7bfb-4678-a482-28430afebe3c',
     name: 'Test Micro',
     displayName: 'Test Micro',
-    scheduledStartAt: new Date('42-09-12T20:00:00.000Z'),
+    scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
     scheduledEndAt: new Date('2023-09-19:12:00.000Z'),
     description: `
 Diese Woche lernen wir...
@@ -292,6 +292,6 @@ Diese Woche lernen wir...
 
 Mehr bla bla...
 `,
-    questions: [0, 1, 2, 3, 202],
+    questions: [0, 1, 2, 3, 4],
   },
 ]
