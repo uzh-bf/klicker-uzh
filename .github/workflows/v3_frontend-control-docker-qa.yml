@@ -3,15 +3,15 @@ name: Build Docker image for frontend-control (QA)
 on:
   push:
     branches:
-      - "v2"
+      - "v3"
     paths:
       - "apps/frontend-control/**"
-      - ".github/workflows/v2_frontend-control**"
+      - ".github/workflows/v3_frontend-control**"
   pull_request:
-    branches: [ "v2" ]
+    branches: [ "v3" ]
     paths:
       - "apps/frontend-control/**"
-      - ".github/workflows/v2_frontend-control**"
+      - ".github/workflows/v3_frontend-control**"
 
 env:
   REGISTRY: ghcr.io

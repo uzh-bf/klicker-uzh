@@ -3,10 +3,10 @@ name: Build and deploy backend-response-processor to Azure Function App (QA)
 on:
   push:
     branches:
-      - "v2"
+      - "v3"
     paths:
       - "apps/backend-response-processor/**"
-      - ".github/workflows/v2_klickeruzhprod-response-processor**"
+      - ".github/workflows/v3_klickeruzhprod-response-processor**"
   workflow_dispatch:
 
 env:

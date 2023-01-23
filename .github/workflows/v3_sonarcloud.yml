@@ -2,7 +2,7 @@ name: Perform sonarcloud analysis
 on:
   push:
     branches:
-      - v2
+      - v3
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
