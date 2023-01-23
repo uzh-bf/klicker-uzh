@@ -52,6 +52,7 @@ export const AuthSchema = {
     editTag: { __authz: { rules: ['IsUserOrAdmin'] } },
     editMicroSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     endSession: { __authz: { rules: ['IsUserOrAdmin'] } },
+    generateLoginToken: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
     logoutUser: { __authz: { rules: ['IsUserOrAdmin'] } },

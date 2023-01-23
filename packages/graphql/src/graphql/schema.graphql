@@ -388,6 +388,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: ID!): Session
+  generateLoginToken: User
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
@@ -739,5 +740,7 @@ type User {
   email: String!
   id: ID!
   isActive: Boolean!
+  loginToken: String
+  loginTokenExpiresAt: DateTime
   shortname: String!
 }

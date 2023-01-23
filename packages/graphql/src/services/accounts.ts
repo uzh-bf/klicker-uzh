@@ -1,5 +1,6 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
+import dayjs from 'dayjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
@@ -160,7 +161,7 @@ export async function loginParticipant(
   return participant.id
 }
 
-export async function logoutParticipant(_, ctx: ContextWithUser) {
+export async function logoutParticipant(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
@@ -177,4 +178,18 @@ export async function logoutParticipant(_, ctx: ContextWithUser) {
   })
 
   return ctx.user.sub
+}
+
+export async function generateLoginToken(_: any, ctx: ContextWithUser) {
+  const expirationDate = dayjs().add(10, 'minute').toDate()
+  const loginToken = Math.floor(
+    100000000 + Math.random() * 900000000
+  ).toString()
+
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { loginToken: loginToken, loginTokenExpiresAt: expirationDate },
+  })
+
+  return user
 }

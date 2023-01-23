@@ -570,6 +570,9 @@ export const User = objectType({
     t.nonNull.string('email')
     t.nonNull.string('shortname')
 
+    t.string('loginToken')
+    t.date('loginTokenExpiresAt')
+
     t.string('description')
   },
 })
@@ -1402,6 +1405,13 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('generateLoginToken', {
+      type: User,
+      resolve(_, args, ctx: ContextWithUser) {
+        return AccountService.generateLoginToken(args, ctx)
+      },
+    })
+
     t.field('loginParticipant', {
       type: 'ID',
       args: {
@@ -1700,7 +1710,7 @@ export const Mutation = objectType({
     t.field('deleteTag', {
       type: Tag,
       args: {
-        id: nonNull(intArg())
+        id: nonNull(intArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return QuestionService.deleteTag(args, ctx)

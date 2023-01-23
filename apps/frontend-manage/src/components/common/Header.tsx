@@ -117,6 +117,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           />
           <Navigation.DropdownItem
+            title="Login-Token generieren"
+            href="/token"
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+          />
+          <Navigation.DropdownItem
             title="Logout"
             onClick={async () => {
               const userIdLogout = await logoutUser()

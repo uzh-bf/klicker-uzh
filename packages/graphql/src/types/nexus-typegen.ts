@@ -571,6 +571,8 @@ export interface NexusGenObjects {
     email: string; // String!
     id: string; // ID!
     isActive: boolean; // Boolean!
+    loginToken?: string | null; // String
+    loginTokenExpiresAt?: NexusGenScalars['DateTime'] | null; // DateTime
     shortname: string; // String!
   }
 }
@@ -867,6 +869,7 @@ export interface NexusGenFieldTypes {
     editSession: NexusGenRootTypes['Session'] | null; // Session
     editTag: NexusGenRootTypes['Tag'] | null; // Tag
     endSession: NexusGenRootTypes['Session'] | null; // Session
+    generateLoginToken: NexusGenRootTypes['User'] | null; // User
     joinCourse: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
     joinCourseWithPin: NexusGenRootTypes['Participant'] | null; // Participant
     joinParticipantGroup: NexusGenRootTypes['ParticipantGroup'] | null; // ParticipantGroup
@@ -1116,6 +1119,8 @@ export interface NexusGenFieldTypes {
     email: string; // String!
     id: string; // ID!
     isActive: boolean; // Boolean!
+    loginToken: string | null; // String
+    loginTokenExpiresAt: NexusGenScalars['DateTime'] | null; // DateTime
     shortname: string; // String!
   }
   EvaluationData: { // field return type
@@ -1417,6 +1422,7 @@ export interface NexusGenFieldTypeNames {
     editSession: 'Session'
     editTag: 'Tag'
     endSession: 'Session'
+    generateLoginToken: 'User'
     joinCourse: 'ParticipantLearningData'
     joinCourseWithPin: 'Participant'
     joinParticipantGroup: 'ParticipantGroup'
@@ -1666,6 +1672,8 @@ export interface NexusGenFieldTypeNames {
     email: 'String'
     id: 'ID'
     isActive: 'Boolean'
+    loginToken: 'String'
+    loginTokenExpiresAt: 'DateTime'
     shortname: 'String'
   }
   EvaluationData: { // field return type name

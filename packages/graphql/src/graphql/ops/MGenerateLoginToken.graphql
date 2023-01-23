@@ -1,0 +1,7 @@
+mutation GenerateLoginToken {
+  generateLoginToken {
+    id
+    loginToken
+    loginTokenExpiresAt
+  }
+}
