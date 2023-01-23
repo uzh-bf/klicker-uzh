@@ -136,7 +136,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 202,
+    id: 4,
     name: 'Modul 4 Business Cycle I',
     content:
       'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
