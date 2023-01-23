@@ -8288,6 +8288,18 @@
             "deprecationReason": null
           },
           {
+            "name": "getLoginToken",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "groupActivityDetails",
             "description": null,
             "args": [

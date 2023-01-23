@@ -1140,6 +1140,13 @@ export const Query = objectType({
       },
     })
 
+    t.field('getLoginToken', {
+      type: User,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return AccountService.getLoginToken({ id: ctx.user.sub }, ctx)
+      },
+    })
+
     t.field('userProfile', {
       type: User,
       resolve(_, _args, ctx: ContextWithUser) {

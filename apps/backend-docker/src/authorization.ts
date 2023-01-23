@@ -90,6 +90,7 @@ export const AuthSchema = {
     learningElement: { __authz: { rules: ['Allow'] } },
     liveSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     feedbacks: { __authz: { rules: ['Allow'] } },
+    getLoginToken: { __authz: { rules: ['IsUserOrAdmin'] } },
     getCourseOverviewData: { __authz: { rules: ['Allow'] } },
     participations: { __authz: { rules: ['IsParticipant'] } },
     participantGroups: { __authz: { rules: ['IsParticipant'] } },

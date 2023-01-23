@@ -1,10 +1,18 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
-import { GenerateLoginTokenDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, ThemeContext } from '@uzh-bf/design-system'
+import {
+  GenerateLoginTokenDocument,
+  GetLoginTokenDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  Button,
+  H2,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs, { Dayjs } from 'dayjs'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Countdown from '../components/common/Countdown'
 
@@ -17,8 +25,19 @@ function TokenGeneration() {
   const [endTime, setEndTime] = useState<Dayjs>(dayjs())
 
   const [generateLoginToken] = useMutation(GenerateLoginTokenDocument)
+  const { data: tokenData } = useQuery(GetLoginTokenDocument)
 
-  // TODO: check if user has already a token and display it (useEffect hook)
+  useEffect(() => {
+    if (
+      tokenData?.getLoginToken &&
+      dayjs(tokenData?.getLoginToken.loginTokenExpiresAt).isAfter(dayjs())
+    ) {
+      setToken(tokenData.getLoginToken?.loginToken)
+      setEndTime(dayjs(tokenData.getLoginToken?.loginTokenExpiresAt))
+      setTokenValid(true)
+      setHadToken(true)
+    }
+  }, [tokenData])
 
   return (
     <Layout displayName="Token Generation">
@@ -40,37 +59,47 @@ function TokenGeneration() {
           onClick={async () => {
             const result = await generateLoginToken()
             if (result) {
-              setToken(result.data?.generateLoginToken.loginToken)
+              setToken(result.data?.generateLoginToken?.loginToken || '')
               setEndTime(
-                dayjs(result.data?.generateLoginToken.loginTokenExpiresAt)
+                dayjs(result.data?.generateLoginToken?.loginTokenExpiresAt)
               )
               setTokenValid(true)
               setHadToken(true)
             }
           }}
-          className={{ root: twMerge(theme.primaryBgDark, 'text-white') }}
+          className={{ root: twMerge(theme.primaryBgDark, 'text-white mb-3') }}
         >
           Token generieren!
         </Button>
 
-        {/* // TODO: styling of token as notification */}
         {tokenValid && (
-          <div>
-            <div>
-              Ihr Token lautet: <span className="font-bold">{token}</span>
+          <UserNotification
+            message={`Ihr Token lautet:`}
+            className={{ root: 'text-base', content: 'mt-0' }}
+            notificationType="success"
+          >
+            <div className="text-lg font-bold">
+              {String(token)
+                .match(/.{1,3}/g)
+                ?.join(' ')}
             </div>
-            Gültigkeit:{' '}
-            <Countdown
-              endTime={endTime}
-              onExpire={() => {
-                setTokenValid(false)
-                alert('countdown expired')
-              }}
-            />
-          </div>
+            <div className="mt-2">
+              Verbleibende Gültigkeit:{' '}
+              <Countdown
+                endTime={endTime}
+                onExpire={() => {
+                  setTokenValid(false)
+                }}
+              />
+            </div>
+          </UserNotification>
         )}
         {hadToken && !tokenValid && (
-          <div>Token abgelaufen! Neu generieren bitte!</div>
+          <UserNotification
+            className={{ root: 'text-base' }}
+            message="Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen."
+            notificationType="error"
+          />
         )}
       </div>
     </Layout>

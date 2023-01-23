@@ -993,6 +993,7 @@ export interface NexusGenFieldTypes {
     course: NexusGenRootTypes['Course'] | null; // Course
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
+    getLoginToken: NexusGenRootTypes['User'] | null; // User
     groupActivityDetails: NexusGenRootTypes['GroupActivityDetails'] | null; // GroupActivityDetails
     learningElement: NexusGenRootTypes['LearningElement'] | null; // LearningElement
     learningElements: NexusGenRootTypes['LearningElement'][]; // [LearningElement!]!
@@ -1546,6 +1547,7 @@ export interface NexusGenFieldTypeNames {
     course: 'Course'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
+    getLoginToken: 'User'
     groupActivityDetails: 'GroupActivityDetails'
     learningElement: 'LearningElement'
     learningElements: 'LearningElement'

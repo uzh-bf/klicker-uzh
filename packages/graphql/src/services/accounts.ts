@@ -193,3 +193,16 @@ export async function generateLoginToken(_: any, ctx: ContextWithUser) {
 
   return user
 }
+
+export async function getLoginToken(_: any, ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!user) return null
+
+  if (!user.loginTokenExpiresAt || dayjs(user.loginTokenExpiresAt).isBefore(dayjs()))
+    return null
+
+  return user
+}
