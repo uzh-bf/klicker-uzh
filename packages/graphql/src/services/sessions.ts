@@ -1652,7 +1652,9 @@ export async function cancelSession(
         data: {
           participants: 0,
           // TODO: ensure that this typescript error does not point to a real potential issue
-          results: prepareInitialInstanceResults(instance.questionData),
+          // TODO: implement everything into prisma transaction
+          // TODO: return session to update cache directly without the use for refetch queries
+          results: prepareInitialInstanceResults(instance.questionData!.valueOf() as AllQuestionTypeData),
           responses: {
             deleteMany: {},
           },
