@@ -19,7 +19,7 @@
     "start:test": "npm start"
   },
   "dependencies": {
-    "@klicker-uzh/grading": "^2.0.0-alpha.23",
+    "@klicker-uzh/grading": "^3.0.0-alpha.0",
     "@sentry/node": "7.16.0",
     "ioredis": "5.2.4",
     "jsonwebtoken": "8.5.1",
