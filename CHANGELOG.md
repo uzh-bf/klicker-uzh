@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.117...v3.0.0-alpha.0) (2023-01-22)
+
+
+### Features
+
+* **frontend-control:** introduce new controller app for live sessions ([#3224](https://github.com/uzh-bf/klicker-uzh/issues/3224)) ([5b6f4ad](https://github.com/uzh-bf/klicker-uzh/commit/5b6f4ad5d2dc470dbc030f82ea2c9616c1e47eb5))
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix issue with scrolling on menu bar ([#3254](https://github.com/uzh-bf/klicker-uzh/issues/3254)) ([826679a](https://github.com/uzh-bf/klicker-uzh/commit/826679ac69cbda1f0a0930da4240be91436ae794))
+* **frontend-manage:** fix session editing bugs ([#3191](https://github.com/uzh-bf/klicker-uzh/issues/3191)) ([bbef64a](https://github.com/uzh-bf/klicker-uzh/commit/bbef64a88933585b85ed9070eb8e50cbb6402058))
+* **frontend-pwa:** remove wrong notification badges from pwa mobile menu bar ([19746cc](https://github.com/uzh-bf/klicker-uzh/commit/19746ccf18335f677a88e01b7773dbae98c86033))
+
+
+### Dependencies
+
+* upgrade turbo and prisma packages ([854090b](https://github.com/uzh-bf/klicker-uzh/commit/854090b788ec96f8d448efbc87b417303cdbdf86))
+
+
+### Enhancements
+
+* **cypress:** rework selectors for data-cy, add draft workflow for GH actions ([#3187](https://github.com/uzh-bf/klicker-uzh/issues/3187)) ([85f3358](https://github.com/uzh-bf/klicker-uzh/commit/85f3358352586f723093eca091eb32292e702a9a))
+* **frontend-control:** update layout and add navigation elements in menu bar on mobile ([aa2d321](https://github.com/uzh-bf/klicker-uzh/commit/aa2d321c36a60765ab70208b53bb36f9708f720d))
+* **frontend-manage:** add custom toast component to sesson creation forms ([#3207](https://github.com/uzh-bf/klicker-uzh/issues/3207)) ([3335b03](https://github.com/uzh-bf/klicker-uzh/commit/3335b030dd65fdb9189fdb3207f6f058f25487ff))
+* **frontend-manage:** add possibility to embed evaluation leaderboard ([61532c6](https://github.com/uzh-bf/klicker-uzh/commit/61532c6c95e4620339af0da8b1ada763a39249de))
+* **frontend-manage:** add reordering possiblities for session creation forms ([#3206](https://github.com/uzh-bf/klicker-uzh/issues/3206)) ([12f8fe9](https://github.com/uzh-bf/klicker-uzh/commit/12f8fe9f89d052189e025a7625101fc120dbc5e6))
+* **frontend-manage:** allow editing micro and live sessions ([#3190](https://github.com/uzh-bf/klicker-uzh/issues/3190)) ([b13035b](https://github.com/uzh-bf/klicker-uzh/commit/b13035b55a8785bf6424ccd059401e3b77f0bbf1))
+* **frontend-manage:** display course join link and PIN through QR code ([#3192](https://github.com/uzh-bf/klicker-uzh/issues/3192)) ([e760a0c](https://github.com/uzh-bf/klicker-uzh/commit/e760a0c720fc2090f7517865345aa8304c91491d))
+* **frontend-manage:** navigation on evaluation using keyboard arrow keys ([#3253](https://github.com/uzh-bf/klicker-uzh/issues/3253)) ([cf78738](https://github.com/uzh-bf/klicker-uzh/commit/cf787384a521fac45240e945b807ddfa74849558))
+
+
+### Other
+
+* **frontend-manage:** fix minor style issues on manage frontend ([#3249](https://github.com/uzh-bf/klicker-uzh/issues/3249)) ([a6bfd67](https://github.com/uzh-bf/klicker-uzh/commit/a6bfd67166938422a88417e7f6b342c81368f07a))
+* **frontend-manage:** minor improvements on session creation and histogram statistics ([30f12c8](https://github.com/uzh-bf/klicker-uzh/commit/30f12c8280874492e204460ed83cff3a864049ba))
+* **frontend-manage:** refactor shortening logic of choices on evaluation view ([#3205](https://github.com/uzh-bf/klicker-uzh/issues/3205)) ([56e251e](https://github.com/uzh-bf/klicker-uzh/commit/56e251e3bea85a8da3574a7c0fd2f07b6fa9a094))
+* rename deployment artifacts to v3 ([1ac3573](https://github.com/uzh-bf/klicker-uzh/commit/1ac35738a50a22caabf1cd667442f4535575991b))
+* update maintainers and contributors ([40576d9](https://github.com/uzh-bf/klicker-uzh/commit/40576d9262a986dda629a003aaa44c5a55030813))
+* upgrade node to 18.13 ([be7a828](https://github.com/uzh-bf/klicker-uzh/commit/be7a8280eff4a377b2d236c21ad0ff748aa34458))
+
 ## [2.0.0-alpha.117](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.116...v2.0.0-alpha.117) (2022-12-28)
 
 
