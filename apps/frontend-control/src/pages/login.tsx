@@ -25,6 +25,7 @@ function LoginForm() {
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full pb-20 mx-auto">
       <Formik
+        isInitialValid={false}
         initialValues={{ email: '', token: '' }}
         validationSchema={loginSchema}
         onSubmit={async (values) => {
@@ -34,11 +35,17 @@ function LoginForm() {
               token: values.token.replace(/\s/g, ''),
             },
           })
-          // alert(`login with email: ${values.email} and token: ${values.token}`)
           Router.push('/')
         }}
       >
-        {({ errors, touched, values, setFieldValue, isSubmitting }) => {
+        {({
+          errors,
+          touched,
+          values,
+          setFieldValue,
+          isSubmitting,
+          isValid,
+        }) => {
           return (
             <div>
               <div className="w-full mb-8 text-center sm:mb-12">
@@ -98,7 +105,7 @@ function LoginForm() {
                     <Button
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !isValid}
                       data={{ cy: 'submit-login' }}
                     >
                       <Button.Label>Anmelden</Button.Label>
