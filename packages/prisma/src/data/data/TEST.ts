@@ -18,7 +18,7 @@ export const ATTACHMENTS = [
 
 export const QUESTIONS = [
   {
-    id: 198,
+    id: 0,
     name: 'Testfrage FREE_TEXT',
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
@@ -33,7 +33,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 199,
+    id: 1,
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
     type: QuestionType.MC,
@@ -74,7 +74,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 200,
+    id: 2,
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
     type: QuestionType.NUMERICAL,
@@ -102,7 +102,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 201,
+    id: 3,
     name: 'Multi-Faktor-Modell',
     content: '<br>',
     type: QuestionType.KPRIM,
@@ -177,7 +177,7 @@ export const LEARNING_ELEMENTS = [
     name: 'Test Lernelement',
     displayName: 'Test Lernelement',
     orderType: 'SHUFFLED',
-    questions: [198, 199, 200, 201, 202],
+    questions: [0, 1, 2, 3, 202],
   },
   {
     id: '011b1f9e-1b45-4447-8b88-b76fce089389',
@@ -191,7 +191,7 @@ And it can be done everyday!
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: 'LAST_RESPONSE',
-    questions: [198, 199, 200, 201, 202],
+    questions: [0, 1, 2, 3, 202],
   },
 ]
 
@@ -204,10 +204,10 @@ export const SESSIONS = [
     pointsMultiplier: 2,
     blocks: [
       {
-        questions: [200, 202],
+        questions: [2, 202],
       },
       {
-        questions: [202, 200],
+        questions: [202, 2],
       },
     ],
   },
@@ -221,10 +221,10 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [198, 199, 200, 201, 202],
+        questions: [0, 1, 2, 3, 202],
       },
       {
-        questions: [198, 199, 200, 201, 202],
+        questions: [0, 1, 2, 3, 202],
       },
     ],
   },
@@ -238,10 +238,10 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [198, 199, 200, 201, 202],
+        questions: [0, 1, 2, 3, 4],
       },
       {
-        questions: [198, 199, 200, 201, 202],
+        questions: [0, 1, 2, 3, 4],
       },
     ],
   },
@@ -255,23 +255,23 @@ export const SESSIONS = [
     status: SessionStatus.PREPARED,
     blocks: [
       {
-        questions: [202],
+        questions: [4],
         timeLimit: 30,
       },
       {
-        questions: [202],
+        questions: [4],
         timeLimit: 30,
       },
       {
-        questions: [202],
+        questions: [4],
         timeLimit: 30,
       },
       {
-        questions: [202],
+        questions: [4],
         timeLimit: 30,
       },
       {
-        questions: [202],
+        questions: [4],
         timeLimit: 30,
       },
     ],
@@ -283,7 +283,7 @@ export const MICRO_SESSIONS = [
     id: '943b5a26-7bfb-4678-a482-28430afebe3c',
     name: 'Test Micro',
     displayName: 'Test Micro',
-    scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
+    scheduledStartAt: new Date('42-09-12T20:00:00.000Z'),
     scheduledEndAt: new Date('2023-09-19:12:00.000Z'),
     description: `
 Diese Woche lernen wir...
@@ -292,6 +292,6 @@ Diese Woche lernen wir...
 
 Mehr bla bla...
 `,
-    questions: [198, 199, 200, 201, 202],
+    questions: [0, 1, 2, 3, 202],
   },
 ]
