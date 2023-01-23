@@ -54,6 +54,7 @@ export const AuthSchema = {
     endSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     generateLoginToken: { __authz: { rules: ['IsUserOrAdmin'] } },
     loginUser: { __authz: { rules: ['Allow'] } },
+    loginUserToken: { __authz: { rules: ['Allow'] } },
     loginParticipant: { __authz: { rules: ['Allow'] } },
     logoutUser: { __authz: { rules: ['IsUserOrAdmin'] } },
     logoutParticipant: { __authz: { rules: ['IsParticipant'] } },
