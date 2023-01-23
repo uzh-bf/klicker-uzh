@@ -90,7 +90,9 @@ export async function loginUserToken(
   if (!user) return null
   if (!user.isActive) return null
 
-  const isLoginValid = token === user.loginToken
+  const isLoginValid =
+    token === user.loginToken &&
+    dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
 
   if (!isLoginValid) return null
 
@@ -108,7 +110,7 @@ export async function loginUserToken(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '2w',
+      expiresIn: '4w',
     }
   )
 
@@ -116,7 +118,7 @@ export async function loginUserToken(
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 13,
+    maxAge: 1000 * 60 * 60 * 24 * 27,
     secure:
       process.env.NODE_ENV === 'production' &&
       process.env.COOKIE_DOMAIN !== '127.0.0.1',

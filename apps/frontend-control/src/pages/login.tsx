@@ -1,11 +1,16 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
+import {
+  Button,
+  H1,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/image'
 import Router from 'next/router'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import PinField from 'shared-components/src/PinField'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -19,6 +24,7 @@ const loginSchema = Yup.object().shape({
 
 function LoginForm() {
   const theme = useContext(ThemeContext)
+  const [loginFailed, setLoginFailed] = useState(false)
 
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
 
@@ -29,12 +35,16 @@ function LoginForm() {
         initialValues={{ email: '', token: '' }}
         validationSchema={loginSchema}
         onSubmit={async (values) => {
-          await loginUserToken({
+          const id = await loginUserToken({
             variables: {
               email: values.email,
               token: values.token.replace(/\s/g, ''),
             },
           })
+          if (id.data?.loginUserToken === null) {
+            setLoginFailed(true)
+            return
+          }
           Router.push('/')
         }}
       >
@@ -113,10 +123,18 @@ function LoginForm() {
                   </div>
                 </Form>
               </div>
+              {loginFailed && (
+                <UserNotification
+                  className={{ root: 'w-72 sm:w-96' }}
+                  notificationType="error"
+                  message="Login fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail Adresse und den Token. Beachten Sie die zeitlich begrenzte Gültigkeit des Tokens."
+                />
+              )}
             </div>
           )
         }}
       </Formik>
+
       <footer
         className={'absolute bottom-0 w-full bg-slate-100 print:hidden px-4'}
       >
