@@ -1,21 +1,21 @@
-name: Build Docker image for frontend-manage (QA)
+name: Build Docker image for frontend-pwa (QA)
 
 on:
   push:
     branches:
-      - "v2"
+      - "v3"
     paths:
-      - "apps/frontend-manage/**"
-      - ".github/workflows/v2_frontend-manage**"
+      - "apps/frontend-pwa/**"
+      - ".github/workflows/v3_frontend-pwa**"
   pull_request:
-    branches: [ "v2" ]
+    branches: [ "v3" ]
     paths:
-      - "apps/frontend-manage/**"
-      - ".github/workflows/v2_frontend-manage**"
+      - "apps/frontend-pwa/**"
+      - ".github/workflows/v3_frontend-pwa**"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend-manage
+  IMAGE_NAME: ${{ github.repository }}/frontend-pwa
 
 jobs:
   build:
@@ -27,12 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Replace .env.production with .env.qa
+      - name: Prepare filesystem
         shell: bash
         run: |
-          rm apps/frontend-manage/.env.production
-          mv apps/frontend-manage/.env.qa apps/frontend-manage/.env.production
-          cp -R packages/shared-components apps/frontend-manage/shared-components
+          rm apps/frontend-pwa/.env.production
+          mv apps/frontend-pwa/.env.qa apps/frontend-pwa/.env.production
+          cp -R packages/shared-components apps/frontend-pwa/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -57,8 +57,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/frontend-manage
-          file: apps/frontend-manage/Dockerfile
+          context: apps/frontend-pwa
+          file: apps/frontend-pwa/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

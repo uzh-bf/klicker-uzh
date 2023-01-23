@@ -1,15 +1,15 @@
-name: Build Docker image for frontend-pwa (Production)
+name: Build Docker image for frontend-control (Production)
 
 on:
   push:
     tags: [ 'v*.*.*' ]
     paths:
-      - "apps/frontend-pwa/**"
-      - ".github/workflows/v2_frontend-pwa**"
+      - "apps/frontend-control/**"
+      - ".github/workflows/v3_frontend-control**"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend-pwa
+  IMAGE_NAME: ${{ github.repository }}/frontend-control
 
 jobs:
   build:
@@ -21,10 +21,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Prepare filesystem
+      - name: Replace .env.production with .env.qa
         shell: bash
         run: |
-          cp -R packages/shared-components apps/frontend-pwa/shared-components
+          cp -R packages/shared-components apps/frontend-control/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -48,8 +48,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/frontend-pwa
-          file: apps/frontend-pwa/Dockerfile
+          context: apps/frontend-control
+          file: apps/frontend-control/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
