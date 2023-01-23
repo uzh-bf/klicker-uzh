@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import useArrowNavigation from '@components/hooks/useArrowNavigation'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,6 +12,7 @@ import {
   Switch,
   ThemeContext,
   UserNotification,
+  useArrowNavigation,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useReducer, useState } from 'react'

@@ -776,6 +776,14 @@ html,
   left: 0.5rem;
 }
 
+.top-4 {
+  top: 1rem;
+}
+
+.right-6 {
+  right: 1.5rem;
+}
+
 .z-10 {
   z-index: 10;
 }
@@ -871,6 +879,10 @@ html,
 
 .mb-2 {
   margin-bottom: 0.5rem;
+}
+
+.mr-4 {
+  margin-right: 1rem;
 }
 
 .mb-1 {
@@ -2064,6 +2076,11 @@ html,
 .hover\:text-uzh-red-100:hover {
   --tw-text-opacity: 1;
   color: rgb(220 96 39 / var(--tw-text-opacity));
+}
+
+.hover\:text-black:hover {
+  --tw-text-opacity: 1;
+  color: rgb(0 0 0 / var(--tw-text-opacity));
 }
 
 .hover\:shadow-none:hover {
