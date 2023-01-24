@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.0...v3.0.0-alpha.1) (2023-01-24)
+
+
+### Features
+
+* introduce token-based login mechanism for controller app ([#3262](https://github.com/uzh-bf/klicker-uzh/issues/3262)) ([e49c555](https://github.com/uzh-bf/klicker-uzh/commit/e49c55587fdae378970ddda77b2225b168499e99))
+
+
+### Enhancements
+
+* **frontend-manage:** add basic tag management ([#3255](https://github.com/uzh-bf/klicker-uzh/issues/3255)) ([aec7c9e](https://github.com/uzh-bf/klicker-uzh/commit/aec7c9e1601e4b03b0950b1d7a8d1853f4390910))
+* **frontend-manage:** introduce session cancellation functionality ([#3256](https://github.com/uzh-bf/klicker-uzh/issues/3256)) ([032394d](https://github.com/uzh-bf/klicker-uzh/commit/032394dc3a56f5b7e3c73ce9814faef070a2f1bb))
+
+
+### Refactors
+
+* **frontend-manage:** extract useNavigationArrow component to design-system ([9474e45](https://github.com/uzh-bf/klicker-uzh/commit/9474e4543ddbfb952be98317d49882d395fd3e62))
+
+
+### Deployment
+
+* update chart lockfiles for latest redis bitnami chart ([8277731](https://github.com/uzh-bf/klicker-uzh/commit/82777314e95ad50ebfe1d3fd6c7398e615027d8a))
+* update redis bitnami chart version to latest ([fb2cd1c](https://github.com/uzh-bf/klicker-uzh/commit/fb2cd1cba3adfbc812e0e3bd2b3c8455299c5156))
+
+
+### Build and CI
+
+* add the bitnami repo before running chart release ([992f165](https://github.com/uzh-bf/klicker-uzh/commit/992f1654ece922844dfb4a67aa27b1a077ba4dfe))
+* add workflow for chart releases to gh pages ([d69e3d9](https://github.com/uzh-bf/klicker-uzh/commit/d69e3d9411f251b2b7a2f8dd470fdb786851e541))
+
+
+### Other
+
+* more updates for the new v3 naming ([2511d41](https://github.com/uzh-bf/klicker-uzh/commit/2511d41224128602892aef3d9008e930bf406673))
+* **packages/prisma:** adjust tsconfig ([#3261](https://github.com/uzh-bf/klicker-uzh/issues/3261)) ([329346a](https://github.com/uzh-bf/klicker-uzh/commit/329346a6c6f8601ddc74bb40d9389e4ee9fa592c))
+* **packages/prisma:** merge seed data from submodule ([#3259](https://github.com/uzh-bf/klicker-uzh/issues/3259)) ([1dc61ed](https://github.com/uzh-bf/klicker-uzh/commit/1dc61ed5f3ec580bbec00e23dc1136f55e391cfb))
+* **packages/prisma:** remove seed submodule, reclone ([6f3cbbb](https://github.com/uzh-bf/klicker-uzh/commit/6f3cbbb1dbb9a619d88d5e846cf0548ab648cbd7))
+* update versions in package files to fix npm install ([d0db610](https://github.com/uzh-bf/klicker-uzh/commit/d0db610e85d7795f18c7b5bdf95a6ec7a1a3f403))
+
 ## [3.0.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.117...v3.0.0-alpha.0) (2023-01-22)
 
 
