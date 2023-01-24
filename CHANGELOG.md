@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.1...v3.0.0-alpha.2) (2023-01-24)
+
+
+### Build and CI
+
+* try chart release action with SKIP_EXISTING=false ([ed2d1d9](https://github.com/uzh-bf/klicker-uzh/commit/ed2d1d981ccf28e37480df8339dd63fd82dc4734))
+
 ## [3.0.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.0...v3.0.0-alpha.1) (2023-01-24)
 
 
