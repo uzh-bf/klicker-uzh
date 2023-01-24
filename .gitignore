@@ -20,3 +20,4 @@ cypress/screenshots/*
 /apps/functions/local.settings.json
 
 .vscode
+packages/prisma/src/seed
