@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-01-24)
+
+
+### Other
+
+* add seed directory to gitignore ([b5d92a8](https://github.com/uzh-bf/klicker-uzh/commit/b5d92a8b2412f4ad8bc17bb9ba9bcf5b1a520282))
+* readd seed submodule ([d9e3c44](https://github.com/uzh-bf/klicker-uzh/commit/d9e3c44abebee697792c690b41e1c2cc95df1c8e))
+* remove seed submodule ([1d70b79](https://github.com/uzh-bf/klicker-uzh/commit/1d70b799886cb7aaa4a5c77d1db6b610f88221f7))
+
 ## [3.0.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.1...v3.0.0-alpha.2) (2023-01-24)
 
 
