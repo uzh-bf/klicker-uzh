@@ -570,6 +570,9 @@ export const User = objectType({
     t.nonNull.string('email')
     t.nonNull.string('shortname')
 
+    t.string('loginToken')
+    t.date('loginTokenExpiresAt')
+
     t.string('description')
   },
 })
@@ -1137,6 +1140,13 @@ export const Query = objectType({
       },
     })
 
+    t.field('getLoginToken', {
+      type: User,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return AccountService.getLoginToken({ id: ctx.user.sub }, ctx)
+      },
+    })
+
     t.field('userProfile', {
       type: User,
       resolve(_, _args, ctx: ContextWithUser) {
@@ -1399,6 +1409,24 @@ export const Mutation = objectType({
       },
       resolve(_, args, ctx: Context) {
         return AccountService.loginUser(args, ctx)
+      },
+    })
+
+    t.field('loginUserToken', {
+      type: 'ID',
+      args: {
+        email: nonNull(stringArg()),
+        token: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.loginUserToken(args, ctx)
+      },
+    })
+
+    t.field('generateLoginToken', {
+      type: User,
+      resolve(_, args, ctx: ContextWithUser) {
+        return AccountService.generateLoginToken(args, ctx)
       },
     })
 
@@ -1700,7 +1728,7 @@ export const Mutation = objectType({
     t.field('deleteTag', {
       type: Tag,
       args: {
-        id: nonNull(intArg())
+        id: nonNull(intArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return QuestionService.deleteTag(args, ctx)

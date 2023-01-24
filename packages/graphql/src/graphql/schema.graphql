@@ -388,6 +388,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: ID!): Session
+  generateLoginToken: User
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
@@ -395,6 +396,7 @@ type Mutation {
   leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
+  loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
@@ -550,6 +552,7 @@ type Query {
   course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
+  getLoginToken: User
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
   learningElements: [LearningElement!]!
@@ -739,5 +742,7 @@ type User {
   email: String!
   id: ID!
   isActive: Boolean!
+  loginToken: String
+  loginTokenExpiresAt: DateTime
   shortname: String!
 }

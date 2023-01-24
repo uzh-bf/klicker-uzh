@@ -53,6 +53,8 @@ model User {
   lastLoginAt         DateTime?
   deletionToken       String?
   deletionRequestedAt DateTime?
+  loginToken          String?
+  loginTokenExpiresAt DateTime?
 
   role UserRole @default(USER)
 
