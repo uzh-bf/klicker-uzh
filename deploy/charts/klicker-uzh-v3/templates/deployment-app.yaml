@@ -51,11 +51,11 @@ spec:
                 name: {{ include "chart.fullname" . }}-secret-frontend-pwa
           livenessProbe:
             httpGet:
-              path: /
+              path: /login
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /login
               port: http
           resources:
             {{- toYaml .Values.frontendPWA.resources | nindent 12 }}
@@ -125,11 +125,11 @@ spec:
                 name: {{ include "chart.fullname" . }}-secret-frontend-manage
           livenessProbe:
             httpGet:
-              path: /
+              path: /login
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /login
               port: http
           resources:
             {{- toYaml .Values.frontendManage.resources | nindent 12 }}
