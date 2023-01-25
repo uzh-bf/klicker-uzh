@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "rehype-katex": "6.0.2",
-    "rehype-react": "7.1.1",
+    "rehype-react": "7.1.2",
     "rehype-sanitize": "5.0.1",
     "remark-math": "5.1.1",
     "remark-parse": "10.0.1",
