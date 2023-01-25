@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** add config map for frontend-control ([0fad5ef](https://github.com/uzh-bf/klicker-uzh/commit/0fad5ef4ec3c2590eb18f93e2b8ec9b24a48e19b))
+
 ## [3.0.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.4...v3.0.0-alpha.5) (2023-01-25)
 
 
