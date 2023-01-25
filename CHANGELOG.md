@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.3...v3.0.0-alpha.4) (2023-01-25)
+
+
+### Other
+
+* **packages/prisma:** use TEST seed in QA ([b41d41d](https://github.com/uzh-bf/klicker-uzh/commit/b41d41d25eae87975e91f19e41d94a810ff073c2))
+
+
+### Deployment
+
+* use /login as routes for readiness and liveness probes ([3cd7b94](https://github.com/uzh-bf/klicker-uzh/commit/3cd7b9431e05496d152288d14da1a52e684d7004))
+
 ## [3.0.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-01-24)
 
 
