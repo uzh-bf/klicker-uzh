@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the secret for frontend-control is present ([4889b27](https://github.com/uzh-bf/klicker-uzh/commit/4889b2751b00fb754d2180aeb649a5177e4c34d2))
+
 ## [3.0.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-01-25)
 
 
