@@ -2,15 +2,15 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
   <Id>cb1a2be4-9241-40a4-bedb-ea666eb3d6c3</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Klicker UZH</ProviderName>
+  <ProviderName>KlickerUZH</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Klicker UZH"/>
-  <Description DefaultValue="Klicker UZH PowerPoint Add-in to control sessions"/>
+  <DisplayName DefaultValue="KlickerUZH"/>
+  <Description DefaultValue="KlickerUZH PowerPoint Add-in to control sessions"/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://klicker.uzh.ch"/>
   <AppDomains>
-    <AppDomain>https://manage.klicker.uzh.ch</AppDomain>
+    <AppDomain>https://control.klicker-qa.bf-app.ch</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Presentation"/>
@@ -71,12 +71,12 @@
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started!"/>
-        <bt:String id="CommandsGroup.Label" DefaultValue="Klicker UZH"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Klicker UZH"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="KlickerUZH"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="KlickerUZH"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Control your sessions from within PowerPoint with this Klicker UZH PowerPoint Add-in"/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to open the Klicker UZH PowerPoint Add-in"/>
+        <bt:String id="GetStarted.Description" DefaultValue="Control your sessions from within PowerPoint with this KlickerUZH PowerPoint Add-in"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to open the KlickerUZH PowerPoint Add-in"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

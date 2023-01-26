@@ -1,3 +1,3 @@
 /* global window */
 
-window.location.replace("https://manage.klicker.uzh.ch");
+window.location.replace("https://control.klicker-qa.bf-app.ch");

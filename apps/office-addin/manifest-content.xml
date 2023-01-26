@@ -2,18 +2,15 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="ContentApp">
   <Id>3e5aec0e-38d6-42b8-8127-86fdbc5469eb</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Klicker UZH</ProviderName>
+  <ProviderName>KlickerUZH</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="klicker-content-test"/>
-  <Description DefaultValue="A dummy project to test content add-ins for Klicker UZH"/>
+  <Description DefaultValue="A dummy project to test content add-ins for KlickerUZH"/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.klicker.uzh.ch"/>
   <AppDomains>
-    <AppDomain>https://www.klicker.uzh.ch</AppDomain>
-    <AppDomain>https://app.klicker.uzh.ch/</AppDomain>
-    <AppDomain>https://api.klicker.uzh.ch/</AppDomain>
-    <AppDomain>https://manage.klicker.uzh.ch/</AppDomain>
+    <AppDomain>https://manage.klicker-qa.bf-app.ch/</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Presentation"/>

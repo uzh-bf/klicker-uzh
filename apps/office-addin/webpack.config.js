@@ -20,8 +20,8 @@ module.exports = async (env, options) => {
     entry: {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       vendor: ["react", "react-dom", "core-js", "@fluentui/react"],
-      content: ["react-hot-loader/patch", "./src/content/index.tsx"],
-      taskpane: ["react-hot-loader/patch", "./src/taskpane/index.tsx"],
+      content: ["./src/content/index.tsx"],
+      taskpane: ["./src/taskpane/index.tsx"],
     },
     output: {
       clean: true,
@@ -43,7 +43,7 @@ module.exports = async (env, options) => {
         },
         {
           test: /\.tsx?$/,
-          use: ["react-hot-loader/webpack", "ts-loader"],
+          use: ["ts-loader"],
           exclude: /node_modules/,
         },
         {
@@ -82,7 +82,7 @@ module.exports = async (env, options) => {
       }),
       new HtmlWebpackPlugin({
         filename: "content.html",
-        template: "./src/content.html",
+        template: "./src/content/content.html",
         chunks: ["content", "vendor", "polyfills"],
       }),
       new HtmlWebpackPlugin({
@@ -95,7 +95,6 @@ module.exports = async (env, options) => {
       }),
     ],
     devServer: {
-      hot: true,
       headers: {
         "Access-Control-Allow-Origin": "*",
       },

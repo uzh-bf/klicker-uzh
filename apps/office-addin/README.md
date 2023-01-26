@@ -1,5 +1,5 @@
-# Klicker UZH PowerPoint Content Add-in
-This repository contains the Klicker UZH content add-in for Microsoft PowerPoint
+# KlickerUZH PowerPoint Content Add-in
+This repository contains the KlickerUZH content add-in for Microsoft PowerPoint
 
 ## Local development using npm
 

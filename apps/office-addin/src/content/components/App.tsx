@@ -1,5 +1,5 @@
 import { H1 } from "@uzh-bf/design-system";
-import * as React from "react";
+import React from "react";
 import { useEffect, useState } from "react";
 import { getSlideID } from "../office-utils/powerPointAPI";
 import { Progress } from "./Progress";
@@ -27,7 +27,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
   }, [isOfficeInitialized]);
 
   if (!isOfficeInitialized) {
-    return <Progress message="Bitte warten Sie, während das Klicker UZH Add-in geladen wird..." />;
+    return <Progress message="Bitte warten Sie, während das KlickerUZH Add-in geladen wird..." />;
   }
 
   if (!newlyInserted) {
@@ -38,9 +38,10 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
   }
   return (
     <div className="m-10">
-      <H1 className={{ root: "text-red-900 text-xl" }}>Klicker UZH: PowerPoint Add-in</H1>
-      <img src="assets/logo-filled.png" alt="Klicker UZH Logo" className="h-72 w-72 ml-auto mr-auto my-12"></img>
+      <H1 className={{ root: "text-red-900 text-xl" }}>KlickerUZH: PowerPoint Add-in</H1>
+      <img src="assets/logo-filled.png" alt="KlickerUZH Logo" className="h-72 w-72 ml-auto mr-auto my-12"></img>
       <URLForm slideID={slideID} />
     </div>
   );
 }
+
