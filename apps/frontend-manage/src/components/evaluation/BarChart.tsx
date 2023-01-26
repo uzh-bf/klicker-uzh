@@ -15,11 +15,12 @@ import {
   QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
+import { TextSizeType } from '../sessions/evaluation/constants'
 
 interface BarChartProps {
   data: InstanceResult
   showSolution: boolean
-  textSize: Record<string, string>
+  textSize: Partial<TextSizeType>
 }
 
 function BarChart({
@@ -105,6 +106,7 @@ function BarChart({
             position="inside"
             stroke="white"
             className={textSize.text3Xl}
+            id="bar-chart-block"
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
             data.questionData.options.choices.map(

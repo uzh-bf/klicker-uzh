@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
+  GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateFreetextQuestionDocument,
   ManipulateNumericalQuestionDocument,
@@ -332,7 +333,10 @@ function QuestionEditModal({
                   }),
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
@@ -363,7 +367,10 @@ function QuestionEditModal({
                   ),
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
@@ -378,7 +385,10 @@ function QuestionEditModal({
                   solutions: values.options?.solutions,
                 },
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
             })
             break
 
@@ -427,6 +437,7 @@ function QuestionEditModal({
                 }}
                 type="submit"
                 form="question-manipulation-form"
+                data={{ cy: 'save-new-question' }}
               >
                 <Button.Label>Speichern</Button.Label>
               </Button>
@@ -462,6 +473,7 @@ function QuestionEditModal({
                       setNewQuestionType(newValue)
                     }}
                     value={newQuestionType}
+                    data={{ cy: 'select-question-type' }}
                   />
                 ) : (
                   <div className="my-auto">
@@ -489,6 +501,7 @@ function QuestionEditModal({
                       'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
                       theme.primaryBorderFocus
                     )}
+                    data-cy="insert-question-title"
                   />
                 </div>
 
@@ -558,6 +571,7 @@ function QuestionEditModal({
                           showToolbarOnFocus={false}
                           placeholder="Fragetext hier eingeben…"
                           key={`${questionType}-content`}
+                          data_cy="insert-question-text"
                         />
                       )}
                     </FastField>
@@ -693,6 +707,7 @@ function QuestionEditModal({
                                         root: 'bg-white',
                                       }}
                                       key={`${questionType}-choice-${index}`}
+                                      data_cy="insert-answer-field"
                                     />
                                   )}
                                 </FastField>
@@ -810,6 +825,7 @@ function QuestionEditModal({
                               feedback: '<br>',
                             })
                           }
+                          data={{ cy: 'add-new-answer' }}
                         >
                           Neue Antwort hinzufügen
                         </Button>
@@ -831,6 +847,7 @@ function QuestionEditModal({
                             theme.primaryBorderFocus
                           )}
                           placeholder="Minimum"
+                          data-cy="set-numerical-minimum"
                         />
                         <div className="font-bold">Max: </div>
                         <FastField
@@ -841,6 +858,7 @@ function QuestionEditModal({
                             theme.primaryBorderFocus
                           )}
                           placeholder="Maximum"
+                          data-cy="set-numerical-maximum"
                         />
                       </div>
                     </div>
@@ -924,6 +942,7 @@ function QuestionEditModal({
                         )}
                         placeholder="Antwort Länge"
                         min={0}
+                        data-cy="set-free-text-length"
                       />
                     </div>
                     {values.hasSampleSolution && (

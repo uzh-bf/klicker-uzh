@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "2.0.0-alpha.109",
+  "version": "3.0.0-alpha.7",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -19,7 +19,7 @@
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
-    "Florina Vogel <florina.vogel@bf.uzh.ch>"
+    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -28,7 +28,9 @@
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
     "Luca Locher <luca.locher@bf.uzh.ch>",
-    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
+    "Jonas Gebel <jonas.gebel@bf.uzh.ch>",
+    "Florina Vogel <florina.vogel@bf.uzh.ch>"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -42,21 +44,29 @@
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
-    "release:rc:dry": "standard-version --dry-run --prerelease rc"
+    "release:rc:dry": "standard-version --dry-run --prerelease rc",
+    "test": "cypress open",
+    "start": "turbo run start",
+    "start:test": "turbo run start:test"
   },
   "devDependencies": {
+    "@testing-library/cypress": "9.0.0",
+    "azure-functions-core-tools": "4.0.4915",
+    "cypress": "12.1.0",
+    "prettier": "2.8.0",
+    "prettier-plugin-organize-imports": "3.2.1",
     "standard-version": "9.5.0",
-    "turbo": "1.6.3",
+    "turbo": "1.7.0",
     "yaml": "2.1.3"
   },
   "dependencies": {
-    "@prisma/client": "4.7.1",
-    "prisma": "4.7.1"
+    "@prisma/client": "4.8.1",
+    "prisma": "4.8.1"
   },
   "volta": {
-    "node": "18.12.0"
+    "node": "18.13.0"
   },
-  "packageManager": "npm@8.19.2",
+  "packageManager": "npm@8.19.3",
   "engines": {
     "node": "=18"
   }

@@ -42,6 +42,7 @@ interface Props {
     editor?: string
   }
   key?: string
+  data_cy?: string
 }
 
 const defaultProps = {
@@ -68,6 +69,7 @@ function ContentInput({
   touched,
   className,
   key,
+  data_cy,
 }: Props): React.ReactElement {
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -248,7 +250,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'leading-7 prose prose-blockquote:text-gray-500 max-w-none',
+              'leading-7 prose prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -266,6 +268,7 @@ function ContentInput({
                 }
               }
             }}
+            data-cy={data_cy}
           />
         </div>
       </Slate>

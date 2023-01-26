@@ -7,6 +7,8 @@ query GetUserQuestions {
 
     isArchived
     isDeleted
+    hasSampleSolution
+    hasAnswerFeedbacks
     createdAt
     updatedAt
 

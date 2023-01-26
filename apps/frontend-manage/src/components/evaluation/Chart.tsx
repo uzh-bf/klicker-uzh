@@ -1,5 +1,6 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import { TextSizeType } from '../sessions/evaluation/constants'
 import BarChart from './BarChart'
 import Histogram from './Histogram'
 import TableChart from './TableChart'
@@ -9,18 +10,7 @@ interface ChartProps {
   chartType: string
   data: InstanceResult
   showSolution: boolean
-  textSize: {
-    size: string
-    text: string
-    prose: string
-    textLg: string
-    textXl: string
-    text2Xl: string
-    text3Xl: string
-    legend: string
-    min: number
-    max: number
-  }
+  textSize: TextSizeType
   statisticsShowSolution?: {
     mean?: boolean
     median?: boolean
@@ -37,7 +27,6 @@ function Chart({
   textSize,
   statisticsShowSolution,
 }: ChartProps): React.ReactElement {
-  console.log('chart', textSize)
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (

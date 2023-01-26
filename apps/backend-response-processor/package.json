@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-response-processor",
-  "version": "2.0.0-alpha.109",
+  "version": "3.0.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -10,13 +10,16 @@
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
+    "build:test": "npm run build",
     "dev": "cross-env NODE_ENV=development npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "cross-env NODE_ENV=development tsup --watch",
     "dev:func": "func start -p 7073",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "func start -p 7073",
+    "start:test": "npm start"
   },
   "dependencies": {
-    "@klicker-uzh/grading": "^2.0.0-alpha.23",
+    "@klicker-uzh/grading": "^3.0.0-alpha.0",
     "@sentry/node": "7.16.0",
     "ioredis": "5.2.4",
     "jsonwebtoken": "8.5.1",
@@ -31,16 +34,14 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
-    "@uzh-bf/design-system": "0.1.5",
+    "@uzh-bf/design-system": "0.1.20",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.1",
     "npm-run-all": "4.1.5",
-    "prettier": "2.8.0",
-    "prettier-plugin-organize-imports": "3.2.1",
     "ts-node": "10.9.1",
     "tsup": "6.5.0",
-    "typescript": "4.9.3"
+    "typescript": "4.9.4"
   },
   "volta": {
     "extends": "../../package.json"

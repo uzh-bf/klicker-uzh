@@ -14,6 +14,10 @@ secrets*.yaml
 **/.DS_Store
 *.pem
 
+cypress/videos/*
+cypress/screenshots/*
+
 /apps/functions/local.settings.json
 
 .vscode
+packages/prisma/src/seed

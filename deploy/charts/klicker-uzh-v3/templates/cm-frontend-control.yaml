@@ -1,0 +1,15 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-frontend-control
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  {{- if .Values.frontendControl.sentryDSN }}
+  SENTRY_DSN: {{ .Values.frontendControl.sentryDSN | quote }}
+  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
+  {{ end }}
+  {{- if .Values.frontendControl.sentryEnv }}
+  SENTRY_ENVIRONMENT: {{ .Values.frontendControl.sentryEnv | quote }}
+  {{ end }}

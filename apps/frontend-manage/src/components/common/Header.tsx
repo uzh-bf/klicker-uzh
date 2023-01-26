@@ -39,7 +39,10 @@ function Header({ user }: HeaderProps): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:hidden">
+    <div
+      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800"
+      data-cy="navigation"
+    >
       <Navigation className={{ root: 'bg-slate-800' }}>
         <Navigation.ButtonItem
           href="/"
@@ -111,6 +114,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Navigation.DropdownItem
             title="Support"
             href="/support"
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+          />
+          <Navigation.DropdownItem
+            title="Login-Token generieren"
+            href="/token"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           />
           <Navigation.DropdownItem

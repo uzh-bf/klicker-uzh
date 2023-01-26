@@ -32,8 +32,14 @@ export function NUMERICALAnswerOptions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row">
-        {typeof min === 'number' && <div className="mr-6">Min: {min}</div>}
-        {typeof max === 'number' && <div>Max: {max}</div>}
+        {typeof min === 'number' && (
+          <div className="mr-6" data-cy="input-numerical-minimum">
+            Min: {min}
+          </div>
+        )}
+        {typeof max === 'number' && (
+          <div data-cy="input-numerical-maximum">Max: {max}</div>
+        )}
       </div>
       <div className="flex flex-row">
         <input

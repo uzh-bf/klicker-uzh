@@ -186,3 +186,9 @@ export const STATISTICS_ORDER: string[] = [
   'q3',
   'sd',
 ]
+
+export const LEARNING_ELEMENT_ORDERS: Record<string, string> = {
+  SEQUENTIAL: 'Sequenziell',
+  SHUFFLED: 'Zufällig',
+  LAST_RESPONSE: 'Letzte Antwort zuletzt',
+}

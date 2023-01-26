@@ -2,6 +2,241 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the secret for frontend-control is present ([4889b27](https://github.com/uzh-bf/klicker-uzh/commit/4889b2751b00fb754d2180aeb649a5177e4c34d2))
+
+## [3.0.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** add config map for frontend-control ([0fad5ef](https://github.com/uzh-bf/klicker-uzh/commit/0fad5ef4ec3c2590eb18f93e2b8ec9b24a48e19b))
+
+## [3.0.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.4...v3.0.0-alpha.5) (2023-01-25)
+
+
+### Enhancements
+
+* **deploy:** add frontend-control to helm chart ([3890e49](https://github.com/uzh-bf/klicker-uzh/commit/3890e49e6e197130c905c8503b05344b8c806659))
+
+## [3.0.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.3...v3.0.0-alpha.4) (2023-01-25)
+
+
+### Other
+
+* **packages/prisma:** use TEST seed in QA ([b41d41d](https://github.com/uzh-bf/klicker-uzh/commit/b41d41d25eae87975e91f19e41d94a810ff073c2))
+
+
+### Deployment
+
+* use /login as routes for readiness and liveness probes ([3cd7b94](https://github.com/uzh-bf/klicker-uzh/commit/3cd7b9431e05496d152288d14da1a52e684d7004))
+
+## [3.0.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-01-24)
+
+
+### Other
+
+* add seed directory to gitignore ([b5d92a8](https://github.com/uzh-bf/klicker-uzh/commit/b5d92a8b2412f4ad8bc17bb9ba9bcf5b1a520282))
+* readd seed submodule ([d9e3c44](https://github.com/uzh-bf/klicker-uzh/commit/d9e3c44abebee697792c690b41e1c2cc95df1c8e))
+* remove seed submodule ([1d70b79](https://github.com/uzh-bf/klicker-uzh/commit/1d70b799886cb7aaa4a5c77d1db6b610f88221f7))
+
+## [3.0.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.1...v3.0.0-alpha.2) (2023-01-24)
+
+
+### Build and CI
+
+* try chart release action with SKIP_EXISTING=false ([ed2d1d9](https://github.com/uzh-bf/klicker-uzh/commit/ed2d1d981ccf28e37480df8339dd63fd82dc4734))
+
+## [3.0.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.0...v3.0.0-alpha.1) (2023-01-24)
+
+
+### Features
+
+* introduce token-based login mechanism for controller app ([#3262](https://github.com/uzh-bf/klicker-uzh/issues/3262)) ([e49c555](https://github.com/uzh-bf/klicker-uzh/commit/e49c55587fdae378970ddda77b2225b168499e99))
+
+
+### Enhancements
+
+* **frontend-manage:** add basic tag management ([#3255](https://github.com/uzh-bf/klicker-uzh/issues/3255)) ([aec7c9e](https://github.com/uzh-bf/klicker-uzh/commit/aec7c9e1601e4b03b0950b1d7a8d1853f4390910))
+* **frontend-manage:** introduce session cancellation functionality ([#3256](https://github.com/uzh-bf/klicker-uzh/issues/3256)) ([032394d](https://github.com/uzh-bf/klicker-uzh/commit/032394dc3a56f5b7e3c73ce9814faef070a2f1bb))
+
+
+### Refactors
+
+* **frontend-manage:** extract useNavigationArrow component to design-system ([9474e45](https://github.com/uzh-bf/klicker-uzh/commit/9474e4543ddbfb952be98317d49882d395fd3e62))
+
+
+### Deployment
+
+* update chart lockfiles for latest redis bitnami chart ([8277731](https://github.com/uzh-bf/klicker-uzh/commit/82777314e95ad50ebfe1d3fd6c7398e615027d8a))
+* update redis bitnami chart version to latest ([fb2cd1c](https://github.com/uzh-bf/klicker-uzh/commit/fb2cd1cba3adfbc812e0e3bd2b3c8455299c5156))
+
+
+### Build and CI
+
+* add the bitnami repo before running chart release ([992f165](https://github.com/uzh-bf/klicker-uzh/commit/992f1654ece922844dfb4a67aa27b1a077ba4dfe))
+* add workflow for chart releases to gh pages ([d69e3d9](https://github.com/uzh-bf/klicker-uzh/commit/d69e3d9411f251b2b7a2f8dd470fdb786851e541))
+
+
+### Other
+
+* more updates for the new v3 naming ([2511d41](https://github.com/uzh-bf/klicker-uzh/commit/2511d41224128602892aef3d9008e930bf406673))
+* **packages/prisma:** adjust tsconfig ([#3261](https://github.com/uzh-bf/klicker-uzh/issues/3261)) ([329346a](https://github.com/uzh-bf/klicker-uzh/commit/329346a6c6f8601ddc74bb40d9389e4ee9fa592c))
+* **packages/prisma:** merge seed data from submodule ([#3259](https://github.com/uzh-bf/klicker-uzh/issues/3259)) ([1dc61ed](https://github.com/uzh-bf/klicker-uzh/commit/1dc61ed5f3ec580bbec00e23dc1136f55e391cfb))
+* **packages/prisma:** remove seed submodule, reclone ([6f3cbbb](https://github.com/uzh-bf/klicker-uzh/commit/6f3cbbb1dbb9a619d88d5e846cf0548ab648cbd7))
+* update versions in package files to fix npm install ([d0db610](https://github.com/uzh-bf/klicker-uzh/commit/d0db610e85d7795f18c7b5bdf95a6ec7a1a3f403))
+
+## [3.0.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.117...v3.0.0-alpha.0) (2023-01-22)
+
+
+### Features
+
+* **frontend-control:** introduce new controller app for live sessions ([#3224](https://github.com/uzh-bf/klicker-uzh/issues/3224)) ([5b6f4ad](https://github.com/uzh-bf/klicker-uzh/commit/5b6f4ad5d2dc470dbc030f82ea2c9616c1e47eb5))
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix issue with scrolling on menu bar ([#3254](https://github.com/uzh-bf/klicker-uzh/issues/3254)) ([826679a](https://github.com/uzh-bf/klicker-uzh/commit/826679ac69cbda1f0a0930da4240be91436ae794))
+* **frontend-manage:** fix session editing bugs ([#3191](https://github.com/uzh-bf/klicker-uzh/issues/3191)) ([bbef64a](https://github.com/uzh-bf/klicker-uzh/commit/bbef64a88933585b85ed9070eb8e50cbb6402058))
+* **frontend-pwa:** remove wrong notification badges from pwa mobile menu bar ([19746cc](https://github.com/uzh-bf/klicker-uzh/commit/19746ccf18335f677a88e01b7773dbae98c86033))
+
+
+### Dependencies
+
+* upgrade turbo and prisma packages ([854090b](https://github.com/uzh-bf/klicker-uzh/commit/854090b788ec96f8d448efbc87b417303cdbdf86))
+
+
+### Enhancements
+
+* **cypress:** rework selectors for data-cy, add draft workflow for GH actions ([#3187](https://github.com/uzh-bf/klicker-uzh/issues/3187)) ([85f3358](https://github.com/uzh-bf/klicker-uzh/commit/85f3358352586f723093eca091eb32292e702a9a))
+* **frontend-control:** update layout and add navigation elements in menu bar on mobile ([aa2d321](https://github.com/uzh-bf/klicker-uzh/commit/aa2d321c36a60765ab70208b53bb36f9708f720d))
+* **frontend-manage:** add custom toast component to sesson creation forms ([#3207](https://github.com/uzh-bf/klicker-uzh/issues/3207)) ([3335b03](https://github.com/uzh-bf/klicker-uzh/commit/3335b030dd65fdb9189fdb3207f6f058f25487ff))
+* **frontend-manage:** add possibility to embed evaluation leaderboard ([61532c6](https://github.com/uzh-bf/klicker-uzh/commit/61532c6c95e4620339af0da8b1ada763a39249de))
+* **frontend-manage:** add reordering possiblities for session creation forms ([#3206](https://github.com/uzh-bf/klicker-uzh/issues/3206)) ([12f8fe9](https://github.com/uzh-bf/klicker-uzh/commit/12f8fe9f89d052189e025a7625101fc120dbc5e6))
+* **frontend-manage:** allow editing micro and live sessions ([#3190](https://github.com/uzh-bf/klicker-uzh/issues/3190)) ([b13035b](https://github.com/uzh-bf/klicker-uzh/commit/b13035b55a8785bf6424ccd059401e3b77f0bbf1))
+* **frontend-manage:** display course join link and PIN through QR code ([#3192](https://github.com/uzh-bf/klicker-uzh/issues/3192)) ([e760a0c](https://github.com/uzh-bf/klicker-uzh/commit/e760a0c720fc2090f7517865345aa8304c91491d))
+* **frontend-manage:** navigation on evaluation using keyboard arrow keys ([#3253](https://github.com/uzh-bf/klicker-uzh/issues/3253)) ([cf78738](https://github.com/uzh-bf/klicker-uzh/commit/cf787384a521fac45240e945b807ddfa74849558))
+
+
+### Other
+
+* **frontend-manage:** fix minor style issues on manage frontend ([#3249](https://github.com/uzh-bf/klicker-uzh/issues/3249)) ([a6bfd67](https://github.com/uzh-bf/klicker-uzh/commit/a6bfd67166938422a88417e7f6b342c81368f07a))
+* **frontend-manage:** minor improvements on session creation and histogram statistics ([30f12c8](https://github.com/uzh-bf/klicker-uzh/commit/30f12c8280874492e204460ed83cff3a864049ba))
+* **frontend-manage:** refactor shortening logic of choices on evaluation view ([#3205](https://github.com/uzh-bf/klicker-uzh/issues/3205)) ([56e251e](https://github.com/uzh-bf/klicker-uzh/commit/56e251e3bea85a8da3574a7c0fd2f07b6fa9a094))
+* rename deployment artifacts to v3 ([1ac3573](https://github.com/uzh-bf/klicker-uzh/commit/1ac35738a50a22caabf1cd667442f4535575991b))
+* update maintainers and contributors ([40576d9](https://github.com/uzh-bf/klicker-uzh/commit/40576d9262a986dda629a003aaa44c5a55030813))
+* upgrade node to 18.13 ([be7a828](https://github.com/uzh-bf/klicker-uzh/commit/be7a8280eff4a377b2d236c21ad0ff748aa34458))
+
+## [2.0.0-alpha.117](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.116...v2.0.0-alpha.117) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** add prettier and imports plugin as explicit deps ([d1e3e21](https://github.com/uzh-bf/klicker-uzh/commit/d1e3e21dd6dbf5ab3022134b889e6ab73fc0dbae))
+
+## [2.0.0-alpha.116](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.115...v2.0.0-alpha.116) (2022-12-28)
+
+
+### Dependencies
+
+* upgrade design system with relaxed peer deps ([5cd9fdb](https://github.com/uzh-bf/klicker-uzh/commit/5cd9fdb1581cc4979665f3862e6b960815fc2a44))
+
+## [2.0.0-alpha.115](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.114...v2.0.0-alpha.115) (2022-12-28)
+
+
+### Bug Fixes
+
+* **frontend-*:** update override for new next version ([8f89cba](https://github.com/uzh-bf/klicker-uzh/commit/8f89cba6eed93218337458c68f08f0c7f83fe0b0))
+
+## [2.0.0-alpha.114](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.113...v2.0.0-alpha.114) (2022-12-28)
+
+
+### Features
+
+* **frontend-manage:** add session creation forms for micro-sessions and learning elements ([#3176](https://github.com/uzh-bf/klicker-uzh/issues/3176)) ([481a48c](https://github.com/uzh-bf/klicker-uzh/commit/481a48cd4f7c1af60d3c4af6ab69797e0279e9b1))
+
+
+### Deployment
+
+* prod upgrade ([dbf009c](https://github.com/uzh-bf/klicker-uzh/commit/dbf009c7559864c608d61f83b432cb292f261a33))
+
+
+### Other
+
+* add devbox.json for initial testing ([747f737](https://github.com/uzh-bf/klicker-uzh/commit/747f737c9e118d380b8de75aefd417007d8fb811))
+* cleanup of deps files for devcontainer ([ae31f60](https://github.com/uzh-bf/klicker-uzh/commit/ae31f6099e21808ca07048cdb982323824051c50))
+* generate initial devcontainer with devbox ([a42c9dc](https://github.com/uzh-bf/klicker-uzh/commit/a42c9dc520635366aeb17532348a0681014198fb))
+* lockfile maintenance ([318f0ac](https://github.com/uzh-bf/klicker-uzh/commit/318f0ac1857cf1c65e567da02a7be47a8265931f))
+* remove devbox.json from .dockerignore to allow devcontainer build ([e83e633](https://github.com/uzh-bf/klicker-uzh/commit/e83e6334a9600e1f731f593fb611acdeb36dfa7c))
+* remove experimental devcontainer ([0c7c2c9](https://github.com/uzh-bf/klicker-uzh/commit/0c7c2c9568c49e5f3b5bd36b58ba9066f9a1cf57))
+* update recommended vscode extensions ([d59c54f](https://github.com/uzh-bf/klicker-uzh/commit/d59c54ff3b8a64f9bd897a81381293bd26a13475))
+
+
+### Dependencies
+
+* upgrade graphql-yoga to v3 and minor upgrades for other packages ([#3186](https://github.com/uzh-bf/klicker-uzh/issues/3186)) ([84e312a](https://github.com/uzh-bf/klicker-uzh/commit/84e312a99ba34b06a784a9c6987c1bad456414a2))
+
+## [2.0.0-alpha.113](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.112...v2.0.0-alpha.113) (2022-12-22)
+
+
+### Bug Fixes
+
+* **packages/prisma:** build openssl musl lib ([2469232](https://github.com/uzh-bf/klicker-uzh/commit/2469232e7cf91e266f9070d0c7d1edec2c0399a3))
+
+## [2.0.0-alpha.112](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.111...v2.0.0-alpha.112) (2022-12-22)
+
+
+### Dependencies
+
+* upgrade prisma ([9b186bf](https://github.com/uzh-bf/klicker-uzh/commit/9b186bff0d23c5c36ccfc151db6a24c1246d1eb6))
+
+## [2.0.0-alpha.111](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.110...v2.0.0-alpha.111) (2022-12-22)
+
+
+### Deployment
+
+* update production version ([be0b44f](https://github.com/uzh-bf/klicker-uzh/commit/be0b44fe6776716e1e2fa78718fc0a1ae9caf940))
+
+## [2.0.0-alpha.110](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.109...v2.0.0-alpha.110) (2022-12-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove scrolling in creation forms for now ([7a9a60a](https://github.com/uzh-bf/klicker-uzh/commit/7a9a60afd927c0dcf6df56f6c68cd9f3e71ea631))
+* **frontend-*:** fix issues with numerical questions ([#3167](https://github.com/uzh-bf/klicker-uzh/issues/3167)) ([e841590](https://github.com/uzh-bf/klicker-uzh/commit/e84159093988cb2eb3f2212e4a6038014db36217))
+* **frontend-manage:** ensure that statistics checkboxes are rescaled on evaluation on textSize change ([7338a1e](https://github.com/uzh-bf/klicker-uzh/commit/7338a1e1e73a044fdca208d4c6688a6b39ed5348))
+* **frontend-manage:** fix issues that session list is not up to date on session creation forwarding ([fc72c44](https://github.com/uzh-bf/klicker-uzh/commit/fc72c44b13898a4beea077ca51dec0b0dc0d2bd1))
+* **frontend-pwa:** fix footer position on learning elements and micro learnings ([6d5fd61](https://github.com/uzh-bf/klicker-uzh/commit/6d5fd61ae13d12ae06f0a84882b59c6175943cdc))
+* **packages/prisma:** add migration for achievements ([efe1722](https://github.com/uzh-bf/klicker-uzh/commit/efe17223819f5b8706372ee55302d46bff22a6df))
+
+
+### Refactors
+
+* extend theme and replace custom colors through theme colors ([#3168](https://github.com/uzh-bf/klicker-uzh/issues/3168)) ([aaa8533](https://github.com/uzh-bf/klicker-uzh/commit/aaa8533bfc5ad16c68c4f630441e126d1f4200b3))
+
+
+### Enhancements
+
+* **frontend-manage:** add possibility to embed direct evaluation links ([#3175](https://github.com/uzh-bf/klicker-uzh/issues/3175)) ([0cc20bc](https://github.com/uzh-bf/klicker-uzh/commit/0cc20bcbd637bd7be8cc12a619bd6ea136ff9393))
+* **frontend-manage:** reintroduce dnd-functionality to live session creation ([#3174](https://github.com/uzh-bf/klicker-uzh/issues/3174)) ([ef34999](https://github.com/uzh-bf/klicker-uzh/commit/ef349990ff2219daa7508e866271ddb699e40bcb))
+* **manage-frontend:** add additional confirmation for question deletion ([#3166](https://github.com/uzh-bf/klicker-uzh/issues/3166)) ([cd955ce](https://github.com/uzh-bf/klicker-uzh/commit/cd955ce1c8ea18b1b60b9191916da4733d57bc9e))
+
+
+### Other
+
+* adapt commands for achievement seeding ([29169d9](https://github.com/uzh-bf/klicker-uzh/commit/29169d9e936c45e9bf09a188651b43b5ceeea5fa))
+* add achievements seed ([3780c27](https://github.com/uzh-bf/klicker-uzh/commit/3780c27aebe7b5b38e13058a900363a792b46efb))
+* add cypress setup and initial e2e tests ([#3126](https://github.com/uzh-bf/klicker-uzh/issues/3126)) ([4f4945c](https://github.com/uzh-bf/klicker-uzh/commit/4f4945c811d648d883896ff214f78fc857d1b7b1))
+* lockfile maintenance ([a5e6f78](https://github.com/uzh-bf/klicker-uzh/commit/a5e6f781039a20c90203a23e94dc322143884001))
+* release prod 109 ([43fc674](https://github.com/uzh-bf/klicker-uzh/commit/43fc6747d5bb6d61a35b4c29d819c4bd55e6e3c0))
+* seed update ([12d6fdf](https://github.com/uzh-bf/klicker-uzh/commit/12d6fdf18c7493b7c9504106f8904504efb6ccb7))
+* seed update ([4e2aeea](https://github.com/uzh-bf/klicker-uzh/commit/4e2aeeaf99753e4d3c289068fd8ba48d7bc9af6d))
+* seed update for week 13 ([4a21d1b](https://github.com/uzh-bf/klicker-uzh/commit/4a21d1b4a561cd4c5d149fba8dc265e616775cbf))
+
 ## [2.0.0-alpha.109](https://github.com/uzh-bf/klicker-uzh/compare/v2.0.0-alpha.108...v2.0.0-alpha.109) (2022-12-12)
 
 

@@ -11,8 +11,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
-import { ThemeContext } from '@uzh-bf/design-system'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Ellipsis from '../common/Ellipsis'
@@ -23,6 +24,7 @@ interface SessionTileProps {
 
 function SessionTile({ session }: SessionTileProps) {
   const theme = useContext(ThemeContext)
+  const router = useRouter()
   const statusMap = {
     PREPARED: <FontAwesomeIcon icon={faClock} />,
     SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
@@ -46,15 +48,23 @@ function SessionTile({ session }: SessionTileProps) {
           {session.numOfBlocks || '0'} Blöcke, {session.numOfQuestions || '0'}{' '}
           Fragen
         </div>
-        {/* // TODO: link to session editing for scheduled / prepared sessions */}
-        {/* {(session.status === 'SCHEDULED' || session.status === 'PREPARED') && (
-          <div className={twMerge("flex flex-row items-center gap-2", theme.primaryText)}>
-            <FontAwesomeIcon icon={faArrowRight} />
-            <Link href={`/sessions`}>
-              Session editieren
-            </Link>
-          </div>
-        )} */}
+        {(session.status === 'SCHEDULED' || session.status === 'PREPARED') && (
+          <Button
+            basic
+            className={{ root: theme.primaryText }}
+            onClick={() =>
+              router.push({
+                pathname: '/',
+                query: { sessionId: session.id, editMode: 'liveSession' },
+              })
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button.Icon>
+            <Button.Label>Session editieren</Button.Label>
+          </Button>
+        )}
         {session.status === 'RUNNING' && (
           <div
             className={twMerge(
@@ -87,6 +97,7 @@ function SessionTile({ session }: SessionTileProps) {
           </div>
         )}
       </div>
+
       <div className="flex flex-row gap-2 ">
         {session.isGamificationEnabled && (
           <div className="py-0.5 px-1 text-sm rounded bg-uzh-red-40 flex flex-row items-center gap-1">

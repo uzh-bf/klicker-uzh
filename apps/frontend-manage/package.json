@@ -1,13 +1,15 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "2.0.0-alpha.109",
+  "version": "3.0.0-alpha.7",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3002",
     "build": "next build",
+    "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",
-    "start": "next start",
+    "start": "next start --port 3002",
+    "start:test": "cross-env NODE_ENV=test npm start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -16,13 +18,12 @@
     "@fortawesome/free-regular-svg-icons": "6.2.0",
     "@fortawesome/free-solid-svg-icons": "6.2.0",
     "@fortawesome/react-fontawesome": "0.2.0",
-    "@klicker-uzh/graphql": "^2.0.0-alpha.8",
-    "@klicker-uzh/markdown": "^2.0.0-alpha.8",
-    "@klicker-uzh/prisma": "^2.0.0-alpha.8",
-    "@radix-ui/react-tabs": "1.0.1",
+    "@klicker-uzh/graphql": "^3.0.0-alpha.0",
+    "@klicker-uzh/markdown": "^3.0.0-alpha.0",
+    "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@sentry/nextjs": "7.21.1",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "0.1.5",
+    "@uzh-bf/design-system": "0.1.20",
     "d3": "7.6.1",
     "dayjs": "1.11.6",
     "deepmerge": "4.2.2",
@@ -33,8 +34,7 @@
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
-    "next": "13.0.5",
-    "next-transpile-modules": "10.0.0",
+    "next": "13.1.1",
     "nookies": "2.5.2",
     "ramda": "0.28.0",
     "react": "18.2.0",
@@ -42,7 +42,6 @@
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "18.2.0",
-    "react-hot-toast": "2.4.0",
     "react-qrcode-logo": "2.8.0",
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",
@@ -50,11 +49,11 @@
     "remark-slate": "1.8.6",
     "shared-components": "*",
     "sharp": "0.31.2",
-    "slate": "0.84.0",
-    "slate-history": "0.66.0",
-    "slate-react": "0.83.2",
-    "tailwind-merge": "1.8.0",
-    "yup": "v1.0.0-beta.7"
+    "slate": "0.87.0",
+    "slate-history": "0.86.0",
+    "slate-react": "0.88.0",
+    "tailwind-merge": "1.8.1",
+    "yup": "v1.0.0-beta.8"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
@@ -71,13 +70,13 @@
     "@types/react-tagcloud": "^1.1.7",
     "@types/sharp": "^0.31.0",
     "autoprefixer": "10.4.13",
-    "eslint-config-next": "13.0.5",
+    "eslint-config-next": "13.1.1",
     "postcss": "8.4.18",
     "prettier": "2.8.0",
     "prettier-plugin-organize-imports": "3.2.1",
     "tailwindcss": "3.2.4",
     "tailwindcss-radix": "2.6.1",
-    "typescript": "4.9.3"
+    "typescript": "4.9.4"
   },
   "volta": {
     "extends": "../../package.json"
@@ -86,6 +85,6 @@
     "node": ">=16"
   },
   "overrides": {
-    "next": "13.0.5"
+    "next": "13.1.1"
   }
 }

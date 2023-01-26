@@ -1,6 +1,6 @@
-import { filter, pipe } from '@graphql-yoga/node'
 import * as DB from '@klicker-uzh/prisma'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
+import { filter, pipe } from 'graphql-yoga'
 import {
   arg,
   asNexusMethod,
@@ -206,7 +206,7 @@ export const EvaluationData = interfaceType({
 export const Tag = objectType({
   name: 'Tag',
   definition(t) {
-    t.nonNull.id('id')
+    t.nonNull.int('id')
     t.nonNull.string('name')
   },
 })
@@ -550,6 +550,8 @@ export const MicroSession = objectType({
       type: QuestionInstance,
     })
 
+    t.nonNull.int('pointsMultiplier')
+
     t.nonNull.field('course', {
       type: Course,
     })
@@ -567,6 +569,9 @@ export const User = objectType({
 
     t.nonNull.string('email')
     t.nonNull.string('shortname')
+
+    t.string('loginToken')
+    t.date('loginTokenExpiresAt')
 
     t.string('description')
   },
@@ -889,6 +894,7 @@ export const Session = objectType({
 
     t.nonNull.string('namespace')
     t.nonNull.string('name')
+    t.string('description')
     t.nonNull.string('displayName')
     t.string('linkTo')
     t.int('pinCode')
@@ -915,6 +921,8 @@ export const Session = objectType({
     t.list.field('confusionFeedbacks', { type: AggregatedConfusionFeedbacks })
 
     t.field('course', { type: Course })
+
+    t.nonNull.int('pointsMultiplier')
 
     t.nonNull.date('createdAt')
     t.date('updatedAt')
@@ -1132,6 +1140,13 @@ export const Query = objectType({
       },
     })
 
+    t.field('getLoginToken', {
+      type: User,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return AccountService.getLoginToken({ id: ctx.user.sub }, ctx)
+      },
+    })
+
     t.field('userProfile', {
       type: User,
       resolve(_, _args, ctx: ContextWithUser) {
@@ -1143,6 +1158,16 @@ export const Query = objectType({
       type: Tag,
       resolve(_, _args, ctx: ContextWithUser) {
         return QuestionService.getUserTags(ctx)
+      },
+    })
+
+    t.field('liveSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithOptionalUser) {
+        return SessionService.getLiveSessionData(args, ctx)
       },
     })
 
@@ -1163,6 +1188,16 @@ export const Query = objectType({
       },
       resolve(_, args, ctx: ContextWithUser) {
         return MicroLearningService.getMicroSessionData(args, ctx)
+      },
+    })
+
+    t.field('singleMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.getSingleMicroSession(args, ctx)
       },
     })
 
@@ -1377,6 +1412,24 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('loginUserToken', {
+      type: 'ID',
+      args: {
+        email: nonNull(stringArg()),
+        token: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: Context) {
+        return AccountService.loginUserToken(args, ctx)
+      },
+    })
+
+    t.field('generateLoginToken', {
+      type: User,
+      resolve(_, args, ctx: ContextWithUser) {
+        return AccountService.generateLoginToken(args, ctx)
+      },
+    })
+
     t.field('loginParticipant', {
       type: 'ID',
       args: {
@@ -1583,6 +1636,16 @@ export const Mutation = objectType({
       },
     })
 
+    t.field('cancelSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.cancelSession(args, ctx)
+      },
+    })
+
     t.field('createCourse', {
       type: Course,
       args: {
@@ -1600,6 +1663,7 @@ export const Mutation = objectType({
       args: {
         name: nonNull(stringArg()),
         displayName: stringArg(),
+        description: stringArg(),
         blocks: nonNull(
           list(
             arg({
@@ -1608,10 +1672,107 @@ export const Mutation = objectType({
           )
         ),
         courseId: stringArg(),
+        multiplier: nonNull(intArg()),
         isGamificationEnabled: booleanArg(),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return SessionService.createSession(args, ctx)
+      },
+    })
+
+    t.field('createMicroSession', {
+      type: MicroSession,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        startDate: nonNull(stringArg()),
+        endDate: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.createMicroSession(args, ctx)
+      },
+    })
+
+    t.field('createLearningElement', {
+      type: MicroSession,
+      args: {
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        order: nonNull(arg({ type: 'OrderType' })),
+        resetTimeDays: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return LearningElementService.createLearningElement(args, ctx)
+      },
+    })
+
+    t.field('editTag', {
+      type: Tag,
+      args: {
+        id: nonNull(intArg()),
+        name: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.editTag(args, ctx)
+      },
+    })
+
+    t.field('deleteTag', {
+      type: Tag,
+      args: {
+        id: nonNull(intArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return QuestionService.deleteTag(args, ctx)
+      },
+    })
+
+    t.field('editSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: stringArg(),
+        description: stringArg(),
+        blocks: nonNull(
+          list(
+            arg({
+              type: nonNull(BlockInput),
+            })
+          )
+        ),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        isGamificationEnabled: booleanArg(),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.editSession(args, ctx)
+      },
+    })
+
+    t.field('editMicroSession', {
+      type: MicroSession,
+      args: {
+        id: nonNull(idArg()),
+        name: nonNull(stringArg()),
+        displayName: nonNull(stringArg()),
+        description: stringArg(),
+        questions: nonNull(list(intArg())),
+        courseId: stringArg(),
+        multiplier: nonNull(intArg()),
+        startDate: nonNull(stringArg()),
+        endDate: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return MicroLearningService.editMicroSession(args, ctx)
       },
     })
 

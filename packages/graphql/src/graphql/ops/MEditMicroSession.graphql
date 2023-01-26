@@ -1,0 +1,25 @@
+mutation EditMicroSession(
+  $id: ID!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $questions: [Int]!
+  $courseId: String
+  $multiplier: Int!
+  $startDate: String!
+  $endDate: String!
+) {
+  editMicroSession(
+    id: $id
+    name: $name
+    displayName: $displayName
+    description: $description
+    questions: $questions
+    courseId: $courseId
+    multiplier: $multiplier
+    startDate: $startDate
+    endDate: $endDate
+  ) {
+    id
+  }
+}

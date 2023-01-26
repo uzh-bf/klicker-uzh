@@ -17,7 +17,8 @@ import {
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import PinField from 'shared-components/src/PinField'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -36,7 +37,20 @@ function JoinCourse({
   description: string
   courseLoading: boolean
 }) {
+  const router = useRouter()
   const theme = useContext(ThemeContext)
+  const [showError, setError] = useState(false)
+  const [initialPin, setInitialPin] = useState<string>('')
+
+  useEffect(() => {
+    const pin = router.query.pin
+      ? String(router.query.pin)
+          .match(/.{1,3}/g)
+          ?.join(' ')
+      : undefined
+    setInitialPin(pin || '')
+  }, [router.query.pin])
+
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
 
@@ -47,9 +61,6 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument, {
     refetchQueries: [GetCourseOverviewDataDocument],
   })
-
-  const router = useRouter()
-  const [showError, setError] = useState(false)
 
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
@@ -86,13 +97,9 @@ function JoinCourse({
 
   const joinCourseWithPinSchema = yup.object({
     pin: yup
-      .mixed()
-      .required('PIN-Code ist erforderlich.')
-      .test(
-        'validPIN',
-        'PIN muss dem vorgeschriebenen Format entsprechen.',
-        (value) => /^\d{3}\ \d{3}\ \d{3}$/.test(value)
-      ),
+      .number()
+      .typeError('Bitte geben Sie einen numerischen PIN ein.')
+      .required('Bitte geben Sie den Kurs-PIN ein.'),
   })
 
   return (
@@ -112,7 +119,7 @@ function JoinCourse({
         {dataParticipant?.self ? (
           <Formik
             initialValues={{
-              pin: '',
+              pin: initialPin,
             }}
             validationSchema={joinCourseWithPinSchema}
             onSubmit={async (values, { setSubmitting }) => {
@@ -132,20 +139,29 @@ function JoinCourse({
               setSubmitting(false)
             }}
           >
-            {({ errors, touched, values, isSubmitting, setFieldValue }) => {
+            {({
+              errors,
+              touched,
+              values,
+              isSubmitting,
+              isValid,
+              setFieldValue,
+            }) => {
               return (
                 <Form>
                   <PinField
-                    errors={errors}
-                    touched={touched}
-                    values={values}
+                    name="pin"
+                    label="Kurs-PIN (Format: ### ### ###)"
+                    error={errors.pin}
+                    touched={touched.pin}
+                    value={values.pin}
                     setFieldValue={setFieldValue}
                   />
 
                   <Button
                     className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isValid}
                   >
                     <Button.Label>Kurs beitreten</Button.Label>
                   </Button>
@@ -160,7 +176,7 @@ function JoinCourse({
               username: '',
               password: '',
               passwordRepetition: '',
-              pin: '',
+              pin: initialPin,
             }}
             validationSchema={joinAndRegisterSchema}
             onSubmit={async (values, { setSubmitting }) => {
@@ -182,7 +198,14 @@ function JoinCourse({
               setSubmitting(false)
             }}
           >
-            {({ errors, touched, values, isSubmitting, setFieldValue }) => {
+            {({
+              errors,
+              touched,
+              values,
+              isSubmitting,
+              isValid,
+              setFieldValue,
+            }) => {
               return (
                 <Form>
                   <Label label="Nutzername" className={{ root: 'italic' }} />
@@ -246,16 +269,17 @@ function JoinCourse({
                   />
 
                   <PinField
-                    errors={errors}
-                    touched={touched}
-                    values={values}
+                    name="pin"
+                    error={errors.pin}
+                    touched={touched.pin}
+                    value={values.pin}
                     setFieldValue={setFieldValue}
                   />
 
                   <Button
                     className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isValid}
                   >
                     <Button.Label>Kurs beitreten</Button.Label>
                   </Button>
@@ -308,76 +332,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   } catch {
     return { redirect: { destination: '/404', statusCode: 302 } }
   }
-}
-
-export const PinField = ({
-  errors,
-  touched,
-  values,
-  setFieldValue,
-}: {
-  errors: Record<string, string>
-  touched: Record<string, boolean>
-  values: Record<string, string>
-  setFieldValue: (field: string, value: any) => void
-}) => {
-  const theme = useContext(ThemeContext)
-
-  return (
-    <>
-      <Label
-        label="Kurs-PIN (Format: ### ### ###)"
-        className={{ root: 'italic' }}
-      />
-      <Field
-        name="pin"
-        type="text"
-        placeholder="### ### ###"
-        className={twMerge(
-          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-          theme.primaryBorderFocus,
-          errors.pin && touched.pin && 'border-red-400 bg-red-50 mb-0'
-        )}
-        maxLength={11}
-        onPaste={(e: any) => {
-          e.preventDefault()
-          const paste = e.clipboardData?.getData('text')
-          if (
-            typeof paste === 'string' &&
-            paste.length === 9 &&
-            paste.match(/^[0-9]{9}$/g)
-          ) {
-            setFieldValue(
-              'pin',
-              `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
-            )
-          }
-        }}
-        onChange={(e: any) => {
-          // regex magic to only allow numerical pins in the format ### ### ###
-          const regexToMatch =
-            /([0-9]{3}\ [0-9]{3}\ [0-9]{0,3})|([0-9]{3}\ [0-9]{3}[\ ]{0,1})|([0-9]{3}\ [0-9]{0,3})|([0-9]{3}[\ ]{0,1})|([0-9]{0,3})/g
-          const value = e.target.value.match(regexToMatch)[0]
-
-          // only add a whitespace after a block of 3 numbers if the user is typing - otherwise deletions are not possible
-          if (
-            (value.match(/^[0-9]{3}$/g) && values.pin.match(/^[0-9]{2}$/g)) ||
-            (value.match(/^[0-9]{3}\ [0-9]{3}$/g) &&
-              values.pin.match(/^[0-9]{3}\ [0-9]{2}$/g))
-          ) {
-            setFieldValue('pin', value + ' ')
-          } else {
-            setFieldValue('pin', value)
-          }
-        }}
-      />
-      <ErrorMessage
-        name="pin"
-        component="div"
-        className="text-sm text-red-400"
-      />
-    </>
-  )
 }
 
 export default JoinCourse

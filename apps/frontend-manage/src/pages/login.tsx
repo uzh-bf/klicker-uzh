@@ -42,6 +42,7 @@ function LoginForm() {
                   height={90}
                   alt="KlickerUZH Logo"
                   className="mx-auto"
+                  data-cy="login-logo"
                 />
               </div>
               <H1>Login</H1>
@@ -63,6 +64,7 @@ function LoginForm() {
                         touched.email &&
                         'border-red-400 bg-red-50'
                     )}
+                    data-cy="email-field"
                   />
                   <ErrorMessage
                     name="email"
@@ -86,6 +88,7 @@ function LoginForm() {
                         touched.password &&
                         'border-red-400 bg-red-50'
                     )}
+                    data-cy="password-field"
                   />
                   <ErrorMessage
                     name="password"
@@ -111,6 +114,7 @@ function LoginForm() {
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       type="submit"
                       disabled={isSubmitting}
+                      data={{ cy: 'submit-login' }}
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>

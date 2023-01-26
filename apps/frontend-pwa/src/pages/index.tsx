@@ -166,7 +166,10 @@ const Index = function () {
 
   return (
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
-      <div className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div
+        className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
+        data-cy="homepage"
+      >
         <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
         <div className="flex flex-col mt-2">
           <Link href="/repetition" legacyBehavior>

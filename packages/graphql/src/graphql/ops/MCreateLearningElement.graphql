@@ -1,0 +1,23 @@
+mutation CreateLearningElement(
+  $name: String!
+  $displayName: String!
+  $description: String
+  $questions: [Int]!
+  $courseId: String
+  $multiplier: Int!
+  $order: OrderType!
+  $resetTimeDays: Int!
+) {
+  createLearningElement(
+    name: $name
+    displayName: $displayName
+    description: $description
+    questions: $questions
+    courseId: $courseId
+    multiplier: $multiplier
+    order: $order
+    resetTimeDays: $resetTimeDays
+  ) {
+    id
+  }
+}

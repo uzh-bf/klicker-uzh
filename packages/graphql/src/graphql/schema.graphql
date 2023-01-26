@@ -361,6 +361,7 @@ type MicroSession {
   instances: [QuestionInstance!]
   name: String!
   numOfInstances: Int
+  pointsMultiplier: Int!
   scheduledEndAt: DateTime!
   scheduledStartAt: DateTime!
 }
@@ -368,18 +369,26 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
+  cancelSession(id: ID!): Session
   changeCourseDescription(courseId: ID!, input: String!): Course
   changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createCourse(color: String, displayName: String, name: String!): Course
   createFeedback(content: String!, sessionId: ID!): Feedback
+  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: OrderType!, questions: [Int]!, resetTimeDays: Int!): MicroSession
+  createMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
   createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
-  createSession(blocks: [BlockInput!]!, courseId: String, displayName: String, isGamificationEnabled: Boolean, name: String!): Session
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int): Question
+  deleteTag(id: Int!): Tag
+  editMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, id: ID!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  editTag(id: Int!, name: String!): Tag
   endSession(id: ID!): Session
+  generateLoginToken: User
   joinCourse(courseId: ID!): ParticipantLearningData
   joinCourseWithPin(courseId: ID!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
@@ -387,6 +396,7 @@ type Mutation {
   leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginUser(email: String!, password: String!): ID
+  loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
@@ -542,9 +552,11 @@ type Query {
   course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
+  getLoginToken: User
   groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
   learningElement(id: ID!): LearningElement
   learningElements: [LearningElement!]!
+  liveSession(id: ID!): Session
   microSession(id: ID!): MicroSession
   participantGroups(courseId: ID!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
@@ -555,6 +567,7 @@ type Query {
   session(id: ID!): Session
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  singleMicroSession(id: ID!): MicroSession
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
@@ -624,6 +637,7 @@ type Session {
   confusionFeedbacks: [AggregatedConfusionFeedbacks]
   course: Course
   createdAt: DateTime!
+  description: String
   displayName: String!
   feedbacks: [Feedback]
   finishedAt: DateTime
@@ -637,6 +651,7 @@ type Session {
   numOfBlocks: Int
   numOfQuestions: Int
   pinCode: Int
+  pointsMultiplier: Int!
   startedAt: DateTime
   status: SessionStatus!
   updatedAt: DateTime
@@ -718,7 +733,7 @@ type TabData {
 }
 
 type Tag {
-  id: ID!
+  id: Int!
   name: String!
 }
 
@@ -727,5 +742,7 @@ type User {
   email: String!
   id: ID!
   isActive: Boolean!
+  loginToken: String
+  loginTokenExpiresAt: DateTime
   shortname: String!
 }

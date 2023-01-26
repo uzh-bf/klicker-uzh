@@ -3,6 +3,7 @@ import {
   ConfusionTimestep,
   Question,
   QuestionInstance,
+  QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
   SessionStatus,
@@ -18,7 +19,7 @@ import schedule from 'node-schedule'
 
 const scheduledJobs: Record<string, any> = {}
 
-function processQuestionData(question: Question): AllQuestionTypeData {
+export function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
     case QuestionType.SC:
     case QuestionType.MC:
@@ -46,7 +47,9 @@ function processQuestionData(question: Question): AllQuestionTypeData {
   }
 }
 
-function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
+export function prepareInitialInstanceResults(
+  questionData: AllQuestionTypeData
+) {
   switch (questionData.type) {
     case QuestionType.SC:
     case QuestionType.MC:
@@ -59,39 +62,16 @@ function prepareInitialInstanceResults(questionData: AllQuestionTypeData) {
     }
 
     case QuestionType.NUMERICAL: {
-      return {} as NumericalQuestionResults
+      return { answers: [] }
     }
 
     case QuestionType.FREE_TEXT: {
-      return {} as FreeTextQuestionResults
+      return { answers: [] }
     }
   }
 }
 
-interface BlockArgs {
-  questionIds: number[]
-  randomSelection?: number
-  timeLimit?: number
-}
-
-interface CreateSessionArgs {
-  name: string
-  displayName?: string | null
-  blocks: BlockArgs[]
-  courseId?: string
-  isGamificationEnabled?: boolean
-}
-
-export async function createSession(
-  {
-    name,
-    displayName,
-    blocks,
-    courseId,
-    isGamificationEnabled,
-  }: CreateSessionArgs,
-  ctx: ContextWithUser
-) {
+async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
   const allQuestionsIds = new Set(
     blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
@@ -110,14 +90,47 @@ export async function createSession(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  const questionMap = questions.reduce<
+  return questions.reduce<
     Record<number, Question & { attachments: Attachment[] }>
   >((acc, question) => ({ ...acc, [question.id]: question }), {})
+}
+
+interface BlockArgs {
+  questionIds: number[]
+  randomSelection?: number
+  timeLimit?: number
+}
+
+interface CreateSessionArgs {
+  name: string
+  displayName: string
+  description?: string | null
+  blocks: BlockArgs[]
+  courseId?: string
+  multiplier: number
+  isGamificationEnabled?: boolean
+}
+
+export async function createSession(
+  {
+    name,
+    displayName,
+    description,
+    blocks,
+    courseId,
+    multiplier,
+    isGamificationEnabled,
+  }: CreateSessionArgs,
+  ctx: ContextWithUser
+) {
+  const questionMap = await getQuestionMap(blocks, ctx)
 
   const session = await ctx.prisma.session.create({
     data: {
       name,
       displayName: displayName ?? name,
+      description,
+      pointsMultiplier: multiplier,
       isGamificationEnabled: isGamificationEnabled ?? false,
       blocks: {
         create: blocks.map(
@@ -130,6 +143,7 @@ export async function createSession(
               )
               return {
                 order: ix,
+                type: QuestionInstanceType.SESSION,
                 questionData: processedQuestionData,
                 results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
@@ -170,6 +184,165 @@ export async function createSession(
   })
 
   ctx.emitter.emit('invalidate', { typename: 'Session', id: session.id })
+
+  return session
+}
+
+interface EditSessionArgs {
+  id: string
+  name: string
+  displayName: string
+  description?: string | null
+  blocks: BlockArgs[]
+  courseId?: string
+  multiplier: number
+  isGamificationEnabled?: boolean
+}
+
+export async function editSession(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    blocks,
+    courseId,
+    multiplier,
+    isGamificationEnabled,
+  }: EditSessionArgs,
+  ctx: ContextWithUser
+) {
+  // find all instances belonging to the old session and delete them as the content of the questions might have changed
+  const oldSession = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        include: {
+          instances: true,
+        },
+      },
+    },
+  })
+
+  if (!oldSession) {
+    throw new GraphQLError('Session not found')
+  }
+  const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
+    (acc, block) => [...acc, ...block.instances],
+    []
+  )
+
+  await ctx.prisma.questionInstance.deleteMany({
+    where: {
+      id: { in: oldQuestionInstances.map(({ id }) => id) },
+    },
+  })
+  await ctx.prisma.session.update({
+    where: { id },
+    data: {
+      blocks: {
+        deleteMany: {},
+      },
+      course: {
+        disconnect: true,
+      },
+    },
+  })
+
+  const questionMap = await getQuestionMap(blocks, ctx)
+
+  const session = await ctx.prisma.session.update({
+    where: { id },
+    data: {
+      name,
+      displayName: displayName ?? name,
+      description,
+      pointsMultiplier: multiplier,
+      isGamificationEnabled: isGamificationEnabled ?? false,
+      blocks: {
+        create: blocks.map(
+          ({ questionIds, randomSelection, timeLimit }, blockIx) => {
+            const newInstances = questionIds.map((questionId, ix) => {
+              const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
+              const questionAttachmentInstances = question.attachments.map(
+                pick(['type', 'href', 'name', 'description', 'originalName'])
+              )
+              return {
+                order: ix,
+                type: QuestionInstanceType.SESSION,
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: { id: questionId },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+                attachments: {
+                  create: questionAttachmentInstances,
+                },
+              }
+            })
+
+            return {
+              order: blockIx,
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
+              },
+            }
+          }
+        ),
+      },
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
+    },
+    include: {
+      blocks: true,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'Session', id: session.id })
+
+  return session
+}
+
+interface GetLiveSessionDataArgs {
+  id: string
+}
+
+export async function getLiveSessionData(
+  { id }: GetLiveSessionDataArgs,
+  ctx: ContextWithUser
+) {
+  if (!id) {
+    return null
+  }
+
+  // TODO: only return data that is required for the live session update
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      course: true,
+    },
+  })
 
   return session
 }
@@ -412,6 +585,10 @@ export async function activateSessionBlock(
           ctx,
           true
         )
+        ctx.emitter.emit('invalidate', {
+          typename: 'Session',
+          id: session.id,
+        })
       }
     )
   }
@@ -1380,19 +1557,6 @@ export async function getSessionEvaluation(
     }
   }
 
-  const temp = {
-    id: `${id}-eval`,
-    status: session.status,
-    isGamificationEnabled: session.isGamificationEnabled,
-    blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
-    instanceResults: [
-      ...completeQuestionData(executedInstanceResults),
-      ...completeQuestionData(activeInstanceResults),
-    ],
-    feedbacks: session.feedbacks,
-    confusionFeedbacks: session.confusionFeedbacks,
-  }
-
   return {
     id: `${id}-eval`,
     status: session.status,
@@ -1405,4 +1569,107 @@ export async function getSessionEvaluation(
     feedbacks: session.feedbacks,
     confusionFeedbacks: session.confusionFeedbacks,
   }
+}
+
+export async function cancelSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      blocks: {
+        include: {
+          instances: true,
+          leaderboard: true,
+          activeInSession: true,
+        },
+      },
+    },
+  })
+
+  if (!session) return null
+
+  if (session.status !== SessionStatus.RUNNING) {
+    throw new Error('Session is not running')
+  }
+
+  const leaderboardEntries = session.blocks
+    .map((block) => block.leaderboard)
+    .flat()
+  const instances = session.blocks.map((block) => block.instances).flat()
+
+  const [updatedSession] = await ctx.prisma.$transaction([
+    ctx.prisma.session.update({
+      where: { id },
+      data: {
+        status: SessionStatus.SCHEDULED,
+        startedAt: null,
+        pinCode: null,
+        activeBlock: {
+          disconnect: true,
+        },
+        leaderboard: {
+          deleteMany: {},
+        },
+        feedbacks: {
+          deleteMany: {},
+        },
+        confusionFeedbacks: {
+          deleteMany: {},
+        },
+        blocks: {
+          updateMany: {
+            where: {
+              status: {
+                in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+              },
+            },
+            data: {
+              status: SessionBlockStatus.SCHEDULED,
+              expiresAt: null,
+              execution: 0,
+            },
+          },
+        },
+      },
+      include: {
+        activeBlock: true,
+        blocks: {
+          include: {
+            instances: true,
+            leaderboard: true,
+            activeInSession: true,
+          },
+        },
+      },
+    }),
+
+    ctx.prisma.leaderboardEntry.deleteMany({
+      where: {
+        id: {
+          in: leaderboardEntries.map((entry) => entry.id),
+        },
+      },
+    }),
+
+    ...instances.map((instance) =>
+      ctx.prisma.questionInstance.updateMany({
+        where: {
+          id: {
+            in: instance.id,
+          },
+        },
+        data: {
+          participants: 0,
+          results: prepareInitialInstanceResults(
+            instance.questionData!.valueOf() as AllQuestionTypeData
+          ),
+        },
+      })
+    ),
+  ])
+
+  return updatedSession
 }
