@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleLiveSessionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Modal, ThemeContext } from '@uzh-bf/design-system'
-import { useContext, useMemo } from 'react'
+import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { useMemo } from 'react'
 
 interface EmbeddingModalProps {
   open: boolean
@@ -12,7 +12,6 @@ interface EmbeddingModalProps {
 }
 
 function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
-  const theme = useContext(ThemeContext)
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId,
