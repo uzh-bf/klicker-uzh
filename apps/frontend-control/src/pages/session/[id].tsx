@@ -63,6 +63,7 @@ function RunningSession() {
       (block) => block.status === SessionBlockStatus.Scheduled
     )
     setNextBlock(typeof scheduledNext === 'undefined' ? -1 : scheduledNext)
+    console.log(scheduledNext)
   }, [cockpitData?.cockpitSession?.blocks])
 
   if (cockpitLoading) {
@@ -164,6 +165,22 @@ function RunningSession() {
               Session beenden
             </Button>
           </div>
+        )}
+
+        {currentBlock && nextBlock !== -1 && nextBlock !== blocks.length && (
+          <div className="mt-14">
+            <H3>Nächster Block:</H3>
+
+            <SessionBlock
+              block={blocks.find((block) => block.order === nextBlock)}
+            />
+          </div>
+        )}
+        {currentBlock && nextBlock == -1 && (
+          <UserNotification
+            message="Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden."
+            className={{ root: 'mt-14' }}
+          />
         )}
       </div>
     </Layout>
