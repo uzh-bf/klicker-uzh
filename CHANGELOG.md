@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** ensure that the secret for frontend-control is present ([4889b27](https://github.com/uzh-bf/klicker-uzh/commit/4889b2751b00fb754d2180aeb649a5177e4c34d2))
+
+## [3.0.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-01-25)
+
+
+### Bug Fixes
+
+* **deploy:** add config map for frontend-control ([0fad5ef](https://github.com/uzh-bf/klicker-uzh/commit/0fad5ef4ec3c2590eb18f93e2b8ec9b24a48e19b))
+
+## [3.0.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.4...v3.0.0-alpha.5) (2023-01-25)
+
+
+### Enhancements
+
+* **deploy:** add frontend-control to helm chart ([3890e49](https://github.com/uzh-bf/klicker-uzh/commit/3890e49e6e197130c905c8503b05344b8c806659))
+
+## [3.0.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.3...v3.0.0-alpha.4) (2023-01-25)
+
+
+### Other
+
+* **packages/prisma:** use TEST seed in QA ([b41d41d](https://github.com/uzh-bf/klicker-uzh/commit/b41d41d25eae87975e91f19e41d94a810ff073c2))
+
+
+### Deployment
+
+* use /login as routes for readiness and liveness probes ([3cd7b94](https://github.com/uzh-bf/klicker-uzh/commit/3cd7b9431e05496d152288d14da1a52e684d7004))
+
 ## [3.0.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-01-24)
 
 
