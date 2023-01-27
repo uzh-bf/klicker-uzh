@@ -5,6 +5,7 @@ interface MenuButtonProps {
   icon: React.ReactNode
   children: React.ReactNode
   onClick: () => void
+  disabled?: boolean
   className?: {
     root?: string
     icon?: string
@@ -12,16 +13,25 @@ interface MenuButtonProps {
   }
 }
 
-function MenuButton({ icon, children, onClick, className }: MenuButtonProps) {
+function MenuButton({
+  icon,
+  disabled,
+  children,
+  onClick,
+  className,
+}: MenuButtonProps) {
+  console.log(disabled)
   return (
     <Button
       className={{
         root: twMerge(
           'flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none text-white',
+          disabled && 'cursor-not-allowed text-uzh-grey-100',
           className?.root
         ),
       }}
       onClick={onClick}
+      disabled={disabled}
     >
       <Button.Icon className={{ root: className?.icon }}>{icon}</Button.Icon>
       <Button.Label className={{ root: twMerge('text-xs', className?.label) }}>
