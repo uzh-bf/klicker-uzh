@@ -70,8 +70,8 @@ export function filterQuestions(
   let results = [...questions]
 
   // if a title (query) was given, search the index with it
-  if (index && filters.title) {
-    results = index.search(filters.title)
+  if (index && filters.name) {
+    results = index.search(filters.name)
   }
 
   // only reduce the shown questions to the non-archived ones, if the archive filter is not active
@@ -138,11 +138,12 @@ export function subtractDates(date1: any, date2: any): any {
 }
 
 export function sortQuestions(questions: any[], sort: any): any[] {
+
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {
     return questions.sort(
-      (a, b): number => factor * a.title.localeCompare(b.title)
+      (a, b): number => factor * a.name.localeCompare(b.name)
     )
   }
 
