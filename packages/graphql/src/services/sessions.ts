@@ -1604,7 +1604,7 @@ export async function cancelSession(
     ctx.prisma.session.update({
       where: { id },
       data: {
-        status: SessionStatus.SCHEDULED,
+        status: SessionStatus.PREPARED,
         startedAt: null,
         pinCode: null,
         activeBlock: {
