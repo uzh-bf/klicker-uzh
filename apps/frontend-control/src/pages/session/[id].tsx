@@ -95,7 +95,7 @@ function RunningSession() {
   }
 
   return (
-    <Layout title={`Session: ${name}`}>
+    <Layout title={`Session: ${name}`} sessionId={id}>
       <div key={`${currentBlock}-${nextBlock}`}>
         {currentBlock ? (
           <div key={`${currentBlock}-${nextBlock}`}>
