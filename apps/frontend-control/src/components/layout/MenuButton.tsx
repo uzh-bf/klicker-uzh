@@ -33,7 +33,9 @@ function MenuButton({
       onClick={onClick}
       disabled={disabled}
     >
-      <Button.Icon className={{ root: className?.icon }}>{icon}</Button.Icon>
+      <Button.Icon className={{ root: twMerge('w-max', className?.icon) }}>
+        {icon}
+      </Button.Icon>
       <Button.Label className={{ root: twMerge('text-xs', className?.label) }}>
         {children}
       </Button.Label>
