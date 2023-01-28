@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.15...v3.0.0-alpha.16) (2023-01-28)
+
+
+### Deployment
+
+* move podAnnotations back into template ([394559e](https://github.com/uzh-bf/klicker-uzh/commit/394559e362160cc718edf7182f17a313c443bf60))
+
 ## [3.0.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.14...v3.0.0-alpha.15) (2023-01-28)
 
 
