@@ -82,10 +82,6 @@ module.exports = {
       section: 'Build and CI',
     },
     {
-      type: 'chore',
-      section: 'Other',
-    },
-    {
       type: 'wip',
       section: 'Other',
     },
