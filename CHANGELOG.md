@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.14...v3.0.0-alpha.15) (2023-01-28)
+
+
+### Deployment
+
+* move pod annotations to values.yaml ([32d0d84](https://github.com/uzh-bf/klicker-uzh/commit/32d0d842209cdf1cf97259263c27f0ef0bf14da8))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve evaluation layout (resize/scroll) and show notification if questionIx not available ([#3285](https://github.com/uzh-bf/klicker-uzh/issues/3285)) ([1fa60d7](https://github.com/uzh-bf/klicker-uzh/commit/1fa60d72fde34db742dfb1a30bbd5542dcb00298))
+
 ## [3.0.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.13...v3.0.0-alpha.14) (2023-01-28)
 
 
