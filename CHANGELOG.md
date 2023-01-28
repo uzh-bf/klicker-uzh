@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.7...v3.0.0-alpha.8) (2023-01-28)
+
+
+### Features
+
+* **apps/office-addin:** add initial POC for content/taskpane add-in in Microsoft PowerPoint ([#3173](https://github.com/uzh-bf/klicker-uzh/issues/3173)) ([81ff43f](https://github.com/uzh-bf/klicker-uzh/commit/81ff43f4a0298f2107894386fef2b1a58c4eab70))
+* **frontend-control:** embed links on controller frontend ([#3282](https://github.com/uzh-bf/klicker-uzh/issues/3282)) ([103bcc4](https://github.com/uzh-bf/klicker-uzh/commit/103bcc44dece9b5175404bc48c2e0f386706df28))
+
+
+### Build and CI
+
+* apply codeql only to the v3 branch ([10b29fb](https://github.com/uzh-bf/klicker-uzh/commit/10b29fb47c074fc965fd8e348702269185ced4fb))
+* update codeql actions to v2 ([1b6c226](https://github.com/uzh-bf/klicker-uzh/commit/1b6c226caa11afa89f3030fd7ba3848963a3a3a5))
+* update dependabot branch to v3 ([8b2065f](https://github.com/uzh-bf/klicker-uzh/commit/8b2065f89348497d01235faed79832d8dfa5279b))
+
+
+### Enhancements
+
+* **frontend-control:** show next block on controller app as well ([#3283](https://github.com/uzh-bf/klicker-uzh/issues/3283)) ([78a099a](https://github.com/uzh-bf/klicker-uzh/commit/78a099a0e0a8ba74347b4bed6c9c40af36d03ab2))
+
 ## [3.0.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-01-25)
 
 
