@@ -16,6 +16,7 @@ module.exports = {
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
     'apps/frontend-control/',
+    'apps/office-addin/',
     'packages/grading/',
     'packages/graphql/',
     'packages/lti/',

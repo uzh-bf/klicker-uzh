@@ -1,11 +1,7 @@
 {
-  "name": "office-addin-taskpane-react",
-  "version": "0.0.1",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/OfficeDev/Office-Addin-TaskPane-React.git"
-  },
-  "license": "MIT",
+  "name": "@klicker-uzh/office-addin",
+  "version": "3.0.0-alpha.7",
+  "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
     "app_type_to_debug": "desktop",
@@ -31,7 +27,8 @@
     "clear": ".\\scripts\\clear.bat",
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
     "dev": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
-    "predev": "npm run clear"
+    "predev": "npm run clear",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@fluentui/react": "^8.52.3",
@@ -44,7 +41,6 @@
     "es6-promise": "^4.2.8",
     "eslint": "^7.32.0",
     "formik": "^2.2.9",
-    "prettier-plugin-organize-imports": "^3.2.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "regenerator-runtime": "^0.13.7",
@@ -81,6 +77,8 @@
     "office-addin-prettier-config": "^1.2.0",
     "os-browserify": "^0.3.0",
     "postcss": "^8.4.19",
+    "prettier": "2.8.3",
+    "prettier-plugin-organize-imports": "3.2.2",
     "process": "^0.11.10",
     "source-map-loader": "^3.0.0",
     "tailwindcss": "^3.2.4",
