@@ -1,4 +1,5 @@
 # KlickerUZH PowerPoint Content Add-in
+
 This repository contains the KlickerUZH content add-in for Microsoft PowerPoint
 
 ## Local development using npm
@@ -7,6 +8,7 @@ _Important:_
 It is strongly recommended that you develop PowerPoint add-ins on a Windows machine with the desktop app for PowerPoint installed. This way you can use automatic sideloading for development (see [below](#sideloading)) which is by far the most convenient way to develop an Office add-in. If you want develop these add-ins in PowerPoint on the web, check [this site](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-office-add-ins-for-testing#sideload-a-yeoman-created-add-in-to-office-on-the-web). You might also have to adapt the scripts in `package.json` to be able to work with both add-ins at the same time. However, be aware that add-ins tend to work not as well when sideloaded on the web.
 
 ### Requirements
+
 - npm
 - Node.js
 
@@ -19,6 +21,7 @@ Start by cloning this repository. After navigating inside the folder containing 
 ```sh
 npm install
 ```
+
 This installs the necessary packages for the add-in. You can then sideload both add-ins at the same time by running:
 
 ```sh
@@ -38,6 +41,7 @@ npm run stop
 ```
 
 ### Useful hints:
+
 - Depending on the type of changes you make, you might not see them reflected in the add-in immediately. Even though auto-reloading is enabled, some files get cached and changes to the source code don't apply automatically.
 - This is why the cache is cleared automatically whenever you start the dev server.
 - To clear the cache manually, stop the development server and clear the Office cache, either by following [these instructions](https://docs.microsoft.com/en-us/office/dev/add-ins/testing/clear-cache) or by running the script `clear.bat`:
@@ -45,6 +49,7 @@ npm run stop
 ```sh
 npm run clear
 ```
+
 - Note that all Office host applications like Outlook, Word etc. need to be closed when you clear the cache, otherwise clearing the cache is not possible.
 - When developing on the web, don't forget to clear your browser's cache.
 - When you stopped the dev server, wait for a while before you start it again. The waiting is necessary as it takes the server a while to properly stop, even when it seems that the process is already finished. If you don't wait long enough, the dev server won't restart.

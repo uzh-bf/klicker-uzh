@@ -1,6 +1,6 @@
 /* global Office*/
 
-declare const Office
+declare const Office;
 
 export function getSlideID() {
   return new Promise((resolve, reject) => {

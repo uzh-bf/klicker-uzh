@@ -1,6 +1,5 @@
 import { H1 } from "@uzh-bf/design-system";
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getSlideID } from "../office-utils/powerPointAPI";
 import { Progress } from "./Progress";
 import { URLForm } from "./URLForm";
@@ -44,4 +43,3 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
     </div>
   );
 }
-

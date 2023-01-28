@@ -6,7 +6,7 @@ import App from "./components/App";
 
 /* global document, Office, module, require */
 
-declare const Office
+declare const Office;
 
 initializeIcons();
 
@@ -15,9 +15,9 @@ let newlyInserted = false;
 
 const render = (Component) => {
   ReactDOM.render(
-      <ThemeProvider>
-        <Component isOfficeInitialized={isOfficeInitialized} newlyInserted={newlyInserted} />
-      </ThemeProvider>,
+    <ThemeProvider>
+      <Component isOfficeInitialized={isOfficeInitialized} newlyInserted={newlyInserted} />
+    </ThemeProvider>,
     document.getElementById("container")
   );
 };
@@ -31,4 +31,3 @@ Office.initialize = function (reason) {
   isOfficeInitialized = true;
   render(App);
 };
-

@@ -1,6 +1,6 @@
-import React from "react";
-import { Form, Formik } from "formik";
 import { Button, FormikTextField } from "@uzh-bf/design-system";
+import { Form, Formik } from "formik";
+import React from "react";
 
 /* global window*/
 
