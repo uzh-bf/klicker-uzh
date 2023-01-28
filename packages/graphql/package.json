@@ -11,8 +11,7 @@
     "analyze": "size-limit --why",
     "prebuild": "npm run generate",
     "build": "NODE_ENV=production tsup --dts",
-    "hive": "hive schema:publish src/graphql/schema.graphql",
-    "dev": "npm-run-all --parallel dev:nexus dev:graphql dev:ts",
+    "dev": "doppler run --config dev -- npm-run-all --parallel dev:nexus dev:graphql dev:ts",
     "dev:ts": "NODE_ENV=development tsup --watch --dts",
     "dev:graphql": "graphql-codegen --config codegen.yml --watch",
     "dev:nexus": "ts-node-dev --transpile-only --no-notify -P tsconfig.nexus.json src/index.ts",
@@ -24,7 +23,7 @@
     "size": "size-limit"
   },
   "engines": {
-    "node": "=18"
+    "node": ">=18"
   },
   "size-limit": [
     {

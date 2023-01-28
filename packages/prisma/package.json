@@ -29,10 +29,8 @@
     "prisma:studio:qa": "doppler run --config stg -- npm run prisma:studio",
     "prisma:studio:prod": "doppler run --config prd -- npm run prisma:studio",
     "preseed": "npm run build",
-    "seed": "npm-run-all seed:test",
+    "seed": "ENV=development doppler run --config dev -- npm-run-all seed:test",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "seed:bf1": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedBF1.ts",
-    "seed:ami": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAMI.ts",
     "seed:achievements": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAchievements.ts",
     "seed:qa": "ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
@@ -46,7 +44,7 @@
     "seed": "npm run seed"
   },
   "engines": {
-    "node": "=18"
+    "node": ">=18"
   },
   "size-limit": [
     {

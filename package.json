@@ -33,7 +33,7 @@
     "Florina Vogel <florina.vogel@bf.uzh.ch>"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "doppler run --config dev -- turbo run dev",
     "build": "turbo run build",
     "publish": "turbo run publish",
     "format": "turbo run format",

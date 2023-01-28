@@ -25,6 +25,7 @@
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "0.1.20",
     "body-parser": "1.20.1",
+    "cross-env": "7.0.3",
     "dayjs": "1.11.7",
     "deepmerge": "4.2.2",
     "graphql": "16.6.0",

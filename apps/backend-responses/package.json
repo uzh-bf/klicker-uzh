@@ -11,8 +11,8 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "build:test": "npm run build",
-    "dev": "cross-env NODE_ENV=development npm-run-all --parallel dev:ts dev:func",
-    "dev:ts": "cross-env NODE_ENV=development tsup --watch",
+    "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:ts": "tsup --watch",
     "dev:func": "func start -p 7072",
     "format": "prettier --write .",
     "start": "func start -p 7072",
