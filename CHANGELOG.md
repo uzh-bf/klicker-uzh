@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.13...v3.0.0-alpha.14) (2023-01-28)
+
+
+### Deployment
+
+* add annotations for config, secret, and release to ensure redeploy on changes ([87ca3aa](https://github.com/uzh-bf/klicker-uzh/commit/87ca3aa36dce6470deda2d0c80259b6c412a9b98))
+
+## [3.0.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.12...v3.0.0-alpha.13) (2023-01-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure URLs for pwa, manage, and control are set in QA configs ([99e24b1](https://github.com/uzh-bf/klicker-uzh/commit/99e24b1a759cc28b77836b6bb8c7e8b13ad43373))
+
+## [3.0.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.11...v3.0.0-alpha.12) (2023-01-28)
+
+## [3.0.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.10...v3.0.0-alpha.11) (2023-01-28)
+
+
+### Deployment
+
+* use chart version for image tag to ensure correct image is deployed ([3305d7d](https://github.com/uzh-bf/klicker-uzh/commit/3305d7d17c1403d52d782296799593dd393cfca8))
+
+## [3.0.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.9...v3.0.0-alpha.10) (2023-01-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR api urls for new chart naming ([99ee2f1](https://github.com/uzh-bf/klicker-uzh/commit/99ee2f18ed536162179d53de11bdc66c003fb428))
+
+
+### Other
+
+* **packages/response*:** ensure that eslint does not reference nonexistent base config ([49ecc96](https://github.com/uzh-bf/klicker-uzh/commit/49ecc9607d8c32a478c3ccaaad7c811725e5e5c8))
+
+## [3.0.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.8...v3.0.0-alpha.9) (2023-01-28)
+
+## [3.0.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.7...v3.0.0-alpha.8) (2023-01-28)
+
+
+### Features
+
+* **apps/office-addin:** add initial POC for content/taskpane add-in in Microsoft PowerPoint ([#3173](https://github.com/uzh-bf/klicker-uzh/issues/3173)) ([81ff43f](https://github.com/uzh-bf/klicker-uzh/commit/81ff43f4a0298f2107894386fef2b1a58c4eab70))
+* **frontend-control:** embed links on controller frontend ([#3282](https://github.com/uzh-bf/klicker-uzh/issues/3282)) ([103bcc4](https://github.com/uzh-bf/klicker-uzh/commit/103bcc44dece9b5175404bc48c2e0f386706df28))
+
+
+### Build and CI
+
+* apply codeql only to the v3 branch ([10b29fb](https://github.com/uzh-bf/klicker-uzh/commit/10b29fb47c074fc965fd8e348702269185ced4fb))
+* update codeql actions to v2 ([1b6c226](https://github.com/uzh-bf/klicker-uzh/commit/1b6c226caa11afa89f3030fd7ba3848963a3a3a5))
+* update dependabot branch to v3 ([8b2065f](https://github.com/uzh-bf/klicker-uzh/commit/8b2065f89348497d01235faed79832d8dfa5279b))
+
+
+### Enhancements
+
+* **frontend-control:** show next block on controller app as well ([#3283](https://github.com/uzh-bf/klicker-uzh/issues/3283)) ([78a099a](https://github.com/uzh-bf/klicker-uzh/commit/78a099a0e0a8ba74347b4bed6c9c40af36d03ab2))
+
 ## [3.0.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-01-25)
 
 

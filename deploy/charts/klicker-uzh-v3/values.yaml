@@ -18,7 +18,6 @@ frontendPWA:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -52,6 +51,11 @@ frontendPWA:
 
   affinity: {}
 
+  podAnnotations:
+    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-pwa.yaml") . | sha256sum }}
+    release: {{ .Chart.AppVersion }}
+
 frontendManage:
   priorityClassName: production-workload
 
@@ -59,7 +63,6 @@ frontendManage:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -92,6 +95,11 @@ frontendManage:
   tolerations: []
 
   affinity: {}
+
+  podAnnotations:
+    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-manage.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-manage.yaml") . | sha256sum }}
+    release: {{ .Chart.AppVersion }}
 
 frontendControl:
   priorityClassName: production-workload
@@ -100,7 +108,6 @@ frontendControl:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -133,6 +140,11 @@ frontendControl:
   tolerations: []
 
   affinity: {}
+
+  podAnnotations:
+    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-control.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-control.yaml") . | sha256sum }}
+    release: {{ .Chart.AppVersion }}
 
 backendGraphql:
   priorityClassName: production-workload
@@ -141,7 +153,6 @@ backendGraphql:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -174,6 +185,11 @@ backendGraphql:
   tolerations: []
 
   affinity: {}
+
+  podAnnotations:
+    checksum/config: {{ include (print $.Template.BasePath "/cm-backend-graphql.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret-backend-graphql.yaml") . | sha256sum }}
+    release: {{ .Chart.AppVersion }}
 
 heartbeats:
   dailyGroupScores:
