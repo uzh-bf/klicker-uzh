@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-alpha.10",
+  "version": "3.0.0-alpha.11",
   "workspaces": [
     "apps/*",
     "packages/*"

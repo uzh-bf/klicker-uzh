@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.10...v3.0.0-alpha.11) (2023-01-28)
+
+
+### Deployment
+
+* use chart version for image tag to ensure correct image is deployed ([3305d7d](https://github.com/uzh-bf/klicker-uzh/commit/3305d7d17c1403d52d782296799593dd393cfca8))
+
 ## [3.0.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.9...v3.0.0-alpha.10) (2023-01-28)
 
 
