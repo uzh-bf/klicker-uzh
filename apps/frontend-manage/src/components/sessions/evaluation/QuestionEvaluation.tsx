@@ -95,7 +95,7 @@ function QuestionEvaluation({
                                 : CHART_COLORS[innerIndex % 12],
                           }}
                           className={twMerge(
-                            'mr-2 text-center rounded-md w-7 h-7 text-white font-bold',
+                            'mr-2 items-center flex justify-center rounded-md w-7 h-7 text-white font-bold',
                             choice.correct && showSolution && 'text-black'
                           )}
                         >
@@ -108,6 +108,7 @@ function QuestionEvaluation({
                             className={{
                               tooltip:
                                 'z-20 float-right !text-white min-w-[25rem]',
+                              markdown: textSize.text,
                             }}
                           >
                             {choice.value}
