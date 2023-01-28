@@ -33,7 +33,7 @@ function Evaluation() {
   const router = useRouter()
   const theme = useContext(ThemeContext)
 
-  const [selectedBlock, setSelectedBlock] = useState<number>(0)
+  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0)
   const [showLeaderboard, setLeaderboard] = useState<boolean>(false)
   const [showFeedbacks, setFeedbacks] = useState<boolean>(false)
   const [showConfusion, setConfusion] = useState<boolean>(false)
@@ -99,44 +99,39 @@ function Evaluation() {
     instanceResults,
     currentInstance,
     chartType,
+    questionIx: Number(router.query.questionIx ?? 0),
     setSelectedInstance,
     setCurrentInstance,
     setSelectedInstanceIndex,
     setChartType,
+    setSelectedBlockIndex,
   })
 
   useArrowNavigation({
     onArrowLeft: () => {
       if (selectedInstanceIndex > 0) {
         setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
-        setSelectedBlock(instanceResults[selectedInstanceIndex - 1].blockIx)
+        setSelectedBlockIndex(
+          instanceResults[selectedInstanceIndex - 1].blockIx
+        )
       }
     },
     onArrowRight: () => {
       if (selectedInstanceIndex < instanceResults.length - 1) {
         setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
-        setSelectedBlock(instanceResults[selectedInstanceIndex + 1].blockIx)
+        setSelectedBlockIndex(
+          instanceResults[selectedInstanceIndex + 1].blockIx
+        )
       }
     },
   })
-
-  // if a question index is provided through the url, directly switch to this question
-  useEffect(() => {
-    const ix = parseInt(String(router.query.questionIx))
-    if (typeof ix === 'number' && instanceResults[ix]) {
-      setSelectedInstance(instanceResults[ix].id)
-      setSelectedBlock(instanceResults[ix].blockIx)
-    } else if (typeof ix === 'number' && !instanceResults[ix]) {
-      setSelectedInstance('placeholder')
-    }
-  }, [router.query.questionIx, instanceResults])
 
   useEffect(() => {
     if (router.query.leaderboard === 'true') {
       setLeaderboard(true)
       setConfusion(false)
       setFeedbacks(false)
-      setSelectedBlock(-1)
+      setSelectedBlockIndex(-1)
     }
   }, [router.query.leaderboard])
 
@@ -148,7 +143,6 @@ function Evaluation() {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
         <UserNotification
-          notificationType="error"
           className={{
             root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
           }}
@@ -162,8 +156,8 @@ function Evaluation() {
     <div className="flex flex-col w-full h-full overflow-y-none">
       <EvaluationControlBar
         blocks={blocks || []}
-        selectedBlock={selectedBlock}
-        setSelectedBlock={setSelectedBlock}
+        selectedBlock={selectedBlockIndex}
+        setSelectedBlock={setSelectedBlockIndex}
         setSelectedInstance={setSelectedInstance}
         selectedInstance={selectedInstance}
         selectedInstanceIndex={selectedInstanceIndex}

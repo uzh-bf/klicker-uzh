@@ -7,7 +7,9 @@ interface useEvaluationInitializationProps {
   instanceResults: InstanceResult[]
   currentInstance: Partial<InstanceResult>
   chartType: string
+  questionIx?: number
   setSelectedInstance: (id: string) => void
+  setSelectedBlockIndex: (index: number) => void
   setCurrentInstance: (instance: InstanceResult) => void
   setSelectedInstanceIndex: (index: number) => void
   setChartType: (type: string) => void
@@ -18,10 +20,12 @@ function useEvaluationInitialization({
   instanceResults,
   currentInstance,
   chartType,
+  questionIx,
   setSelectedInstance,
   setCurrentInstance,
   setSelectedInstanceIndex,
   setChartType,
+  setSelectedBlockIndex,
 }: useEvaluationInitializationProps) {
   useEffect(() => {
     if (
@@ -67,6 +71,16 @@ function useEvaluationInitialization({
     setSelectedInstance,
     setChartType,
   ])
+
+  // if a question index is provided through the url, directly switch to this question
+  useEffect(() => {
+    if (typeof questionIx === 'number' && instanceResults[questionIx]) {
+      setSelectedInstance(instanceResults[questionIx].id)
+      setSelectedBlockIndex(instanceResults[questionIx].blockIx)
+    } else if (typeof questionIx === 'number' && !instanceResults[questionIx]) {
+      setSelectedInstance('placeholder')
+    }
+  }, [questionIx, instanceResults])
 }
 
 export default useEvaluationInitialization
