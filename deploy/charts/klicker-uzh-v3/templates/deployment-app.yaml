@@ -22,9 +22,6 @@ spec:
       {{- with .Values.frontendPWA.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-pwa.yaml") . | sha256sum }}
-        release: {{ .Chart.AppVersion }}
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
@@ -99,9 +96,6 @@ spec:
       {{- with .Values.frontendManage.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-manage.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-manage.yaml") . | sha256sum }}
-        release: {{ .Chart.AppVersion }}
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
@@ -176,9 +170,6 @@ spec:
       {{- with .Values.frontendControl.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-control.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-control.yaml") . | sha256sum }}
-        release: {{ .Chart.AppVersion }}
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
@@ -253,9 +244,6 @@ spec:
       {{- with .Values.backendGraphql.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-        checksum/config: {{ include (print $.Template.BasePath "/cm-backend-graphql.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-backend-graphql.yaml") . | sha256sum }}
-        release: {{ .Chart.AppVersion }}
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
