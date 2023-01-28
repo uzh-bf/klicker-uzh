@@ -51,11 +51,6 @@ frontendPWA:
 
   affinity: {}
 
-  podAnnotations:
-    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
-    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-pwa.yaml") . | sha256sum }}
-    release: {{ .Chart.AppVersion }}
-
 frontendManage:
   priorityClassName: production-workload
 
@@ -95,11 +90,6 @@ frontendManage:
   tolerations: []
 
   affinity: {}
-
-  podAnnotations:
-    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-manage.yaml") . | sha256sum }}
-    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-manage.yaml") . | sha256sum }}
-    release: {{ .Chart.AppVersion }}
 
 frontendControl:
   priorityClassName: production-workload
@@ -141,11 +131,6 @@ frontendControl:
 
   affinity: {}
 
-  podAnnotations:
-    checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-control.yaml") . | sha256sum }}
-    checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-control.yaml") . | sha256sum }}
-    release: {{ .Chart.AppVersion }}
-
 backendGraphql:
   priorityClassName: production-workload
 
@@ -185,11 +170,6 @@ backendGraphql:
   tolerations: []
 
   affinity: {}
-
-  podAnnotations:
-    checksum/config: {{ include (print $.Template.BasePath "/cm-backend-graphql.yaml") . | sha256sum }}
-    checksum/secret: {{ include (print $.Template.BasePath "/secret-backend-graphql.yaml") . | sha256sum }}
-    release: {{ .Chart.AppVersion }}
 
 heartbeats:
   dailyGroupScores:
