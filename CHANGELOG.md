@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.12...v3.0.0-alpha.13) (2023-01-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure URLs for pwa, manage, and control are set in QA configs ([99e24b1](https://github.com/uzh-bf/klicker-uzh/commit/99e24b1a759cc28b77836b6bb8c7e8b13ad43373))
+
 ## [3.0.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.11...v3.0.0-alpha.12) (2023-01-28)
 
 ## [3.0.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.10...v3.0.0-alpha.11) (2023-01-28)
