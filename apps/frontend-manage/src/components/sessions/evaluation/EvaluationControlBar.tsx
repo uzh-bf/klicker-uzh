@@ -89,7 +89,7 @@ function EvaluationControlBar({
   }, [blocks, selectedBlock])
 
   return (
-    <div className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
+    <div className="fixed top-0 z-10 flex flex-row flex-none w-full px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
       {blocks && blocks[selectedBlock] && (
         <div className="flex flex-row items-center gap-2">
           <Button

@@ -159,7 +159,7 @@ function Evaluation() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-none">
+    <div className="flex flex-col w-full h-full overflow-y-none">
       <EvaluationControlBar
         blocks={blocks || []}
         selectedBlock={selectedBlock}
@@ -180,7 +180,13 @@ function Evaluation() {
         isGamificationEnabled={isGamificationEnabled}
       />
 
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className={twMerge(
+          'flex justify-between flex-col mt-11 [height:_calc(100%-6.25rem)] mb-14',
+          (showFeedbacks || showConfusion || showLeaderboard) &&
+            '[height:_calc(100%-7.25rem)] mb-18'
+        )}
+      >
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -192,6 +198,11 @@ function Evaluation() {
               textSize={textSize}
               chartType={chartType}
               setChartType={setChartType}
+              className={twMerge(
+                '[height:_calc(100%-4rem)] mb-14',
+                (showFeedbacks || showConfusion || showLeaderboard) &&
+                  '[height:_calc(100%-4.5rem)] mb-18'
+              )}
             />
           )}
         {showLeaderboard && !showConfusion && !showFeedbacks && (
@@ -261,7 +272,7 @@ function Evaluation() {
 
       <Footer
         className={twMerge(
-          'relative flex-none h-14',
+          'fixed bottom-0 flex-none h-14',
           (showFeedbacks || showConfusion || showLeaderboard) && 'h-18'
         )}
       >
