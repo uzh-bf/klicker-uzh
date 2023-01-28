@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.13...v3.0.0-alpha.14) (2023-01-28)
+
+
+### Deployment
+
+* add annotations for config, secret, and release to ensure redeploy on changes ([87ca3aa](https://github.com/uzh-bf/klicker-uzh/commit/87ca3aa36dce6470deda2d0c80259b6c412a9b98))
+
 ## [3.0.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.12...v3.0.0-alpha.13) (2023-01-28)
 
 
