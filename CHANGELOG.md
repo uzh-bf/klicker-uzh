@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.9...v3.0.0-alpha.10) (2023-01-28)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR api urls for new chart naming ([99ee2f1](https://github.com/uzh-bf/klicker-uzh/commit/99ee2f18ed536162179d53de11bdc66c003fb428))
+
+
+### Other
+
+* **packages/response*:** ensure that eslint does not reference nonexistent base config ([49ecc96](https://github.com/uzh-bf/klicker-uzh/commit/49ecc9607d8c32a478c3ccaaad7c811725e5e5c8))
+
 ## [3.0.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.8...v3.0.0-alpha.9) (2023-01-28)
 
 ## [3.0.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.7...v3.0.0-alpha.8) (2023-01-28)
