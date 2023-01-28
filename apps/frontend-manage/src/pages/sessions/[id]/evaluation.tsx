@@ -11,8 +11,8 @@ import {
   Button,
   Switch,
   ThemeContext,
-  UserNotification,
   useArrowNavigation,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useReducer, useState } from 'react'
@@ -126,6 +126,8 @@ function Evaluation() {
     if (typeof ix === 'number' && instanceResults[ix]) {
       setSelectedInstance(instanceResults[ix].id)
       setSelectedBlock(instanceResults[ix].blockIx)
+    } else if (typeof ix === 'number' && !instanceResults[ix]) {
+      setSelectedInstance('placeholder')
     }
   }, [router.query.questionIx, instanceResults])
 
@@ -141,6 +143,20 @@ function Evaluation() {
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
+
+  if (!currentInstance.id) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <UserNotification
+          notificationType="error"
+          className={{
+            root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
+          }}
+          message="Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt."
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-none">
@@ -158,7 +174,7 @@ function Evaluation() {
         showLeaderboard={showLeaderboard}
         showFeedbacks={showFeedbacks}
         showConfusion={showConfusion}
-        status={status}
+        status={status || ''}
         feedbacks={feedbacks || []}
         confusionFeedbacks={confusionFeedbacks || []}
         isGamificationEnabled={isGamificationEnabled}

@@ -24,7 +24,12 @@ function useEvaluationInitialization({
   setChartType,
 }: useEvaluationInitializationProps) {
   useEffect(() => {
-    if (!instanceResults || instanceResults.length === 0) return
+    if (
+      !instanceResults ||
+      instanceResults.length === 0 ||
+      selectedInstance == 'placeholder'
+    )
+      return
 
     if (selectedInstance === '' && currentInstance.id === '') {
       setSelectedInstance(instanceResults[0].id)
