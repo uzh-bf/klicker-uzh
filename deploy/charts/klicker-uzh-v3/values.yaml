@@ -18,7 +18,6 @@ frontendPWA:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -59,7 +58,6 @@ frontendManage:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -100,7 +98,6 @@ frontendControl:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control
-    tag: v3
     pullPolicy: Always
 
   service:
@@ -141,7 +138,6 @@ backendGraphql:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker
-    tag: v3
     pullPolicy: Always
 
   service:
