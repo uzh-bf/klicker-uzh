@@ -10,6 +10,7 @@ import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
+import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   // const armor = new EnvelopArmor()
@@ -85,6 +86,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           return req.body?.locals?.user?.sub ?? null
         },
       }),
+      useCSRFPrevention({
+        requestHeaders: ['x-graphql-yoga-csrf'] // default
+      })
       process.env.SENTRY_DSN &&
         useSentry({
           includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected

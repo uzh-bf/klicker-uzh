@@ -10,6 +10,17 @@ generates:
       # - "typescript-react-apollo"
       - 'typed-document-node'
       - 'fragment-matcher'
+  ./src/persisted-queries/client.json:
+    plugins:
+      - graphql-codegen-persisted-query-ids:
+          output: client
+          algorithm: sha256
+
+  ./src/persisted-queries/server.json:
+    plugins:
+      - graphql-codegen-persisted-query-ids:
+          output: server
+          algorithm: sha256
   ./src/ops.schema.json:
     plugins:
       - 'introspection'
