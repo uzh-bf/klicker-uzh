@@ -36,12 +36,16 @@ function createIsomorphLink() {
 
   const isBrowser = typeof window !== 'undefined'
 
-  const persistedLink = createPersistedQueryLink({
-    useGETForHashedQueries: true, // Optional but allows better caching
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    generateHash: usePregeneratedHashes(hashes),
-    // TODO: disable on dev
-  })
+  const persistedLink =
+    process.env.NODE_ENV === 'development'
+      ? []
+      : [
+          createPersistedQueryLink({
+            useGETForHashedQueries: true, // Optional but allows better caching
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            generateHash: usePregeneratedHashes(hashes),
+          }),
+        ]
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
@@ -129,10 +133,10 @@ function createIsomorphLink() {
       link
     )
 
-    return from([retryLink, errorLink, persistedLink, link])
+    return from([retryLink, errorLink, ...persistedLink, link])
   }
 
-  return from([errorLink, persistedLink, link])
+  return from([errorLink, ...persistedLink, link])
 }
 
 // TODO: use the schema link when working on the server?
