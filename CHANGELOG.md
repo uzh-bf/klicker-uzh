@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.16...v3.0.0-alpha.17) (2023-01-29)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure that session-based caching works with the new yoga app ([c092ad7](https://github.com/uzh-bf/klicker-uzh/commit/c092ad7d63f97a491d4103005b4b27159c358747))
+* **packages/graphql:** add manual unauthorized error on fetching participations to ensure PWA login redirect ([681d5e9](https://github.com/uzh-bf/klicker-uzh/commit/681d5e932248e97eb98db40890a8e59117088a85))
+
 ## [3.0.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.15...v3.0.0-alpha.16) (2023-01-28)
 
 
