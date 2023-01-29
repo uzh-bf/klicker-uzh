@@ -2,8 +2,11 @@
 import { useSentry } from '@envelop/sentry'
 // import { EnvelopArmor } from '@escape.tech/graphql-armor'
 // import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
+import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { Request } from 'express'
@@ -83,6 +86,15 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         session(req) {
           // extract user id from locals as stored in passport auth middleware
           return req.body?.locals?.user?.sub ?? null
+        },
+      }),
+      useCSRFPrevention({
+        requestHeaders: ['x-graphql-yoga-csrf'], // default
+      }),
+      usePersistedOperations({
+        allowArbitraryOperations: process.env.NODE_ENV === 'development',
+        getPersistedOperation(sha256Hash: string) {
+          return persistedOperations[sha256Hash]
         },
       }),
       process.env.SENTRY_DSN &&
