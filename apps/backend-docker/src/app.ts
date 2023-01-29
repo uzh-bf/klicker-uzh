@@ -2,15 +2,17 @@
 import { useSentry } from '@envelop/sentry'
 // import { EnvelopArmor } from '@escape.tech/graphql-armor'
 // import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
+import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
-import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   // const armor = new EnvelopArmor()
@@ -87,8 +89,14 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         },
       }),
       useCSRFPrevention({
-        requestHeaders: ['x-graphql-yoga-csrf'] // default
-      })
+        requestHeaders: ['x-graphql-yoga-csrf'], // default
+      }),
+      usePersistedOperations({
+        allowArbitraryOperations: process.env.NODE_ENV === 'development',
+        getPersistedOperation(sha256Hash: string) {
+          return persistedOperations[sha256Hash]
+        },
+      }),
       process.env.SENTRY_DSN &&
         useSentry({
           includeRawResult: false, // set to `true` in order to include the execution result in the metadata collected
