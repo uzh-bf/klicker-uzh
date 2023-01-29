@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.17...v3.0.0-alpha.18) (2023-01-29)
+
+
+### Enhancements
+
+* **apps/backend-docker:** upgrade graphql-yoga and set-up CSRF protection plug-in ([4065288](https://github.com/uzh-bf/klicker-uzh/commit/4065288936565a0a11b6da487f99e081c93d9fd3))
+* set-up persisted queries and CSRF ([#3288](https://github.com/uzh-bf/klicker-uzh/issues/3288)) ([f1956b3](https://github.com/uzh-bf/klicker-uzh/commit/f1956b3fd5824f75488e358058b9d06e7d07d9f6))
+
 ## [3.0.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.16...v3.0.0-alpha.17) (2023-01-29)
 
 
