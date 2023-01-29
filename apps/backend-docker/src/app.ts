@@ -6,7 +6,7 @@ import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express from 'express'
+import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
@@ -30,14 +30,14 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   passport.use(
     new JWTStrategy(
       {
-        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
-        jwtFromRequest(req) {
+        jwtFromRequest(req: Request) {
           if (req.headers?.['authorization'])
             return req.headers['authorization']?.replace('Bearer ', '')
           if (req.cookies)
             return req.cookies['user_token'] || req.cookies['participant_token']
           return null
         },
+        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         secretOrKey: process.env.APP_SECRET,
         // issuer: 'abcd',
         // audience: 'localhost',
@@ -80,8 +80,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           LeaderboardEntry: 0,
         },
         cache,
-        session(ctx) {
-          return ctx.user ? ctx.user.sub : null
+        session(req) {
+          // extract user id from locals as stored in passport auth middleware
+          return req.body?.locals?.user?.sub ?? null
         },
       }),
       process.env.SENTRY_DSN &&
