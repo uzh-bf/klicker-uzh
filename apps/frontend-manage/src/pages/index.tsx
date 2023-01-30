@@ -152,7 +152,7 @@ function Index() {
                     key="question-list"
                   >
                     <div className="flex flex-row content-center justify-between w-full h-full mt-4 pl-7">
-                      <div className="relative flex flex-row w-2.5/5 pb-6">
+                      <div className="relative flex flex-row pb-6">
                         <TextField
                           placeholder="Suchen.."
                           value={searchInput}
@@ -163,36 +163,34 @@ function Index() {
                           icon={faMagnifyingGlass}
                           className={{
                             input: 'h-10',
-                            field: 'w-1/2',
+                            field: 'w-30 pr-3',
                           }}
                         />
-                        <div className="flex flex-row justify-center w-1/2 ml-1">
-                          <Button
-                            disabled={!sortBy}
-                            onClick={() => {
-                              handleSortOrderToggle()
-                            }}
-                            className={{
-                              root: 'h-10 mr-1',
-                            }}
-                          >
-                            <Button.Icon>
-                              <FontAwesomeIcon icon={sortIcon} />
-                            </Button.Icon>
-                          </Button>
-                          <Select
-                            className={{
-                              root: 'min-w-30',
-                              trigger: 'h-10',
-                            }}
-                            placeholder="Sortieren nach.."
-                            items={dropdownItems}
-                            onChange={(newSortBy: string) => {
-                              setSortBy(newSortBy)
-                              handleSortByChange(newSortBy)
-                            }}
-                          />
-                        </div>
+                        <Button
+                          disabled={!sortBy}
+                          onClick={() => {
+                            handleSortOrderToggle()
+                          }}
+                          className={{
+                            root: 'h-10 mr-1',
+                          }}
+                        >
+                          <Button.Icon>
+                            <FontAwesomeIcon icon={sortIcon} />
+                          </Button.Icon>
+                        </Button>
+                        <Select
+                          className={{
+                            root: 'min-w-30',
+                            trigger: 'h-10',
+                          }}
+                          placeholder="Sortieren nach.."
+                          items={dropdownItems}
+                          onChange={(newSortBy: string) => {
+                            setSortBy(newSortBy)
+                            handleSortByChange(newSortBy)
+                          }}
+                        />
                       </div>
                       <Button
                         onClick={() =>
