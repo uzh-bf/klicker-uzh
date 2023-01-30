@@ -55,17 +55,18 @@ function TableChart({
     { label: '%', accessor: 'percentage', sortable: true },
   ]
   if (showSolution)
-    // Don't show True/False for numerical questions right now, as it is not implemented in current klicker either
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
+
   return (
     <Table
       data={tableData}
       columns={columns}
       className={{
+        root: 'pb-4',
         tableHeader: textSize,
         body: textSize,
       }}
-    ></Table>
+    />
   )
 }
 

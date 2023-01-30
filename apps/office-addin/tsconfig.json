@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "allowUnusedLabels": false,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "outDir": "dist",
+    "removeComments": false,
+    "sourceMap": true,
+    "target": "es5",
+    "lib": ["es7", "dom"],
+    "pretty": true
+  },
+  "compileOnSave": false,
+  "buildOnSave": false,
+  "ts-node": {
+    "files": true
+  }
+}

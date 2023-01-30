@@ -8,8 +8,11 @@ import {
   split,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
+import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
+import hashes from '@klicker-uzh/graphql/dist/client.json'
+import { usePregeneratedHashes } from '@klicker-uzh/graphql/dist/util'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { createClient } from 'graphql-ws'
@@ -19,7 +22,6 @@ import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
-
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
   props?: Record<string, any>
@@ -33,6 +35,17 @@ function createIsomorphLink() {
   const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
   const isBrowser = typeof window !== 'undefined'
+
+  const persistedLink =
+    process.env.NODE_ENV === 'development'
+      ? []
+      : [
+          createPersistedQueryLink({
+            useGETForHashedQueries: true, // Optional but allows better caching
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            generateHash: usePregeneratedHashes(hashes),
+          }),
+        ]
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
@@ -72,6 +85,9 @@ function createIsomorphLink() {
       ? publicRuntimeConfig.API_URL
       : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
     credentials: 'include',
+    headers: {
+      'x-graphql-yoga-csrf': 'true',
+    },
   })
 
   if (isBrowser) {
@@ -117,14 +133,15 @@ function createIsomorphLink() {
       link
     )
 
-    return from([retryLink, errorLink, link])
+    return from([retryLink, errorLink, ...persistedLink, link])
   }
 
-  return from([errorLink, link])
+  return from([errorLink, ...persistedLink, link])
 }
 
 // TODO: use the schema link when working on the server?
 function createApolloClient(ctx?: GetServerSidePropsContext) {
+  // TODO: switch to yoga link
   // const yogaLink = new YogaLink({
   //   endpoint: publicRuntimeConfig.API_URL,
   //   credentials: true
@@ -138,7 +155,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 }
 
 export function initializeApollo(
-  initialState: NormalizedCacheObject,
+  initialState?: NormalizedCacheObject,
   ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
   const _apolloClient = apolloClient ?? createApolloClient(ctx)

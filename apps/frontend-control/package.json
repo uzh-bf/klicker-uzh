@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.7",
+  "version": "3.0.0-alpha.18",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
@@ -25,6 +25,7 @@
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "0.1.21",
     "body-parser": "1.20.1",
+    "cross-env": "7.0.3",
     "dayjs": "1.11.7",
     "deepmerge": "4.2.2",
     "graphql": "16.6.0",
