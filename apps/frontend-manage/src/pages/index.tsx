@@ -151,7 +151,7 @@ function Index() {
                     className="w-full h-full mt-4 md:overflow-y-auto md:mx-auto"
                     key="question-list"
                   >
-                    <div className="flex flex-row content-center justify-between w-full h-full mt-4 pl-7">
+                    <div className="flex flex-row content-center justify-between w-full h-full pl-8 mt-4">
                       <div className="relative flex flex-row pb-6">
                         <TextField
                           placeholder="Suchen.."
