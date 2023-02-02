@@ -1,6 +1,7 @@
 import { Button, Label, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
+import { PRESET_COURSE_COLORS } from 'src/constants'
 
 interface Props {
   color: string
@@ -12,8 +13,6 @@ function ColorPicker({ color, onAbort, onSubmit }: Props) {
   const theme = useContext(ThemeContext)
   const [newColor, setNewColor] = useState(color)
 
-  const presetColors = ['#262FAD', '#016272', '#5FB1F9', '#FE7408', '#D84B39']
-
   return (
     <div className="absolute flex flex-col p-1 bg-white rounded-md shadow-md w-80 left-10 top-8">
       <HexColorPicker
@@ -22,7 +21,7 @@ function ColorPicker({ color, onAbort, onSubmit }: Props) {
         onChange={setNewColor}
       />
       <div className="grid grid-cols-5 gap-0.5 pt-3 pb-3 justify-items-center">
-        {presetColors.map((presetColor, index) => (
+        {PRESET_COURSE_COLORS.map((presetColor, index) => (
           <button
             key={index}
             className={'h-7 w-7 rounded-2xl'}

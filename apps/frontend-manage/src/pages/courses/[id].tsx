@@ -41,9 +41,9 @@ function CourseOverviewPage() {
     }
   }, [data, router])
 
-  const toggleColorPicker = useCallback(() => {
-    setIsColorPickerVisible(!isColorPickerVisible)
-  }, [isColorPickerVisible])
+  const toggleColorPicker = () => {
+    setIsColorPickerVisible (prevState => !prevState)
+  }
 
   if (error) {
     return <div>{error.message}</div>
