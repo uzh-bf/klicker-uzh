@@ -10,11 +10,11 @@ interface Props {
 
 function ColorPicker(props: Props) {
   const { color, onAbort, onChange } = props
-  
+
   const theme = useContext(ThemeContext)
   const [newColor, setNewColor] = useState(color)
 
-  const presetColors = ['#808080', '#008000', '#800080', '#FF0000', '#0000FF']
+  const presetColors = ['#262FAD', '#016272', '#5FB1F9', '#FE7408', '#D84B39']
 
   return (
     <div className="absolute flex flex-col p-1 bg-white rounded-md shadow-md w-80 left-10 top-8">
@@ -35,7 +35,7 @@ function ColorPicker(props: Props) {
       </div>
       <div className="flex flex-row">
         <Label
-          className={{ root: 'pr-1' }}
+          className={{ root: 'pr-1', tooltip: 'ml-4' }}
           label="Farbe:"
           tooltip="Sie können auch direkt den Hex-Code einer Farbe eingeben"
           showTooltipSymbol
@@ -55,7 +55,9 @@ function ColorPicker(props: Props) {
           Abbrechen
         </Button>
         <Button
-          className={{ root: `float-right text-white disabled:opacity-60 ${theme.primaryBgDark}` }}
+          className={{
+            root: `float-right text-white disabled:opacity-60 ${theme.primaryBgDark}`,
+          }}
           type="submit"
           onClick={() => onChange(newColor)}
           disabled={color === newColor}

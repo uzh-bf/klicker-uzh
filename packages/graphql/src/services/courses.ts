@@ -526,3 +526,18 @@ export async function changeCourseDescription(
 
   return course
 }
+
+export async function changeCourseColor(
+  { courseId, color }: { courseId: string; color: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: { id: courseId },
+    data: {
+      color,
+    },
+  })
+
+  return course
+}
+

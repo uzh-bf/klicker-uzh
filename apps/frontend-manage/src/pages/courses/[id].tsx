@@ -1,7 +1,7 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument, ChangeCourseColorDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
@@ -24,21 +24,19 @@ function CourseOverviewPage() {
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
-  const [color, setColor] = useState('')
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
 
+  const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
+
   useEffect(() => {
     if (data && !data.course) {
       router.push('/404')
     }
 
-    if (data && data.course?.color) {
-      setColor(data.course.color)
-    }
   }, [data, router])
 
   const toggleColorPicker = useCallback(() => {
@@ -62,8 +60,7 @@ function CourseOverviewPage() {
 
   const handleColorChange = (newColor: string) => {
     toggleColorPicker()
-    setColor(newColor)
-    // TODO: write modification to DB
+    changeCourseColor({variables: {color: newColor, courseId: course.id} })
   }
 
   return (
@@ -142,14 +139,14 @@ function CourseOverviewPage() {
             className={
               'flex relative w-20 mr-3 rounded-lg align-center justify-end'
             }
-            style={{ backgroundColor: color }}
+            style={{ backgroundColor: course.color }}
           >
             <Button className={{ root: '' }} onClick={toggleColorPicker}>
               <FontAwesomeIcon icon={faPalette} />
             </Button>
             {isColorPickerVisible && (
               <ColorPicker
-                color={color}
+                color={course.color}
                 onChange={handleColorChange}
                 onAbort={toggleColorPicker}
               />
