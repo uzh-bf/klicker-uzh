@@ -8,14 +8,14 @@ const INITIAL_STATE = {
   filters: {
     archive: false,
     tags: [],
-    title: null,
+    name: null,
     type: null,
     sampleSolution: null,
     answerFeedbacks: null,
   },
   sort: {
     asc: false,
-    by: QUESTION_SORTINGS[0].id,
+    by: '',
   },
 }
 
@@ -89,7 +89,7 @@ function reducer(state, action): any {
         ...state,
         filters: {
           ...state.filters,
-          title: action.title,
+          name: action.name,
         },
       }
 
@@ -131,7 +131,7 @@ function useSortingAndFiltering(): any {
   return {
     ...state,
     handleReset: (): void => dispatch({ type: 'RESET' }),
-    handleSearch: (title: string): void => dispatch({ type: 'SEARCH', title }),
+    handleSearch: (name: string): void => dispatch({ type: 'SEARCH', name }),
     handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
     handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
     handleToggleArchive: (newValue: boolean): void =>
