@@ -1,7 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument, ChangeCourseColorDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChangeCourseColorDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
@@ -36,7 +39,6 @@ function CourseOverviewPage() {
     if (data && !data.course) {
       router.push('/404')
     }
-
   }, [data, router])
 
   const toggleColorPicker = useCallback(() => {
@@ -58,9 +60,9 @@ function CourseOverviewPage() {
     [SESSION_STATUS.COMPLETED]: 3,
   }
 
-  const handleColorChange = (newColor: string) => {
+  const handleColorChange = (color: string) => {
     toggleColorPicker()
-    changeCourseColor({variables: {color: newColor, courseId: course.id} })
+    changeCourseColor({ variables: { color, courseId: course.id } })
   }
 
   return (
@@ -141,13 +143,13 @@ function CourseOverviewPage() {
             }
             style={{ backgroundColor: course.color }}
           >
-            <Button className={{ root: '' }} onClick={toggleColorPicker}>
+            <Button onClick={toggleColorPicker}>
               <FontAwesomeIcon icon={faPalette} />
             </Button>
             {isColorPickerVisible && (
               <ColorPicker
                 color={course.color}
-                onChange={handleColorChange}
+                onSubmit={handleColorChange}
                 onAbort={toggleColorPicker}
               />
             )}

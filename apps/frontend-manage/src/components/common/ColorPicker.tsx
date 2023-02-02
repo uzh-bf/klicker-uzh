@@ -4,12 +4,11 @@ import { HexColorInput, HexColorPicker } from 'react-colorful'
 
 interface Props {
   color: string
-  onChange: (newColor: string) => void
+  onSubmit: (newColor: string) => void
   onAbort: () => void
 }
 
-function ColorPicker({ color, onAbort, onChange }: Props) {
-
+function ColorPicker({ color, onAbort, onSubmit }: Props) {
   const theme = useContext(ThemeContext)
   const [newColor, setNewColor] = useState(color)
 
@@ -58,7 +57,7 @@ function ColorPicker({ color, onAbort, onChange }: Props) {
             root: `float-right text-white disabled:opacity-60 ${theme.primaryBgDark}`,
           }}
           type="submit"
-          onClick={() => onChange(newColor)}
+          onClick={() => onSubmit(newColor)}
           disabled={color === newColor}
         >
           Speichern
