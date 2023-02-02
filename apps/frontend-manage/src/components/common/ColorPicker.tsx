@@ -8,8 +8,7 @@ interface Props {
   onAbort: () => void
 }
 
-function ColorPicker(props: Props) {
-  const { color, onAbort, onChange } = props
+function ColorPicker({ color, onAbort, onChange }: Props) {
 
   const theme = useContext(ThemeContext)
   const [newColor, setNewColor] = useState(color)
