@@ -1,7 +1,7 @@
 import { Button, Label, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
-import { PRESET_COURSE_COLORS } from 'src/constants'
+import { PRESET_COURSE_COLORS } from 'shared-components/src/constants'
 
 interface Props {
   color: string
