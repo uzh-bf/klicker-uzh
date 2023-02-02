@@ -540,4 +540,3 @@ export async function changeCourseColor(
 
   return course
 }
-

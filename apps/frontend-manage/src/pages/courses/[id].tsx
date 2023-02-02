@@ -10,7 +10,7 @@ import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import ColorPicker from '../../components/common/ColorPicker'
@@ -42,7 +42,7 @@ function CourseOverviewPage() {
   }, [data, router])
 
   const toggleColorPicker = () => {
-    setIsColorPickerVisible (prevState => !prevState)
+    setIsColorPickerVisible((prevState) => !prevState)
   }
 
   if (error) {

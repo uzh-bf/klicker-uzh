@@ -1,7 +1,6 @@
 import Prisma from '@klicker-uzh/prisma'
 
 async function seedAchievements(prisma: Prisma.PrismaClient) {
-
   const pilotAchievement = await prisma.achievement.upsert({
     where: { id: 2 },
     create: {
@@ -31,7 +30,6 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
     },
   })
-
 
   // TODO: include these achievements again and add icon for last place
   //   const lastPlaceAchievement = await prisma.achievement.upsert({

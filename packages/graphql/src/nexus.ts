@@ -1984,9 +1984,7 @@ export const Mutation = objectType({
       type: Course,
       args: {
         courseId: nonNull(idArg()),
-        color: nonNull(
-          stringArg()
-        ),
+        color: nonNull(stringArg()),
       },
       resolve(_, args, ctx: ContextWithUser) {
         return CourseService.changeCourseColor(args, ctx)

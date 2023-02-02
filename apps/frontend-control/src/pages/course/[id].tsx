@@ -6,8 +6,8 @@ import {
 import { UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import SessionLists from '../../components/sessions/SessionLists'
 import Layout from '../../components/Layout'
+import SessionLists from '../../components/sessions/SessionLists'
 
 function Course() {
   const router = useRouter()
