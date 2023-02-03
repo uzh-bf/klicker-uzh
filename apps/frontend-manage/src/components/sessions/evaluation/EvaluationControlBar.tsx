@@ -239,6 +239,7 @@ function EvaluationControlBar({
               setFeedbacks(false)
               setConfusion(false)
               setSelectedBlock(-1)
+              setSelectedInstanceIndex(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -265,6 +266,7 @@ function EvaluationControlBar({
               setLeaderboard(false)
               setConfusion(false)
               setSelectedBlock(-1)
+              setSelectedInstanceIndex(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -290,6 +292,7 @@ function EvaluationControlBar({
               setLeaderboard(false)
               setFeedbacks(false)
               setSelectedBlock(-1)
+              setSelectedInstanceIndex(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">

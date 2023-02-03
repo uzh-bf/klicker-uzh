@@ -53,8 +53,13 @@ function useEvaluationInitialization({
           ACTIVE_CHART_TYPES[currentInstance?.questionData?.type || 0][0].value
         )
       }
-    } else if (!instanceResults?.[selectedInstanceIndex]) {
+    } else if (
+      !instanceResults?.[selectedInstanceIndex] &&
+      selectedInstanceIndex !== -1
+    ) {
       setSelectedInstance('placeholder')
+    } else {
+      setSelectedInstance('')
     }
   }, [instanceResults, selectedInstanceIndex])
 }

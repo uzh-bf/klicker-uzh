@@ -144,12 +144,15 @@ function Evaluation() {
 
   useArrowNavigation({
     onArrowLeft: () => {
-      if (selectedInstanceIndex > 0) {
+      if (selectedInstanceIndex > 0 && selectedInstanceIndex !== -1) {
         setSelectedInstanceIndex(selectedInstanceIndex - 1)
       }
     },
     onArrowRight: () => {
-      if (selectedInstanceIndex < instanceResults.length - 1) {
+      if (
+        selectedInstanceIndex < instanceResults.length - 1 &&
+        selectedInstanceIndex !== -1
+      ) {
         setSelectedInstanceIndex(selectedInstanceIndex + 1)
       }
     },
@@ -161,6 +164,7 @@ function Evaluation() {
       setConfusion(false)
       setFeedbacks(false)
       setSelectedBlockIndex(-1)
+      setSelectedInstanceIndex(-1)
     }
   }, [router.query.leaderboard])
 
@@ -168,7 +172,7 @@ function Evaluation() {
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  if (!currentInstance.id) {
+  if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
         <UserNotification
