@@ -143,6 +143,8 @@ function FeedbackSearchAndFilters({
                         <Checkbox
                           checked={filter.checked}
                           onCheck={() => null}
+                          disabled={disabled?.filters}
+                          className={{ root: 'mr-2' }}
                         />
                         {filter.label}
                       </span>
@@ -166,8 +168,9 @@ function FeedbackSearchAndFilters({
                       checked={filter.checked}
                       onCheck={filter.onChange}
                       disabled={disabled?.filters}
+                      label={filter.label}
+                      className={{ label: 'mr-2' }}
                     />
-                    {filter.label}
                   </span>
                 </div>
               ))}
@@ -179,9 +182,11 @@ function FeedbackSearchAndFilters({
       <div className="flex flex-row">
         {!hidden?.print && (
           <Button
+            basic
             className={{
               root: twMerge(
-                'justify-center mt-4 w-11 h-11 md:mt-0',
+                'flex justify-center items-center h-9 w-9 rounded-md',
+                theme.primaryBgHover,
                 !hidden?.sorting && 'mr-2'
               ),
             }}
