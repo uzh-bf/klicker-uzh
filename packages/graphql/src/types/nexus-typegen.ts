@@ -851,6 +851,7 @@ export interface NexusGenFieldTypes {
     activateSessionBlock: NexusGenRootTypes['Session'] | null; // Session
     addConfusionTimestep: NexusGenRootTypes['ConfusionTimestep'] | null; // ConfusionTimestep
     cancelSession: NexusGenRootTypes['Session'] | null; // Session
+    changeCourseColor: NexusGenRootTypes['Course'] | null; // Course
     changeCourseDescription: NexusGenRootTypes['Course'] | null; // Course
     changeSessionSettings: NexusGenRootTypes['Session'] | null; // Session
     createCourse: NexusGenRootTypes['Course'] | null; // Course
@@ -1406,6 +1407,7 @@ export interface NexusGenFieldTypeNames {
     activateSessionBlock: 'Session'
     addConfusionTimestep: 'ConfusionTimestep'
     cancelSession: 'Session'
+    changeCourseColor: 'Course'
     changeCourseDescription: 'Course'
     changeSessionSettings: 'Session'
     createCourse: 'Course'
@@ -1712,6 +1714,10 @@ export interface NexusGenArgTypes {
     }
     cancelSession: { // args
       id: string; // ID!
+    }
+    changeCourseColor: { // args
+      color: string; // String!
+      courseId: string; // ID!
     }
     changeCourseDescription: { // args
       courseId: string; // ID!

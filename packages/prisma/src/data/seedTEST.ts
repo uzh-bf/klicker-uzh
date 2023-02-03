@@ -1,12 +1,7 @@
 import Prisma from '@klicker-uzh/prisma'
 import * as DATA_TEST from './data/TEST'
 
-import {
-  COURSE_ID_AMI,
-  COURSE_ID_BF1,
-  COURSE_ID_TEST,
-  USER_ID_TEST,
-} from './constants.js'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import {
   prepareCourse,
   prepareLearningElement,
@@ -123,7 +118,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           id,
           password: 'testing',
           username: `testuser${ix + 1}`,
-          courseIds: [ COURSE_ID_TEST],
+          courseIds: [COURSE_ID_TEST],
         })
       )
     })

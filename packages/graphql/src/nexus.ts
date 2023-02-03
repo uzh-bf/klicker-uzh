@@ -1979,6 +1979,17 @@ export const Mutation = objectType({
         return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
       },
     })
+
+    t.field('changeCourseColor', {
+      type: Course,
+      args: {
+        courseId: nonNull(idArg()),
+        color: nonNull(stringArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.changeCourseColor(args, ctx)
+      },
+    })
   },
 })
 
