@@ -132,7 +132,6 @@ function Evaluation() {
   useEvaluationInitialization({
     selectedInstanceIndex,
     instanceResults,
-    currentInstance,
     chartType,
     questionIx: Number(router.query.questionIx ?? 0),
     setSelectedInstance,

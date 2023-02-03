@@ -5,7 +5,6 @@ import { ACTIVE_CHART_TYPES } from 'shared-components/src/constants'
 interface useEvaluationInitializationProps {
   selectedInstanceIndex: number
   instanceResults: InstanceResult[]
-  currentInstance: Partial<InstanceResult>
   chartType: string
   questionIx?: number
   setSelectedInstance: (id: string) => void
@@ -18,7 +17,6 @@ interface useEvaluationInitializationProps {
 function useEvaluationInitialization({
   selectedInstanceIndex,
   instanceResults,
-  currentInstance,
   chartType,
   questionIx,
   setSelectedInstance,
