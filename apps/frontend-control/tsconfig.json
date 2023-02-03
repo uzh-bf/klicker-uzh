@@ -22,12 +22,7 @@
       "@type/*": ["src/types/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "types/app.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-  ],
+  "include": ["next-env.d.ts", "types/app.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"],
   "ts-node": {
     "transpileOnly": true,

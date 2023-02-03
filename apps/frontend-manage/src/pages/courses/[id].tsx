@@ -1,14 +1,19 @@
-import { useQuery } from '@apollo/client'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import { useMutation, useQuery } from '@apollo/client'
+import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChangeCourseColorDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { sort } from 'ramda'
 import { useContext, useEffect, useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import ColorPicker from '../../components/common/ColorPicker'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSession'
@@ -21,17 +26,24 @@ function CourseOverviewPage() {
   const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
+  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
 
+  const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
+
   useEffect(() => {
     if (data && !data.course) {
       router.push('/404')
     }
   }, [data, router])
+
+  const toggleColorPicker = () => {
+    setIsColorPickerVisible((prevState) => !prevState)
+  }
 
   if (error) {
     return <div>{error.message}</div>
@@ -46,6 +58,11 @@ function CourseOverviewPage() {
     [SESSION_STATUS.SCHEDULED]: 1,
     [SESSION_STATUS.PREPARED]: 2,
     [SESSION_STATUS.COMPLETED]: 3,
+  }
+
+  const handleColorChange = (color: string) => {
+    toggleColorPicker()
+    changeCourseColor({ variables: { color, courseId: course.id } })
   }
 
   return (
@@ -118,6 +135,26 @@ function CourseOverviewPage() {
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
+        <div className="flex flex-row pt-1">
+          <span className="pr-3">Kursfarbe</span>
+          <div
+            className={
+              'flex relative w-20 mr-3 rounded-lg align-center justify-end'
+            }
+            style={{ backgroundColor: course.color }}
+          >
+            <Button onClick={toggleColorPicker}>
+              <FontAwesomeIcon icon={faPalette} />
+            </Button>
+            {isColorPickerVisible && (
+              <ColorPicker
+                color={course.color}
+                onSubmit={handleColorChange}
+                onAbort={toggleColorPicker}
+              />
+            )}
+          </div>
+        </div>
       </div>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
@@ -125,16 +162,14 @@ function CourseOverviewPage() {
             <H3>Sessionen</H3>
             {course.sessions && course.sessions.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {course.sessions
-                  .sort((a, b) => {
-                    return (
-                      sortingOrderSessions[a.status] -
-                      sortingOrderSessions[b.status]
-                    )
-                  })
-                  .map((session) => (
-                    <SessionTile session={session} key={session.id} />
-                  ))}
+                {sort((a, b) => {
+                  return (
+                    sortingOrderSessions[a.status] -
+                    sortingOrderSessions[b.status]
+                  )
+                }, course.sessions).map((session) => (
+                  <SessionTile session={session} key={session.id} />
+                ))}
               </div>
             ) : (
               <div>Keine Sessionen vorhanden</div>

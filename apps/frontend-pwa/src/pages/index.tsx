@@ -257,7 +257,7 @@ const Index = function () {
         </div>
 
         <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2 mb-4">
           {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
           {courses.map((course) => (
             <CourseElement

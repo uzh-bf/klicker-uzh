@@ -138,7 +138,6 @@ export function subtractDates(date1: any, date2: any): any {
 }
 
 export function sortQuestions(questions: any[], sort: any): any[] {
-
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {

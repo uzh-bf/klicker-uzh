@@ -44,6 +44,7 @@ export const AuthSchema = {
     cancelSession: { __authz: { rules: ['IsUserOrAdmin'] } },
     changeSessionSettings: { __authz: { rules: ['IsUserOrAdmin'] } },
     changeCourseDescription: { __authz: { rules: ['IsUserOrAdmin'] } },
+    changeCourseColor: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedback: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteFeedbackResponse: { __authz: { rules: ['IsUserOrAdmin'] } },
     deleteTag: { __authz: { rules: ['IsUserOrAdmin'] } },

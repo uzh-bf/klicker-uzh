@@ -192,3 +192,11 @@ export const LEARNING_ELEMENT_ORDERS: Record<string, string> = {
   SHUFFLED: 'Zufällig',
   LAST_RESPONSE: 'Letzte Antwort zuletzt',
 }
+
+export const PRESET_COURSE_COLORS = [
+  '#262FAD',
+  '#016272',
+  '#5FB1F9',
+  '#FE7408',
+  '#D84B39',
+]
