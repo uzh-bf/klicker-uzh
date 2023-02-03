@@ -12,11 +12,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Block,
   ConfusionTimestep,
   Feedback,
   InstanceResult,
 } from '@klicker-uzh/graphql/dist/ops'
+import { EvaluationBlock } from '@pages/sessions/[id]/evaluation'
 import { Button, Select, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -28,11 +28,10 @@ const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
 }
 
 interface EvaluationControlBarProps {
-  blocks: Block[]
+  blocks: EvaluationBlock[]
   selectedBlock: number
   setSelectedBlock: (block: number) => void
-  setSelectedInstance: (instance: string) => void
-  selectedInstance: string
+  setSelectedInstanceIndex: (index: number) => void
   selectedInstanceIndex: number
   instanceResults: InstanceResult[]
   setLeaderboard: (leaderboard: boolean) => void
@@ -51,8 +50,7 @@ function EvaluationControlBar({
   blocks,
   selectedBlock,
   setSelectedBlock,
-  setSelectedInstance,
-  selectedInstance,
+  setSelectedInstanceIndex,
   selectedInstanceIndex,
   instanceResults,
   setLeaderboard,
@@ -83,7 +81,7 @@ function EvaluationControlBar({
           question?.name.length > 20
             ? `${question?.name.substring(0, 20)}...`
             : undefined,
-        value: question?.id || '',
+        value: String(question?.ix),
       }
     })
   }, [blocks, selectedBlock])
@@ -95,10 +93,7 @@ function EvaluationControlBar({
           <Button
             basic
             onClick={() => {
-              setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
-              setSelectedBlock(
-                instanceResults[selectedInstanceIndex - 1].blockIx
-              )
+              setSelectedInstanceIndex(selectedInstanceIndex - 1)
             }}
             disabled={selectedInstanceIndex === 0}
             className={{
@@ -113,10 +108,7 @@ function EvaluationControlBar({
           <Button
             basic
             onClick={() => {
-              setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
-              setSelectedBlock(
-                instanceResults[selectedInstanceIndex + 1].blockIx
-              )
+              setSelectedInstanceIndex(selectedInstanceIndex + 1)
             }}
             disabled={selectedInstanceIndex === instanceResults.length - 1}
             className={{
@@ -135,19 +127,13 @@ function EvaluationControlBar({
           <Select
             items={selectData || []}
             onChange={(newValue) => {
-              if (newValue !== '') {
-                setSelectedInstance(newValue)
-              }
+              setSelectedInstanceIndex(Number(newValue))
             }}
             className={{
               root: 'h-[2.65rem] z-20',
               trigger: 'shadow-none rounded-none m-0 border-none h-full',
             }}
-            value={
-              selectedInstance === ''
-                ? blocks[selectedBlock].tabData[0].id
-                : selectedInstance
-            }
+            value={String(selectedInstanceIndex)}
           />
         </div>
       )}
@@ -155,7 +141,7 @@ function EvaluationControlBar({
         <Button
           basic
           onClick={() => {
-            setSelectedInstance(blocks[selectedBlock - 1].tabData[0].id)
+            setSelectedInstanceIndex(blocks[selectedBlock - 1].tabData[0].ix)
             setLeaderboard(false)
             setFeedbacks(false)
             setConfusion(false)
@@ -186,7 +172,7 @@ function EvaluationControlBar({
               setLeaderboard(false)
               setFeedbacks(false)
               setConfusion(false)
-              setSelectedInstance(blocks[tab.value].tabData[0].id)
+              setSelectedInstanceIndex(blocks[tab.value].tabData[0].ix)
             }}
             className={{
               root: twMerge(
@@ -213,7 +199,7 @@ function EvaluationControlBar({
         <Button
           basic
           onClick={() => {
-            setSelectedInstance(blocks[selectedBlock + 1].tabData[0].id)
+            setSelectedInstanceIndex(blocks[selectedBlock + 1].tabData[0].ix)
             setLeaderboard(false)
             setFeedbacks(false)
             setConfusion(false)
