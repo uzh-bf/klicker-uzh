@@ -13,6 +13,7 @@ import React, { useContext, useEffect, useState } from 'react'
 
 import durationPlugin from 'dayjs/plugin/duration'
 
+import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
@@ -197,26 +198,39 @@ function SessionTimeline({
           <div className="flex flex-row w-full p-4 mt-2 overflow-scroll border border-solid rounded-lg border-uzh-grey-80">
             <FontAwesomeIcon
               icon={faPlay}
-              size="lg"
+              size="xl"
               className={twMerge(
                 'my-auto p-2 rounded-md',
-                buttonState === 'firstBlock' && 'bg-green-300'
+                buttonState === 'firstBlock' && 'text-green-500'
               )}
             />
-            {blocks.map((block) => (
-              <SessionBlock
-                key={block.id}
-                block={block}
-                active={activeBlockId === block.id}
-                className="my-auto"
-              />
+            {blocks.map((block, idx) => (
+              <>
+                <SessionBlock
+                  key={block.id}
+                  block={block}
+                  active={activeBlockId === block.id}
+                  className="my-auto"
+                />
+                <FontAwesomeIcon
+                  className={twMerge(
+                    'my-auto',
+                    idx === blocks.length - 1 && 'hidden',
+                    buttonState === 'nextBlock' &&
+                      lastActiveBlockId === block.id &&
+                      'text-green-500'
+                  )}
+                  icon={faPauseCircle}
+                  size="xl"
+                />
+              </>
             ))}
             <FontAwesomeIcon
               icon={faStop}
-              size="lg"
+              size="xl"
               className={twMerge(
                 'my-auto p-2 rounded-md',
-                buttonState === 'endSession' && 'bg-uzh-red-100'
+                buttonState === 'endSession' && 'text-uzh-red-100'
               )}
             />
           </div>
