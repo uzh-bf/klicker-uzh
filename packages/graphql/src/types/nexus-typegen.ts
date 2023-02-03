@@ -1014,6 +1014,7 @@ export interface NexusGenFieldTypes {
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     singleMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    unassignedSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     userCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
@@ -1573,6 +1574,7 @@ export interface NexusGenFieldTypeNames {
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     singleMicroSession: 'MicroSession'
+    unassignedSessions: 'Session'
     userCourses: 'Course'
     userProfile: 'User'
     userQuestions: 'Question'

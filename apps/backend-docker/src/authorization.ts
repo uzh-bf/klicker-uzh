@@ -103,6 +103,7 @@ export const AuthSchema = {
     self: { __authz: { rules: ['Allow'] } },
     session: { __authz: { rules: ['Allow'] } },
     sessionLeaderboard: { __authz: { rules: ['Allow'] } },
+    unassignedSessions: { __authz: { rules: ['IsUserOrAdmin'] } },
     userCourses: { __authz: { rules: ['IsUserOrAdmin'] } },
     userProfile: { __authz: { rules: ['IsUserOrAdmin'] } },
     userTags: { __authz: { rules: ['IsUserOrAdmin'] } },

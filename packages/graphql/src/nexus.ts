@@ -1362,6 +1362,16 @@ export const Query = objectType({
       },
     })
 
+    t.list.nonNull.field('unassignedSessions', {
+      type: Session,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return SessionService.getUnassignedSessions(
+          { userId: ctx.user.sub },
+          ctx
+        )
+      },
+    })
+
     t.list.nonNull.field('userQuestions', {
       type: Question,
       resolve(_, _args, ctx: ContextWithUser) {

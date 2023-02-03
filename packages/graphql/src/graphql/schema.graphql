@@ -572,6 +572,7 @@ type Query {
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   singleMicroSession(id: ID!): MicroSession
+  unassignedSessions: [Session!]
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
