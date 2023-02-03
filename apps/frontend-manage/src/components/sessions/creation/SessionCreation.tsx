@@ -19,6 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import LearningElementCreationForm from '../../../components/sessions/creation/LearningElementCreationForm'
 import LiveSessionCreationForm from '../../../components/sessions/creation/LiveSessionCreationForm'
 import MicroSessionCreationForm from '../../../components/sessions/creation/MicroSessionCreationForm'
+import LiveSessionWizzard from './LiveSessionWizzard'
 
 interface SessionCreationProps {
   sessionId?: string
@@ -28,6 +29,7 @@ interface SessionCreationProps {
 function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   const theme = useContext(ThemeContext)
   const [selectedForm, setSelectedForm] = useState(editMode)
+  //  const [stepNumber, setStepNumber] = useState(0)
 
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
@@ -56,7 +58,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   if (!errorCourses && loadingCourses) return <div>Loading...</div>
 
   return (
-    <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
+    <div className="flex flex-col justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
       <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
         <Tabs
           defaultValue="liveSession"
@@ -133,6 +135,8 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
           </TabContent>
         </Tabs>
       </div>
+      {/* <OldApproachLiveSessionWizard /> */}
+      <LiveSessionWizzard />
     </div>
   )
 }
