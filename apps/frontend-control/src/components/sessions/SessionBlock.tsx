@@ -7,12 +7,18 @@ import {
 import { Countdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
   block?: Block
+  active?: boolean
 }
 
-function SessionBlock({ block }: SessionBlockProps) {
+const defaultProps = {
+  active: false,
+}
+
+function SessionBlock({ block, active }: SessionBlockProps) {
   const untilExpiration = useMemo(
     () =>
       block?.expiresAt
@@ -30,8 +36,18 @@ function SessionBlock({ block }: SessionBlockProps) {
     )
 
   return (
-    <div className="mb-2 border border-solid rounded-md border-uzh-grey-100">
-      <div className="flex flex-row justify-between p-1 bg-uzh-grey-40">
+    <div
+      className={twMerge(
+        'mb-2 border border-solid rounded-md border-uzh-grey-100',
+        active && 'border-uzh-darkgreen-80'
+      )}
+    >
+      <div
+        className={twMerge(
+          'flex flex-row justify-between p-1 bg-uzh-grey-40',
+          active && 'bg-green-300'
+        )}
+      >
         <div className="font-bold">Block {block.order + 1}</div>
         <div className="flex flex-row items-center gap-2">
           {untilExpiration && (
@@ -66,4 +82,5 @@ function SessionBlock({ block }: SessionBlockProps) {
   )
 }
 
+SessionBlock.defaultProps = defaultProps
 export default SessionBlock

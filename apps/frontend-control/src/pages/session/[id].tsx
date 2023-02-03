@@ -1,4 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
@@ -103,7 +105,23 @@ function RunningSession() {
 
             <SessionBlock
               block={blocks.find((block) => block.id === currentBlock)}
+              active
             />
+            {currentBlock &&
+              nextBlock !== -1 &&
+              nextBlock !== blocks.length && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <FontAwesomeIcon
+                    icon={faArrowDown}
+                    className="w-full mx-auto"
+                    size="2xl"
+                  />
+
+                  <SessionBlock
+                    block={blocks.find((block) => block.order === nextBlock)}
+                  />
+                </div>
+              )}
             <Button
               onClick={async () => {
                 await deactivateSessionBlock({
@@ -124,7 +142,21 @@ function RunningSession() {
         ) : nextBlock !== -1 ? (
           <div>
             <H3>Nächster Block:</H3>
+            {nextBlock > 0 && (
+              <FontAwesomeIcon
+                icon={faEllipsis}
+                size="2xl"
+                className="w-full mx-auto"
+              />
+            )}
             <SessionBlock block={blocks[nextBlock]} />
+            {nextBlock !== blocks.length && (
+              <FontAwesomeIcon
+                icon={faEllipsis}
+                size="2xl"
+                className="w-full mx-auto"
+              />
+            )}
             <Button
               onClick={async () => {
                 {
@@ -167,15 +199,6 @@ function RunningSession() {
           </div>
         )}
 
-        {currentBlock && nextBlock !== -1 && nextBlock !== blocks.length && (
-          <div className="mt-14">
-            <H3>Nächster Block:</H3>
-
-            <SessionBlock
-              block={blocks.find((block) => block.order === nextBlock)}
-            />
-          </div>
-        )}
         {currentBlock && nextBlock == -1 && (
           <UserNotification
             message="Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden."
