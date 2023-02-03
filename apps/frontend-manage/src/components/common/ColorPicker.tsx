@@ -22,9 +22,9 @@ function ColorPicker({ color, onAbort, onSubmit }: Props) {
       />
       <div className="grid grid-cols-5 gap-0.5 pt-3 pb-3 justify-items-center">
         {PRESET_COURSE_COLORS.map((presetColor, index) => (
-          <button
+          <Button
             key={index}
-            className={'h-7 w-7 rounded-2xl'}
+            className={{root: 'h-7 w-7 border-none rounded-2xl'}}
             style={{ backgroundColor: presetColor }}
             onClick={() => setNewColor(presetColor)}
           />

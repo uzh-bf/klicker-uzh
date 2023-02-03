@@ -23,7 +23,7 @@
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@sentry/nextjs": "7.21.1",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "1.0.22",
+    "@uzh-bf/design-system": "1.0.23",
     "d3": "7.6.1",
     "dayjs": "1.11.6",
     "deepmerge": "4.2.2",
