@@ -3,7 +3,7 @@ import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
-  GetCockpitSessionDocument,
+  GetControlSessionDocument,
   GetRunningSessionsDocument,
   Session,
   SessionBlockStatus,
@@ -38,10 +38,10 @@ function RunningSession() {
     ],
   })
   const {
-    loading: cockpitLoading,
-    error: cockpitError,
-    data: cockpitData,
-  } = useQuery(GetCockpitSessionDocument, {
+    loading: sessionLoading,
+    error: sessionError,
+    data: sessionData,
+  } = useQuery(GetControlSessionDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -50,26 +50,26 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    if (!cockpitData?.cockpitSession?.activeBlock) {
+    if (!sessionData?.controlSession?.activeBlock) {
       setCurrentBlock(undefined)
       return
     }
-    setCurrentBlock(cockpitData?.cockpitSession?.activeBlock.id)
-  }, [cockpitData?.cockpitSession?.activeBlock])
+    setCurrentBlock(sessionData?.controlSession?.activeBlock.id)
+  }, [sessionData?.controlSession?.activeBlock])
 
   useEffect(() => {
-    if (!cockpitData?.cockpitSession?.blocks) return
-    const scheduledNext = cockpitData?.cockpitSession?.blocks.findIndex(
+    if (!sessionData?.controlSession?.blocks) return
+    const scheduledNext = sessionData?.controlSession?.blocks.findIndex(
       (block) => block.status === SessionBlockStatus.Scheduled
     )
     setNextBlock(typeof scheduledNext === 'undefined' ? -1 : scheduledNext)
     console.log(scheduledNext)
-  }, [cockpitData?.cockpitSession?.blocks])
+  }, [sessionData?.controlSession?.blocks])
 
-  if (cockpitLoading) {
+  if (sessionLoading) {
     return <Layout title="Session-Steuerung">Loading...</Layout>
   }
-  if (!cockpitData?.cockpitSession || cockpitError) {
+  if (!sessionData?.controlSession || sessionError) {
     return (
       <Layout title="Session-Steuerung">
         <UserNotification
@@ -81,7 +81,7 @@ function RunningSession() {
   }
 
   const { id, name, course, activeBlock, blocks } =
-    cockpitData?.cockpitSession as Session
+    sessionData?.controlSession as Session
 
   if (!blocks) {
     return (

@@ -992,6 +992,9 @@ export interface NexusGenFieldTypes {
   Query: { // field return type
     basicCourseInformation: NexusGenRootTypes['Course'] | null; // Course
     cockpitSession: NexusGenRootTypes['Session'] | null; // Session
+    controlCourse: NexusGenRootTypes['Course'] | null; // Course
+    controlCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
+    controlSession: NexusGenRootTypes['Session'] | null; // Session
     course: NexusGenRootTypes['Course'] | null; // Course
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -1548,6 +1551,9 @@ export interface NexusGenFieldTypeNames {
   Query: { // field return type name
     basicCourseInformation: 'Course'
     cockpitSession: 'Session'
+    controlCourse: 'Course'
+    controlCourses: 'Course'
+    controlSession: 'Session'
     course: 'Course'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
@@ -1949,6 +1955,12 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
     }
     cockpitSession: { // args
+      id: string; // ID!
+    }
+    controlCourse: { // args
+      id: string; // ID!
+    }
+    controlSession: { // args
       id: string; // ID!
     }
     course: { // args

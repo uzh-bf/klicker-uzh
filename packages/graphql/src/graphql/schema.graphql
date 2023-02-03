@@ -550,6 +550,9 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
+  controlCourse(id: ID!): Course
+  controlCourses: [Course!]
+  controlSession(id: ID!): Session
   course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData

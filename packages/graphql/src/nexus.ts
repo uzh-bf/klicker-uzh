@@ -1221,6 +1221,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('controlCourse', {
+      type: Course,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return CourseService.getControlCourse(args, ctx)
+      },
+    })
+
     t.field('basicCourseInformation', {
       type: Course,
       args: {
@@ -1281,6 +1291,16 @@ export const Query = objectType({
       },
     })
 
+    t.field('controlSession', {
+      type: Session,
+      args: {
+        id: nonNull(idArg()),
+      },
+      resolve(_, args, ctx: ContextWithUser) {
+        return SessionService.getControlSession(args, ctx)
+      },
+    })
+
     t.field('pinnedFeedbacks', {
       type: Session,
       args: {
@@ -1325,6 +1345,13 @@ export const Query = objectType({
       type: Course,
       resolve(_, _args, ctx: ContextWithUser) {
         return CourseService.getUserCourses({ userId: ctx.user.sub }, ctx)
+      },
+    })
+
+    t.list.nonNull.field('controlCourses', {
+      type: Course,
+      resolve(_, _args, ctx: ContextWithUser) {
+        return CourseService.getControlCourses({ userId: ctx.user.sub }, ctx)
       },
     })
 

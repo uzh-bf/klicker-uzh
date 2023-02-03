@@ -1316,6 +1316,74 @@ export async function getCockpitSession(
   return reducedSession
 }
 
+export async function getControlSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      course: true,
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!session || session?.status !== SessionStatus.RUNNING) {
+    return null
+  }
+
+  // recude session to only contain what is required for the control cockpit
+  const reducedSession = {
+    id: session.id,
+    name: session.name,
+    displayName: session.displayName,
+    activeBlock: session.activeBlock
+      ? {
+          id: session.activeBlock.id,
+        }
+      : null,
+    course: session.course,
+    blocks: session.blocks.map((block) => {
+      return {
+        ...block,
+        instances: block.instances.map((instance) => {
+          const questionData =
+            instance.questionData?.valueOf() as AllQuestionTypeData
+          if (
+            !questionData ||
+            typeof questionData !== 'object' ||
+            Array.isArray(questionData)
+          ) {
+            return instance
+          } else {
+            return {
+              ...instance,
+              questionData: {
+                ...questionData,
+                options: null,
+              },
+            }
+          }
+        }),
+      }
+    }),
+  }
+
+  return reducedSession
+}
+
 export async function getPinnedFeedbacks(
   { id }: { id: string },
   ctx: ContextWithUser
