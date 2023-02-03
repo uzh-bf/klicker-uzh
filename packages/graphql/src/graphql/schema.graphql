@@ -97,10 +97,139 @@ type LearningElement {
 
 type MicroSession {
   id: ID!
+<<<<<<< HEAD
 }
 
 type Mutation {
   loginUser(email: String!, password: String!): String
+=======
+  instances: [QuestionInstance!]
+  name: String!
+  numOfInstances: Int
+  pointsMultiplier: Int!
+  scheduledEndAt: DateTime!
+  scheduledStartAt: DateTime!
+}
+
+type Mutation {
+  activateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  addConfusionTimestep(difficulty: Int!, sessionId: ID!, speed: Int!): ConfusionTimestep
+  cancelSession(id: ID!): Session
+  changeCourseColor(color: String!, courseId: ID!): Course
+  changeCourseDescription(courseId: ID!, input: String!): Course
+  changeSessionSettings(id: ID!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
+  createCourse(color: String, displayName: String, name: String!): Course
+  createFeedback(content: String!, sessionId: ID!): Feedback
+  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: OrderType!, questions: [Int]!, resetTimeDays: Int!): MicroSession
+  createMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
+  createParticipantAndJoinCourse(courseId: ID!, password: String!, pin: Int!, username: String!): Participant
+  createParticipantGroup(courseId: ID!, name: String!): ParticipantGroup
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  deactivateSessionBlock(sessionBlockId: Int!, sessionId: ID!): Session
+  deleteFeedback(id: Int!): Feedback
+  deleteFeedbackResponse(id: Int!): Feedback
+  deleteQuestion(id: Int): Question
+  deleteTag(id: Int!): Tag
+  editMicroSession(courseId: String, description: String, displayName: String!, endDate: String!, id: ID!, multiplier: Int!, name: String!, questions: [Int]!, startDate: String!): MicroSession
+  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String, id: ID!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  editTag(id: Int!, name: String!): Tag
+  endSession(id: ID!): Session
+  generateLoginToken: User
+  joinCourse(courseId: ID!): ParticipantLearningData
+  joinCourseWithPin(courseId: ID!, pin: Int!): Participant
+  joinParticipantGroup(code: Int!, courseId: ID!): ParticipantGroup
+  leaveCourse(courseId: ID!): ParticipantLearningData
+  leaveParticipantGroup(courseId: ID!, groupId: ID!): ParticipantGroup
+  loginParticipant(password: String!, username: String!): ID
+  loginUser(email: String!, password: String!): ID
+  loginUserToken(email: String!, token: String!): ID
+  logoutParticipant: ID
+  logoutUser: ID
+  manipulateChoicesQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String], type: String): Question
+  manipulateFREETEXTQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String], type: String): Question
+  manipulateNUMERICALQuestion(attachments: [AttachmentInput], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String], type: String): Question
+  markMicroSessionCompleted(courseId: ID!, id: ID!): Participation
+  pinFeedback(id: Int!, isPinned: Boolean!): Feedback
+  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  registerParticipantFromLTI(courseId: ID!, participantId: ID!): ParticipantLearningData
+  resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  respondToFeedback(id: Int!, responseContent: String!): Feedback
+  respondToQuestionInstance(courseId: ID!, id: Int!, response: ResponseInput!): QuestionInstance
+  startGroupActivity(activityId: ID!, groupId: ID!): GroupActivityDetails
+  startSession(id: ID!): Session
+  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityDetails
+  subscribeToPush(courseId: ID!, subscriptionObject: SubscriptionObjectInput!): Participation
+  updateGroupAverageScores: Boolean
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
+  upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
+}
+
+type NumericalEvaluationData implements EvaluationData {
+  content: String!
+  id: Int!
+  name: String!
+  options: NumericalQuestionOptions!
+  statistics: Statistics
+  type: String!
+}
+
+type NumericalQuestionData implements QuestionData {
+  content: String!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int
+  type: String!
+}
+
+type NumericalQuestionOptions {
+  accuracy: Int
+  placeholder: String
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange!]
+  unit: String
+}
+
+type NumericalRestrictions {
+  max: Int
+  min: Int
+}
+
+type NumericalSolutionRange {
+  max: Float
+  min: Float
+}
+
+input OptionsChoicesInput {
+  choices: [ChoiceInput]!
+}
+
+input OptionsFreeTextInput {
+  restrictions: Restrictions
+  solutions: [String]
+}
+
+input OptionsNumericalInput {
+  accuracy: Int
+  restrictions: Restrictions
+  solutionRanges: [SolutionRange]
+}
+
+enum OrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
+}
+
+enum ParameterType {
+  NUMBER
+  STRING
+>>>>>>> f7b7c56fb9b023ab50ebfecc8feb8f99cae33fae
 }
 
 type Participant {
@@ -133,7 +262,36 @@ type PushSubscription {
 }
 
 type Query {
+<<<<<<< HEAD
   self: Participant
+=======
+  basicCourseInformation(courseId: ID!): Course
+  cockpitSession(id: ID!): Session
+  course(id: ID!): Course
+  feedbacks(id: ID!): [Feedback!]
+  getCourseOverviewData(courseId: ID!): ParticipantLearningData
+  getLoginToken: User
+  groupActivityDetails(activityId: ID!, groupId: ID!): GroupActivityDetails
+  learningElement(id: ID!): LearningElement
+  learningElements: [LearningElement!]!
+  liveSession(id: ID!): Session
+  microSession(id: ID!): MicroSession
+  participantGroups(courseId: ID!): [ParticipantGroup!]
+  participations(endpoint: String): [Participation!]
+  pinnedFeedbacks(id: ID!): Session
+  question(id: Int!): Question
+  runningSessions(shortname: String!): [Session!]
+  self: Participant
+  session(id: ID!): Session
+  sessionEvaluation(id: ID!): SessionEvaluation
+  sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
+  singleMicroSession(id: ID!): MicroSession
+  userCourses: [Course!]
+  userProfile: User
+  userQuestions: [Question!]
+  userSessions: [Session!]
+  userTags: [Tag!]
+>>>>>>> f7b7c56fb9b023ab50ebfecc8feb8f99cae33fae
 }
 
 type Question {
@@ -153,7 +311,34 @@ type QuestionResponseDetail {
 }
 
 type Session {
+<<<<<<< HEAD
   id: ID!
+=======
+  accessMode: AccessMode!
+  activeBlock: SessionBlock
+  blocks: [SessionBlock!]
+  confusionFeedbacks: [AggregatedConfusionFeedbacks]
+  course: Course
+  createdAt: DateTime!
+  description: String
+  displayName: String!
+  feedbacks: [Feedback]
+  finishedAt: DateTime
+  id: ID!
+  isAudienceInteractionActive: Boolean!
+  isGamificationEnabled: Boolean!
+  isModerationEnabled: Boolean!
+  linkTo: String
+  name: String!
+  namespace: String!
+  numOfBlocks: Int
+  numOfQuestions: Int
+  pinCode: Int
+  pointsMultiplier: Int!
+  startedAt: DateTime
+  status: SessionStatus!
+  updatedAt: DateTime
+>>>>>>> f7b7c56fb9b023ab50ebfecc8feb8f99cae33fae
 }
 
 type SessionBlock {
@@ -162,12 +347,23 @@ type SessionBlock {
 
 type Tag {
   id: Int!
+<<<<<<< HEAD
 }
 
 type Title {
   id: Int!
+=======
+  name: String!
+>>>>>>> f7b7c56fb9b023ab50ebfecc8feb8f99cae33fae
 }
 
 type User {
   id: ID!
+<<<<<<< HEAD
+=======
+  isActive: Boolean!
+  loginToken: String
+  loginTokenExpiresAt: DateTime
+  shortname: String!
+>>>>>>> f7b7c56fb9b023ab50ebfecc8feb8f99cae33fae
 }

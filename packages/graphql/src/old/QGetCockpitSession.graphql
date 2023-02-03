@@ -33,6 +33,9 @@ query GetCockpitSession($id: ID!) {
         }
       }
     }
+    activeBlock {
+      id
+    }
     confusionFeedbacks {
       speed
       difficulty

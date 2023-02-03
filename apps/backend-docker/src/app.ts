@@ -1,10 +1,13 @@
 import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
+import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
+import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express from 'express'
+import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
@@ -28,14 +31,14 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   passport.use(
     new JWTStrategy(
       {
-        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
-        jwtFromRequest(req) {
+        jwtFromRequest(req: Request) {
           if (req.headers?.['authorization'])
             return req.headers['authorization']?.replace('Bearer ', '')
           if (req.cookies)
             return req.cookies['user_token'] || req.cookies['participant_token']
           return null
         },
+        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
         secretOrKey: process.env.APP_SECRET,
         // issuer: 'abcd',
         // audience: 'localhost',
@@ -74,8 +77,18 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           LeaderboardEntry: 0,
         },
         cache,
-        session(ctx) {
-          return ctx.user ? ctx.user.sub : null
+        session(req) {
+          // extract user id from locals as stored in passport auth middleware
+          return req.body?.locals?.user?.sub ?? null
+        },
+      }),
+      useCSRFPrevention({
+        requestHeaders: ['x-graphql-yoga-csrf'], // default
+      }),
+      usePersistedOperations({
+        allowArbitraryOperations: process.env.NODE_ENV === 'development',
+        getPersistedOperation(sha256Hash: string) {
+          return persistedOperations[sha256Hash]
         },
       }),
       process.env.SENTRY_DSN &&

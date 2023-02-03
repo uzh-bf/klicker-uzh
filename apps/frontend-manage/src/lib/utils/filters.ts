@@ -70,8 +70,8 @@ export function filterQuestions(
   let results = [...questions]
 
   // if a title (query) was given, search the index with it
-  if (index && filters.title) {
-    results = index.search(filters.title)
+  if (index && filters.name) {
+    results = index.search(filters.name)
   }
 
   // only reduce the shown questions to the non-archived ones, if the archive filter is not active
@@ -80,6 +80,20 @@ export function filterQuestions(
       ({ isArchived }): boolean =>
         (typeof isArchived === 'undefined' && !filters.archive) ||
         isArchived === false
+    )
+  }
+
+  // if a sample solution filter was selected, only show questions with a sample solution
+  if (filters.sampleSolution) {
+    results = results.filter(
+      ({ hasSampleSolution }): boolean => hasSampleSolution === true
+    )
+  }
+
+  // if an answer feedback filter was selected, only show questions with answer feedbacks
+  if (filters.answerFeedbacks) {
+    results = results.filter(
+      ({ hasAnswerFeedbacks }): boolean => hasAnswerFeedbacks === true
     )
   }
 
@@ -128,7 +142,7 @@ export function sortQuestions(questions: any[], sort: any): any[] {
 
   if (sort.by === 'TITLE') {
     return questions.sort(
-      (a, b): number => factor * a.title.localeCompare(b.title)
+      (a, b): number => factor * a.name.localeCompare(b.name)
     )
   }
 

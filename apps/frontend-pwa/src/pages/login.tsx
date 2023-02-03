@@ -110,7 +110,7 @@ function LoginForm() {
                   height={90}
                   alt="KlickerUZH Logo"
                   className="mx-auto"
-                  id="login-logo"
+                  data-cy="login-logo"
                 />
               </div>
               <H1>Login</H1>
@@ -132,7 +132,7 @@ function LoginForm() {
                         touched.username &&
                         'border-red-400 bg-red-50'
                     )}
-                    id="username-field"
+                    data-cy="username-field"
                   />
                   <ErrorMessage
                     name="username"
@@ -154,7 +154,7 @@ function LoginForm() {
                       theme.primaryBorderFocus,
                       touched.password && 'border-red-400 bg-red-50'
                     )}
-                    id="password-field"
+                    data-cy="password-field"
                   />
                   <ErrorMessage
                     name="password"
@@ -172,7 +172,7 @@ function LoginForm() {
                       type="submit"
                       disabled={isSubmitting}
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
-                      id="submit-login"
+                      data={{ cy: 'submit-login' }}
                     >
                       <Button.Label>Anmelden</Button.Label>
                     </Button>

@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontendPWA.service.type }}
+  ports:
+    - port: {{ .Values.frontendPWA.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-manage
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontendManage.service.type }}
+  ports:
+    - port: {{ .Values.frontendManage.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-manage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-control
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontendControl.service.type }}
+  ports:
+    - port: {{ .Values.frontendControl.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-control
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-backend-graphql
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.backendGraphql.service.type }}
+  ports:
+    - port: {{ .Values.backendGraphql.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-graphql

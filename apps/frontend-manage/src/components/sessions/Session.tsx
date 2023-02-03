@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import Ellipsis from '@components/common/Ellipsis'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -23,6 +22,7 @@ import {
   SESSION_STATUS,
 } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import Ellipsis from '../common/Ellipsis'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {
@@ -53,7 +53,10 @@ function Session({ session }: SessionProps) {
           }
         }}
         staticContent={
-          <div className="flex flex-row justify-between">
+          <div
+            className="flex flex-row justify-between"
+            data-cy="session-block"
+          >
             <H3 className={{ root: 'mb-0' }}>{session.name}</H3>
             <div className="flex flex-row gap-5">
               {session.blocks?.length !== 0 && (
@@ -185,6 +188,22 @@ function Session({ session }: SessionProps) {
             </div>
           ))}
         </div>
+        {(SESSION_STATUS.PREPARED === session.status ||
+          SESSION_STATUS.SCHEDULED === session.status) && (
+          <div>
+            <Button
+              className={{ root: 'float-right' }}
+              onClick={() =>
+                router.push({
+                  pathname: '/',
+                  query: { sessionId: session.id, editMode: 'liveSession' },
+                })
+              }
+            >
+              Session bearbeiten
+            </Button>
+          </div>
+        )}
       </Collapsible>
     </div>
   )

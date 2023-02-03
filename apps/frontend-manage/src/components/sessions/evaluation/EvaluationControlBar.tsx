@@ -1,4 +1,3 @@
-import useEvaluationTabs from '@components/hooks/useEvaluationTabs'
 import {
   faArrowLeft,
   faArrowRight,
@@ -21,6 +20,7 @@ import {
 import { Button, Select, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useEvaluationTabs from '../../hooks/useEvaluationTabs'
 
 const INSTANCE_STATUS_ICON: Record<string, IconDefinition> = {
   EXECUTED: faCheck,
@@ -89,7 +89,7 @@ function EvaluationControlBar({
   }, [blocks, selectedBlock])
 
   return (
-    <div className="flex flex-row flex-none px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
+    <div className="fixed top-0 z-10 flex flex-row flex-none w-full px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
       {blocks && blocks[selectedBlock] && (
         <div className="flex flex-row items-center gap-2">
           <Button
@@ -125,7 +125,7 @@ function EvaluationControlBar({
                   'text-uzh-grey-80 cursor-not-allowed'
               ),
             }}
-            id="evaluate-next-question"
+            data={{ cy: 'evaluate-next-question' }}
           >
             <FontAwesomeIcon icon={faArrowRight} />
           </Button>
@@ -252,6 +252,7 @@ function EvaluationControlBar({
               setLeaderboard(true)
               setFeedbacks(false)
               setConfusion(false)
+              setSelectedBlock(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -277,6 +278,7 @@ function EvaluationControlBar({
               setFeedbacks(true)
               setLeaderboard(false)
               setConfusion(false)
+              setSelectedBlock(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">
@@ -301,6 +303,7 @@ function EvaluationControlBar({
               setConfusion(true)
               setLeaderboard(false)
               setFeedbacks(false)
+              setSelectedBlock(-1)
             }}
           >
             <div className="flex flex-row items-center gap-2">

@@ -1,6 +1,7 @@
 import { faBellSlash } from '@fortawesome/free-regular-svg-icons'
 import { faBell } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
@@ -29,12 +30,14 @@ const CourseElement = ({
         </span>
       </Link>
 
-      <button
-        className={twMerge(
-          'py-2 px-4 text-2xl rounded-r-md',
-          disabled ? 'bg-slate-400' : 'bg-slate-600',
-          !isSubscribed && !disabled && 'cursor-pointer hover:text-white'
-        )}
+      <Button
+        className={{
+          root: twMerge(
+            'py-2 px-4 text-2xl rounded-r-md',
+            disabled ? 'bg-slate-400' : 'bg-slate-600',
+            !isSubscribed && !disabled && 'cursor-pointer hover:text-white'
+          ),
+        }}
         disabled={isSubscribed || disabled}
         onClick={() => onSubscribeClick(isSubscribed, courseId)}
       >
@@ -47,7 +50,7 @@ const CourseElement = ({
         ) : (
           <FontAwesomeIcon icon={faBellSlash} fixedWidth flip="horizontal" />
         )}
-      </button>
+      </Button>
     </div>
   )
 }

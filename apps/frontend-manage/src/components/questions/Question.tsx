@@ -13,6 +13,7 @@ import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Ellipsis from '../common/Ellipsis'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionPreviewModal from './QuestionPreviewModal'
 import QuestionTags from './QuestionTags'
@@ -80,6 +81,7 @@ function Question({
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
+        data-cy="question-block"
       >
         <div className="flex flex-row flex-1">
           <div className="flex-1">
@@ -100,9 +102,7 @@ function Question({
             </div>
             <div className="mb-2 italic">{QUESTION_TYPES_SHORT[type]}</div>
             <div className="flex-1 mb-2">
-              {content.length > 120
-                ? `${content.substring(0, 120)}...`
-                : content}
+              <Ellipsis maxLines={1}>{content}</Ellipsis>
             </div>
           </div>
           <div className="hidden ml-6 w-max md:block">
@@ -115,7 +115,7 @@ function Question({
             <Button
               className={{ root: 'justify-center h-10 bg-white w-36' }}
               onClick={(): void => setIsPreviewModalOpen(true)}
-              id="question-preview"
+              data={{ cy: 'question-preview-button' }}
             >
               Vorschau
             </Button>

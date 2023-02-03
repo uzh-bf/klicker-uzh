@@ -11,6 +11,7 @@ import {
   Button,
   Switch,
   ThemeContext,
+  useArrowNavigation,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -32,7 +33,7 @@ function Evaluation() {
   const router = useRouter()
   const theme = useContext(ThemeContext)
 
-  const [selectedBlock, setSelectedBlock] = useState<number>(0)
+  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0)
   const [showLeaderboard, setLeaderboard] = useState<boolean>(false)
   const [showFeedbacks, setFeedbacks] = useState<boolean>(false)
   const [showConfusion, setConfusion] = useState<boolean>(false)
@@ -98,31 +99,65 @@ function Evaluation() {
     instanceResults,
     currentInstance,
     chartType,
+    questionIx: Number(router.query.questionIx ?? 0),
     setSelectedInstance,
     setCurrentInstance,
     setSelectedInstanceIndex,
     setChartType,
+    setSelectedBlockIndex,
   })
 
-  // if a question index is provided through the url, directly switch to this question
+  useArrowNavigation({
+    onArrowLeft: () => {
+      if (selectedInstanceIndex > 0) {
+        setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
+        setSelectedBlockIndex(
+          instanceResults[selectedInstanceIndex - 1].blockIx
+        )
+      }
+    },
+    onArrowRight: () => {
+      if (selectedInstanceIndex < instanceResults.length - 1) {
+        setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
+        setSelectedBlockIndex(
+          instanceResults[selectedInstanceIndex + 1].blockIx
+        )
+      }
+    },
+  })
+
   useEffect(() => {
-    const ix = parseInt(String(router.query.questionIx))
-    if (typeof ix === 'number' && instanceResults[ix]) {
-      setSelectedInstance(instanceResults[ix].id)
-      setSelectedBlock(instanceResults[ix].blockIx)
+    if (router.query.leaderboard === 'true') {
+      setLeaderboard(true)
+      setConfusion(false)
+      setFeedbacks(false)
+      setSelectedBlockIndex(-1)
     }
-  }, [router.query.questionIx, instanceResults])
+  }, [router.query.leaderboard])
 
   if (error && !data)
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
+  if (!currentInstance.id) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <UserNotification
+          className={{
+            root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
+          }}
+          message="Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt."
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full overflow-y-none">
+    <div className="flex flex-col w-full h-full overflow-y-none">
       <EvaluationControlBar
         blocks={blocks || []}
-        selectedBlock={selectedBlock}
-        setSelectedBlock={setSelectedBlock}
+        selectedBlock={selectedBlockIndex}
+        setSelectedBlock={setSelectedBlockIndex}
         setSelectedInstance={setSelectedInstance}
         selectedInstance={selectedInstance}
         selectedInstanceIndex={selectedInstanceIndex}
@@ -133,13 +168,19 @@ function Evaluation() {
         showLeaderboard={showLeaderboard}
         showFeedbacks={showFeedbacks}
         showConfusion={showConfusion}
-        status={status}
+        status={status || ''}
         feedbacks={feedbacks || []}
         confusionFeedbacks={confusionFeedbacks || []}
         isGamificationEnabled={isGamificationEnabled}
       />
 
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className={twMerge(
+          'flex justify-between flex-col mt-11 [height:_calc(100%-6.25rem)] mb-14',
+          (showFeedbacks || showConfusion || showLeaderboard) &&
+            '[height:_calc(100%-7.25rem)] mb-18'
+        )}
+      >
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -151,6 +192,11 @@ function Evaluation() {
               textSize={textSize}
               chartType={chartType}
               setChartType={setChartType}
+              className={twMerge(
+                '[height:_calc(100%-4rem)] mb-14',
+                (showFeedbacks || showConfusion || showLeaderboard) &&
+                  '[height:_calc(100%-4.5rem)] mb-18'
+              )}
             />
           )}
         {showLeaderboard && !showConfusion && !showFeedbacks && (
@@ -220,7 +266,7 @@ function Evaluation() {
 
       <Footer
         className={twMerge(
-          'relative flex-none h-14',
+          'fixed bottom-0 flex-none h-14',
           (showFeedbacks || showConfusion || showLeaderboard) && 'h-18'
         )}
       >
@@ -229,7 +275,7 @@ function Evaluation() {
           !showConfusion &&
           !showLeaderboard && (
             <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
-              <div className="text-lg" id="session-total-participants">
+              <div className="text-lg" data-cy="session-total-participants">
                 Total Teilnehmende: {currentInstance.participants}
               </div>
               <div className="flex flex-row items-center gap-5">

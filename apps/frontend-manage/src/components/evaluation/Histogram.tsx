@@ -97,8 +97,8 @@ function Histogram({
   }, [data, numBins])
 
   return (
-    <div className="mt-1">
-      <ResponsiveContainer width="99%" height={500}>
+    <div className="h-[calc(100%-4rem)] mt-1">
+      <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={processedData.data}
           margin={{

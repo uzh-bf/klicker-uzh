@@ -1,34 +1,49 @@
-import { useQuery } from '@apollo/client'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import { useMutation, useQuery } from '@apollo/client'
+import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChangeCourseColorDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { sort } from 'ramda'
+import { useContext, useEffect, useState } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import ColorPicker from '../../components/common/ColorPicker'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSession'
 import SessionTile from '../../components/courses/SessionTile'
 import Layout from '../../components/Layout'
+import QRPopup from '../../components/sessions/cockpit/QRPopup'
 
 function CourseOverviewPage() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
+  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
 
+  const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
+
   useEffect(() => {
     if (data && !data.course) {
       router.push('/404')
     }
   }, [data, router])
+
+  const toggleColorPicker = () => {
+    setIsColorPickerVisible((prevState) => !prevState)
+  }
 
   if (error) {
     return <div>{error.message}</div>
@@ -45,12 +60,48 @@ function CourseOverviewPage() {
     [SESSION_STATUS.COMPLETED]: 3,
   }
 
+  const handleColorChange = (color: string) => {
+    toggleColorPicker()
+    changeCourseColor({ variables: { color, courseId: course.id } })
+  }
+
   return (
     <Layout>
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
-          <H1>Kurs: {course.name}</H1>
-          <div className="italic">{course.numOfParticipants} Teilnehmende</div>
+          <H1>
+            Kurs: {course.name} (PIN:{' '}
+            {String(course.pinCode)
+              .match(/.{1,3}/g)
+              ?.join(' ')}
+            )
+          </H1>
+          <div className="flex flex-row items-center gap-4 mb-2">
+            <QRPopup
+              relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
+              triggerText="Kurs beitreten"
+              className={{ modal: 'w-[40rem]' }}
+            >
+              <H2>Kurs beitreten</H2>
+              <Link
+                href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
+                target="_blank"
+                className={theme.primaryText}
+              >{`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}</Link>
+
+              <div className="mt-4">
+                Der für den Beitritt benötigte PIN lautet:{' '}
+                <span className="font-bold">
+                  {String(course.pinCode)
+                    .match(/.{1,3}/g)
+                    ?.join(' ')}
+                </span>
+              </div>
+            </QRPopup>
+            <div className="italic">
+              {course.numOfParticipants} Teilnehmende
+            </div>
+          </div>
         </div>
         {course.description ? (
           descriptionEditMode ? (
@@ -84,6 +135,26 @@ function CourseOverviewPage() {
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
+        <div className="flex flex-row pt-1">
+          <span className="pr-3">Kursfarbe</span>
+          <div
+            className={
+              'flex relative w-20 mr-3 rounded-lg align-center justify-end'
+            }
+            style={{ backgroundColor: course.color }}
+          >
+            <Button onClick={toggleColorPicker}>
+              <FontAwesomeIcon icon={faPalette} />
+            </Button>
+            {isColorPickerVisible && (
+              <ColorPicker
+                color={course.color}
+                onSubmit={handleColorChange}
+                onAbort={toggleColorPicker}
+              />
+            )}
+          </div>
+        </div>
       </div>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
@@ -91,16 +162,14 @@ function CourseOverviewPage() {
             <H3>Sessionen</H3>
             {course.sessions && course.sessions.length > 0 ? (
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
-                {course.sessions
-                  .sort((a, b) => {
-                    return (
-                      sortingOrderSessions[a.status] -
-                      sortingOrderSessions[b.status]
-                    )
-                  })
-                  .map((session) => (
-                    <SessionTile session={session} key={session.id} />
-                  ))}
+                {sort((a, b) => {
+                  return (
+                    sortingOrderSessions[a.status] -
+                    sortingOrderSessions[b.status]
+                  )
+                }, course.sessions).map((session) => (
+                  <SessionTile session={session} key={session.id} />
+                ))}
               </div>
             ) : (
               <div>Keine Sessionen vorhanden</div>
@@ -148,12 +217,12 @@ function CourseOverviewPage() {
               Teilnehmende Leaderboard: {course.numOfActiveParticipants}
             </div>
             <div>
-              Durchschnittl. Punkte: {course.averageActiveScore.toFixed(2)}
+              Durchschnittl. Punkte: {course.averageActiveScore?.toFixed(2)}
             </div>
             <div className="mt-1">
               Kursteilnehmende: {course.numOfParticipants}
             </div>
-            <div>Durchschnittl. Punkte: {course.averageScore.toFixed(2)}</div>
+            <div>Durchschnittl. Punkte: {course.averageScore?.toFixed(2)}</div>
           </div>
         </div>
       </div>

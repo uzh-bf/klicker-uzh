@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
+  EditSessionDocument,
   GetUserSessionsDocument,
+  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -12,7 +12,6 @@ import {
   H3,
   Label,
   Switch,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import {
   ErrorMessage,
@@ -21,25 +20,33 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
-import { useContext } from 'react'
-import toast, { Toaster } from 'react-hot-toast'
-import { twMerge } from 'tailwind-merge'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import * as yup from 'yup'
+import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
-import SessionBlock from './SessionBlock'
+import SessionCreationBlock from './SessionCreationBlock'
 
 interface LiveSessionCreationFormProps {
   courses?: {
     label: string
     value: string
   }[]
+  initialValues?: Partial<Session>
 }
 
-function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
+function LiveSessionCreationForm({
+  courses,
+  initialValues,
+}: LiveSessionCreationFormProps) {
   const [createSession] = useMutation(CreateSessionDocument)
-  const theme = useContext(ThemeContext)
+  const [editSession] = useMutation(EditSessionDocument)
+  const router = useRouter()
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   const liveSessionCreationSchema = yup.object().shape({
     name: yup
@@ -69,23 +76,35 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
 
   return (
     <div>
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-        toastOptions={{ duration: 6000 }}
-      />
-      <H3>Live-Session erstellen</H3>
+      {initialValues ? (
+        <H3>Live-Session bearbeiten</H3>
+      ) : (
+        <H3>Live-Session erstellen</H3>
+      )}
       <Formik
+        key={initialValues?.id}
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
-          courseId: '',
-          multiplier: '1',
-          isGamificationEnabled: false,
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          blocks: initialValues?.blocks?.map((block) => {
+            return {
+              questionIds: block.instances.map(
+                (instance) => instance.questionData.id
+              ),
+              titles: block.instances.map(
+                (instance) => instance.questionData.name
+              ),
+              timeLimit: block.timeLimit ?? undefined,
+            }
+          }) || [{ questionIds: [], titles: [], timeLimit: undefined }],
+          courseId: initialValues?.course?.id || '',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
+          isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
-        isInitialValid={false}
+        isInitialValid={initialValues ? true : false}
         validationSchema={liveSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           const blockQuestions = values.blocks
@@ -98,40 +117,49 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
             })
 
           try {
-            const session = await createSession({
-              variables: {
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                blocks: blockQuestions,
-                courseId: values.courseId,
-                multiplier: parseInt(values.multiplier),
-                isGamificationEnabled: values.isGamificationEnabled,
-              },
-              refetchQueries: [GetUserSessionsDocument],
-            })
-            if (session.data?.createSession) {
-              toast.success(
-                <div>
-                  <div>Session erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href="/sessions"
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-session-list"
-                    >
-                      Session-Liste
-                    </Link>
-                  </div>
-                </div>
-              )
+            let success = false
+
+            if (initialValues) {
+              const session = await editSession({
+                variables: {
+                  id: initialValues.id || '',
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  blocks: blockQuestions,
+                  courseId: values.courseId,
+                  multiplier: parseInt(values.multiplier),
+                  isGamificationEnabled: values.isGamificationEnabled,
+                },
+                refetchQueries: [GetUserSessionsDocument],
+              })
+              success = Boolean(session.data?.editSession)
+            } else {
+              const session = await createSession({
+                variables: {
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  blocks: blockQuestions,
+                  courseId: values.courseId,
+                  multiplier: parseInt(values.multiplier),
+                  isGamificationEnabled: values.isGamificationEnabled,
+                },
+                refetchQueries: [GetUserSessionsDocument],
+              })
+              success = Boolean(session.data?.createSession)
+            }
+
+            if (success) {
+              router.push('/')
+              setEditMode(!!initialValues)
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling - e.g. corresponding toast
             console.log('error')
+            setEditMode(!!initialValues)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -144,14 +172,14 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
           isValid,
         }) => {
           return (
-            <Form className="">
+            <Form>
               <FormikTextField
                 required
                 name="name"
                 label="Session-Name"
                 tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                 className={{ root: 'mb-1' }}
-                id="session-name"
+                data-cy="insert-live-session-name"
               />
               <FormikTextField
                 required
@@ -159,7 +187,7 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 label="Anzeigenamen"
                 tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                 className={{ root: 'mb-1' }}
-                id="display-name"
+                data-cy="insert-live-display-name"
               />
 
               <EditorField
@@ -192,15 +220,17 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                     showTooltipSymbol={true}
                   />
                   <FieldArray name="blocks">
-                    {({ push, remove }: FieldArrayRenderProps) => (
+                    {({ push, remove, move }: FieldArrayRenderProps) => (
                       <div className="flex flex-row gap-1 overflow-scroll">
                         {values.blocks.map((block: any, index: number) => (
-                          <SessionBlock
+                          <SessionCreationBlock
                             key={`${index}-${block.questionIds.join('')}`}
                             index={index}
                             block={block}
+                            numOfBlocks={values.blocks.length}
                             setFieldValue={setFieldValue}
                             remove={remove}
+                            move={move}
                           />
                         ))}
                         <AddBlockButton push={push} />
@@ -225,7 +255,9 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                 />
                 {courses && (
                   <>
-                    <div className="mr-2">Kurs:</div>
+                    <div className="mr-2" data-cy="select-course-div">
+                      Kurs:
+                    </div>
                     <FormikSelectField
                       name="courseId"
                       placeholder="Kurs auswählen"
@@ -270,18 +302,56 @@ function LiveSessionCreationForm({ courses }: LiveSessionCreationFormProps) {
                   className="text-sm text-red-400"
                 />
               </div>
-              <Button
-                className={{ root: 'float-right' }}
-                type="submit"
-                disabled={isSubmitting || !isValid}
-                id="create-new-session"
-              >
-                Erstellen
-              </Button>
+
+              {initialValues && (
+                <div className="flex flex-row float-right gap-3">
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="button"
+                    disabled={isSubmitting}
+                    id="abort-session-edit"
+                    onClick={() => router.push('/')}
+                  >
+                    Editieren abbrechen
+                  </Button>
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                    id="save-session-changes"
+                  >
+                    Änderungen speichern
+                  </Button>
+                </div>
+              )}
+              {!initialValues && (
+                <Button
+                  className={{ root: 'float-right mb-4' }}
+                  type="submit"
+                  disabled={isSubmitting || !isValid}
+                  data={{ cy: 'create-new-session' }}
+                >
+                  Erstellen
+                </Button>
+              )}
             </Form>
           )
         }}
       </Formik>
+      <LiveSessionCreationToast
+        open={successToastOpen}
+        setOpen={setSuccessToastOpen}
+        editMode={editMode}
+      />
+      <SessionCreationErrorToast
+        open={errorToastOpen}
+        setOpen={setErrorToastOpen}
+        error={
+          editMode
+            ? 'Anpassen der Live-Session fehlgeschlagen...'
+            : 'Erstellen der Live-Session fehlgeschlagen...'
+        }
+      />
     </div>
   )
 }

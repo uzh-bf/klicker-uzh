@@ -2,4 +2,4 @@ schema: packages/graphql/src/graphql/schema.graphql
 
 env:
   dev:
-    branch: v2
+    branch: v3

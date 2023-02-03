@@ -1,0 +1,21 @@
+query GetSingleMicroSession($id: ID!) {
+  singleMicroSession(id: $id) {
+    id
+    name
+    displayName
+    description
+    scheduledStartAt
+    scheduledEndAt
+    pointsMultiplier
+    course {
+      id
+    }
+    instances {
+      id
+      questionData {
+        id
+        name
+      }
+    }
+  }
+}

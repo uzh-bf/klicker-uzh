@@ -168,7 +168,7 @@ const Index = function () {
     <Layout courseName="KlickerUZH" displayName="Kursübersicht">
       <div
         className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
-        id="homepage"
+        data-cy="homepage"
       >
         <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
         <div className="flex flex-col mt-2">
@@ -257,7 +257,7 @@ const Index = function () {
         </div>
 
         <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2 mb-4">
           {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
           {courses.map((course) => (
             <CourseElement

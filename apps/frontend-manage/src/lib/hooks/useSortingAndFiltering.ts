@@ -2,18 +2,18 @@
 
 import { useReducer } from 'react'
 
-import { QUESTION_SORTINGS } from 'shared-components/src/constants'
-
 const INITIAL_STATE = {
   filters: {
     archive: false,
     tags: [],
-    title: null,
+    name: null,
     type: null,
+    sampleSolution: null,
+    answerFeedbacks: null,
   },
   sort: {
     asc: false,
-    by: QUESTION_SORTINGS[0].id,
+    by: '',
   },
 }
 
@@ -87,7 +87,31 @@ function reducer(state, action): any {
         ...state,
         filters: {
           ...state.filters,
-          title: action.title,
+          name: action.name,
+        },
+      }
+
+    case 'SAMPLE_SOLUTION':
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          sampleSolution:
+            typeof action.newValue !== 'undefined'
+              ? action.newValue
+              : !state.filters.sampleSolution,
+        },
+      }
+
+    case 'ANSWER_FEEDBACKS':
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          answerFeedbacks:
+            typeof action.newValue !== 'undefined'
+              ? action.newValue
+              : !state.filters.answerFeedbacks,
         },
       }
 
@@ -105,13 +129,17 @@ function useSortingAndFiltering(): any {
   return {
     ...state,
     handleReset: (): void => dispatch({ type: 'RESET' }),
-    handleSearch: (title): void => dispatch({ type: 'SEARCH', title }),
+    handleSearch: (name: string): void => dispatch({ type: 'SEARCH', name }),
     handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
     handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
-    handleToggleArchive: (newValue): void =>
+    handleToggleArchive: (newValue: boolean): void =>
       dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName, questionType): void =>
+    handleTagClick: (tagName: string, questionType): void =>
       dispatch({ type: 'TAG_CLICK', tagName, questionType }),
+    handleSampleSolutionClick: (newValue: boolean): void =>
+      dispatch({ type: 'SAMPLE_SOLUTION', newValue }),
+    handleAnswerFeedbacksClick: (newValue: boolean): void =>
+      dispatch({ type: 'ANSWER_FEEDBACKS', newValue }),
   }
 }
 

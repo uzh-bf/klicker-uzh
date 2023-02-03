@@ -1,14 +1,15 @@
 import { useMutation } from '@apollo/client'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CreateMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateMicroSessionDocument,
+  EditMicroSessionDocument,
+  MicroSession,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
   FormikTextField,
   H3,
   Label,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -19,11 +20,11 @@ import {
   Form,
   Formik,
 } from 'formik'
-import Link from 'next/link'
-import { useContext } from 'react'
-import toast from 'react-hot-toast'
-import { twMerge } from 'tailwind-merge'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import * as yup from 'yup'
+import MicroSessionCreationToast from '../../toasts/MicroSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import AddQuestionField from './AddQuestionField'
 import EditorField from './EditorField'
 import QuestionBlock from './QuestionBlock'
@@ -33,11 +34,20 @@ interface MicroSessionCreationFormProps {
     label: string
     value: string
   }[]
+  initialValues?: Partial<MicroSession>
 }
 
-function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
-  const theme = useContext(ThemeContext)
+function MicroSessionCreationForm({
+  courses,
+  initialValues,
+}: MicroSessionCreationFormProps) {
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const router = useRouter()
+
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
+  const [editMicroSession] = useMutation(EditMicroSessionDocument)
   dayjs.extend(utc)
 
   // TODO: keep in mind that only questions with solutions (and maybe also feedbacks) should be used for learning elements
@@ -78,55 +88,72 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
     <div>
       <H3>Micro-Session erstellen</H3>
       <Formik
+        key={initialValues?.id}
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          questions: [],
-          startDate: '',
-          endDate: '',
-          multiplier: '1',
-          courseId: courses[0].value,
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          questions:
+            initialValues?.instances?.map((instance) => {
+              return {
+                id: instance.questionData.id,
+                title: instance.questionData.name,
+              }
+            }) || [],
+          startDate: initialValues?.scheduledStartAt || '',
+          endDate: initialValues?.scheduledEndAt || '',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
+          courseId: initialValues?.course?.id || courses[0].value,
         }}
+        isInitialValid={initialValues ? true : false}
         validationSchema={microSessionCreationSchema}
         onSubmit={async (values, { resetForm }) => {
           try {
-            const result = await createMicroSession({
-              variables: {
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                questions: values.questions.map((q: any) => q.id),
-                startDate: values.startDate,
-                endDate: values.endDate,
-                multiplier: parseInt(values.multiplier),
-                courseId: values.courseId,
-              },
-            })
+            let success = false
 
-            if (result.data?.createMicroSession) {
-              // TODO: seems like toast is only shown when switching back to live session creation -> fix this
-              toast.success(
-                <div>
-                  <div>Micro-Session erfolgreich erstellt!</div>
-                  <div className="flex flex-row items-center">
-                    <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-                    Zur
-                    <Link
-                      href={`/courses/${values.courseId}`}
-                      className={twMerge(theme.primaryText, 'ml-1')}
-                      id="load-course-link"
-                    >
-                      Kursübersicht
-                    </Link>
-                  </div>
-                </div>
-              )
+            if (initialValues) {
+              const result = await editMicroSession({
+                variables: {
+                  id: initialValues?.id || '',
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  questions: values.questions.map((q: any) => q.id),
+                  startDate: values.startDate,
+                  endDate: values.endDate,
+                  multiplier: parseInt(values.multiplier),
+                  courseId: values.courseId,
+                },
+              })
+              success = Boolean(result.data?.editMicroSession)
+            } else {
+              const result = await createMicroSession({
+                variables: {
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  questions: values.questions.map((q: any) => q.id),
+                  startDate: values.startDate,
+                  endDate: values.endDate,
+                  multiplier: parseInt(values.multiplier),
+                  courseId: values.courseId,
+                },
+              })
+              success = Boolean(result.data?.createMicroSession)
+            }
+
+            if (success) {
+              router.push('/')
+              setEditMode(!!initialValues)
+              setSuccessToastOpen(true)
               resetForm()
             }
           } catch (error) {
-            // TODO: add error handling
             console.log(error)
+            setEditMode(!!initialValues)
+            setErrorToastOpen(true)
           }
         }}
       >
@@ -146,7 +173,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 label="Session-Name"
                 tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
                 className={{ root: 'mb-1' }}
-                id="session-name"
               />
               <FormikTextField
                 required
@@ -154,7 +180,6 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                 label="Anzeigenamen"
                 tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
                 className={{ root: 'mb-1' }}
-                id="display-name"
               />
 
               <EditorField
@@ -188,15 +213,17 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                     showTooltipSymbol={true}
                   />
                   <FieldArray name="questions">
-                    {({ push, remove }: FieldArrayRenderProps) => (
+                    {({ push, remove, move }: FieldArrayRenderProps) => (
                       <div className="flex flex-row gap-1 overflow-scroll">
                         {values.questions.map(
                           (question: any, index: number) => (
                             <QuestionBlock
-                              key={`${question.id}`}
+                              key={`${question.id}-${index}`}
                               index={index}
                               question={question}
+                              numOfBlocks={values.questions.length}
                               remove={remove}
+                              move={move}
                             />
                           )
                         )}
@@ -302,14 +329,53 @@ function MicroSessionCreationForm({ courses }: MicroSessionCreationFormProps) {
                   className="text-sm text-red-400"
                 />
               </div>
-              <Button
-                className={{ root: 'float-right' }}
-                type="submit"
-                disabled={isSubmitting || !isValid}
-                id="create-new-session"
-              >
-                Erstellen
-              </Button>
+
+              {initialValues && (
+                <div className="flex flex-row float-right gap-3">
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="button"
+                    disabled={isSubmitting}
+                    id="abort-microsession-edit"
+                    onClick={() => router.push('/')}
+                  >
+                    Editieren abbrechen
+                  </Button>
+                  <Button
+                    className={{ root: 'float-right mb-4' }}
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                    id="save-microsession-changes"
+                  >
+                    Änderungen speichern
+                  </Button>
+                </div>
+              )}
+              {!initialValues && (
+                <Button
+                  className={{ root: 'float-right mb-4' }}
+                  type="submit"
+                  disabled={isSubmitting || !isValid}
+                  data={{ cy: 'create-new-microsession' }}
+                >
+                  Erstellen
+                </Button>
+              )}
+              <MicroSessionCreationToast
+                editMode={editMode}
+                open={successToastOpen}
+                setOpen={setSuccessToastOpen}
+                courseId={values.courseId}
+              />
+              <SessionCreationErrorToast
+                open={errorToastOpen}
+                setOpen={setErrorToastOpen}
+                error={
+                  editMode
+                    ? 'Anpassen der Micro-Session fehlgeschlagen...'
+                    : 'Erstellen der Micro-Session fehlgeschlagen...'
+                }
+              />
             </Form>
           )
         }}

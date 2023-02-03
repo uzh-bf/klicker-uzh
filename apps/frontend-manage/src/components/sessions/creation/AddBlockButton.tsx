@@ -48,7 +48,7 @@ function AddBlockButton({ push }: AddBlockButtonProps) {
           timeLimit: undefined,
         })
       }
-      id="add-block"
+      data-cy="add-block"
       ref={drop}
     >
       <FontAwesomeIcon icon={faPlus} size="lg" />

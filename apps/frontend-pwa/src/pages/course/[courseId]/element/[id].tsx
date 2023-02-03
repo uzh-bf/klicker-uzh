@@ -334,7 +334,7 @@ function LearningElement({ courseId, id }: Props) {
       </div>
 
       <Footer
-        browserLink={`https://pwa.klicker.uzh.ch/course/${courseId}/element/${id}`}
+        browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${id}`}
       />
     </Layout>
   )

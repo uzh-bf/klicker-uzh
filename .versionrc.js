@@ -15,6 +15,8 @@ module.exports = {
     'apps/frontend-learning/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
+    'apps/frontend-control/',
+    'apps/office-addin/',
     'packages/grading/',
     'packages/graphql/',
     'packages/lti/',
@@ -34,7 +36,7 @@ module.exports = {
         type: 'json',
       },
       {
-        filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+        filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
         updater: 'util/yaml-updater.js',
       },
     ]
@@ -79,10 +81,6 @@ module.exports = {
     {
       type: 'ci',
       section: 'Build and CI',
-    },
-    {
-      type: 'chore',
-      section: 'Other',
     },
     {
       type: 'wip',

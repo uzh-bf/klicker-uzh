@@ -1,0 +1,6 @@
+mutation ChangeCourseColor($color: String!, $courseId: ID!) {
+  changeCourseColor(color: $color, courseId: $courseId) {
+    id
+    color
+  }
+}

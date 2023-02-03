@@ -1,4 +1,3 @@
-import { TextSizeType } from '@components/sessions/evaluation/constants'
 import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
@@ -16,6 +15,7 @@ import {
   QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
+import { TextSizeType } from '../sessions/evaluation/constants'
 
 interface BarChartProps {
   data: InstanceResult
@@ -45,9 +45,8 @@ function BarChart({
     return { count: result.count, labelIn, labelOut, xLabel }
   })
 
-  // TODO: readd ResponsiveContainer to allow resizing with sizeMe component on level above <ResponsiveContainer><BarChartRecharts>...</BarChartRecharts></ResponsiveContainer>
   return (
-    <ResponsiveContainer className="mb-4" height={600} width="99%">
+    <ResponsiveContainer className="pb-2" height="99%" width="99%">
       <BarChartRecharts
         data={dataWithLabels}
         margin={{

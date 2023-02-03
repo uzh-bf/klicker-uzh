@@ -1,0 +1,273 @@
+import {
+  faClock,
+  faPlay,
+  faStop,
+  faUpRightFromSquare,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button, ThemeContext } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+// import getConfig from 'next/config'
+import Link from 'next/link'
+import React, { useContext, useEffect, useState } from 'react'
+
+import durationPlugin from 'dayjs/plugin/duration'
+
+import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
+import { twMerge } from 'tailwind-merge'
+import CancelSessionModal from './CancelSessionModal'
+import QRPopup from './QRPopup'
+import SessionBlock from './SessionBlock'
+
+dayjs.extend(durationPlugin)
+
+// const { publicRuntimeConfig } = getConfig()
+
+const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
+  const start = dayjs(startedAt)
+  const duration = dayjs.duration(dayjs().diff(start))
+
+  const days = duration.days()
+  const hours = `0${duration.hours()}`.slice(-2)
+  const minutes = `0${duration.minutes()}`.slice(-2)
+  const seconds = `0${duration.seconds()}`.slice(-2)
+
+  if (days > 0) {
+    return `${days}d ${hours}:${minutes}:${seconds}`
+  }
+  return `${hours}:${minutes}:${seconds}`
+}
+
+interface Props {
+  blocks?: SessionBlockType[]
+  sessionName: string
+  handleEndSession: () => void
+  handleTogglePublicEvaluation: () => void
+  handleOpenBlock: (blockId: number) => void
+  handleCloseBlock: (blockId: number) => void
+  isEvaluationPublic?: boolean
+  sessionId: string
+  startedAt?: string
+}
+
+const defaultProps = {
+  blocks: [],
+  isEvaluationPublic: false,
+  startedAt: undefined,
+}
+
+function SessionTimeline({
+  sessionId,
+  blocks,
+  sessionName,
+  startedAt,
+  isEvaluationPublic,
+  handleEndSession,
+  handleTogglePublicEvaluation,
+  handleOpenBlock,
+  handleCloseBlock,
+}: Props): React.ReactElement {
+  const theme = useContext(ThemeContext)
+  const isFeedbackSession = blocks?.length === 0
+
+  const [cancelSessionModal, setCancelSessionModal] = useState(false)
+  const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
+
+  // logic: keep track of the current and previous block
+  const [buttonState, setButtonState] = useState('firstBlock')
+  const [activeBlockId, setActiveBlockId] = useState(-1)
+  const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
+
+  const buttonNames: Record<string, string> = {
+    firstBlock: 'Ersten Block starten',
+    blockActive: 'Block schliessen',
+    nextBlock: 'Nächsten Block starten',
+    endSession: 'Session beenden',
+  }
+
+  const startingTime = runtime.includes('d')
+    ? dayjs(startedAt).format('DD.MM HH:mm:ss')
+    : dayjs(startedAt).format('HH:mm:ss')
+
+  useEffect(() => {
+    const currentRuntime = setInterval(() => {
+      setRuntime(calculateRuntime({ startedAt }))
+    }, 1000)
+    return () => clearInterval(currentRuntime)
+  }, [runtime, startedAt])
+
+  // basic session timeline logic - identifying the currently active block as well as the state of the session
+  useEffect(() => {
+    if (blocks) {
+      setActiveBlockId(
+        blocks.find((block) => block.status === 'ACTIVE')?.id || -1
+      )
+      if (blocks.every((block) => block.status === 'EXECUTED')) {
+        setLastActiveBlockId(blocks[blocks.length - 1].id)
+      } else {
+        const executedBlockIds = blocks
+          .filter((block) => block.status === 'EXECUTED')
+          .map((block) => block.id)
+
+        if (executedBlockIds.length === 0) {
+          setLastActiveBlockId(-1)
+        } else {
+          setLastActiveBlockId(executedBlockIds[executedBlockIds.length - 1])
+        }
+      }
+
+      if (activeBlockId !== -1) {
+        // a block is active
+        setButtonState('blockActive')
+      } else if (
+        // no block is active and last block has been executed
+        lastActiveBlockId === blocks[blocks.length - 1].id &&
+        activeBlockId === -1
+      ) {
+        setButtonState('endSession')
+      } else if (
+        // no block is active and no block has been executed yet
+        lastActiveBlockId === -1 &&
+        activeBlockId === -1
+      ) {
+        setButtonState('firstBlock')
+      } else {
+        // no block is active and the last block of the session has not yet been executed
+        setButtonState('nextBlock')
+      }
+    }
+  }, [activeBlockId, blocks, lastActiveBlockId])
+
+  return (
+    <div className="flex flex-col md:flex-row md:flex-wrap">
+      <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
+        <div className="flex flex-row flex-wrap items-end">
+          <div>
+            <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
+          </div>
+          <div className="ml-8">
+            <FontAwesomeIcon icon={faPlay} className="mr-1" /> {runtime}
+          </div>
+        </div>
+
+        <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
+            <QRPopup
+              link={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
+              relativeLink={`/session/${sessionId}`}
+            />
+            <a
+              className="flex-1"
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button fluid className={{ root: 'h-10' }}>
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                </Button.Icon>
+                <Button.Label>Publikumsansicht</Button.Label>
+              </Button>
+            </a>
+          </div>
+          <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+            <Link
+              passHref
+              href={`/sessions/${sessionId}/evaluation`}
+              className="flex-1"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                disabled={isFeedbackSession}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                </Button.Icon>
+                <Button.Label>Auswertung (Resultate)</Button.Label>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+      {!isFeedbackSession && blocks && (
+        <>
+          <div className="flex flex-row w-full p-4 mt-2 overflow-scroll border border-solid rounded-lg border-uzh-grey-80">
+            <FontAwesomeIcon
+              icon={faPlay}
+              size="lg"
+              className={twMerge(
+                'my-auto p-2 rounded-md',
+                buttonState === 'firstBlock' && 'bg-green-300'
+              )}
+            />
+            {blocks.map((block) => (
+              <SessionBlock
+                key={block.id}
+                block={block}
+                active={activeBlockId === block.id}
+                className="my-auto"
+              />
+            ))}
+            <FontAwesomeIcon
+              icon={faStop}
+              size="lg"
+              className={twMerge(
+                'my-auto p-2 rounded-md',
+                buttonState === 'endSession' && 'bg-uzh-red-100'
+              )}
+            />
+          </div>
+          <div className="flex flex-row justify-end w-full gap-2 mt-2">
+            <Button
+              onClick={() => setCancelSessionModal(true)}
+              className={{ root: 'bg-red-800 text-white' }}
+            >
+              Session abbrechen
+            </Button>
+            <Button
+              className={{
+                root: twMerge(
+                  (buttonState === 'firstBlock' ||
+                    buttonState === 'nextBlock') &&
+                    `text-white ${theme.primaryBgDark}`,
+                  buttonState === 'endSession' && 'bg-uzh-red-100 text-white'
+                ),
+              }}
+              onClick={() => {
+                if (buttonState === 'firstBlock') {
+                  handleOpenBlock(blocks[0].id)
+                } else if (buttonState === 'nextBlock') {
+                  const openBlockIndex =
+                    blocks.findIndex(
+                      (block) => block.id === lastActiveBlockId
+                    ) + 1
+                  handleOpenBlock(blocks[openBlockIndex].id)
+                } else if (buttonState === 'blockActive') {
+                  handleCloseBlock(activeBlockId)
+                } else {
+                  handleEndSession()
+                }
+              }}
+              data={{ cy: 'interaction-first-block' }}
+            >
+              <Button.Label>{buttonNames[buttonState]}</Button.Label>
+            </Button>
+          </div>
+          <CancelSessionModal
+            isDeletionModalOpen={cancelSessionModal}
+            setIsDeletionModalOpen={setCancelSessionModal}
+            sessionId={sessionId}
+            title={sessionName}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+SessionTimeline.defaultProps = defaultProps
+
+export default SessionTimeline
