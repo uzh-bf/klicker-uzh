@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.16...v3.0.0-alpha.19) (2023-02-03)
+
+
+### Features
+
+* **frontend-manage:** enable configuration of colors for courses ([#3301](https://github.com/uzh-bf/klicker-uzh/issues/3301)) ([e1fb124](https://github.com/uzh-bf/klicker-uzh/commit/e1fb124d6f021477d89b90838556ec93d0ba232b))
+* **frontend-manage:** enable searching and sorting in question pool ([#3284](https://github.com/uzh-bf/klicker-uzh/issues/3284)) ([542d9b7](https://github.com/uzh-bf/klicker-uzh/commit/542d9b71fb0734ea79db84c96a3911adacaf1662))
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** ensure that session-based caching works with the new yoga app ([c092ad7](https://github.com/uzh-bf/klicker-uzh/commit/c092ad7d63f97a491d4103005b4b27159c358747))
+* **packages/graphql:** add manual unauthorized error on fetching participations to ensure PWA login redirect ([681d5e9](https://github.com/uzh-bf/klicker-uzh/commit/681d5e932248e97eb98db40890a8e59117088a85))
+
+
+### Enhancements
+
+* **apps/backend-docker:** upgrade graphql-yoga and set-up CSRF protection plug-in ([4065288](https://github.com/uzh-bf/klicker-uzh/commit/4065288936565a0a11b6da487f99e081c93d9fd3))
+* set-up persisted queries and CSRF ([#3288](https://github.com/uzh-bf/klicker-uzh/issues/3288)) ([f1956b3](https://github.com/uzh-bf/klicker-uzh/commit/f1956b3fd5824f75488e358058b9d06e7d07d9f6))
+
 ## [3.0.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.17...v3.0.0-alpha.18) (2023-01-29)
 
 
