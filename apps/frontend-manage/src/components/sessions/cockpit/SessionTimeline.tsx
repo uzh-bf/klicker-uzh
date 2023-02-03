@@ -22,8 +22,6 @@ import SessionBlock from './SessionBlock'
 
 dayjs.extend(durationPlugin)
 
-// const { publicRuntimeConfig } = getConfig()
-
 const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
   const start = dayjs(startedAt)
   const duration = dayjs.duration(dayjs().diff(start))

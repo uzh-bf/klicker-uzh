@@ -73,33 +73,20 @@ function AudienceInteraction({
   return (
     <div>
       <div className="flex flex-col flex-wrap justify-between gap-4 md:flex-row">
-        <div className="text-2xl font-bold print:hidden">
-          Publikumsinteraktion
-        </div>
-
         <div className="hidden print:block">
           <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
         </div>
 
-        <div className="flex flex-col flex-wrap self-start gap-4 md:flex-row print:hidden">
-          {isAudienceInteractionActive && (
-            <div className="order-3 md:order-1">
-              <a
-                href={`/sessions/${sessionId}/lecturer`}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <Button className={{ root: 'h-10 px-4' }}>
-                  <Button.Icon className={{ root: 'mr-1' }}>
-                    <FontAwesomeIcon icon={faUpRightFromSquare} />
-                  </Button.Icon>
-                  <Button.Label>Dozierendenansicht</Button.Label>
-                </Button>
-              </a>
-            </div>
+        <div
+          className={twMerge(
+            'flex flex-col justify-end w-full gap-2 md:gap-8 md:flex-row print:hidden h-8',
+            isAudienceInteractionActive && 'justify-between'
           )}
-
-          <div className="flex items-center order-1 md:order-2">
+        >
+          {isAudienceInteractionActive && (
+            <div className="text-2xl font-bold">Publikumsinteraktion</div>
+          )}
+          <div className="flex flex-row gap-8">
             <Switch
               checked={isAudienceInteractionActive}
               onCheckedChange={(): void => {
@@ -122,9 +109,6 @@ function AudienceInteraction({
               }}
               label="Publikumsinteraktion aktivieren"
             />
-          </div>
-
-          <div className="flex items-center order-2 md:order-3">
             <Switch
               checked={isModerationEnabled}
               disabled={!isAudienceInteractionActive}
@@ -148,6 +132,25 @@ function AudienceInteraction({
               }}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col flex-wrap self-start w-full gap-4 md:flex-row print:hidden">
+          {isAudienceInteractionActive && (
+            <div className="order-3 md:order-1">
+              <a
+                href={`/sessions/${sessionId}/lecturer`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <Button className={{ root: 'h-10 px-4' }}>
+                  <Button.Icon className={{ root: 'mr-1' }}>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  </Button.Icon>
+                  <Button.Label>Dozierendenansicht</Button.Label>
+                </Button>
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
