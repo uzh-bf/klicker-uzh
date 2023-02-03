@@ -45,12 +45,12 @@ function useEvaluationInitialization({
       if (currInstance) setCurrentInstance(currInstance)
 
       const possibleChartTypes = ACTIVE_CHART_TYPES[
-        currentInstance?.questionData?.type || 0
+        currInstance?.questionData?.type || 0
       ].map((type) => type.value)
 
       if (!possibleChartTypes.includes(chartType)) {
         setChartType(
-          ACTIVE_CHART_TYPES[currentInstance?.questionData?.type || 0][0].value
+          ACTIVE_CHART_TYPES[currInstance?.questionData?.type || 0][0].value
         )
       }
     } else if (
