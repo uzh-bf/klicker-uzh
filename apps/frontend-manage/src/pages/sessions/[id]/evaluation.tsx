@@ -2,20 +2,21 @@ import { useQuery } from '@apollo/client'
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  Block,
   GetSessionEvaluationDocument,
   GetSessionEvaluationQuery,
   InstanceResult,
   SessionBlockStatus,
+  TabData,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   Switch,
-  ThemeContext,
   useArrowNavigation,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useReducer, useState } from 'react'
+import { useEffect, useMemo, useReducer, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
@@ -29,9 +30,13 @@ import EvaluationControlBar from '../../../components/sessions/evaluation/Evalua
 import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
 import QuestionEvaluation from '../../../components/sessions/evaluation/QuestionEvaluation'
 
+export type EvaluationTabData = TabData & { ix: number }
+export type EvaluationBlock = Omit<Block, 'tabData'> & {
+  tabData: EvaluationTabData[]
+}
+
 function Evaluation() {
   const router = useRouter()
-  const theme = useContext(ThemeContext)
 
   const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0)
   const [showLeaderboard, setLeaderboard] = useState<boolean>(false)
@@ -78,7 +83,7 @@ function Evaluation() {
   })
 
   const {
-    blocks,
+    blocks: blockData,
     feedbacks,
     confusionFeedbacks,
     isGamificationEnabled,
@@ -91,13 +96,42 @@ function Evaluation() {
   }
 
   const instanceResults = useMemo(() => {
-    return data?.sessionEvaluation?.instanceResults ?? []
+    return (
+      data?.sessionEvaluation?.instanceResults?.map((result, ix) => ({
+        ...result,
+        ix,
+      })) ?? []
+    )
   }, [data])
 
+  const { blocks } = useMemo(() => {
+    if (!blockData) return { blocks: [] }
+
+    return blockData.reduce(
+      (acc: { ix: number; blocks: EvaluationBlock[] }, block: Block) => {
+        const mappedBlock = {
+          ...block,
+          tabData: block.tabData?.map((instance, ix) => ({
+            ...instance,
+            ix: ix + acc.ix,
+          })),
+        }
+
+        return {
+          ix: acc.ix + (block.tabData?.length || 0),
+          blocks: [...acc.blocks, mappedBlock],
+        }
+      },
+      {
+        ix: 0,
+        blocks: [],
+      }
+    ) as { ix: number; blocks: EvaluationBlock[] }
+  }, [blockData])
+
   useEvaluationInitialization({
-    selectedInstance,
+    selectedInstanceIndex,
     instanceResults,
-    currentInstance,
     chartType,
     questionIx: Number(router.query.questionIx ?? 0),
     setSelectedInstance,
@@ -109,19 +143,16 @@ function Evaluation() {
 
   useArrowNavigation({
     onArrowLeft: () => {
-      if (selectedInstanceIndex > 0) {
-        setSelectedInstance(instanceResults[selectedInstanceIndex - 1].id)
-        setSelectedBlockIndex(
-          instanceResults[selectedInstanceIndex - 1].blockIx
-        )
+      if (selectedInstanceIndex > 0 && selectedInstanceIndex !== -1) {
+        setSelectedInstanceIndex(selectedInstanceIndex - 1)
       }
     },
     onArrowRight: () => {
-      if (selectedInstanceIndex < instanceResults.length - 1) {
-        setSelectedInstance(instanceResults[selectedInstanceIndex + 1].id)
-        setSelectedBlockIndex(
-          instanceResults[selectedInstanceIndex + 1].blockIx
-        )
+      if (
+        selectedInstanceIndex < instanceResults.length - 1 &&
+        selectedInstanceIndex !== -1
+      ) {
+        setSelectedInstanceIndex(selectedInstanceIndex + 1)
       }
     },
   })
@@ -132,6 +163,7 @@ function Evaluation() {
       setConfusion(false)
       setFeedbacks(false)
       setSelectedBlockIndex(-1)
+      setSelectedInstanceIndex(-1)
     }
   }, [router.query.leaderboard])
 
@@ -139,7 +171,7 @@ function Evaluation() {
     return <div>An error occurred, please try again later.</div>
   if (loading || !data) return <div>Loading...</div>
 
-  if (!currentInstance.id) {
+  if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
         <UserNotification
@@ -158,8 +190,7 @@ function Evaluation() {
         blocks={blocks || []}
         selectedBlock={selectedBlockIndex}
         setSelectedBlock={setSelectedBlockIndex}
-        setSelectedInstance={setSelectedInstance}
-        selectedInstance={selectedInstance}
+        setSelectedInstanceIndex={setSelectedInstanceIndex}
         selectedInstanceIndex={selectedInstanceIndex}
         instanceResults={instanceResults}
         setLeaderboard={setLeaderboard}
