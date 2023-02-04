@@ -42,7 +42,7 @@ function Layout({ displayName, children, className }: LayoutProps) {
       </Head>
 
       <div className={twMerge('h-full overflow-y-none', className)}>
-        <div className="fixed top-0 z-10 w-full">
+        <div className="fixed top-0 z-10 w-full print:hidden">
           <Header user={dataUser.userProfile as User} />
         </div>
         <div className="flex justify-between flex-col mt-14 overflow-y-auto [height:_calc(100%-3.5rem)]">
