@@ -3,9 +3,8 @@ import { useEffect } from 'react'
 import { ACTIVE_CHART_TYPES } from 'shared-components/src/constants'
 
 interface useEvaluationInitializationProps {
-  selectedInstance: string
+  selectedInstanceIndex: number
   instanceResults: InstanceResult[]
-  currentInstance: Partial<InstanceResult>
   chartType: string
   questionIx?: number
   setSelectedInstance: (id: string) => void
@@ -16,9 +15,8 @@ interface useEvaluationInitializationProps {
 }
 
 function useEvaluationInitialization({
-  selectedInstance,
+  selectedInstanceIndex,
   instanceResults,
-  currentInstance,
   chartType,
   questionIx,
   setSelectedInstance,
@@ -28,59 +26,40 @@ function useEvaluationInitialization({
   setSelectedBlockIndex,
 }: useEvaluationInitializationProps) {
   useEffect(() => {
-    if (
-      !instanceResults ||
-      instanceResults.length === 0 ||
-      selectedInstance == 'placeholder'
-    )
-      return
-
-    if (selectedInstance === '' && currentInstance.id === '') {
-      setSelectedInstance(instanceResults[0].id)
-      setCurrentInstance(instanceResults[0])
-      return
+    if (typeof questionIx === 'number') {
+      setSelectedInstanceIndex(questionIx)
     }
+  }, [questionIx])
 
-    const currentInstanceIndex = instanceResults.findIndex(
-      (instance) => instance.id === selectedInstance
-    )
-    setSelectedInstanceIndex(currentInstanceIndex)
-
-    const currInstance = instanceResults?.find(
-      (instance) => instance.id === selectedInstance
-    )
-    if (currInstance) setCurrentInstance(currInstance)
-
-    const possibleChartTypes = ACTIVE_CHART_TYPES[
-      currentInstance?.questionData?.type || 0
-    ].map((type) => type.value)
-
-    if (!possibleChartTypes.includes(chartType)) {
-      setChartType(
-        ACTIVE_CHART_TYPES[currentInstance?.questionData?.type || 0][0].value
-      )
-    }
-  }, [
-    selectedInstance,
-    instanceResults,
-    currentInstance.id,
-    chartType,
-    currentInstance?.questionData?.type,
-    setSelectedInstanceIndex,
-    setCurrentInstance,
-    setSelectedInstance,
-    setChartType,
-  ])
-
-  // if a question index is provided through the url, directly switch to this question
   useEffect(() => {
-    if (typeof questionIx === 'number' && instanceResults[questionIx]) {
-      setSelectedInstance(instanceResults[questionIx].id)
-      setSelectedBlockIndex(instanceResults[questionIx].blockIx)
-    } else if (typeof questionIx === 'number' && !instanceResults[questionIx]) {
+    if (instanceResults?.[selectedInstanceIndex]) {
+      const selectedInstance = instanceResults[selectedInstanceIndex].id
+      setSelectedInstance(selectedInstance)
+      setSelectedBlockIndex(instanceResults[selectedInstanceIndex].blockIx)
+
+      const currInstance = instanceResults?.find(
+        (instance) => instance.id === selectedInstance
+      )
+      if (currInstance) setCurrentInstance(currInstance)
+
+      const possibleChartTypes = ACTIVE_CHART_TYPES[
+        currInstance?.questionData?.type || 0
+      ].map((type) => type.value)
+
+      if (!possibleChartTypes.includes(chartType)) {
+        setChartType(
+          ACTIVE_CHART_TYPES[currInstance?.questionData?.type || 0][0].value
+        )
+      }
+    } else if (
+      !instanceResults?.[selectedInstanceIndex] &&
+      selectedInstanceIndex !== -1
+    ) {
       setSelectedInstance('placeholder')
+    } else {
+      setSelectedInstance('')
     }
-  }, [questionIx, instanceResults])
+  }, [instanceResults, selectedInstanceIndex])
 }
 
 export default useEvaluationInitialization

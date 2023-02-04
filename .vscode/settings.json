@@ -7,5 +7,5 @@
   "azureFunctions.preDeployTask": "npm prune (serverless)",
   "azureFunctions.projectSubpath": "apps/backend-sls",
   "githubPullRequests.ignoredPullRequestBranches": ["v3"],
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": true
 }
