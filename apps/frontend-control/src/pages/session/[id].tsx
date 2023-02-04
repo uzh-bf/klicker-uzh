@@ -7,7 +7,6 @@ import {
   EndSessionDocument,
   GetControlSessionDocument,
   GetRunningSessionsDocument,
-  Session,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -25,10 +24,10 @@ import SessionBlock from '../../components/sessions/SessionBlock'
 function RunningSession() {
   const router = useRouter()
   const theme = useContext(ThemeContext)
-  const [nextBlock, setNextBlock] = useState(-1)
-  const [currentBlock, setCurrentBlock] = useState<number | undefined>(
-    undefined
-  )
+  const [nextBlockOrder, setNextBlockOrder] = useState(-1)
+  const [currentBlockOrder, setCurrentBlockOrder] = useState<
+    number | undefined
+  >(undefined)
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
@@ -52,20 +51,21 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    if (!sessionData?.controlSession?.activeBlock) {
-      setCurrentBlock(undefined)
-      return
-    }
-    setCurrentBlock(sessionData?.controlSession?.activeBlock.id)
+    setCurrentBlockOrder(sessionData?.controlSession?.activeBlock?.order)
   }, [sessionData?.controlSession?.activeBlock])
 
   useEffect(() => {
-    if (!sessionData?.controlSession?.blocks) return
-    const scheduledNext = sessionData?.controlSession?.blocks.findIndex(
+    const sortedBlocks = sessionData?.controlSession?.blocks?.sort(
+      (a, b) => a.order - b.order
+    )
+
+    if (!sortedBlocks) return
+    const scheduledNext = sortedBlocks.find(
       (block) => block.status === SessionBlockStatus.Scheduled
     )
-    setNextBlock(typeof scheduledNext === 'undefined' ? -1 : scheduledNext)
-    console.log(scheduledNext)
+    setNextBlockOrder(
+      typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
+    )
   }, [sessionData?.controlSession?.blocks])
 
   if (sessionLoading) {
@@ -82,8 +82,7 @@ function RunningSession() {
     )
   }
 
-  const { id, name, course, activeBlock, blocks } =
-    sessionData?.controlSession as Session
+  const { id, name, course, blocks } = sessionData?.controlSession
 
   if (!blocks) {
     return (
@@ -98,18 +97,18 @@ function RunningSession() {
 
   return (
     <Layout title={`Session: ${name}`} sessionId={id}>
-      <div key={`${currentBlock}-${nextBlock}`}>
-        {currentBlock ? (
-          <div key={`${currentBlock}-${nextBlock}`}>
+      <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
+        {typeof currentBlockOrder !== 'undefined' ? (
+          <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
             <H3>Aktiver Block:</H3>
 
             <SessionBlock
-              block={blocks.find((block) => block.id === currentBlock)}
+              block={blocks.find((block) => block.order === currentBlockOrder)}
               active
             />
-            {currentBlock &&
-              nextBlock !== -1 &&
-              nextBlock !== blocks.length && (
+            {typeof currentBlockOrder !== 'undefined' &&
+              nextBlockOrder !== -1 &&
+              nextBlockOrder < blocks.length && (
                 <div className="flex flex-col gap-2 mt-2">
                   <FontAwesomeIcon
                     icon={faArrowDown}
@@ -118,7 +117,9 @@ function RunningSession() {
                   />
 
                   <SessionBlock
-                    block={blocks.find((block) => block.order === nextBlock)}
+                    block={blocks.find(
+                      (block) => block.order === nextBlockOrder
+                    )}
                   />
                 </div>
               )}
@@ -127,10 +128,12 @@ function RunningSession() {
                 await deactivateSessionBlock({
                   variables: {
                     sessionId: id,
-                    sessionBlockId: currentBlock,
+                    sessionBlockId:
+                      blocks.find((block) => block.order === currentBlockOrder)
+                        ?.id || -1,
                   },
                 })
-                setCurrentBlock(undefined)
+                setCurrentBlockOrder(undefined)
               }}
               className={{
                 root: 'float-right',
@@ -139,18 +142,20 @@ function RunningSession() {
               Block schliessen
             </Button>
           </div>
-        ) : nextBlock !== -1 ? (
+        ) : nextBlockOrder !== -1 ? (
           <div>
             <H3>Nächster Block:</H3>
-            {nextBlock > 0 && (
+            {nextBlockOrder > 0 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
                 className="w-full mx-auto"
               />
             )}
-            <SessionBlock block={blocks[nextBlock]} />
-            {nextBlock !== blocks.length && (
+            <SessionBlock
+              block={blocks.find((block) => block.order === nextBlockOrder)}
+            />
+            {nextBlockOrder < blocks.length - 1 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
                 size="2xl"
@@ -163,17 +168,20 @@ function RunningSession() {
                   await activateSessionBlock({
                     variables: {
                       sessionId: id,
-                      sessionBlockId: blocks[nextBlock].id,
+                      sessionBlockId:
+                        blocks.find((block) => block.order === nextBlockOrder)
+                          ?.id || -1,
                     },
                   })
-                  setCurrentBlock(blocks[nextBlock].id)
+                  setCurrentBlockOrder(nextBlockOrder)
+                  setNextBlockOrder(nextBlockOrder + 1)
                 }
               }}
               className={{
                 root: twMerge('float-right text-white', theme.primaryBgDark),
               }}
             >
-              Block {nextBlock + 1} aktivieren
+              Block {nextBlockOrder + 1} aktivieren
             </Button>
           </div>
         ) : (
@@ -199,7 +207,7 @@ function RunningSession() {
           </div>
         )}
 
-        {currentBlock && nextBlock == -1 && (
+        {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
           <UserNotification
             message="Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden."
             className={{ root: 'mt-14' }}

@@ -1358,15 +1358,15 @@ export async function getControlSession(
       activeBlock: true,
       course: true,
       blocks: {
-        orderBy: {
-          order: 'asc',
-        },
         include: {
           instances: {
             orderBy: {
               order: 'asc',
             },
           },
+        },
+        orderBy: {
+          order: 'asc',
         },
       },
     },
@@ -1376,44 +1376,7 @@ export async function getControlSession(
     return null
   }
 
-  // recude session to only contain what is required for the control cockpit
-  const reducedSession = {
-    id: session.id,
-    name: session.name,
-    displayName: session.displayName,
-    activeBlock: session.activeBlock
-      ? {
-          id: session.activeBlock.id,
-        }
-      : null,
-    course: session.course,
-    blocks: session.blocks.map((block) => {
-      return {
-        ...block,
-        instances: block.instances.map((instance) => {
-          const questionData =
-            instance.questionData?.valueOf() as AllQuestionTypeData
-          if (
-            !questionData ||
-            typeof questionData !== 'object' ||
-            Array.isArray(questionData)
-          ) {
-            return instance
-          } else {
-            return {
-              ...instance,
-              questionData: {
-                ...questionData,
-                options: null,
-              },
-            }
-          }
-        }),
-      }
-    }),
-  }
-
-  return reducedSession
+  return session
 }
 
 export async function getPinnedFeedbacks(

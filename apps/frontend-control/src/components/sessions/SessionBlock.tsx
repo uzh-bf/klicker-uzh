@@ -1,16 +1,24 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  SessionBlock as Block,
-  SessionBlockStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { SessionBlockStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Countdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SessionBlockProps {
-  block?: Block
+  block?: {
+    expiresAt?: string
+    timeLimit?: number | null
+    order: number
+    status: SessionBlockStatus
+    instances: {
+      id: number
+      questionData: {
+        name: string
+      }
+    }[]
+  }
   active?: boolean
 }
 

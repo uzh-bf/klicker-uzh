@@ -27,6 +27,7 @@ query GetControlSession($id: ID!) {
     }
     activeBlock {
       id
+      order
     }
   }
 }
