@@ -27,6 +27,7 @@ function EditorField({
   tooltip,
   className,
 }: EditorFieldProps) {
+  // TODO: move useField here and only pass name through props
   return (
     <div className={twMerge('flex flex-row w-full', className)}>
       <Label
