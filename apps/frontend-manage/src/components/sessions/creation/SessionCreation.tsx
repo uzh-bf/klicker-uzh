@@ -19,7 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import LearningElementCreationForm from '../../../components/sessions/creation/LearningElementCreationForm'
 import LiveSessionCreationForm from '../../../components/sessions/creation/LiveSessionCreationForm'
 import MicroSessionCreationForm from '../../../components/sessions/creation/MicroSessionCreationForm'
-import LiveSessionWizzard from './LiveSessionWizzard'
+import LiveSessionWizard from './LiveSessionWizard'
 
 interface SessionCreationProps {
   sessionId?: string
@@ -136,7 +136,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
         </Tabs>
       </div>
       {/* <OldApproachLiveSessionWizard /> */}
-      <LiveSessionWizzard />
+      <LiveSessionWizard />
     </div>
   )
 }
