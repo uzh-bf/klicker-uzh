@@ -1,33 +1,23 @@
 import { Label } from '@uzh-bf/design-system'
+import { useField } from 'formik'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../questions/ContentInput'
 
 interface EditorFieldProps {
-  label: string
-  field: string
+  label?: string
   fieldName: string
-  setFieldValue: (
-    name: string,
-    value: string,
-    shouldValidate?: boolean | undefined
-  ) => void
-  error?: string
-  touched?: boolean
   tooltip?: string
   className?: string
 }
 
 function EditorField({
   label,
-  field,
   fieldName,
-  setFieldValue,
-  error,
-  touched,
   tooltip,
   className,
 }: EditorFieldProps) {
-  // TODO: move useField here and only pass name through props
+  const [field, meta, helpers] = useField(fieldName)
+
   return (
     <div className={twMerge('flex flex-row w-full', className)}>
       <Label
@@ -40,10 +30,10 @@ function EditorField({
         showTooltipSymbol={typeof tooltip !== 'undefined'}
       />
       <ContentInput
-        error={error}
-        touched={touched}
-        content={field || '<br>'}
-        onChange={(newValue: string) => setFieldValue(fieldName, newValue)}
+        error={meta.error}
+        touched={meta.touched}
+        content={field.value || '<br>'}
+        onChange={(newValue: string) => helpers.setValue(newValue)}
         showToolbarOnFocus={true}
         placeholder="Inhalt hier eingeben…"
         className={{ editor: '!leading-3', root: 'w-full' }}

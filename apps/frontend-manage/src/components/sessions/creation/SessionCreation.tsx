@@ -135,8 +135,10 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
           </TabContent>
         </Tabs>
       </div>
-      {/* <OldApproachLiveSessionWizard /> */}
-      <LiveSessionWizard />
+      <LiveSessionWizard
+        courses={courseSelection}
+        initialValues={(dataLiveSession?.liveSession as Session) ?? undefined}
+      />
     </div>
   )
 }

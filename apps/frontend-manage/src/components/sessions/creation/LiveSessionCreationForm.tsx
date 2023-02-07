@@ -13,21 +13,13 @@ import {
   Label,
   Switch,
 } from '@uzh-bf/design-system'
-import {
-  ErrorMessage,
-  FieldArray,
-  FieldArrayRenderProps,
-  Form,
-  Formik,
-} from 'formik'
+import { ErrorMessage, Form, Formik } from 'formik'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
 import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
 import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
-import AddBlockButton from './AddBlockButton'
 import EditorField from './EditorField'
-import SessionCreationBlock from './SessionCreationBlock'
 
 interface LiveSessionCreationFormProps {
   courses?: {
@@ -219,7 +211,7 @@ function LiveSessionCreationForm({
                     tooltip="Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcken können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden."
                     showTooltipSymbol={true}
                   />
-                  <FieldArray name="blocks">
+                  {/* <FieldArray name="blocks">
                     {({ push, remove, move }: FieldArrayRenderProps) => (
                       <div className="flex flex-row gap-1 overflow-scroll">
                         {values.blocks.map((block: any, index: number) => (
@@ -236,7 +228,7 @@ function LiveSessionCreationForm({
                         <AddBlockButton push={push} />
                       </div>
                     )}
-                  </FieldArray>
+                  </FieldArray> */}
                 </div>
                 <ErrorMessage
                   name="blocks"

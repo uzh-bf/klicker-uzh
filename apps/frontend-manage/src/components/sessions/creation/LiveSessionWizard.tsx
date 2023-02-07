@@ -1,52 +1,194 @@
-import { FormikTextField, Label } from '@uzh-bf/design-system'
+import { useMutation } from '@apollo/client'
+import {
+  CreateSessionDocument,
+  EditSessionDocument,
+  GetUserSessionsDocument,
+  Session,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  FormikSelectField,
+  FormikSwitchField,
+  FormikTextField,
+  Label,
+} from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import MultistepWizard from './MultistepWizard'
+import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
+import BlockField from './BlockField'
+import EditorField from './EditorField'
+import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
 
-function LiveSessionWizard() {
+interface LiveSessionWizardProps {
+  courses?: {
+    label: string
+    value: string
+  }[]
+  initialValues?: Partial<Session>
+}
+
+const stepOneValidationSchema = yup.object().shape({
+  name: yup
+    .string()
+    .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
+  displayName: yup
+    .string()
+    .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
+  description: yup.string(),
+})
+
+const stepTwoValidationSchema = yup.object().shape({
+  blocks: yup.array().of(
+    yup.object().shape({
+      ids: yup.array().of(yup.number()),
+      titles: yup.array().of(yup.string()),
+      timeLimit: yup
+        .number()
+        .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
+    })
+  ),
+})
+
+const stepThreeValidationSchema = yup.object().shape({
+  multiplier: yup
+    .string()
+    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
+  courseId: yup.string(),
+  isGamificationEnabled: yup
+    .boolean()
+    .required('Bitte spezifizieren Sie, ob die Session gamified sein soll.'),
+})
+
+function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
   const [stepNumber, setStepNumber] = useState(0)
+  const [editSession] = useMutation(EditSessionDocument)
+  const [createSession] = useMutation(CreateSessionDocument)
+  const router = useRouter()
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+
+  const onSubmit = async (
+    values: LiveSessionFormValues,
+    { resetForm }: any
+  ) => {
+    const blockQuestions = values.blocks
+      .filter((block) => block.questionIds.length > 0)
+      .map((block) => {
+        return {
+          questionIds: block.questionIds,
+          timeLimit: block.timeLimit,
+        }
+      })
+
+    try {
+      let success = false
+
+      if (initialValues) {
+        const session = await editSession({
+          variables: {
+            id: initialValues.id || '',
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            blocks: blockQuestions,
+            courseId: values.courseId,
+            multiplier: parseInt(values.multiplier),
+            isGamificationEnabled: values.isGamificationEnabled,
+          },
+          refetchQueries: [GetUserSessionsDocument],
+        })
+        success = Boolean(session.data?.editSession)
+      } else {
+        const session = await createSession({
+          variables: {
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            blocks: blockQuestions,
+            courseId: values.courseId,
+            multiplier: parseInt(values.multiplier),
+            isGamificationEnabled: values.isGamificationEnabled,
+          },
+          refetchQueries: [GetUserSessionsDocument],
+        })
+        success = Boolean(session.data?.createSession)
+      }
+
+      if (success) {
+        router.push('/')
+        setEditMode(!!initialValues)
+        setSuccessToastOpen(true)
+        resetForm()
+      }
+    } catch (error) {
+      console.log('error')
+      setEditMode(!!initialValues)
+      setErrorToastOpen(true)
+    }
+  }
 
   return (
     <div>
-      <h1>Formik Multistep Wizard</h1>
+      <Label label="Formik Multistep Wizard" />
       <MultistepWizard
         initialValues={{
-          name: '',
-          displayName: '',
-          description: '',
-          blocks: [{ questionIds: [], titles: [], timeLimit: undefined }],
-          courseId: '',
-          multiplier: '1',
-          isGamificationEnabled: false,
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          blocks: initialValues?.blocks?.map((block) => {
+            return {
+              questionIds: block.instances.map(
+                (instance) => instance.questionData.id
+              ),
+              titles: block.instances.map(
+                (instance) => instance.questionData.name
+              ),
+              timeLimit: block.timeLimit ?? undefined,
+            }
+          }) || [{ questionIds: [], titles: [], timeLimit: undefined }],
+          courseId: initialValues?.course?.id || '',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
+          isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
+        isInitialValid={initialValues ? true : false}
         stepNumber={stepNumber}
         setStepNumber={setStepNumber}
-        onSubmit={(values) => console.log('Wizard submit', values)}
+        //onSubmit={(values) => console.log('Wizard submit', values)}
+        onSubmit={onSubmit}
       >
         <StepOne
-          onSubmit={() => console.log('Step1 onSubmit')}
-          validationSchema={yup.object().shape({
-            name: yup
-              .string()
-              .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
-            displayName: yup
-              .string()
-              .required(
-                'Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'
-              ),
-            description: yup.string(),
-          })}
+          //onSubmit={() => console.log('Step1 onSubmit')}
+          validationSchema={stepOneValidationSchema}
         />
         <StepTwo
-          onSubmit={() => console.log('Step2 onSubmit')}
-          validationSchema={yup.object().shape({
-            blabla: yup
-              .string()
-              .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
-          })}
+          //onSubmit={() => console.log('Step2 onSubmit')}
+          validationSchema={stepTwoValidationSchema}
+        />
+        <StepThree
+          //onSubmit={() => console.log('Step3 onSubmit')}
+          validationSchema={stepThreeValidationSchema}
+          courses={courses}
         />
       </MultistepWizard>
+      <LiveSessionCreationToast
+        open={successToastOpen}
+        setOpen={setSuccessToastOpen}
+        editMode={editMode}
+      />
+      <SessionCreationErrorToast
+        open={errorToastOpen}
+        setOpen={setErrorToastOpen}
+        error={
+          editMode
+            ? 'Anpassen der Live-Session fehlgeschlagen...'
+            : 'Erstellen der Live-Session fehlgeschlagen...'
+        }
+      />
     </div>
   )
 }
@@ -54,8 +196,12 @@ function LiveSessionWizard() {
 export default LiveSessionWizard
 
 interface StepProps {
-  onSubmit: () => void
+  onSubmit?: () => void
   validationSchema: any
+  courses?: {
+    label: string
+    value: string
+  }[]
 }
 
 function StepOne(_: StepProps) {
@@ -70,7 +216,6 @@ function StepOne(_: StepProps) {
         data-cy="insert-live-session-name"
         shouldValidate={() => true}
       />
-
       <FormikTextField
         required
         name="displayName"
@@ -79,20 +224,12 @@ function StepOne(_: StepProps) {
         className={{ root: 'mb-1' }}
         data-cy="insert-live-display-name"
       />
-
-      {/* <EditorField
-            key={fieldName.value}
-            label="Beschreibung"
-            tooltip="// TODO CONTENT TOOLTIP"
-            field={fieldDescription.value}
-            fieldName="description"
-            setFieldValue={(name, value, shouldValidate) => {
-              helpersDescription.setValue(value, shouldValidate)
-            }}
-            error={metaDescription.error}
-            touched={metaDescription.touched}
-          /> */}
-
+      <EditorField
+        // key={fieldName.value}
+        label="Beschreibung"
+        tooltip="// TODO CONTENT TOOLTIP"
+        fieldName="description"
+      />
       <div className="w-full text-right">
         <ErrorMessage
           name="description"
@@ -108,45 +245,70 @@ function StepTwo(_: StepProps) {
   return (
     <>
       <div className="mt-2 mb-2">
-        <div className="flex flex-row items-center flex-1 gap-2">
-          <FormikTextField
-            required
-            name="blabla"
-            label="Anzeigenamen"
-            tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
-            className={{ root: 'mb-1' }}
-            data-cy="insert-live-display-name"
-          />
-          <Label
-            label="Frageblöcke:"
-            className={{
-              root: 'font-bold',
-              tooltip: 'font-normal text-sm !w-1/2',
-            }}
-            tooltip="Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcken können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden."
-            showTooltipSymbol={true}
-          />
-          {/* <FieldArray name="blocks">
-          {({ push, remove, move }: FieldArrayRenderProps) => (
-            <div className="flex flex-row gap-1 overflow-scroll">
-              {values.blocks.map((block: any, index: number) => (
-                <SessionCreationBlock
-                  key={`${index}-${block.questionIds.join('')}`}
-                  index={index}
-                  block={block}
-                  numOfBlocks={values.blocks.length}
-                  setFieldValue={setFieldValue}
-                  remove={remove}
-                  move={move}
-                />
-              ))}
-              <AddBlockButton push={push} />
-            </div>
-          )}
-        </FieldArray> */}
-        </div>
+        <BlockField fieldName="blocks" />
         <ErrorMessage
           name="blocks"
+          component="div"
+          className="text-sm text-red-400"
+        />
+      </div>
+    </>
+  )
+}
+
+function StepThree(props: StepProps) {
+  return (
+    <>
+      <div className="flex flex-row items-center">
+        <Label
+          label="Optionen"
+          className={{
+            root: 'my-auto mr-2 font-bold min-w-max',
+            tooltip: 'text-sm font-normal !w-1/2',
+          }}
+        />
+        {props.courses && (
+          <>
+            <div className="mr-2" data-cy="select-course-div">
+              Kurs:
+            </div>
+            <FormikSelectField
+              name="courseId"
+              placeholder="Kurs auswählen"
+              items={[{ label: 'Kein Kurs', value: '' }, ...props.courses]}
+            />
+          </>
+        )}
+        <div className="ml-4 mr-2">Multiplier:</div>
+        <FormikSelectField
+          name="multiplier"
+          placeholder="Default: 1x"
+          items={[
+            { label: 'Einfach (1x)', value: '1' },
+            { label: 'Doppelt (2x)', value: '2' },
+            { label: 'Dreifach (3x)', value: '3' },
+            { label: 'Vierfach (4x)', value: '4' },
+          ]}
+        />
+        <FormikSwitchField
+          name="isGamificationEnabled"
+          label="Gamification"
+          className={{ root: 'ml-4' }}
+        />
+      </div>
+      <div>
+        <ErrorMessage
+          name="courseId"
+          component="div"
+          className="text-sm text-red-400"
+        />
+        <ErrorMessage
+          name="multiplier"
+          component="div"
+          className="text-sm text-red-400"
+        />
+        <ErrorMessage
+          name="isGamificationEnabled"
           component="div"
           className="text-sm text-red-400"
         />

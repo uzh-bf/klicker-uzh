@@ -1,4 +1,5 @@
 import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
 
@@ -8,6 +9,21 @@ interface LiveSessionCreationFormProps {
   onSubmit: (values: any, bag: any) => void
   stepNumber: number
   setStepNumber: (newValue: number) => void
+  isInitialValid: boolean
+}
+
+export interface LiveSessionFormValues {
+  name: string
+  displayName: string
+  description: string
+  blocks: {
+    questionIds: number[]
+    titles: string[]
+    timeLimit: number
+  }[]
+  courseId: string
+  multiplier: string
+  isGamificationEnabled: boolean
 }
 
 function MultistepWizard({
@@ -16,25 +32,27 @@ function MultistepWizard({
   onSubmit,
   stepNumber,
   setStepNumber,
+  isInitialValid,
 }: LiveSessionCreationFormProps) {
   const steps = React.Children.toArray(children)
+
   const [snapshot, setSnapshot] = useState(initialValues)
 
   const step = steps[stepNumber]
   const totalSteps = steps.length
   const isLastStep = stepNumber === totalSteps - 1
 
-  const next = (values: any) => {
+  const next = (values: LiveSessionFormValues) => {
     setSnapshot(values)
     setStepNumber(Math.min(stepNumber + 1, totalSteps - 1))
   }
 
-  const previous = (values: any) => {
+  const previous = (values: LiveSessionFormValues) => {
     setSnapshot(values)
     setStepNumber(Math.max(stepNumber - 1, 0))
   }
 
-  const handleSubmit = async (values: any, bag: any) => {
+  const handleSubmit = async (values: LiveSessionFormValues, bag: any) => {
     if (step.props.onSubmit) {
       await step.props.onSubmit(values, bag)
     }
@@ -50,6 +68,7 @@ function MultistepWizard({
   return (
     <Formik
       initialValues={snapshot}
+      isInitialValid={isInitialValid}
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
     >
@@ -59,16 +78,16 @@ function MultistepWizard({
             Step {stepNumber + 1} of {totalSteps}
           </p>
           {step}
-          <div style={{ display: 'flex' }}>
+          <div className="flex">
             {stepNumber > 0 && (
-              <button onClick={() => previous(values)} type="button">
-                Back
-              </button>
+              <Button onClick={() => previous(values)} type="button">
+                Zurück
+              </Button>
             )}
             <div>
-              <button disabled={isSubmitting} type="submit">
-                {isLastStep ? 'Submit' : 'Next'}
-              </button>
+              <Button disabled={isSubmitting} type="submit">
+                {isLastStep ? 'Erstellen' : 'Weiter'}
+              </Button>
             </div>
           </div>
         </Form>
