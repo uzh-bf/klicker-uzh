@@ -11,7 +11,11 @@ import {
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 // TODO: rework scheduling for serverless
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -1571,10 +1575,7 @@ export async function getSessionEvaluation(
   }
 }
 
-export async function cancelSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function cancelSession({ id }: { id: string }, ctx: Context) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {

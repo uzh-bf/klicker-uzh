@@ -1,8 +1,47 @@
+import { AccessMode, SessionStatus as Status } from '@klicker-uzh/prisma'
+
 import builder from '../builder'
+
+export const SessionStatus = builder.enumType('SessionStatus', {
+  values: Object.values(Status),
+})
+
+export const SessionAccessMode = builder.enumType('SessionAccessMode', {
+  values: Object.values(AccessMode),
+})
 
 export const Session = builder.prismaObject('Session', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    isAudienceInteractionActive: t.exposeBoolean('isAudienceInteractionActive'),
+    isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
+    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+
+    namespace: t.exposeString('namespace'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    displayName: t.exposeString('displayName'),
+    linkToJoin: t.exposeString('linkTo', { nullable: true }),
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+
+    // numOfBlocks: t.exposeInt('numOfBlocks'),
+    // numOfQuestions: t.exposeInt('numOfQuestions'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+
+    status: t.expose('status', { type: SessionStatus }),
+    accessMode: t.expose('accessMode', { type: SessionAccessMode }),
+
+    activeBlock: t.relation('activeBlock'),
+    blocks: t.relation('blocks'),
+    feedbacks: t.relation('feedbacks'),
+    confusionFeedbacks: t.relation('confusionFeedbacks'),
+    course: t.relation('course'),
+
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+    startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
+    finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),
   }),
 })
 

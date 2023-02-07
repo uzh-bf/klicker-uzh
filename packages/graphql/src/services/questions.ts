@@ -1,6 +1,6 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(
   { userId }: { userId: string },
@@ -253,7 +253,7 @@ export async function editTag(
   return tag
 }
 
-export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
+export async function deleteTag({ id }: { id: number }, ctx: Context) {
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
@@ -264,4 +264,6 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
     typename: 'Tag',
     id: tag.id,
   })
+
+  return tag
 }

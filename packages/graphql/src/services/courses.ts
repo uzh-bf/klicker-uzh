@@ -1,5 +1,9 @@
 import * as R from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -529,7 +533,7 @@ export async function changeCourseDescription(
 
 export async function changeCourseColor(
   { courseId, color }: { courseId: string; color: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.update({
     where: { id: courseId },
