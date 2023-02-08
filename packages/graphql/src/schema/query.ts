@@ -1,11 +1,14 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import builder from '../builder'
+import * as CourseService from '../services/courses'
+import { Course } from './course'
+import { Participant } from './participant'
 
 export const Query = builder.queryType({
   fields: (t) => ({
     self: t.prismaField({
       nullable: true,
-      type: 'Participant',
+      type: Participant,
       authScopes: {
         role: UserRole.PARTICIPANT,
       },
@@ -15,6 +18,19 @@ export const Query = builder.queryType({
           ...query,
           where: { id: ctx.user.sub },
         })
+      },
+    }),
+    controlCourse: t.prismaField({
+      nullable: true,
+      type: Course,
+      authScopes: {
+        role: UserRole.USER,
+      },
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      resolve(_, __, args, ctx) {
+        return CourseService.getControlCourse(args, ctx)
       },
     }),
   }),

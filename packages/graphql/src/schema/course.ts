@@ -2,10 +2,13 @@ import builder from '../builder'
 
 export const Course = builder.prismaObject('Course', {
   fields: (t) => ({
-    id: t.exposeID('id'),
+    id: t.exposeID('id', { nullable: false }),
+    name: t.exposeString('name'),
 
     color: t.exposeString('color', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
+
+    sessions: t.relation('sessions'),
   }),
 })
 

@@ -541,10 +541,7 @@ export async function getCourseData(
   }
 }
 
-export async function getControlCourse(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function getControlCourse({ id }: { id: string }, ctx: Context) {
   const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
@@ -565,12 +562,7 @@ export async function getControlCourse(
     },
   })
 
-  const reducedSessions = course?.sessions.map(R.pick(['id', 'name', 'status']))
-
-  return {
-    ...course,
-    sessions: reducedSessions,
-  }
+  return course
 }
 
 export async function changeCourseDescription(

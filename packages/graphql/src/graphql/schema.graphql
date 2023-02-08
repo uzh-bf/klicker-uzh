@@ -42,6 +42,8 @@ type Course {
   color: String
   description: String
   id: ID!
+  name: String!
+  sessions: [Session!]!
 }
 
 """
@@ -176,6 +178,7 @@ type PushSubscription {
 }
 
 type Query {
+  controlCourse(id: String!): Course
   self: Participant
 }
 
