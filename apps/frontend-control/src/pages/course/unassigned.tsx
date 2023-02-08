@@ -27,9 +27,6 @@ function UnassignedSessions() {
     )
   }, [dataSessions])
 
-  console.log('runningSessions', dataSessions)
-  console.log('plannedSessions', plannedSessions)
-
   if (loadingSessions) {
     return <Layout title="Sessionen ohne Kurs">Loading...</Layout>
   }
