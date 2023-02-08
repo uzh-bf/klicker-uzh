@@ -107,9 +107,10 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   deleteFeedback(id: Int!): Feedback
-  deleteFeedbackResponse(id: Int!): FeedbackResponse
+  deleteFeedbackResponse(id: Int!): Feedback
   deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
+  editTag(id: Int!, name: String!): Tag
   loginUser(email: String!, password: String!): String
 }
 
@@ -205,6 +206,7 @@ enum SessionStatus {
 
 type Tag {
   id: Int!
+  name: String!
 }
 
 type Title {

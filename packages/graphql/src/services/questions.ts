@@ -236,7 +236,7 @@ export async function getUserTags(ctx: ContextWithUser) {
 
 export async function editTag(
   { id, name }: { id: number; name: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const tag = await ctx.prisma.tag.update({
     where: {

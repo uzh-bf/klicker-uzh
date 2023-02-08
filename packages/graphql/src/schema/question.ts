@@ -15,6 +15,7 @@ export const QuestionInstance = builder.prismaObject('QuestionInstance', {
 export const Tag = builder.prismaObject('Tag', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+    name: t.exposeString('name'),
   }),
 })
 

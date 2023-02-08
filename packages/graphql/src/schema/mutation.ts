@@ -133,5 +133,20 @@ export const Mutation = builder.mutationType({
         return QuestionService.deleteQuestion(args, ctx)
       },
     }),
+    editTag: t.field({
+      nullable: true,
+      type: Tag,
+      args: {
+        id: t.arg.int({ required: true }),
+        name: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return QuestionService.editTag(args, ctx)
+      },
+    }),
   }),
 })
