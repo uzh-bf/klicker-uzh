@@ -183,6 +183,7 @@ type Query {
   controlCourse(id: String!): Course
   getLoginToken: User
   self: Participant
+  userTags: [Tag!]
 }
 
 type Question {
