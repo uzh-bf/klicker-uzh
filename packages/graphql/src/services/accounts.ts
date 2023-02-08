@@ -132,7 +132,7 @@ export async function loginUserToken(
   return user.id
 }
 
-export async function logoutUser(_, ctx: ContextWithUser) {
+export async function logoutUser(_, ctx: Context) {
   ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
@@ -223,7 +223,7 @@ export async function loginParticipant(
   return participant.id
 }
 
-export async function logoutParticipant(_: any, ctx: ContextWithUser) {
+export async function logoutParticipant(_: any, ctx: Context) {
   ctx.res.cookie('participant_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',

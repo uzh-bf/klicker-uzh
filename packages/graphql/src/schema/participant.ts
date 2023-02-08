@@ -82,3 +82,15 @@ export const PushSubscription = builder.prismaObject('PushSubscription', {
     endpoint: t.exposeString('endpoint', { nullable: false }),
   }),
 })
+
+interface ParticipantLearningData {
+  id: string
+}
+
+export const ParticipantLearningData = builder
+  .objectRef<ParticipantLearningData>('ParticipantLearningData')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+    }),
+  })

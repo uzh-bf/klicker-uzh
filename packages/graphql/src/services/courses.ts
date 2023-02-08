@@ -92,15 +92,12 @@ interface LeaveCourseArgs {
   courseId: string
 }
 
-export async function leaveCourse(
-  { courseId }: LeaveCourseArgs,
-  ctx: ContextWithUser
-) {
+export async function leaveCourse({ courseId }: LeaveCourseArgs, ctx: Context) {
   const participation = ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user.sub,
+        participantId: ctx.user!.sub,
       },
     },
     data: {
@@ -109,7 +106,7 @@ export async function leaveCourse(
   })
 
   return {
-    id: `${courseId}-${ctx.user.sub}`,
+    id: `${courseId}-${ctx.user!.sub}`,
     participation,
   }
 }

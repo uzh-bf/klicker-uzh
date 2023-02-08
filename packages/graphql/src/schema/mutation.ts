@@ -354,5 +354,41 @@ export const Mutation = builder.mutationType({
         return FeedbackService.respondToFeedback(args, ctx)
       },
     }),
+    logoutUser: t.field({
+      nullable: true,
+      type: 'ID',
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return AccountService.logoutUser(args, ctx)
+      },
+    }),
+    logoutParticipant: t.field({
+      nullable: true,
+      type: 'ID',
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return AccountService.logoutParticipant(args, ctx)
+      },
+    }),
+    leaveCourse: t.field({
+      nullable: true,
+      type: Course,
+      args: {
+        courseId: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return CourseService.leaveCourse(args, ctx)
+      },
+    }),
   }),
 })
