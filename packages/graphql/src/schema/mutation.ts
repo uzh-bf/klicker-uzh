@@ -6,7 +6,7 @@ import * as FeedbackService from '../services/feedbacks'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { Tag } from './question'
+import { Question, Tag } from './question'
 import { Feedback, Session } from './session'
 
 export const Mutation = builder.mutationType({
@@ -89,6 +89,16 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return FeedbackService.createFeedback(args, ctx)
+      },
+    }),
+    deleteQuestion: t.field({
+      nullable: true,
+      type: Question,
+      args: {
+        id: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return QuestionService.deleteQuestion(args, ctx)
       },
     }),
   }),

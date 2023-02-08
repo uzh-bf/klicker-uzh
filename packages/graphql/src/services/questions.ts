@@ -202,10 +202,7 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion(
-  { id }: { id: number },
-  ctx: ContextWithUser
-) {
+export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
   const question = await ctx.prisma.question.delete({
     where: {
       id: id,
