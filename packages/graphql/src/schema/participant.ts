@@ -14,6 +14,30 @@ export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   }),
 })
 
+export const SubscriptionKeysInput = builder.inputType(
+  'SubscriptionKeysInput',
+  {
+    fields: (t) => ({
+      p256dh: t.string({ required: true }),
+      auth: t.string({ required: true }),
+    }),
+  }
+)
+
+export const SubscriptionObjectInput = builder.inputType(
+  'SubscriptionObjectInput',
+  {
+    fields: (t) => ({
+      endpoint: t.string({ required: true }),
+      expirationTime: t.int({ required: false }),
+      keys: t.field({
+        type: SubscriptionKeysInput,
+        required: true,
+      }),
+    }),
+  }
+)
+
 export const Participant = builder.prismaObject('Participant', {
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -43,11 +67,15 @@ export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
 export const Participation = builder.prismaObject('Participation', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    subscriptions: t.relation('subscriptions'),
   }),
 })
 
 export const PushSubscription = builder.prismaObject('PushSubscription', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    endpoint: t.exposeString('endpoint', { nullable: false }),
   }),
 })

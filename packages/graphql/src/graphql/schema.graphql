@@ -120,6 +120,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: String!): Feedback
   deleteTag(id: Int!): Tag
   loginUser(email: String!, password: String!): String
+  subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -151,9 +152,11 @@ type ParticipantGroup {
 
 type Participation {
   id: Int!
+  subscriptions: [PushSubscription!]!
 }
 
 type PushSubscription {
+  endpoint: String!
   id: Int!
 }
 
@@ -216,6 +219,17 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+input SubscriptionKeysInput {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeysInput!
 }
 
 type Tag {
