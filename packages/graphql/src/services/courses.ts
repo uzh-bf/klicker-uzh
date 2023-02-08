@@ -575,7 +575,7 @@ export async function getControlCourse(
 
 export async function changeCourseDescription(
   { courseId, input }: { courseId: string; input: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.update({
     where: { id: courseId },

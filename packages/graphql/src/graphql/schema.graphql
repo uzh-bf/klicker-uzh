@@ -28,6 +28,7 @@ type ConfusionTimestep {
 
 type Course {
   color: String
+  description: String
   id: ID!
 }
 
@@ -103,6 +104,7 @@ type MicroSession {
 type Mutation {
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
+  changeCourseDescription(courseId: String!, input: String!): Course
   deleteTag(id: Int!): Tag
   loginUser(email: String!, password: String!): String
 }

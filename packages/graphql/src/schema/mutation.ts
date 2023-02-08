@@ -50,6 +50,21 @@ export const Mutation = builder.mutationType({
         return CourseService.changeCourseColor(args, ctx)
       },
     }),
+    changeCourseDescription: t.field({
+      nullable: true,
+      type: Course,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        input: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return CourseService.changeCourseDescription(args, ctx)
+      },
+    }),
     deleteTag: t.field({
       nullable: true,
       type: Tag,

@@ -5,6 +5,7 @@ export const Course = builder.prismaObject('Course', {
     id: t.exposeID('id'),
 
     color: t.exposeString('color', { nullable: true }),
+    description: t.exposeString('description', { nullable: true }),
   }),
 })
 
