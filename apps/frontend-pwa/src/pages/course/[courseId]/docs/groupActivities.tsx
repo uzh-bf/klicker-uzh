@@ -6,7 +6,7 @@ function GroupActivities() {
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <CommonDocs />
-      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
         <H3>Gruppenaktivitäten</H3>
         Während des Semesters werden euch praxisnahe Gruppenaktivitäten
         bereitgestellt, die ihr nur als Gruppe gemeinsam lösen könnt. Diese

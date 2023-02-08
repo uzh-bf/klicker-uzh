@@ -12,6 +12,7 @@ interface LayoutProps {
   displayName?: string
   courseName?: string
   courseColor?: string | null
+  courseId?: string
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -38,6 +39,7 @@ function Layout({
   displayName,
   courseName,
   courseColor,
+  courseId,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -71,6 +73,7 @@ function Layout({
             title={displayName}
             courseName={courseName}
             courseColor={courseColor}
+            courseId={courseId}
           />
         </div>
 

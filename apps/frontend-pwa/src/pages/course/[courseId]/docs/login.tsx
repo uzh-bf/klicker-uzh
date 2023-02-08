@@ -7,7 +7,7 @@ function LoginPage() {
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <CommonDocs />
-      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
         <H3>Erstmaliges Login</H3>
         Damit du an der BF-Champions Challenge teilnehmen kannst, musst du dich
         einmalig registrieren. Dabei kannst du wie folgt vorgehen:

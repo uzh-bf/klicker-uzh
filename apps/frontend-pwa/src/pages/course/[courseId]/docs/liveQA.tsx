@@ -2,11 +2,11 @@ import CommonDocs from '@components/CommonDocs'
 import Layout from '@components/Layout'
 import { H3 } from '@uzh-bf/design-system'
 
-function QandA() {
+function LiveQA() {
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <CommonDocs />
-      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
         <H3>Live Q&A und Real-Time Feedback</H3>
         Hast du eine Frage oder möchtest du Real-Time Feedback zur Vorlesung
         geben? Mit dem Live Q&A kannst den Dozierenden oder Assistierenden
@@ -36,4 +36,4 @@ function QandA() {
   )
 }
 
-export default QandA
+export default LiveQA

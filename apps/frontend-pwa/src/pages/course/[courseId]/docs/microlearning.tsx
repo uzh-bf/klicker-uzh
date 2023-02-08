@@ -6,7 +6,7 @@ function Microlearning() {
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <CommonDocs />
-      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
         <H3>Microlearning</H3>
         Microlearning bezeichnet Lernen in kleinen Einheiten. Am{' '}
         <strong>Mittwoch nach jeder Vorlesung ab 07.00 Uhr</strong> werden in

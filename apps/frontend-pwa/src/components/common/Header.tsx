@@ -12,6 +12,7 @@ interface HeaderProps {
   participant?: Participant
   title?: string
   courseName?: string
+  courseId?: string
   courseColor?: string | null
 }
 
@@ -25,6 +26,7 @@ function Header({
   title,
   courseName,
   courseColor,
+  courseId,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
 
@@ -53,11 +55,17 @@ function Header({
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
       <div className="flex flex-row items-center gap-4">
-        <FontAwesomeIcon
-          className="fa-lg"
-          icon={faCircleQuestion}
-          onClick={() => router.push('/docs')}
-        />
+        {courseName !== 'KlickerUZH' && (
+          <Link href={`/course/${courseId}/docs`}>
+            <Button
+              className={{
+                root: 'bg-slate-800 peer-disabled: md:block border-slate-800',
+              }}
+            >
+              <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
+            </Button>
+          </Link>
+        )}
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
           router.pathname !== '/' &&

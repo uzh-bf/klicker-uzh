@@ -6,7 +6,7 @@ function KlickerApp() {
   return (
     <Layout courseName="KlickerUZH" displayName="Mein Profil">
       <CommonDocs />
-      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
         <H3>Klicker App</H3>
         Damit du von überall auf den Klicker zugreifen kannst, gibt’s die
         Klicker App. Die Klicker App hat den Vorteil gegenüber der Klicker
