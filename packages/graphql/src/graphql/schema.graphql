@@ -267,6 +267,9 @@ type Query {
 =======
   basicCourseInformation(courseId: ID!): Course
   cockpitSession(id: ID!): Session
+  controlCourse(id: ID!): Course
+  controlCourses: [Course!]
+  controlSession(id: ID!): Session
   course(id: ID!): Course
   feedbacks(id: ID!): [Feedback!]
   getCourseOverviewData(courseId: ID!): ParticipantLearningData
@@ -286,6 +289,7 @@ type Query {
   sessionEvaluation(id: ID!): SessionEvaluation
   sessionLeaderboard(sessionId: ID!): [LeaderboardEntry!]
   singleMicroSession(id: ID!): MicroSession
+  unassignedSessions: [Session!]
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]

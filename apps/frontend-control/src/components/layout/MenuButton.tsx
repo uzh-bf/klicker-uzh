@@ -20,7 +20,6 @@ function MenuButton({
   onClick,
   className,
 }: MenuButtonProps) {
-  console.log(disabled)
   return (
     <Button
       className={{

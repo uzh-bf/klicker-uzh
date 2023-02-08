@@ -12,6 +12,9 @@ module.exports = {
       colors: {
         ...TailwindColorsUZH,
       },
+      screens: {
+        xs: '480px',
+      },
       fontFamily: {},
     },
   },

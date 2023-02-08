@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H4, UserNotification } from '@uzh-bf/design-system'
 import ListButton from '../components/common/ListButton'
 import Layout from '../components/Layout'
@@ -10,7 +10,7 @@ function Index() {
     loading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetUserCoursesDocument)
+  } = useQuery(GetControlCoursesDocument)
 
   if (loadingCourses) {
     return <Layout title="Kursübersicht">Loading...</Layout>
@@ -31,11 +31,11 @@ function Index() {
   return (
     <Layout title="Kursübersicht">
       <div className="flex flex-col w-full gap-4">
-        {dataCourses?.userCourses && (
+        {dataCourses?.controlCourses && (
           <div>
             <H4>Bitte wählen Sie einen Kurs aus:</H4>
             <div className="flex flex-col gap-2">
-              {dataCourses.userCourses
+              {dataCourses.controlCourses
                 .sort((a, b) => (a.isArchived ? 1 : -1))
                 .map((course) => (
                   <ListButton

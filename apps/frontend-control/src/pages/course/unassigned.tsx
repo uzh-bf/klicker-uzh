@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetUnassignedSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useMemo } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
@@ -11,24 +11,20 @@ function UnassignedSessions() {
     loading: loadingSessions,
     error: errorSessions,
     data: dataSessions,
-  } = useQuery(GetUserSessionsDocument)
+  } = useQuery(GetUnassignedSessionsDocument)
 
   const runningSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session.course === null)
-      ?.filter((session) => session.status === SESSION_STATUS.RUNNING)
-      .sort((a, b) => b.startedAt - a.startedAt)
+    return dataSessions?.unassignedSessions?.filter(
+      (session) => session.status === SESSION_STATUS.RUNNING
+    )
   }, [dataSessions])
 
   const plannedSessions = useMemo(() => {
-    return dataSessions?.userSessions
-      ?.filter((session) => session.course === null)
-      ?.filter(
-        (session) =>
-          session.status === SESSION_STATUS.SCHEDULED ||
-          session.status === SESSION_STATUS.PREPARED
-      )
-      .sort((a, b) => b.createdAt - a.createdAt)
+    return dataSessions?.unassignedSessions?.filter(
+      (session) =>
+        session.status === SESSION_STATUS.SCHEDULED ||
+        session.status === SESSION_STATUS.PREPARED
+    )
   }, [dataSessions])
 
   if (loadingSessions) {

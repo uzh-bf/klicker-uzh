@@ -326,6 +326,30 @@ export async function getUserCourses(
   return userCourses?.courses ?? []
 }
 
+export async function getControlCourses(
+  { userId }: { userId: string },
+  ctx: ContextWithOptionalUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    include: {
+      courses: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
+  const courses = user?.courses.map(
+    R.pick(['id', 'name', 'displayName', 'isArchived', 'description'])
+  )
+
+  return courses ?? []
+}
+
 export async function getUserLearningElements(ctx: ContextWithUser) {
   const participantCoursesWithLearningElements =
     await ctx.prisma.participant.findUnique({
@@ -514,6 +538,38 @@ export async function getCourseData(
     leaderboard: activeLBEntries,
     averageScore,
     averageActiveScore,
+  }
+}
+
+export async function getControlCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      sessions: {
+        include: {
+          blocks: {
+            include: {
+              _count: {
+                select: { instances: true },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+    },
+  })
+
+  const reducedSessions = course?.sessions.map(R.pick(['id', 'name', 'status']))
+
+  return {
+    ...course,
+    sessions: reducedSessions,
   }
 }
 

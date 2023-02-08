@@ -42,9 +42,15 @@ function PinField({
             paste.match(/^[0-9]{9}$/g)
           ) {
             setFieldValue(
-              'pin',
+              name,
               `${paste.slice(0, 3)} ${paste.slice(3, 6)} ${paste.slice(6, 9)}`
             )
+          } else if (
+            typeof paste === 'string' &&
+            paste.length === 11 &&
+            paste.match(/^[0-9]{3}\ [0-9]{3}\ [0-9]{3}$/g)
+          ) {
+            setFieldValue(name, paste)
           }
         }}
         onChange={(e: any) => {

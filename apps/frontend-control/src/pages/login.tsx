@@ -1,12 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
-import {
-  Button,
-  H1,
-  ThemeContext,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, ThemeContext, UserNotification } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import Image from 'next/image'
 import Router from 'next/router'
@@ -14,6 +9,7 @@ import { useContext, useState } from 'react'
 import PinField from 'shared-components/src/PinField'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import KlickerUZHLogo from '../../public/KlickerLogo.png'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string().required('Geben Sie eine gültige E-Mail Adresse ein'),
@@ -57,20 +53,21 @@ function LoginForm() {
           isValid,
         }) => {
           return (
-            <div>
-              <div className="w-full mb-8 text-center sm:mb-12">
+            <div className="w-full px-2 2xs:bg-red-300 xs:w-72 md:w-96">
+              <div className="mb-8 text-center xs:mb-12">
                 <Image
-                  src="/KlickerLogo.png"
-                  width={300}
-                  height={90}
+                  src={KlickerUZHLogo}
                   alt="KlickerUZH Logo"
-                  className="mx-auto"
+                  className="mx-auto w-52 xs:w-60 md:w-80"
                   data-cy="login-logo"
                 />
               </div>
-              <H1>Login Controller-App (Token)</H1>
+
               <div className="mb-10">
-                <Form className="w-72 sm:w-96">
+                <Form className="">
+                  <div className="text-lg font-bold xs:text:xl md:text-2xl">
+                    Login Controller-App (Token)
+                  </div>
                   <RadixLabel.Root
                     htmlFor="email"
                     className="text-sm leading-7 text-gray-600"
