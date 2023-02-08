@@ -4,6 +4,7 @@ export const Course = builder.prismaObject('Course', {
   fields: (t) => ({
     id: t.exposeID('id', { nullable: false }),
     name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
 
     color: t.exposeString('color', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),

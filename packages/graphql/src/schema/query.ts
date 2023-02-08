@@ -33,5 +33,18 @@ export const Query = builder.queryType({
         return CourseService.getControlCourse(args, ctx)
       },
     }),
+    basicCourseInformation: t.prismaField({
+      nullable: true,
+      type: Course,
+      authScopes: {
+        role: UserRole.USER,
+      },
+      args: {
+        courseId: t.arg.string({ required: true }),
+      },
+      resolve(_, __, args, ctx) {
+        return CourseService.getBasicCourseInformation(args, ctx)
+      },
+    }),
   }),
 })

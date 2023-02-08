@@ -7,7 +7,7 @@ import {
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -16,7 +16,7 @@ export async function getBasicCourseInformation(
   if (!course) {
     return null
   }
-  return R.pick(['id', 'name', 'displayName', 'description', 'color'], course)
+  return course
 }
 
 export async function joinCourseWithPin(

@@ -41,6 +41,7 @@ type ConfusionTimestep {
 type Course {
   color: String
   description: String
+  displayName: String!
   id: ID!
   name: String!
   sessions: [Session!]!
@@ -178,6 +179,7 @@ type PushSubscription {
 }
 
 type Query {
+  basicCourseInformation(courseId: String!): Course
   controlCourse(id: String!): Course
   self: Participant
 }
