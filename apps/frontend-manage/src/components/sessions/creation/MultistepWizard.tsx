@@ -3,7 +3,7 @@ import { Button } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
 
-interface LiveSessionCreationFormProps {
+interface FormProps {
   children: React.ReactNode[]
   initialValues?: Partial<Session>
   onSubmit: (values: any, bag: any) => void
@@ -26,6 +26,31 @@ export interface LiveSessionFormValues {
   isGamificationEnabled: boolean
 }
 
+export interface MicroSessionFormValues {
+  name: string
+  displayName: string
+  description: string
+  questions: {
+    id: number
+    title: string
+  }[]
+  startDate: string
+  endDate: string
+  multiplier: string
+  courseId: string
+}
+
+export interface LearningElementFormValues {
+  name: string
+  displayName: string
+  description: string
+  questions: any
+  multiplier: string
+  courseId: string
+  order: any
+  resetTimeDays: string
+}
+
 function MultistepWizard({
   children,
   initialValues,
@@ -33,7 +58,7 @@ function MultistepWizard({
   stepNumber,
   setStepNumber,
   isInitialValid,
-}: LiveSessionCreationFormProps) {
+}: FormProps) {
   const steps = React.Children.toArray(children)
 
   const [snapshot, setSnapshot] = useState(initialValues)
@@ -42,17 +67,33 @@ function MultistepWizard({
   const totalSteps = steps.length
   const isLastStep = stepNumber === totalSteps - 1
 
-  const next = (values: LiveSessionFormValues) => {
+  const next = (
+    values:
+      | LiveSessionFormValues
+      | MicroSessionFormValues
+      | LearningElementFormValues
+  ) => {
     setSnapshot(values)
     setStepNumber(Math.min(stepNumber + 1, totalSteps - 1))
   }
 
-  const previous = (values: LiveSessionFormValues) => {
+  const previous = (
+    values:
+      | LiveSessionFormValues
+      | MicroSessionFormValues
+      | LearningElementFormValues
+  ) => {
     setSnapshot(values)
     setStepNumber(Math.max(stepNumber - 1, 0))
   }
 
-  const handleSubmit = async (values: LiveSessionFormValues, bag: any) => {
+  const handleSubmit = async (
+    values:
+      | LiveSessionFormValues
+      | MicroSessionFormValues
+      | LearningElementFormValues,
+    bag: any
+  ) => {
     if (step.props.onSubmit) {
       await step.props.onSubmit(values, bag)
     }

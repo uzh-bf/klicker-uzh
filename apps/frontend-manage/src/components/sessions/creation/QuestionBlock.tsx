@@ -34,7 +34,8 @@ function QuestionBlock({
         <div className="flex flex-row gap-1 ml-2">
           <Button
             basic
-            className={{ root: 'mx-1' }}
+            disabled={numOfBlocks === 1}
+            className={{ root: 'mx-1 disabled:hidden' }}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
           >
             <Button.Icon>
@@ -43,7 +44,8 @@ function QuestionBlock({
           </Button>
           <Button
             basic
-            className={{ root: 'ml-1 mr-2' }}
+            disabled={numOfBlocks === 1}
+            className={{ root: 'ml-1 mr-2 disabled:hidden' }}
             onClick={() =>
               move(index, index !== numOfBlocks ? index + 1 : index)
             }

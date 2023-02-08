@@ -17,9 +17,9 @@ import { useState } from 'react'
 import * as yup from 'yup'
 import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
 import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
-import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
+import SessionBlockField from './SessionBlockField'
 
 interface LiveSessionWizardProps {
   courses?: {
@@ -245,7 +245,7 @@ function StepTwo(_: StepProps) {
   return (
     <>
       <div className="mt-2 mb-2">
-        <BlockField fieldName="blocks" />
+        <SessionBlockField fieldName="blocks" />
         <ErrorMessage
           name="blocks"
           component="div"
