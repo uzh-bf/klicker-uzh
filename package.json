@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "@prisma/client": "4.10.0",
-    "prisma": "4.8.1"
+    "prisma": "4.10.0"
   },
   "volta": {
     "node": "18.13.0"
