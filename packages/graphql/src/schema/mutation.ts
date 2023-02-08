@@ -288,5 +288,16 @@ export const Mutation = builder.mutationType({
         return SessionService.startSession(args, ctx)
       },
     }),
+    pinFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        isPinned: t.arg.boolean({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.pinFeedback(args, ctx)
+      },
+    }),
   }),
 })

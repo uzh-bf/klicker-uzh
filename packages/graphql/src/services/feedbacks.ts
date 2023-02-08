@@ -199,7 +199,7 @@ export async function publishFeedback(
 // pin / unpin a feedback on the lecturers running session screen
 export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: {
