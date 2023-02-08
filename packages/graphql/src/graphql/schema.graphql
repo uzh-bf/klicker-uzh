@@ -113,6 +113,7 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
   joinCourseWithPin(courseId: String!, pin: Int!): Participant
+  joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
 }
 
@@ -133,7 +134,9 @@ type ParticipantAchievementInstance {
 }
 
 type ParticipantGroup {
+  code: Int!
   id: ID!
+  name: String!
   participants: [Participant!]!
 }
 

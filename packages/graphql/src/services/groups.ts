@@ -56,7 +56,7 @@ interface JoinParticipantGroupArgs {
 
 export async function joinParticipantGroup(
   { courseId, code }: JoinParticipantGroupArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({

@@ -3,10 +3,11 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as ParticipantGroupService from '../services/groups'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { Participant } from './participant'
+import { Participant, ParticipantGroup } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session } from './session'
 
@@ -176,6 +177,21 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return SessionService.endSession(args, ctx)
+      },
+    }),
+    joinParticipantGroup: t.field({
+      nullable: true,
+      type: ParticipantGroup,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        code: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.joinParticipantGroup(args, ctx)
       },
     }),
   }),
