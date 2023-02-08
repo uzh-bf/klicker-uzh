@@ -181,6 +181,7 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: String!): Course
   controlCourse(id: String!): Course
+  getLoginToken: User
   self: Participant
 }
 
@@ -263,4 +264,6 @@ type Title {
 
 type User {
   id: ID!
+  loginToken: String
+  loginTokenExpiresAt: Date
 }

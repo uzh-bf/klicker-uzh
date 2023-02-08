@@ -1,8 +1,10 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import builder from '../builder'
+import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import { Course } from './course'
 import { Participant } from './participant'
+import { User } from './user'
 
 export const Query = builder.queryType({
   fields: (t) => ({
@@ -44,6 +46,16 @@ export const Query = builder.queryType({
       },
       resolve(_, __, args, ctx) {
         return CourseService.getBasicCourseInformation(args, ctx)
+      },
+    }),
+    getLoginToken: t.prismaField({
+      nullable: true,
+      type: User,
+      authScopes: {
+        role: UserRole.USER,
+      },
+      resolve(_, __, args, ctx) {
+        return AccountService.getLoginToken(args, ctx)
       },
     }),
   }),

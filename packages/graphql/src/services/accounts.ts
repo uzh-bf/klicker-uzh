@@ -256,7 +256,7 @@ export async function generateLoginToken(_: any, ctx: ContextWithUser) {
   return user
 }
 
-export async function getLoginToken(_: any, ctx: ContextWithUser) {
+export async function getLoginToken(_: any, ctx: Context) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
