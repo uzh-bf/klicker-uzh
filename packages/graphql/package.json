@@ -12,7 +12,7 @@
     "prebuild": "npm run generate",
     "build": "NODE_ENV=production tsup --dts",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
-    "dev:ts": "doppler run --config dev -- NODE_ENV=development tsup --watch --dts",
+    "dev:ts": "NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch '**/**.graphql' --watch '**/**.ts'",
     "format": "prettier --write .",
     "generate": "graphql-codegen --config codegen.ts",
