@@ -268,7 +268,7 @@ export async function deleteFeedback({ id }: { id: number }, ctx: Context) {
 // deletes a feedback response
 export async function deleteFeedbackResponse(
   { id }: { id: number },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },
