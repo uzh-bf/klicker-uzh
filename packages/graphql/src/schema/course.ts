@@ -3,6 +3,8 @@ import builder from '../builder'
 export const Course = builder.prismaObject('Course', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    color: t.exposeString('color', { nullable: true }),
   }),
 })
 
