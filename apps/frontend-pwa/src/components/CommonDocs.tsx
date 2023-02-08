@@ -1,11 +1,12 @@
 import { Navigation } from '@uzh-bf/design-system'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 
 function CommonDocs() {
   const router = useRouter()
   return (
     <div>
-      <div className="grid grid-cols-1 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="grid grid-cols-1 text-sm leading-relaxed md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <div className="m-5">
           Der KlickerUZH wird dich während des gesamten Semesters durch die
           Vorlesung «Banking und Finance I» begleiten: Von der Teilnahme an
@@ -14,16 +15,34 @@ function CommonDocs() {
           Repetitionsfragen in Rahmen des Microlearnings bis hin zu den
           Selbsttests in OLAT und dem Prüfungspool.
         </div>
+        <div className="mx-5 md:w-full md:max-w-xl md:p-8 md:mx-auto md:rounded">
+          <Image
+            src="https://course-cms.sos-ch-dk-2.exo.io/Klicker_cfdb47ee12.PNG"
+            alt="image of Klicker on different devices with functionality of features explained"
+            width={1108}
+            height={622}
+          />
+        </div>
         <div className="m-5">
           Bei Fragen, Anmerkungen oder Kritik kannst du dich jederzeit im extra
-          dafür erstellten Support & Feedback Forum melden. Denn das Konzept ist
-          brandneu und wir freuen uns über deinen Input.
+          dafür erstellten{' '}
+          <a
+            className="font-bold text-uzh-turqoise-100"
+            href="https://lms.uzh.ch/url/RepositoryEntry/17250386251/CourseNode/106401872066650"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Support & Feedback Forum
+          </a>{' '}
+          melden. Denn das Konzept ist brandneu und wir freuen uns über deinen
+          Input.
+          <br />
           <br />
           Details zur Installation und Nutzung der KlickerUZH-App findest du in
           folgendem Dokument:
           <br />
           <a
-            className="font-bold"
+            className="font-bold text-uzh-turqoise-100"
             href="https://course-cms.sos-ch-dk-2.exo.io/Klicker_UZH_Anleitung_zur_App_Installation_1cad003132.pdf"
             target="_blank"
             rel="noreferrer"
@@ -56,6 +75,10 @@ function CommonDocs() {
             <Navigation.DropdownItem
               title="Live Q&A"
               onClick={() => router.push('/docs/liveQA')}
+            />
+            <Navigation.DropdownItem
+              title="Gruppenaktivitäten"
+              onClick={() => router.push('/docs/groupActivities')}
             />
             <Navigation.DropdownItem
               title="Microlearning"
