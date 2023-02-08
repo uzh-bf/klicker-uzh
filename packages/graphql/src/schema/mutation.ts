@@ -164,5 +164,19 @@ export const Mutation = builder.mutationType({
         return CourseService.joinCourseWithPin(args, ctx)
       },
     }),
+    endSession: t.field({
+      nullable: true,
+      type: Session,
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return SessionService.endSession(args, ctx)
+      },
+    }),
   }),
 })

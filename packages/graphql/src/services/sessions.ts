@@ -424,7 +424,7 @@ interface EndSessionArgs {
   id: string
 }
 
-export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
+export async function endSession({ id }: EndSessionArgs, ctx: Context) {
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,
