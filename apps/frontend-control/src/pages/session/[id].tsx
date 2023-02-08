@@ -29,16 +29,12 @@ function RunningSession() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
   const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [
-      {
-        query: GetRunningSessionsDocument,
-      },
-    ],
+    refetchQueries: [{ query: GetRunningSessionsDocument }],
   })
+
   const {
     loading: sessionLoading,
     error: sessionError,
@@ -53,7 +49,10 @@ function RunningSession() {
 
   useEffect(() => {
     setCurrentBlockOrder(sessionData?.controlSession?.activeBlock?.order)
-  }, [sessionData?.controlSession?.activeBlock])
+  }, [
+    sessionData?.controlSession?.id,
+    sessionData?.controlSession?.activeBlock,
+  ])
 
   useEffect(() => {
     if (!sessionData?.controlSession?.blocks) return
@@ -75,6 +74,7 @@ function RunningSession() {
   if (sessionLoading) {
     return <Layout title="Session-Steuerung">Loading...</Layout>
   }
+
   if (!sessionData?.controlSession || sessionError) {
     return (
       <Layout title="Session-Steuerung">
