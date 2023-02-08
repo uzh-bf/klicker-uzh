@@ -4,12 +4,20 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
+import * as NotificationService from '../services/notifications'
+import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { Participant, ParticipantGroup } from './participant'
+import {
+  AvatarSettingsInput,
+  Participant,
+  ParticipantGroup,
+  Participation,
+  SubscriptionObjectInput,
+} from './participant'
 import { Question, Tag } from './question'
-import { Feedback, Session } from './session'
+import { Feedback, FeedbackResponse, Session } from './session'
 
 export const Mutation = builder.mutationType({
   fields: (t) => ({
@@ -194,6 +202,49 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.joinParticipantGroup(args, ctx)
       },
     }),
+    voteFeedbackResponse: t.field({
+      nullable: true,
+      type: FeedbackResponse,
+      args: {
+        id: t.arg.int({ required: true }),
+        incrementUpvote: t.arg.int({ required: true }),
+        incrementDownvote: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.voteFeedbackResponse(args, ctx)
+      },
+    }),
+    upvoteFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        feedbackId: t.arg.int({ required: true }),
+        increment: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.upvoteFeedback(args, ctx)
+      },
+    }),
+    updateParticipantProfile: t.field({
+      nullable: true,
+      type: Participant,
+      args: {
+        username: t.arg.string({ required: false }),
+        avatar: t.arg.string({ required: false }),
+        password: t.arg.string({ required: false }),
+        avatarSettings: t.arg({
+          type: AvatarSettingsInput,
+          required: false,
+        }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
+      },
+    }),
     leaveParticipantGroup: t.field({
       nullable: true,
       type: ParticipantGroup,
@@ -201,12 +252,26 @@ export const Mutation = builder.mutationType({
         courseId: t.arg.string({ required: true }),
         groupId: t.arg.string({ required: true }),
       },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+      },
+    }),
+    subscribeToPush: t.field({
+      nullable: true,
+      type: Participation,
+      args: {
+        subscriptionObject: t.arg({
+          type: SubscriptionObjectInput,
+          required: true,
+        }),
+        courseId: t.arg.string({ required: true }),
+      },
       authScopes: {
         authenticated: true,
         role: UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
-        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+        return NotificationService.subscribeToPush(args, ctx)
       },
     }),
   }),

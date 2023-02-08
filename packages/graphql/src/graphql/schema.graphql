@@ -14,6 +14,18 @@ type AttachmentInstance {
   id: ID!
 }
 
+input AvatarSettingsInput {
+  accessory: String!
+  clothing: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 type AwardEntry {
   id: Int!
 }
@@ -116,6 +128,10 @@ type Mutation {
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
+  subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
+  upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
 type Participant {
@@ -123,8 +139,11 @@ type Participant {
   avatar: String
   avatarSettings: Json!
   id: ID!
+  lastLoginAt: Date!
+  level: Int!
   participantGroups: [ParticipantGroup!]!
   username: String!
+  xp: Int!
 }
 
 type ParticipantAchievementInstance {
@@ -143,9 +162,11 @@ type ParticipantGroup {
 
 type Participation {
   id: Int!
+  subscriptions: [PushSubscription!]!
 }
 
 type PushSubscription {
+  endpoint: String!
   id: Int!
 }
 
@@ -208,6 +229,17 @@ enum SessionStatus {
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+input SubscriptionKeysInput {
+  auth: String!
+  p256dh: String!
+}
+
+input SubscriptionObjectInput {
+  endpoint: String!
+  expirationTime: Int
+  keys: SubscriptionKeysInput!
 }
 
 type Tag {
