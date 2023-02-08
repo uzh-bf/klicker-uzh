@@ -1,10 +1,21 @@
-import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import MicroSessionCreationToast from '@components/toasts/MicroSessionCreationToast'
+import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
+  CreateMicroSessionDocument,
+  EditMicroSessionDocument,
+  MicroSession,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  FormikDateField,
   FormikSelectField,
   FormikTextField,
   Label,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import { ErrorMessage } from 'formik'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
 import BlockField from './BlockField'
@@ -41,11 +52,85 @@ const stepTwoValidationSchema = yup.object().shape({
     .min(1),
 })
 
+const stepThreeValidationSchema = yup.object().shape({
+  startDate: yup
+    .date()
+    .required('Bitte geben Sie ein Startdatum für Ihre Session ein.'),
+  endDate: yup
+    .date()
+    .min(yup.ref('startDate'), 'Das Enddatum muss nach dem Startdatum liegen.')
+    .required('Bitte geben Sie ein Enddatum für Ihre Session ein.'),
+  multiplier: yup
+    .string()
+    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
+  courseId: yup.string(),
+})
+
 function MicroSessionWizard({
   courses,
   initialValues,
 }: MicroSessionWizardProps) {
   const [stepNumber, setStepNumber] = useState(0)
+
+  const [successToastOpen, setSuccessToastOpen] = useState(false)
+  const [errorToastOpen, setErrorToastOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const router = useRouter()
+
+  const [createMicroSession] = useMutation(CreateMicroSessionDocument)
+  const [editMicroSession] = useMutation(EditMicroSessionDocument)
+  dayjs.extend(utc)
+
+  const [selectedCourseId, setSelectedCourseId] = useState('')
+
+  const onSubmit = async (values, { resetForm }) => {
+    try {
+      let success = false
+
+      if (initialValues) {
+        const result = await editMicroSession({
+          variables: {
+            id: initialValues?.id || '',
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            questions: values.questions.map((q: any) => q.id),
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+          },
+        })
+        success = Boolean(result.data?.editMicroSession)
+      } else {
+        const result = await createMicroSession({
+          variables: {
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            questions: values.questions.map((q: any) => q.id),
+            startDate: dayjs(values.startDate).utc().format(),
+            endDate: dayjs(values.endDate).utc().format(),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+          },
+        })
+        success = Boolean(result.data?.createMicroSession)
+      }
+
+      if (success) {
+        setSelectedCourseId(values.courseId)
+        router.push('/')
+        setEditMode(!!initialValues)
+        setSuccessToastOpen(true)
+        resetForm()
+      }
+    } catch (error) {
+      console.log(error)
+      setEditMode(!!initialValues)
+      setErrorToastOpen(true)
+    }
+  }
 
   return (
     <div>
@@ -72,7 +157,8 @@ function MicroSessionWizard({
         isInitialValid={initialValues ? true : false}
         stepNumber={stepNumber}
         setStepNumber={setStepNumber}
-        onSubmit={(values) => console.log('Wizard submit', values)}
+        //onSubmit={(values) => console.log('Wizard submit', values)}
+        onSubmit={onSubmit}
       >
         <StepOne
           onSubmit={() => console.log('Step 1 onSubmit')}
@@ -82,7 +168,27 @@ function MicroSessionWizard({
           onSubmit={() => console.log('Step 2 onSubmit')}
           validationSchema={stepTwoValidationSchema}
         />
+        <StepThree
+          validationSchema={stepThreeValidationSchema}
+          courses={courses}
+          onSubmit={() => console.log('Step 3 onSubmit')}
+        />
       </MultistepWizard>
+      <MicroSessionCreationToast
+        editMode={editMode}
+        open={successToastOpen}
+        setOpen={setSuccessToastOpen}
+        courseId={selectedCourseId}
+      />
+      <SessionCreationErrorToast
+        open={errorToastOpen}
+        setOpen={setErrorToastOpen}
+        error={
+          editMode
+            ? 'Anpassen der Micro-Session fehlgeschlagen...'
+            : 'Erstellen der Micro-Session fehlgeschlagen...'
+        }
+      />
     </div>
   )
 }
@@ -169,36 +275,27 @@ function StepThree(props: StepProps) {
           className={{ label: 'font-normal' }}
         />
 
-        {/* <Label label="Startdatum" required className={{ root: 'ml-4' }} />
-        <input
-          key={'startDate'}
-          type="datetime-local"
-          value={(dayjs(values.startDate).local().format() || '')
-            .toString()
-            .substring(0, 16)}
-          onChange={(e) => {
-            if (e.target['validity'].valid) {
-              setFieldValue(
-                'startDate',
-                dayjs(e.target['value']).utc().format()
-              )
-            }
+        <FormikDateField
+          label="Startdatum"
+          name="startDate"
+          required
+          className={{
+            root: 'ml-4',
+            input: 'bg-bg-uzh-grey-20',
+            label: 'font-normal',
           }}
         />
 
-        <Label label="Enddatum" required className={{ root: 'ml-4' }} />
-        <input
-          key={'endDate'}
-          type="datetime-local"
-          value={(dayjs(values.endDate).local().format() || '')
-            .toString()
-            .substring(0, 16)}
-          onChange={(e) => {
-            if (e.target['validity'].valid) {
-              setFieldValue('endDate', dayjs(e.target['value']).utc().format())
-            }
+        <FormikDateField
+          label="Enddatum"
+          name="endDate"
+          required
+          className={{
+            root: 'ml-4',
+            input: 'bg-bg-uzh-grey-20',
+            label: 'font-normal',
           }}
-        /> */}
+        />
 
         <Label label="Multiplier:" className={{ root: 'ml-4 mr-2' }} />
         <FormikSelectField
@@ -211,6 +308,29 @@ function StepThree(props: StepProps) {
             { label: 'Vierfach (4x)', value: '4' },
           ]}
         />
+
+        <div>
+          <ErrorMessage
+            name="courseId"
+            component="div"
+            className="text-sm text-red-400"
+          />
+          <ErrorMessage
+            name="startDate"
+            component="div"
+            className="text-sm text-red-400"
+          />
+          <ErrorMessage
+            name="endDate"
+            component="div"
+            className="text-sm text-red-400"
+          />
+          <ErrorMessage
+            name="multiplier"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
     </>
   )
