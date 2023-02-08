@@ -250,10 +250,7 @@ export async function resolveFeedback(
 }
 
 // deletes a feedback (and all its responses through cascade)
-export async function deleteFeedback(
-  { id }: { id: number },
-  ctx: ContextWithUser
-) {
+export async function deleteFeedback({ id }: { id: number }, ctx: Context) {
   const feedback = await ctx.prisma.feedback.delete({
     where: { id },
   })

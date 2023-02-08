@@ -91,11 +91,29 @@ export const Mutation = builder.mutationType({
         return FeedbackService.createFeedback(args, ctx)
       },
     }),
+    deleteFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.deleteFeedback(args, ctx)
+      },
+    }),
     deleteQuestion: t.field({
       nullable: true,
       type: Question,
       args: {
         id: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
       },
       resolve(_, args, ctx) {
         return QuestionService.deleteQuestion(args, ctx)
