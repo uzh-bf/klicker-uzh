@@ -114,6 +114,7 @@ type Mutation {
   endSession(id: String!): Session
   joinCourseWithPin(courseId: String!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
 }
 

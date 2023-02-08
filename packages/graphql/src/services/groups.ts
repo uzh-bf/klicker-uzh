@@ -110,7 +110,7 @@ interface LeaveParticipantGroupArgs {
 
 export async function leaveParticipantGroup(
   { groupId, courseId }: LeaveParticipantGroupArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // find participantgroup with corresponding id
   const participantGroup = await ctx.prisma.participantGroup.findUnique({

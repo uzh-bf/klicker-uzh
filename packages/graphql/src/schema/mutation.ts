@@ -194,5 +194,20 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.joinParticipantGroup(args, ctx)
       },
     }),
+    leaveParticipantGroup: t.field({
+      nullable: true,
+      type: ParticipantGroup,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        groupId: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+      },
+    }),
   }),
 })

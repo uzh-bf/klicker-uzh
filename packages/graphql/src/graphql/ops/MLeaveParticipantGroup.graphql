@@ -1,4 +1,4 @@
-mutation LeaveParticipantGroup($groupId: ID!, $courseId: ID!) {
+mutation LeaveParticipantGroup($groupId: String!, $courseId: String!) {
   leaveParticipantGroup(groupId: $groupId, courseId: $courseId) {
     id
     name
