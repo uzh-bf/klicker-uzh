@@ -7,7 +7,7 @@ import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
 import { Tag } from './question'
-import { Feedback, Session } from './session'
+import { Feedback, FeedbackResponse, Session } from './session'
 
 export const Mutation = builder.mutationType({
   fields: (t) => ({
@@ -89,6 +89,29 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return FeedbackService.createFeedback(args, ctx)
+      },
+    }),
+    voteFeedbackResponse: t.field({
+      nullable: true,
+      type: FeedbackResponse,
+      args: {
+        id: t.arg.int({ required: true }),
+        incrementUpvote: t.arg.int({ required: true }),
+        incrementDownvote: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.voteFeedbackResponse(args, ctx)
+      },
+    }),
+    upvoteFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        feedbackId: t.arg.int({ required: true }),
+        increment: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.upvoteFeedback(args, ctx)
       },
     }),
   }),

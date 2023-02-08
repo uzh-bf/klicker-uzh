@@ -30,7 +30,7 @@ export async function getFeedbacks(
 
 export async function upvoteFeedback(
   { feedbackId, increment }: { feedbackId: number; increment: number },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   return ctx.prisma.feedback.update({
     where: {
@@ -48,7 +48,7 @@ export async function voteFeedbackResponse(
     incrementUpvote,
     incrementDownvote,
   }: { id: number; incrementUpvote: number; incrementDownvote: number },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   return ctx.prisma.feedbackResponse.update({
     where: {
