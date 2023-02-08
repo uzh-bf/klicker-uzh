@@ -1,5 +1,9 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import {
+  Context,
+  ContextWithOptionalUser,
+  ContextWithUser,
+} from '../lib/context'
 
 export async function getFeedbacks(
   { id }: { id: string },
@@ -59,7 +63,7 @@ export async function voteFeedbackResponse(
 
 export async function createFeedback(
   { sessionId, content }: { sessionId: string; content: string },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const isLoggedInParticipant =
     ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT

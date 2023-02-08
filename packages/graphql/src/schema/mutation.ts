@@ -2,11 +2,12 @@ import { UserRole } from '@klicker-uzh/prisma'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
+import * as FeedbackService from '../services/feedbacks'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
 import { Tag } from './question'
-import { Session } from './session'
+import { Feedback, Session } from './session'
 
 export const Mutation = builder.mutationType({
   fields: (t) => ({
@@ -77,6 +78,17 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return QuestionService.deleteTag(args, ctx)
+      },
+    }),
+    createFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        sessionId: t.arg.string({ required: true }),
+        content: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.createFeedback(args, ctx)
       },
     }),
   }),
