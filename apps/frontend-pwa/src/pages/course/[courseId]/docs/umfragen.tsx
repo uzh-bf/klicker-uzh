@@ -36,7 +36,7 @@ function Umfragen() {
         >
           https://pwa.klicker.uzh.ch/join/
           {data.getCourseOverviewData?.course.name}
-        </a>
+        </a>{' '}
         oder hier im OLAT unter{' '}
         <a
           className="font-bold text-uzh-turqoise-100"
