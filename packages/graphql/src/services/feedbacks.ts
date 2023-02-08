@@ -168,7 +168,7 @@ export async function addConfusionTimestep(
 // publish / unpublish a feedback to be visible to students
 export async function publishFeedback(
   { id, isPublished }: { id: number; isPublished: boolean },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: {
