@@ -1,0 +1,33 @@
+query GetControlSession($id: ID!) {
+  controlSession(id: $id) {
+    id
+    name
+    displayName
+    course {
+      id
+      displayName
+    }
+    blocks {
+      id
+      order
+      status
+      expiresAt
+      timeLimit
+      randomSelection
+      execution
+      instances {
+        id
+        questionData {
+          id
+          name
+          type
+          content
+        }
+      }
+    }
+    activeBlock {
+      id
+      order
+    }
+  }
+}

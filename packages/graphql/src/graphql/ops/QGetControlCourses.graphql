@@ -1,0 +1,9 @@
+query GetControlCourses {
+  controlCourses {
+    id
+    name
+    isArchived
+    displayName
+    description
+  }
+}

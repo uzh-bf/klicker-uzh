@@ -992,6 +992,9 @@ export interface NexusGenFieldTypes {
   Query: { // field return type
     basicCourseInformation: NexusGenRootTypes['Course'] | null; // Course
     cockpitSession: NexusGenRootTypes['Session'] | null; // Session
+    controlCourse: NexusGenRootTypes['Course'] | null; // Course
+    controlCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
+    controlSession: NexusGenRootTypes['Session'] | null; // Session
     course: NexusGenRootTypes['Course'] | null; // Course
     feedbacks: NexusGenRootTypes['Feedback'][] | null; // [Feedback!]
     getCourseOverviewData: NexusGenRootTypes['ParticipantLearningData'] | null; // ParticipantLearningData
@@ -1011,6 +1014,7 @@ export interface NexusGenFieldTypes {
     sessionEvaluation: NexusGenRootTypes['SessionEvaluation'] | null; // SessionEvaluation
     sessionLeaderboard: NexusGenRootTypes['LeaderboardEntry'][] | null; // [LeaderboardEntry!]
     singleMicroSession: NexusGenRootTypes['MicroSession'] | null; // MicroSession
+    unassignedSessions: NexusGenRootTypes['Session'][] | null; // [Session!]
     userCourses: NexusGenRootTypes['Course'][] | null; // [Course!]
     userProfile: NexusGenRootTypes['User'] | null; // User
     userQuestions: NexusGenRootTypes['Question'][] | null; // [Question!]
@@ -1548,6 +1552,9 @@ export interface NexusGenFieldTypeNames {
   Query: { // field return type name
     basicCourseInformation: 'Course'
     cockpitSession: 'Session'
+    controlCourse: 'Course'
+    controlCourses: 'Course'
+    controlSession: 'Session'
     course: 'Course'
     feedbacks: 'Feedback'
     getCourseOverviewData: 'ParticipantLearningData'
@@ -1567,6 +1574,7 @@ export interface NexusGenFieldTypeNames {
     sessionEvaluation: 'SessionEvaluation'
     sessionLeaderboard: 'LeaderboardEntry'
     singleMicroSession: 'MicroSession'
+    unassignedSessions: 'Session'
     userCourses: 'Course'
     userProfile: 'User'
     userQuestions: 'Question'
@@ -1949,6 +1957,12 @@ export interface NexusGenArgTypes {
       courseId: string; // ID!
     }
     cockpitSession: { // args
+      id: string; // ID!
+    }
+    controlCourse: { // args
+      id: string; // ID!
+    }
+    controlSession: { // args
       id: string; // ID!
     }
     course: { // args

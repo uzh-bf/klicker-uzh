@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
-  GetSingleCourseDocument,
+  GetControlCourseDocument,
   SessionStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -12,13 +12,13 @@ import SessionLists from '../../components/sessions/SessionLists'
 function Course() {
   const router = useRouter()
 
-  const { loading, error, data } = useQuery(GetSingleCourseDocument, {
+  const { loading, error, data } = useQuery(GetControlCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
 
   useEffect(() => {
-    if (data && !data.course) {
+    if (data && !data.controlCourse) {
       router.push('/404')
     }
   }, [data, router])
@@ -26,7 +26,7 @@ function Course() {
   if (loading) {
     return <Layout title="Kursübersicht">Loading...</Layout>
   }
-  if (!data?.course || error) {
+  if (!data?.controlCourse || error) {
     return (
       <Layout title="Kursübersicht">
         <UserNotification
@@ -39,19 +39,19 @@ function Course() {
     )
   }
 
-  const { course } = data
+  const { controlCourse } = data
 
-  const runningSessions = course.sessions.filter(
+  const runningSessions = controlCourse.sessions.filter(
     (session) => session.status === SessionStatus.Running
   )
-  const plannedSessions = course.sessions.filter(
+  const plannedSessions = controlCourse.sessions.filter(
     (session) =>
       session.status === SessionStatus.Prepared ||
       session.status === SessionStatus.Scheduled
   )
 
   return (
-    <Layout title={course.name}>
+    <Layout title={controlCourse.name}>
       <SessionLists
         runningSessions={runningSessions}
         plannedSessions={plannedSessions}

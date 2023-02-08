@@ -1215,6 +1215,38 @@ export async function getUserSessions(
   })
 }
 
+export async function getUnassignedSessions(
+  { userId }: { userId: string },
+  ctx: ContextWithOptionalUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    include: {
+      sessions: {
+        where: {
+          courseId: null,
+          status: {
+            in: [
+              SessionStatus.RUNNING,
+              SessionStatus.SCHEDULED,
+              SessionStatus.PREPARED,
+            ],
+          },
+        },
+        orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
+      },
+    },
+  })
+
+  return user?.sessions.map((session) => {
+    return {
+      ...pick(['id', 'name', 'status'], session),
+    }
+  })
+}
+
 // compute the average of all feedbacks that were given within the last 10 minutes
 const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
   const recentFeedbacks = feedbacks.filter(
@@ -1314,6 +1346,37 @@ export async function getCockpitSession(
   }
 
   return reducedSession
+}
+
+export async function getControlSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.session.findUnique({
+    where: { id },
+    include: {
+      activeBlock: true,
+      course: true,
+      blocks: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!session || session?.status !== SessionStatus.RUNNING) {
+    return null
+  }
+
+  return session
 }
 
 export async function getPinnedFeedbacks(
