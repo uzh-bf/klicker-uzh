@@ -16,6 +16,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+import * as R from 'ramda'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
@@ -55,8 +56,11 @@ function RunningSession() {
   }, [sessionData?.controlSession?.activeBlock])
 
   useEffect(() => {
-    const sortedBlocks = sessionData?.controlSession?.blocks?.sort(
-      (a, b) => a.order - b.order
+    if (!sessionData?.controlSession?.blocks) return
+
+    const sortedBlocks = R.sort(
+      (a, b) => a.order - b.order,
+      sessionData?.controlSession?.blocks
     )
 
     if (!sortedBlocks) return
