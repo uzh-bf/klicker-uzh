@@ -226,7 +226,7 @@ export async function pinFeedback(
 // resolve / unresolve a feedback
 export async function resolveFeedback(
   { id, isResolved }: { id: number; isResolved: boolean },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: { id },
