@@ -355,10 +355,7 @@ interface StartSessionArgs {
   id: string
 }
 
-export async function startSession(
-  { id }: StartSessionArgs,
-  ctx: ContextWithUser
-) {
+export async function startSession({ id }: StartSessionArgs, ctx: Context) {
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,

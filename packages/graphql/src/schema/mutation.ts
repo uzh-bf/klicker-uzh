@@ -274,5 +274,19 @@ export const Mutation = builder.mutationType({
         return NotificationService.subscribeToPush(args, ctx)
       },
     }),
+    startSession: t.field({
+      nullable: true,
+      type: Session,
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return SessionService.startSession(args, ctx)
+      },
+    }),
   }),
 })
