@@ -28,7 +28,7 @@ function BlockField({ label, fieldName, tooltip, className }: BlockFieldProps) {
         tooltip="Fügen Sie mittels Drag&Drop Fragen zu Ihrer Micro-Session hinzu."
         showTooltipSymbol={true}
       />
-      <FieldArray name="questions">
+      <FieldArray name={fieldName}>
         {({ push, remove, move }: FieldArrayRenderProps) => (
           <div className="flex flex-row gap-1 overflow-scroll">
             {field.value.map((question: any, index: number) => (

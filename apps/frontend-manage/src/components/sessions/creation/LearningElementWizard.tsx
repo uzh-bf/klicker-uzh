@@ -43,6 +43,17 @@ const stepTwoValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
+        // type: yup
+        //   .string()
+        //   .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT']),
+        // hasAnswerFeedbacks: yup.boolean().when('type', {
+        //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
+        //   then: yup.boolean().isTrue(),
+        // }),
+        // hasAnswerFeedbacks: yup.boolean().isTrue(),
+        hasSampleSolution: yup
+          .boolean()
+          .isTrue('Bitte fügen Sie nur Fragen mit Lösung hinzu.'),
       })
     )
     .min(1),
@@ -86,6 +97,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
   }
 
   const onSubmit = async (values, { resetForm }) => {
+    console.log('onSubmit - values: ', values)
     try {
       const result = await createLearningElement({
         variables: {
@@ -120,25 +132,22 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
       <Label label="Lernelement erstellen" />
       <MultistepWizard
         initialValues={initialValues}
-        isInitialValid={false}
-        stepNumber={stepNumber}
-        setStepNumber={setStepNumber}
         //onSubmit={(values) => console.log('Wizard submit', values)}
         onSubmit={onSubmit}
       >
         <StepOne
           validationSchema={stepOneValidationSchema}
-          onSubmit={() => console.log('Step 1 onSubmit')}
+          //onSubmit={() => console.log('Step 1 onSubmit')}
         />
 
         <StepTwo
           validationSchema={stepTwoValidationSchema}
-          onSubmit={() => console.log('Step 2 onSubmit')}
+          // onSubmit={() => console.log('Step 2 onSubmit')}
         />
 
         <StepThree
           validationSchema={stepThreeValidationSchema}
-          onSubmit={() => console.log('Step 3 onSubmit')}
+          //onSubmit={() => console.log('Step 3 onSubmit')}
           courses={courses}
         />
       </MultistepWizard>
@@ -166,6 +175,7 @@ export default LearningElementWizard
 interface StepProps {
   onSubmit?: () => void
   validationSchema: any
+  isInitialValid?: boolean
   courses?: {
     label: string
     value: string

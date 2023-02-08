@@ -145,6 +145,8 @@ function MicroSessionWizard({
               return {
                 id: instance.questionData.id,
                 title: instance.questionData.name,
+                hasAnswerFeedbacks: instance.questionData.hasAnswerFeedbacks,
+                hasSampleSolution: instance.questionData.hasSampleSolution,
               }
             }) || [],
           startDate: initialValues?.scheduledStartAt || '',

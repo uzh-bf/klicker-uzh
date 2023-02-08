@@ -68,6 +68,7 @@ function Index() {
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
 
+  console.log('index - processedQuestions: ', processedQuestions)
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
 

@@ -9,7 +9,12 @@ import { useContext } from 'react'
 
 interface QuestionBlockProps {
   index: number
-  question: { id: number; title: string }
+  question: {
+    id: number
+    title: string
+    hasAnswerFeedbacks: boolean
+    hasSampleSolution: boolean
+  }
   numOfBlocks: number
   remove: (index: number) => void
   move: (from: number, to: number) => void
@@ -24,6 +29,7 @@ function QuestionBlock({
 }: QuestionBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
+  console.log('QuestionBlock - question: ', question)
   return (
     <div
       key={index}

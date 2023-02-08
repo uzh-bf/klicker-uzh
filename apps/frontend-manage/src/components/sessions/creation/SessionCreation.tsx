@@ -19,7 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import LearningElementCreationForm from '../../../components/sessions/creation/LearningElementCreationForm'
 import LiveSessionCreationForm from '../../../components/sessions/creation/LiveSessionCreationForm'
 import MicroSessionCreationForm from '../../../components/sessions/creation/MicroSessionCreationForm'
-import MicroSessionWizard from './MicroSessionWizard'
+import LearningElementWizard from './LearningElementWizard'
 
 interface SessionCreationProps {
   sessionId?: string
@@ -139,15 +139,15 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
         courses={courseSelection}
         initialValues={(dataLiveSession?.liveSession as Session) ?? undefined}
       /> */}
-      <MicroSessionWizard
+      {/* <MicroSessionWizard
         courses={courseSelection}
         initialValues={
           (dataMicroSession?.singleMicroSession as MicroSession) ?? undefined
         }
-      />
-      {/* <LearningElementWizard
-        courses={courseSelection || [{ label: '', value: '' }]}
       /> */}
+      <LearningElementWizard
+        courses={courseSelection || [{ label: '', value: '' }]}
+      />
     </div>
   )
 }

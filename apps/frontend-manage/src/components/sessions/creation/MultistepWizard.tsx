@@ -9,7 +9,6 @@ interface FormProps {
   onSubmit: (values: any, bag: any) => void
   stepNumber: number
   setStepNumber: (newValue: number) => void
-  isInitialValid: boolean
 }
 
 export interface LiveSessionFormValues {
@@ -33,6 +32,8 @@ export interface MicroSessionFormValues {
   questions: {
     id: number
     title: string
+    hasAnswerFeedbacks: boolean
+    hasSampleSolution: boolean
   }[]
   startDate: string
   endDate: string
@@ -44,21 +45,21 @@ export interface LearningElementFormValues {
   name: string
   displayName: string
   description: string
-  questions: any
+  questions: {
+    id: number
+    title: string
+    hasAnswerFeedbacks: boolean
+    hasSampleSolution: boolean
+  }[]
   multiplier: string
   courseId: string
   order: any
   resetTimeDays: string
 }
 
-function MultistepWizard({
-  children,
-  initialValues,
-  onSubmit,
-  stepNumber,
-  setStepNumber,
-  isInitialValid,
-}: FormProps) {
+function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
+  const [stepNumber, setStepNumber] = useState(0)
+
   const steps = React.Children.toArray(children)
 
   const [snapshot, setSnapshot] = useState(initialValues)
@@ -94,26 +95,29 @@ function MultistepWizard({
       | LearningElementFormValues,
     bag: any
   ) => {
+    console.log('handleSubmit - values: ', values)
     if (step.props.onSubmit) {
       await step.props.onSubmit(values, bag)
     }
 
     if (isLastStep) {
       return onSubmit(values, bag)
+    } else {
+      bag.setTouched({})
+      next(values)
     }
-
-    bag.setTouched({})
-    next(values)
   }
+
+  console.log(step.props)
 
   return (
     <Formik
       initialValues={snapshot}
-      isInitialValid={isInitialValid}
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
+      isInitialValid={false}
     >
-      {({ values, isSubmitting }) => (
+      {({ values, isSubmitting, isValid }) => (
         <Form>
           <p>
             Step {stepNumber + 1} of {totalSteps}
@@ -126,7 +130,7 @@ function MultistepWizard({
               </Button>
             )}
             <div>
-              <Button disabled={isSubmitting} type="submit">
+              <Button disabled={isSubmitting || !isValid} type="submit">
                 {isLastStep ? 'Erstellen' : 'Weiter'}
               </Button>
             </div>
