@@ -202,10 +202,7 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion(
-  { id }: { id: number },
-  ctx: ContextWithUser
-) {
+export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
   const question = await ctx.prisma.question.delete({
     where: {
       id: id,
@@ -220,7 +217,7 @@ export async function deleteQuestion(
   return question
 }
 
-export async function getUserTags(ctx: ContextWithUser) {
+export async function getUserTags(ctx: Context) {
   const user = await ctx.prisma.user.findUnique({
     where: {
       id: ctx.user.sub,
@@ -239,7 +236,7 @@ export async function getUserTags(ctx: ContextWithUser) {
 
 export async function editTag(
   { id, name }: { id: number; name: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const tag = await ctx.prisma.tag.update({
     where: {

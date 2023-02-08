@@ -41,7 +41,10 @@ type ConfusionTimestep {
 type Course {
   color: String
   description: String
+  displayName: String!
   id: ID!
+  name: String!
+  sessions: [Session!]!
 }
 
 """
@@ -118,8 +121,21 @@ type Mutation {
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDescription(courseId: String!, input: String!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
+  deleteFeedback(id: Int!): Feedback
+  deleteFeedbackResponse(id: Int!): Feedback
+  deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
+  editTag(id: Int!, name: String!): Tag
+  endSession(id: String!): Session
+  joinCourseWithPin(courseId: String!, pin: Int!): Participant
+  joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
+  pinFeedback(id: Int!, isPinned: Boolean!): Feedback
+  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  respondToFeedback(id: Int!, responseContent: String!): Feedback
+  startSession(id: String!): Session
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
@@ -146,7 +162,9 @@ type ParticipantAchievementInstance {
 }
 
 type ParticipantGroup {
+  code: Int!
   id: ID!
+  name: String!
   participants: [Participant!]!
 }
 
@@ -161,7 +179,11 @@ type PushSubscription {
 }
 
 type Query {
+  basicCourseInformation(courseId: String!): Course
+  controlCourse(id: String!): Course
+  getLoginToken: User
   self: Participant
+  userTags: [Tag!]
 }
 
 type Question {
@@ -234,6 +256,7 @@ input SubscriptionObjectInput {
 
 type Tag {
   id: Int!
+  name: String!
 }
 
 type Title {
@@ -242,4 +265,6 @@ type Title {
 
 type User {
   id: ID!
+  loginToken: String
+  loginTokenExpiresAt: Date
 }

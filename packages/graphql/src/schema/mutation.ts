@@ -3,7 +3,7 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
-import * as GroupService from '../services/groups'
+import * as ParticipantGroupService from '../services/groups'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -16,10 +16,11 @@ import {
 import {
   AvatarSettingsInput,
   Participant,
+  ParticipantGroup,
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import { Tag } from './question'
+import { Question, Tag } from './question'
 import { Feedback, FeedbackResponse, Session } from './session'
 
 export const Mutation = builder.mutationType({
@@ -104,6 +105,107 @@ export const Mutation = builder.mutationType({
         return FeedbackService.createFeedback(args, ctx)
       },
     }),
+    deleteFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.deleteFeedback(args, ctx)
+      },
+    }),
+    deleteFeedbackResponse: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.deleteFeedbackResponse(args, ctx)
+      },
+    }),
+    deleteQuestion: t.field({
+      nullable: true,
+      type: Question,
+      args: {
+        id: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return QuestionService.deleteQuestion(args, ctx)
+      },
+    }),
+    editTag: t.field({
+      nullable: true,
+      type: Tag,
+      args: {
+        id: t.arg.int({ required: true }),
+        name: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return QuestionService.editTag(args, ctx)
+      },
+    }),
+    joinCourseWithPin: t.field({
+      nullable: true,
+      type: Participant,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        pin: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return CourseService.joinCourseWithPin(args, ctx)
+      },
+    }),
+    endSession: t.field({
+      nullable: true,
+      type: Session,
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return SessionService.endSession(args, ctx)
+      },
+    }),
+    joinParticipantGroup: t.field({
+      nullable: true,
+      type: ParticipantGroup,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        code: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.joinParticipantGroup(args, ctx)
+      },
+    }),
     voteFeedbackResponse: t.field({
       nullable: true,
       type: FeedbackResponse,
@@ -147,6 +249,17 @@ export const Mutation = builder.mutationType({
         return ParticipantService.updateParticipantProfile(args, ctx)
       },
     }),
+    leaveParticipantGroup: t.field({
+      nullable: true,
+      type: ParticipantGroup,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        groupId: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.leaveParticipantGroup(args, ctx)
+      },
+    }),
     subscribeToPush: t.field({
       nullable: true,
       type: Participation,
@@ -180,7 +293,65 @@ export const Mutation = builder.mutationType({
         role: UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
-        return GroupService.submitGroupActivityDecisions(args, ctx)
+        return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
+      },
+    }),
+    startSession: t.field({
+      nullable: true,
+      type: Session,
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return SessionService.startSession(args, ctx)
+      },
+    }),
+    pinFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        isPinned: t.arg.boolean({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.pinFeedback(args, ctx)
+      },
+    }),
+    publishFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        isPublished: t.arg.boolean({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.publishFeedback(args, ctx)
+      },
+    }),
+    resolveFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        isResolved: t.arg.boolean({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.resolveFeedback(args, ctx)
+      },
+    }),
+    respondToFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        responseContent: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.respondToFeedback(args, ctx)
       },
     }),
   }),

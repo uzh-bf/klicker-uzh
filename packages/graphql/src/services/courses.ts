@@ -7,7 +7,7 @@ import {
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -16,12 +16,12 @@ export async function getBasicCourseInformation(
   if (!course) {
     return null
   }
-  return R.pick(['id', 'name', 'displayName', 'description', 'color'], course)
+  return course
 }
 
 export async function joinCourseWithPin(
   { courseId, pin }: { courseId: string; pin: number },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -541,10 +541,7 @@ export async function getCourseData(
   }
 }
 
-export async function getControlCourse(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function getControlCourse({ id }: { id: string }, ctx: Context) {
   const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
@@ -565,12 +562,7 @@ export async function getControlCourse(
     },
   })
 
-  const reducedSessions = course?.sessions.map(R.pick(['id', 'name', 'status']))
-
-  return {
-    ...course,
-    sessions: reducedSessions,
-  }
+  return course
 }
 
 export async function changeCourseDescription(

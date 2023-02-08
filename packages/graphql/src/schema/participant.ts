@@ -61,6 +61,9 @@ export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
     id: t.exposeID('id'),
 
     participants: t.relation('participants'),
+
+    name: t.exposeString('name'),
+    code: t.exposeInt('code'),
   }),
 })
 

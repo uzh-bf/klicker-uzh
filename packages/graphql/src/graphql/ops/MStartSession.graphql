@@ -1,4 +1,4 @@
-mutation StartSession($id: ID!) {
+mutation StartSession($id: String!) {
   startSession(id: $id) {
     id
     status
