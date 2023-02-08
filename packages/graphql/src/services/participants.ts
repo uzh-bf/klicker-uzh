@@ -11,15 +11,15 @@ import {
 import { createParticipantToken } from './accounts'
 
 interface UpdateParticipantProfileArgs {
-  password?: string
-  username?: string
-  avatar?: string
+  password?: string | null
+  username?: string | null
+  avatar?: string | null
   avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
   { password, username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {
@@ -31,13 +31,12 @@ export async function updateParticipantProfile(
     if (password.length >= 8) {
       const hashedPassword = await bcrypt.hash(password, 12)
       return ctx.prisma.participant.update({
-        where: { id: ctx.user.sub },
-        data: { password: hashedPassword, username, avatar, avatarSettings },
-        select: {
-          id: true,
-          avatar: true,
-          avatarSettings: true,
-          username: true,
+        where: { id: ctx.user!.sub },
+        data: {
+          password: hashedPassword,
+          username: username ?? undefined,
+          avatar: avatar ?? undefined,
+          avatarSettings: avatarSettings ?? undefined,
         },
       })
     } else {
@@ -46,13 +45,11 @@ export async function updateParticipantProfile(
   }
 
   const participant = await ctx.prisma.participant.update({
-    where: { id: ctx.user.sub },
-    data: { username, avatar, avatarSettings },
-    select: {
-      id: true,
-      avatar: true,
-      avatarSettings: true,
-      username: true,
+    where: { id: ctx.user!.sub },
+    data: {
+      username: username ?? undefined,
+      avatar: avatar ?? undefined,
+      avatarSettings: avatarSettings ?? undefined,
     },
   })
 

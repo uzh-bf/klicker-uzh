@@ -14,6 +14,18 @@ type AttachmentInstance {
   id: ID!
 }
 
+input AvatarSettingsInput {
+  accessory: String!
+  clothing: String!
+  clothingColor: String!
+  eyes: String!
+  facialHair: String!
+  hair: String!
+  hairColor: String!
+  mouth: String!
+  skinTone: String!
+}
+
 type AwardEntry {
   id: Int!
 }
@@ -108,6 +120,9 @@ type Mutation {
   createFeedback(content: String!, sessionId: String!): Feedback
   deleteTag(id: Int!): Tag
   loginUser(email: String!, password: String!): String
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
+  upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
 type Participant {
@@ -115,8 +130,11 @@ type Participant {
   avatar: String
   avatarSettings: Json!
   id: ID!
+  lastLoginAt: Date!
+  level: Int!
   participantGroups: [ParticipantGroup!]!
   username: String!
+  xp: Int!
 }
 
 type ParticipantAchievementInstance {

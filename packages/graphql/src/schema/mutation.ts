@@ -3,9 +3,11 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
+import { AvatarSettingsInput, Participant } from './participant'
 import { Tag } from './question'
 import { Feedback, FeedbackResponse, Session } from './session'
 
@@ -112,6 +114,26 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return FeedbackService.upvoteFeedback(args, ctx)
+      },
+    }),
+    updateParticipantProfile: t.field({
+      nullable: true,
+      type: Participant,
+      args: {
+        username: t.arg.string({ required: false }),
+        avatar: t.arg.string({ required: false }),
+        password: t.arg.string({ required: false }),
+        avatarSettings: t.arg({
+          type: AvatarSettingsInput,
+          required: false,
+        }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return ParticipantService.updateParticipantProfile(args, ctx)
       },
     }),
   }),
