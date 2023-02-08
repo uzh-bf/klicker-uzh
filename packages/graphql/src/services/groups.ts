@@ -524,7 +524,7 @@ interface SubmitGroupActivityDecisionsArgs {
 
 export async function submitGroupActivityDecisions(
   { activityInstanceId, decisions }: SubmitGroupActivityDecisionsArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const groupActivityInstance =
     await ctx.prisma.groupActivityInstance.findUnique({
@@ -534,7 +534,7 @@ export async function submitGroupActivityDecisions(
           include: {
             participants: {
               where: {
-                id: ctx.user.sub,
+                id: ctx.user!.sub,
               },
             },
           },
@@ -562,7 +562,5 @@ export async function submitGroupActivityDecisions(
     }
   )
 
-  return {
-    id: groupActivityInstance.groupActivityId,
-  }
+  return updatedActivityInstance
 }

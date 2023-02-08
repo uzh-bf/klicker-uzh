@@ -3,11 +3,16 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as GroupService from '../services/groups'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
+import {
+  GroupActivityDecisionInput,
+  GroupActivityDetails,
+} from './groupActivity'
 import {
   AvatarSettingsInput,
   Participant,
@@ -158,6 +163,24 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return NotificationService.subscribeToPush(args, ctx)
+      },
+    }),
+    submitGroupActivityDecisions: t.field({
+      nullable: true,
+      type: GroupActivityDetails,
+      args: {
+        activityInstanceId: t.arg.int({ required: true }),
+        decisions: t.arg({
+          type: [GroupActivityDecisionInput],
+          required: true,
+        }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      resolve(_, args, ctx) {
+        return GroupService.submitGroupActivityDecisions(args, ctx)
       },
     }),
   }),
