@@ -6,6 +6,7 @@ import * as FeedbackService from '../services/feedbacks'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
+import { Participant } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session } from './session'
 
@@ -146,6 +147,21 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return QuestionService.editTag(args, ctx)
+      },
+    }),
+    joinCourseWithPin: t.field({
+      nullable: true,
+      type: Participant,
+      args: {
+        courseId: t.arg.string({ required: true }),
+        pin: t.arg.int({ required: true }),
+      },
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      resolve(_, args, ctx) {
+        return CourseService.joinCourseWithPin(args, ctx)
       },
     }),
   }),

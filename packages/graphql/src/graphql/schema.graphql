@@ -111,6 +111,7 @@ type Mutation {
   deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
   editTag(id: Int!, name: String!): Tag
+  joinCourseWithPin(courseId: String!, pin: Int!): Participant
   loginUser(email: String!, password: String!): String
 }
 

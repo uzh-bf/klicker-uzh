@@ -21,7 +21,7 @@ export async function getBasicCourseInformation(
 
 export async function joinCourseWithPin(
   { courseId, pin }: { courseId: string; pin: number },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
