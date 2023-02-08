@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetCourseOverviewDataDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+// TODO add style to NavBar
 
 function CommonDocs() {
   const router = useRouter()
@@ -14,11 +15,17 @@ function CommonDocs() {
   if (!data?.getCourseOverviewData) {
     return <div>Loading...</div>
   }
-
   return (
     <div>
       <div className="m-5 md:m-0 md:w-full md:max-w-xxl md:py-8 md:mx-auto">
-        <Navigation className={{ root: 'w-full' }}>
+        <Navigation
+          // style={{
+          //   backgroundColor: `${data.getCourseOverviewData?.course.color}`,
+          // }}
+          className={{
+            root: `w-full`,
+          }}
+        >
           <Navigation.ButtonItem
             label="Info Page"
             onClick={() =>
