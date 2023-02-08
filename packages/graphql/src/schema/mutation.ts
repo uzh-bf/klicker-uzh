@@ -1,12 +1,12 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import * as AccountService from 'src/services/accounts'
 import * as CourseService from 'src/services/courses'
-import * as SessionService from 'src/services/sessions'
 import * as QuestionService from 'src/services/questions'
+import * as SessionService from 'src/services/sessions'
 import builder from '../builder'
 import { Course } from './course'
-import { Session } from './session'
 import { Tag } from './question'
+import { Session } from './session'
 
 export const Mutation = builder.mutationType({
   fields: (t) => ({
@@ -62,6 +62,7 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return QuestionService.deleteTag(args, ctx)
-      }
+      },
+    }),
   }),
 })
