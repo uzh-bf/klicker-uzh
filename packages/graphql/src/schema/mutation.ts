@@ -321,5 +321,16 @@ export const Mutation = builder.mutationType({
         return FeedbackService.resolveFeedback(args, ctx)
       },
     }),
+    respondToFeedback: t.field({
+      nullable: true,
+      type: Feedback,
+      args: {
+        id: t.arg.int({ required: true }),
+        responseContent: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.respondToFeedback(args, ctx)
+      },
+    }),
   }),
 })

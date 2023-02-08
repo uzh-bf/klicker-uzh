@@ -131,6 +131,7 @@ type Mutation {
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  respondToFeedback(id: Int!, responseContent: String!): Feedback
   startSession(id: String!): Session
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant

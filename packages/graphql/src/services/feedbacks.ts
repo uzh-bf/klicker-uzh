@@ -105,7 +105,7 @@ export async function createFeedback(
 // add response to an existing feedback
 export async function respondToFeedback(
   { id, responseContent }: { id: number; responseContent: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: { id },
