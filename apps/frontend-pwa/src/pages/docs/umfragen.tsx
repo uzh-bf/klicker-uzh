@@ -1,15 +1,15 @@
 import CommonDocs from '@components/CommonDocs'
 import Layout from '@components/Layout'
 
-function LoginPage() {
+function Umfragen() {
   return (
-    <Layout courseName="KlickerUZH" displayName="Mein Profil">
+    <Layout>
       <CommonDocs />
       <div className="m-5 md:m-0 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        some text for login
+        some text for Umfragen
       </div>
     </Layout>
   )
 }
 
-export default LoginPage
+export default Umfragen

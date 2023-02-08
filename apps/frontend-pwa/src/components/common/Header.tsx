@@ -1,3 +1,5 @@
+import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import Image from 'next/image'
@@ -50,8 +52,12 @@ function Header({
       {title && !courseName && (
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
-
       <div className="flex flex-row items-center gap-4">
+        <FontAwesomeIcon
+          className="fa-lg"
+          icon={faCircleQuestion}
+          onClick={() => router.push('/docs')}
+        />
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
           router.pathname !== '/' &&
