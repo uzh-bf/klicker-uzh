@@ -2,6 +2,7 @@ import { Label } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
 import AddBlockButton from './AddBlockButton'
 import SessionCreationBlock from './SessionCreationBlock'
+import WizardErrorMessage from './WizardErrorMessage'
 
 interface EditorFieldProps {
   label?: string
@@ -49,8 +50,8 @@ function SessionBlockField({
           )}
         </FieldArray>
       </div>
-      <div>
-        {/* <WizardErrorMessage fieldName={`${fieldName}`} /> */}
+      <div className="text-sm text-red-400">
+        <WizardErrorMessage fieldName={`${fieldName}[0].questionIds`} />
         {typeof meta.error === 'string' && meta.error}
       </div>
     </div>

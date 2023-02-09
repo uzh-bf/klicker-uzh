@@ -155,9 +155,6 @@ function MicroSessionWizard({
             : '1',
           courseId: initialValues?.course?.id || courses[0].value,
         }}
-        isInitialValid={initialValues ? true : false}
-        stepNumber={stepNumber}
-        setStepNumber={setStepNumber}
         onSubmit={onSubmit}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
@@ -290,16 +287,7 @@ function StepTwo(props: StepProps) {
             component="div"
             className="text-sm text-red-400"
           />
-          <ErrorMessage
-            name="startDate"
-            component="div"
-            className="text-sm text-red-400"
-          />
-          <ErrorMessage
-            name="endDate"
-            component="div"
-            className="text-sm text-red-400"
-          />
+
           <ErrorMessage
             name="multiplier"
             component="div"

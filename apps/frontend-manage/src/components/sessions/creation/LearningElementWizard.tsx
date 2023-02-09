@@ -12,6 +12,7 @@ import {
   Label,
 } from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
@@ -78,6 +79,8 @@ const stepThreeValidationSchema = yup.object().shape({
 })
 
 function LearningElementWizard({ courses }: LearningElementWizardProps) {
+  const router = useRouter()
+
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
@@ -113,6 +116,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
 
       if (result.data?.createLearningElement) {
         // TODO: set edit mode value correctly once editing is implemented
+        router.push('/')
         setEditMode(false)
         setSuccessToastOpen(true)
         resetForm()

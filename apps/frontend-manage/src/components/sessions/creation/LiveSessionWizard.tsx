@@ -59,6 +59,7 @@ const stepThreeValidationSchema = yup.object().shape({
         timeLimit: yup
           .number()
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
+        questionIds: yup.array().min(1),
       })
     )
     .min(1),
@@ -156,7 +157,6 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
             : '1',
           isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
-        isInitialValid={initialValues ? true : false}
         onSubmit={onSubmit}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
