@@ -22,7 +22,7 @@
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
     "@sentry/node": "7.16.0",
     "ioredis": "5.2.4",
-    "jsonwebtoken": "8.5.1",
+    "jsonwebtoken": "9.0.0",
     "md5": "2.3.0",
     "ramda": "0.28.0"
   },

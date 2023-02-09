@@ -21,7 +21,7 @@
   "dependencies": {
     "@azure/service-bus": "7.7.2",
     "@sentry/node": "7.16.0",
-    "jsonwebtoken": "8.5.1"
+    "jsonwebtoken": "9.0.0"
   },
   "devDependencies": {
     "@azure/functions": "3.2.0",
