@@ -28,6 +28,8 @@ interface Props {
   type: string
   content: string
   onCheck: any // TODO: typing
+  hasAnswerFeedbacks: boolean
+  hasSampleSolution: boolean
   tagfilter?: string[]
 }
 
@@ -48,6 +50,8 @@ function Question({
   content,
   onCheck,
   isArchived,
+  hasAnswerFeedbacks,
+  hasSampleSolution,
   tagfilter,
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
@@ -63,6 +67,8 @@ function Question({
       questionType: type,
       title,
       content,
+      hasAnswerFeedbacks,
+      hasSampleSolution,
     },
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),

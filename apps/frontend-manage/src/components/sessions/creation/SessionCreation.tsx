@@ -16,9 +16,9 @@ import {
 } from '@uzh-bf/design-system'
 import { useContext, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LearningElementCreationForm from '../../../components/sessions/creation/LearningElementCreationForm'
-import LiveSessionCreationForm from '../../../components/sessions/creation/LiveSessionCreationForm'
-import MicroSessionCreationForm from '../../../components/sessions/creation/MicroSessionCreationForm'
+import LearningElementWizard from './LearningElementWizard'
+import LiveSessionWizard from './LiveSessionWizard'
+import MicroSessionWizard from './MicroSessionWizard'
 
 interface SessionCreationProps {
   sessionId?: string
@@ -28,6 +28,7 @@ interface SessionCreationProps {
 function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   const theme = useContext(ThemeContext)
   const [selectedForm, setSelectedForm] = useState(editMode)
+  //  const [stepNumber, setStepNumber] = useState(0)
 
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
@@ -56,8 +57,8 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   if (!errorCourses && loadingCourses) return <div>Loading...</div>
 
   return (
-    <div className="flex justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
-      <div className="max-w-[100rem] h-full w-full mt-6 gap-5 border border-solid border-uzh-grey-60 rounded-md">
+    <div className="flex flex-col justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
+      <div className="max-w-[100rem] h-full w-full mt-6 gap-5 rounded border">
         <Tabs
           defaultValue="liveSession"
           value={selectedForm}
@@ -65,7 +66,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
         >
           <TabList
             className={{
-              root: 'flex flex-row justify-between w-full h-8 border-b border-solid border-uzh-grey-60',
+              root: 'flex flex-row justify-between w-full h-8',
             }}
           >
             <Tab
@@ -78,7 +79,6 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
             />
-            <div className="border-r-2 border-solid border-uzh-grey-60" />
             <Tab
               key="microSession"
               value="microSession"
@@ -93,7 +93,6 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               }}
               disabled={courseSelection?.length === 0}
             />
-            <div className="border-r-2 border-solid border-uzh-grey-60" />
             <Tab
               key="learningElement"
               value="learningElement"
@@ -109,16 +108,37 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               disabled={courseSelection?.length === 0}
             />
           </TabList>
-          <TabContent key="liveSession" value="liveSession">
-            <LiveSessionCreationForm
+          <TabContent
+            key="liveSession"
+            value="liveSession"
+            className={{ root: 'p-0' }}
+          >
+            {/* <LiveSessionCreationForm
               courses={courseSelection}
+              initialValues={
+                (dataLiveSession?.liveSession as Session) ?? undefined
+              }
+            /> */}
+            <LiveSessionWizard
+              courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
                 (dataLiveSession?.liveSession as Session) ?? undefined
               }
             />
           </TabContent>
-          <TabContent key="microSession" value="microSession">
-            <MicroSessionCreationForm
+          <TabContent
+            key="microSession"
+            value="microSession"
+            className={{ root: 'p-0' }}
+          >
+            {/* <MicroSessionCreationForm
+              courses={courseSelection || [{ label: '', value: '' }]}
+              initialValues={
+                (dataMicroSession?.singleMicroSession as MicroSession) ??
+                undefined
+              }
+            /> */}
+            <MicroSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
                 (dataMicroSession?.singleMicroSession as MicroSession) ??
@@ -126,13 +146,30 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               }
             />
           </TabContent>
-          <TabContent key="learningElement" value="learningElement">
-            <LearningElementCreationForm
+          <TabContent
+            key="learningElement"
+            value="learningElement"
+            className={{ root: 'p-0' }}
+          >
+            {/* <LearningElementCreationForm
+              courses={courseSelection || [{ label: '', value: '' }]}
+            /> */}
+            <LearningElementWizard
               courses={courseSelection || [{ label: '', value: '' }]}
             />
           </TabContent>
         </Tabs>
       </div>
+      {/* <LiveSessionWizard
+        courses={courseSelection}
+        initialValues={(dataLiveSession?.liveSession as Session) ?? undefined}
+      /> */}
+      {/* <MicroSessionWizard
+        courses={courseSelection}
+        initialValues={
+          (dataMicroSession?.singleMicroSession as MicroSession) ?? undefined
+        }
+      /> */}
     </div>
   )
 }

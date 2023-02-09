@@ -41,6 +41,8 @@ function QuestionList({
           title={question.name}
           type={question.type}
           content={question.content}
+          hasAnswerFeedbacks={question.hasAnswerFeedbacks}
+          hasSampleSolution={question.hasSampleSolution}
           onCheck={() => setSelectedQuestions(index)}
           tagfilter={tagfilter}
         />

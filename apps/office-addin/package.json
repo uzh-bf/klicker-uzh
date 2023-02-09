@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@fluentui/react": "8.104.8",
-    "@uzh-bf/design-system": "1.0.24",
+    "@uzh-bf/design-system": "1.2.0",
     "core-js": "3.27.2",
     "es6-promise": "4.2.8",
     "eslint": "8.32.0",
