@@ -60,7 +60,7 @@
     "@mermaid-js/mermaid-cli": "9.1.6",
     "@size-limit/preset-small-lib": "8.1.0",
     "@tsconfig/node18": "1.0.1",
-    "@tsconfig/recommended": "1.0.1",
+    "@tsconfig/recommended": "1.0.2",
     "@types/bcryptjs": "^2.4.2",
     "@types/ramda": "^0.28.15",
     "bcryptjs": "2.4.3",
