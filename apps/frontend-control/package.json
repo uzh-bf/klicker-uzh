@@ -21,7 +21,7 @@
     "@klicker-uzh/graphql": "^3.0.0-alpha.0",
     "@klicker-uzh/markdown": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
-    "@sentry/nextjs": "7.21.1",
+    "@sentry/nextjs": "7.36.0",
     "@socialgouv/matomo-next": "1.4.0",
     "@uzh-bf/design-system": "1.2.0",
     "body-parser": "1.20.1",
