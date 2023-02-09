@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.21...v3.0.0-alpha.22) (2023-02-09)
+
+
+### Features
+
+* **frontend-manage:** add session creation wizard ([#3320](https://github.com/uzh-bf/klicker-uzh/issues/3320)) ([c22c82a](https://github.com/uzh-bf/klicker-uzh/commit/c22c82abecbdded1bf65058fd5cace6bc6e19c65))
+
+
+### Refactors
+
+* **frontend-manage:** ensure that state logic on evaluation view works as expected ([#3306](https://github.com/uzh-bf/klicker-uzh/issues/3306)) ([1dae48b](https://github.com/uzh-bf/klicker-uzh/commit/1dae48b46e235fc3c5e592b68d4bc57cc539cbc0))
+
+
+### Other
+
+* **frontend-manage:** add pause button between session blocks ([#3308](https://github.com/uzh-bf/klicker-uzh/issues/3308)) ([61abd7c](https://github.com/uzh-bf/klicker-uzh/commit/61abd7c16425a7aadf3905d813414f45cc59d580))
+
+
+### Enhancements
+
+* **frontend-control:** various improvements for the controller app ([#3309](https://github.com/uzh-bf/klicker-uzh/issues/3309)) ([e9e3a7e](https://github.com/uzh-bf/klicker-uzh/commit/e9e3a7e56ea0189c7e3bd32cb40e3ca73caba9c6))
+
 ## [3.0.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.20...v3.0.0-alpha.21) (2023-02-03)
 
 ## [3.0.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.19...v3.0.0-alpha.20) (2023-02-03)
