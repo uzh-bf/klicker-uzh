@@ -17,7 +17,7 @@ import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
-import MultistepWizard from './MultistepWizard'
+import MultistepWizard, { MicroSessionFormValues } from './MultistepWizard'
 
 interface LearningElementWizardProps {
   courses: {
@@ -36,7 +36,25 @@ const stepOneValidationSchema = yup.object().shape({
   description: yup.string(),
 })
 
+//TODO: adjust validation
 const stepTwoValidationSchema = yup.object().shape({
+  multiplier: yup
+    .string()
+    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
+  courseId: yup.string(),
+  order: yup.string(),
+  resetTimeDays: yup
+    .string()
+    .required(
+      'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
+    )
+    .matches(
+      /^[0-9]+$/,
+      'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
+    ),
+})
+
+const stepThreeValidationSchema = yup.object().shape({
   questions: yup
     .array()
     .of(
@@ -59,26 +77,7 @@ const stepTwoValidationSchema = yup.object().shape({
     .min(1),
 })
 
-//TODO: adjust validation
-const stepThreeValidationSchema = yup.object().shape({
-  multiplier: yup
-    .string()
-    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
-  courseId: yup.string(),
-  order: yup.string(),
-  resetTimeDays: yup
-    .string()
-    .required(
-      'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
-    )
-    .matches(
-      /^[0-9]+$/,
-      'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
-    ),
-})
-
 function LearningElementWizard({ courses }: LearningElementWizardProps) {
-  const [stepNumber, setStepNumber] = useState(0)
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
@@ -96,7 +95,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
     resetTimeDays: '6',
   }
 
-  const onSubmit = async (values, { resetForm }) => {
+  const onSubmit = async (values: MicroSessionFormValues, { resetForm }) => {
     console.log('onSubmit - values: ', values)
     try {
       const result = await createLearningElement({
@@ -129,27 +128,10 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
 
   return (
     <div>
-      <Label label="Lernelement erstellen" />
-      <MultistepWizard
-        initialValues={initialValues}
-        //onSubmit={(values) => console.log('Wizard submit', values)}
-        onSubmit={onSubmit}
-      >
-        <StepOne
-          validationSchema={stepOneValidationSchema}
-          //onSubmit={() => console.log('Step 1 onSubmit')}
-        />
-
-        <StepTwo
-          validationSchema={stepTwoValidationSchema}
-          // onSubmit={() => console.log('Step 2 onSubmit')}
-        />
-
-        <StepThree
-          validationSchema={stepThreeValidationSchema}
-          //onSubmit={() => console.log('Step 3 onSubmit')}
-          courses={courses}
-        />
+      <MultistepWizard initialValues={initialValues} onSubmit={onSubmit}>
+        <StepOne validationSchema={stepOneValidationSchema} />
+        <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
+        <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
       <LearningElementCreationToast
         open={successToastOpen}
@@ -217,25 +199,10 @@ function StepOne(_: StepProps) {
   )
 }
 
-function StepTwo(_: StepProps) {
+function StepTwo(props: StepProps) {
   return (
     <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-        <ErrorMessage
-          name="questions"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-    </>
-  )
-}
-
-function StepThree(props: StepProps) {
-  return (
-    <>
-      <div className="flex flex-row items-center">
+      <div className="flex flex-row items-center gap-4">
         <Label
           label="Optionen"
           className={{
@@ -314,6 +281,16 @@ function StepThree(props: StepProps) {
           component="div"
           className="text-sm text-red-400"
         />
+      </div>
+    </>
+  )
+}
+
+function StepThree(_: StepProps) {
+  return (
+    <>
+      <div className="mt-2 mb-2">
+        <BlockField fieldName="questions" />
       </div>
     </>
   )

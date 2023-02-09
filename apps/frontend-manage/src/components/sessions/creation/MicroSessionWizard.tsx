@@ -41,18 +41,6 @@ const stepOneValidationSchema = yup.object().shape({
 })
 
 const stepTwoValidationSchema = yup.object().shape({
-  questions: yup
-    .array()
-    .of(
-      yup.object().shape({
-        id: yup.string(),
-        title: yup.string(),
-      })
-    )
-    .min(1),
-})
-
-const stepThreeValidationSchema = yup.object().shape({
   startDate: yup
     .date()
     .required('Bitte geben Sie ein Startdatum für Ihre Session ein.'),
@@ -64,6 +52,18 @@ const stepThreeValidationSchema = yup.object().shape({
     .string()
     .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
   courseId: yup.string(),
+})
+
+const stepThreeValidationSchema = yup.object().shape({
+  questions: yup
+    .array()
+    .of(
+      yup.object().shape({
+        id: yup.string(),
+        title: yup.string(),
+      })
+    )
+    .min(1),
 })
 
 function MicroSessionWizard({
@@ -134,7 +134,6 @@ function MicroSessionWizard({
 
   return (
     <div>
-      <Label label="Micro-Session erstellen" />
       <MultistepWizard
         initialValues={{
           name: initialValues?.name || '',
@@ -159,22 +158,11 @@ function MicroSessionWizard({
         isInitialValid={initialValues ? true : false}
         stepNumber={stepNumber}
         setStepNumber={setStepNumber}
-        //onSubmit={(values) => console.log('Wizard submit', values)}
         onSubmit={onSubmit}
       >
-        <StepOne
-          onSubmit={() => console.log('Step 1 onSubmit')}
-          validationSchema={stepOneValidationSchema}
-        />
-        <StepTwo
-          onSubmit={() => console.log('Step 2 onSubmit')}
-          validationSchema={stepTwoValidationSchema}
-        />
-        <StepThree
-          validationSchema={stepThreeValidationSchema}
-          courses={courses}
-          onSubmit={() => console.log('Step 3 onSubmit')}
-        />
+        <StepOne validationSchema={stepOneValidationSchema} />
+        <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
+        <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
       <MicroSessionCreationToast
         editMode={editMode}
@@ -241,25 +229,10 @@ function StepOne(_: StepProps) {
   )
 }
 
-function StepTwo(_: StepProps) {
+function StepTwo(props: StepProps) {
   return (
     <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-        <ErrorMessage
-          name="questions"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-    </>
-  )
-}
-
-function StepThree(props: StepProps) {
-  return (
-    <>
-      <div className="flex flex-row items-center">
+      <div className="flex flex-row items-center gap-4">
         <Label
           label="Optionen"
           className={{
@@ -333,6 +306,16 @@ function StepThree(props: StepProps) {
             className="text-sm text-red-400"
           />
         </div>
+      </div>
+    </>
+  )
+}
+
+function StepThree(_: StepProps) {
+  return (
+    <>
+      <div className="mt-2 mb-2">
+        <BlockField fieldName="questions" />
       </div>
     </>
   )

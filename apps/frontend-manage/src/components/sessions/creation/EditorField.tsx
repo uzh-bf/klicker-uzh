@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../questions/ContentInput'
 
 interface EditorFieldProps {
-  label?: string
+  label: string
   fieldName: string
   tooltip?: string
   className?: string
@@ -33,10 +33,16 @@ function EditorField({
         error={meta.error}
         touched={meta.touched}
         content={field.value || '<br>'}
-        onChange={(newValue: string) => helpers.setValue(newValue)}
+        onChange={(newValue: string) => {
+          helpers.setValue(newValue)
+          helpers.setTouched(true)
+        }}
         showToolbarOnFocus={true}
         placeholder="Inhalt hier eingeben…"
-        className={{ editor: '!leading-3', root: 'w-full' }}
+        className={{
+          editor: '!leading-3 h-40 overflow-x-auto',
+          root: 'w-full',
+        }}
       />
     </div>
   )

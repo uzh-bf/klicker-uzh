@@ -40,18 +40,6 @@ const stepOneValidationSchema = yup.object().shape({
 })
 
 const stepTwoValidationSchema = yup.object().shape({
-  blocks: yup.array().of(
-    yup.object().shape({
-      ids: yup.array().of(yup.number()),
-      titles: yup.array().of(yup.string()),
-      timeLimit: yup
-        .number()
-        .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
-    })
-  ),
-})
-
-const stepThreeValidationSchema = yup.object().shape({
   multiplier: yup
     .string()
     .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
@@ -61,8 +49,22 @@ const stepThreeValidationSchema = yup.object().shape({
     .required('Bitte spezifizieren Sie, ob die Session gamified sein soll.'),
 })
 
+const stepThreeValidationSchema = yup.object().shape({
+  blocks: yup
+    .array()
+    .of(
+      yup.object().shape({
+        ids: yup.array().of(yup.number()),
+        titles: yup.array().of(yup.string()),
+        timeLimit: yup
+          .number()
+          .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
+      })
+    )
+    .min(1),
+})
+
 function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
-  const [stepNumber, setStepNumber] = useState(0)
   const [editSession] = useMutation(EditSessionDocument)
   const [createSession] = useMutation(CreateSessionDocument)
   const router = useRouter()
@@ -132,7 +134,6 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
 
   return (
     <div>
-      <Label label="Formik Multistep Wizard" />
       <MultistepWizard
         initialValues={{
           name: initialValues?.name || '',
@@ -156,24 +157,11 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
         isInitialValid={initialValues ? true : false}
-        stepNumber={stepNumber}
-        setStepNumber={setStepNumber}
-        //onSubmit={(values) => console.log('Wizard submit', values)}
         onSubmit={onSubmit}
       >
-        <StepOne
-          //onSubmit={() => console.log('Step1 onSubmit')}
-          validationSchema={stepOneValidationSchema}
-        />
-        <StepTwo
-          //onSubmit={() => console.log('Step2 onSubmit')}
-          validationSchema={stepTwoValidationSchema}
-        />
-        <StepThree
-          //onSubmit={() => console.log('Step3 onSubmit')}
-          validationSchema={stepThreeValidationSchema}
-          courses={courses}
-        />
+        <StepOne validationSchema={stepOneValidationSchema} />
+        <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
+        <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
       <LiveSessionCreationToast
         open={successToastOpen}
@@ -241,25 +229,10 @@ function StepOne(_: StepProps) {
   )
 }
 
-function StepTwo(_: StepProps) {
+function StepTwo(props: StepProps) {
   return (
     <>
-      <div className="mt-2 mb-2">
-        <SessionBlockField fieldName="blocks" />
-        <ErrorMessage
-          name="blocks"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-    </>
-  )
-}
-
-function StepThree(props: StepProps) {
-  return (
-    <>
-      <div className="flex flex-row items-center">
+      <div className="flex flex-row items-center gap-4">
         <Label
           label="Optionen"
           className={{
@@ -312,6 +285,16 @@ function StepThree(props: StepProps) {
           component="div"
           className="text-sm text-red-400"
         />
+      </div>
+    </>
+  )
+}
+
+function StepThree(_: StepProps) {
+  return (
+    <>
+      <div className="mt-2 mb-2">
+        <SessionBlockField fieldName="blocks" />
       </div>
     </>
   )

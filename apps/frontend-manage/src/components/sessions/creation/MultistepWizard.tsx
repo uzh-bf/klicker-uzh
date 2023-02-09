@@ -1,5 +1,5 @@
 import { Session } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Progress } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
 
@@ -7,8 +7,6 @@ interface FormProps {
   children: React.ReactNode[]
   initialValues?: Partial<Session>
   onSubmit: (values: any, bag: any) => void
-  stepNumber: number
-  setStepNumber: (newValue: number) => void
 }
 
 export interface LiveSessionFormValues {
@@ -118,23 +116,32 @@ function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
       isInitialValid={false}
     >
       {({ values, isSubmitting, isValid }) => (
-        <Form>
-          <p>
-            Step {stepNumber + 1} of {totalSteps}
-          </p>
+        <Form className="flex flex-col gap-4 p-4">
           {step}
-          <div className="flex">
-            {stepNumber > 0 && (
-              <Button onClick={() => previous(values)} type="button">
-                Zurück
-              </Button>
-            )}
+          <div className="flex flex-row justify-between">
             <div>
-              <Button disabled={isSubmitting || !isValid} type="submit">
+              {stepNumber > 0 && (
+                <Button onClick={() => previous(values)} type="button">
+                  Zurück
+                </Button>
+              )}
+            </div>
+
+            <div>
+              <Button disabled={isSubmitting} type="submit">
                 {isLastStep ? 'Erstellen' : 'Weiter'}
               </Button>
             </div>
           </div>
+          <Progress
+            className={{
+              root: 'flex-1 h-4 pb-4',
+              indicator: 'bg-slate-400 h-4',
+            }}
+            value={stepNumber + 1}
+            max={totalSteps}
+            formatter={() => null}
+          />
         </Form>
       )}
     </Formik>
