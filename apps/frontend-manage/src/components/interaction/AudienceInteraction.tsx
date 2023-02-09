@@ -133,11 +133,9 @@ function AudienceInteraction({
               />
             </div>
           </div>
-          {/* <div className="flex flex-col flex-wrap self-start w-full pt-5 md:flex-row print:hidden"> */}
 
-          {/* className="bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]" */}
           {!isLiveQAEnabled && (
-            <div className="flex min-h-[400px] justify-center items-center font-bold mt-5 border border-solid rounded shadow bg-primary-bg border-primary">
+            <div className="flex min-h-[400px] justify-center items-center font-bold mt-7 border border-solid rounded shadow bg-primary-bg border-primary">
               Live Q&A nicht aktiv.
             </div>
           )}
@@ -160,9 +158,7 @@ function AudienceInteraction({
               </div>
             </div>
           )}
-          {/* </div> */}
 
-          {/* <div className="flex flex-col pt-1 md:flex-row md:flex-wrap"> */}
           {isLiveQAEnabled && (
             <div className="flex flex-col md:flex-row md:flex-wrap">
               <div className="flex-1">
@@ -247,7 +243,6 @@ function AudienceInteraction({
               </div>
             </div>
           )}
-          {/* </div> */}
         </div>
         <div className="flex flex-col w-1/3 gap-4 md:flex-row md:flex-wrap">
           <div className="flex flex-row w-full justify-evenly">
@@ -271,7 +266,7 @@ function AudienceInteraction({
               label="Feedback aktivieren"
             />
           </div>
-          <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
+          <div className="flex-initial relative mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
             {isConfusionFeedbackEnabled ? (
               // <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
               <ConfusionCharts confusionValues={confusionValues} />
