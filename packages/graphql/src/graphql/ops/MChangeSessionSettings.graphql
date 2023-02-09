@@ -1,17 +1,20 @@
 mutation ChangeSessionSettings(
   $id: ID!
-  $isAudienceInteractionActive: Boolean
+  $isLiveQAEnabled: Boolean
+  $isConfusionFeedbackEnabled: Boolean
   $isModerationEnabled: Boolean
   $isGamificationEnabled: Boolean
 ) {
   changeSessionSettings(
     id: $id
-    isAudienceInteractionActive: $isAudienceInteractionActive
+    isLiveQAEnabled: $isLiveQAEnabled
+    isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isModerationEnabled: $isModerationEnabled
     isGamificationEnabled: $isGamificationEnabled
   ) {
     id
-    isAudienceInteractionActive
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
   }

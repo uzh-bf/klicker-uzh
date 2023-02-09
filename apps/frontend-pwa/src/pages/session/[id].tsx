@@ -63,7 +63,8 @@ function Index({ id }: Props) {
   const {
     activeBlock,
     displayName,
-    isAudienceInteractionActive,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
     name,
@@ -130,7 +131,7 @@ function Index({ id }: Props) {
     },
   ]
 
-  if (isAudienceInteractionActive) {
+  if (isLiveQAEnabled) {
     mobileMenuItems.push({
       value: 'feedbacks',
       label: 'Feedbacks',
@@ -160,7 +161,7 @@ function Index({ id }: Props) {
         <div
           className={twMerge(
             'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
-            isAudienceInteractionActive && 'md:w-1/2',
+            isLiveQAEnabled && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block'
           )}
         >
@@ -203,7 +204,19 @@ function Index({ id }: Props) {
           </div>
         )}
 
-        {isAudienceInteractionActive && (
+        <div
+          className={twMerge(
+            'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
+            activeMobilePage === 'feedbacks' && 'block'
+          )}
+        >
+          <FeedbackArea
+            isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
+            isLiveQAEnabled={isLiveQAEnabled}
+          />
+        </div>
+
+        {/* {isLiveQAEnabled && (
           <div
             className={twMerge(
               'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
@@ -212,7 +225,7 @@ function Index({ id }: Props) {
           >
             <FeedbackArea />
           </div>
-        )}
+        )} */}
       </div>
     </Layout>
   )

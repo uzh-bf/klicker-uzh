@@ -3,7 +3,8 @@
 query GetCockpitSession($id: ID!) {
   cockpitSession(id: $id) {
     id
-    isAudienceInteractionActive
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
     namespace

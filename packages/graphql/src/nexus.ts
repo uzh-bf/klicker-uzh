@@ -888,7 +888,8 @@ export const Session = objectType({
   definition(t) {
     t.nonNull.id('id')
 
-    t.nonNull.boolean('isAudienceInteractionActive')
+    t.nonNull.boolean('isLiveQAEnabled')
+    t.nonNull.boolean('isConfusionFeedbackEnabled')
     t.nonNull.boolean('isModerationEnabled')
     t.nonNull.boolean('isGamificationEnabled')
 
@@ -1837,7 +1838,8 @@ export const Mutation = objectType({
       type: Session,
       args: {
         id: nonNull(idArg()),
-        isAudienceInteractionActive: booleanArg(),
+        isLiveQAEnabled: booleanArg(),
+        isConfusionFeedbackEnabled: booleanArg() ,
         isModerationEnabled: booleanArg(),
         isGamificationEnabled: booleanArg(),
       },

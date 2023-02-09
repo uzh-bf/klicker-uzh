@@ -1106,6 +1106,8 @@ export async function getLeaderboard(
 interface SessionSettingArgs {
   id: string
   isAudienceInteractionActive?: boolean | null
+  isLiveQAEnabled?: boolean | null
+  isConfusionFeedbackEnabled?: boolean | null
   isModerationEnabled?: boolean | null
   isGamificationEnabled?: boolean | null
 }
@@ -1114,6 +1116,8 @@ export async function changeSessionSettings(
   {
     id,
     isAudienceInteractionActive,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled ,
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
@@ -1123,6 +1127,8 @@ export async function changeSessionSettings(
     where: { id },
     data: {
       isAudienceInteractionActive: isAudienceInteractionActive ?? undefined,
+      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
+      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
       isModerationEnabled: isModerationEnabled ?? undefined,
       isGamificationEnabled: isGamificationEnabled ?? undefined,
     },

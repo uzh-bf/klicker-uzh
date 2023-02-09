@@ -3,7 +3,8 @@
 query GetRunningSession($id: ID!) {
   session(id: $id) {
     id
-    isAudienceInteractionActive
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
     namespace
