@@ -2,6 +2,20 @@ apiVersion: v1
 entries:
   klicker-uzh-v3:
   - apiVersion: v2
+    appVersion: v3.0.0-alpha.22
+    created: "2023-02-09T14:16:59.367078676Z"
+    dependencies:
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 17.6.0
+    description: A Helm chart for the KlickerUZH
+    digest: d5d611c176b068134ed21234c81f9c73533f7fc5d6034ac38f2e9d5253405acd
+    name: klicker-uzh-v3
+    type: application
+    urls:
+    - https://github.com/uzh-bf/klicker-uzh/releases/download/klicker-uzh-v3-3.0.0-alpha.22/klicker-uzh-v3-3.0.0-alpha.22.tgz
+    version: 3.0.0-alpha.22
+  - apiVersion: v2
     appVersion: v3.0.0-alpha.21
     created: "2023-02-03T15:09:52.690863687Z"
     dependencies:
@@ -211,4 +225,4 @@ entries:
     urls:
     - https://github.com/uzh-bf/klicker-uzh/releases/download/klicker-uzh-v3-3.0.0-alpha.3/klicker-uzh-v3-3.0.0-alpha.3.tgz
     version: 3.0.0-alpha.3
-generated: "2023-02-03T15:09:52.691294485Z"
+generated: "2023-02-09T14:16:59.36725218Z"
