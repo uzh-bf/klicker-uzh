@@ -31,7 +31,11 @@ const nextConfig = withPWA({
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['127.0.0.1', process.env.S3_HOSTNAME, 'course-cms.sos-ch-dk-2.exo.io'],
+    domains: [
+      '127.0.0.1',
+      process.env.S3_HOSTNAME,
+      'course-cms.sos-ch-dk-2.exo.io',
+    ],
     remotePatterns: [
       {
         protocol: 'https',

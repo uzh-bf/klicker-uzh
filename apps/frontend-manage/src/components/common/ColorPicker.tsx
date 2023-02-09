@@ -24,7 +24,7 @@ function ColorPicker({ color, onAbort, onSubmit }: Props) {
         {PRESET_COURSE_COLORS.map((presetColor, index) => (
           <Button
             key={index}
-            className={{root: 'h-7 w-7 border-none rounded-2xl'}}
+            className={{ root: 'h-7 w-7 border-none rounded-2xl' }}
             style={{ backgroundColor: presetColor }}
             onClick={() => setNewColor(presetColor)}
           />
