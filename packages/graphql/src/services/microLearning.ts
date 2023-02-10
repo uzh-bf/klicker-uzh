@@ -144,9 +144,9 @@ export async function markMicroSessionCompleted(
 interface CreateMicroSessionArgs {
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -163,7 +163,7 @@ export async function createMicroSession(
     startDate,
     endDate,
   }: CreateMicroSessionArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const questionMap = await getQuestionMap(questions, ctx)
 

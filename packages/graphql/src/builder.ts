@@ -20,8 +20,8 @@ const builder = new SchemaBuilder<{
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
-      Input: any
-      Output: any
+      Input: Date
+      Output: Date
     }
     Json: {
       Input: any

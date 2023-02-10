@@ -31,6 +31,7 @@ import {
   FeedbackResponse,
   LearningElement,
   LearningElementOrderType,
+  MicroSession,
   Session,
 } from './session'
 import { User } from './user'
@@ -623,6 +624,23 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return SessionService.editSession(args, ctx)
+      },
+    }),
+    createMicroSession: t.field({
+      nullable: true,
+      type: MicroSession,
+      args: {
+        name: t.arg.string({ required: true }),
+        displayName: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
+        questions: t.arg.intList({ required: true }),
+        courseId: t.arg.string({ required: false }),
+        multiplier: t.arg.int({ required: true }),
+        startDate: t.arg({ type: 'Date', required: true }),
+        endDate: t.arg({ type: 'Date', required: true }),
+      },
+      resolve(_, args, ctx) {
+        return MicroLearningService.createMicroSession(args, ctx)
       },
     }),
   }),
