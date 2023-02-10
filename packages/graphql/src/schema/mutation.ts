@@ -24,6 +24,7 @@ import {
 } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, FeedbackResponse, Session } from './session'
+import { User } from './user'
 
 export const Mutation = builder.mutationType({
   fields: (t) => ({
@@ -443,6 +444,18 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return AccountService.loginParticipant(args, ctx)
+      },
+    }),
+    generateLoginToken: t.field({
+      nullable: true,
+      type: User,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+
+      resolve(_, __, ctx) {
+        return AccountService.generateLoginToken(ctx)
       },
     }),
   }),

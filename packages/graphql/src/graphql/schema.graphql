@@ -142,6 +142,7 @@ type Mutation {
   deleteTag(id: Int!): Tag
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  generateLoginToken: User
   joinCourseWithPin(courseId: String!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
   leaveCourse(courseId: String!): LeaveCourseParticipation

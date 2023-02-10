@@ -1572,6 +1572,18 @@
             "deprecationReason": null
           },
           {
+            "name": "generateLoginToken",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "joinCourseWithPin",
             "description": null,
             "args": [
