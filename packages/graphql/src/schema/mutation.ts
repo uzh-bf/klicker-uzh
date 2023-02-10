@@ -577,7 +577,6 @@ export const Mutation = builder.mutationType({
         return SessionService.createSession(args, ctx)
       },
     }),
-
     createLearningElement: t.field({
       nullable: true,
       type: LearningElement,
@@ -600,6 +599,30 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return LearningElementService.createLearningElement(args, ctx)
+      },
+    }),
+    editSession: t.field({
+      nullable: true,
+      type: Session,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      args: {
+        id: t.arg.string({ required: true }),
+        name: t.arg.string({ required: true }),
+        displayName: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
+        blocks: t.arg({
+          type: [BlockInput],
+          required: true,
+        }),
+        courseId: t.arg.string({ required: false }),
+        multiplier: t.arg.int({ required: true }),
+        isGamificationEnabled: t.arg.boolean({ required: false }),
+      },
+      resolve(_, args, ctx) {
+        return SessionService.editSession(args, ctx)
       },
     }),
   }),

@@ -198,9 +198,9 @@ interface EditSessionArgs {
   displayName: string
   description?: string | null
   blocks: BlockArgs[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean
+  isGamificationEnabled?: boolean | null
 }
 
 export async function editSession(
@@ -214,7 +214,7 @@ export async function editSession(
     multiplier,
     isGamificationEnabled,
   }: EditSessionArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // find all instances belonging to the old session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.session.findUnique({
