@@ -4,11 +4,7 @@ import dayjs from 'dayjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -151,12 +147,9 @@ export async function logoutUser(_, ctx: Context) {
   return ctx.user.sub
 }
 
-export async function getUserProfile(
-  { id }: { id: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUserProfile(ctx: Context) {
   const user = await ctx.prisma.user.findUnique({
-    where: { id },
+    where: { id: ctx.user!.sub },
   })
 
   return user

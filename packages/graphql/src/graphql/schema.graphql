@@ -204,6 +204,7 @@ type Query {
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
   self: Participant
+  userProfile: User
   userTags: [Tag!]
 }
 
@@ -285,7 +286,10 @@ type Title {
 }
 
 type User {
+  email: String!
   id: ID!
+  isActive: Boolean!
   loginToken: String
   loginTokenExpiresAt: Date
+  shortname: String!
 }

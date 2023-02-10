@@ -6,9 +6,9 @@ import {
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation, ThemeContext } from '@uzh-bf/design-system'
+import { Navigation } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import React, { useContext } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -17,22 +17,7 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
-  const theme = useContext(ThemeContext)
   const [logoutUser] = useMutation(LogoutUserDocument)
-
-  const userDropdownContent = [
-    { name: 'Settings', onClick: () => router.push('/settings') },
-    { name: 'Support', onClick: () => router.push('/support') },
-    {
-      name: 'Logout',
-      onClick: async () => {
-        const userIdLogout = await logoutUser()
-        userIdLogout.data?.logoutUser
-          ? router.push('https://www.klicker.uzh.ch')
-          : console.log('Logout failed')
-      },
-    },
-  ]
 
   const { data } = useQuery(GetRunningSessionsDocument, {
     variables: { shortname: user.shortname },

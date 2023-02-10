@@ -82,5 +82,15 @@ export const Query = builder.queryType({
         return FeedbackService.getFeedbacks(args, ctx)
       },
     }),
+    userProfile: t.prismaField({
+      nullable: true,
+      type: User,
+      authScopes: {
+        role: UserRole.USER,
+      },
+      resolve(_, __, ___, ctx) {
+        return AccountService.getUserProfile(ctx)
+      },
+    }),
   }),
 })
