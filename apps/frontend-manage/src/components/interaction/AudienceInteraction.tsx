@@ -14,7 +14,8 @@ import {
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { Button, Switch } from '@uzh-bf/design-system'
+import { Switch } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -73,20 +74,28 @@ function AudienceInteraction({
   const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
 
   return (
-    <div className="flex flex-col flex-wrap justify-between md:flex-row">
+    <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
       <div className="hidden print:block">
         <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
       </div>
 
       <div
         className={twMerge(
-          'flex flex-row justify-start w-full gap-2 md:gap-8 md:flex-row print:hidden'
+          'flex flex-col md:justify-start w-full gap-2 md:gap-8 md:flex-row print:hidden'
         )}
       >
-        <div className="flex flex-col w-2/3 pr-5">
-          <div className="flex flex-row justify-between">
-            <div className="flex pr-5 text-2xl font-bold">Live Q&A</div>
-            <div className="flex flex-row gap-6">
+        <div className="flex flex-col flex-grow gap-4 md:w-2/3">
+          <div className="flex flex-row flex-wrap items-end justify-between">
+            <div className="flex text-2xl font-bold">Live Q&A</div>
+            <div className="flex flex-row flex-wrap items-end gap-4">
+              <Link
+                href={`/sessions/${sessionId}/lecturer`}
+                target="_blank"
+                className="inline-flex items-center gap-1"
+              >
+                <FontAwesomeIcon icon={faUpRightFromSquare} />
+                Dozierendenansicht
+              </Link>
               <Switch
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
@@ -133,32 +142,13 @@ function AudienceInteraction({
           </div>
 
           {!isLiveQAEnabled && (
-            <div className="flex min-h-[400px] justify-center items-center font-bold mt-7 border border-solid rounded shadow bg-primary-bg border-primary">
+            <div className="flex items-center justify-center flex-1 font-bold border rounded">
               Live Q&A nicht aktiv.
             </div>
           )}
 
           {isLiveQAEnabled && (
-            <div className="flex flex-col flex-wrap self-start w-full mt-5 md:flex-row print:hidden">
-              <div className="order-3 md:order-1">
-                <a
-                  href={`/sessions/${sessionId}/lecturer`}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <Button className={{ root: 'h-10 px-4' }}>
-                    <Button.Icon className={{ root: 'mr-1' }}>
-                      <FontAwesomeIcon icon={faUpRightFromSquare} />
-                    </Button.Icon>
-                    <Button.Label>Dozierendenansicht</Button.Label>
-                  </Button>
-                </a>
-              </div>
-            </div>
-          )}
-
-          {isLiveQAEnabled && (
-            <div className="flex flex-col md:flex-row md:flex-wrap">
+            <div className="flex flex-col flex-1 p-4 border rounded md:flex-row md:flex-wrap">
               <div className="flex-1">
                 <FeedbackChannel
                   feedbacks={feedbacks}
@@ -242,8 +232,8 @@ function AudienceInteraction({
             </div>
           )}
         </div>
-        <div className="flex flex-col w-1/3 gap-4 md:flex-row md:flex-wrap">
-          <div className="flex flex-row w-full justify-evenly">
+        <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap">
+          <div className="flex flex-row flex-wrap items-end justify-between w-full gap-2">
             <div className="text-2xl font-bold">Feedback</div>
             <Switch
               checked={isConfusionFeedbackEnabled}
@@ -267,7 +257,7 @@ function AudienceInteraction({
               }}
             />
           </div>
-          <div className="flex-initial relative mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
+          <div className="flex-1 flex-shrink p-4 rounded print:hidden border md:max-h-[31rem]">
             {isConfusionFeedbackEnabled ? (
               // <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
               <ConfusionCharts confusionValues={confusionValues} />

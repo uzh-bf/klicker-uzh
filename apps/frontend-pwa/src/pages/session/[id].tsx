@@ -149,7 +149,7 @@ function Index({ id }: Props) {
   return (
     <Layout
       displayName={displayName}
-      courseName={course?.displayName ?? 'KlickerUZH Live'}
+      courseName={course?.displayName ?? 'KlickerUZH'}
       courseColor={course?.color}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
@@ -209,8 +209,11 @@ function Index({ id }: Props) {
 
         <div
           className={twMerge(
-            'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
-            activeMobilePage === 'feedbacks' && 'block'
+            'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:rounded-lg',
+            (isLiveQAEnabled || isConfusionFeedbackEnabled) && 'md:block',
+            activeMobilePage === 'feedbacks' &&
+              (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
+              'block'
           )}
         >
           <FeedbackArea
