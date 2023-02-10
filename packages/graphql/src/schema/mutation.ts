@@ -300,12 +300,12 @@ export const Mutation = builder.mutationType({
     startSession: t.field({
       nullable: true,
       type: Session,
-      args: {
-        id: t.arg.string({ required: true }),
-      },
       authScopes: {
         authenticated: true,
         role: UserRole.USER,
+      },
+      args: {
+        id: t.arg.string({ required: true }),
       },
       resolve(_, args, ctx) {
         return SessionService.startSession(args, ctx)
@@ -314,6 +314,10 @@ export const Mutation = builder.mutationType({
     pinFeedback: t.field({
       nullable: true,
       type: Feedback,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
       args: {
         id: t.arg.int({ required: true }),
         isPinned: t.arg.boolean({ required: true }),
@@ -325,6 +329,10 @@ export const Mutation = builder.mutationType({
     publishFeedback: t.field({
       nullable: true,
       type: Feedback,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
       args: {
         id: t.arg.int({ required: true }),
         isPublished: t.arg.boolean({ required: true }),
@@ -336,6 +344,10 @@ export const Mutation = builder.mutationType({
     resolveFeedback: t.field({
       nullable: true,
       type: Feedback,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
       args: {
         id: t.arg.int({ required: true }),
         isResolved: t.arg.boolean({ required: true }),
@@ -347,6 +359,10 @@ export const Mutation = builder.mutationType({
     respondToFeedback: t.field({
       nullable: true,
       type: Feedback,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
       args: {
         id: t.arg.int({ required: true }),
         responseContent: t.arg.string({ required: true }),
@@ -380,12 +396,12 @@ export const Mutation = builder.mutationType({
     leaveCourse: t.field({
       nullable: true,
       type: LeaveCourseParticipation,
-      args: {
-        courseId: t.arg.string({ required: true }),
-      },
       authScopes: {
         authenticated: true,
         role: UserRole.PARTICIPANT,
+      },
+      args: {
+        courseId: t.arg.string({ required: true }),
       },
       resolve(_, args, ctx) {
         return CourseService.leaveCourse(args, ctx)

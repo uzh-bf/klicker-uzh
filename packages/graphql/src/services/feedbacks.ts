@@ -1,14 +1,7 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithOptionalUser } from '../lib/context'
 
-export async function getFeedbacks(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
     where: { id },
     include: {

@@ -2,10 +2,12 @@ import { UserRole } from '@klicker-uzh/prisma'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
+import * as FeedbackService from '../services/feedbacks'
 import * as QuestionService from '../services/questions'
 import { Course } from './course'
 import { Participant } from './participant'
 import { Tag } from './question'
+import { Feedback } from './session'
 import { User } from './user'
 
 export const Query = builder.queryType({
@@ -68,6 +70,16 @@ export const Query = builder.queryType({
       },
       resolve(_, __, ___, ctx) {
         return QuestionService.getUserTags(ctx)
+      },
+    }),
+    feedbacks: t.prismaField({
+      nullable: true,
+      type: [Feedback],
+      args: {
+        id: t.arg.string({ required: true }),
+      },
+      resolve(_, __, args, ctx) {
+        return FeedbackService.getFeedbacks(args, ctx)
       },
     }),
   }),
