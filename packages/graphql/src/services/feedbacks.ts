@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { Context, ContextWithOptionalUser } from '../lib/context'
+import { Context } from '../lib/context'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
@@ -131,13 +131,13 @@ export async function respondToFeedback(
 // add confusion timestep to session
 interface AddConfusionTimestepArgs {
   sessionId: string
-  difficulty: -2 | -1 | 0 | 1 | 2
-  speed: -2 | -1 | 0 | 1 | 2
+  difficulty: number
+  speed: number
 }
 
 export async function addConfusionTimestep(
   { sessionId, difficulty, speed }: AddConfusionTimestepArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const confusionTS = await ctx.prisma.confusionTimestep.create({
     data: {

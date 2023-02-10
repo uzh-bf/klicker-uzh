@@ -35,7 +35,9 @@ type ClassAchievementInstance {
 }
 
 type ConfusionTimestep {
+  difficulty: Int!
   id: Int!
+  speed: Int!
 }
 
 type Course {
@@ -132,6 +134,7 @@ type MicroSession {
 }
 
 type Mutation {
+  addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDescription(courseId: String!, input: String!): Course

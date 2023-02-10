@@ -23,7 +23,12 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import { Question, Tag } from './question'
-import { Feedback, FeedbackResponse, Session } from './session'
+import {
+  ConfusionTimestep,
+  Feedback,
+  FeedbackResponse,
+  Session,
+} from './session'
 import { User } from './user'
 
 export const Mutation = builder.mutationType({
@@ -516,6 +521,18 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return SessionService.changeSessionSettings(args, ctx)
+      },
+    }),
+    addConfusionTimestep: t.field({
+      nullable: true,
+      type: ConfusionTimestep,
+      args: {
+        sessionId: t.arg.string({ required: true }),
+        difficulty: t.arg.int({ required: true }),
+        speed: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return FeedbackService.addConfusionTimestep(args, ctx)
       },
     }),
   }),

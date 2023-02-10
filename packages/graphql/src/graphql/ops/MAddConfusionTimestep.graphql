@@ -1,5 +1,5 @@
 mutation AddConfusionTimestep(
-  $sessionId: ID!
+  $sessionId: String!
   $difficulty: Int!
   $speed: Int!
 ) {

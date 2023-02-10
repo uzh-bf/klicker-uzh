@@ -89,6 +89,9 @@ export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
 export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    speed: t.exposeInt('speed'),
+    difficulty: t.exposeInt('difficulty'),
   }),
 })
 
