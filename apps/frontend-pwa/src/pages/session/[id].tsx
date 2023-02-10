@@ -162,7 +162,10 @@ function Index({ id }: Props) {
           className={twMerge(
             'md:p-8 md:rounded-lg md:shadow md:border-solid md:border flex-1 bg-white hidden',
             isLiveQAEnabled && 'md:w-1/2',
-            activeMobilePage === 'questions' && 'block'
+            activeMobilePage === 'questions' && 'block',
+            (activeMobilePage === 'feedbacks' ||
+              activeMobilePage === 'leaderboard') &&
+              'md:block'
           )}
         >
           {!activeBlock ? (
