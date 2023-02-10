@@ -94,9 +94,6 @@ function AudienceInteraction({
                     variables: {
                       id: sessionId,
                       isLiveQAEnabled: !isLiveQAEnabled,
-                      isModerationEnabled: !isLiveQAEnabled
-                        ? isModerationEnabled
-                        : false,
                     },
                   })
                   push([
@@ -128,7 +125,8 @@ function AudienceInteraction({
                 }}
                 label="Moderation aktivieren"
                 className={{
-                  label: twMerge(!isLiveQAEnabled && 'text-gray-400'),
+                  element: twMerge(!isLiveQAEnabled && 'bg-uzh-grey-40'),
+                  label: twMerge(!isLiveQAEnabled && 'text-gray-40'),
                 }}
               />
             </div>
