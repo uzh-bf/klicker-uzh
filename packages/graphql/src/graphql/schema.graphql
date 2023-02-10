@@ -207,6 +207,7 @@ type Query {
   controlCourse(id: String!): Course
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
+  runningSessions(shortname: String!): [Session!]
   self: Participant
   unassignedSessions: [Session!]
   userCourses: [Course!]
@@ -258,6 +259,7 @@ type Session {
   isAudienceInteractionActive: Boolean!
   isGamificationEnabled: Boolean!
   isModerationEnabled: Boolean!
+  linkTo: String
   linkToJoin: String
   name: String!
   namespace: String!

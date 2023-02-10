@@ -38,6 +38,8 @@ export const Session = builder.prismaObject('Session', {
     confusionFeedbacks: t.relation('confusionFeedbacks'),
     course: t.relation('course'),
 
+    linkTo: t.exposeString('linkTo', { nullable: true }),
+
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),

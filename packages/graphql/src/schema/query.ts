@@ -123,5 +123,18 @@ export const Query = builder.queryType({
         return SessionService.getUnassignedSessions(ctx)
       },
     }),
+    runningSessions: t.prismaField({
+      nullable: true,
+      type: [Session],
+      authScopes: {
+        role: UserRole.USER,
+      },
+      args: {
+        shortname: t.arg.string({ required: true }),
+      },
+      resolve(_, __, args, ctx) {
+        return SessionService.getRunningSessions(args, ctx)
+      },
+    }),
   }),
 })
