@@ -1216,13 +1216,10 @@ export async function getUserSessions(
   })
 }
 
-export async function getUnassignedSessions(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUnassignedSessions(ctx: Context) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user!.sub,
     },
     include: {
       sessions: {
@@ -1241,11 +1238,7 @@ export async function getUnassignedSessions(
     },
   })
 
-  return user?.sessions.map((session) => {
-    return {
-      ...pick(['id', 'name', 'status'], session),
-    }
-  })
+  return user?.sessions
 }
 
 // compute the average of all feedbacks that were given within the last 10 minutes

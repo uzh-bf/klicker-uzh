@@ -4,10 +4,11 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as QuestionService from '../services/questions'
+import * as SessionService from '../services/sessions'
 import { Course } from './course'
 import { Participant } from './participant'
 import { Question, Tag } from './question'
-import { Feedback } from './session'
+import { Feedback, Session } from './session'
 import { User } from './user'
 
 export const Query = builder.queryType({
@@ -110,6 +111,16 @@ export const Query = builder.queryType({
       },
       resolve(_, __, ___, ctx) {
         return CourseService.getUserCourses(ctx)
+      },
+    }),
+    unassignedSessions: t.prismaField({
+      nullable: true,
+      type: [Session],
+      authScopes: {
+        role: UserRole.USER,
+      },
+      resolve(_, __, ___, ctx) {
+        return SessionService.getUnassignedSessions(ctx)
       },
     }),
   }),
