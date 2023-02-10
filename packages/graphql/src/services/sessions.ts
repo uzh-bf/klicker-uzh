@@ -101,8 +101,8 @@ async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
 
 interface BlockArgs {
   questionIds: number[]
-  randomSelection?: number
-  timeLimit?: number
+  randomSelection?: number | null
+  timeLimit?: number | null
 }
 
 interface CreateSessionArgs {
@@ -110,9 +110,9 @@ interface CreateSessionArgs {
   displayName: string
   description?: string | null
   blocks: BlockArgs[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean
+  isGamificationEnabled?: boolean | null
 }
 
 export async function createSession(
@@ -125,7 +125,7 @@ export async function createSession(
     multiplier,
     isGamificationEnabled,
   }: CreateSessionArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const questionMap = await getQuestionMap(blocks, ctx)
 

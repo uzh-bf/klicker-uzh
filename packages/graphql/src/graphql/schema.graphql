@@ -30,6 +30,12 @@ type AwardEntry {
   id: Int!
 }
 
+input BlockInput {
+  questionIds: [Int!]!
+  randomSelection: Int
+  timeLimit: Int
+}
+
 type ClassAchievementInstance {
   id: Int!
 }
@@ -143,6 +149,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: String!): Feedback
   createParticipantAndJoinCourse(courseId: String!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
+  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback

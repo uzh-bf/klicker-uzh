@@ -18,6 +18,14 @@ export const SessionAccessMode = builder.enumType('SessionAccessMode', {
   values: Object.values(AccessMode),
 })
 
+export const BlockInput = builder.inputType('BlockInput', {
+  fields: (t) => ({
+    questionIds: t.intList({ required: true }),
+    randomSelection: t.int({ required: false }),
+    timeLimit: t.int({ required: false }),
+  }),
+})
+
 export const Session = builder.prismaObject('Session', {
   fields: (t) => ({
     id: t.exposeID('id'),
