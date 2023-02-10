@@ -3,11 +3,7 @@ import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { createParticipantToken } from './accounts'
 
 interface UpdateParticipantProfileArgs {
@@ -253,7 +249,7 @@ interface CreateParticipantAndJoinCourseArgs {
 
 export async function createParticipantAndJoinCourse(
   { username, password, courseId, pin }: CreateParticipantAndJoinCourseArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {

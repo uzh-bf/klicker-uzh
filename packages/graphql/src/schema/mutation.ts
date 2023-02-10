@@ -488,5 +488,18 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.createParticipantGroup(args, ctx)
       },
     }),
+    createParticipantAndJoinCourse: t.field({
+      nullable: true,
+      type: Participant,
+      args: {
+        username: t.arg.string({ required: true }),
+        password: t.arg.string({ required: true }),
+        courseId: t.arg.string({ required: true }),
+        pin: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      },
+    }),
   }),
 })
