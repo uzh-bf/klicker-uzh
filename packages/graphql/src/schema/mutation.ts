@@ -535,5 +535,20 @@ export const Mutation = builder.mutationType({
         return FeedbackService.addConfusionTimestep(args, ctx)
       },
     }),
+    activateSessionBlock: t.field({
+      nullable: true,
+      type: Session,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      args: {
+        sessionId: t.arg.string({ required: true }),
+        sessionBlockId: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return SessionService.activateSessionBlock(args, ctx)
+      },
+    }),
   }),
 })

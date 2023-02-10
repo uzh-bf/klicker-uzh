@@ -520,7 +520,7 @@ interface ActivateSessionBlockArgs {
 
 export async function activateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: { id: sessionId },
@@ -533,7 +533,7 @@ export async function activateSessionBlock(
     },
   })
 
-  if (!session || session.ownerId !== ctx.user.sub) return null
+  if (!session || session.ownerId !== ctx.user!.sub) return null
 
   const newBlock = session.blocks.find((block) => block.id === sessionBlockId)
 

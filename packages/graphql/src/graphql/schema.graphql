@@ -134,6 +134,7 @@ type MicroSession {
 }
 
 type Mutation {
+  activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
