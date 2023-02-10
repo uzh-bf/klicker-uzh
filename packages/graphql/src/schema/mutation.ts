@@ -4,6 +4,7 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
+import * as MicroLearningService from '../services/microLearning'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -405,6 +406,21 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return CourseService.leaveCourse(args, ctx)
+      },
+    }),
+    markMicroSessionCompleted: t.field({
+      nullable: true,
+      type: Participation,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      args: {
+        id: t.arg.string({ required: true }),
+        courseId: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return MicroLearningService.markMicroSessionCompleted(args, ctx)
       },
     }),
   }),

@@ -149,6 +149,7 @@ type Mutation {
   loginUser(email: String!, password: String!): String
   logoutParticipant: ID
   logoutUser: ID
+  markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
@@ -192,6 +193,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
+  completedMicroSessions: [String!]!
   id: Int!
   isActive: Boolean!
   subscriptions: [PushSubscription!]!

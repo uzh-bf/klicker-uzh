@@ -1,4 +1,4 @@
-mutation MarkMicroSessionCompleted($courseId: ID!, $id: ID!) {
+mutation MarkMicroSessionCompleted($courseId: String!, $id: String!) {
   markMicroSessionCompleted(courseId: $courseId, id: $id) {
     id
     completedMicroSessions

@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 export async function getQuestionMap(
@@ -124,13 +124,13 @@ interface MarkMicroSessionCompletedArgs {
 
 export async function markMicroSessionCompleted(
   { courseId, id }: MarkMicroSessionCompletedArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   return ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user.sub,
+        participantId: ctx.user!.sub,
       },
     },
     data: {
