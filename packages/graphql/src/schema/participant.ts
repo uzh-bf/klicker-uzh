@@ -52,7 +52,7 @@ export const Participant = builder.prismaObject('Participant', {
     participantGroups: t.relation('participantGroups'),
     achievements: t.relation('achievements'),
 
-    lastLoginAt: t.expose('lastLoginAt', { type: 'Date' }),
+    lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),
 })
 

@@ -95,7 +95,7 @@ export type Feedback = {
   isPinned: Scalars['Boolean'];
   isPublished: Scalars['Boolean'];
   isResolved: Scalars['Boolean'];
-  resolvedAt: Scalars['Date'];
+  resolvedAt?: Maybe<Scalars['Date']>;
   responses: Array<FeedbackResponse>;
   votes: Scalars['Int'];
 };
@@ -478,7 +478,7 @@ export type Participant = {
   avatar?: Maybe<Scalars['String']>;
   avatarSettings: Scalars['Json'];
   id: Scalars['ID'];
-  lastLoginAt: Scalars['Date'];
+  lastLoginAt?: Maybe<Scalars['Date']>;
   level: Scalars['Int'];
   participantGroups: Array<ParticipantGroup>;
   username: Scalars['String'];
@@ -961,7 +961,7 @@ export type RespondToFeedbackMutationVariables = Exact<{
 }>;
 
 
-export type RespondToFeedbackMutation = { __typename?: 'Mutation', respondToFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt: any, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } | null };
+export type RespondToFeedbackMutation = { __typename?: 'Mutation', respondToFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } | null };
 
 export type StartSessionMutationVariables = Exact<{
   id: Scalars['String'];
@@ -1037,7 +1037,7 @@ export type GetFeedbacksQueryVariables = Exact<{
 }>;
 
 
-export type GetFeedbacksQuery = { __typename?: 'Query', feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt: any, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> | null };
+export type GetFeedbacksQuery = { __typename?: 'Query', feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> | null };
 
 export type GetLoginTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1317,7 +1317,7 @@ export type FeedbackResolvers<ContextType = any, ParentType extends ResolversPar
   isPinned?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isPublished?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isResolved?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  resolvedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  resolvedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   responses?: Resolver<Array<ResolversTypes['FeedbackResponse']>, ParentType, ContextType>;
   votes?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1440,7 +1440,7 @@ export type ParticipantResolvers<ContextType = any, ParentType extends Resolvers
   avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   avatarSettings?: Resolver<ResolversTypes['Json'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  lastLoginAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  lastLoginAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   level?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   participantGroups?: Resolver<Array<ResolversTypes['ParticipantGroup']>, ParentType, ContextType>;
   username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

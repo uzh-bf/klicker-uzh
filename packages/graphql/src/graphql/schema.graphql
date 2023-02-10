@@ -71,7 +71,7 @@ type Feedback {
   isPinned: Boolean!
   isPublished: Boolean!
   isResolved: Boolean!
-  resolvedAt: Date!
+  resolvedAt: Date
   responses: [FeedbackResponse!]!
   votes: Int!
 }
@@ -194,7 +194,7 @@ type Participant {
   avatar: String
   avatarSettings: Json!
   id: ID!
-  lastLoginAt: Date!
+  lastLoginAt: Date
   level: Int!
   participantGroups: [ParticipantGroup!]!
   username: String!

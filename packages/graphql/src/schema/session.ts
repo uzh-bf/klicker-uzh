@@ -88,7 +88,7 @@ export const Feedback = builder.prismaObject('Feedback', {
     content: t.exposeString('content'),
     votes: t.exposeInt('votes'),
     responses: t.relation('responses'),
-    resolvedAt: t.expose('resolvedAt', { type: 'Date' }),
+    resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
