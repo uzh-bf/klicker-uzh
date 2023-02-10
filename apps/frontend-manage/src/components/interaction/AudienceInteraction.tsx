@@ -262,6 +262,9 @@ function AudienceInteraction({
                 ])
               }}
               label="Feedback aktivieren"
+              className={{
+                root: twMerge('items-start'),
+              }}
             />
           </div>
           <div className="flex-initial relative mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">

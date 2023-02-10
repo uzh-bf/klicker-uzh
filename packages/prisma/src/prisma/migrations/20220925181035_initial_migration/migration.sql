@@ -182,6 +182,8 @@ CREATE TABLE "SessionBlock" (
 CREATE TABLE "Session" (
     "id" UUID NOT NULL,
     "isAudienceInteractionActive" BOOLEAN NOT NULL DEFAULT false,
+    "isLiveQAEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "isConfusionFeedbackEnabled" BOOLEAN NOT NULL DEFAULT false,
     "isModerationEnabled" BOOLEAN NOT NULL DEFAULT true,
     "isGamificationEnabled" BOOLEAN NOT NULL DEFAULT false,
     "namespace" UUID NOT NULL,

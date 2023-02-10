@@ -131,7 +131,7 @@ function Index({ id }: Props) {
     },
   ]
 
-  if (isLiveQAEnabled) {
+  if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
     mobileMenuItems.push({
       value: 'feedbacks',
       label: 'Feedbacks',
@@ -215,17 +215,6 @@ function Index({ id }: Props) {
             isLiveQAEnabled={isLiveQAEnabled}
           />
         </div>
-
-        {/* {isLiveQAEnabled && (
-          <div
-            className={twMerge(
-              'md:p-8 flex-1 bg-white md:border-solid md:shadow md:border hidden md:block md:rounded-lg',
-              activeMobilePage === 'feedbacks' && 'block'
-            )}
-          >
-            <FeedbackArea />
-          </div>
-        )} */}
       </div>
     </Layout>
   )
