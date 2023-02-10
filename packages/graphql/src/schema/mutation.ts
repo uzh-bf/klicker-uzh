@@ -423,5 +423,16 @@ export const Mutation = builder.mutationType({
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
       },
     }),
+    loginUserToken: t.field({
+      nullable: true,
+      type: 'ID',
+      args: {
+        email: t.arg.string({ required: true }),
+        token: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return AccountService.loginUserToken(args, ctx)
+      },
+    }),
   }),
 })

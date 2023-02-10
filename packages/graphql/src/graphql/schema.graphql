@@ -147,6 +147,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
+  loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
