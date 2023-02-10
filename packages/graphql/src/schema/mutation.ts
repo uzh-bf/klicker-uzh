@@ -434,5 +434,16 @@ export const Mutation = builder.mutationType({
         return AccountService.loginUserToken(args, ctx)
       },
     }),
+    loginParticipant: t.field({
+      nullable: true,
+      type: 'ID',
+      args: {
+        username: t.arg.string({ required: true }),
+        password: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return AccountService.loginParticipant(args, ctx)
+      },
+    }),
   }),
 })
