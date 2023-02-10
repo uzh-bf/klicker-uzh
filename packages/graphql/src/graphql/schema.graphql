@@ -205,6 +205,7 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: String!): Course
   controlCourse(id: String!): Course
+  controlCourses: [Course!]
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
   runningSessions(shortname: String!): [Session!]

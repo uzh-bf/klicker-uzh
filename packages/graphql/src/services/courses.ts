@@ -320,13 +320,10 @@ export async function getUserCourses(ctx: Context) {
   return userCourses?.courses ?? []
 }
 
-export async function getControlCourses(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getControlCourses(ctx: Context) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user!.sub,
     },
     include: {
       courses: {
@@ -337,11 +334,7 @@ export async function getControlCourses(
     },
   })
 
-  const courses = user?.courses.map(
-    R.pick(['id', 'name', 'displayName', 'isArchived', 'description'])
-  )
-
-  return courses ?? []
+  return user?.courses ?? []
 }
 
 export async function getUserLearningElements(ctx: ContextWithUser) {
