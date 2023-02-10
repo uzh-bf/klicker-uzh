@@ -517,7 +517,7 @@ interface SubmitGroupActivityDecisionsArgs {
   activityInstanceId: number
   decisions: {
     id: number
-    response?: string
+    response?: string | null
     selectedOptions?: number[]
   }[]
 }

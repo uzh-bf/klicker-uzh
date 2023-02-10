@@ -4,7 +4,7 @@ export const GroupActivityDecisionInput = builder.inputType(
   'GroupActivityDecisionInput',
   {
     fields: (t) => ({
-      id: t.string({ required: true }),
+      id: t.int({ required: true }),
 
       selectedOptions: t.intList({ required: true }),
       response: t.string({ required: false }),
@@ -60,43 +60,43 @@ export const GroupActivityParameter = builder.prismaObject(
   }
 )
 
-interface GroupActivityDetails {
-  id: string
-  name: string
-  displayName: string
-  description?: string
-  scheduledStartAt?: Date
-  scheduledEndAt?: Date
-  group: any
-  course: any
-  activityInstance: any
-  clues: any
-  instances: any
-}
+// interface GroupActivityDetails {
+//   id: string
+//   name: string
+//   displayName: string
+//   description?: string
+//   scheduledStartAt?: Date
+//   scheduledEndAt?: Date
+//   group: any
+//   course: any
+//   activityInstance: any
+//   clues: any
+//   instances: any
+// }
 
-export const GroupActivityDetails = builder
-  .objectRef<GroupActivityDetails>('GroupActivityDetails')
-  .implement({
-    fields: (t) => ({
-      id: t.exposeString('id'),
+// export const GroupActivityDetails = builder
+//   .objectRef<GroupActivityDetails>('GroupActivityDetails')
+//   .implement({
+//     fields: (t) => ({
+//       id: t.exposeString('id'),
 
-      name: t.exposeString('name', { nullable: false }),
-      displayName: t.exposeString('displayName', { nullable: false }),
-      description: t.exposeString('description', { nullable: true }),
+//       name: t.exposeString('name', { nullable: false }),
+//       displayName: t.exposeString('displayName', { nullable: false }),
+//       description: t.exposeString('description', { nullable: true }),
 
-      scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
-      scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+//       scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
+//       scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
 
-      activityInstance: t.field({
-        type: GroupActivityInstance,
-        resolve: (root, args, ctx) => {
-          return root.activityInstance
-        },
-      }),
+//       activityInstance: t.field({
+//         type: GroupActivityInstance,
+//         resolve: (root, args, ctx) => {
+//           return root.activityInstance
+//         },
+//       }),
 
-      // group: t.relation('group'),
-      // course: t.relation('course'),
-      // clues: t.relation('clues'),
-      // instances: t.relation('instances'),
-    }),
-  })
+//       // group: t.relation('group'),
+//       // course: t.relation('course'),
+//       // clues: t.relation('clues'),
+//       // instances: t.relation('instances'),
+//     }),
+//   })

@@ -1,4 +1,4 @@
-mutation LeaveCourse($courseId: ID!) {
+mutation LeaveCourse($courseId: String!) {
   leaveCourse(courseId: $courseId) {
     id
     participation {

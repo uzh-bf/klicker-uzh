@@ -92,19 +92,9 @@ type GroupActivityClueInstance {
 }
 
 input GroupActivityDecisionInput {
-  id: String!
+  id: Int!
   response: String
   selectedOptions: [Int!]!
-}
-
-type GroupActivityDetails {
-  activityInstance: GroupActivityInstance!
-  description: String
-  displayName: String!
-  id: String!
-  name: String!
-  scheduledEndAt: Date!
-  scheduledStartAt: Date!
 }
 
 type GroupActivityInstance {
@@ -128,6 +118,11 @@ type LearningElement {
   id: ID!
 }
 
+type LeaveCourseParticipation {
+  id: String!
+  participation: Participation!
+}
+
 type MicroSession {
   id: ID!
 }
@@ -145,14 +140,17 @@ type Mutation {
   endSession(id: String!): Session
   joinCourseWithPin(courseId: String!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
+  leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginUser(email: String!, password: String!): String
+  logoutParticipant: ID
+  logoutUser: ID
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   startSession(id: String!): Session
-  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityDetails
+  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
@@ -185,8 +183,13 @@ type ParticipantGroup {
   participants: [Participant!]!
 }
 
+type ParticipantLearningData {
+  id: String!
+}
+
 type Participation {
   id: Int!
+  isActive: Boolean!
   subscriptions: [PushSubscription!]!
 }
 

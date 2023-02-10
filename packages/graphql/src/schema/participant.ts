@@ -71,6 +71,8 @@ export const Participation = builder.prismaObject('Participation', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
+    isActive: t.exposeBoolean('isActive'),
+
     subscriptions: t.relation('subscriptions'),
   }),
 })
@@ -92,5 +94,25 @@ export const ParticipantLearningData = builder
   .implement({
     fields: (t) => ({
       id: t.exposeString('id'),
+    }),
+  })
+
+interface LeaveCourseParticipation {
+  id: string
+  participation: any
+}
+
+export const LeaveCourseParticipation = builder
+  .objectRef<LeaveCourseParticipation>('LeaveCourseParticipation')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+
+      participation: t.field({
+        type: Participation,
+        resolve: (root, args, ctx) => {
+          return root.participation
+        },
+      }),
     }),
   })

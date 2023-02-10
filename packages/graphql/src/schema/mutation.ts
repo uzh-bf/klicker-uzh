@@ -11,10 +11,11 @@ import * as SessionService from '../services/sessions'
 import { Course } from './course'
 import {
   GroupActivityDecisionInput,
-  GroupActivityDetails,
+  GroupActivityInstance,
 } from './groupActivity'
 import {
   AvatarSettingsInput,
+  LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
   Participation,
@@ -280,7 +281,7 @@ export const Mutation = builder.mutationType({
     }),
     submitGroupActivityDecisions: t.field({
       nullable: true,
-      type: GroupActivityDetails,
+      type: GroupActivityInstance,
       args: {
         activityInstanceId: t.arg.int({ required: true }),
         decisions: t.arg({
@@ -378,7 +379,7 @@ export const Mutation = builder.mutationType({
     }),
     leaveCourse: t.field({
       nullable: true,
-      type: Course,
+      type: LeaveCourseParticipation,
       args: {
         courseId: t.arg.string({ required: true }),
       },
