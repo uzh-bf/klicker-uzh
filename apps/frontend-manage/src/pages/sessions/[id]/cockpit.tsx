@@ -90,7 +90,8 @@ function Cockpit() {
 
   const {
     id,
-    isAudienceInteractionActive,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
     namespace,
@@ -144,7 +145,8 @@ function Cockpit() {
             : undefined
         }
         feedbacks={feedbacks as Feedback[]}
-        isAudienceInteractionActive={isAudienceInteractionActive}
+        isLiveQAEnabled={isLiveQAEnabled}
+        isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}
         sessionId={id}

@@ -17,7 +17,11 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
     Number.isNaN(confusionValues.difficulty) ||
     !confusionValues.numberOfParticipants
   ) {
-    return <div className="font-bold">Noch keine Daten verfügbar.</div>
+    return (
+      <div className="flex justify-center items-center font-bold min-h-[355px]">
+        Noch keine Daten verfügbar.
+      </div>
+    )
   }
 
   // const tooltipConfusion = (

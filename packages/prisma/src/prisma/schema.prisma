@@ -338,9 +338,10 @@ enum AccessMode {
 model Session {
   id String @id @default(uuid()) @db.Uuid
 
-  isAudienceInteractionActive Boolean @default(false)
-  isModerationEnabled         Boolean @default(true)
-  isGamificationEnabled       Boolean @default(false)
+  isLiveQAEnabled            Boolean @default(false)
+  isConfusionFeedbackEnabled Boolean @default(true)
+  isModerationEnabled        Boolean @default(true)
+  isGamificationEnabled      Boolean @default(false)
 
   namespace        String    @default(uuid()) @db.Uuid
   pinCode          Int?

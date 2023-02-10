@@ -1,7 +1,8 @@
 query GetPinnedFeedbacks($id: ID!) {
   pinnedFeedbacks(id: $id) {
     id
-    isAudienceInteractionActive
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
     confusionFeedbacks {

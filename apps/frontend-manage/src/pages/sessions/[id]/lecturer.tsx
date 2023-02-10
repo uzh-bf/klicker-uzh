@@ -68,12 +68,16 @@ function Feedbacks() {
     return <div className="p-4">Keine Daten verfügbar...</div>
   }
 
-  const { isAudienceInteractionActive, confusionFeedbacks, feedbacks } =
-    data?.pinnedFeedbacks as Session & { feedbacks: Feedback[] } & {
-      confusionFeedbacks: AggregatedConfusionFeedbacks[]
-    }
+  const {
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled,
+    confusionFeedbacks,
+    feedbacks,
+  } = data?.pinnedFeedbacks as Session & { feedbacks: Feedback[] } & {
+    confusionFeedbacks: AggregatedConfusionFeedbacks[]
+  }
 
-  if (!isAudienceInteractionActive) {
+  if (!isLiveQAEnabled) {
     return <div className="p-4">Publikumsinteraktion ist nicht aktiviert.</div>
   }
 
@@ -130,7 +134,7 @@ function Feedbacks() {
         ))}
       </div>
 
-      {isAudienceInteractionActive && (
+      {isConfusionFeedbackEnabled && (
         <div className="flex-initial">
           <div className="flex-initial p-4 w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border">
             <ConfusionCharts confusionValues={confusionFeedbacks[0]} />
