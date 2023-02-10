@@ -458,5 +458,20 @@ export const Mutation = builder.mutationType({
         return AccountService.generateLoginToken(ctx)
       },
     }),
+    deactivateSessionBlock: t.field({
+      nullable: true,
+      type: Session,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      args: {
+        sessionId: t.arg.string({ required: true }),
+        sessionBlockId: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return SessionService.deactivateSessionBlock(args, ctx)
+      },
+    }),
   }),
 })

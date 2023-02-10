@@ -1,9 +1,17 @@
-import { AccessMode, SessionStatus as Status } from '@klicker-uzh/prisma'
+import {
+  AccessMode,
+  SessionBlockStatus as BlockStatus,
+  SessionStatus as Status,
+} from '@klicker-uzh/prisma'
 
 import builder from '../builder'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(Status),
+})
+
+export const SessionBlockStatus = builder.enumType('SessionBlockStatus', {
+  values: Object.values(BlockStatus),
 })
 
 export const SessionAccessMode = builder.enumType('SessionAccessMode', {
@@ -50,6 +58,8 @@ export const Session = builder.prismaObject('Session', {
 export const SessionBlock = builder.prismaObject('SessionBlock', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    status: t.expose('status', { type: SessionBlockStatus }),
   }),
 })
 

@@ -773,7 +773,7 @@ async function processCachedData({ cachedResults, activeBlock }) {
 
 export async function deactivateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: ContextWithUser,
+  ctx: Context,
   isScheduled?: boolean
 ) {
   const session = await ctx.prisma.session.findUnique({
@@ -798,7 +798,7 @@ export async function deactivateSessionBlock(
     },
   })
 
-  if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
+  if (!session || session.ownerId !== ctx.user!.sub || !session.activeBlock)
     return null
 
   // if the block is not the active one, return early
