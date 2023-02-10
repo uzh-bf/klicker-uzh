@@ -136,6 +136,7 @@ type Mutation {
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDescription(courseId: String!, input: String!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
+  createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback

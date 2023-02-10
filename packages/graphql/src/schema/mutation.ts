@@ -473,5 +473,20 @@ export const Mutation = builder.mutationType({
         return SessionService.deactivateSessionBlock(args, ctx)
       },
     }),
+    createParticipantGroup: t.field({
+      nullable: true,
+      type: ParticipantGroup,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.PARTICIPANT,
+      },
+      args: {
+        courseId: t.arg.string({ required: true }),
+        name: t.arg.string({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return ParticipantGroupService.createParticipantGroup(args, ctx)
+      },
+    }),
   }),
 })

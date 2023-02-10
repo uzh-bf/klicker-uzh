@@ -11,7 +11,7 @@ interface CreateParticipantGroupArgs {
 
 export async function createParticipantGroup(
   { courseId, name }: CreateParticipantGroupArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -26,7 +26,7 @@ export async function createParticipantGroup(
       },
       participants: {
         connect: {
-          id: ctx.user.sub,
+          id: ctx.user!.sub,
         },
       },
     },
