@@ -501,5 +501,22 @@ export const Mutation = builder.mutationType({
         return ParticipantService.createParticipantAndJoinCourse(args, ctx)
       },
     }),
+    changeSessionSettings: t.field({
+      nullable: true,
+      type: Session,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      args: {
+        id: t.arg.string({ required: true }),
+        isAudienceInteractionActive: t.arg.boolean({ required: false }),
+        isModerationEnabled: t.arg.boolean({ required: false }),
+        isGamificationEnabled: t.arg.boolean({ required: false }),
+      },
+      resolve(_, args, ctx) {
+        return SessionService.changeSessionSettings(args, ctx)
+      },
+    }),
   }),
 })

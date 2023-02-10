@@ -1118,7 +1118,7 @@ export async function changeSessionSettings(
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const session = await ctx.prisma.session.update({
     where: { id },

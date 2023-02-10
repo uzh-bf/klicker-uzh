@@ -1,5 +1,5 @@
 mutation ChangeSessionSettings(
-  $id: ID!
+  $id: String!
   $isAudienceInteractionActive: Boolean
   $isModerationEnabled: Boolean
   $isGamificationEnabled: Boolean
