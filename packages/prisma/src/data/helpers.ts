@@ -335,7 +335,7 @@ export async function prepareSession({
   ownerId: string
   status: Prisma.SessionStatus
   isModerationEnabled?: boolean
-  'isLiveQAEnabled'?: boolean
+  isLiveQAEnabled?: boolean
   isConfusionFeedbackEnabled?: boolean
   isGamificationEnabled?: boolean
   linkTo?: string
