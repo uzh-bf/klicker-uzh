@@ -80,7 +80,7 @@ function AudienceInteraction({
 
       <div
         className={twMerge(
-          'flex flex-row justify-start w-full gap-2 md:gap-8 md:flex-row print:hidden h-8'
+          'flex flex-row justify-start w-full gap-2 md:gap-8 md:flex-row print:hidden'
         )}
       >
         <div className="flex flex-col w-2/3 pr-5">
