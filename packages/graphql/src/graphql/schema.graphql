@@ -40,11 +40,15 @@ type ConfusionTimestep {
 
 type Course {
   color: String
+  createdAt: Date!
   description: String
   displayName: String!
   id: ID!
+  isArchived: Boolean
   name: String!
+  pinCode: Int
   sessions: [Session!]!
+  updatedAt: Date!
 }
 
 """
@@ -204,6 +208,7 @@ type Query {
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
   self: Participant
+  userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
   userTags: [Tag!]

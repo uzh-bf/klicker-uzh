@@ -102,5 +102,15 @@ export const Query = builder.queryType({
         return QuestionService.getUserQuestions(ctx)
       },
     }),
+    userCourses: t.prismaField({
+      nullable: true,
+      type: [Course],
+      authScopes: {
+        role: UserRole.USER,
+      },
+      resolve(_, __, ___, ctx) {
+        return CourseService.getUserCourses(ctx)
+      },
+    }),
   }),
 })

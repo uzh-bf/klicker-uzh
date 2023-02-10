@@ -303,13 +303,10 @@ export async function createCourse(
   })
 }
 
-export async function getUserCourses(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUserCourses(ctx: Context) {
   const userCourses = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user!.sub,
     },
     include: {
       courses: {

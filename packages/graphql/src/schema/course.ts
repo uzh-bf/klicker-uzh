@@ -6,8 +6,15 @@ export const Course = builder.prismaObject('Course', {
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
 
+    pinCode: t.exposeInt('pinCode', { nullable: true }),
+
     color: t.exposeString('color', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
+
+    isArchived: t.exposeBoolean('isArchived', { nullable: true }),
+
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
     sessions: t.relation('sessions'),
   }),
