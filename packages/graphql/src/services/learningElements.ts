@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { pick } from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { Context, ContextWithOptionalUser } from '../lib/context'
 import { shuffle } from '../util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
@@ -514,9 +514,9 @@ export async function getLearningElementData(
 interface CreateLearningElementArgs {
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   order: OrderType
   resetTimeDays: number
@@ -533,12 +533,12 @@ export async function createLearningElement(
     order,
     resetTimeDays,
   }: CreateLearningElementArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const dbQuestions = await ctx.prisma.question.findMany({
     where: {
       id: { in: questions },
-      ownerId: ctx.user.sub,
+      ownerId: ctx.user!.sub,
     },
     include: {
       attachments: true,
@@ -578,7 +578,7 @@ export async function createLearningElement(
               connect: { id: questionId },
             },
             owner: {
-              connect: { id: ctx.user.sub },
+              connect: { id: ctx.user!.sub },
             },
             attachments: {
               create: questionAttachmentInstances,
@@ -587,7 +587,7 @@ export async function createLearningElement(
         }),
       },
       owner: {
-        connect: { id: ctx.user.sub },
+        connect: { id: ctx.user!.sub },
       },
       course: {
         connect: { id: courseId },

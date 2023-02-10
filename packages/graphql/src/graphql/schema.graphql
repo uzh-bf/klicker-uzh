@@ -130,6 +130,12 @@ type LearningElement {
   id: ID!
 }
 
+enum LearningElementOrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
+}
+
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
@@ -147,6 +153,7 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   changeSessionSettings(id: String!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
   createFeedback(content: String!, sessionId: String!): Feedback
+  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, questions: [Int!]!, resetTimeDays: Int!): LearningElement
   createParticipantAndJoinCourse(courseId: String!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session

@@ -4,6 +4,7 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
+import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
@@ -28,6 +29,8 @@ import {
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
+  LearningElement,
+  LearningElementOrderType,
   Session,
 } from './session'
 import { User } from './user'
@@ -572,6 +575,31 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return SessionService.createSession(args, ctx)
+      },
+    }),
+
+    createLearningElement: t.field({
+      nullable: true,
+      type: LearningElement,
+      authScopes: {
+        authenticated: true,
+        role: UserRole.USER,
+      },
+      args: {
+        name: t.arg.string({ required: true }),
+        displayName: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
+        questions: t.arg.intList({ required: true }),
+        courseId: t.arg.string({ required: false }),
+        multiplier: t.arg.int({ required: true }),
+        order: t.arg({
+          type: LearningElementOrderType,
+          required: true,
+        }),
+        resetTimeDays: t.arg.int({ required: true }),
+      },
+      resolve(_, args, ctx) {
+        return LearningElementService.createLearningElement(args, ctx)
       },
     }),
   }),

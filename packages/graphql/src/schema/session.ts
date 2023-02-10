@@ -1,5 +1,6 @@
 import {
   AccessMode,
+  OrderType,
   SessionBlockStatus as BlockStatus,
   SessionStatus as Status,
 } from '@klicker-uzh/prisma'
@@ -17,6 +18,13 @@ export const SessionBlockStatus = builder.enumType('SessionBlockStatus', {
 export const SessionAccessMode = builder.enumType('SessionAccessMode', {
   values: Object.values(AccessMode),
 })
+
+export const LearningElementOrderType = builder.enumType(
+  'LearningElementOrderType',
+  {
+    values: Object.values(OrderType),
+  }
+)
 
 export const BlockInput = builder.inputType('BlockInput', {
   fields: (t) => ({
