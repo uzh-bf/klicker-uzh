@@ -220,9 +220,9 @@ interface EditMicroSessionArgs {
   id: string
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -240,7 +240,7 @@ export async function editMicroSession(
     startDate,
     endDate,
   }: EditMicroSessionArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.microSession.findUnique({

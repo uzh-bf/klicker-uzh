@@ -49,6 +49,7 @@ export const Mutation = builder.mutationType({
         return AccountService.loginUser(args, ctx)
       },
     }),
+
     cancelSession: t.field({
       nullable: true,
       type: Session,
@@ -63,6 +64,7 @@ export const Mutation = builder.mutationType({
         return SessionService.cancelSession(args, ctx)
       },
     }),
+
     changeCourseColor: t.field({
       nullable: true,
       type: Course,
@@ -78,6 +80,7 @@ export const Mutation = builder.mutationType({
         return CourseService.changeCourseColor(args, ctx)
       },
     }),
+
     changeCourseDescription: t.field({
       nullable: true,
       type: Course,
@@ -93,6 +96,7 @@ export const Mutation = builder.mutationType({
         return CourseService.changeCourseDescription(args, ctx)
       },
     }),
+
     deleteTag: t.field({
       nullable: true,
       type: Tag,
@@ -107,6 +111,7 @@ export const Mutation = builder.mutationType({
         return QuestionService.deleteTag(args, ctx)
       },
     }),
+
     createFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -118,6 +123,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.createFeedback(args, ctx)
       },
     }),
+
     deleteFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -132,6 +138,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.deleteFeedback(args, ctx)
       },
     }),
+
     deleteFeedbackResponse: t.field({
       nullable: true,
       type: Feedback,
@@ -146,6 +153,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.deleteFeedbackResponse(args, ctx)
       },
     }),
+
     deleteQuestion: t.field({
       nullable: true,
       type: Question,
@@ -160,6 +168,7 @@ export const Mutation = builder.mutationType({
         return QuestionService.deleteQuestion(args, ctx)
       },
     }),
+
     editTag: t.field({
       nullable: true,
       type: Tag,
@@ -175,6 +184,7 @@ export const Mutation = builder.mutationType({
         return QuestionService.editTag(args, ctx)
       },
     }),
+
     joinCourseWithPin: t.field({
       nullable: true,
       type: Participant,
@@ -190,6 +200,7 @@ export const Mutation = builder.mutationType({
         return CourseService.joinCourseWithPin(args, ctx)
       },
     }),
+
     endSession: t.field({
       nullable: true,
       type: Session,
@@ -204,6 +215,7 @@ export const Mutation = builder.mutationType({
         return SessionService.endSession(args, ctx)
       },
     }),
+
     joinParticipantGroup: t.field({
       nullable: true,
       type: ParticipantGroup,
@@ -219,6 +231,7 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.joinParticipantGroup(args, ctx)
       },
     }),
+
     voteFeedbackResponse: t.field({
       nullable: true,
       type: FeedbackResponse,
@@ -231,6 +244,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.voteFeedbackResponse(args, ctx)
       },
     }),
+
     upvoteFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -242,6 +256,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.upvoteFeedback(args, ctx)
       },
     }),
+
     updateParticipantProfile: t.field({
       nullable: true,
       type: Participant,
@@ -262,6 +277,7 @@ export const Mutation = builder.mutationType({
         return ParticipantService.updateParticipantProfile(args, ctx)
       },
     }),
+
     leaveParticipantGroup: t.field({
       nullable: true,
       type: ParticipantGroup,
@@ -273,6 +289,7 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.leaveParticipantGroup(args, ctx)
       },
     }),
+
     subscribeToPush: t.field({
       nullable: true,
       type: Participation,
@@ -291,6 +308,7 @@ export const Mutation = builder.mutationType({
         return NotificationService.subscribeToPush(args, ctx)
       },
     }),
+
     submitGroupActivityDecisions: t.field({
       nullable: true,
       type: GroupActivityInstance,
@@ -309,6 +327,7 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
       },
     }),
+
     startSession: t.field({
       nullable: true,
       type: Session,
@@ -323,6 +342,7 @@ export const Mutation = builder.mutationType({
         return SessionService.startSession(args, ctx)
       },
     }),
+
     pinFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -338,6 +358,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.pinFeedback(args, ctx)
       },
     }),
+
     publishFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -353,6 +374,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.publishFeedback(args, ctx)
       },
     }),
+
     resolveFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -368,6 +390,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.resolveFeedback(args, ctx)
       },
     }),
+
     respondToFeedback: t.field({
       nullable: true,
       type: Feedback,
@@ -383,6 +406,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.respondToFeedback(args, ctx)
       },
     }),
+
     logoutUser: t.field({
       nullable: true,
       type: 'ID',
@@ -394,6 +418,7 @@ export const Mutation = builder.mutationType({
         return AccountService.logoutUser(args, ctx)
       },
     }),
+
     logoutParticipant: t.field({
       nullable: true,
       type: 'ID',
@@ -405,6 +430,7 @@ export const Mutation = builder.mutationType({
         return AccountService.logoutParticipant(args, ctx)
       },
     }),
+
     leaveCourse: t.field({
       nullable: true,
       type: LeaveCourseParticipation,
@@ -419,6 +445,7 @@ export const Mutation = builder.mutationType({
         return CourseService.leaveCourse(args, ctx)
       },
     }),
+
     markMicroSessionCompleted: t.field({
       nullable: true,
       type: Participation,
@@ -434,6 +461,7 @@ export const Mutation = builder.mutationType({
         return MicroLearningService.markMicroSessionCompleted(args, ctx)
       },
     }),
+
     loginUserToken: t.field({
       nullable: true,
       type: 'ID',
@@ -445,6 +473,7 @@ export const Mutation = builder.mutationType({
         return AccountService.loginUserToken(args, ctx)
       },
     }),
+
     loginParticipant: t.field({
       nullable: true,
       type: 'ID',
@@ -456,6 +485,7 @@ export const Mutation = builder.mutationType({
         return AccountService.loginParticipant(args, ctx)
       },
     }),
+
     generateLoginToken: t.field({
       nullable: true,
       type: User,
@@ -468,6 +498,7 @@ export const Mutation = builder.mutationType({
         return AccountService.generateLoginToken(ctx)
       },
     }),
+
     deactivateSessionBlock: t.field({
       nullable: true,
       type: Session,
@@ -483,6 +514,7 @@ export const Mutation = builder.mutationType({
         return SessionService.deactivateSessionBlock(args, ctx)
       },
     }),
+
     createParticipantGroup: t.field({
       nullable: true,
       type: ParticipantGroup,
@@ -498,6 +530,7 @@ export const Mutation = builder.mutationType({
         return ParticipantGroupService.createParticipantGroup(args, ctx)
       },
     }),
+
     createParticipantAndJoinCourse: t.field({
       nullable: true,
       type: Participant,
@@ -511,6 +544,7 @@ export const Mutation = builder.mutationType({
         return ParticipantService.createParticipantAndJoinCourse(args, ctx)
       },
     }),
+
     changeSessionSettings: t.field({
       nullable: true,
       type: Session,
@@ -528,6 +562,7 @@ export const Mutation = builder.mutationType({
         return SessionService.changeSessionSettings(args, ctx)
       },
     }),
+
     addConfusionTimestep: t.field({
       nullable: true,
       type: ConfusionTimestep,
@@ -540,6 +575,7 @@ export const Mutation = builder.mutationType({
         return FeedbackService.addConfusionTimestep(args, ctx)
       },
     }),
+
     activateSessionBlock: t.field({
       nullable: true,
       type: Session,
@@ -555,6 +591,7 @@ export const Mutation = builder.mutationType({
         return SessionService.activateSessionBlock(args, ctx)
       },
     }),
+
     createSession: t.field({
       nullable: true,
       type: Session,
@@ -578,6 +615,7 @@ export const Mutation = builder.mutationType({
         return SessionService.createSession(args, ctx)
       },
     }),
+
     createLearningElement: t.field({
       nullable: true,
       type: LearningElement,
@@ -602,6 +640,7 @@ export const Mutation = builder.mutationType({
         return LearningElementService.createLearningElement(args, ctx)
       },
     }),
+
     editSession: t.field({
       nullable: true,
       type: Session,
@@ -626,6 +665,7 @@ export const Mutation = builder.mutationType({
         return SessionService.editSession(args, ctx)
       },
     }),
+
     createMicroSession: t.field({
       nullable: true,
       type: MicroSession,
@@ -641,6 +681,25 @@ export const Mutation = builder.mutationType({
       },
       resolve(_, args, ctx) {
         return MicroLearningService.createMicroSession(args, ctx)
+      },
+    }),
+
+    editMicroSession: t.field({
+      nullable: true,
+      type: MicroSession,
+      args: {
+        id: t.arg.string({ required: true }),
+        name: t.arg.string({ required: true }),
+        displayName: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
+        questions: t.arg.intList({ required: true }),
+        courseId: t.arg.string({ required: false }),
+        multiplier: t.arg.int({ required: true }),
+        startDate: t.arg({ type: 'Date', required: true }),
+        endDate: t.arg({ type: 'Date', required: true }),
+      },
+      resolve(_, args, ctx) {
+        return MicroLearningService.editMicroSession(args, ctx)
       },
     }),
   }),
