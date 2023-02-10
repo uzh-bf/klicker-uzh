@@ -205,11 +205,24 @@ type Query {
   getLoginToken: User
   self: Participant
   userProfile: User
+  userQuestions: [Question!]
   userTags: [Tag!]
 }
 
 type Question {
+  content: String!
+  createdAt: Date!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: Json!
+  pointsMultiplier: Int!
+  tags: [Tag!]!
+  type: String!
+  updatedAt: Date!
 }
 
 type QuestionInstance {

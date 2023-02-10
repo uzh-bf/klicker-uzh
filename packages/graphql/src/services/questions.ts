@@ -1,14 +1,10 @@
 import { QuestionType } from '@klicker-uzh/prisma'
-import { pick } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
-export async function getUserQuestions(
-  { userId }: { userId: string },
-  ctx: ContextWithUser
-) {
+export async function getUserQuestions(ctx: Context) {
   const userQuestions = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user!.sub,
     },
     include: {
       questions: {
@@ -24,26 +20,7 @@ export async function getUserQuestions(
     },
   })
 
-  return userQuestions?.questions.map((question) => {
-    return {
-      ...pick(
-        [
-          'id',
-          'name',
-          'type',
-          'content',
-          'isArchived',
-          'isDeleted',
-          'hasSampleSolution',
-          'hasAnswerFeedbacks',
-          'createdAt',
-          'updatedAt',
-        ],
-        question
-      ),
-      tags: question.tags.map(pick(['id', 'name'])),
-    }
-  })
+  return userQuestions?.questions
 }
 
 export async function getSingleQuestion(
