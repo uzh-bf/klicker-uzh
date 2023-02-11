@@ -84,6 +84,8 @@ export const QuestionInstance = builder.prismaObject('QuestionInstance', {
 
     // HACK: as any fixes a weird TS error that only occurs in console
     questionData: t.expose('questionData', { type: QuestionData as any }),
+
+    attachments: t.relation('attachments'),
   }),
 })
 
@@ -103,5 +105,11 @@ export const Attachment = builder.prismaObject('Attachment', {
 export const AttachmentInstance = builder.prismaObject('AttachmentInstance', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    href: t.exposeString('href'),
+    name: t.exposeString('name'),
+    originalName: t.exposeString('originalName', { nullable: true }),
+    type: t.exposeString('type'),
+    description: t.exposeString('description', { nullable: true }),
   }),
 })

@@ -11,7 +11,12 @@ type Attachment {
 }
 
 type AttachmentInstance {
+  description: String
+  href: String!
   id: ID!
+  name: String!
+  originalName: String
+  type: String!
 }
 
 input AvatarSettingsInput {
@@ -367,6 +372,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   runningSessions(shortname: String!): [Session!]
   self: Participant
+  session(id: String!): Session
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userProfile: User
@@ -407,6 +413,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
+  attachments: [AttachmentInstance!]!
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!

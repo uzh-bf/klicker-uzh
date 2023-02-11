@@ -196,6 +196,16 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getParticipantGroups(args, ctx)
         },
       }),
+      session: asUser.prismaField({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getRunningSession(args, ctx)
+        },
+      }),
     }
   },
 })
