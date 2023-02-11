@@ -1,4 +1,4 @@
-query GetPinnedFeedbacks($id: ID!) {
+query GetPinnedFeedbacks($id: String!) {
   pinnedFeedbacks(id: $id) {
     id
     isLiveQAEnabled

@@ -206,6 +206,16 @@ export const Query = builder.queryType({
           return SessionService.getRunningSession(args, ctx)
         },
       }),
+      pinnedFeedbacks: asUser.prismaField({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getPinnedFeedbacks(args, ctx)
+        },
+      }),
     }
   },
 })

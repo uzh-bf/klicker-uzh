@@ -370,6 +370,7 @@ type Query {
   learningElements: [LearningElement!]
   microSession(id: String!): MicroSession
   participantGroups(courseId: String!): [ParticipantGroup!]
+  pinnedFeedbacks(id: String!): Session
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: String!): Session
