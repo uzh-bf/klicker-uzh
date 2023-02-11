@@ -13,20 +13,21 @@ import { User } from './user'
 
 export const Query = builder.queryType({
   fields: (t) => ({
-    self: t.prismaField({
-      nullable: true,
-      type: Participant,
-      authScopes: {
+    self: t
+      .withAuth({
+        authenticated: true,
         role: DB.UserRole.PARTICIPANT,
-      },
-      resolve(query, _, _args, ctx) {
-        if (!ctx.user?.sub) return null
-        return ctx.prisma.participant.findUnique({
-          ...query,
-          where: { id: ctx.user.sub },
-        })
-      },
-    }),
+      })
+      .prismaField({
+        nullable: true,
+        type: Participant,
+        resolve(query, _, __, ctx) {
+          return ctx.prisma.participant.findUnique({
+            ...query,
+            where: { id: ctx.user.sub },
+          })
+        },
+      }),
     controlCourse: t.prismaField({
       nullable: true,
       type: Course,

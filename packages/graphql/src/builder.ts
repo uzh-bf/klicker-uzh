@@ -6,17 +6,22 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
-import { ContextWithOptionalUser, ContextWithUser } from './lib/context'
+import { Context, ContextWithUser } from './lib/context'
 
 const prisma = new PrismaClient({})
 
 const builder = new SchemaBuilder<{
+  Context: Context
+  AuthContexts: {
+    anonymous: Context
+    authenticated: ContextWithUser
+    role: ContextWithUser
+  }
   AuthScopes: {
     anonymous: boolean
     authenticated: boolean
     role?: UserRole
   }
-  Context: ContextWithOptionalUser | ContextWithUser
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
@@ -40,6 +45,7 @@ const builder = new SchemaBuilder<{
     filterConnectionTotalCount: true,
   },
   scopeAuthOptions: {
+    authorizeOnSubscribe: true,
     unauthorizedError: () => new GraphQLError('Unauthorized'),
   },
   validationOptions: {

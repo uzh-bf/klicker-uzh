@@ -20,13 +20,6 @@ export interface Context extends BaseContext {
   }
 }
 
-export interface ContextWithOptionalUser extends Context {
-  user?: {
-    sub: string
-    role: UserRole
-  }
-}
-
 export interface ContextWithUser extends Context {
   user: {
     sub: string
