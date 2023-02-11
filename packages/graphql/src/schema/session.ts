@@ -1,28 +1,23 @@
-import {
-  AccessMode,
-  OrderType,
-  SessionBlockStatus as BlockStatus,
-  SessionStatus as Status,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
-  values: Object.values(Status),
+  values: Object.values(DB.SessionStatus),
 })
 
 export const SessionBlockStatus = builder.enumType('SessionBlockStatus', {
-  values: Object.values(BlockStatus),
+  values: Object.values(DB.SessionBlockStatus),
 })
 
 export const SessionAccessMode = builder.enumType('SessionAccessMode', {
-  values: Object.values(AccessMode),
+  values: Object.values(DB.AccessMode),
 })
 
 export const LearningElementOrderType = builder.enumType(
   'LearningElementOrderType',
   {
-    values: Object.values(OrderType),
+    values: Object.values(DB.OrderType),
   }
 )
 

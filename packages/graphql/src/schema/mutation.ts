@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
@@ -58,7 +58,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return SessionService.cancelSession(args, ctx)
@@ -74,7 +74,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return CourseService.changeCourseColor(args, ctx)
@@ -90,7 +90,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return CourseService.changeCourseDescription(args, ctx)
@@ -105,7 +105,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return QuestionService.deleteTag(args, ctx)
@@ -132,7 +132,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return FeedbackService.deleteFeedback(args, ctx)
@@ -147,7 +147,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return FeedbackService.deleteFeedbackResponse(args, ctx)
@@ -162,7 +162,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return QuestionService.deleteQuestion(args, ctx)
@@ -178,7 +178,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return QuestionService.editTag(args, ctx)
@@ -194,7 +194,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return CourseService.joinCourseWithPin(args, ctx)
@@ -209,7 +209,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return SessionService.endSession(args, ctx)
@@ -225,7 +225,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
         return ParticipantGroupService.joinParticipantGroup(args, ctx)
@@ -271,7 +271,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
         return ParticipantService.updateParticipantProfile(args, ctx)
@@ -302,7 +302,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
         return NotificationService.subscribeToPush(args, ctx)
@@ -321,7 +321,7 @@ export const Mutation = builder.mutationType({
       },
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
         return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
@@ -333,7 +333,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.string({ required: true }),
@@ -348,7 +348,7 @@ export const Mutation = builder.mutationType({
       type: Feedback,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.int({ required: true }),
@@ -364,7 +364,7 @@ export const Mutation = builder.mutationType({
       type: Feedback,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.int({ required: true }),
@@ -380,7 +380,7 @@ export const Mutation = builder.mutationType({
       type: Feedback,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.int({ required: true }),
@@ -396,7 +396,7 @@ export const Mutation = builder.mutationType({
       type: Feedback,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.int({ required: true }),
@@ -412,7 +412,7 @@ export const Mutation = builder.mutationType({
       type: 'ID',
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, args, ctx) {
         return AccountService.logoutUser(args, ctx)
@@ -424,7 +424,7 @@ export const Mutation = builder.mutationType({
       type: 'ID',
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(_, args, ctx) {
         return AccountService.logoutParticipant(args, ctx)
@@ -436,7 +436,7 @@ export const Mutation = builder.mutationType({
       type: LeaveCourseParticipation,
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       args: {
         courseId: t.arg.string({ required: true }),
@@ -451,7 +451,7 @@ export const Mutation = builder.mutationType({
       type: Participation,
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       args: {
         id: t.arg.string({ required: true }),
@@ -491,7 +491,7 @@ export const Mutation = builder.mutationType({
       type: User,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
 
       resolve(_, __, ctx) {
@@ -504,7 +504,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         sessionId: t.arg.string({ required: true }),
@@ -520,7 +520,7 @@ export const Mutation = builder.mutationType({
       type: ParticipantGroup,
       authScopes: {
         authenticated: true,
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       args: {
         courseId: t.arg.string({ required: true }),
@@ -550,7 +550,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.string({ required: true }),
@@ -582,7 +582,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         sessionId: t.arg.string({ required: true }),
@@ -598,7 +598,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         name: t.arg.string({ required: true }),
@@ -622,7 +622,7 @@ export const Mutation = builder.mutationType({
       type: LearningElement,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         name: t.arg.string({ required: true }),
@@ -647,7 +647,7 @@ export const Mutation = builder.mutationType({
       type: Session,
       authScopes: {
         authenticated: true,
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.string({ required: true }),

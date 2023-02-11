@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
@@ -17,7 +17,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: Participant,
       authScopes: {
-        role: UserRole.PARTICIPANT,
+        role: DB.UserRole.PARTICIPANT,
       },
       resolve(query, _, _args, ctx) {
         if (!ctx.user?.sub) return null
@@ -31,7 +31,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: Course,
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         id: t.arg.string({ required: true }),
@@ -44,7 +44,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: Course,
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         courseId: t.arg.string({ required: true }),
@@ -57,7 +57,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: User,
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, args, ctx) {
         return AccountService.getLoginToken(args, ctx)
@@ -67,7 +67,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Tag],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return QuestionService.getUserTags(ctx)
@@ -87,7 +87,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: User,
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return AccountService.getUserProfile(ctx)
@@ -97,7 +97,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Question],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return QuestionService.getUserQuestions(ctx)
@@ -107,7 +107,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Course],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return CourseService.getUserCourses(ctx)
@@ -117,7 +117,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Session],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return SessionService.getUnassignedSessions(ctx)
@@ -127,7 +127,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Session],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       args: {
         shortname: t.arg.string({ required: true }),
@@ -140,7 +140,7 @@ export const Query = builder.queryType({
       nullable: true,
       type: [Course],
       authScopes: {
-        role: UserRole.USER,
+        role: DB.UserRole.USER,
       },
       resolve(_, __, ___, ctx) {
         return CourseService.getControlCourses(ctx)
