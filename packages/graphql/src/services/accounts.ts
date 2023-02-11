@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -235,23 +235,23 @@ export async function logoutParticipant(_: any, ctx: Context) {
   return ctx.user.sub
 }
 
-export async function generateLoginToken(ctx: Context) {
+export async function generateLoginToken(ctx: ContextWithUser) {
   const expirationDate = dayjs().add(10, 'minute').toDate()
   const loginToken = Math.floor(
     100000000 + Math.random() * 900000000
   ).toString()
 
   const user = await ctx.prisma.user.update({
-    where: { id: ctx.user!.sub },
+    where: { id: ctx.user.sub },
     data: { loginToken: loginToken, loginTokenExpiresAt: expirationDate },
   })
 
   return user
 }
 
-export async function getLoginToken(_: any, ctx: Context) {
+export async function getLoginToken(_: any, ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user!.sub },
+    where: { id: ctx.user.sub },
   })
 
   if (!user) return null

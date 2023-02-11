@@ -12,13 +12,19 @@ import { Feedback, Session } from './session'
 import { User } from './user'
 
 export const Query = builder.queryType({
-  fields: (t) => ({
-    self: t
-      .withAuth({
-        authenticated: true,
-        role: DB.UserRole.PARTICIPANT,
-      })
-      .prismaField({
+  fields(t) {
+    const asParticipant = t.withAuth({
+      authenticated: true,
+      role: DB.UserRole.PARTICIPANT,
+    })
+
+    const asUser = t.withAuth({
+      authenticated: true,
+      role: DB.UserRole.USER,
+    })
+
+    return {
+      self: asParticipant.prismaField({
         nullable: true,
         type: Participant,
         resolve(query, _, __, ctx) {
@@ -28,134 +34,102 @@ export const Query = builder.queryType({
           })
         },
       }),
-    controlCourse: t.prismaField({
-      nullable: true,
-      type: Course,
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve(_, __, args, ctx) {
-        return CourseService.getControlCourse(args, ctx)
-      },
-    }),
-    basicCourseInformation: t.prismaField({
-      nullable: true,
-      type: Course,
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      args: {
-        courseId: t.arg.string({ required: true }),
-      },
-      resolve(_, __, args, ctx) {
-        return CourseService.getBasicCourseInformation(args, ctx)
-      },
-    }),
-    getLoginToken: t.prismaField({
-      nullable: true,
-      type: User,
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, args, ctx) {
-        return AccountService.getLoginToken(args, ctx)
-      },
-    }),
-    userTags: t.prismaField({
-      nullable: true,
-      type: [Tag],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return QuestionService.getUserTags(ctx)
-      },
-    }),
-    feedbacks: t.prismaField({
-      nullable: true,
-      type: [Feedback],
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve(_, __, args, ctx) {
-        return FeedbackService.getFeedbacks(args, ctx)
-      },
-    }),
-    userProfile: t.prismaField({
-      nullable: true,
-      type: User,
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return AccountService.getUserProfile(ctx)
-      },
-    }),
-    userQuestions: t.prismaField({
-      nullable: true,
-      type: [Question],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return QuestionService.getUserQuestions(ctx)
-      },
-    }),
-    userCourses: t.prismaField({
-      nullable: true,
-      type: [Course],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return CourseService.getUserCourses(ctx)
-      },
-    }),
-    unassignedSessions: t.prismaField({
-      nullable: true,
-      type: [Session],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return SessionService.getUnassignedSessions(ctx)
-      },
-    }),
-    runningSessions: t.prismaField({
-      nullable: true,
-      type: [Session],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      args: {
-        shortname: t.arg.string({ required: true }),
-      },
-      resolve(_, __, args, ctx) {
-        return SessionService.getRunningSessions(args, ctx)
-      },
-    }),
-    controlCourses: t.prismaField({
-      nullable: true,
-      type: [Course],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return CourseService.getControlCourses(ctx)
-      },
-    }),
-    userSessions: t.prismaField({
-      nullable: true,
-      type: [Session],
-      authScopes: {
-        role: DB.UserRole.USER,
-      },
-      resolve(_, __, ___, ctx) {
-        return SessionService.getUserSessions({ userId: ctx.user!.sub }, ctx)
-      },
-    }),
-  }),
+      controlCourse: asUser.prismaField({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return CourseService.getControlCourse(args, ctx)
+        },
+      }),
+      basicCourseInformation: asUser.prismaField({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return CourseService.getBasicCourseInformation(args, ctx)
+        },
+      }),
+      getLoginToken: asUser.prismaField({
+        nullable: true,
+        type: User,
+        resolve(_, __, args, ctx) {
+          return AccountService.getLoginToken(args, ctx)
+        },
+      }),
+      userTags: asUser.prismaField({
+        nullable: true,
+        type: [Tag],
+        resolve(_, __, ___, ctx) {
+          return QuestionService.getUserTags(ctx)
+        },
+      }),
+      feedbacks: t.prismaField({
+        nullable: true,
+        type: [Feedback],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return FeedbackService.getFeedbacks(args, ctx)
+        },
+      }),
+      userProfile: asUser.prismaField({
+        nullable: true,
+        type: User,
+        resolve(_, __, ___, ctx) {
+          return AccountService.getUserProfile(ctx)
+        },
+      }),
+      userQuestions: asUser.prismaField({
+        nullable: true,
+        type: [Question],
+        resolve(_, __, ___, ctx) {
+          return QuestionService.getUserQuestions(ctx)
+        },
+      }),
+      userCourses: asUser.prismaField({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ___, ctx) {
+          return CourseService.getUserCourses(ctx)
+        },
+      }),
+      unassignedSessions: asUser.prismaField({
+        nullable: true,
+        type: [Session],
+        resolve(_, __, ___, ctx) {
+          return SessionService.getUnassignedSessions(ctx)
+        },
+      }),
+      runningSessions: asUser.prismaField({
+        nullable: true,
+        type: [Session],
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getRunningSessions(args, ctx)
+        },
+      }),
+      controlCourses: asUser.prismaField({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ___, ctx) {
+          return CourseService.getControlCourses(ctx)
+        },
+      }),
+      userSessions: asUser.prismaField({
+        nullable: true,
+        type: [Session],
+        resolve(_, __, ___, ctx) {
+          return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+        },
+      }),
+    }
+  },
 })

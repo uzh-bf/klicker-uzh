@@ -67,7 +67,7 @@ export const Session = builder.prismaObject('Session', {
 
 builder.prismaObjectFields(Session, (t) => ({
   numOfBlocks: t.int({
-    resolve: (session) => session.numOfQuestions,
+    resolve: (session) => session.numOfBlocks,
     nullable: true,
   }),
   numOfQuestions: t.int({

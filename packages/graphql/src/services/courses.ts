@@ -7,7 +7,7 @@ import {
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -528,7 +528,10 @@ export async function getCourseData(
   }
 }
 
-export async function getControlCourse({ id }: { id: string }, ctx: Context) {
+export async function getControlCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
   const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
