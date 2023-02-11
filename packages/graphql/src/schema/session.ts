@@ -45,8 +45,6 @@ export const Session = builder.prismaObject('Session', {
     linkToJoin: t.exposeString('linkTo', { nullable: true }),
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    // numOfBlocks: t.exposeInt('numOfBlocks'),
-    // numOfQuestions: t.exposeInt('numOfQuestions'),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
     status: t.expose('status', { type: SessionStatus }),
@@ -67,11 +65,23 @@ export const Session = builder.prismaObject('Session', {
   }),
 })
 
+builder.prismaObjectFields(Session, (t) => ({
+  numOfBlocks: t.int({
+    resolve: (session) => session.numOfQuestions,
+    nullable: true,
+  }),
+  numOfQuestions: t.int({
+    resolve: (session) => session.numOfQuestions,
+    nullable: true,
+  }),
+}))
+
 export const SessionBlock = builder.prismaObject('SessionBlock', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     status: t.expose('status', { type: SessionBlockStatus }),
+    instances: t.relation('instances'),
   }),
 })
 

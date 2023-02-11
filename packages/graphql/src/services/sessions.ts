@@ -1116,7 +1116,7 @@ export async function changeSessionSettings(
   {
     id,
     isLiveQAEnabled,
-    isConfusionFeedbackEnabled ,
+    isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
@@ -1163,7 +1163,7 @@ export async function getRunningSessions(
 
 export async function getUserSessions(
   { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -1182,10 +1182,6 @@ export async function getUserSessions(
                 orderBy: {
                   order: 'asc',
                 },
-                select: {
-                  id: true,
-                  questionData: true,
-                },
               },
               _count: {
                 select: { instances: true },
@@ -1200,23 +1196,16 @@ export async function getUserSessions(
     },
   })
 
-  return user?.sessions.map((session) => {
-    return {
-      ...pick(
-        ['id', 'name', 'displayName', 'accessMode', 'status', 'createdAt'],
-        session
-      ),
-      blocks: session.blocks.map(pick(['id', 'instances'])),
-      course: session.course
-        ? pick(['id', 'name', 'displayName'], session.course)
-        : undefined,
-      numOfBlocks: session._count?.blocks,
-      numOfQuestions: session.blocks.reduce(
-        (acc, block) => acc + block._count?.instances,
-        0
-      ),
-    }
-  })
+  return user?.sessions.map((session) => ({
+    ...session,
+    blocks: session.blocks,
+    course: session.course ? session.course : undefined,
+    numOfBlocks: session._count?.blocks,
+    numOfQuestions: session.blocks.reduce(
+      (acc, block) => acc + block._count?.instances,
+      0
+    ),
+  }))
 }
 
 export async function getUnassignedSessions(ctx: Context) {

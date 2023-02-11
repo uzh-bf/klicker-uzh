@@ -146,5 +146,15 @@ export const Query = builder.queryType({
         return CourseService.getControlCourses(ctx)
       },
     }),
+    userSessions: t.prismaField({
+      nullable: true,
+      type: [Session],
+      authScopes: {
+        role: DB.UserRole.USER,
+      },
+      resolve(_, __, ___, ctx) {
+        return SessionService.getUserSessions({ userId: ctx.user!.sub }, ctx)
+      },
+    }),
   }),
 })

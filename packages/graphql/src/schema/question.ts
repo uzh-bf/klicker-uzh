@@ -1,5 +1,9 @@
 import builder from '../builder'
 
+builder.interfaceRef('QuestionData'. {
+
+})
+
 export const Question = builder.prismaObject('Question', {
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -27,6 +31,8 @@ export const Question = builder.prismaObject('Question', {
 export const QuestionInstance = builder.prismaObject('QuestionInstance', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    questionData: t.expose('questionData', { type: 'Json' }),
   }),
 })
 
