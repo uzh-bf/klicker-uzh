@@ -14,13 +14,6 @@ export const SessionAccessMode = builder.enumType('SessionAccessMode', {
   values: Object.values(DB.AccessMode),
 })
 
-export const LearningElementOrderType = builder.enumType(
-  'LearningElementOrderType',
-  {
-    values: Object.values(DB.OrderType),
-  }
-)
-
 export const BlockInput = builder.inputType('BlockInput', {
   fields: (t) => ({
     questionIds: t.intList({ required: true }),
@@ -81,6 +74,12 @@ export const SessionBlock = builder.prismaObject('SessionBlock', {
     id: t.exposeInt('id'),
 
     status: t.expose('status', { type: SessionBlockStatus }),
+    order: t.exposeInt('order', { nullable: true }),
+    expiresAt: t.expose('expiresAt', { type: 'Date', nullable: true }),
+    timeLimit: t.exposeInt('timeLimit', { nullable: true }),
+    randomSelection: t.exposeInt('randomSelection', { nullable: true }),
+    execution: t.exposeInt('execution', { nullable: true }),
+
     instances: t.relation('instances'),
   }),
 })
@@ -114,18 +113,11 @@ export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
 
     speed: t.exposeInt('speed'),
     difficulty: t.exposeInt('difficulty'),
-  }),
-})
 
-export const LearningElement = builder.prismaObject('LearningElement', {
-  fields: (t) => ({
-    id: t.exposeID('id'),
-  }),
-})
-
-export const MicroSession = builder.prismaObject('MicroSession', {
-  fields: (t) => ({
-    id: t.exposeID('id'),
+    numberOfParticipants: t.int({
+      resolve: (block) => block.numberOfParticipants,
+      nullable: true,
+    }),
   }),
 })
 

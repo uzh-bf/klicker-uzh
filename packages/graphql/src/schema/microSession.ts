@@ -1,0 +1,14 @@
+import builder from '../builder'
+
+export const MicroSession = builder.prismaObject('MicroSession', {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    description: t.exposeString('description', { nullable: true }),
+
+    course: t.relation('course', {}),
+    instances: t.relation('instances', {}),
+  }),
+})

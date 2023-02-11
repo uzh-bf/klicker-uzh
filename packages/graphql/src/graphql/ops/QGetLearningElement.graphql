@@ -1,10 +1,17 @@
 #import "./FQuestionData.graphql"
 
-query GetMicroSession($id: ID!) {
-  microSession(id: $id) {
+query GetLearningElement($id: String!) {
+  learningElement(id: $id) {
     id
     displayName
     description
+    pointsMultiplier
+    resetTimeDays
+    orderType
+    previouslyAnswered
+    previousScore
+    previousPointsAwarded
+    totalTrials
     course {
       id
       displayName
@@ -12,6 +19,7 @@ query GetMicroSession($id: ID!) {
     }
     instances {
       id
+      pointsMultiplier
       ...QuestionData
       evaluation {
         feedbacks {

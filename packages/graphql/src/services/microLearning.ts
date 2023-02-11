@@ -146,7 +146,7 @@ interface CreateMicroSessionArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -202,9 +202,11 @@ export async function createMicroSession(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,
@@ -222,7 +224,7 @@ interface EditMicroSessionArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -309,9 +311,11 @@ export async function editMicroSession(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,

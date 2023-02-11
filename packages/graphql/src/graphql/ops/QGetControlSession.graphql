@@ -1,4 +1,4 @@
-query GetControlSession($id: ID!) {
+query GetControlSession($id: String!) {
   controlSession(id: $id) {
     id
     name

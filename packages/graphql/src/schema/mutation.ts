@@ -15,11 +15,14 @@ import {
   GroupActivityDecisionInput,
   GroupActivityInstance,
 } from './groupActivity'
+import { LearningElement, LearningElementOrderType } from './learningElements'
+import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
+  ParticipantLearningData,
   Participation,
   SubscriptionObjectInput,
 } from './participant'
@@ -29,9 +32,6 @@ import {
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
-  LearningElement,
-  LearningElementOrderType,
-  MicroSession,
   Session,
 } from './session'
 import { User } from './user'
@@ -587,6 +587,29 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.editMicroSession(args, ctx)
+        },
+      }),
+
+      joinCourse: asParticipant.field({
+        nullable: true,
+        type: ParticipantLearningData,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.joinCourse(args, ctx)
+        },
+      }),
+
+      registerParticipantFromLTI: t.field({
+        nullable: true,
+        type: ParticipantLearningData,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.registerParticipantFromLTI(args, ctx)
         },
       }),
     }

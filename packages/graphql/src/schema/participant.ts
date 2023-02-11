@@ -1,4 +1,10 @@
 import builder from '../builder'
+import {
+  Course,
+  GroupLeaderboardEntry,
+  LeaderboardEntry,
+  LeaderboardStatistics,
+} from './course'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -53,6 +59,18 @@ export const Participant = builder.prismaObject('Participant', {
     achievements: t.relation('achievements'),
 
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
+
+    rank: t.int({
+      resolve: (participant) => participant.rank,
+    }),
+    score: t.float({
+      resolve: (participant) => participant.score,
+    }),
+    isSelf: t.boolean({
+      resolve: (participant, args, ctx) => {
+        return participant.id === ctx.user?.sub
+      },
+    }),
   }),
 })
 
@@ -64,6 +82,10 @@ export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
 
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
+
+    score: t.float({
+      resolve: (group) => group.score,
+    }),
   }),
 })
 
@@ -89,6 +111,14 @@ export const PushSubscription = builder.prismaObject('PushSubscription', {
 
 interface ParticipantLearningData {
   id: string
+  participantToken?: string
+  participant?: any // FIXME
+  participation?: any // FIXME
+  course?: any // FIXME
+  leaderboard?: any[] // FIXME
+  leaderboardStatistics?: any // FIXME
+  groupLeaderboard?: any[] // FIXME
+  groupLeaderboardStatistics?: any // FIXME
 }
 
 export const ParticipantLearningData = builder
@@ -96,12 +126,70 @@ export const ParticipantLearningData = builder
   .implement({
     fields: (t) => ({
       id: t.exposeString('id'),
+
+      participantToken: t.exposeString('participantToken', { nullable: true }),
+
+      participant: t.field({
+        type: Participant,
+        resolve: (root, args, ctx) => {
+          return root.participant
+        },
+        nullable: true,
+      }),
+
+      participation: t.field({
+        type: Participation,
+        resolve: (root, args, ctx) => {
+          return root.participation
+        },
+        nullable: true,
+      }),
+
+      course: t.field({
+        type: Course,
+        resolve: (root, args, ctx) => {
+          return root.course
+        },
+        nullable: true,
+      }),
+
+      leaderboard: t.field({
+        type: [LeaderboardEntry],
+        resolve: (root, args, ctx) => {
+          return root.leaderboard
+        },
+        nullable: true,
+      }),
+
+      leaderboardStatistics: t.field({
+        type: LeaderboardStatistics,
+        resolve: (root, args, ctx) => {
+          return root.leaderboardStatistics
+        },
+        nullable: true,
+      }),
+
+      groupLeaderboard: t.field({
+        type: [GroupLeaderboardEntry],
+        resolve: (root, args, ctx) => {
+          return root.groupLeaderboard
+        },
+        nullable: true,
+      }),
+
+      groupLeaderboardStatistics: t.field({
+        type: LeaderboardStatistics,
+        resolve: (root, args, ctx) => {
+          return root.groupLeaderboardStatistics
+        },
+        nullable: true,
+      }),
     }),
   })
 
 interface LeaveCourseParticipation {
   id: string
-  participation: any
+  participation: any // FIXME
 }
 
 export const LeaveCourseParticipation = builder

@@ -1,6 +1,6 @@
 # import "./FQuestionDataWithoutSolutions.graphql"
 
-query GetCockpitSession($id: ID!) {
+query GetCockpitSession($id: String!) {
   cockpitSession(id: $id) {
     id
     isLiveQAEnabled

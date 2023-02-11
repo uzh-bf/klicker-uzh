@@ -63,6 +63,7 @@ type ClassAchievementInstance {
 type ConfusionTimestep {
   difficulty: Int!
   id: Int!
+  numberOfParticipants: Int
   speed: Int!
 }
 
@@ -155,6 +156,23 @@ type GroupActivityParameter {
   id: Int!
 }
 
+type GroupLeaderboardEntry {
+  id: ID!
+  isMember: Boolean
+  name: String!
+  rank: Int!
+  score: Float!
+}
+
+type InstanceEvaluation {
+  choices: Json!
+  feedbacks: [QuestionFeedback!]
+  newPointsFrom: Date
+  percentile: Float
+  pointsAwarded: Float
+  score: Float!
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -164,8 +182,27 @@ type LeaderboardEntry {
   id: Int!
 }
 
+type LeaderboardStatistics {
+  averageScore: Float!
+  participantCount: Int!
+}
+
 type LearningElement {
-  id: ID!
+  course: Course!
+  courseId: String!
+  description: String
+  displayName: String!
+  id: String!
+  instances: [QuestionInstance!]!
+  name: String!
+  numOfInstances: Int!
+  orderType: LearningElementOrderType!
+  pointsMultiplier: Int!
+  previousPointsAwarded: Float!
+  previousScore: Float!
+  previouslyAnswered: Int!
+  resetTimeDays: Int!
+  totalTrials: Int!
 }
 
 enum LearningElementOrderType {
@@ -180,7 +217,12 @@ type LeaveCourseParticipation {
 }
 
 type MicroSession {
+  course: Course!
+  description: String
+  displayName: String!
   id: ID!
+  instances: [QuestionInstance!]!
+  name: String!
 }
 
 type Mutation {
@@ -206,6 +248,7 @@ type Mutation {
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
   generateLoginToken: User
+  joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(courseId: String!, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
   leaveCourse(courseId: String!): LeaveCourseParticipation
@@ -218,6 +261,7 @@ type Mutation {
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   startSession(id: String!): Session
@@ -260,9 +304,12 @@ type Participant {
   avatar: String
   avatarSettings: Json!
   id: ID!
+  isSelf: Boolean!
   lastLoginAt: Date
   level: Int!
   participantGroups: [ParticipantGroup!]!
+  rank: Int!
+  score: Float!
   username: String!
   xp: Int!
 }
@@ -279,10 +326,19 @@ type ParticipantGroup {
   id: ID!
   name: String!
   participants: [Participant!]!
+  score: Float!
 }
 
 type ParticipantLearningData {
+  course: Course
+  groupLeaderboard: [GroupLeaderboardEntry!]
+  groupLeaderboardStatistics: LeaderboardStatistics
   id: String!
+  leaderboard: [LeaderboardEntry!]
+  leaderboardStatistics: LeaderboardStatistics
+  participant: Participant
+  participantToken: String
+  participation: Participation
 }
 
 type Participation {
@@ -299,10 +355,16 @@ type PushSubscription {
 
 type Query {
   basicCourseInformation(courseId: String!): Course
+  cockpitSession(id: String!): Session
   controlCourse(id: String!): Course
   controlCourses: [Course!]
+  controlSession(id: String!): Session
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
+  learningElement(id: String!): LearningElement
+  learningElements: [LearningElement!]
+  microSession(id: String!): MicroSession
+  participantGroups(courseId: String!): [ParticipantGroup!]
   runningSessions(shortname: String!): [Session!]
   self: Participant
   unassignedSessions: [Session!]
@@ -337,8 +399,17 @@ interface QuestionData {
   type: String!
 }
 
+type QuestionFeedback {
+  correct: Boolean!
+  feedback: String!
+  ix: Int!
+  value: String!
+}
+
 type QuestionInstance {
+  evaluation: InstanceEvaluation
   id: Int!
+  pointsMultiplier: Int!
   questionData: QuestionData!
 }
 
@@ -385,9 +456,14 @@ enum SessionAccessMode {
 }
 
 type SessionBlock {
+  execution: Int
+  expiresAt: Date
   id: Int!
   instances: [QuestionInstance!]!
+  order: Int
+  randomSelection: Int
   status: SessionBlockStatus!
+  timeLimit: Int
 }
 
 enum SessionBlockStatus {

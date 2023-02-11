@@ -516,7 +516,7 @@ interface CreateLearningElementArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId: string
+  courseId?: string | null
   multiplier: number
   order: OrderType
   resetTimeDays: number
@@ -589,9 +589,11 @@ export async function createLearningElement(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,

@@ -56,7 +56,7 @@ export async function voteFeedbackResponse(
 
 export async function createFeedback(
   { sessionId, content }: { sessionId: string; content: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const isLoggedInParticipant =
     ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT

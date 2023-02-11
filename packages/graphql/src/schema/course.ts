@@ -26,6 +26,46 @@ export const LeaderboardEntry = builder.prismaObject('LeaderboardEntry', {
   }),
 })
 
+interface LeaderboardStatistics {
+  participantCount: number
+  averageScore: number
+}
+
+export const LeaderboardStatistics = builder
+  .objectRef<LeaderboardStatistics>('LeaderboardStatistics')
+  .implement({
+    fields: (t) => ({
+      participantCount: t.int({
+        nullable: false,
+        resolve: (stats) => stats.participantCount,
+      }),
+      averageScore: t.float({
+        nullable: false,
+        resolve: (stats) => stats.averageScore,
+      }),
+    }),
+  })
+
+interface GroupLeaderboardEntry {
+  id: string
+  name: string
+  score: number
+  rank: number
+  isMember?: boolean
+}
+
+export const GroupLeaderboardEntry = builder
+  .objectRef<GroupLeaderboardEntry>('GroupLeaderboardEntry')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+      score: t.exposeFloat('score'),
+      rank: t.exposeInt('rank'),
+      isMember: t.exposeBoolean('isMember', { nullable: true }),
+    }),
+  })
+
 export const AwardEntry = builder.prismaObject('AwardEntry', {
   fields: (t) => ({
     id: t.exposeInt('id'),

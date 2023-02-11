@@ -3,16 +3,25 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as ParticipantGroupService from '../services/groups'
+import * as LearningElementService from '../services/learningElements'
+import * as MicroSessionService from '../services/microLearning'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
-import { Participant } from './participant'
+import { LearningElement } from './learningElements'
+import { MicroSession } from './microSession'
+import { Participant, ParticipantGroup } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session } from './session'
 import { User } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
+    const asAuthenticated = t.withAuth({
+      authenticated: true,
+    })
+
     const asParticipant = t.withAuth({
       authenticated: true,
       role: DB.UserRole.PARTICIPANT,
@@ -128,6 +137,63 @@ export const Query = builder.queryType({
         type: [Session],
         resolve(_, __, ___, ctx) {
           return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+        },
+      }),
+      cockpitSession: asUser.prismaField({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getCockpitSession(args, ctx)
+        },
+      }),
+      controlSession: asUser.prismaField({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getControlSession(args, ctx)
+        },
+      }),
+      learningElement: t.prismaField({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return LearningElementService.getLearningElementData(args, ctx)
+        },
+      }),
+      learningElements: asUser.prismaField({
+        nullable: true,
+        type: [LearningElement],
+        resolve(_, __, ___, ctx) {
+          return CourseService.getUserLearningElements(ctx)
+        },
+      }),
+      microSession: asAuthenticated.prismaField({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return MicroSessionService.getSingleMicroSession(args, ctx)
+        },
+      }),
+      participantGroups: asAuthenticated.prismaField({
+        nullable: true,
+        type: [ParticipantGroup],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return ParticipantGroupService.getParticipantGroups(args, ctx)
         },
       }),
     }
