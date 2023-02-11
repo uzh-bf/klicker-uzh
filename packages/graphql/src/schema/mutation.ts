@@ -554,7 +554,8 @@ export const Mutation = builder.mutationType({
       },
       args: {
         id: t.arg.string({ required: true }),
-        isAudienceInteractionActive: t.arg.boolean({ required: false }),
+        isLiveQAEnabled: t.arg.boolean({ required: false }),
+        isConfusionFeedbackEnabled: t.arg.boolean({ required: false }),
         isModerationEnabled: t.arg.boolean({ required: false }),
         isGamificationEnabled: t.arg.boolean({ required: false }),
       },

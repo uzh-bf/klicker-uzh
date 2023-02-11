@@ -1579,7 +1579,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "isAudienceInteractionActive",
+                "name": "isConfusionFeedbackEnabled",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",
@@ -1592,6 +1592,18 @@
               },
               {
                 "name": "isGamificationEnabled",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "isLiveQAEnabled",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",
@@ -4849,7 +4861,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isAudienceInteractionActive",
+            "name": "isConfusionFeedbackEnabled",
             "description": null,
             "args": [],
             "type": {
@@ -4866,6 +4878,22 @@
           },
           {
             "name": "isGamificationEnabled",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isLiveQAEnabled",
             "description": null,
             "args": [],
             "type": {

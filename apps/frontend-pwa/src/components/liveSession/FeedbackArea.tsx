@@ -80,7 +80,15 @@ function Subscriber({ subscribeToMore, sessionId }) {
   return <div></div>
 }
 
-function FeedbackArea() {
+interface FeedbackAreaProps {
+  isLiveQAEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+}
+
+function FeedbackArea({
+  isConfusionFeedbackEnabled,
+  isLiveQAEnabled,
+}: FeedbackAreaProps) {
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
@@ -282,95 +290,99 @@ function FeedbackArea() {
 
       <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
 
-      <div className="mb-8">
-        <Formik
-          initialValues={{ feedbackInput: '' }}
-          onSubmit={(values, { setSubmitting }) => {
-            if (values.feedbackInput !== '') {
-              onAddFeedback(values.feedbackInput)
-              values.feedbackInput = ''
+      {isLiveQAEnabled && (
+        <div className="mb-8">
+          <Formik
+            initialValues={{ feedbackInput: '' }}
+            onSubmit={(values, { setSubmitting }) => {
+              if (values.feedbackInput !== '') {
+                onAddFeedback(values.feedbackInput)
+                values.feedbackInput = ''
 
-              setTimeout(() => {
+                setTimeout(() => {
+                  setSubmitting(false)
+                }, 700)
+              } else {
                 setSubmitting(false)
-              }, 700)
-            } else {
-              setSubmitting(false)
-            }
-          }}
-        >
-          {({ isSubmitting }) => (
-            <Form>
-              <FormikTextareaField
-                name="feedbackInput"
-                placeholder="Feedback / Frage eingeben"
-                className={{
-                  input:
-                    'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
-                  root: 'mb-1',
-                }}
-                component="textarea"
-                rows="3"
-                maxLength={500}
-                maxLengthLabel="Zeichen"
+              }
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form>
+                <FormikTextareaField
+                  name="feedbackInput"
+                  placeholder="Feedback / Frage eingeben"
+                  className={{
+                    input:
+                      'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
+                    root: 'mb-1',
+                  }}
+                  component="textarea"
+                  rows="3"
+                  maxLength={500}
+                  maxLengthLabel="Zeichen"
+                />
+                <Button
+                  className={{
+                    root: 'float-right h-10 text-center items-center !w-30',
+                  }}
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Button.Label>Loading...</Button.Label>
+                  ) : (
+                    <Button.Label>Absenden</Button.Label>
+                  )}
+                </Button>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      )}
+
+      {isConfusionFeedbackEnabled && (
+        <div className="mb-8 space-y-6 text-sm">
+          <div className="">
+            <H3 className={{ root: 'mb-0' }}>Geschwindigkeit</H3>
+            <div className="w-full -mt-8">
+              <Slider
+                disabled={!isConfusionEnabled}
+                handleChange={(newValue: any): Promise<void> =>
+                  onNewConfusionTS(newValue, 'speed')
+                }
+                icons={speedIcons}
+                value={confusionSpeed}
+                rangeColorMap={RANGE_COLOR_MAP}
+                borderColorMap={BORDER_COLOR_MAP}
+                min={-2}
+                max={2}
+                step={1}
               />
-              <Button
-                className={{
-                  root: 'float-right h-10 text-center items-center !w-30',
-                }}
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <Button.Label>Loading...</Button.Label>
-                ) : (
-                  <Button.Label>Absenden</Button.Label>
-                )}
-              </Button>
-            </Form>
-          )}
-        </Formik>
-      </div>
-
-      <div className="mb-8 space-y-6 text-sm">
-        <div className="">
-          <H3 className={{ root: 'mb-0' }}>Geschwindigkeit</H3>
-          <div className="w-full -mt-8">
-            <Slider
-              disabled={!isConfusionEnabled}
-              handleChange={(newValue: any): Promise<void> =>
-                onNewConfusionTS(newValue, 'speed')
-              }
-              icons={speedIcons}
-              value={confusionSpeed}
-              rangeColorMap={RANGE_COLOR_MAP}
-              borderColorMap={BORDER_COLOR_MAP}
-              min={-2}
-              max={2}
-              step={1}
-            />
+            </div>
+          </div>
+          <div>
+            <H3 className={{ root: 'mb-0' }}>Schwierigkeit</H3>
+            <div className="w-full -mt-5">
+              <Slider
+                disabled={!isConfusionEnabled}
+                handleChange={(newValue: any): Promise<void> =>
+                  onNewConfusionTS(newValue, 'difficulty')
+                }
+                icons={difficultyIcons}
+                value={confusionDifficulty}
+                rangeColorMap={RANGE_COLOR_MAP}
+                borderColorMap={BORDER_COLOR_MAP}
+                min={-2}
+                max={2}
+                step={1}
+              />
+            </div>
           </div>
         </div>
-        <div>
-          <H3 className={{ root: 'mb-0' }}>Schwierigkeit</H3>
-          <div className="w-full -mt-5">
-            <Slider
-              disabled={!isConfusionEnabled}
-              handleChange={(newValue: any): Promise<void> =>
-                onNewConfusionTS(newValue, 'difficulty')
-              }
-              icons={difficultyIcons}
-              value={confusionDifficulty}
-              rangeColorMap={RANGE_COLOR_MAP}
-              borderColorMap={BORDER_COLOR_MAP}
-              min={-2}
-              max={2}
-              step={1}
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
-      {feedbacksData?.feedbacks.length > 0 && (
+      {isLiveQAEnabled && feedbacksData?.feedbacks.length > 0 && (
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">

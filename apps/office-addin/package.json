@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.0.0-alpha.21",
+  "version": "3.0.0-alpha.22",
   "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@fluentui/react": "8.104.8",
-    "@uzh-bf/design-system": "1.1.1",
+    "@uzh-bf/design-system": "1.2.0",
     "core-js": "3.27.2",
     "es6-promise": "4.2.8",
     "eslint": "8.32.0",

@@ -513,8 +513,9 @@ export interface NexusGenObjects {
     feedbacks?: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     finishedAt?: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
-    isAudienceInteractionActive: boolean; // Boolean!
+    isConfusionFeedbackEnabled: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isLiveQAEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     linkTo?: string | null; // String
     name: string; // String!
@@ -1062,8 +1063,9 @@ export interface NexusGenFieldTypes {
     feedbacks: Array<NexusGenRootTypes['Feedback'] | null> | null; // [Feedback]
     finishedAt: NexusGenScalars['DateTime'] | null; // DateTime
     id: string; // ID!
-    isAudienceInteractionActive: boolean; // Boolean!
+    isConfusionFeedbackEnabled: boolean; // Boolean!
     isGamificationEnabled: boolean; // Boolean!
+    isLiveQAEnabled: boolean; // Boolean!
     isModerationEnabled: boolean; // Boolean!
     linkTo: string | null; // String
     name: string; // String!
@@ -1622,8 +1624,9 @@ export interface NexusGenFieldTypeNames {
     feedbacks: 'Feedback'
     finishedAt: 'DateTime'
     id: 'ID'
-    isAudienceInteractionActive: 'Boolean'
+    isConfusionFeedbackEnabled: 'Boolean'
     isGamificationEnabled: 'Boolean'
+    isLiveQAEnabled: 'Boolean'
     isModerationEnabled: 'Boolean'
     linkTo: 'String'
     name: 'String'
@@ -1733,8 +1736,9 @@ export interface NexusGenArgTypes {
     }
     changeSessionSettings: { // args
       id: string; // ID!
-      isAudienceInteractionActive?: boolean | null; // Boolean
+      isConfusionFeedbackEnabled?: boolean | null; // Boolean
       isGamificationEnabled?: boolean | null; // Boolean
+      isLiveQAEnabled?: boolean | null; // Boolean
       isModerationEnabled?: boolean | null; // Boolean
     }
     createCourse: { // args

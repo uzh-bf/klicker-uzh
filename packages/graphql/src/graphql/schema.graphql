@@ -151,7 +151,7 @@ type Mutation {
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDescription(courseId: String!, input: String!): Course
-  changeSessionSettings(id: String!, isAudienceInteractionActive: Boolean, isGamificationEnabled: Boolean, isModerationEnabled: Boolean): Session
+  changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   createFeedback(content: String!, sessionId: String!): Feedback
   createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, questions: [Int!]!, resetTimeDays: Int!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
@@ -287,8 +287,9 @@ type Session {
   feedbacks: [Feedback!]!
   finishedAt: Date
   id: ID!
-  isAudienceInteractionActive: Boolean!
+  isConfusionFeedbackEnabled: Boolean!
   isGamificationEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
   isModerationEnabled: Boolean!
   linkTo: String
   linkToJoin: String

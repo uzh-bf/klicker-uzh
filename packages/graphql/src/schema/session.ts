@@ -38,7 +38,8 @@ export const Session = builder.prismaObject('Session', {
   fields: (t) => ({
     id: t.exposeID('id'),
 
-    isAudienceInteractionActive: t.exposeBoolean('isAudienceInteractionActive'),
+    isLiveQAEnabled: t.exposeBoolean('isLiveQAEnabled'),
+    isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
     isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.21",
+  "version": "3.0.0-alpha.22",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
@@ -23,7 +23,7 @@
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@sentry/nextjs": "7.21.1",
     "@socialgouv/matomo-next": "1.4.0",
-    "@uzh-bf/design-system": "1.1.1",
+    "@uzh-bf/design-system": "1.2.0",
     "body-parser": "1.20.1",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",

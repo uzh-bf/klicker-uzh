@@ -95,15 +95,39 @@ function ContentInput({
         value={editorValue}
         onChange={(newValue) => onChange(convertToMd(newValue))}
       >
+        <div className={twMerge('p-3', className?.content)}>
+          <Editable
+            className={twMerge(
+              'leading-7 prose prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
+              className?.editor
+            )}
+            autoFocus={autoFocus}
+            spellCheck
+            placeholder={placeholder}
+            renderElement={renderElement}
+            renderLeaf={renderLeaf}
+            onKeyDown={(event) => {
+              // eslint-disable-next-line no-restricted-syntax
+              for (const hotkey in HOTKEYS) {
+                if (isHotkey(hotkey, event as any)) {
+                  event.preventDefault()
+                  const mark = HOTKEYS[hotkey]
+                  toggleMark(editor, mark)
+                }
+              }
+            }}
+            data-cy={data_cy}
+          />
+        </div>
         <div
           className={twMerge(
-            'toolbar flex flex-row w-full px-1.5 mr-10 h-10 bg-uzh-grey-20',
+            'toolbar flex flex-row w-full px-1 mr-10 h-8 bg-uzh-grey-20 text-sm',
             showToolbarOnFocus && 'group-focus-within:flex hidden'
           )}
         >
           <div
             className={twMerge(
-              'flex flex-row flex-1 gap-3',
+              'flex flex-row flex-1 gap-1',
               className?.toolbar
             )}
           >
@@ -128,7 +152,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung für Code-Styling. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+c erreicht werden."
+              tooltip="Wählen Sie diese Einstellung für Code-Styling."
               className={{
                 tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
               }}
@@ -246,30 +270,6 @@ function ContentInput({
               <FontAwesomeIcon icon={faRotateRight} color="grey" />
             </div>
           </Button>
-        </div>
-        <div className={twMerge('p-3', className?.content)}>
-          <Editable
-            className={twMerge(
-              'leading-7 prose prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
-              className?.editor
-            )}
-            autoFocus={autoFocus}
-            spellCheck
-            placeholder={placeholder}
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            onKeyDown={(event) => {
-              // eslint-disable-next-line no-restricted-syntax
-              for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event as any)) {
-                  event.preventDefault()
-                  const mark = HOTKEYS[hotkey]
-                  toggleMark(editor, mark)
-                }
-              }
-            }}
-            data-cy={data_cy}
-          />
         </div>
       </Slate>
     </div>

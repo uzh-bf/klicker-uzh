@@ -67,7 +67,7 @@ export async function createFeedback(
     },
   })
 
-  if (!session || !session.isAudienceInteractionActive) return null
+  if (!session || !session.isLiveQAEnabled) return null
 
   const newFeedback = await ctx.prisma.feedback.create({
     data: {

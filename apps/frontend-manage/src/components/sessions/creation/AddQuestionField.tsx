@@ -20,10 +20,14 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
         questionType: string
         title: string
         content: string
+        hasAnswerFeedbacks: boolean
+        hasSampleSolution: boolean
       }) => {
         push({
           id: item.id,
           title: item.title,
+          hasAnswerFeedbacks: item.hasAnswerFeedbacks,
+          hasSampleSolution: item.hasSampleSolution,
         })
       },
       collect: (monitor) => ({

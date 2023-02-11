@@ -1106,7 +1106,8 @@ export async function getLeaderboard(
 // modify session parameters isAudienceInteractionEnabled, isModerationEnabled, isGamificationEnabled
 interface SessionSettingArgs {
   id: string
-  isAudienceInteractionActive?: boolean | null
+  isLiveQAEnabled?: boolean | null
+  isConfusionFeedbackEnabled?: boolean | null
   isModerationEnabled?: boolean | null
   isGamificationEnabled?: boolean | null
 }
@@ -1114,7 +1115,8 @@ interface SessionSettingArgs {
 export async function changeSessionSettings(
   {
     id,
-    isAudienceInteractionActive,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled ,
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
@@ -1123,7 +1125,8 @@ export async function changeSessionSettings(
   const session = await ctx.prisma.session.update({
     where: { id },
     data: {
-      isAudienceInteractionActive: isAudienceInteractionActive ?? undefined,
+      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
+      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
       isModerationEnabled: isModerationEnabled ?? undefined,
       isGamificationEnabled: isGamificationEnabled ?? undefined,
     },
